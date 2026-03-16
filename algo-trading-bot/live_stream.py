@@ -109,6 +109,9 @@ def on_message(ws, message):
 
         builder.on_tick(price=price, volume=volume, timestamp=timestamp)
 
+        # ── Check SL / Target on every tick (O(1) — two comparisons) ──
+        paper_trader.check_exit(live_price=price)
+
     except json.JSONDecodeError:
         logging.warning(f"Failed to parse JSON: {message}")
     except Exception as e:

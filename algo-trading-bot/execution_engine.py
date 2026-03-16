@@ -262,6 +262,67 @@ class PaperTrader:
 
         return summary
 
+    def check_exit(self, live_price: float) -> Optional[dict]:
+        """
+        Check every incoming tick against the open position's
+        Stop-Loss and Target thresholds.  If either is breached,
+        automatically close the position.
+
+        Call this on EVERY raw tick inside the WebSocket on_message
+        callback.  The method is O(1) — two float comparisons and
+        an early return — so it adds negligible overhead.
+
+        Parameters
+        ----------
+        live_price : float — The latest traded price from the tick.
+
+        Returns
+        -------
+        dict or None
+            The closed-trade summary if an exit was triggered,
+            otherwise None (position still open or no position).
+        """
+        # ── Fast exit: nothing to monitor ───────────────────────────
+        if self._open_position is None:
+            return None
+
+        pos = self._open_position
+
+        # ── Stop-Loss Hit ───────────────────────────────────────────
+        # Price dropped to or below the stop-loss level.
+        if live_price <= pos["stop_loss_price"]:
+            logging.info("")
+            logging.info(
+                "🔴 ════════════════════════════════════════════════════════"
+            )
+            logging.info(
+                f"🔴  STOP-LOSS TRIGGERED  @  ₹{live_price:,.2f}  "
+                f"(SL was ₹{pos['stop_loss_price']:,.2f})"
+            )
+            logging.info(
+                "🔴 ════════════════════════════════════════════════════════"
+            )
+            return self.close_position(exit_price=pos["stop_loss_price"])
+
+        # ── Target Hit ──────────────────────────────────────────────
+        # Price rose to or above the target level.
+        if live_price >= pos["target_price"]:
+            logging.info("")
+            logging.info(
+                "🟢 ════════════════════════════════════════════════════════"
+            )
+            logging.info(
+                f"🟢  TARGET HIT  @  ₹{live_price:,.2f}  "
+                f"(Target was ₹{pos['target_price']:,.2f})"
+            )
+            logging.info(
+                "🟢 ════════════════════════════════════════════════════════"
+            )
+            return self.close_position(exit_price=pos["target_price"])
+
+        # ── Neither threshold breached — position stays open ────────
+        return None
+
     @property
     def is_halted(self) -> bool:
         """Whether trading has been halted due to daily loss limit."""
