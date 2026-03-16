@@ -231,15 +231,8 @@ class PaperTrader:
         self._daily_pnl += pnl
         self.working_capital += pnl
 
-        logging.info("=" * 60)
-        logging.info(f"  📋  POSITION CLOSED — {result}")
-        logging.info(f"  Entry : ₹{pos['entry_price']:,.2f}")
-        logging.info(f"  Exit  : ₹{exit_price:,.2f}")
-        logging.info(f"  Qty   : {pos['quantity']}")
-        logging.info(f"  P&L   : ₹{pnl:,.2f}  ({pnl_pct:+.2f}%)")
-        logging.info(f"  Daily P&L  : ₹{self._daily_pnl:,.2f}")
-        logging.info(f"  Working Cap: ₹{self.working_capital:,.2f}")
-        logging.info("=" * 60)
+        # Print the structured TRADE CLOSED ticket to the terminal
+        self._print_closed_ticket(pos, exit_price, pnl, pnl_pct, result)
 
         # Clear the open position
         self._open_position = None
@@ -380,5 +373,42 @@ class PaperTrader:
         logging.info(f"║  Max Loss     :  ₹{ticket['potential_loss']:>10,.2f}{'':<28}║")
         logging.info(f"║  Max Profit   :  ₹{ticket['potential_profit']:>10,.2f}{'':<28}║")
         logging.info(f"║  Risk : Reward:  {ticket['risk_reward']:<40}║")
+        logging.info("╚══════════════════════════════════════════════════════════╝")
+        logging.info("")
+
+    def _print_closed_ticket(
+        self,
+        pos: dict,
+        exit_price: float,
+        pnl: float,
+        pnl_pct: float,
+        result: str,
+    ) -> None:
+        """
+        Print a structured TRADE CLOSED ticket to the terminal.
+        Called by close_position() on every SL hit or target hit.
+        Mirrors the entry ticket's box-drawing style for consistency.
+        """
+        pnl_icon    = "🟢" if pnl >= 0 else "🔴"
+        pnl_sign    = "+" if pnl >= 0 else ""
+        exit_label  = f"₹{exit_price:,.2f}"
+        pnl_label   = f"{pnl_sign}₹{pnl:,.2f}  ({pnl_sign}{pnl_pct:.2f}%)"
+        daily_label = f"₹{self._daily_pnl:,.2f}"
+        wcap_label  = f"₹{self.working_capital:,.2f}"
+
+        logging.info("")
+        logging.info("╔══════════════════════════════════════════════════════════╗")
+        logging.info(f"║  {pnl_icon}  TRADE CLOSED  ──  {result:<35}║")
+        logging.info("╠══════════════════════════════════════════════════════════╣")
+        logging.info(f"║  Trade ID     :  #{pos['trade_id']:<39}║")
+        logging.info(f"║  Symbol       :  {pos['symbol']:<40}║")
+        logging.info("║──────────────────────────────────────────────────────────║")
+        logging.info(f"║  Entry Price  :  ₹{pos['entry_price']:>10,.2f}{'':<28}║")
+        logging.info(f"║  Exit  Price  :  {exit_label:<42}║")
+        logging.info(f"║  Quantity     :  {pos['quantity']:<40}║")
+        logging.info("║──────────────────────────────────────────────────────────║")
+        logging.info(f"║  P & L        :  {pnl_label:<42}║")
+        logging.info(f"║  Daily P&L    :  {daily_label:<42}║")
+        logging.info(f"║  Working Cap  :  {wcap_label:<42}║")
         logging.info("╚══════════════════════════════════════════════════════════╝")
         logging.info("")
