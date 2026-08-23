@@ -16,6 +16,7 @@ Risk Management Model
 """
 
 import logging
+import threading
 from datetime import date, datetime
 from typing import Optional
 
@@ -69,6 +70,7 @@ class PaperTrader:
         self._pending_orders: list          = []
         self._latest_price: Optional[float] = None
         self._latest_timestamp: Optional[datetime] = None
+        self._state_lock = threading.RLock()
 
         logging.info("=" * 60)
         logging.info("  PAPER TRADER INITIALIZED")
@@ -109,101 +111,102 @@ class PaperTrader:
         """
 
         # ── Day-reset check ─────────────────────────────────────────
-        trade_timestamp = self._resolve_timestamp(timestamp, signal_data)
-        self._check_day_reset(trade_timestamp)
+        with self._state_lock:
+            trade_timestamp = self._resolve_timestamp(timestamp, signal_data)
+            self._check_day_reset(trade_timestamp)
 
-        # ── Guard: daily loss limit breached ────────────────────────
-        if self._halted:
-            logging.warning(
-                "⛔  TRADE BLOCKED — Daily loss limit "
-                f"(₹{self.daily_loss_limit:,.2f}) has been reached. "
-                "Trading is halted for today."
-            )
-            return None
-
-        # ── Guard: already in an open position ──────────────────────
-        if self._open_position is not None:
-            logging.info(
-                "⏳  Skipping signal — already holding an open position "
-                f"(Entry: ₹{self._open_position['entry_price']:,.2f})"
-            )
-            return None
-
-        # ── Extract data ────────────────────────────────────────────
-        entry_price = float(signal_data.get("VWAP", 0))
-        symbol      = signal_data.get("symbol", "RELIANCE")
-        close_price = signal_data.get("Close")
-        if close_price is not None:
-            self._set_latest_price(float(close_price), trade_timestamp)
-
-        if entry_price <= 0:
-            logging.error("Invalid VWAP value for trade entry. Skipping.")
-            return None
-
-        # ── 1. Calculate Stop-Loss (VWAP - 0.5%) ───────────────────
-        stop_loss_price = entry_price * (1 - self.stop_loss_pct)
-
-        # ── 2. Calculate Target (1:2 Risk-to-Reward) ────────────────
-        risk_distance   = entry_price - stop_loss_price
-        target_price    = entry_price + (self.reward_to_risk * risk_distance)
-
-        # ── 3. Quantity Sizing ──────────────────────────────────────
-        #    Quantity = Risk_Per_Trade / (Entry - Stop_Loss)
-        if risk_distance <= 0:
-            logging.error("Risk distance is zero or negative. Skipping.")
-            return None
-
-        raw_quantity = self.risk_per_trade / risk_distance
-        quantity     = int(raw_quantity)  # Floor to whole shares
-
-        if quantity <= 0:
-            logging.warning(
-                "Calculated quantity is 0 (price too high for current "
-                "risk budget). Skipping."
-            )
-            return None
-
-        # ── 4. Capital adequacy check ───────────────────────────────
-        total_cost = quantity * entry_price
-        if total_cost > self.working_capital:
-            # Scale down to what working capital allows
-            quantity   = int(self.working_capital / entry_price)
-            total_cost = quantity * entry_price
-            if quantity <= 0:
+            # ── Guard: daily loss limit breached ────────────────────────
+            if self._halted:
                 logging.warning(
-                    "Insufficient working capital for even 1 share. Skipping."
+                    "⛔  TRADE BLOCKED — Daily loss limit "
+                    f"(₹{self.daily_loss_limit:,.2f}) has been reached. "
+                    "Trading is halted for today."
                 )
                 return None
 
-        # ── 5. Build the Trade Ticket ───────────────────────────────
-        potential_loss   = quantity * risk_distance
-        potential_profit = quantity * (target_price - entry_price)
+            # ── Guard: already in an open position ──────────────────────
+            if self._open_position is not None:
+                logging.info(
+                    "⏳  Skipping signal — already holding an open position "
+                    f"(Entry: ₹{self._open_position['entry_price']:,.2f})"
+                )
+                return None
 
-        ticket = {
-            "trade_id":        self._trade_count + 1,
-            "symbol":          symbol,
-            "side":            "BUY",
-            "entry_price":     round(entry_price, 2),
-            "stop_loss_price": round(stop_loss_price, 2),
-            "target_price":    round(target_price, 2),
-            "quantity":        quantity,
-            "total_cost":      round(total_cost, 2),
-            "risk_distance":   round(risk_distance, 2),
-            "potential_loss":  round(potential_loss, 2),
-            "potential_profit": round(potential_profit, 2),
-            "risk_reward":     f"1:{self.reward_to_risk:.0f}",
-            "timestamp":       trade_timestamp,
-        }
+            # ── Extract data ────────────────────────────────────────────
+            entry_price = float(signal_data.get("VWAP", 0))
+            symbol      = signal_data.get("symbol", "RELIANCE")
+            close_price = signal_data.get("Close")
+            if close_price is not None:
+                self._set_latest_price(float(close_price), trade_timestamp)
 
-        # ── 6. Record the position ─────────────────────────────────
-        self._open_position = ticket
-        self._trade_count  += 1
-        self._trade_log.append(ticket)
+            if entry_price <= 0:
+                logging.error("Invalid VWAP value for trade entry. Skipping.")
+                return None
 
-        # ── 7. Print the Simulated Trade Ticket ─────────────────────
-        self._print_trade_ticket(ticket)
+            # ── 1. Calculate Stop-Loss (VWAP - 0.5%) ───────────────────
+            stop_loss_price = entry_price * (1 - self.stop_loss_pct)
 
-        return ticket
+            # ── 2. Calculate Target (1:2 Risk-to-Reward) ────────────────
+            risk_distance   = entry_price - stop_loss_price
+            target_price    = entry_price + (self.reward_to_risk * risk_distance)
+
+            # ── 3. Quantity Sizing ──────────────────────────────────────
+            #    Quantity = Risk_Per_Trade / (Entry - Stop_Loss)
+            if risk_distance <= 0:
+                logging.error("Risk distance is zero or negative. Skipping.")
+                return None
+
+            raw_quantity = self.risk_per_trade / risk_distance
+            quantity     = int(raw_quantity)  # Floor to whole shares
+
+            if quantity <= 0:
+                logging.warning(
+                    "Calculated quantity is 0 (price too high for current "
+                    "risk budget). Skipping."
+                )
+                return None
+
+            # ── 4. Capital adequacy check ───────────────────────────────
+            total_cost = quantity * entry_price
+            if total_cost > self.working_capital:
+                # Scale down to what working capital allows
+                quantity   = int(self.working_capital / entry_price)
+                total_cost = quantity * entry_price
+                if quantity <= 0:
+                    logging.warning(
+                        "Insufficient working capital for even 1 share. Skipping."
+                    )
+                    return None
+
+            # ── 5. Build the Trade Ticket ───────────────────────────────
+            potential_loss   = quantity * risk_distance
+            potential_profit = quantity * (target_price - entry_price)
+
+            ticket = {
+                "trade_id":        self._trade_count + 1,
+                "symbol":          symbol,
+                "side":            "BUY",
+                "entry_price":     round(entry_price, 2),
+                "stop_loss_price": round(stop_loss_price, 2),
+                "target_price":    round(target_price, 2),
+                "quantity":        quantity,
+                "total_cost":      round(total_cost, 2),
+                "risk_distance":   round(risk_distance, 2),
+                "potential_loss":  round(potential_loss, 2),
+                "potential_profit": round(potential_profit, 2),
+                "risk_reward":     f"1:{self.reward_to_risk:.0f}",
+                "timestamp":       trade_timestamp,
+            }
+
+            # ── 6. Record the position ─────────────────────────────────
+            self._open_position = ticket
+            self._trade_count  += 1
+            self._trade_log.append(ticket)
+
+            # ── 7. Print the Simulated Trade Ticket ─────────────────────
+            self._print_trade_ticket(ticket)
+
+            return ticket
 
     def close_position(
         self,
@@ -223,60 +226,61 @@ class PaperTrader:
         -------
         dict or None — Summary of the closed trade, or None if no position.
         """
-        if self._open_position is None:
-            logging.info("No open position to close.")
-            return None
+        with self._state_lock:
+            if self._open_position is None:
+                logging.info("No open position to close.")
+                return None
 
-        exit_timestamp = self._resolve_timestamp(timestamp)
-        self._check_day_reset(exit_timestamp)
-        self._set_latest_price(exit_price, exit_timestamp)
+            exit_timestamp = self._resolve_timestamp(timestamp)
+            self._check_day_reset(exit_timestamp)
+            self._set_latest_price(exit_price, exit_timestamp)
 
-        pos       = self._open_position
-        pnl       = (exit_price - pos["entry_price"]) * pos["quantity"]
-        pnl_pct   = (pnl / pos["total_cost"]) * 100 if pos["total_cost"] else 0
+            pos       = self._open_position
+            pnl       = (exit_price - pos["entry_price"]) * pos["quantity"]
+            pnl_pct   = (pnl / pos["total_cost"]) * 100 if pos["total_cost"] else 0
 
-        result = "PROFIT ✅" if pnl >= 0 else "LOSS ❌"
+            result = "PROFIT ✅" if pnl >= 0 else "LOSS ❌"
 
-        summary = {
-            "trade_id":    pos["trade_id"],
-            "symbol":      pos["symbol"],
-            "entry_price": pos["entry_price"],
-            "exit_price":  round(exit_price, 2),
-            "quantity":    pos["quantity"],
-            "pnl":         round(pnl, 2),
-            "pnl_pct":     round(pnl_pct, 2),
-            "result":      result,
-            "reason":      reason,
-            "timestamp":   exit_timestamp,
-        }
+            summary = {
+                "trade_id":    pos["trade_id"],
+                "symbol":      pos["symbol"],
+                "entry_price": pos["entry_price"],
+                "exit_price":  round(exit_price, 2),
+                "quantity":    pos["quantity"],
+                "pnl":         round(pnl, 2),
+                "pnl_pct":     round(pnl_pct, 2),
+                "result":      result,
+                "reason":      reason,
+                "timestamp":   exit_timestamp,
+            }
 
-        # Update daily P&L
-        self._daily_pnl += pnl
-        self.working_capital += pnl
+            # Update daily P&L
+            self._daily_pnl += pnl
+            self.working_capital += pnl
 
-        # Print the structured TRADE CLOSED ticket to the terminal
-        self._print_closed_ticket(pos, exit_price, pnl, pnl_pct, result)
+            # Print the structured TRADE CLOSED ticket to the terminal
+            self._print_closed_ticket(pos, exit_price, pnl, pnl_pct, result)
 
-        # Clear the open position
-        self._open_position = None
+            # Clear the open position
+            self._open_position = None
 
-        # Check if daily loss limit is now breached
-        if self._daily_pnl <= -self.daily_loss_limit:
-            self._halted = True
-            logging.warning(
-                "⛔ ══════════════════════════════════════════════════════"
-            )
-            logging.warning(
-                f"⛔  DAILY LOSS LIMIT HIT  |  P&L: ₹{self._daily_pnl:,.2f}"
-            )
-            logging.warning(
-                "⛔  ALL TRADING IS HALTED FOR THE REST OF THE DAY"
-            )
-            logging.warning(
-                "⛔ ══════════════════════════════════════════════════════"
-            )
+            # Check if daily loss limit is now breached
+            if self._daily_pnl <= -self.daily_loss_limit:
+                self._halted = True
+                logging.warning(
+                    "⛔ ══════════════════════════════════════════════════════"
+                )
+                logging.warning(
+                    f"⛔  DAILY LOSS LIMIT HIT  |  P&L: ₹{self._daily_pnl:,.2f}"
+                )
+                logging.warning(
+                    "⛔  ALL TRADING IS HALTED FOR THE REST OF THE DAY"
+                )
+                logging.warning(
+                    "⛔ ══════════════════════════════════════════════════════"
+                )
 
-        return summary
+            return summary
 
     def check_exit(
         self,
@@ -302,58 +306,59 @@ class PaperTrader:
             The closed-trade summary if an exit was triggered,
             otherwise None (position still open or no position).
         """
-        tick_timestamp = self._resolve_timestamp(timestamp)
-        self._check_day_reset(tick_timestamp)
-        self._set_latest_price(live_price, tick_timestamp)
+        with self._state_lock:
+            tick_timestamp = self._resolve_timestamp(timestamp)
+            self._check_day_reset(tick_timestamp)
+            self._set_latest_price(live_price, tick_timestamp)
 
-        # ── Fast exit: nothing to monitor ───────────────────────────
-        if self._open_position is None:
+            # ── Fast exit: nothing to monitor ───────────────────────────
+            if self._open_position is None:
+                return None
+
+            pos = self._open_position
+
+            # ── Stop-Loss Hit ───────────────────────────────────────────
+            # Price dropped to or below the stop-loss level.
+            if live_price <= pos["stop_loss_price"]:
+                logging.info("")
+                logging.info(
+                    "🔴 ════════════════════════════════════════════════════════"
+                )
+                logging.info(
+                    f"🔴  STOP-LOSS TRIGGERED  @  ₹{live_price:,.2f}  "
+                    f"(SL was ₹{pos['stop_loss_price']:,.2f})"
+                )
+                logging.info(
+                    "🔴 ════════════════════════════════════════════════════════"
+                )
+                return self.close_position(
+                    exit_price=pos["stop_loss_price"],
+                    timestamp=tick_timestamp,
+                    reason="Stop Loss",
+                )
+
+            # ── Target Hit ──────────────────────────────────────────────
+            # Price rose to or above the target level.
+            if live_price >= pos["target_price"]:
+                logging.info("")
+                logging.info(
+                    "🟢 ════════════════════════════════════════════════════════"
+                )
+                logging.info(
+                    f"🟢  TARGET HIT  @  ₹{live_price:,.2f}  "
+                    f"(Target was ₹{pos['target_price']:,.2f})"
+                )
+                logging.info(
+                    "🟢 ════════════════════════════════════════════════════════"
+                )
+                return self.close_position(
+                    exit_price=pos["target_price"],
+                    timestamp=tick_timestamp,
+                    reason="Target Hit",
+                )
+
+            # ── Neither threshold breached — position stays open ────────
             return None
-
-        pos = self._open_position
-
-        # ── Stop-Loss Hit ───────────────────────────────────────────
-        # Price dropped to or below the stop-loss level.
-        if live_price <= pos["stop_loss_price"]:
-            logging.info("")
-            logging.info(
-                "🔴 ════════════════════════════════════════════════════════"
-            )
-            logging.info(
-                f"🔴  STOP-LOSS TRIGGERED  @  ₹{live_price:,.2f}  "
-                f"(SL was ₹{pos['stop_loss_price']:,.2f})"
-            )
-            logging.info(
-                "🔴 ════════════════════════════════════════════════════════"
-            )
-            return self.close_position(
-                exit_price=pos["stop_loss_price"],
-                timestamp=tick_timestamp,
-                reason="Stop Loss",
-            )
-
-        # ── Target Hit ──────────────────────────────────────────────
-        # Price rose to or above the target level.
-        if live_price >= pos["target_price"]:
-            logging.info("")
-            logging.info(
-                "🟢 ════════════════════════════════════════════════════════"
-            )
-            logging.info(
-                f"🟢  TARGET HIT  @  ₹{live_price:,.2f}  "
-                f"(Target was ₹{pos['target_price']:,.2f})"
-            )
-            logging.info(
-                "🟢 ════════════════════════════════════════════════════════"
-            )
-            return self.close_position(
-                exit_price=pos["target_price"],
-                timestamp=tick_timestamp,
-                reason="Target Hit",
-            )
-
-        # ── Neither threshold breached — position stays open ────────
-        return None
 
     def square_off_all_positions(
         self,
@@ -371,39 +376,40 @@ class PaperTrader:
                                the most recent tick seen by check_exit() is used.
         timestamp    : datetime, optional — Event time for live/test injection.
         """
-        square_off_timestamp = self._resolve_timestamp(timestamp)
-        self._check_day_reset(square_off_timestamp)
+        with self._state_lock:
+            square_off_timestamp = self._resolve_timestamp(timestamp)
+            self._check_day_reset(square_off_timestamp)
 
-        if latest_price is not None:
-            self._set_latest_price(latest_price, square_off_timestamp)
+            if latest_price is not None:
+                self._set_latest_price(latest_price, square_off_timestamp)
 
-        if self._open_position is None:
-            logging.info(
-                f"[AUTO-SQUARE-OFF] No open position to close. Reason: {reason}"
-            )
-            return None
+            if self._open_position is None:
+                logging.info(
+                    f"[AUTO-SQUARE-OFF] No open position to close. Reason: {reason}"
+                )
+                return None
 
-        if self._latest_price is None:
-            logging.warning(
-                "[AUTO-SQUARE-OFF] Cannot close position because no latest "
-                f"market price is available. Reason: {reason}"
-            )
-            return None
+            if self._latest_price is None:
+                logging.warning(
+                    "[AUTO-SQUARE-OFF] Cannot close position because no latest "
+                    f"market price is available. Reason: {reason}"
+                )
+                return None
 
-        summary = self.close_position(
-            exit_price=self._latest_price,
-            timestamp=square_off_timestamp,
-            reason=reason,
-        )
-
-        if summary is not None:
-            logging.info(
-                "[AUTO-SQUARE-OFF] Closed position at "
-                f"₹{summary['exit_price']:,.2f}. Realized P&L: "
-                f"₹{summary['pnl']:,.2f} | Reason: {reason}"
+            summary = self.close_position(
+                exit_price=self._latest_price,
+                timestamp=square_off_timestamp,
+                reason=reason,
             )
 
-        return summary
+            if summary is not None:
+                logging.info(
+                    "[AUTO-SQUARE-OFF] Closed position at "
+                    f"₹{summary['exit_price']:,.2f}. Realized P&L: "
+                    f"₹{summary['pnl']:,.2f} | Reason: {reason}"
+                )
+
+            return summary
 
     def cancel_pending_orders(self, reason: str = "Lifecycle shutdown") -> int:
         """

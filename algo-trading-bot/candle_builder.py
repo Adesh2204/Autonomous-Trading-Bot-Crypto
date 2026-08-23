@@ -26,6 +26,8 @@ Design Principles
   so no locks are needed.
 """
 
+import math
+
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
@@ -71,7 +73,7 @@ class CandleBuilder:
 
         # ── Master DataFrame — stores all finalized candles ─────────
         self._columns = ["Timestamp", "Open", "High", "Low", "Close", "Volume"]
-        self.df = pd.DataFrame(columns=self._columns)
+        self.df = self._empty_dataframe()
 
         # ── Current (in-progress) candle buffer ─────────────────────
         self._reset_buffer()
@@ -101,11 +103,13 @@ class CandleBuilder:
         if timestamp is None:
             timestamp = datetime.now()
 
+        price, volume = self._validate_tick(price, volume)
+
         # Reset the in-memory session buffer when a new calendar date arrives.
         # This prevents yesterday's candle history from leaking into today's
         # VWAP and keeps memory bounded to the active trading session.
         if self._bucket_start is not None and timestamp.date() != self._bucket_start.date():
-            self.df = pd.DataFrame(columns=self._columns)
+            self.df = self._empty_dataframe()
             self._reset_buffer()
 
         # ── Determine which 1-minute bucket this tick belongs to ────
@@ -182,6 +186,35 @@ class CandleBuilder:
         self._low:    float = np.inf
         self._close:  float = 0.0
         self._volume: float = 0.0
+
+    def _empty_dataframe(self) -> pd.DataFrame:
+        """Create a typed empty DataFrame for finalized candle history."""
+        return pd.DataFrame(
+            {
+                "Timestamp": pd.Series(dtype="datetime64[ns]"),
+                "Open": pd.Series(dtype="float64"),
+                "High": pd.Series(dtype="float64"),
+                "Low": pd.Series(dtype="float64"),
+                "Close": pd.Series(dtype="float64"),
+                "Volume": pd.Series(dtype="float64"),
+            },
+            columns=self._columns,
+        )
+
+    def _validate_tick(self, price: float, volume: float) -> tuple[float, float]:
+        """Reject malformed ticks before they can poison OHLCV state."""
+        try:
+            price = float(price)
+            volume = float(volume)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("Tick price and volume must be numeric") from exc
+
+        if not math.isfinite(price) or price <= 0:
+            raise ValueError(f"Tick price must be finite and positive, got {price!r}")
+        if not math.isfinite(volume) or volume < 0:
+            raise ValueError(f"Tick volume must be finite and non-negative, got {volume!r}")
+
+        return price, volume
 
     def _init_candle(self, price: float, volume: float) -> None:
         """Start tracking a brand-new candle from the first tick."""

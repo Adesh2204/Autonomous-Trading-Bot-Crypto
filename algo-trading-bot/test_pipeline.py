@@ -603,6 +603,24 @@ def test_rejects_zero_price_tick_payload() -> None:
     assert volume == 120
 
 
+def test_candle_builder_keeps_native_dtypes_and_vwap_works() -> None:
+    """CandleBuilder must emit a typed DataFrame that supports VWAP groupby-cumsum."""
+    builder = CandleBuilder(interval_seconds=60, on_candle_close=lambda df: None)
+
+    builder.on_tick(price=100.0, volume=10, timestamp=datetime(2026, 8, 24, 9, 15, 0))
+    builder.on_tick(price=102.0, volume=20, timestamp=datetime(2026, 8, 24, 9, 15, 30))
+    builder.on_tick(price=101.5, volume=30, timestamp=datetime(2026, 8, 24, 9, 16, 0))
+
+    assert str(builder.df["Timestamp"].dtype) == "datetime64[ns]"
+    assert str(builder.df["Open"].dtype) == "float64"
+    assert str(builder.df["Volume"].dtype) == "float64"
+
+    result = generate_vwap_signal(builder.df)
+    assert "VWAP" in result.columns
+    assert result["VWAP"].notna().any()
+    assert isinstance(result["VWAP"].iloc[0], float)
+
+
 def test_vwap_resets_on_new_session_day() -> None:
     """VWAP must reset for a brand-new day instead of carrying yesterday's volume."""
     previous_day = pd.DataFrame(
