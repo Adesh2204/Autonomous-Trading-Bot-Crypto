@@ -16,7 +16,7 @@ Risk Management Model
 """
 
 import logging
-from datetime import date
+from datetime import date, datetime
 from typing import Optional
 
 
@@ -66,6 +66,9 @@ class PaperTrader:
         # ── Session Tracking ────────────────────────────────────────
         self._open_position: Optional[dict] = None
         self._trade_log: list               = []
+        self._pending_orders: list          = []
+        self._latest_price: Optional[float] = None
+        self._latest_timestamp: Optional[datetime] = None
 
         logging.info("=" * 60)
         logging.info("  PAPER TRADER INITIALIZED")
@@ -80,7 +83,11 @@ class PaperTrader:
     #  PUBLIC API
     # ────────────────────────────────────────────────────────────────
 
-    def execute_trade(self, signal_data: dict) -> Optional[dict]:
+    def execute_trade(
+        self,
+        signal_data: dict,
+        timestamp: Optional[datetime] = None,
+    ) -> Optional[dict]:
         """
         Process a buy signal and simulate a trade entry.
 
@@ -102,7 +109,8 @@ class PaperTrader:
         """
 
         # ── Day-reset check ─────────────────────────────────────────
-        self._check_day_reset()
+        trade_timestamp = self._resolve_timestamp(timestamp, signal_data)
+        self._check_day_reset(trade_timestamp)
 
         # ── Guard: daily loss limit breached ────────────────────────
         if self._halted:
@@ -124,6 +132,9 @@ class PaperTrader:
         # ── Extract data ────────────────────────────────────────────
         entry_price = float(signal_data.get("VWAP", 0))
         symbol      = signal_data.get("symbol", "RELIANCE")
+        close_price = signal_data.get("Close")
+        if close_price is not None:
+            self._set_latest_price(float(close_price), trade_timestamp)
 
         if entry_price <= 0:
             logging.error("Invalid VWAP value for trade entry. Skipping.")
@@ -181,6 +192,7 @@ class PaperTrader:
             "potential_loss":  round(potential_loss, 2),
             "potential_profit": round(potential_profit, 2),
             "risk_reward":     f"1:{self.reward_to_risk:.0f}",
+            "timestamp":       trade_timestamp,
         }
 
         # ── 6. Record the position ─────────────────────────────────
@@ -193,7 +205,12 @@ class PaperTrader:
 
         return ticket
 
-    def close_position(self, exit_price: float) -> Optional[dict]:
+    def close_position(
+        self,
+        exit_price: float,
+        timestamp: Optional[datetime] = None,
+        reason: str = "Signal Exit",
+    ) -> Optional[dict]:
         """
         Close the current open position at the given exit price
         and update the daily P&L.
@@ -210,6 +227,10 @@ class PaperTrader:
             logging.info("No open position to close.")
             return None
 
+        exit_timestamp = self._resolve_timestamp(timestamp)
+        self._check_day_reset(exit_timestamp)
+        self._set_latest_price(exit_price, exit_timestamp)
+
         pos       = self._open_position
         pnl       = (exit_price - pos["entry_price"]) * pos["quantity"]
         pnl_pct   = (pnl / pos["total_cost"]) * 100 if pos["total_cost"] else 0
@@ -225,6 +246,8 @@ class PaperTrader:
             "pnl":         round(pnl, 2),
             "pnl_pct":     round(pnl_pct, 2),
             "result":      result,
+            "reason":      reason,
+            "timestamp":   exit_timestamp,
         }
 
         # Update daily P&L
@@ -255,7 +278,11 @@ class PaperTrader:
 
         return summary
 
-    def check_exit(self, live_price: float) -> Optional[dict]:
+    def check_exit(
+        self,
+        live_price: float,
+        timestamp: Optional[datetime] = None,
+    ) -> Optional[dict]:
         """
         Check every incoming tick against the open position's
         Stop-Loss and Target thresholds.  If either is breached,
@@ -275,6 +302,10 @@ class PaperTrader:
             The closed-trade summary if an exit was triggered,
             otherwise None (position still open or no position).
         """
+        tick_timestamp = self._resolve_timestamp(timestamp)
+        self._check_day_reset(tick_timestamp)
+        self._set_latest_price(live_price, tick_timestamp)
+
         # ── Fast exit: nothing to monitor ───────────────────────────
         if self._open_position is None:
             return None
@@ -295,7 +326,11 @@ class PaperTrader:
             logging.info(
                 "🔴 ════════════════════════════════════════════════════════"
             )
-            return self.close_position(exit_price=pos["stop_loss_price"])
+            return self.close_position(
+                exit_price=pos["stop_loss_price"],
+                timestamp=tick_timestamp,
+                reason="Stop Loss",
+            )
 
         # ── Target Hit ──────────────────────────────────────────────
         # Price rose to or above the target level.
@@ -311,10 +346,78 @@ class PaperTrader:
             logging.info(
                 "🟢 ════════════════════════════════════════════════════════"
             )
-            return self.close_position(exit_price=pos["target_price"])
+            return self.close_position(
+                exit_price=pos["target_price"],
+                timestamp=tick_timestamp,
+                reason="Target Hit",
+            )
 
         # ── Neither threshold breached — position stays open ────────
         return None
+
+    def square_off_all_positions(
+        self,
+        reason: str,
+        latest_price: Optional[float] = None,
+        timestamp: Optional[datetime] = None,
+    ) -> Optional[dict]:
+        """
+        Force-close any open intraday position at the latest market price.
+
+        Parameters
+        ----------
+        reason       : str   — Operational reason for forced exit.
+        latest_price : float — Optional explicit market price. If omitted,
+                               the most recent tick seen by check_exit() is used.
+        timestamp    : datetime, optional — Event time for live/test injection.
+        """
+        square_off_timestamp = self._resolve_timestamp(timestamp)
+        self._check_day_reset(square_off_timestamp)
+
+        if latest_price is not None:
+            self._set_latest_price(latest_price, square_off_timestamp)
+
+        if self._open_position is None:
+            logging.info(
+                f"[AUTO-SQUARE-OFF] No open position to close. Reason: {reason}"
+            )
+            return None
+
+        if self._latest_price is None:
+            logging.warning(
+                "[AUTO-SQUARE-OFF] Cannot close position because no latest "
+                f"market price is available. Reason: {reason}"
+            )
+            return None
+
+        summary = self.close_position(
+            exit_price=self._latest_price,
+            timestamp=square_off_timestamp,
+            reason=reason,
+        )
+
+        if summary is not None:
+            logging.info(
+                "[AUTO-SQUARE-OFF] Closed position at "
+                f"₹{summary['exit_price']:,.2f}. Realized P&L: "
+                f"₹{summary['pnl']:,.2f} | Reason: {reason}"
+            )
+
+        return summary
+
+    def cancel_pending_orders(self, reason: str = "Lifecycle shutdown") -> int:
+        """
+        Cancel tracked paper orders.
+
+        The current paper engine has no broker-side pending orders, but keeping
+        this method makes the live lifecycle path explicit and future-proof.
+        """
+        cancelled_count = len(self._pending_orders)
+        self._pending_orders.clear()
+        logging.info(
+            f"Cancelled {cancelled_count} pending paper orders. Reason: {reason}"
+        )
+        return cancelled_count
 
     @property
     def is_halted(self) -> bool:
@@ -331,17 +434,22 @@ class PaperTrader:
         """Running daily P&L in rupees."""
         return self._daily_pnl
 
+    @property
+    def latest_price(self) -> Optional[float]:
+        """Most recent market price observed by the trader."""
+        return self._latest_price
+
     # ────────────────────────────────────────────────────────────────
     #  INTERNAL HELPERS
     # ────────────────────────────────────────────────────────────────
 
-    def _check_day_reset(self) -> None:
+    def _check_day_reset(self, current_dt: Optional[datetime] = None) -> None:
         """
         Reset daily counters when a new trading day begins.
         This ensures the daily loss limit and trade count refresh
         automatically without manual intervention.
         """
-        today = date.today()
+        today = current_dt.date() if current_dt is not None else date.today()
         if self._current_date != today:
             if self._current_date is not None:
                 logging.info(
@@ -352,6 +460,29 @@ class PaperTrader:
             self._daily_pnl    = 0.0
             self._trade_count  = 0
             self._halted       = False
+
+    def _resolve_timestamp(
+        self,
+        timestamp: Optional[datetime],
+        data: Optional[dict] = None,
+    ) -> datetime:
+        """Resolve timestamp from an explicit value, signal payload, or clock."""
+        if timestamp is not None:
+            return timestamp
+        if data is not None:
+            value = data.get("timestamp", data.get("Timestamp"))
+            if isinstance(value, datetime):
+                return value
+        return datetime.now()
+
+    def _set_latest_price(
+        self,
+        price: float,
+        timestamp: Optional[datetime] = None,
+    ) -> None:
+        """Track the last market price for lifecycle exits."""
+        self._latest_price = float(price)
+        self._latest_timestamp = timestamp
 
     def _print_trade_ticket(self, ticket: dict) -> None:
         """Print a clear, structured simulated trade ticket."""

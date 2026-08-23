@@ -9,12 +9,24 @@ import websocket
 import json
 import os
 import logging
+import sys
+import threading
+import time as time_module
 from datetime import datetime
 from dotenv import load_dotenv
 
 from candle_builder    import CandleBuilder
 from signal_brain      import generate_vwap_signal
 from execution_engine  import PaperTrader
+from market_schedule   import (
+    MarketPhase,
+    can_enter_new_positions,
+    get_market_state,
+    holiday_name,
+    is_trading_day,
+    seconds_until_market_start,
+    to_ist,
+)
 
 # ── Logging Setup ───────────────────────────────────────────────────────────
 # This will print to the terminal AND save to a file named 'trading_bot.log'
@@ -44,6 +56,9 @@ paper_trader = PaperTrader(
     reward_to_risk=2.0,
 )
 
+_eod_square_off_done = False
+_lifecycle_shutdown_requested = False
+
 
 # ── Signal Callback ─────────────────────────────────────────────────────────
 # Fired automatically every time a 1-minute candle closes.
@@ -52,6 +67,7 @@ def on_candle_close(df):
     """Run VWAP signal detection and execute paper trades on buy signals."""
     result = generate_vwap_signal(df.copy())
     latest = result.iloc[-1]
+    signal_timestamp = to_ist()
 
     logging.info(
         f"Candle #{len(result)} closed | "
@@ -61,6 +77,14 @@ def on_candle_close(df):
     )
 
     if latest["Buy_Signal"]:
+        if not can_enter_new_positions(signal_timestamp):
+            logging.info(
+                "Buy signal rejected - entries are disabled in "
+                f"{get_market_state(signal_timestamp).value} after the "
+                "15:15 IST cutoff."
+            )
+            return
+
         logging.info(
             "🚀 ════════════════════════════════════════════════════════"
         )
@@ -76,41 +100,179 @@ def on_candle_close(df):
             "VWAP":   latest["VWAP"],
             "Close":  latest["Close"],
             "symbol": "RELIANCE",
-        })
+        }, timestamp=signal_timestamp)
 
 
 # ── Candle Builder Instance ─────────────────────────────────────────────────
 builder = CandleBuilder(interval_seconds=60, on_candle_close=on_candle_close)
 
 
+# ── Lifecycle Controller ────────────────────────────────────────────────────
+
+def parse_tick_timestamp(ts_raw) -> datetime:
+    """Parse broker timestamps and normalize them to IST."""
+    if not ts_raw:
+        return to_ist()
+
+    try:
+        ts_text = str(ts_raw).replace("Z", "+00:00")
+        return to_ist(datetime.fromisoformat(ts_text))
+    except (ValueError, TypeError):
+        return to_ist()
+
+
+def log_daily_summary(prefix: str = "Daily Summary") -> None:
+    virtual_equity = paper_trader.backup_capital + paper_trader.working_capital
+    logging.info(
+        f"{prefix} | Daily P&L: ₹{paper_trader.daily_pnl:,.2f} | "
+        f"Working Capital: ₹{paper_trader.working_capital:,.2f} | "
+        f"Virtual Equity: ₹{virtual_equity:,.2f}"
+    )
+
+
+def trigger_eod_square_off(ws, current_dt: datetime, reason: str) -> None:
+    """Run the mandatory EOD cleanup exactly once."""
+    global _eod_square_off_done, _lifecycle_shutdown_requested
+
+    if _eod_square_off_done:
+        return
+
+    _eod_square_off_done = True
+    logging.info(f"{reason} triggered at {to_ist(current_dt).strftime('%H:%M:%S')} IST.")
+    paper_trader.cancel_pending_orders(reason)
+    paper_trader.square_off_all_positions(reason, timestamp=current_dt)
+    log_daily_summary("Final Daily P&L")
+
+    _lifecycle_shutdown_requested = True
+    if ws is not None:
+        ws.close()
+
+
+def enforce_lifecycle(ws=None, current_dt: datetime | None = None) -> MarketPhase:
+    """
+    Apply session lifecycle actions for the supplied clock time.
+
+    Live mode passes system time. The simulator passes synthetic tick time.
+    """
+    global _lifecycle_shutdown_requested
+
+    clock = to_ist(current_dt)
+    state = get_market_state(clock)
+
+    if state == MarketPhase.SQUARE_OFF:
+        trigger_eod_square_off(ws, clock, "EOD Auto-Square-Off")
+    elif state == MarketPhase.CLOSED:
+        if paper_trader.has_open_position:
+            trigger_eod_square_off(ws, clock, "Market Close Safety Square-Off")
+        else:
+            logging.info("Market closed. Disconnecting and exiting cleanly.")
+            log_daily_summary("Final Daily P&L")
+            _lifecycle_shutdown_requested = True
+            if ws is not None:
+                ws.close()
+
+    return state
+
+
+def validate_market_startup() -> None:
+    """Validate trading day and hold before opening WebSocket subscriptions."""
+    now = to_ist()
+    today = now.date()
+
+    if not is_trading_day(today):
+        reason = holiday_name(today) or "Weekend/Holiday"
+        logging.info(f"Market is closed today ({reason}). Exiting.")
+        sys.exit(0)
+
+    state = get_market_state(now)
+    if state == MarketPhase.PRE_MARKET:
+        wait_seconds = seconds_until_market_start(now)
+        logging.info(
+            "Pre-market startup detected. Waiting until 09:15:00 IST "
+            f"({wait_seconds:.0f}s)."
+        )
+        time_module.sleep(wait_seconds)
+    elif state in {MarketPhase.SQUARE_OFF, MarketPhase.CLOSED}:
+        logging.info("Market is already in shutdown window. Exiting.")
+        sys.exit(0)
+    elif state == MarketPhase.CLOSE_ONLY:
+        logging.info("Started after 15:15 IST. Entries are disabled; exits only.")
+
+
+def lifecycle_watchdog(ws) -> None:
+    """Timer-based lifecycle enforcement independent of incoming ticks."""
+    while not _lifecycle_shutdown_requested:
+        state = enforce_lifecycle(ws=ws, current_dt=to_ist())
+        if state in {MarketPhase.SQUARE_OFF, MarketPhase.CLOSED}:
+            return
+        time_module.sleep(5)
+
+
 # ── WebSocket Callbacks ─────────────────────────────────────────────────────
+
+def extract_tick_metrics(tick):
+    """Return a validated (price: float, volume: int) pair from broker payloads."""
+    if not isinstance(tick, dict):
+        raise ValueError("Tick payload must be a JSON object")
+
+    # Broker payloads are inconsistent across endpoints and versions. Try the
+    # most common LTP aliases in order and reject any missing or malformed value.
+    price = None
+    for key in ("ltp", "last_traded_price", "last_price", "price"):
+        if key not in tick or tick[key] is None:
+            continue
+        try:
+            price = float(tick[key])
+            if price > 0 and __import__("math").isfinite(price):
+                break
+        except (TypeError, ValueError):
+            continue
+
+    if price is None or price <= 0:
+        raise ValueError(
+            f"Invalid tick payload: LTP missing or non-positive (received {tick!r})"
+        )
+
+    # Volume is often encoded as volume / v / qty / last_qty. We only drop it to 0
+    # for missing values after the price has already passed validation.
+    volume = 0
+    for key in ("volume", "v", "qty", "last_qty", "traded_volume"):
+        if key not in tick or tick[key] is None:
+            continue
+        try:
+            volume = int(float(tick[key]))
+            break
+        except (TypeError, ValueError):
+            continue
+
+    return float(price), max(volume, 0)
+
 
 def on_message(ws, message):
     try:
         tick = json.loads(message)
         logging.debug(f"Tick received: {tick}")
 
-        # ── Feed the tick into the candle aggregation pipeline ──────
-        # Adjust the key names below to match your broker's payload.
-        # Common variants:  ltp / last_price / price
-        #                   volume / qty / last_qty
-        price     = float(tick.get("ltp", tick.get("last_price", tick.get("price", 0))))
-        volume    = float(tick.get("volume", tick.get("qty", tick.get("last_qty", 0))))
-        ts_raw    = tick.get("timestamp", tick.get("exchange_timestamp"))
+        # Guardrail: never trust a broker payload that omits or zeroes the price.
+        # A 0.0 LTP can poison the VWAP engine and create false pullback entries.
+        try:
+            price, volume = extract_tick_metrics(tick)
+        except ValueError as exc:
+            logging.warning("[WARNING] Received invalid tick payload (Price/Volume rejected): %s | raw=%s", exc, tick)
+            return
 
-        # Parse timestamp if the broker provides one; otherwise use local clock.
-        if ts_raw:
-            try:
-                timestamp = datetime.fromisoformat(str(ts_raw))
-            except (ValueError, TypeError):
-                timestamp = datetime.now()
-        else:
-            timestamp = datetime.now()
+        ts_raw = tick.get("timestamp", tick.get("exchange_timestamp"))
+
+        # Parse timestamp if the broker provides one; otherwise use local IST.
+        timestamp = parse_tick_timestamp(ts_raw)
 
         builder.on_tick(price=price, volume=volume, timestamp=timestamp)
 
         # ── Check SL / Target on every tick (O(1) — two comparisons) ──
-        paper_trader.check_exit(live_price=price)
+        paper_trader.check_exit(live_price=price, timestamp=timestamp)
+
+        # ── Enforce close-only, square-off, and market-close lifecycle ─
+        enforce_lifecycle(ws=ws, current_dt=timestamp)
 
     except json.JSONDecodeError:
         logging.warning(f"Failed to parse JSON: {message}")
@@ -146,6 +308,8 @@ if __name__ == "__main__":
         logging.critical("Missing WSS_URL or API_KEY in .env file. Exiting.")
         exit(1)
 
+    validate_market_startup()
+
     logging.info("=" * 60)
     logging.info("  STARTING ALGO TRADING BOT — FULL PIPELINE")
     logging.info("  Ingestion → Candles → VWAP Signal → Paper Trader")
@@ -162,9 +326,14 @@ if __name__ == "__main__":
         on_open=on_open,
     )
 
+    threading.Thread(target=lifecycle_watchdog, args=(ws,), daemon=True).start()
+
     # Bulletproof run_forever settings
     ws.run_forever(
         ping_interval=30,   # Send a ping every 30 seconds
         ping_timeout=10,    # Disconnect if no pong received in 10s
         reconnect=5         # Wait 5 seconds before auto-reconnecting on a drop
     )
+
+    if _lifecycle_shutdown_requested:
+        sys.exit(0)

@@ -51,14 +51,22 @@ def generate_vwap_signal(df: pd.DataFrame) -> pd.DataFrame:
         df["Buy_Signal"] = False
         return df
 
-    # ── 1. VWAP Calculation (Vectorized) ────────────────────────────────
+    # ── 1. VWAP Calculation (Vectorized, daily-session reset) ──────────
     # Typical Price is the market's consensus "fair value" for each candle.
     typical_price = (df["High"] + df["Low"] + df["Close"]) / 3
 
-    # Cumulative (TP × Volume) / Cumulative Volume
-    # This gives us a running, volume-anchored average price for the day.
-    cumulative_tp_vol = (typical_price * df["Volume"]).cumsum()
-    cumulative_vol = df["Volume"].cumsum()
+    # Use the session date as the reset boundary so yesterday's cumulative
+    # volume never contaminates today's intraday VWAP. This is fully vectorized
+    # and safe even when the DataFrame spans multiple days.
+    if "Timestamp" in df.columns:
+        session_key = pd.to_datetime(df["Timestamp"]).dt.date
+    elif isinstance(df.index, pd.DatetimeIndex):
+        session_key = df.index.date
+    else:
+        session_key = pd.Index([pd.Timestamp(value).date() for value in df.index])
+
+    cumulative_tp_vol = (typical_price * df["Volume"]).groupby(session_key).cumsum()
+    cumulative_vol = df["Volume"].groupby(session_key).cumsum()
 
     # Guard against division-by-zero when cumulative volume is 0
     # (e.g., pre-market candles with no volume).

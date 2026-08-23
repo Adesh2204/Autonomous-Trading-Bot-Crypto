@@ -101,6 +101,13 @@ class CandleBuilder:
         if timestamp is None:
             timestamp = datetime.now()
 
+        # Reset the in-memory session buffer when a new calendar date arrives.
+        # This prevents yesterday's candle history from leaking into today's
+        # VWAP and keeps memory bounded to the active trading session.
+        if self._bucket_start is not None and timestamp.date() != self._bucket_start.date():
+            self.df = pd.DataFrame(columns=self._columns)
+            self._reset_buffer()
+
         # ── Determine which 1-minute bucket this tick belongs to ────
         bucket_start = self._floor_timestamp(timestamp)
 
