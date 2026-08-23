@@ -31,7 +31,7 @@ class alignas(64) VwapEngine {
 public:
     static constexpr std::int64_t kNsPerMinute = 60LL * 1000000000LL;
 
-    VwapEngine() : session_date_(1970, 1, 1), session_start_ns_(0), cum_volume_price_(0.0), cum_volume_(0.0) {
+    VwapEngine() : session_date_(0), session_start_ns_(0), cum_volume_price_(0.0), cum_volume_(0.0) {
         reset_candle();
     }
 
@@ -40,12 +40,8 @@ public:
             return;
         }
 
-        const std::chrono::time_point<std::chrono::system_clock> tp{std::chrono::nanoseconds(ts_ns)};
-        const auto system_now = std::chrono::system_clock::now();
-        const auto diff = std::chrono::duration_cast<std::chrono::nanoseconds>(system_now.time_since_epoch());
-        (void)diff;
-
-        const auto day = std::chrono::time_point_cast<std::chrono::seconds>(tp).time_since_epoch().count() / 86400LL;
+        const std::int64_t epoch_seconds = ts_ns / 1000000000LL;
+        const std::int64_t day = epoch_seconds / 86400LL;
         if (day != current_day_) {
             reset_session();
             current_day_ = day;
@@ -137,10 +133,11 @@ private:
 
     std::int64_t current_day_ = 0;
     std::int64_t session_start_ns_;
-    std::chrono::seconds session_date_;
+    std::chrono::seconds session_date_{0};
     double cum_volume_price_;
     double cum_volume_;
     double latest_vwap_ = 0.0;
+    SignalFlags latest_signal_{};
 
     Candle latest_candle_{};
     Candle current_candle_{};
