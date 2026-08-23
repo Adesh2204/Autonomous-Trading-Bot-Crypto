@@ -36,6 +36,8 @@ class PaperTrader:
     risk_per_trade_pct  : float — Risk per trade as fraction of total (default 0.01).
     stop_loss_pct       : float — Stop-loss distance below entry (default 0.005 = 0.5%).
     reward_to_risk      : float — Reward-to-risk ratio for target (default 2.0).
+    slippage_pct        : float — Per-side estimated slippage (default 0.05%).
+    brokerage_per_order : float — Flat brokerage per order leg.
     """
 
     def __init__(
@@ -46,6 +48,13 @@ class PaperTrader:
         risk_per_trade_pct: float = 0.01,
         stop_loss_pct: float = 0.005,
         reward_to_risk: float = 2.0,
+        slippage_pct: float = 0.0005,
+        brokerage_per_order: float = 20.0,
+        stt_sell_pct: float = 0.00025,
+        exchange_txn_pct: float = 0.0000322,
+        sebi_turnover_pct: float = 0.000001,
+        stamp_duty_buy_pct: float = 0.00003,
+        gst_pct: float = 0.18,
     ):
         # ── Capital Configuration ───────────────────────────────────
         self.total_capital       = total_capital
@@ -57,6 +66,13 @@ class PaperTrader:
         self.risk_per_trade      = total_capital * risk_per_trade_pct
         self.stop_loss_pct       = stop_loss_pct
         self.reward_to_risk      = reward_to_risk
+        self.slippage_pct        = slippage_pct
+        self.brokerage_per_order = brokerage_per_order
+        self.stt_sell_pct        = stt_sell_pct
+        self.exchange_txn_pct    = exchange_txn_pct
+        self.sebi_turnover_pct   = sebi_turnover_pct
+        self.stamp_duty_buy_pct  = stamp_duty_buy_pct
+        self.gst_pct             = gst_pct
 
         # ── Daily State (resets each trading day) ───────────────────
         self._current_date: Optional[date] = None
@@ -79,6 +95,8 @@ class PaperTrader:
         logging.info(f"  Backup Capital    : ₹{self.backup_capital:,.2f}")
         logging.info(f"  Daily Loss Limit  : ₹{self.daily_loss_limit:,.2f}")
         logging.info(f"  Risk Per Trade    : ₹{self.risk_per_trade:,.2f}")
+        logging.info(f"  Slippage / Side   : {self.slippage_pct * 100:.3f}%")
+        logging.info(f"  Brokerage / Order : ₹{self.brokerage_per_order:,.2f}")
         logging.info("=" * 60)
 
     # ────────────────────────────────────────────────────────────────
@@ -166,21 +184,44 @@ class PaperTrader:
                 )
                 return None
 
-            # ── 4. Capital adequacy check ───────────────────────────────
-            total_cost = quantity * entry_price
-            if total_cost > self.working_capital:
-                # Scale down to what working capital allows
-                quantity   = int(self.working_capital / entry_price)
-                total_cost = quantity * entry_price
-                if quantity <= 0:
-                    logging.warning(
-                        "Insufficient working capital for even 1 share. Skipping."
-                    )
-                    return None
+            # ── 4. Capital and net-risk adequacy checks ─────────────────
+            while quantity > 0:
+                costs_at_stop = self._estimate_round_trip_costs(
+                    quantity=quantity,
+                    entry_price=entry_price,
+                    exit_price=stop_loss_price,
+                )
+                gross_stop_loss = quantity * risk_distance
+                net_stop_loss = gross_stop_loss + costs_at_stop["total_charges"]
+                total_cost = costs_at_stop["buy_turnover"] + costs_at_stop["entry_charges"]
+
+                if total_cost <= self.working_capital and net_stop_loss <= self.risk_per_trade:
+                    break
+                quantity -= 1
+
+            if quantity <= 0:
+                logging.warning(
+                    "Insufficient working capital or net risk budget after "
+                    "slippage and statutory charges. Skipping."
+                )
+                return None
 
             # ── 5. Build the Trade Ticket ───────────────────────────────
-            potential_loss   = quantity * risk_distance
+            costs_at_stop = self._estimate_round_trip_costs(
+                quantity=quantity,
+                entry_price=entry_price,
+                exit_price=stop_loss_price,
+            )
+            costs_at_target = self._estimate_round_trip_costs(
+                quantity=quantity,
+                entry_price=entry_price,
+                exit_price=target_price,
+            )
+            potential_loss = quantity * risk_distance
             potential_profit = quantity * (target_price - entry_price)
+            estimated_net_loss = potential_loss + costs_at_stop["total_charges"]
+            estimated_net_profit = potential_profit - costs_at_target["total_charges"]
+            total_cost = costs_at_stop["buy_turnover"] + costs_at_stop["entry_charges"]
 
             ticket = {
                 "trade_id":        self._trade_count + 1,
@@ -194,6 +235,10 @@ class PaperTrader:
                 "risk_distance":   round(risk_distance, 2),
                 "potential_loss":  round(potential_loss, 2),
                 "potential_profit": round(potential_profit, 2),
+                "estimated_charges_at_stop": round(costs_at_stop["total_charges"], 2),
+                "estimated_charges_at_target": round(costs_at_target["total_charges"], 2),
+                "estimated_net_loss": round(estimated_net_loss, 2),
+                "estimated_net_profit": round(estimated_net_profit, 2),
                 "risk_reward":     f"1:{self.reward_to_risk:.0f}",
                 "timestamp":       trade_timestamp,
             }
@@ -236,8 +281,14 @@ class PaperTrader:
             self._set_latest_price(exit_price, exit_timestamp)
 
             pos       = self._open_position
-            pnl       = (exit_price - pos["entry_price"]) * pos["quantity"]
-            pnl_pct   = (pnl / pos["total_cost"]) * 100 if pos["total_cost"] else 0
+            gross_pnl = (exit_price - pos["entry_price"]) * pos["quantity"]
+            cost_breakdown = self._estimate_round_trip_costs(
+                quantity=pos["quantity"],
+                entry_price=pos["entry_price"],
+                exit_price=exit_price,
+            )
+            pnl = gross_pnl - cost_breakdown["total_charges"]
+            pnl_pct = (pnl / pos["total_cost"]) * 100 if pos["total_cost"] else 0
 
             result = "PROFIT ✅" if pnl >= 0 else "LOSS ❌"
 
@@ -247,6 +298,8 @@ class PaperTrader:
                 "entry_price": pos["entry_price"],
                 "exit_price":  round(exit_price, 2),
                 "quantity":    pos["quantity"],
+                "gross_pnl":   round(gross_pnl, 2),
+                "charges":     round(cost_breakdown["total_charges"], 2),
                 "pnl":         round(pnl, 2),
                 "pnl_pct":     round(pnl_pct, 2),
                 "result":      result,
@@ -259,7 +312,15 @@ class PaperTrader:
             self.working_capital += pnl
 
             # Print the structured TRADE CLOSED ticket to the terminal
-            self._print_closed_ticket(pos, exit_price, pnl, pnl_pct, result)
+            self._print_closed_ticket(
+                pos,
+                exit_price,
+                gross_pnl,
+                cost_breakdown["total_charges"],
+                pnl,
+                pnl_pct,
+                result,
+            )
 
             # Clear the open position
             self._open_position = None
@@ -490,6 +551,52 @@ class PaperTrader:
         self._latest_price = float(price)
         self._latest_timestamp = timestamp
 
+    def _estimate_round_trip_costs(
+        self,
+        quantity: int,
+        entry_price: float,
+        exit_price: float,
+    ) -> dict:
+        """Estimate Indian intraday equity slippage and statutory charges."""
+        effective_entry = entry_price * (1 + self.slippage_pct)
+        effective_exit = exit_price * (1 - self.slippage_pct)
+
+        buy_turnover = quantity * effective_entry
+        sell_turnover = quantity * effective_exit
+        turnover = buy_turnover + sell_turnover
+
+        brokerage = self.brokerage_per_order * 2
+        stt = sell_turnover * self.stt_sell_pct
+        exchange_txn = turnover * self.exchange_txn_pct
+        sebi = turnover * self.sebi_turnover_pct
+        stamp_duty = buy_turnover * self.stamp_duty_buy_pct
+        gst = (brokerage + exchange_txn + sebi) * self.gst_pct
+
+        entry_charges = self.brokerage_per_order + buy_turnover * self.stamp_duty_buy_pct
+        exit_charges = (
+            self.brokerage_per_order
+            + stt
+            + turnover * self.exchange_txn_pct
+            + turnover * self.sebi_turnover_pct
+            + gst
+        )
+
+        return {
+            "effective_entry": effective_entry,
+            "effective_exit": effective_exit,
+            "buy_turnover": buy_turnover,
+            "sell_turnover": sell_turnover,
+            "brokerage": brokerage,
+            "stt": stt,
+            "exchange_txn": exchange_txn,
+            "sebi": sebi,
+            "stamp_duty": stamp_duty,
+            "gst": gst,
+            "entry_charges": entry_charges,
+            "exit_charges": exit_charges,
+            "total_charges": brokerage + stt + exchange_txn + sebi + stamp_duty + gst,
+        }
+
     def _print_trade_ticket(self, ticket: dict) -> None:
         """Print a clear, structured simulated trade ticket."""
         logging.info("")
@@ -509,6 +616,9 @@ class PaperTrader:
         logging.info(f"║──────────────────────────────────────────────────────────║")
         logging.info(f"║  Max Loss     :  ₹{ticket['potential_loss']:>10,.2f}{'':<28}║")
         logging.info(f"║  Max Profit   :  ₹{ticket['potential_profit']:>10,.2f}{'':<28}║")
+        logging.info(f"║  Est. Charges :  ₹{ticket['estimated_charges_at_target']:>10,.2f}{'':<28}║")
+        logging.info(f"║  Net Loss Est.:  ₹{ticket['estimated_net_loss']:>10,.2f}{'':<28}║")
+        logging.info(f"║  Net Prof Est.:  ₹{ticket['estimated_net_profit']:>10,.2f}{'':<28}║")
         logging.info(f"║  Risk : Reward:  {ticket['risk_reward']:<40}║")
         logging.info("╚══════════════════════════════════════════════════════════╝")
         logging.info("")
@@ -517,6 +627,8 @@ class PaperTrader:
         self,
         pos: dict,
         exit_price: float,
+        gross_pnl: float,
+        charges: float,
         pnl: float,
         pnl_pct: float,
         result: str,
@@ -530,6 +642,8 @@ class PaperTrader:
         pnl_sign    = "+" if pnl >= 0 else ""
         exit_label  = f"₹{exit_price:,.2f}"
         pnl_label   = f"{pnl_sign}₹{pnl:,.2f}  ({pnl_sign}{pnl_pct:.2f}%)"
+        gross_label = f"₹{gross_pnl:,.2f}"
+        charges_label = f"₹{charges:,.2f}"
         daily_label = f"₹{self._daily_pnl:,.2f}"
         wcap_label  = f"₹{self.working_capital:,.2f}"
 
@@ -544,6 +658,8 @@ class PaperTrader:
         logging.info(f"║  Exit  Price  :  {exit_label:<42}║")
         logging.info(f"║  Quantity     :  {pos['quantity']:<40}║")
         logging.info("║──────────────────────────────────────────────────────────║")
+        logging.info(f"║  Gross P&L    :  {gross_label:<42}║")
+        logging.info(f"║  Costs        :  {charges_label:<42}║")
         logging.info(f"║  P & L        :  {pnl_label:<42}║")
         logging.info(f"║  Daily P&L    :  {daily_label:<42}║")
         logging.info(f"║  Working Cap  :  {wcap_label:<42}║")

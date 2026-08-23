@@ -35,6 +35,7 @@ class MarketPhase(str, Enum):
 # https://www.nseindia.com/api/holiday-master?type=trading
 NSE_HOLIDAYS = {
     2026: {
+        date(2026, 1, 15): "Municipal Corporation Election - Maharashtra",
         date(2026, 1, 26): "Republic Day",
         date(2026, 2, 15): "Mahashivratri",
         date(2026, 3, 3): "Holi",
@@ -131,4 +132,3 @@ def seconds_until_market_start(current_dt: Optional[datetime] = None) -> float:
         if is_trading_day(check_date) and open_dt > ist_now:
             return (open_dt - ist_now).total_seconds()
         check_date += timedelta(days=1)
-

@@ -44,6 +44,8 @@ load_dotenv()
 
 BROKER_WSS_URL = os.getenv("BROKER_WSS_URL")
 BROKER_API_KEY = os.getenv("BROKER_API_KEY")
+INITIAL_RECONNECT_DELAY_SECONDS = 5
+MAX_RECONNECT_DELAY_SECONDS = 300
 
 
 # ── Paper Trader Instance ───────────────────────────────────────────────────
@@ -115,9 +117,21 @@ def parse_tick_timestamp(ts_raw) -> datetime:
         return to_ist()
 
     try:
+        if isinstance(ts_raw, (int, float)):
+            seconds = float(ts_raw)
+            if seconds > 10_000_000_000:
+                seconds /= 1000.0
+            return to_ist(datetime.fromtimestamp(seconds, tz=to_ist().tzinfo))
+
         ts_text = str(ts_raw).replace("Z", "+00:00")
+        if ts_text.isdigit():
+            seconds = float(ts_text)
+            if seconds > 10_000_000_000:
+                seconds /= 1000.0
+            return to_ist(datetime.fromtimestamp(seconds, tz=to_ist().tzinfo))
+
         return to_ist(datetime.fromisoformat(ts_text))
-    except (ValueError, TypeError):
+    except (OverflowError, OSError, ValueError, TypeError):
         return to_ist()
 
 
@@ -284,7 +298,8 @@ def on_error(ws, error):
 
 def on_close(ws, close_status_code, close_msg):
     logging.warning(f"Disconnected — Code: {close_status_code} | Reason: {close_msg}")
-    logging.info("Attempting to reconnect...")
+    if not _lifecycle_shutdown_requested:
+        logging.info("Connection dropped. Reconnect supervisor will retry.")
 
 def on_open(ws):
     logging.info("WebSocket connection established successfully.")
@@ -299,6 +314,43 @@ def on_open(ws):
 
     ws.send(subscription_payload)
     logging.info("Subscription request sent for: RELIANCE")
+
+
+def build_websocket_app() -> websocket.WebSocketApp:
+    """Create a fresh WebSocketApp for each reconnect attempt."""
+    return websocket.WebSocketApp(
+        BROKER_WSS_URL,
+        on_message=on_message,
+        on_error=on_error,
+        on_close=on_close,
+        on_open=on_open,
+    )
+
+
+def run_websocket_forever() -> None:
+    """Run the WebSocket with exponential backoff after abnormal exits."""
+    delay = INITIAL_RECONNECT_DELAY_SECONDS
+
+    while not _lifecycle_shutdown_requested:
+        ws = build_websocket_app()
+        threading.Thread(target=lifecycle_watchdog, args=(ws,), daemon=True).start()
+
+        try:
+            ws.run_forever(
+                ping_interval=30,
+                ping_timeout=10,
+            )
+        except Exception as exc:
+            logging.exception(f"WebSocket run_forever crashed: {exc}")
+
+        if _lifecycle_shutdown_requested:
+            return
+
+        logging.warning(
+            f"WebSocket disconnected unexpectedly. Reconnecting in {delay}s."
+        )
+        time_module.sleep(delay)
+        delay = min(delay * 2, MAX_RECONNECT_DELAY_SECONDS)
 
 
 # ── Main Execution ──────────────────────────────────────────────────────────
@@ -318,22 +370,7 @@ if __name__ == "__main__":
     # Enable trace for deep debugging of the websocket if needed (keep False normally)
     websocket.enableTrace(False) 
 
-    ws = websocket.WebSocketApp(
-        BROKER_WSS_URL,
-        on_message=on_message,
-        on_error=on_error,
-        on_close=on_close,
-        on_open=on_open,
-    )
-
-    threading.Thread(target=lifecycle_watchdog, args=(ws,), daemon=True).start()
-
-    # Bulletproof run_forever settings
-    ws.run_forever(
-        ping_interval=30,   # Send a ping every 30 seconds
-        ping_timeout=10,    # Disconnect if no pong received in 10s
-        reconnect=5         # Wait 5 seconds before auto-reconnecting on a drop
-    )
+    run_websocket_forever()
 
     if _lifecycle_shutdown_requested:
         sys.exit(0)

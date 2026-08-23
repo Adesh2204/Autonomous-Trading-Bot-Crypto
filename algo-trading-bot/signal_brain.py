@@ -81,11 +81,12 @@ def generate_vwap_signal(df: pd.DataFrame) -> pd.DataFrame:
     # value. This filters out choppy / bearish sessions where a pullback
     # to VWAP is more likely a breakdown than a bounce.
     close_above_vwap = df["Close"] > df["VWAP"]
+    grouped_close_above = close_above_vwap.groupby(session_key)
 
     trend_confirmed = (
-        close_above_vwap.shift(1)    # candle at t-1 closed above VWAP
-        & close_above_vwap.shift(2)  # candle at t-2 closed above VWAP
-        & close_above_vwap.shift(3)  # candle at t-3 closed above VWAP
+        grouped_close_above.shift(1)    # candle at t-1 closed above VWAP
+        & grouped_close_above.shift(2)  # candle at t-2 closed above VWAP
+        & grouped_close_above.shift(3)  # candle at t-3 closed above VWAP
     )
 
     # ── 3. Pullback Entry Trigger ───────────────────────────────────────
