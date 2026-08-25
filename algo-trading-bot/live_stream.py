@@ -1,24 +1,29 @@
-"""
-live_stream.py — Data Ingestion Layer
-=====================================
-Production-ready WebSocket client. Includes auto-reconnection,
-keep-alive pings, and file-based logging.
+"""Live market data stream for Angel One SmartAPI V2.
+
+VERSION UPDATE (2026-08-25): Rebuilt the live ingestion layer around
+SmartConnect + SmartWebSocketV2, removed the legacy websocket-client path,
+and hardened the watchdog lifecycle so reconnects do not leak threads.
 """
 
-import websocket
-import json
-import os
+from __future__ import annotations
+
 import logging
+import math
+import os
 import sys
 import threading
 import time as time_module
 from datetime import datetime
-from dotenv import load_dotenv
+from typing import Any, Optional
 
-from candle_builder    import CandleBuilder
-from signal_brain      import generate_vwap_signal
-from execution_engine  import PaperTrader
-from market_schedule   import (
+import pyotp
+from dotenv import load_dotenv
+from SmartApi.smartConnect import SmartConnect
+from SmartApi.smartWebSocketV2 import SmartWebSocketV2
+
+from candle_builder import CandleBuilder
+from execution_engine import PaperTrader
+from market_schedule import (
     MarketPhase,
     can_enter_new_positions,
     get_market_state,
@@ -27,382 +32,441 @@ from market_schedule   import (
     seconds_until_market_start,
     to_ist,
 )
+from signal_brain import generate_vwap_signal
 
-# ── Logging Setup ───────────────────────────────────────────────────────────
-# This will print to the terminal AND save to a file named 'trading_bot.log'
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.FileHandler("trading_bot.log"),
-        logging.StreamHandler()
-    ]
+    handlers=[logging.FileHandler("trading_bot.log"), logging.StreamHandler()],
 )
 
-# ── Security ────────────────────────────────────────────────────────────────
 load_dotenv()
 
-BROKER_WSS_URL = os.getenv("BROKER_WSS_URL")
-BROKER_API_KEY = os.getenv("BROKER_API_KEY")
-INITIAL_RECONNECT_DELAY_SECONDS = 5
-MAX_RECONNECT_DELAY_SECONDS = 300
+
+def _first_env(*names: str) -> Optional[str]:
+    for name in names:
+        value = os.getenv(name)
+        if value:
+            return value.strip()
+    return None
 
 
-# ── Paper Trader Instance ───────────────────────────────────────────────────
-paper_trader = PaperTrader(
-    total_capital=10_000,
-    working_capital_pct=0.50,
-    daily_loss_limit_pct=0.02,
-    risk_per_trade_pct=0.01,
-    stop_loss_pct=0.005,
-    reward_to_risk=2.0,
-)
-
-_eod_square_off_done = False
-_lifecycle_shutdown_requested = False
-_watchdog_thread = None
-_watchdog_stop_event = None
+def _normalize_bearer_token(token: Optional[str]) -> Optional[str]:
+    if not token:
+        return None
+    token = token.strip()
+    return token if token.startswith("Bearer ") else f"Bearer {token}"
 
 
-# ── Signal Callback ─────────────────────────────────────────────────────────
-# Fired automatically every time a 1-minute candle closes.
-
-def on_candle_close(df):
-    """Run VWAP signal detection and execute paper trades on buy signals."""
-    result = generate_vwap_signal(df.copy())
-    latest = result.iloc[-1]
-    signal_timestamp = to_ist()
-
-    logging.info(
-        f"Candle #{len(result)} closed | "
-        f"O:{latest['Open']:.2f}  H:{latest['High']:.2f}  "
-        f"L:{latest['Low']:.2f}  C:{latest['Close']:.2f}  "
-        f"V:{latest['Volume']:.0f}  |  VWAP:{latest['VWAP']:.2f}"
-    )
-
-    if latest["Buy_Signal"]:
-        if not can_enter_new_positions(signal_timestamp):
-            logging.info(
-                "Buy signal rejected - entries are disabled in "
-                f"{get_market_state(signal_timestamp).value} after the "
-                "15:15 IST cutoff."
-            )
-            return
-
-        logging.info(
-            "🚀 ════════════════════════════════════════════════════════"
-        )
-        logging.info(
-            f"🚀  VWAP PULLBACK BUY SIGNAL  @  VWAP {latest['VWAP']:.2f}"
-        )
-        logging.info(
-            "🚀 ════════════════════════════════════════════════════════"
-        )
-
-        # ── Execute the paper trade ─────────────────────────────────
-        paper_trader.execute_trade({
-            "VWAP":   latest["VWAP"],
-            "Close":  latest["Close"],
-            "symbol": "RELIANCE",
-        }, timestamp=signal_timestamp)
-
-
-# ── Candle Builder Instance ─────────────────────────────────────────────────
-builder = CandleBuilder(interval_seconds=60, on_candle_close=on_candle_close)
-
-
-# ── Lifecycle Controller ────────────────────────────────────────────────────
-
-def parse_tick_timestamp(ts_raw) -> datetime:
-    """Parse broker timestamps and normalize them to IST."""
-    if not ts_raw:
+def _parse_tick_timestamp(value: Any) -> datetime:
+    """Parse SmartAPI timestamps to timezone-aware IST datetimes."""
+    if value is None or value == "":
         return to_ist()
 
     try:
-        if isinstance(ts_raw, (int, float)):
-            seconds = float(ts_raw)
+        if isinstance(value, (int, float)):
+            seconds = float(value)
             if seconds > 10_000_000_000:
                 seconds /= 1000.0
             return to_ist(datetime.fromtimestamp(seconds, tz=to_ist().tzinfo))
 
-        ts_text = str(ts_raw).replace("Z", "+00:00")
-        if ts_text.isdigit():
-            seconds = float(ts_text)
+        text = str(value).replace("Z", "+00:00")
+        if text.isdigit():
+            seconds = float(text)
             if seconds > 10_000_000_000:
                 seconds /= 1000.0
             return to_ist(datetime.fromtimestamp(seconds, tz=to_ist().tzinfo))
 
-        return to_ist(datetime.fromisoformat(ts_text))
+        return to_ist(datetime.fromisoformat(text))
     except (OverflowError, OSError, ValueError, TypeError):
         return to_ist()
 
 
-def log_daily_summary(prefix: str = "Daily Summary") -> None:
-    virtual_equity = paper_trader.backup_capital + paper_trader.working_capital
-    logging.info(
-        f"{prefix} | Daily P&L: ₹{paper_trader.daily_pnl:,.2f} | "
-        f"Working Capital: ₹{paper_trader.working_capital:,.2f} | "
-        f"Virtual Equity: ₹{virtual_equity:,.2f}"
-    )
+class AngelOneLiveStream:
+    """Manage authenticated live streaming, candle generation, and lifecycle."""
 
+    RELIANCE_TOKEN = "2885"
+    RELIANCE_SYMBOL = "RELIANCE"
+    CORRELATION_ID = "reliance-ltp"
+    SUBSCRIPTION_MODE = SmartWebSocketV2.LTP_MODE
+    EXCHANGE_TYPE = SmartWebSocketV2.NSE_CM
 
-def trigger_eod_square_off(ws, current_dt: datetime, reason: str) -> None:
-    """Run the mandatory EOD cleanup exactly once."""
-    global _eod_square_off_done, _lifecycle_shutdown_requested
+    def __init__(self) -> None:
+        self.api_key = _first_env("BROKER_API_KEY")
+        self.client_code = _first_env("BROKER_CLIENT_ID", "BROKER_CLIENT_CODE")
+        self.client_pin = _first_env("BROKER_PIN", "BROKER_PASSWORD")
+        self.totp_secret = _first_env("BROKER_TOTP_SECRET")
 
-    if _eod_square_off_done:
-        return
+        missing = [
+            name
+            for name, value in (
+                ("BROKER_API_KEY", self.api_key),
+                ("BROKER_CLIENT_ID/BROKER_CLIENT_CODE", self.client_code),
+                ("BROKER_PIN/BROKER_PASSWORD", self.client_pin),
+                ("BROKER_TOTP_SECRET", self.totp_secret),
+            )
+            if not value
+        ]
+        if missing:
+            raise RuntimeError(f"Missing required environment variables: {', '.join(missing)}")
 
-    _eod_square_off_done = True
-    logging.info(f"{reason} triggered at {to_ist(current_dt).strftime('%H:%M:%S')} IST.")
-    paper_trader.cancel_pending_orders(reason)
-    paper_trader.square_off_all_positions(reason, timestamp=current_dt)
-    log_daily_summary("Final Daily P&L")
+        self.smart_api: Optional[SmartConnect] = None
+        self.websocket: Optional[SmartWebSocketV2] = None
+        self.auth_token: Optional[str] = None
+        self.feed_token: Optional[str] = None
 
-    _lifecycle_shutdown_requested = True
-    if ws is not None:
-        ws.close()
-
-
-def enforce_lifecycle(ws=None, current_dt: datetime | None = None) -> MarketPhase:
-    """
-    Apply session lifecycle actions for the supplied clock time.
-
-    Live mode passes system time. The simulator passes synthetic tick time.
-    """
-    global _lifecycle_shutdown_requested
-
-    clock = to_ist(current_dt)
-    state = get_market_state(clock)
-
-    if state == MarketPhase.SQUARE_OFF:
-        trigger_eod_square_off(ws, clock, "EOD Auto-Square-Off")
-    elif state == MarketPhase.CLOSED:
-        if paper_trader.has_open_position:
-            trigger_eod_square_off(ws, clock, "Market Close Safety Square-Off")
-        else:
-            logging.info("Market closed. Disconnecting and exiting cleanly.")
-            log_daily_summary("Final Daily P&L")
-            _lifecycle_shutdown_requested = True
-            if ws is not None:
-                ws.close()
-
-    return state
-
-
-def validate_market_startup() -> None:
-    """Validate trading day and hold before opening WebSocket subscriptions."""
-    now = to_ist()
-    today = now.date()
-
-    if not is_trading_day(today):
-        reason = holiday_name(today) or "Weekend/Holiday"
-        logging.info(f"Market is closed today ({reason}). Exiting.")
-        sys.exit(0)
-
-    state = get_market_state(now)
-    if state == MarketPhase.PRE_MARKET:
-        wait_seconds = seconds_until_market_start(now)
-        logging.info(
-            "Pre-market startup detected. Waiting until 09:15:00 IST "
-            f"({wait_seconds:.0f}s)."
+        self.paper_trader = PaperTrader(
+            total_capital=10_000,
+            working_capital_pct=0.50,
+            daily_loss_limit_pct=0.02,
+            risk_per_trade_pct=0.01,
+            stop_loss_pct=0.005,
+            reward_to_risk=2.0,
         )
-        time_module.sleep(wait_seconds)
-    elif state in {MarketPhase.SQUARE_OFF, MarketPhase.CLOSED}:
-        logging.info("Market is already in shutdown window. Exiting.")
-        sys.exit(0)
-    elif state == MarketPhase.CLOSE_ONLY:
-        logging.info("Started after 15:15 IST. Entries are disabled; exits only.")
 
+        self.builder = CandleBuilder(interval_seconds=60, on_candle_close=self.on_candle_close)
 
-def lifecycle_watchdog(ws, stop_event: threading.Event) -> None:
-    """Timer-based lifecycle enforcement independent of incoming ticks."""
-    while not _lifecycle_shutdown_requested and not stop_event.is_set():
-        state = enforce_lifecycle(ws=ws, current_dt=to_ist())
-        if state in {MarketPhase.SQUARE_OFF, MarketPhase.CLOSED}:
+        self._shutdown_requested = False
+        self._eod_square_off_done = False
+        self._watchdog_thread: Optional[threading.Thread] = None
+        self._watchdog_stop_event: Optional[threading.Event] = None
+        self._reconnect_delay = 5
+
+    # ──────────────────────────────────────────────────────────────
+    #  Startup / Login
+    # ──────────────────────────────────────────────────────────────
+
+    def validate_market_startup(self) -> None:
+        """Validate that today is a trading day and wait for the open if needed."""
+        now = to_ist()
+        today = now.date()
+
+        if not is_trading_day(today):
+            reason = holiday_name(today) or "Weekend/Holiday"
+            logging.info(f"Market is closed today ({reason}). Exiting.")
+            sys.exit(0)
+
+        state = get_market_state(now)
+        if state == MarketPhase.PRE_MARKET:
+            wait_seconds = seconds_until_market_start(now)
+            logging.info(
+                "Pre-market startup detected. Waiting until 09:15:00 IST "
+                f"({wait_seconds:.0f}s)."
+            )
+            time_module.sleep(wait_seconds)
+        elif state in {MarketPhase.SQUARE_OFF, MarketPhase.CLOSED}:
+            logging.info("Market is already in shutdown window. Exiting.")
+            sys.exit(0)
+        elif state == MarketPhase.CLOSE_ONLY:
+            logging.info("Started after 15:15 IST. Entries are disabled; exits only.")
+
+    def login(self) -> None:
+        """Authenticate with SmartAPI and cache jwt/feed tokens for the stream."""
+        self.smart_api = SmartConnect(api_key=self.api_key)
+        totp = pyotp.TOTP(self.totp_secret).now()
+        login_data = self.smart_api.generateSession(self.client_code, self.client_pin, totp)
+
+        if not isinstance(login_data, dict) or not login_data.get("status"):
+            raise RuntimeError(f"SmartAPI login failed: {login_data}")
+
+        data = login_data.get("data", {}) or {}
+        self.auth_token = _normalize_bearer_token(data.get("jwtToken"))
+        self.feed_token = data.get("feedToken") or self.smart_api.getfeedToken()
+        self.client_code = data.get("clientcode") or self.client_code
+
+        if not self.auth_token or not self.feed_token or not self.client_code:
+            raise RuntimeError("SmartAPI login did not return required auth/feed tokens.")
+
+        logging.info("Angel One SmartAPI authenticated successfully.")
+
+    # ──────────────────────────────────────────────────────────────
+    #  Trading Lifecycle
+    # ──────────────────────────────────────────────────────────────
+
+    def run(self) -> None:
+        """Login, connect, and keep the live stream running until shutdown."""
+        self.validate_market_startup()
+        self.login()
+
+        logging.info("=" * 60)
+        logging.info("  STARTING ALGO TRADING BOT — SMARTAPI V2 STREAM")
+        logging.info("  Authenticated live feed -> CandleBuilder -> Signal Brain -> PaperTrader")
+        logging.info("=" * 60)
+
+        while not self._shutdown_requested:
+            try:
+                self.websocket = self._build_websocket()
+                self._start_watchdog_thread()
+                self.websocket.connect()
+                if self._shutdown_requested:
+                    break
+            except KeyboardInterrupt:
+                logging.info("Keyboard interrupt received. Shutting down live stream.")
+                self.request_shutdown("KeyboardInterrupt")
+                break
+            except Exception as exc:
+                if self._shutdown_requested:
+                    break
+                logging.exception("SmartWebSocketV2 stream error: %s", exc)
+                logging.warning(
+                    "WebSocket disconnected unexpectedly. Reconnecting in %ss.",
+                    self._reconnect_delay,
+                )
+                time_module.sleep(self._reconnect_delay)
+                self._reconnect_delay = min(self._reconnect_delay * 2, 300)
+            finally:
+                self._stop_watchdog_thread()
+                self.websocket = None
+
+        if self._shutdown_requested:
+            sys.exit(0)
+
+    def request_shutdown(self, reason: str) -> None:
+        """Mark the stream for shutdown and close the active websocket."""
+        logging.info("Shutdown requested: %s", reason)
+        self._shutdown_requested = True
+        if self.websocket is not None:
+            try:
+                self.websocket.close_connection()
+            except Exception:
+                logging.exception("Error while closing SmartWebSocketV2 during shutdown.")
+
+    def _build_websocket(self) -> SmartWebSocketV2:
+        if not self.auth_token or not self.feed_token or not self.client_code:
+            raise RuntimeError("Cannot build SmartWebSocketV2 without auth/feed tokens.")
+
+        websocket = SmartWebSocketV2(
+            auth_token=self.auth_token,
+            api_key=self.api_key,
+            client_code=self.client_code,
+            feed_token=self.feed_token,
+            max_retry_attempt=3,
+            retry_strategy=1,
+            retry_delay=5,
+            retry_multiplier=2,
+            retry_duration=60,
+        )
+        websocket.on_open = self._on_open
+        websocket.on_data = self._on_data
+        websocket.on_message = self._on_message
+        websocket.on_error = self._on_error
+        websocket.on_close = self._on_close
+        websocket.on_control_message = self._on_control_message
+        return websocket
+
+    # ──────────────────────────────────────────────────────────────
+    #  Candle / Signal / Trade Pipeline
+    # ──────────────────────────────────────────────────────────────
+
+    def on_candle_close(self, df) -> None:
+        """Run VWAP signal detection and execute paper trades on buy signals."""
+        result = generate_vwap_signal(df.copy())
+        latest = result.iloc[-1]
+        signal_timestamp = to_ist()
+
+        logging.info(
+            f"Candle #{len(result)} closed | "
+            f"O:{latest['Open']:.2f}  H:{latest['High']:.2f}  "
+            f"L:{latest['Low']:.2f}  C:{latest['Close']:.2f}  "
+            f"V:{latest['Volume']:.0f}  |  VWAP:{latest['VWAP']:.2f}"
+        )
+
+        if not bool(latest.get("Buy_Signal")):
             return
-        time_module.sleep(5)
 
+        if not can_enter_new_positions(signal_timestamp):
+            logging.info(
+                "Buy signal rejected - entries are disabled in %s after the 15:15 IST cutoff.",
+                get_market_state(signal_timestamp).value,
+            )
+            return
 
-def _stop_watchdog_thread() -> None:
-    """Stop and join the active watchdog thread, if any."""
-    global _watchdog_thread, _watchdog_stop_event
+        logging.info("🚀 ════════════════════════════════════════════════════════")
+        logging.info(f"🚀  VWAP PULLBACK BUY SIGNAL  @  VWAP {latest['VWAP']:.2f}")
+        logging.info("🚀 ════════════════════════════════════════════════════════")
 
-    if _watchdog_stop_event is not None:
-        _watchdog_stop_event.set()
+        self.paper_trader.execute_trade(
+            {
+                "VWAP": float(latest["VWAP"]),
+                "Close": float(latest["Close"]),
+                "symbol": self.RELIANCE_SYMBOL,
+            },
+            timestamp=signal_timestamp,
+        )
 
-    if _watchdog_thread is not None and _watchdog_thread.is_alive():
-        _watchdog_thread.join(timeout=2.0)
+    def _extract_tick_fields(self, data: dict) -> tuple[float, int, datetime]:
+        """Extract LTP, a usable volume fallback, and a timestamp from SmartAPI data."""
+        raw_price = data.get("last_traded_price")
+        if raw_price is None:
+            raise ValueError(f"Invalid SmartAPI tick payload: missing last_traded_price ({data!r})")
 
-    _watchdog_thread = None
-    _watchdog_stop_event = None
+        raw_price = float(raw_price)
+        price = raw_price / 100.0 if raw_price > 1000 else raw_price
+        if price <= 0 or not math.isfinite(price):
+            raise ValueError(f"Invalid SmartAPI tick payload: non-positive LTP ({raw_price!r})")
 
+        raw_volume = (
+            data.get("last_traded_quantity")
+            or data.get("volume_trade_for_the_day")
+            or data.get("total_buy_quantity")
+            or 1
+        )
+        try:
+            volume = int(float(raw_volume))
+        except (TypeError, ValueError):
+            volume = 1
 
-def _ensure_watchdog_thread(ws) -> None:
-    """Start at most one watchdog thread for the current websocket session."""
-    global _watchdog_thread, _watchdog_stop_event
+        if volume <= 0:
+            volume = 1
 
-    if _watchdog_thread is None or not _watchdog_thread.is_alive():
-        _watchdog_stop_event = threading.Event()
-        _watchdog_thread = threading.Thread(
-            target=lifecycle_watchdog,
-            args=(ws, _watchdog_stop_event),
+        timestamp = _parse_tick_timestamp(data.get("exchange_timestamp", data.get("last_traded_timestamp")))
+        return price, volume, timestamp
+
+    def _on_data(self, wsapp, data: dict) -> None:
+        try:
+            if not isinstance(data, dict):
+                logging.warning("Received non-dict SmartAPI payload: %r", data)
+                return
+
+            price, volume, timestamp = self._extract_tick_fields(data)
+
+            # LTP mode carries price only; use a unit-volume fallback so the
+            # existing candle/VWAP pipeline keeps functioning deterministically.
+            if price <= 0 or not math.isfinite(price):
+                logging.warning("Rejected invalid LTP payload: %r", data)
+                return
+
+            self.builder.on_tick(price=price, volume=volume, timestamp=timestamp)
+            self.paper_trader.check_exit(live_price=price, timestamp=timestamp)
+            self.enforce_lifecycle(ws=self.websocket, current_dt=timestamp)
+        except Exception as exc:
+            logging.error("Error processing SmartAPI data frame: %s | payload=%r", exc, data)
+
+    def _on_message(self, wsapp, message: str) -> None:
+        if message == "pong":
+            logging.debug("SmartAPI heartbeat pong received.")
+
+    def _on_control_message(self, wsapp, message: dict) -> None:
+        logging.debug("SmartAPI control message: %s", message)
+
+    def _on_open(self, wsapp) -> None:
+        logging.info("WebSocket connection established successfully.")
+
+        token_list = [
+            {
+                "exchangeType": self.EXCHANGE_TYPE,
+                "tokens": [self.RELIANCE_TOKEN],
+            }
+        ]
+
+        if self.websocket is None:
+            raise RuntimeError("SmartWebSocketV2 is not initialized.")
+
+        self.websocket.subscribe(
+            self.CORRELATION_ID,
+            self.SUBSCRIPTION_MODE,
+            token_list,
+        )
+        logging.info(
+            "Subscribed to %s token %s in LTP mode (exchangeType=%s).",
+            self.RELIANCE_SYMBOL,
+            self.RELIANCE_TOKEN,
+            self.EXCHANGE_TYPE,
+        )
+
+    def _on_error(self, wsapp, error) -> None:
+        logging.error("WebSocket Error: %s", error)
+
+    def _on_close(self, wsapp) -> None:
+        logging.warning("SmartAPI websocket closed.")
+        if not self._shutdown_requested:
+            logging.info("Connection dropped. Reconnect supervisor will retry.")
+
+    # ──────────────────────────────────────────────────────────────
+    #  EOD / Square-off / Watchdog
+    # ──────────────────────────────────────────────────────────────
+
+    def log_daily_summary(self, prefix: str = "Daily Summary") -> None:
+        virtual_equity = self.paper_trader.backup_capital + self.paper_trader.working_capital
+        logging.info(
+            f"{prefix} | Daily P&L: ₹{self.paper_trader.daily_pnl:,.2f} | "
+            f"Working Capital: ₹{self.paper_trader.working_capital:,.2f} | "
+            f"Virtual Equity: ₹{virtual_equity:,.2f}"
+        )
+
+    def trigger_eod_square_off(self, ws, current_dt: datetime, reason: str) -> None:
+        """Run the mandatory EOD cleanup exactly once."""
+        if self._eod_square_off_done:
+            return
+
+        self._eod_square_off_done = True
+        logging.info(f"{reason} triggered at {to_ist(current_dt).strftime('%H:%M:%S')} IST.")
+        self.paper_trader.cancel_pending_orders(reason)
+        self.paper_trader.square_off_all_positions(reason, timestamp=current_dt)
+        self.log_daily_summary("Final Daily P&L")
+        self.request_shutdown(reason)
+
+        if ws is not None:
+            try:
+                ws.close_connection()
+            except Exception:
+                logging.exception("Failed to close SmartAPI websocket during EOD square-off.")
+
+    def enforce_lifecycle(self, ws=None, current_dt: Optional[datetime] = None) -> MarketPhase:
+        """Apply session lifecycle actions for the supplied clock time."""
+        clock = to_ist(current_dt)
+        state = get_market_state(clock)
+
+        if state == MarketPhase.SQUARE_OFF:
+            self.trigger_eod_square_off(ws, clock, "EOD Auto-Square-Off")
+        elif state == MarketPhase.CLOSED:
+            if self.paper_trader.has_open_position:
+                self.trigger_eod_square_off(ws, clock, "Market Close Safety Square-Off")
+            else:
+                logging.info("Market closed. Disconnecting and exiting cleanly.")
+                self.log_daily_summary("Final Daily P&L")
+                self.request_shutdown("Market closed")
+
+        return state
+
+    def lifecycle_watchdog(self, ws, stop_event: threading.Event) -> None:
+        """Timer-based lifecycle enforcement independent of incoming ticks."""
+        while not self._shutdown_requested and not stop_event.is_set():
+            state = self.enforce_lifecycle(ws=ws, current_dt=to_ist())
+            if state in {MarketPhase.SQUARE_OFF, MarketPhase.CLOSED}:
+                return
+            time_module.sleep(5)
+
+    def _start_watchdog_thread(self) -> None:
+        """Start at most one watchdog thread for the active websocket session."""
+        if self._watchdog_thread is not None and self._watchdog_thread.is_alive():
+            return
+
+        self._watchdog_stop_event = threading.Event()
+        self._watchdog_thread = threading.Thread(
+            target=self.lifecycle_watchdog,
+            args=(self.websocket, self._watchdog_stop_event),
             daemon=True,
         )
-        _watchdog_thread.start()
+        self._watchdog_thread.start()
+
+    def _stop_watchdog_thread(self) -> None:
+        """Stop and join the active watchdog thread, if any."""
+        if self._watchdog_stop_event is not None:
+            self._watchdog_stop_event.set()
+
+        if self._watchdog_thread is not None and self._watchdog_thread.is_alive():
+            self._watchdog_thread.join(timeout=2.0)
+
+        self._watchdog_thread = None
+        self._watchdog_stop_event = None
 
 
-# ── WebSocket Callbacks ─────────────────────────────────────────────────────
+def main() -> None:
+    stream = AngelOneLiveStream()
+    stream.run()
 
-def extract_tick_metrics(tick):
-    """Return a validated (price: float, volume: int) pair from broker payloads."""
-    if not isinstance(tick, dict):
-        raise ValueError("Tick payload must be a JSON object")
-
-    # Broker payloads are inconsistent across endpoints and versions. Try the
-    # most common LTP aliases in order and reject any missing or malformed value.
-    price = None
-    for key in ("ltp", "last_traded_price", "last_price", "price"):
-        if key not in tick or tick[key] is None:
-            continue
-        try:
-            price = float(tick[key])
-            if price > 0 and __import__("math").isfinite(price):
-                break
-        except (TypeError, ValueError):
-            continue
-
-    if price is None or price <= 0:
-        raise ValueError(
-            f"Invalid tick payload: LTP missing or non-positive (received {tick!r})"
-        )
-
-    # Volume is often encoded as volume / v / qty / last_qty. We only drop it to 0
-    # for missing values after the price has already passed validation.
-    volume = 0
-    for key in ("volume", "v", "qty", "last_qty", "traded_volume"):
-        if key not in tick or tick[key] is None:
-            continue
-        try:
-            volume = int(float(tick[key]))
-            break
-        except (TypeError, ValueError):
-            continue
-
-    return float(price), max(volume, 0)
-
-
-def on_message(ws, message):
-    try:
-        tick = json.loads(message)
-        logging.debug(f"Tick received: {tick}")
-
-        # Guardrail: never trust a broker payload that omits or zeroes the price.
-        # A 0.0 LTP can poison the VWAP engine and create false pullback entries.
-        try:
-            price, volume = extract_tick_metrics(tick)
-        except ValueError as exc:
-            logging.warning("[WARNING] Received invalid tick payload (Price/Volume rejected): %s | raw=%s", exc, tick)
-            return
-
-        ts_raw = tick.get("timestamp", tick.get("exchange_timestamp"))
-
-        # Parse timestamp if the broker provides one; otherwise use local IST.
-        timestamp = parse_tick_timestamp(ts_raw)
-
-        builder.on_tick(price=price, volume=volume, timestamp=timestamp)
-
-        # ── Check SL / Target on every tick (O(1) — two comparisons) ──
-        paper_trader.check_exit(live_price=price, timestamp=timestamp)
-
-        # ── Enforce close-only, square-off, and market-close lifecycle ─
-        enforce_lifecycle(ws=ws, current_dt=timestamp)
-
-    except json.JSONDecodeError:
-        logging.warning(f"Failed to parse JSON: {message}")
-    except Exception as e:
-        logging.error(f"Error processing tick: {e}")
-
-def on_error(ws, error):
-    logging.error(f"WebSocket Error: {error}")
-
-def on_close(ws, close_status_code, close_msg):
-    logging.warning(f"Disconnected — Code: {close_status_code} | Reason: {close_msg}")
-    if not _lifecycle_shutdown_requested:
-        logging.info("Connection dropped. Reconnect supervisor will retry.")
-
-def on_open(ws):
-    logging.info("WebSocket connection established successfully.")
-    
-    subscription_payload = json.dumps({
-        "action": "subscribe",
-        "params": {
-            "symbol": "RELIANCE",
-            "api_key": BROKER_API_KEY,
-        },
-    })
-
-    ws.send(subscription_payload)
-    logging.info("Subscription request sent for: RELIANCE")
-
-
-def build_websocket_app() -> websocket.WebSocketApp:
-    """Create a fresh WebSocketApp for each reconnect attempt."""
-    return websocket.WebSocketApp(
-        BROKER_WSS_URL,
-        on_message=on_message,
-        on_error=on_error,
-        on_close=on_close,
-        on_open=on_open,
-    )
-
-
-def run_websocket_forever() -> None:
-    """Run the WebSocket with exponential backoff after abnormal exits."""
-    delay = INITIAL_RECONNECT_DELAY_SECONDS
-
-    while not _lifecycle_shutdown_requested:
-        ws = build_websocket_app()
-        _ensure_watchdog_thread(ws)
-
-        try:
-            ws.run_forever(
-                ping_interval=30,
-                ping_timeout=10,
-            )
-        except Exception as exc:
-            logging.exception(f"WebSocket run_forever crashed: {exc}")
-        finally:
-            _stop_watchdog_thread()
-
-        if _lifecycle_shutdown_requested:
-            return
-
-        logging.warning(
-            f"WebSocket disconnected unexpectedly. Reconnecting in {delay}s."
-        )
-        time_module.sleep(delay)
-        delay = min(delay * 2, MAX_RECONNECT_DELAY_SECONDS)
-
-
-# ── Main Execution ──────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    if not BROKER_WSS_URL or not BROKER_API_KEY:
-        logging.critical("Missing WSS_URL or API_KEY in .env file. Exiting.")
-        exit(1)
-
-    validate_market_startup()
-
-    logging.info("=" * 60)
-    logging.info("  STARTING ALGO TRADING BOT — FULL PIPELINE")
-    logging.info("  Ingestion → Candles → VWAP Signal → Paper Trader")
-    logging.info("=" * 60)
-
-    # Enable trace for deep debugging of the websocket if needed (keep False normally)
-    websocket.enableTrace(False) 
-
-    run_websocket_forever()
-
-    if _lifecycle_shutdown_requested:
-        sys.exit(0)
+    main()
