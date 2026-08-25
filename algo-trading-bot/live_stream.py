@@ -60,6 +60,8 @@ paper_trader = PaperTrader(
 
 _eod_square_off_done = False
 _lifecycle_shutdown_requested = False
+_watchdog_thread = None
+_watchdog_stop_event = None
 
 
 # ── Signal Callback ─────────────────────────────────────────────────────────
@@ -213,13 +215,41 @@ def validate_market_startup() -> None:
         logging.info("Started after 15:15 IST. Entries are disabled; exits only.")
 
 
-def lifecycle_watchdog(ws) -> None:
+def lifecycle_watchdog(ws, stop_event: threading.Event) -> None:
     """Timer-based lifecycle enforcement independent of incoming ticks."""
-    while not _lifecycle_shutdown_requested:
+    while not _lifecycle_shutdown_requested and not stop_event.is_set():
         state = enforce_lifecycle(ws=ws, current_dt=to_ist())
         if state in {MarketPhase.SQUARE_OFF, MarketPhase.CLOSED}:
             return
         time_module.sleep(5)
+
+
+def _stop_watchdog_thread() -> None:
+    """Stop and join the active watchdog thread, if any."""
+    global _watchdog_thread, _watchdog_stop_event
+
+    if _watchdog_stop_event is not None:
+        _watchdog_stop_event.set()
+
+    if _watchdog_thread is not None and _watchdog_thread.is_alive():
+        _watchdog_thread.join(timeout=2.0)
+
+    _watchdog_thread = None
+    _watchdog_stop_event = None
+
+
+def _ensure_watchdog_thread(ws) -> None:
+    """Start at most one watchdog thread for the current websocket session."""
+    global _watchdog_thread, _watchdog_stop_event
+
+    if _watchdog_thread is None or not _watchdog_thread.is_alive():
+        _watchdog_stop_event = threading.Event()
+        _watchdog_thread = threading.Thread(
+            target=lifecycle_watchdog,
+            args=(ws, _watchdog_stop_event),
+            daemon=True,
+        )
+        _watchdog_thread.start()
 
 
 # ── WebSocket Callbacks ─────────────────────────────────────────────────────
@@ -333,7 +363,7 @@ def run_websocket_forever() -> None:
 
     while not _lifecycle_shutdown_requested:
         ws = build_websocket_app()
-        threading.Thread(target=lifecycle_watchdog, args=(ws,), daemon=True).start()
+        _ensure_watchdog_thread(ws)
 
         try:
             ws.run_forever(
@@ -342,6 +372,8 @@ def run_websocket_forever() -> None:
             )
         except Exception as exc:
             logging.exception(f"WebSocket run_forever crashed: {exc}")
+        finally:
+            _stop_watchdog_thread()
 
         if _lifecycle_shutdown_requested:
             return

@@ -86,7 +86,8 @@ class PaperTrader:
         self._pending_orders: list          = []
         self._latest_price: Optional[float] = None
         self._latest_timestamp: Optional[datetime] = None
-        self._state_lock = threading.RLock()
+        self.lock = threading.RLock()
+        self._state_lock = self.lock
 
         logging.info("=" * 60)
         logging.info("  PAPER TRADER INITIALIZED")
@@ -129,7 +130,7 @@ class PaperTrader:
         """
 
         # ── Day-reset check ─────────────────────────────────────────
-        with self._state_lock:
+        with self.lock:
             trade_timestamp = self._resolve_timestamp(timestamp, signal_data)
             self._check_day_reset(trade_timestamp)
 
@@ -289,7 +290,7 @@ class PaperTrader:
         -------
         dict or None — Summary of the closed trade, or None if no position.
         """
-        with self._state_lock:
+        with self.lock:
             if self._open_position is None:
                 logging.info("No open position to close.")
                 return None
@@ -386,7 +387,7 @@ class PaperTrader:
             The closed-trade summary if an exit was triggered,
             otherwise None (position still open or no position).
         """
-        with self._state_lock:
+        with self.lock:
             tick_timestamp = self._resolve_timestamp(timestamp)
             self._check_day_reset(tick_timestamp)
             self._set_latest_price(live_price, tick_timestamp)
@@ -456,7 +457,7 @@ class PaperTrader:
                                the most recent tick seen by check_exit() is used.
         timestamp    : datetime, optional — Event time for live/test injection.
         """
-        with self._state_lock:
+        with self.lock:
             square_off_timestamp = self._resolve_timestamp(timestamp)
             self._check_day_reset(square_off_timestamp)
 

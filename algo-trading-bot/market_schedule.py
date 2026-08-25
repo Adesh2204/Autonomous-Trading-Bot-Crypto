@@ -1,9 +1,8 @@
 """
 market_schedule.py - NSE session and lifecycle rules.
 
-This module is intentionally dependency-free so live trading and offline
-simulation can use the same clock rules. Holiday dates are static snapshots
-from the NSE trading holiday calendar for the equity/capital market segment.
+VERSION UPDATE (2026-08-25): Replaced legacy hardcoded holiday snapshots with
+dynamic exchange-calendar resolution to prevent fabricated date regressions.
 """
 
 from __future__ import annotations
@@ -12,6 +11,16 @@ from datetime import date, datetime, time, timedelta
 from enum import Enum
 from typing import Optional, Union
 from zoneinfo import ZoneInfo
+
+try:
+    import pandas_market_calendars as mcal
+except ImportError:  # Optional in constrained environments.
+    mcal = None
+
+try:
+    import holidays
+except ImportError:  # Optional fallback when exchange calendar package is missing.
+    holidays = None
 
 
 IST = ZoneInfo("Asia/Kolkata")
@@ -30,33 +39,7 @@ class MarketPhase(str, Enum):
     CLOSED = "CLOSED"
 
 
-# NSE CM/Equity holidays for calendar year 2026.
-# Source checked from NSE's trading holiday endpoint on 2026-08-23:
-# https://www.nseindia.com/api/holiday-master?type=trading
-NSE_HOLIDAYS = {
-    2026: {
-        date(2026, 1, 15): "Municipal Corporation Election - Maharashtra",
-        date(2026, 1, 26): "Republic Day",
-        date(2026, 2, 15): "Mahashivratri",
-        date(2026, 3, 3): "Holi",
-        date(2026, 3, 21): "Id-Ul-Fitr (Ramadan Eid)",
-        date(2026, 3, 26): "Shri Ram Navami",
-        date(2026, 3, 31): "Shri Mahavir Jayanti",
-        date(2026, 4, 3): "Good Friday",
-        date(2026, 4, 14): "Dr. Baba Saheb Ambedkar Jayanti",
-        date(2026, 5, 1): "Maharashtra Day",
-        date(2026, 5, 28): "Bakri Id",
-        date(2026, 6, 26): "Muharram",
-        date(2026, 8, 15): "Independence Day",
-        date(2026, 9, 14): "Ganesh Chaturthi",
-        date(2026, 10, 2): "Mahatma Gandhi Jayanti",
-        date(2026, 10, 20): "Dussehra",
-        date(2026, 11, 8): "Diwali Laxmi Pujan",
-        date(2026, 11, 10): "Diwali-Balipratipada",
-        date(2026, 11, 24): "Prakash Gurpurb Sri Guru Nanak Dev",
-        date(2026, 12, 25): "Christmas",
-    },
-}
+_BSE_CALENDAR = mcal.get_calendar("BSE") if mcal is not None else None
 
 
 ClockValue = Union[datetime, time]
@@ -76,15 +59,35 @@ def to_ist(value: Optional[datetime] = None) -> datetime:
 
 
 def is_trading_day(current_date: date) -> bool:
-    """Return True when the date is a weekday and not an NSE holiday."""
-    if current_date.weekday() >= 5:
-        return False
-    return current_date not in NSE_HOLIDAYS.get(current_date.year, {})
+    """Return True if BSE/NSE has a valid trading session on current_date."""
+    if _BSE_CALENDAR is not None:
+        schedule = _BSE_CALENDAR.schedule(
+            start_date=current_date,
+            end_date=current_date,
+        )
+        if not schedule.empty:
+            return True
+
+    # Fallback path: weekend or India financial holiday indicates closure.
+    if holidays is not None:
+        india_financial = holidays.financial_holidays("IND")
+        if current_date.weekday() >= 5:
+            return False
+        return current_date not in india_financial
+
+    return False
 
 
 def holiday_name(current_date: date) -> Optional[str]:
-    """Return the NSE holiday name for a date, if one is configured."""
-    return NSE_HOLIDAYS.get(current_date.year, {}).get(current_date)
+    """Return a holiday label when the market is closed on a business day."""
+    if is_trading_day(current_date):
+        return None
+    if current_date.weekday() >= 5:
+        return "Weekend"
+    if holidays is None:
+        return "Exchange Closed"
+    india_financial = holidays.financial_holidays("IND")
+    return india_financial.get(current_date, "Exchange Closed")
 
 
 def get_market_state(current_time: ClockValue) -> MarketPhase:
