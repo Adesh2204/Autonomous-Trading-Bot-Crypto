@@ -202,11 +202,29 @@ class PaperTrader:
             if quantity <= 0:
                 logging.warning(
                     "Insufficient working capital or net risk budget after "
-                    "slippage and statutory charges. Skipping."
+                    "statutory charges. Skipping."
                 )
                 return None
 
-            # ── 5. Build the Trade Ticket ───────────────────────────────
+            # ── 5. Net-Profit Gate (target-side projection) ───────────
+            gross_expected_reward = quantity * (target_price - entry_price)
+            projected_friction = self.calculate_friction(
+                qty=quantity,
+                entry_price=entry_price,
+                exit_price=target_price,
+            )
+            expected_net_pnl = gross_expected_reward - projected_friction
+
+            if expected_net_pnl <= 0:
+                logging.warning(
+                    "[TRADE REJECTED] Gross Target Profit "
+                    f"(₹{gross_expected_reward:,.2f}) is fully consumed by "
+                    f"Transaction Friction (₹{projected_friction:,.2f}). "
+                    f"Net Expected PnL: ₹{expected_net_pnl:,.2f}."
+                )
+                return None
+
+            # ── 6. Build the Trade Ticket ───────────────────────────────
             costs_at_stop = self._estimate_round_trip_costs(
                 quantity=quantity,
                 entry_price=entry_price,
@@ -243,12 +261,12 @@ class PaperTrader:
                 "timestamp":       trade_timestamp,
             }
 
-            # ── 6. Record the position ─────────────────────────────────
+            # ── 7. Record the position ─────────────────────────────────
             self._open_position = ticket
             self._trade_count  += 1
             self._trade_log.append(ticket)
 
-            # ── 7. Print the Simulated Trade Ticket ─────────────────────
+            # ── 8. Print the Simulated Trade Ticket ─────────────────────
             self._print_trade_ticket(ticket)
 
             return ticket
@@ -287,10 +305,10 @@ class PaperTrader:
                 entry_price=pos["entry_price"],
                 exit_price=exit_price,
             )
-            pnl = gross_pnl - cost_breakdown["total_charges"]
-            pnl_pct = (pnl / pos["total_cost"]) * 100 if pos["total_cost"] else 0
+            net_pnl = gross_pnl - cost_breakdown["total_charges"]
+            pnl_pct = (net_pnl / pos["total_cost"]) * 100 if pos["total_cost"] else 0
 
-            result = "PROFIT ✅" if pnl >= 0 else "LOSS ❌"
+            result = "PROFIT ✅" if net_pnl >= 0 else "LOSS ❌"
 
             summary = {
                 "trade_id":    pos["trade_id"],
@@ -300,7 +318,8 @@ class PaperTrader:
                 "quantity":    pos["quantity"],
                 "gross_pnl":   round(gross_pnl, 2),
                 "charges":     round(cost_breakdown["total_charges"], 2),
-                "pnl":         round(pnl, 2),
+                "net_pnl":     round(net_pnl, 2),
+                "pnl":         round(net_pnl, 2),
                 "pnl_pct":     round(pnl_pct, 2),
                 "result":      result,
                 "reason":      reason,
@@ -308,8 +327,8 @@ class PaperTrader:
             }
 
             # Update daily P&L
-            self._daily_pnl += pnl
-            self.working_capital += pnl
+            self._daily_pnl += net_pnl
+            self.working_capital += net_pnl
 
             # Print the structured TRADE CLOSED ticket to the terminal
             self._print_closed_ticket(
@@ -317,7 +336,7 @@ class PaperTrader:
                 exit_price,
                 gross_pnl,
                 cost_breakdown["total_charges"],
-                pnl,
+                net_pnl,
                 pnl_pct,
                 result,
             )
@@ -466,8 +485,8 @@ class PaperTrader:
             if summary is not None:
                 logging.info(
                     "[AUTO-SQUARE-OFF] Closed position at "
-                    f"₹{summary['exit_price']:,.2f}. Realized P&L: "
-                    f"₹{summary['pnl']:,.2f} | Reason: {reason}"
+                    f"₹{summary['exit_price']:,.2f}. Realized Net P&L: "
+                    f"₹{summary['net_pnl']:,.2f} | Reason: {reason}"
                 )
 
             return summary
@@ -557,45 +576,61 @@ class PaperTrader:
         entry_price: float,
         exit_price: float,
     ) -> dict:
-        """Estimate Indian intraday equity slippage and statutory charges."""
-        effective_entry = entry_price * (1 + self.slippage_pct)
-        effective_exit = exit_price * (1 - self.slippage_pct)
+        """Estimate NSE intraday equity round-trip friction components."""
+        buy_turnover = quantity * entry_price
+        sell_turnover = quantity * exit_price
+        total_turnover = buy_turnover + sell_turnover
 
-        buy_turnover = quantity * effective_entry
-        sell_turnover = quantity * effective_exit
-        turnover = buy_turnover + sell_turnover
+        buy_brokerage = min(20.0, buy_turnover * 0.0003)
+        sell_brokerage = min(20.0, sell_turnover * 0.0003)
+        brokerage = buy_brokerage + sell_brokerage
+        stt = sell_turnover * 0.00025
+        exchange_txn = total_turnover * 0.0000325
+        stamp_duty = buy_turnover * 0.00003
+        gst = (brokerage + exchange_txn) * 0.18
+        total_charges = brokerage + stt + exchange_txn + stamp_duty + gst
 
-        brokerage = self.brokerage_per_order * 2
-        stt = sell_turnover * self.stt_sell_pct
-        exchange_txn = turnover * self.exchange_txn_pct
-        sebi = turnover * self.sebi_turnover_pct
-        stamp_duty = buy_turnover * self.stamp_duty_buy_pct
-        gst = (brokerage + exchange_txn + sebi) * self.gst_pct
-
-        entry_charges = self.brokerage_per_order + buy_turnover * self.stamp_duty_buy_pct
-        exit_charges = (
-            self.brokerage_per_order
-            + stt
-            + turnover * self.exchange_txn_pct
-            + turnover * self.sebi_turnover_pct
-            + gst
-        )
+        entry_charges = buy_brokerage + stamp_duty + (buy_turnover * 0.0000325) + ((buy_brokerage + (buy_turnover * 0.0000325)) * 0.18)
+        exit_charges = sell_brokerage + stt + (sell_turnover * 0.0000325) + ((sell_brokerage + (sell_turnover * 0.0000325)) * 0.18)
 
         return {
-            "effective_entry": effective_entry,
-            "effective_exit": effective_exit,
             "buy_turnover": buy_turnover,
             "sell_turnover": sell_turnover,
             "brokerage": brokerage,
+            "buy_brokerage": buy_brokerage,
+            "sell_brokerage": sell_brokerage,
             "stt": stt,
             "exchange_txn": exchange_txn,
-            "sebi": sebi,
             "stamp_duty": stamp_duty,
             "gst": gst,
             "entry_charges": entry_charges,
             "exit_charges": exit_charges,
-            "total_charges": brokerage + stt + exchange_txn + sebi + stamp_duty + gst,
+            "total_charges": total_charges,
         }
+
+    def calculate_friction(
+        self,
+        qty: int,
+        entry_price: float,
+        exit_price: float,
+    ) -> float:
+        """Return total NSE intraday equity transaction friction for a round trip."""
+        if qty <= 0 or entry_price <= 0 or exit_price <= 0:
+            return 0.0
+
+        buy_turnover = qty * entry_price
+        sell_turnover = qty * exit_price
+        total_turnover = buy_turnover + sell_turnover
+
+        buy_brokerage = min(20.0, buy_turnover * 0.0003)
+        sell_brokerage = min(20.0, sell_turnover * 0.0003)
+        brokerage = buy_brokerage + sell_brokerage
+        stt = sell_turnover * 0.00025
+        exchange_txn = total_turnover * 0.0000325
+        stamp_duty = buy_turnover * 0.00003
+        gst = (brokerage + exchange_txn) * 0.18
+
+        return brokerage + stt + exchange_txn + stamp_duty + gst
 
     def _print_trade_ticket(self, ticket: dict) -> None:
         """Print a clear, structured simulated trade ticket."""
@@ -660,7 +695,7 @@ class PaperTrader:
         logging.info("║──────────────────────────────────────────────────────────║")
         logging.info(f"║  Gross P&L    :  {gross_label:<42}║")
         logging.info(f"║  Costs        :  {charges_label:<42}║")
-        logging.info(f"║  P & L        :  {pnl_label:<42}║")
+        logging.info(f"║  Net P&L      :  {pnl_label:<42}║")
         logging.info(f"║  Daily P&L    :  {daily_label:<42}║")
         logging.info(f"║  Working Cap  :  {wcap_label:<42}║")
         logging.info("╚══════════════════════════════════════════════════════════╝")
