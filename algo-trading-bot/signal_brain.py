@@ -1,67 +1,120 @@
 """
 signal_brain.py — Signal Generation Layer (The Brain)
 =====================================================
-Contains vectorized indicator calculations and high-probability
-signal detection logic. Designed for sub-millisecond execution
-on DataFrames populated by the Data Ingestion Layer.
+Contains vectorized indicator calculations (VWAP, ATR-14) and
+strict, high-probability VWAP Pullback Buy Signal detection.
+
+Strict 3-Condition Pullback Model (Dynamic ATR Band)
+─────────────────────────────────────────────────────
+1. Displacement Check : Candle N-1 must close firmly ABOVE VWAP_N-1.
+2. Dynamic ATR Touch  : Candle N Low ≤ VWAP_N + (0.2 × ATR_14).
+3. Rejection / Rebound: Candle N Close firmly ABOVE VWAP_N.
+
+Anti-Spam State Lock
+────────────────────
+After a Buy_Signal fires, signal generation is locked until price
+displaces above VWAP for at least 2 consecutive candles — preventing
+the same pullback zone from firing repeated entries on adjacent
+candles without a meaningful price re-acceleration first.
 
 Scale-In (Pyramiding) Support
 ─────────────────────────────
-Consecutive valid VWAP Pullback buy signals are emitted so the
-Execution Layer can execute multi-tranche entries (max 3 tranches
-per session, same symbol). Each consecutive signal represents a
-candidate scale-in (pyramid up) opportunity. Risk + capital gates
-are enforced downstream in paper_trader.py / execution_engine.py.
-
-The signal itself remains binary (Buy_Signal = True/False per
-candle). It is the Execution Layer's responsibility to check:
-  1. Are we in an open position for the same symbol?
-  2. If yes: current_tranches < MAX_TRANCHES?
-  3. If yes: working_capital and risk budgets still available?
-  4. If yes: execute SCALE-IN tranche with VWAP recalc.
-  5. If no : log "Max scale-in limit reached" and skip.
+Once the Anti-Spam lock resets, a new valid signal is emitted and the
+Execution Layer treats it as a candidate scale-in (subject to its own
+MAX_TRANCHES, Working Capital, and Risk Budget caps).
 """
 
 import pandas as pd
 import numpy as np
 
 
+def compute_atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
+    """
+    Wilder's RMA-based Average True Range (ATR-14) across candles.
+
+    ATR is calculated globally over the DataFrame but the Signal Brain
+    uses it row-by-row in a rolling fashion. Vectorized implementation
+    so the hot path stays sub-millisecond.
+
+    Parameters
+    ----------
+    df : pd.DataFrame — Must contain columns High/Low/Close.
+    period : int      — ATR lookback (default 14 for 1-minute candles).
+
+    Returns
+    -------
+    pd.Series of ATR values aligned with the input index.
+    """
+    high = df["High"].astype(float)
+    low = df["Low"].astype(float)
+    close = df["Close"].astype(float)
+
+    prev_close = close.shift(1)
+
+    true_range = pd.concat(
+        [
+            high - low,
+            (high - prev_close).abs(),
+            (low - prev_close).abs(),
+        ],
+        axis=1,
+    ).max(axis=1)
+
+    atr = true_range.ewm(
+        alpha=1.0 / period,
+        adjust=False,
+        min_periods=period,
+    ).mean()
+
+    return atr
+
+
+def _get_session_key(df: pd.DataFrame) -> pd.Index:
+    """Return a date-level session key grouped by trading day."""
+    if "Timestamp" in df.columns:
+        ts = pd.to_datetime(df["Timestamp"])
+        return pd.Index(ts.dt.date.to_list(), name="session_key")
+    if isinstance(df.index, pd.DatetimeIndex):
+        return pd.Index(df.index.date, name="session_key")
+    raise ValueError("DataFrame must contain a 'Timestamp' column or DatetimeIndex.")
+
+
 def generate_vwap_signal(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Calculate Intraday VWAP and detect a high-probability
-    "VWAP Pullback Buy Signal" using purely vectorized Pandas logic.
+    Calculate Intraday VWAP, rolling ATR-14, and detect a strict
+    3-condition "VWAP Pullback Buy Signal" with Anti-Spam State Lock.
 
-    Consecutive True signals on subsequent candles are valid and
-    represent scale-in (pyramiding / multi-tranche entry) candidates
-    for the Execution Layer. The Execution Layer is responsible for
-    enforcing MAX_TRANCHES (=3), working-capital, and risk caps.
+    Consecutive True signals on subsequent candles are only emitted
+    after the 2-candle "displaced above VWAP" Anti-Spam reset has been
+    satisfied. This avoids signal spam on adjacent pullback candles in
+    the same consolidation zone.
 
     Strategy Logic
     ──────────────
-    1. VWAP Calculation  — Cumulative (TP × Volume) / Cumulative Volume
-    2. Trend Confirmation — Previous 3 candles all closed ABOVE the VWAP,
-       confirming intraday bullishness.
-    3. Pullback Trigger   — Current candle's Low touches or dips slightly
-       BELOW the VWAP (testing support), but Close bounces back ABOVE it,
-       indicating institutional buyers are defending the VWAP line.
+    1. VWAP Calculation  — Cumulative (TP × Volume) / Cumulative Volume,
+                           resetting per trading session (09:15 IST each day).
+    2. ATR-14            — Wilder RMA rolling 14-period intraday volatility.
+    3. Displacement (t-1)— Candle N-1 Close > VWAP_{N-1} firmly above.
+    4. Dynamic ATR Touch — Candle N Low ≤ VWAP_N + (0.2 × ATR_14).
+    5. Rebound Close     — Candle N Close > VWAP_N back above line.
+    6. Anti-Spam Lock    — After True signal, require ≥ 2 consecutive candles
+                           whose CLOSE is ABOVE VWAP before a new True may
+                           fire (prevents signal spam).
 
     Parameters
     ----------
     df : pd.DataFrame
         Must contain columns: Open, High, Low, Close, Volume.
-        Rows should represent intraday candles (1-min / 5-min) for a
-        SINGLE trading session. VWAP resets each session.
+        May span multiple sessions; VWAP resets at each session boundary.
 
     Returns
     -------
     pd.DataFrame
-        Original DataFrame enriched with two new columns:
-        • VWAP       (float)  — The running intraday VWAP value.
-        • Buy_Signal (bool)   — True ONLY on candles where all three
-                                conditions converge. Multiple consecutive
-                                True signals = scale-in candidates.
+        Original DataFrame enriched with:
+        • VWAP       (float) — Running session intraday VWAP.
+        • ATR_14     (float) — Rolling 14-period Wilder ATR.
+        • Buy_Signal (bool)  — True only if all 6 conditions converge.
     """
-
     # ── 0. Input Validation ─────────────────────────────────────────────
     required_cols = {"Open", "High", "Low", "Close", "Volume"}
     if not required_cols.issubset(df.columns):
@@ -69,68 +122,78 @@ def generate_vwap_signal(df: pd.DataFrame) -> pd.DataFrame:
         raise ValueError(f"DataFrame is missing required columns: {missing}")
 
     if df.empty:
+        df = df.copy()
         df["VWAP"] = np.nan
+        df["ATR_14"] = np.nan
         df["Buy_Signal"] = False
         return df
 
+    out = df.copy()
+
     # ── 1. VWAP Calculation (Vectorized, daily-session reset) ──────────
-    # Typical Price is the market's consensus "fair value" for each candle.
-    typical_price = (df["High"] + df["Low"] + df["Close"]) / 3
+    typical_price = (out["High"].astype(float) + out["Low"].astype(float) + out["Close"].astype(float)) / 3.0
+    session_key = _get_session_key(out)
 
-    # Use the session date as the reset boundary so yesterday's cumulative
-    # volume never contaminates today's intraday VWAP. This is fully vectorized
-    # and safe even when the DataFrame spans multiple days.
-    if "Timestamp" in df.columns:
-        session_key = pd.to_datetime(df["Timestamp"]).dt.date
-    elif isinstance(df.index, pd.DatetimeIndex):
-        session_key = df.index.date
-    else:
-        session_key = pd.Index([pd.Timestamp(value).date() for value in df.index])
+    cumulative_tp_vol = (typical_price * out["Volume"].astype(float)).groupby(session_key).cumsum()
+    cumulative_vol = out["Volume"].astype(float).groupby(session_key).cumsum()
 
-    cumulative_tp_vol = (typical_price * df["Volume"]).groupby(session_key).cumsum()
-    cumulative_vol = df["Volume"].groupby(session_key).cumsum()
-
-    # Guard against division-by-zero when cumulative volume is 0
-    # (e.g., pre-market candles with no volume).
-    df["VWAP"] = np.where(
+    out["VWAP"] = np.where(
         cumulative_vol == 0,
         np.nan,
         cumulative_tp_vol / cumulative_vol,
     )
 
-    # ── 2. Trend Confirmation ───────────────────────────────────────────
-    # All 3 previous candles must have closed ABOVE their respective VWAP
-    # value. This filters out choppy / bearish sessions where a pullback
-    # to VWAP is more likely a breakdown than a bounce.
-    close_above_vwap = df["Close"] > df["VWAP"]
-    grouped_close_above = close_above_vwap.groupby(session_key)
+    # ── 2. Rolling 14-period Wilder ATR (volatility proxy) ─────────────
+    out["ATR_14"] = compute_atr(out, period=14)
 
-    trend_confirmed = (
-        grouped_close_above.shift(1)    # candle at t-1 closed above VWAP
-        & grouped_close_above.shift(2)  # candle at t-2 closed above VWAP
-        & grouped_close_above.shift(3)  # candle at t-3 closed above VWAP
+    # ── 3. Trend Displacement Check (Candle N-1 firmly above VWAP) ─────
+    close_above_vwap_tm1 = (out["Close"].astype(float) > out["VWAP"]).shift(1)
+
+    # ── 4. Dynamic ATR Penetration / Touch ─────────────────────────────
+    # Low_N <= VWAP_N + (0.2 * ATR_14)
+    dynamic_band = out["VWAP"] + 0.2 * out["ATR_14"]
+    low_tests_vwap = out["Low"].astype(float) <= dynamic_band
+
+    # ── 5. Rebound & Close back above VWAP ─────────────────────────────
+    close_bounces = out["Close"].astype(float) > out["VWAP"]
+
+    # Raw signal (ignores anti-spam lock)
+    raw_signal = (
+        close_above_vwap_tm1.fillna(False).astype(bool)
+        & low_tests_vwap.fillna(False).astype(bool)
+        & close_bounces.fillna(False).astype(bool)
     )
 
-    # ── 3. Pullback Entry Trigger ───────────────────────────────────────
-    # The current candle must:
-    #   a) Have its Low touch or slightly pierce BELOW the VWAP
-    #      (price is "testing" VWAP as dynamic support).
-    #   b) Close ABOVE the VWAP (buyers absorbed selling pressure and
-    #      pushed price back up — a classic institutional defense).
+    # ── 6. Anti-Spam State Lock ────────────────────────────────────────
+    # After a True signal fires, the next True is blocked until at least
+    # 2 consecutive candles have closed ABOVE VWAP (displacement reset).
     #
-    # A small tolerance (0.1 % above VWAP) is added to the Low condition
-    # so we don't miss candles that got extremely close to VWAP without
-    # technically touching it — a common occurrence on liquid instruments.
-    tolerance = df["VWAP"] * 0.001  # 0.1 % cushion
+    # We walk the series sequentially because state depends on prior
+    # True signals; this is O(n) with pure Python — cheap for ≤ 375
+    # daily candles (09:15 → 15:29 IST).
+    buy_signal_vals: list[bool] = [False] * len(raw_signal)
+    lock_cooldown = 0  # number of additional required "Close > VWAP" candles
 
-    low_tests_vwap = df["Low"] <= (df["VWAP"] + tolerance)
-    close_bounces  = df["Close"] > df["VWAP"]
+    raw_arr = raw_signal.to_numpy()
+    close_arr = out["Close"].astype(float).to_numpy()
+    vwap_arr = pd.Series(out["VWAP"]).astype(float).to_numpy()
 
-    # ── 4. Combine All Conditions into Final Signal ─────────────────────
-    df["Buy_Signal"] = (
-        trend_confirmed
-        & low_tests_vwap
-        & close_bounces
-    ).fillna(False).astype(bool)
+    for i in range(len(raw_arr)):
+        cs_raw = bool(raw_arr[i])
+        close_above = bool(close_arr[i] > vwap_arr[i])
 
-    return df
+        if lock_cooldown > 0:
+            if close_above:
+                lock_cooldown -= 1
+            buy_signal_vals[i] = False
+            continue
+
+        if cs_raw:
+            buy_signal_vals[i] = True
+            lock_cooldown = 2  # require ≥ 2 subsequent Close > VWAP before re-fire
+        else:
+            buy_signal_vals[i] = False
+
+    out["Buy_Signal"] = buy_signal_vals
+
+    return out

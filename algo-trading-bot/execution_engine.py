@@ -1,39 +1,55 @@
 """
-execution_engine.py — Paper-Trading Execution Layer (Pyramiding Enabled)
-========================================================================
+execution_engine.py — Paper-Trading Execution Layer (Pyramiding + Trailing Stops)
+==================================================================================
 Simulates trade execution with strict, mathematical risk management
 and Scale-In (Pyramiding / Multi-Tranche Entry) support on consecutive
 valid VWAP Pullback buy signals.
 
-No real orders are placed; every trade is logged as a simulated ticket.
-
-Scale-In (Pyramiding) Architecture
+Active Trade Management (added v2)
 ──────────────────────────────────
-• Maximum 3 tranches (entries) per trading session on the same symbol.
-• Total combined exposure ≤ Working Capital (50% of Total Capital).
-• Total combined risk ≤ Daily Loss Limit (₹200) and per-trade cap (₹100).
-• On each scale-in fill:
-    – Volume Weighted Average Entry Price is recalculated (Σ(Pᵢ×Qᵢ) / ΣQᵢ)
-    – Global Stop Loss updates (−0.5% from new average entry price)
-    – Global Take Profit updates (1:2 R:R from new average entry price)
-• Friction Gate runs on every incoming tranche to ensure positive net expectancy.
-• Unified exit on SL / Target / 15:20 IST EOD — entire Q_total sold in single tx.
+1. Breakeven Trailing Stop  — If live price reaches +0.50% above avg
+                              entry, ratchet SL up to Avg Entry price.
+2. Time-Based Momentum Stop— If position is open ≥ 40 candles and
+                              neither SL nor TP has hit → MOC close.
+3. Exit Priority           — Stop Loss → Target → Time Stop → 15:20 IST EOD.
 
-Risk Management Model
-─────────────────────
-• Total Capital       : ₹10,000
-• Working Capital     : 50% of Total  (₹5,000)  — the other 50% is backup
-• Daily Loss Limit    : 2%  of Total  (₹200)    — halt trading if breached
-• Risk Per Trade      : 1%  of Total  (₹100)    — max loss on any single trade
-• Quantity Formula    : Risk_Per_Trade / (Entry - Stop_Loss)
-• Stop Loss           : Avg Entry − 0.5%
-• Target              : Avg Entry + 2 × (Avg Entry − Stop Loss)  [1:2 R:R]
+Persistent Structured Logging
+─────────────────────────────
+On every exit (Target / Stop Loss / Breakeven / Time Stop / EOD Square-Off)
+a clean row is appended to `trades.csv` with Net Profit Gate-matching
+charges (Brokerage + STT + Exchange Turnover + GST + Stamp Duty).
+
+No real orders are placed; every trade is logged as a simulated ticket.
 """
 
+import csv
 import logging
+import os
 import threading
 from datetime import date, datetime
 from typing import Optional
+
+
+CSV_HEADERS = [
+    "timestamp",
+    "trade_id",
+    "symbol",
+    "side",
+    "entry_price",
+    "exit_price",
+    "quantity",
+    "hold_duration_mins",
+    "exit_reason",
+    "gross_pnl",
+    "charges",
+    "net_pnl",
+    "net_roi_pct",
+    "final_balance",
+]
+
+BREAKEVEN_TRIGGER_PCT = 0.0050  # +0.50% above avg entry → move SL to breakeven
+TIME_STOP_CANDLES = 40          # 40 minutes (1-min candles) → MOC close
+CANDLE_INTERVAL_SEC = 60        # used for time-stop estimation
 
 
 class PaperTrader:
@@ -53,6 +69,7 @@ class PaperTrader:
     reward_to_risk      : float — Reward-to-risk ratio for target (default 2.0).
     slippage_pct        : float — Per-side estimated slippage (default 0.05%).
     brokerage_per_order : float — Flat brokerage per order leg.
+    csv_log_path        : str   — Path to persistent trades.csv log.
     """
 
     def __init__(
@@ -71,6 +88,9 @@ class PaperTrader:
         sebi_turnover_pct: float = 0.000001,
         stamp_duty_buy_pct: float = 0.00003,
         gst_pct: float = 0.18,
+        csv_log_path: Optional[str] = None,
+        breakeven_trigger_pct: float = BREAKEVEN_TRIGGER_PCT,
+        time_stop_candles: int = TIME_STOP_CANDLES,
     ):
         # ── Capital Configuration ───────────────────────────────────
         self.total_capital       = total_capital
@@ -91,6 +111,18 @@ class PaperTrader:
         self.stamp_duty_buy_pct  = stamp_duty_buy_pct
         self.gst_pct             = gst_pct
 
+        # ── Active Trade Management v2 ──────────────────────────────
+        self.breakeven_trigger_pct = breakeven_trigger_pct
+        self.time_stop_candles     = time_stop_candles
+        self._candle_close_count_since_entry = 0
+
+        # ── Persistent CSV Log ──────────────────────────────────────
+        if csv_log_path is None:
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            csv_log_path = os.path.join(base_dir, "trades.csv")
+        self._csv_log_path = csv_log_path
+        self._ensure_csv_initialized()
+
         # ── Daily State (resets each trading day) ───────────────────
         self._current_date: Optional[date] = None
         self._daily_pnl: float             = 0.0
@@ -103,18 +135,20 @@ class PaperTrader:
         self._pending_orders: list          = []
         self._latest_price: Optional[float] = None
         self._latest_timestamp: Optional[datetime] = None
+        self._entry_timestamp: Optional[datetime]   = None
         self.lock = threading.RLock()
         self._state_lock = self.lock
 
         logging.info("=" * 60)
-        logging.info("  PAPER TRADER INITIALIZED")
+        logging.info("  PAPER TRADER INITIALIZED (v2 — Trailing Stops + CSV)")
         logging.info(f"  Total Capital     : ₹{self.total_capital:,.2f}")
         logging.info(f"  Working Capital   : ₹{self.working_capital:,.2f}")
         logging.info(f"  Backup Capital    : ₹{self.backup_capital:,.2f}")
         logging.info(f"  Daily Loss Limit  : ₹{self.daily_loss_limit:,.2f}")
         logging.info(f"  Risk Per Trade    : ₹{self.risk_per_trade:,.2f}")
-        logging.info(f"  Slippage / Side   : {self.slippage_pct * 100:.3f}%")
-        logging.info(f"  Brokerage / Order : ₹{self.brokerage_per_order:,.2f}")
+        logging.info(f"  Breakeven Trigger : +{self.breakeven_trigger_pct*100:.2f}% → SL → Avg Entry")
+        logging.info(f"  Time Stop         : {self.time_stop_candles} candles MOC")
+        logging.info(f"  Trade Log (CSV)   : {self._csv_log_path}")
         logging.info("=" * 60)
 
     # ────────────────────────────────────────────────────────────────
@@ -145,7 +179,6 @@ class PaperTrader:
             The trade ticket dict if a trade was placed, else None
             (e.g. when halted or position already open).
         """
-
         with self.lock:
             trade_timestamp = self._resolve_timestamp(timestamp, signal_data)
             self._check_day_reset(trade_timestamp)
@@ -248,11 +281,18 @@ class PaperTrader:
 
             tranche_number = snapshot["current_tranches"]
             if current_position is None:
+                # ── First tranche: reset active-trade state timers ────
+                self._entry_timestamp = trade_timestamp
+                self._candle_close_count_since_entry = 0
+                # ── Start with breakeven_disarmed ─────────────────────
+                snapshot["breakeven_armed"] = False
                 logging.info(
                     f"✅ [ENTRY TRANCHE {tranche_number}/{self.max_tranches}] "
                     f"Initial VWAP buy signal accepted. All gates passed."
                 )
             else:
+                # ── Subsequent scale-in: preserve breakeven state ─────
+                snapshot["breakeven_armed"] = bool(current_position.get("breakeven_armed", False))
                 new_avg = snapshot["average_entry_price"]
                 new_sl = snapshot["stop_loss_price"]
                 new_tp = snapshot["target_price"]
@@ -281,16 +321,9 @@ class PaperTrader:
         reason: str = "Signal Exit",
     ) -> Optional[dict]:
         """
-        Close the current open position at the given exit price
-        and update the daily P&L.
-
-        Parameters
-        ----------
-        exit_price : float — The price at which the position is exited.
-
-        Returns
-        -------
-        dict or None — Summary of the closed trade, or None if no position.
+        Close the current open position at the given exit price,
+        update the daily P&L, and append a structured row to
+        `trades.csv` for persistent record keeping.
         """
         with self.lock:
             if self._open_position is None:
@@ -310,7 +343,20 @@ class PaperTrader:
             net_pnl = gross_pnl - total_charges
             pnl_pct = (net_pnl / pos["total_cost"]) * 100 if pos["total_cost"] else 0
 
+            # ── Hold-duration calculation ────────────────────────────
+            entry_ts = pos.get("timestamp") or self._entry_timestamp
+            if entry_ts is not None and exit_timestamp is not None:
+                hold_td = exit_timestamp - entry_ts
+                hold_mins = round(hold_td.total_seconds() / 60.0, 2)
+            else:
+                hold_mins = 0.0
+
             result = "PROFIT ✅" if net_pnl >= 0 else "LOSS ❌"
+
+            # ── Final balance after exit (Working + Backup Capital) ──
+            final_balance = (
+                (self.working_capital + net_pnl) + self.backup_capital
+            )
 
             summary = {
                 "trade_id":    pos["position_id"],
@@ -327,8 +373,16 @@ class PaperTrader:
                 "pnl_pct":     round(pnl_pct, 2),
                 "result":      result,
                 "reason":      reason,
+                "hold_duration_mins": hold_mins,
+                "final_balance": round(final_balance, 2),
                 "timestamp":   exit_timestamp,
             }
+
+            # ── Persistent CSV Log ───────────────────────────────────
+            try:
+                self._append_trade_csv(summary)
+            except Exception as exc:
+                logging.error(f"Failed to append to trades.csv: {exc!s}")
 
             # Update daily P&L
             self._daily_pnl += net_pnl
@@ -347,6 +401,8 @@ class PaperTrader:
 
             # Clear the open position
             self._open_position = None
+            self._entry_timestamp = None
+            self._candle_close_count_since_entry = 0
 
             # Check if daily loss limit is now breached
             if self._daily_pnl <= -self.daily_loss_limit:
@@ -366,29 +422,70 @@ class PaperTrader:
 
             return summary
 
+    def notify_candle_close(self, timestamp: Optional[datetime] = None) -> Optional[dict]:
+        """
+        Must be called from `on_candle_close` so we can track candle
+        count since entry for the Time-Based Momentum Stop.
+
+        If the time-stop threshold (TIME_STOP_CANDLES = 40) is reached
+        and no SL/TP/EOD has yet triggered → returns a close_position
+        summary dict and closes the entire accumulated position.
+
+        Otherwise returns None.
+        """
+        with self.lock:
+            if self._open_position is None:
+                return None
+
+            ts = self._resolve_timestamp(timestamp)
+            self._candle_close_count_since_entry += 1
+            elapsed = self._candle_close_count_since_entry
+
+            # Priority: stop-loss / target are handled in check_exit()
+            # Here we only handle Time Stop → lowest priority BEFORE EOD
+            if elapsed >= self.time_stop_candles:
+                if self._latest_price is None:
+                    logging.warning(
+                        f"[TIME STOP] {elapsed}/{self.time_stop_candles} candles "
+                        "reached but no latest price available."
+                    )
+                    return None
+                logging.info("")
+                logging.info(
+                    "⏱️  ═══════════════════════════════════════════════════════"
+                )
+                logging.info(
+                    f"⏱️  TIME STOP TRIGGERED  |  {elapsed}/{self.time_stop_candles} "
+                    f"candles elapsed  |  Price: ₹{self._latest_price:,.2f}"
+                )
+                logging.info(
+                    "⏱️  ═══════════════════════════════════════════════════════"
+                )
+                return self.close_position(
+                    exit_price=self._latest_price,
+                    timestamp=ts,
+                    reason="Time Stop",
+                )
+
+            return None
+
     def check_exit(
         self,
         live_price: float,
         timestamp: Optional[datetime] = None,
     ) -> Optional[dict]:
         """
-        Check every incoming tick against the open position's
-        Stop-Loss and Target thresholds.  If either is breached,
-        automatically close the position.
+        Exit priority evaluation every incoming tick:
 
-        Call this on EVERY raw tick inside the WebSocket on_message
-        callback.  The method is O(1) — two float comparisons and
-        an early return — so it adds negligible overhead.
+          1. Stop Loss            (live_price ≤ SL)
+          2. Target Price         (live_price ≥ TP)
+          3. Breakeven Arming     (+0.5% above avg entry → SL = avg entry)
+             Note: Breakeven ratchets SL, actual SL exit is step (1).
+          4. Time Stop            (handled in notify_candle_close)
+          5. 15:20 IST EOD Square-Off (handled in square_off_all_positions)
 
-        Parameters
-        ----------
-        live_price : float — The latest traded price from the tick.
-
-        Returns
-        -------
-        dict or None
-            The closed-trade summary if an exit was triggered,
-            otherwise None (position still open or no position).
+        Returns the close_position() summary dict if any exit triggers,
+        otherwise None.
         """
         with self.lock:
             tick_timestamp = self._resolve_timestamp(timestamp)
@@ -400,28 +497,46 @@ class PaperTrader:
                 return None
 
             pos = self._open_position
+            avg_entry = pos["average_entry_price"]
 
-            # ── Stop-Loss Hit ───────────────────────────────────────────
-            # Price dropped to or below the stop-loss level.
+            # ── 3. Breakeven Arming Check (+0.5% above avg entry) ──────
+            #    BEFORE evaluating SL/TP so SL is already ratcheted when
+            #    the thresholds are tested on this same tick.
+            trigger_level = avg_entry * (1.0 + self.breakeven_trigger_pct)
+            if not pos.get("breakeven_armed", False) and live_price >= trigger_level:
+                old_sl = pos["stop_loss_price"]
+                new_sl = avg_entry
+                if new_sl > old_sl:
+                    pos["stop_loss_price"] = new_sl
+                    pos["breakeven_armed"] = True
+                    logging.info(
+                        f"🛡️  [BREAKEVEN ARMED] Price hit +{self.breakeven_trigger_pct*100:.2f}% "
+                        f"(≥ ₹{trigger_level:,.2f}). SL ratcheted: ₹{old_sl:,.2f} → ₹{new_sl:,.2f}"
+                    )
+
+            # ── 1. Stop-Loss Hit ───────────────────────────────────────
+            # Price dropped to or below the (possibly ratcheted) stop-loss.
             if live_price <= pos["stop_loss_price"]:
+                label = "STOP-LOSS (BREAKEVEN)" if pos.get("breakeven_armed") else "STOP-LOSS"
                 logging.info("")
                 logging.info(
                     "🔴 ════════════════════════════════════════════════════════"
                 )
                 logging.info(
-                    f"🔴  STOP-LOSS TRIGGERED  @  ₹{live_price:,.2f}  "
+                    f"🔴  {label} TRIGGERED  @  ₹{live_price:,.2f}  "
                     f"(SL was ₹{pos['stop_loss_price']:,.2f}) | Tranches: {pos['current_tranches']}/{pos['max_tranches']}"
                 )
                 logging.info(
                     "🔴 ════════════════════════════════════════════════════════"
                 )
+                exit_reason = "Breakeven Stop" if pos.get("breakeven_armed") else "Stop Loss"
                 return self.close_position(
                     exit_price=pos["stop_loss_price"],
                     timestamp=tick_timestamp,
-                    reason="Stop Loss",
+                    reason=exit_reason,
                 )
 
-            # ── Target Hit ──────────────────────────────────────────────
+            # ── 2. Target Hit ──────────────────────────────────────────
             # Price rose to or above the target level.
             if live_price >= pos["target_price"]:
                 logging.info("")
@@ -452,13 +567,7 @@ class PaperTrader:
     ) -> Optional[dict]:
         """
         Force-close any open intraday position at the latest market price.
-
-        Parameters
-        ----------
-        reason       : str   — Operational reason for forced exit.
-        latest_price : float — Optional explicit market price. If omitted,
-                               the most recent tick seen by check_exit() is used.
-        timestamp    : datetime, optional — Event time for live/test injection.
+        Priority: lowest — only runs after SL / TP / Time Stop.
         """
         with self.lock:
             square_off_timestamp = self._resolve_timestamp(timestamp)
@@ -496,12 +605,7 @@ class PaperTrader:
             return summary
 
     def cancel_pending_orders(self, reason: str = "Lifecycle shutdown") -> int:
-        """
-        Cancel tracked paper orders.
-
-        The current paper engine has no broker-side pending orders, but keeping
-        this method makes the live lifecycle path explicit and future-proof.
-        """
+        """Cancel tracked paper orders."""
         cancelled_count = len(self._pending_orders)
         self._pending_orders.clear()
         logging.info(
@@ -511,34 +615,69 @@ class PaperTrader:
 
     @property
     def is_halted(self) -> bool:
-        """Whether trading has been halted due to daily loss limit."""
         return self._halted
 
     @property
     def has_open_position(self) -> bool:
-        """Whether there is currently an open paper position."""
         return self._open_position is not None
 
     @property
     def daily_pnl(self) -> float:
-        """Running daily P&L in rupees."""
         return self._daily_pnl
 
     @property
     def latest_price(self) -> Optional[float]:
-        """Most recent market price observed by the trader."""
         return self._latest_price
+
+    # ────────────────────────────────────────────────────────────────
+    #  CSV PERSISTENCE
+    # ────────────────────────────────────────────────────────────────
+
+    def _ensure_csv_initialized(self) -> None:
+        """Create `trades.csv` with headers if it does not already exist."""
+        path = self._csv_log_path
+        if not os.path.exists(path):
+            try:
+                with open(path, "w", newline="", encoding="utf-8") as fh:
+                    writer = csv.writer(fh)
+                    writer.writerow(CSV_HEADERS)
+                logging.info(f"Created new trade log CSV: {path}")
+            except Exception as exc:
+                logging.error(f"Could not initialize trades.csv: {exc!s}")
+
+    def _append_trade_csv(self, summary: dict) -> None:
+        """
+        Append a single structured row to the persistent `trades.csv`.
+        All charges are derived from the exact Net-Profit Gate formula:
+            Brokerage + STT + Exchange Turnover + GST + Stamp Duty
+        """
+        ts = summary.get("timestamp")
+        ts_str = ts.isoformat() if isinstance(ts, datetime) else str(ts)
+        row = [
+            ts_str,
+            summary.get("trade_id", ""),
+            summary.get("symbol", ""),
+            "BUY",
+            f"{summary.get('entry_price', 0.0):.2f}",
+            f"{summary.get('exit_price', 0.0):.2f}",
+            summary.get("quantity", 0),
+            f"{summary.get('hold_duration_mins', 0.0):.2f}",
+            summary.get("reason", ""),
+            f"{summary.get('gross_pnl', 0.0):.2f}",
+            f"{summary.get('charges', 0.0):.2f}",
+            f"{summary.get('net_pnl', 0.0):.2f}",
+            f"{summary.get('pnl_pct', 0.0):.2f}",
+            f"{summary.get('final_balance', 0.0):.2f}",
+        ]
+        with open(self._csv_log_path, "a", newline="", encoding="utf-8") as fh:
+            writer = csv.writer(fh)
+            writer.writerow(row)
 
     # ────────────────────────────────────────────────────────────────
     #  INTERNAL HELPERS
     # ────────────────────────────────────────────────────────────────
 
     def _check_day_reset(self, current_dt: Optional[datetime] = None) -> None:
-        """
-        Reset daily counters when a new trading day begins.
-        This ensures the daily loss limit and trade count refresh
-        automatically without manual intervention.
-        """
         today = current_dt.date() if current_dt is not None else date.today()
         if self._current_date != today:
             if self._current_date is not None:
@@ -556,7 +695,6 @@ class PaperTrader:
         timestamp: Optional[datetime],
         data: Optional[dict] = None,
     ) -> datetime:
-        """Resolve timestamp from an explicit value, signal payload, or clock."""
         if timestamp is not None:
             return timestamp
         if data is not None:
@@ -570,12 +708,10 @@ class PaperTrader:
         price: float,
         timestamp: Optional[datetime] = None,
     ) -> None:
-        """Track the last market price for lifecycle exits."""
         self._latest_price = float(price)
         self._latest_timestamp = timestamp
 
     def _calculate_entry_leg_charges(self, quantity: int, price: float) -> dict:
-        """Calculate buy-leg turnover and statutory charges for one tranche."""
         turnover = quantity * price
         brokerage = min(20.0, turnover * 0.0003)
         exchange_txn = turnover * 0.0000325
@@ -592,7 +728,6 @@ class PaperTrader:
         }
 
     def _calculate_exit_leg_charges(self, quantity: int, price: float) -> dict:
-        """Calculate sell-leg turnover and statutory charges for one exit."""
         turnover = quantity * price
         brokerage = min(20.0, turnover * 0.0003)
         stt = turnover * 0.00025
@@ -614,7 +749,6 @@ class PaperTrader:
         entry_price: float,
         exit_price: float,
     ) -> dict:
-        """Estimate NSE intraday equity round-trip friction components."""
         entry_leg = self._calculate_entry_leg_charges(quantity, entry_price)
         exit_leg = self._calculate_exit_leg_charges(quantity, exit_price)
         buy_turnover = entry_leg["turnover"]
@@ -647,10 +781,8 @@ class PaperTrader:
         entry_price: float,
         exit_price: float,
     ) -> float:
-        """Return total NSE intraday equity transaction friction for a round trip."""
         if qty <= 0 or entry_price <= 0 or exit_price <= 0:
             return 0.0
-
         return self._estimate_round_trip_costs(
             quantity=qty,
             entry_price=entry_price,
@@ -668,19 +800,14 @@ class PaperTrader:
         """
         Create an aggregated open-position snapshot from tranche fills.
 
-        Dynamic Position Recalculation (per tranche fill):
-        ──────────────────────────────────────────────────
-        Volume Weighted Average Entry Price:
-            Avg Entry = Σ (Pᵢ × Qᵢ) / Σ Qᵢ
-
-        Global Stop Loss  : −0.5% from the NEW average entry price.
-        Global Take Profit: 1:2 R:R from the NEW average entry price.
+        Volume Weighted Average Entry Price:  Σ (Pᵢ × Qᵢ) / Σ Qᵢ
+        Global Stop Loss  : −0.5% from the new average entry price.
+        Global Take Profit: 1:2 R:R from the new average entry price.
         """
         num_tranches = len(tranches)
-
-        total_quantity = sum(tranche["quantity"] for tranche in tranches)
-        entry_notional = sum(tranche["entry_turnover"] for tranche in tranches)
-        entry_friction = sum(tranche["entry_friction"] for tranche in tranches)
+        total_quantity = sum(t["quantity"] for t in tranches)
+        entry_notional = sum(t["entry_turnover"] for t in tranches)
+        entry_friction = sum(t["entry_friction"] for t in tranches)
 
         average_entry_price = entry_notional / total_quantity
         stop_loss_price = average_entry_price * (1 - self.stop_loss_pct)
@@ -727,6 +854,7 @@ class PaperTrader:
             "target_exit_charges": target_exit_costs["total_charges"],
             "tranches": tranches,
             "timestamp": timestamp,
+            "breakeven_armed": False,
         }
 
     def _project_position_after_tranche(
@@ -738,7 +866,6 @@ class PaperTrader:
         trade_id: int,
         timestamp: Optional[datetime],
     ) -> tuple[dict, dict]:
-        """Return a new position snapshot and tranche ticket for the candidate fill."""
         tranche_entry_charges = self._calculate_entry_leg_charges(quantity, entry_price)
         tranche = {
             "trade_id": trade_id,
@@ -799,18 +926,6 @@ class PaperTrader:
         self,
         snapshot: dict,
     ) -> tuple[bool, Optional[str]]:
-        """
-        Friction Gate + Risk + Capital Validator per tranche.
-
-        Runs the Net-Profit Gate check on the incoming tranche to ensure
-        added transaction costs (STT + Stamp Duty + Brokerage + Exchange
-        Turnover) do not make the net trade expectancy negative.
-
-        Also enforces:
-        • Total combined exposure ≤ Working Capital (50% of Total Capital)
-        • Total combined risk     ≤ Daily Loss Limit (₹200) ∩ Per-trade cap (₹100)
-        • Projected net profit at target  >  0  (Friction Gate)
-        """
         risk_cap = min(self.risk_per_trade, self.daily_loss_limit)
         nt = snapshot["current_tranches"]
 
@@ -850,7 +965,6 @@ class PaperTrader:
         trade_id: int,
         timestamp: Optional[datetime],
     ) -> tuple[Optional[dict], Optional[dict], Optional[str]]:
-        """Search for the largest valid tranche size under the current constraints."""
         risk_cap = min(self.risk_per_trade, self.daily_loss_limit)
 
         if current_position is not None and current_position["current_tranches"] >= self.max_tranches:
@@ -902,16 +1016,12 @@ class PaperTrader:
         return None, None, "friction"
 
     def _print_trade_ticket(self, ticket: dict) -> None:
-        """Print a clear, structured simulated trade ticket with tranche info."""
         tranche_label = f"[TRANCHE {ticket['tranche_number']}/{ticket['max_tranches']}]"
-        if ticket['tranche_number'] == 1:
-            ticket_type = "📝  INITIAL ENTRY"
-        else:
-            ticket_type = "📐  SCALE-IN (PYRAMID)"
+        ticket_type = "📝  INITIAL ENTRY" if ticket['tranche_number'] == 1 else "📐  SCALE-IN (PYRAMID)"
         logging.info("")
         logging.info("╔══════════════════════════════════════════════════════════╗")
         logging.info(f"║  {ticket_type:<45} {tranche_label}║")
-        logging.info(f"║           SIMULATED TRADE TICKET                        ║")
+        logging.info("║           SIMULATED TRADE TICKET                        ║")
         logging.info("╠══════════════════════════════════════════════════════════╣")
         logging.info(f"║  Trade ID     :  #{ticket['trade_id']:<39}║")
         logging.info(f"║  Position ID  :  #{ticket['position_id']:<39}║")
@@ -947,11 +1057,6 @@ class PaperTrader:
         pnl_pct: float,
         result: str,
     ) -> None:
-        """
-        Print a structured TRADE CLOSED ticket to the terminal.
-        Called by close_position() on every SL hit or target hit.
-        Mirrors the entry ticket's box-drawing style for consistency.
-        """
         pnl_icon    = "🟢" if pnl >= 0 else "🔴"
         pnl_sign    = "+" if pnl >= 0 else ""
         exit_label  = f"₹{exit_price:,.2f}"
