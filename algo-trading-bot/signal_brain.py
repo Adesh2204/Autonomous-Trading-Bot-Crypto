@@ -30,11 +30,9 @@ import numpy as np
 
 def compute_atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
     """
-    Wilder's RMA-based Average True Range (ATR-14) across candles.
-
-    ATR is calculated globally over the DataFrame but the Signal Brain
-    uses it row-by-row in a rolling fashion. Vectorized implementation
-    so the hot path stays sub-millisecond.
+    Rolling 14-period Average True Range (ATR-14) across completed bars:
+        TR_t = max(High_t - Low_t, |High_t - Close_{t-1}|, |Low_t - Close_{t-1}|)
+        ATR_{14, t} = 1/14 * sum_{i=0}^{13} TR_{t-i}
 
     Parameters
     ----------
@@ -60,12 +58,7 @@ def compute_atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
         axis=1,
     ).max(axis=1)
 
-    atr = true_range.ewm(
-        alpha=1.0 / period,
-        adjust=False,
-        min_periods=1,
-    ).mean()
-
+    atr = true_range.rolling(period, min_periods=1).mean()
     return atr
 
 
@@ -84,22 +77,18 @@ def generate_vwap_signal(df: pd.DataFrame) -> pd.DataFrame:
     Calculate Intraday VWAP, rolling ATR-14, and detect a strict
     3-condition "VWAP Pullback Buy Signal" with Anti-Spam State Lock.
 
-    Consecutive True signals on subsequent candles are only emitted
-    after the 2-candle "displaced above VWAP" Anti-Spam reset has been
-    satisfied. This avoids signal spam on adjacent pullback candles in
-    the same consolidation zone.
+    Strategy Logic (VWAP_PULLBACK_BUY)
+    ──────────────────────────────────
+    1. Prior Displacement: Close_{t-1} > VWAP_{t-1} (firmly above on previous bar).
+    2. Dynamic Volatility Touch: Low_t <= VWAP_t + (0.20 * ATR_{14, t}).
+    3. Bullish Rejection Close: Close_t > VWAP_t (closes back above VWAP).
 
-    Strategy Logic
-    ──────────────
-    1. VWAP Calculation  — Cumulative (TP × Volume) / Cumulative Volume,
-                           resetting per trading session (09:15 IST each day).
-    2. ATR-14            — Wilder RMA rolling 14-period intraday volatility.
-    3. Displacement (t-1)— Candle N-1 Close > VWAP_{N-1} firmly above.
-    4. Dynamic ATR Touch — Candle N Low ≤ VWAP_N + (0.2 × ATR_14).
-    5. Rebound Close     — Candle N Close > VWAP_N back above line.
-    6. Anti-Spam Lock    — After True signal, require ≥ 2 consecutive candles
-                           whose CLOSE is ABOVE VWAP before a new True may
-                           fire (prevents signal spam).
+    Anti-Spam State Lock
+    ────────────────────
+    After a signal fires at Candle T, state transitions to LOCKED.
+    To unlock, price must displace away from VWAP such that:
+        Low_k > VWAP_k + (0.20 * ATR_{14, k})
+    for at least 2 consecutive candles (k = T+1, T+2) before another touch can register.
 
     Parameters
     ----------
@@ -112,8 +101,8 @@ def generate_vwap_signal(df: pd.DataFrame) -> pd.DataFrame:
     pd.DataFrame
         Original DataFrame enriched with:
         • VWAP       (float) — Running session intraday VWAP.
-        • ATR_14     (float) — Rolling 14-period Wilder ATR.
-        • Buy_Signal (bool)  — True only if all 6 conditions converge.
+        • ATR_14     (float) — Rolling 14-period ATR.
+        • Buy_Signal (bool)  — True only if all conditions converge and unlocked.
     """
     # ── 0. Input Validation ─────────────────────────────────────────────
     required_cols = {"Open", "High", "Low", "Close", "Volume"}
@@ -143,18 +132,18 @@ def generate_vwap_signal(df: pd.DataFrame) -> pd.DataFrame:
         cumulative_tp_vol / cumulative_vol,
     )
 
-    # ── 2. Rolling 14-period Wilder ATR (volatility proxy) ─────────────
+    # ── 2. Rolling 14-period ATR (volatility proxy) ────────────────────
     out["ATR_14"] = compute_atr(out, period=14)
 
-    # ── 3. Trend Displacement Check (Candle N-1 firmly above VWAP) ─────
+    # ── 3. Trend Displacement Check (Candle t-1 firmly above VWAP) ────
     close_above_vwap_tm1 = (out["Close"].astype(float) > out["VWAP"]).shift(1)
 
-    # ── 4. Dynamic ATR Penetration / Touch ─────────────────────────────
-    # Low_N <= VWAP_N + (0.2 * ATR_14)
-    dynamic_band = out["VWAP"] + 0.2 * out["ATR_14"]
+    # ── 4. Dynamic ATR Penetration / Touch ────────────────────────────
+    # Low_t <= VWAP_t + (0.20 * ATR_14_t)
+    dynamic_band = out["VWAP"] + 0.20 * out["ATR_14"]
     low_tests_vwap = out["Low"].astype(float) <= dynamic_band
 
-    # ── 5. Rebound & Close back above VWAP ─────────────────────────────
+    # ── 5. Rebound & Close back above VWAP ────────────────────────────
     close_bounces = out["Close"].astype(float) > out["VWAP"]
 
     # Raw signal (ignores anti-spam lock)
@@ -164,33 +153,39 @@ def generate_vwap_signal(df: pd.DataFrame) -> pd.DataFrame:
         & close_bounces.fillna(False).astype(bool)
     )
 
-    # ── 6. Anti-Spam State Lock ────────────────────────────────────────
-    # After a True signal fires, the next True is blocked until at least
-    # 2 consecutive candles have closed ABOVE VWAP (displacement reset).
-    #
-    # We walk the series sequentially because state depends on prior
-    # True signals; this is O(n) with pure Python — cheap for ≤ 375
-    # daily candles (09:15 → 15:29 IST).
+    # ── 6. Anti-Spam State Lock ───────────────────────────────────────
+    # After a signal fires at Candle T, state transitions to LOCKED.
+    # To unlock, price must displace away from VWAP such that:
+    #     Low_k > VWAP_k + (0.20 * ATR_{14, k})
+    # for at least 2 consecutive candles (k = T+1, T+2).
     buy_signal_vals: list[bool] = [False] * len(raw_signal)
-    lock_cooldown = 0  # number of additional required "Close > VWAP" candles
+    locked = False
+    consecutive_displaced = 0
 
     raw_arr = raw_signal.to_numpy()
-    close_arr = out["Close"].astype(float).to_numpy()
-    vwap_arr = pd.Series(out["VWAP"]).astype(float).to_numpy()
+    low_arr = out["Low"].astype(float).to_numpy()
+    dynamic_band_arr = dynamic_band.to_numpy()
 
     for i in range(len(raw_arr)):
-        cs_raw = bool(raw_arr[i])
-        close_above = bool(close_arr[i] > vwap_arr[i])
+        is_raw_true = bool(raw_arr[i])
+        # Check if candle low displaced away above the dynamic tolerance band
+        is_displaced_away = bool(low_arr[i] > dynamic_band_arr[i])
 
-        if lock_cooldown > 0:
-            if close_above:
-                lock_cooldown -= 1
+        if locked:
+            if is_displaced_away:
+                consecutive_displaced += 1
+                if consecutive_displaced >= 2:
+                    locked = False
+            else:
+                consecutive_displaced = 0
+
             buy_signal_vals[i] = False
             continue
 
-        if cs_raw:
+        if is_raw_true:
             buy_signal_vals[i] = True
-            lock_cooldown = 2  # require ≥ 2 subsequent Close > VWAP before re-fire
+            locked = True
+            consecutive_displaced = 0
         else:
             buy_signal_vals[i] = False
 

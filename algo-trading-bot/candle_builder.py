@@ -319,11 +319,7 @@ class CandleBuilder:
             axis=1,
         ).max(axis=1)
 
-        self.df["ATR_14"] = true_range.ewm(
-            alpha=1.0 / 14,
-            adjust=False,
-            min_periods=1,
-        ).mean()
+        self.df["ATR_14"] = true_range.rolling(14, min_periods=1).mean()
 
     def _finalize_candle(self) -> None:
         """

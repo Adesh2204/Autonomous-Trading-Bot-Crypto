@@ -12,11 +12,11 @@ How It Works
 3. Runs `signal_brain.generate_vwap_signal` for strict 3-condition
    dynamic-ATR pullback signals with Anti-Spam State Lock.
 4. Simulates `PaperTrader` with:
-     • Scale-in (Pyramiding) up to 3 tranches
-     • Breakeven trailing stop armed at +0.5% above avg entry
-     • Time stop at 40 candles (40 min) MOC close
-     • Priority: Stop Loss → Target → Time Stop → 15:20 IST EOD
-     • Working/Backup capital splits, ₹100 risk, ₹200 daily loss
+     • Scale-in (Pyramiding) up to 3 tranches (33%, 33%, 34%)
+     • Scale-in trigger on +0.50% gain + confirmed continuation
+     • Zero-risk trailing stop locks (Breakeven / Profit Locks)
+     • Priority: Stop Loss → Target → 15:20 IST EOD Auto-Square-Off
+     • Capital partitions: 50% Working, 50% Backup, ₹100 risk limit, ₹200 daily loss limit
      • Statutory Friction Gate (Brokerage + STT + Stamp + GST + Txn)
 5. On every simulated exit, a structured row is appended to the
    PaperTrader's internal `trades.csv` AND collected in-memory.
@@ -29,8 +29,8 @@ Usage
 ─────
 >>> from backtest_engine import run_backtest
 >>> result = run_backtest(csv_path="historical_ohlcv.csv",
-...                        symbol="NIFTY 50",
-...                        total_capital=100000.0)
+...                        symbol="M&M",
+...                        total_capital=10017.0)
 >>> print(result.summary_table)
 """
 
@@ -172,7 +172,7 @@ def _intraday_filter(df: pd.DataFrame) -> pd.DataFrame:
 def run_backtest(
     source: Union[str, pd.DataFrame],
     symbol: str = "UNKNOWN",
-    total_capital: float = 100000.0,
+    total_capital: float = 10017.0,
     working_capital_pct: float = 0.50,
     daily_loss_limit_pct: float = 0.02,
     risk_per_trade_pct: float = 0.01,
@@ -180,7 +180,6 @@ def run_backtest(
     reward_to_risk: float = 2.0,
     max_tranches: int = 3,
     breakeven_trigger_pct: float = 0.0050,
-    time_stop_candles: int = 40,
     csv_log_path: Optional[str] = None,
 ) -> BacktestResult:
     """
@@ -196,7 +195,7 @@ def run_backtest(
     total_capital, working_capital_pct, daily_loss_limit_pct,
     risk_per_trade_pct, stop_loss_pct, reward_to_risk, max_tranches
         Passed directly to PaperTrader (same parameters as the live bot).
-    breakeven_trigger_pct, time_stop_candles
+    breakeven_trigger_pct
         Passed directly to PaperTrader active-trade management.
     csv_log_path : str, optional
         Override persistent `trades.csv` output path.
@@ -231,7 +230,6 @@ def run_backtest(
         max_tranches=max_tranches,
         csv_log_path=csv_log_path,
         breakeven_trigger_pct=breakeven_trigger_pct,
-        time_stop_candles=time_stop_candles,
     )
 
     equity_points = []

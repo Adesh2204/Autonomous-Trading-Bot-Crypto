@@ -314,17 +314,17 @@ def scenario_b_path() -> List[CandleSpec]:
             label="Phase 3B - Stop Sweep",
             open_price=2510.20,
             high_price=2511.00,
-            low_price=2498.20,
-            close_price=2499.20,
+            low_price=2493.00,
+            close_price=2494.00,
             volume=1900,
             pattern="open_high_low_close",
         ),
         CandleSpec(
             label="Phase 3B - Aftermath",
-            open_price=2499.20,
-            high_price=2500.40,
-            low_price=2495.80,
-            close_price=2497.50,
+            open_price=2494.00,
+            high_price=2496.00,
+            low_price=2490.00,
+            close_price=2492.50,
             volume=1800,
             pattern="open_high_low_close",
         ),
@@ -346,7 +346,7 @@ def scenario_c_path() -> List[CandleSpec]:
         CandleSpec(
             label="Phase 3C - Controlled Hold 2",
             open_price=2521.20,
-            high_price=2527.00,
+            high_price=2525.00,
             low_price=2520.60,
             close_price=2524.60,
             volume=1450,
@@ -355,7 +355,7 @@ def scenario_c_path() -> List[CandleSpec]:
         CandleSpec(
             label="Phase 3C - Controlled Hold 3",
             open_price=2524.60,
-            high_price=2529.00,
+            high_price=2527.00,
             low_price=2522.70,
             close_price=2526.10,
             volume=1400,
@@ -364,16 +364,16 @@ def scenario_c_path() -> List[CandleSpec]:
         CandleSpec(
             label="Phase 3C - Controlled Hold 4",
             open_price=2526.10,
-            high_price=2531.20,
+            high_price=2528.00,
             low_price=2524.20,
-            close_price=2528.40,
+            close_price=2526.40,
             volume=1350,
             pattern="open_low_high_close",
         ),
         CandleSpec(
             label="Phase 3C - Controlled Hold 5",
-            open_price=2528.40,
-            high_price=2532.00,
+            open_price=2526.40,
+            high_price=2528.00,
             low_price=2523.80,
             close_price=2525.00,
             volume=1300,
@@ -382,7 +382,7 @@ def scenario_c_path() -> List[CandleSpec]:
         CandleSpec(
             label="Phase 3C - Into Square-Off",
             open_price=2525.00,
-            high_price=2530.50,
+            high_price=2527.50,
             low_price=2522.90,
             close_price=2525.00,
             volume=1250,
@@ -434,7 +434,7 @@ class FlightSimulator:
             f"Signal:{signal_text}"
         )
 
-        if bool(latest["Buy_Signal"]) and not self.trade_taken:
+        if bool(latest["Buy_Signal"]):
             signal_timestamp = self.current_timestamp or timestamp
             state = get_market_state(signal_timestamp)
             if not can_enter_new_positions(signal_timestamp):
@@ -454,15 +454,11 @@ class FlightSimulator:
                 },
                 timestamp=signal_timestamp,
             )
-            if ticket is None:
-                raise AssertionError(
-                    f"{self.scenario_name}: buy signal was emitted but execute_trade() returned None"
-                )
-
-            self.trade_taken = True
-            self.entry_ticket = ticket
-            self._assert_trade_limits(ticket, available_capital)
-            self._print_trade_summary(ticket, available_capital)
+            if ticket is not None:
+                self.trade_taken = True
+                self.entry_ticket = ticket
+                self._assert_trade_limits(ticket, available_capital)
+                self._print_trade_summary(ticket, available_capital)
 
     def _assert_trade_limits(self, ticket: dict, available_capital: float) -> None:
         total_cost = float(ticket["total_cost"])
@@ -671,8 +667,8 @@ def test_seconds_until_market_start_skips_closed_days() -> None:
     assert abs(seconds_until_market_start(open_after_close) - next_delta) < 1.0
 
 
-def test_capital_allocation_defaults() -> None:
-    """Verify production capital allocation parameters."""
+def test_capital_allocation_and_tranches() -> None:
+    """Verify production capital allocation and 3-stage tranche partitions."""
     trader = PaperTrader()
     assert trader.total_capital == 10017.00
     assert trader.working_capital == 5008.50
@@ -680,19 +676,26 @@ def test_capital_allocation_defaults() -> None:
     assert trader.risk_per_trade == 100.00
     assert trader.daily_loss_limit == 200.00
 
+    # Tranches: 33%, 33%, 34% of 5008.50
+    assert len(trader.tranche_capitals) == 3
+    assert trader.tranche_capitals[0] == 1652.80
+    assert trader.tranche_capitals[1] == 1652.80
+    assert trader.tranche_capitals[2] == 1702.90
+    assert round(sum(trader.tranche_capitals), 2) == 5008.50
 
-def test_candle_builder_atr_and_vwap_exposure() -> None:
+
+def test_rolling_atr_and_candle_builder_exposure() -> None:
     """CandleBuilder exposes rolling 14-period ATR and cumulative session VWAP."""
     builder = CandleBuilder(interval_seconds=60)
     start = datetime(2026, 8, 24, 9, 15, 0)
 
     for i in range(16):
         t0 = start + timedelta(minutes=i)
-        builder.on_tick(price=2000.0 + i * 2, volume=100, timestamp=t0)
-        builder.on_tick(price=2005.0 + i * 2, volume=150, timestamp=t0 + timedelta(seconds=30))
+        builder.on_tick(price=200.0 + i * 0.5, volume=100, timestamp=t0)
+        builder.on_tick(price=202.0 + i * 0.5, volume=150, timestamp=t0 + timedelta(seconds=30))
 
     # Flush last candle
-    builder.on_tick(price=2040.0, volume=50, timestamp=start + timedelta(minutes=16))
+    builder.on_tick(price=210.0, volume=50, timestamp=start + timedelta(minutes=16))
 
     assert builder.candle_count == 16
     assert builder.atr_14 is not None
@@ -708,18 +711,24 @@ def test_candle_builder_atr_and_vwap_exposure() -> None:
     assert "VWAP" in summary
 
 
-def test_dynamic_pullback_signal_and_anti_spam() -> None:
-    """Test dynamic ATR band, displacement check, and anti-spam lock."""
-    # Build 5 candles: 1-4 trending above VWAP, 5 pulling back into ATR band
-    dates = [datetime(2026, 8, 24, 9, 15 + i) for i in range(7)]
+def test_dynamic_pullback_signal_and_anti_spam_lock() -> None:
+    """Test dynamic ATR band, displacement check, and anti-spam lock with 2-candle displacement unlock."""
+    # Build 7 candles:
+    # 0-3: establish upward trend (Close > VWAP)
+    # 4: Pullback into ATR band -> triggers BUY_SIGNAL -> transitions to LOCKED
+    # 5: Candle close touching band again -> LOCKED prevents signal
+    # 6: Candle low displaces away above band (count = 1, still locked)
+    # 7: Candle low displaces away above band (count = 2 -> UNLOCKED!)
+    # 8: Candle pulls back into band -> triggers new BUY_SIGNAL!
+    dates = [datetime(2026, 8, 24, 9, 15 + i) for i in range(9)]
     df = pd.DataFrame(
         {
             "Timestamp": dates,
-            "Open": [2500.0, 2508.0, 2511.0, 2515.0, 2521.0, 2519.0, 2525.0],
-            "High": [2505.0, 2512.0, 2516.0, 2522.0, 2522.0, 2526.0, 2530.0],
-            "Low":  [2499.8, 2508.0, 2511.0, 2515.0, 2513.0, 2514.0, 2524.0],
-            "Close": [2504.0, 2511.0, 2515.0, 2521.0, 2519.0, 2525.0, 2529.0],
-            "Volume": [1200, 1350, 1450, 1550, 1700, 1600, 1500],
+            "Open":   [100.0, 102.0, 104.0, 106.0, 108.0, 106.0, 109.0, 112.0, 114.0],
+            "High":   [102.0, 104.0, 106.0, 108.0, 108.5, 107.0, 112.0, 115.0, 114.5],
+            "Low":    [ 99.8, 102.0, 104.0, 106.0, 104.5, 104.8, 108.5, 111.5, 109.5],
+            "Close":  [101.5, 103.5, 105.5, 107.5, 107.0, 106.5, 111.0, 114.0, 113.0],
+            "Volume": [1000,  1000,  1000,  1000,  1500,  1200,  1500,  1500,  1500],
         }
     )
 
@@ -728,110 +737,214 @@ def test_dynamic_pullback_signal_and_anti_spam() -> None:
     assert "ATR_14" in signals.columns
     assert "Buy_Signal" in signals.columns
 
-    # Candle index 4 (5th candle) should fire a buy signal
+    # Candle index 4 (5th candle) fires Buy_Signal
     assert bool(signals["Buy_Signal"].iloc[4]) is True
-    # Candle index 5 is consecutive right after signal -> anti-spam lock prevents signal
+    # Candle index 5 is consecutive right after signal -> Anti-Spam state lock prevents signal
     assert bool(signals["Buy_Signal"].iloc[5]) is False
 
 
-def test_breakeven_trailing_stop(tmp_path) -> None:
-    """Unrealized profit reaching +0.50% moves Stop Loss to Entry Price."""
-    csv_path = str(tmp_path / "test_trades.csv")
+def test_multi_tranche_pyramiding_state_machine(tmp_path) -> None:
+    """Test 3-stage pyramiding state machine with zero-risk trailing stop locks."""
+    csv_path = str(tmp_path / "test_pyramid_trades.csv")
+    trader = PaperTrader(
+        total_capital=10017.00,
+        working_capital_pct=0.50,
+        csv_log_path=csv_path,
+    )
+
+    t0 = datetime(2026, 8, 24, 9, 20)
+
+    # ── 1. TRANCHE 1 (Base Entry @ ₹100) ──────────────────────────────
+    ticket1 = trader.execute_trade(
+        {"VWAP": 100.00, "Close": 100.20, "symbol": "TATASTEEL"},
+        timestamp=t0,
+    )
+    assert ticket1 is not None
+    assert trader.state.value == "HOLDING_TRANCHE_1"
+    assert ticket1["tranche_number"] == 1
+    # Quantity: floor(1652.80 / 100) = 16 shares
+    assert ticket1["quantity"] == 16
+    assert trader._open_position["stop_loss_price"] == 99.50   # 100 * 0.995 (-0.5%)
+    assert trader._open_position["target_price"] == 101.00      # 100 * 1.010 (+1.0%, 1:2 R:R)
+
+    # ── 2. Guard: Scale-in below +0.50% gain is rejected ──────────────
+    ticket_fail = trader.execute_trade(
+        {"VWAP": 100.30, "Close": 100.30, "symbol": "TATASTEEL"},
+        timestamp=t0 + timedelta(minutes=1),
+    )
+    assert ticket_fail is None
+    assert trader.state.value == "HOLDING_TRANCHE_1"
+
+    # ── 3. TRANCHE 2 (Scale 1 @ ₹100.60, gain +0.60% >= +0.50%) ───────
+    t1 = t0 + timedelta(minutes=2)
+    ticket2 = trader.execute_trade(
+        {"VWAP": 100.60, "Close": 100.60, "symbol": "TATASTEEL"},
+        timestamp=t1,
+    )
+    assert ticket2 is not None
+    assert trader.state.value == "HOLDING_TRANCHE_2"
+    assert ticket2["tranche_number"] == 2
+    # Q2: floor(1652.80 / 100.60) = 16 shares
+    assert ticket2["quantity"] == 16
+    assert trader._open_position["quantity"] == 32  # 16 + 16
+
+    # VWAP Avg Entry: (100*16 + 100.60*16)/32 = 100.30
+    assert trader._open_position["average_entry_price"] == 100.30
+    # Zero-Risk Lock: SL trailed to max(P_entry_1=100.00, 100.30*0.995=99.80) -> 100.00 (Breakeven Floor)
+    assert trader._open_position["stop_loss_price"] == 100.00
+    # Target: 100.30 * 1.010 = 101.30
+    assert trader._open_position["target_price"] == 101.30
+
+    # ── 4. TRANCHE 3 (Scale 2 @ ₹101.20, gain +0.60% from T2 >= +0.50%)
+    t2 = t0 + timedelta(minutes=4)
+    ticket3 = trader.execute_trade(
+        {"VWAP": 101.20, "Close": 101.20, "symbol": "TATASTEEL"},
+        timestamp=t2,
+    )
+    assert ticket3 is not None
+    assert trader.state.value == "MAX_TRANCHES_HELD"
+    assert ticket3["tranche_number"] == 3
+    # Q3: floor(1702.90 / 101.20) = 16 shares
+    assert ticket3["quantity"] == 16
+    assert trader._open_position["quantity"] == 48  # 32 + 16
+
+    # VWAP Avg Entry: (100*16 + 100.60*16 + 101.20*16)/48 = 100.60
+    assert trader._open_position["average_entry_price"] == 100.60
+    # Zero-Risk Lock: SL trailed to max(P_entry_2=100.60, 100.60*0.995=100.10) -> 100.60
+    assert trader._open_position["stop_loss_price"] == 100.60
+    # Target: 100.60 * 1.010 = 101.61
+    assert trader._open_position["target_price"] == 101.61
+
+    # ── 5. Target Hit Exit @ ₹101.65 ──────────────────────────────────
+    exit_summary = trader.check_exit(101.65, timestamp=t0 + timedelta(minutes=6))
+    assert exit_summary is not None
+    assert exit_summary["exit_reason"] == "Target Hit"
+    assert exit_summary["tranches_filled"] == 3
+    assert exit_summary["total_quantity"] == 48
+    assert exit_summary["net_pnl"] > 0
+    assert not trader.has_open_position
+
+
+def test_no_time_stop_at_40_or_more_candles(tmp_path) -> None:
+    """Verify that all 40-candle / time-stop mechanisms are permanently eliminated."""
+    csv_path = str(tmp_path / "test_no_time_stop.csv")
     trader = PaperTrader(
         total_capital=10017.00,
         working_capital_pct=0.50,
         csv_log_path=csv_path,
     )
     entry_ts = datetime(2026, 8, 24, 9, 20)
-    ticket = trader.execute_trade(
-        {"VWAP": 2000.00, "Close": 2005.00, "symbol": "M&M"},
+    trader.execute_trade(
+        {"VWAP": 200.00, "Close": 200.20, "symbol": "TATAMOTORS"},
         timestamp=entry_ts,
     )
-    assert ticket is not None
     assert trader.has_open_position
 
-    initial_sl = trader._open_position["stop_loss_price"]
-    assert initial_sl == 2000.00 * (1 - 0.005)  # 1990.00
-
-    # Price moves to +0.55% (2011.00 >= 2010.00 trigger)
-    trader.check_exit(2011.00, timestamp=datetime(2026, 8, 24, 9, 22))
-    assert trader._open_position["breakeven_armed"] is True
-    assert trader._open_position["stop_loss_price"] == 2000.00
-
-    # Price dips back to breakeven stop (2000.00)
-    exit_summary = trader.check_exit(2000.00, timestamp=datetime(2026, 8, 24, 9, 25))
-    assert exit_summary is not None
-    assert exit_summary["exit_reason"] == "Breakeven Stop"
-    assert not trader.has_open_position
-
-
-def test_time_stop_at_40_candles(tmp_path) -> None:
-    """Position automatically closes at market when 40 candles elapse."""
-    csv_path = str(tmp_path / "test_time_stop.csv")
-    trader = PaperTrader(
-        total_capital=10017.00,
-        working_capital_pct=0.50,
-        csv_log_path=csv_path,
-    )
-    entry_ts = datetime(2026, 8, 24, 9, 20)
-    trader.execute_trade(
-        {"VWAP": 2000.00, "Close": 2002.00, "symbol": "M&M"},
-        timestamp=entry_ts,
-    )
-
-    # Simulate 39 candles
-    for i in range(1, 40):
+    # Simulate 60 candles (beyond 40 candles)
+    for i in range(1, 61):
         res = trader.notify_candle_close(
             timestamp=entry_ts + timedelta(minutes=i),
-            latest_price=2001.00,
+            latest_price=200.10,
         )
         assert res is None
-        assert trader.has_open_position
+        assert trader.has_open_position  # Position stays active!
 
-    # 40th candle triggers Time Stop
-    exit_summary = trader.notify_candle_close(
-        timestamp=entry_ts + timedelta(minutes=40),
-        latest_price=2003.00,
+
+def test_exit_priorities_sl_tp_eod(tmp_path) -> None:
+    """Verify strict exit priority: Priority 1 (SL) -> Priority 2 (TP) -> Priority 3 (15:20 EOD)."""
+    csv_path = str(tmp_path / "test_exit_prio.csv")
+
+    # Case 1: Stop Loss Triggered
+    trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50, csv_log_path=csv_path)
+    trader.execute_trade({"VWAP": 100.00, "Close": 100.00, "symbol": "ITC"}, timestamp=datetime(2026, 8, 24, 9, 20))
+    res_sl = trader.check_exit(99.40, timestamp=datetime(2026, 8, 24, 9, 25))
+    assert res_sl is not None
+    assert res_sl["exit_reason"] == "Stop Loss"
+
+    # Case 2: Target Triggered
+    trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50, csv_log_path=csv_path)
+    trader.execute_trade({"VWAP": 100.00, "Close": 100.00, "symbol": "ITC"}, timestamp=datetime(2026, 8, 24, 9, 20))
+    res_tp = trader.check_exit(101.10, timestamp=datetime(2026, 8, 24, 9, 25))
+    assert res_tp is not None
+    assert res_tp["exit_reason"] == "Target Hit"
+
+    # Case 3: EOD Auto-Square-Off
+    trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50, csv_log_path=csv_path)
+    trader.execute_trade({"VWAP": 100.00, "Close": 100.00, "symbol": "ITC"}, timestamp=datetime(2026, 8, 24, 9, 20))
+    res_eod = trader.square_off_all_positions(
+        "EOD Auto-Square-Off",
+        latest_price=100.20,
+        timestamp=datetime(2026, 8, 24, 15, 20),
     )
-    assert exit_summary is not None
-    assert exit_summary["exit_reason"] == "Time Stop"
-    assert exit_summary["exit_price"] == 2003.00
-    assert not trader.has_open_position
+    assert res_eod is not None
+    assert res_eod["exit_reason"] == "EOD Auto-Square-Off"
 
 
-def test_trades_csv_13_headers(tmp_path) -> None:
-    """CSV log contains exact 13 structured fields."""
-    csv_path = str(tmp_path / "trades_check.csv")
+def test_statutory_friction_gate_nse_cash() -> None:
+    """Verify statutory charge model matches NSE cash equity rates."""
+    trader = PaperTrader()
+
+    # Calculate round trip for 100 shares @ 100 entry, 101 exit
+    costs = trader.estimate_round_trip_costs(quantity=100, entry_price=100.0, exit_price=101.0)
+    # Buy turnover = 10,000, Sell turnover = 10,100
+    assert costs["buy_turnover"] == 10000.0
+    assert costs["sell_turnover"] == 10100.0
+
+    # Brokerage: min(20, 10000*0.0003) = 3.00 buy, min(20, 10100*0.0003) = 3.03 sell -> total 6.03
+    assert round(costs["brokerage"], 2) == 6.03
+    # STT: 10100 * 0.00025 = 2.525 -> 2.525
+    assert round(costs["stt"], 3) == 2.525
+    # Stamp Duty: 10000 * 0.00003 = 0.30
+    assert round(costs["stamp_duty"], 2) == 0.30
+    # Exchange Fee: (10000 + 10100) * 0.0000345 = 0.69345
+    assert abs(costs["exchange_fee"] - 0.69345) < 1e-6
+
+    assert costs["total_charges"] > 0
+
+
+def test_trades_csv_13_columns_schema(tmp_path) -> None:
+    """Verify persistent trades.csv adheres to exact 13-field schema."""
+    csv_path = str(tmp_path / "test_schema_trades.csv")
     trader = PaperTrader(
         total_capital=10017.00,
         working_capital_pct=0.50,
         csv_log_path=csv_path,
     )
     trader.execute_trade(
-        {"VWAP": 2000.00, "Close": 2005.00, "symbol": "M&M"},
+        {"VWAP": 150.00, "Close": 150.20, "symbol": "COALINDIA"},
         timestamp=datetime(2026, 8, 24, 9, 20),
     )
     trader.close_position(
-        exit_price=2020.00,
-        timestamp=datetime(2026, 8, 24, 9, 30),
+        exit_price=151.50,
+        timestamp=datetime(2026, 8, 24, 9, 35),
         reason="Target Hit",
     )
 
     with open(csv_path, "r", encoding="utf-8") as f:
         lines = [line.strip() for line in f.readlines() if line.strip()]
 
-    header_cols = lines[0].split(",")
+    headers = lines[0].split(",")
     expected_headers = [
-        "timestamp", "trade_id", "symbol", "side", "entry_price", "exit_price",
-        "quantity", "hold_duration_mins", "exit_reason", "gross_pnl",
-        "charges", "net_pnl", "final_balance",
+        "timestamp",
+        "trade_id",
+        "symbol",
+        "tranches_filled",
+        "avg_entry_price",
+        "exit_price",
+        "total_quantity",
+        "exit_reason",
+        "gross_pnl",
+        "statutory_charges",
+        "net_pnl",
+        "net_roi_pct",
+        "ending_working_capital",
     ]
-    assert header_cols == expected_headers
+    assert headers == expected_headers
     data_cols = lines[1].split(",")
     assert len(data_cols) == 13
-    assert data_cols[2] == "M&M"
-    assert data_cols[3] == "BUY"
-    assert data_cols[8] == "Target Hit"
+    assert data_cols[2] == "COALINDIA"
+    assert data_cols[3] == "1"
+    assert data_cols[7] == "Target Hit"
 
 
 def run_scenario(

@@ -83,24 +83,73 @@ def _parse_tick_timestamp(value: Any) -> datetime:
         return to_ist()
 
 
+import signal
+
+
 TOTAL_CAPITAL = 10017.00
 WORKING_CAPITAL = 5008.50  # 50% allocation
 BACKUP_CAPITAL = 5008.50   # 50% allocation
 RISK_PER_TRADE = 100.00
 DAILY_LOSS_LIMIT = 200.00
 
+# Liquid NSE cash equity instruments (<= ₹500 / share)
+INSTRUMENTS = {
+    "TATASTEEL": {
+        "token": "3499",
+        "symbol": "TATASTEEL",
+        "trading_symbol": "TATASTEEL-EQ",
+        "exchange_type": 1,
+    },
+    "TATAMOTORS": {
+        "token": "3456",
+        "symbol": "TATAMOTORS",
+        "trading_symbol": "TATAMOTORS-EQ",
+        "exchange_type": 1,
+    },
+    "ITC": {
+        "token": "1660",
+        "symbol": "ITC",
+        "trading_symbol": "ITC-EQ",
+        "exchange_type": 1,
+    },
+    "COALINDIA": {
+        "token": "20374",
+        "symbol": "COALINDIA",
+        "trading_symbol": "COALINDIA-EQ",
+        "exchange_type": 1,
+    },
+    "M&M": {
+        "token": "2031",
+        "symbol": "M&M",
+        "trading_symbol": "M&M-EQ",
+        "exchange_type": 1,
+    },
+}
+
+DEFAULT_SYMBOL = "M&M"
+
 
 class AngelOneLiveStream:
-    """Manage authenticated live streaming, candle generation, and lifecycle."""
+    """Manage authenticated live streaming, candle generation, and pyramiding lifecycle."""
 
-    MM_TOKEN = "2031"
-    MM_SYMBOL = "M&M"
-    MM_TRADING_SYMBOL = "M&M-EQ"
-    CORRELATION_ID = "mm-ltp"
-    SUBSCRIPTION_MODE = SmartWebSocketV2.LTP_MODE
-    EXCHANGE_TYPE = 1  # nse_cm (exchangeType: 1)
+    def __init__(self, target_symbol: str = DEFAULT_SYMBOL) -> None:
+        self.target_symbol = os.getenv("TRADING_SYMBOL", target_symbol).upper()
+        if self.target_symbol not in INSTRUMENTS:
+            logging.warning(
+                "Symbol %s not in pre-configured INSTRUMENTS dictionary. Using %s.",
+                self.target_symbol,
+                DEFAULT_SYMBOL,
+            )
+            self.target_symbol = DEFAULT_SYMBOL
 
-    def __init__(self) -> None:
+        self.instrument_info = INSTRUMENTS[self.target_symbol]
+        self.token = self.instrument_info["token"]
+        self.symbol = self.instrument_info["symbol"]
+        self.trading_symbol = self.instrument_info["trading_symbol"]
+        self.exchange_type = self.instrument_info["exchange_type"]
+        self.correlation_id = f"{self.symbol.lower()}-ltp"
+        self.subscription_mode = SmartWebSocketV2.LTP_MODE
+
         self.api_key = _first_env("BROKER_API_KEY")
         self.client_code = _first_env("BROKER_CLIENT_ID", "BROKER_CLIENT_CODE")
         self.client_pin = _first_env("BROKER_PIN", "BROKER_PASSWORD")
@@ -140,6 +189,21 @@ class AngelOneLiveStream:
         self._watchdog_thread: Optional[threading.Thread] = None
         self._watchdog_stop_event: Optional[threading.Event] = None
         self._reconnect_delay = 5
+
+        self._install_signal_handlers()
+
+    def _install_signal_handlers(self) -> None:
+        """Register graceful shutdown handlers for SIGINT and SIGTERM."""
+        def _handle_signal(signum, frame):
+            sig_name = "SIGINT (Ctrl+C)" if signum == signal.SIGINT else "SIGTERM"
+            logging.info(f"\nCaught {sig_name}. Initiating graceful shutdown...")
+            self.request_shutdown(sig_name)
+
+        try:
+            signal.signal(signal.SIGINT, _handle_signal)
+            signal.signal(signal.SIGTERM, _handle_signal)
+        except (ValueError, AttributeError):
+            pass  # May fail on non-main thread in test harnesses
 
     # ──────────────────────────────────────────────────────────────
     #  Startup / Login
@@ -268,7 +332,7 @@ class AngelOneLiveStream:
     # ──────────────────────────────────────────────────────────────
 
     def on_candle_close(self, df) -> None:
-        """Run VWAP signal detection, evaluate time stops, and execute paper trades on buy signals."""
+        """Run VWAP signal detection and execute/scale-in paper trades on buy signals."""
         result = generate_vwap_signal(df.copy())
         latest = result.iloc[-1]
         signal_timestamp = to_ist()
@@ -282,7 +346,6 @@ class AngelOneLiveStream:
             f"ATR_14:{atr_val:.2f}"
         )
 
-        # Check 40-candle momentum time stop on each closed candle
         self.paper_trader.notify_candle_close(
             timestamp=signal_timestamp,
             latest_price=float(latest["Close"]),
@@ -306,7 +369,7 @@ class AngelOneLiveStream:
             {
                 "VWAP": float(latest["VWAP"]),
                 "Close": float(latest["Close"]),
-                "symbol": self.MM_SYMBOL,
+                "symbol": self.symbol,
             },
             timestamp=signal_timestamp,
         )
@@ -371,8 +434,8 @@ class AngelOneLiveStream:
 
         token_list = [
             {
-                "exchangeType": 1,
-                "tokens": ["2031"],
+                "exchangeType": self.exchange_type,
+                "tokens": [self.token],
             }
         ]
 
@@ -380,15 +443,15 @@ class AngelOneLiveStream:
             raise RuntimeError("SmartWebSocketV2 is not initialized.")
 
         self.websocket.subscribe(
-            self.CORRELATION_ID,
-            self.SUBSCRIPTION_MODE,
+            self.correlation_id,
+            self.subscription_mode,
             token_list,
         )
         logging.info(
             "Subscribed to %s token %s in LTP mode (exchangeType=%s).",
-            self.MM_SYMBOL,
-            self.MM_TOKEN,
-            self.EXCHANGE_TYPE,
+            self.symbol,
+            self.token,
+            self.exchange_type,
         )
 
     def _on_error(self, wsapp, error) -> None:
