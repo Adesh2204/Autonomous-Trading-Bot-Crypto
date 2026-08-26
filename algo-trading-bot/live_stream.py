@@ -83,14 +83,22 @@ def _parse_tick_timestamp(value: Any) -> datetime:
         return to_ist()
 
 
+TOTAL_CAPITAL = 10017.00
+WORKING_CAPITAL = 5008.50  # 50% allocation
+BACKUP_CAPITAL = 5008.50   # 50% allocation
+RISK_PER_TRADE = 100.00
+DAILY_LOSS_LIMIT = 200.00
+
+
 class AngelOneLiveStream:
     """Manage authenticated live streaming, candle generation, and lifecycle."""
 
-    RELIANCE_TOKEN = "2885"
-    RELIANCE_SYMBOL = "RELIANCE"
-    CORRELATION_ID = "reliance-ltp"
+    MM_TOKEN = "2031"
+    MM_SYMBOL = "M&M"
+    MM_TRADING_SYMBOL = "M&M-EQ"
+    CORRELATION_ID = "mm-ltp"
     SUBSCRIPTION_MODE = SmartWebSocketV2.LTP_MODE
-    EXCHANGE_TYPE = SmartWebSocketV2.NSE_CM
+    EXCHANGE_TYPE = 1  # nse_cm (exchangeType: 1)
 
     def __init__(self) -> None:
         self.api_key = _first_env("BROKER_API_KEY")
@@ -117,10 +125,10 @@ class AngelOneLiveStream:
         self.feed_token: Optional[str] = None
 
         self.paper_trader = PaperTrader(
-            total_capital=10_000,
+            total_capital=TOTAL_CAPITAL,
             working_capital_pct=0.50,
-            daily_loss_limit_pct=0.02,
-            risk_per_trade_pct=0.01,
+            daily_loss_limit=DAILY_LOSS_LIMIT,
+            risk_per_trade=RISK_PER_TRADE,
             stop_loss_pct=0.005,
             reward_to_risk=2.0,
         )
@@ -260,16 +268,24 @@ class AngelOneLiveStream:
     # ──────────────────────────────────────────────────────────────
 
     def on_candle_close(self, df) -> None:
-        """Run VWAP signal detection and execute paper trades on buy signals."""
+        """Run VWAP signal detection, evaluate time stops, and execute paper trades on buy signals."""
         result = generate_vwap_signal(df.copy())
         latest = result.iloc[-1]
         signal_timestamp = to_ist()
+        atr_val = float(latest.get("ATR_14", float("nan")))
 
         logging.info(
             f"Candle #{len(result)} closed | "
             f"O:{latest['Open']:.2f}  H:{latest['High']:.2f}  "
             f"L:{latest['Low']:.2f}  C:{latest['Close']:.2f}  "
-            f"V:{latest['Volume']:.0f}  |  VWAP:{latest['VWAP']:.2f}"
+            f"V:{latest['Volume']:.0f}  |  VWAP:{latest['VWAP']:.2f}  |  "
+            f"ATR_14:{atr_val:.2f}"
+        )
+
+        # Check 40-candle momentum time stop on each closed candle
+        self.paper_trader.notify_candle_close(
+            timestamp=signal_timestamp,
+            latest_price=float(latest["Close"]),
         )
 
         if not bool(latest.get("Buy_Signal")):
@@ -283,14 +299,14 @@ class AngelOneLiveStream:
             return
 
         logging.info("🚀 ════════════════════════════════════════════════════════")
-        logging.info(f"🚀  VWAP PULLBACK BUY SIGNAL  @  VWAP {latest['VWAP']:.2f}")
+        logging.info(f"🚀  VWAP PULLBACK BUY SIGNAL  @  VWAP {latest['VWAP']:.2f} (ATR: {atr_val:.2f})")
         logging.info("🚀 ════════════════════════════════════════════════════════")
 
         self.paper_trader.execute_trade(
             {
                 "VWAP": float(latest["VWAP"]),
                 "Close": float(latest["Close"]),
-                "symbol": self.RELIANCE_SYMBOL,
+                "symbol": self.MM_SYMBOL,
             },
             timestamp=signal_timestamp,
         )
@@ -355,8 +371,8 @@ class AngelOneLiveStream:
 
         token_list = [
             {
-                "exchangeType": self.EXCHANGE_TYPE,
-                "tokens": [self.RELIANCE_TOKEN],
+                "exchangeType": 1,
+                "tokens": ["2031"],
             }
         ]
 
@@ -370,8 +386,8 @@ class AngelOneLiveStream:
         )
         logging.info(
             "Subscribed to %s token %s in LTP mode (exchangeType=%s).",
-            self.RELIANCE_SYMBOL,
-            self.RELIANCE_TOKEN,
+            self.MM_SYMBOL,
+            self.MM_TOKEN,
             self.EXCHANGE_TYPE,
         )
 

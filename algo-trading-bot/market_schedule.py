@@ -75,7 +75,8 @@ def is_trading_day(current_date: date) -> bool:
             return False
         return current_date not in india_financial
 
-    return False
+    return current_date.weekday() < 5
+
 
 
 def holiday_name(current_date: date) -> Optional[str]:

@@ -43,12 +43,12 @@ from market_schedule import (
 from signal_brain import generate_vwap_signal
 
 
-SYMBOL = "DEMO-2500"
+SYMBOL = "M&M"
 START_PRICE = 2500.00
-STARTING_CAPITAL = 10_000.0
-WORKING_CAPITAL_LIMIT = STARTING_CAPITAL * 0.50
-DAILY_LOSS_LIMIT = STARTING_CAPITAL * 0.02
-ENTRY_RISK_LIMIT = STARTING_CAPITAL * 0.01
+STARTING_CAPITAL = 10017.00
+WORKING_CAPITAL_LIMIT = 5008.50
+DAILY_LOSS_LIMIT = 200.00
+ENTRY_RISK_LIMIT = 100.00
 
 
 @dataclass(frozen=True)
@@ -220,45 +220,45 @@ def base_market_path() -> List[CandleSpec]:
         CandleSpec(
             label="Phase 1 - Candle 1",
             open_price=2500.00,
-            high_price=2504.50,
+            high_price=2505.00,
             low_price=2499.80,
-            close_price=2503.90,
+            close_price=2504.00,
             volume=1200,
             pattern="open_high_low_close",
         ),
         CandleSpec(
             label="Phase 1 - Candle 2",
-            open_price=2503.90,
-            high_price=2509.00,
-            low_price=2503.40,
-            close_price=2508.10,
+            open_price=2508.00,
+            high_price=2512.00,
+            low_price=2508.00,
+            close_price=2511.00,
             volume=1350,
             pattern="open_high_low_close",
         ),
         CandleSpec(
             label="Phase 1 - Candle 3",
-            open_price=2508.10,
-            high_price=2514.50,
-            low_price=2507.90,
-            close_price=2513.60,
+            open_price=2511.00,
+            high_price=2516.00,
+            low_price=2511.00,
+            close_price=2515.00,
             volume=1450,
             pattern="open_high_low_close",
         ),
         CandleSpec(
             label="Phase 1 - Candle 4",
-            open_price=2513.60,
-            high_price=2521.20,
-            low_price=2513.20,
-            close_price=2520.40,
+            open_price=2515.00,
+            high_price=2522.00,
+            low_price=2515.00,
+            close_price=2521.00,
             volume=1550,
             pattern="open_high_low_close",
         ),
         CandleSpec(
             label="Phase 2 - Pullback Entry Candle",
-            open_price=2520.40,
+            open_price=2521.00,
             high_price=2522.00,
-            low_price=2512.80,
-            close_price=2518.90,
+            low_price=2513.00,
+            close_price=2519.00,
             volume=1700,
             pattern="open_high_low_close",
         ),
@@ -406,8 +406,8 @@ class FlightSimulator:
         self.trader = PaperTrader(
             total_capital=STARTING_CAPITAL,
             working_capital_pct=0.50,
-            daily_loss_limit_pct=0.02,
-            risk_per_trade_pct=0.01,
+            daily_loss_limit=DAILY_LOSS_LIMIT,
+            risk_per_trade=ENTRY_RISK_LIMIT,
             stop_loss_pct=0.005,
             reward_to_risk=2.0,
         )
@@ -669,6 +669,169 @@ def test_seconds_until_market_start_skips_closed_days() -> None:
     next_open = datetime(2026, 8, 25, 9, 15, tzinfo=IST)
     next_delta = (next_open - open_after_close.replace(tzinfo=IST)).total_seconds()
     assert abs(seconds_until_market_start(open_after_close) - next_delta) < 1.0
+
+
+def test_capital_allocation_defaults() -> None:
+    """Verify production capital allocation parameters."""
+    trader = PaperTrader()
+    assert trader.total_capital == 10017.00
+    assert trader.working_capital == 5008.50
+    assert trader.backup_capital == 5008.50
+    assert trader.risk_per_trade == 100.00
+    assert trader.daily_loss_limit == 200.00
+
+
+def test_candle_builder_atr_and_vwap_exposure() -> None:
+    """CandleBuilder exposes rolling 14-period ATR and cumulative session VWAP."""
+    builder = CandleBuilder(interval_seconds=60)
+    start = datetime(2026, 8, 24, 9, 15, 0)
+
+    for i in range(16):
+        t0 = start + timedelta(minutes=i)
+        builder.on_tick(price=2000.0 + i * 2, volume=100, timestamp=t0)
+        builder.on_tick(price=2005.0 + i * 2, volume=150, timestamp=t0 + timedelta(seconds=30))
+
+    # Flush last candle
+    builder.on_tick(price=2040.0, volume=50, timestamp=start + timedelta(minutes=16))
+
+    assert builder.candle_count == 16
+    assert builder.atr_14 is not None
+    assert builder.atr_14 > 0
+    assert builder.vwap is not None
+    assert builder.vwap > 0
+
+    summary = builder.latest_completed_candle
+    assert summary is not None
+    assert "atr_14" in summary
+    assert "vwap" in summary
+    assert "ATR_14" in summary
+    assert "VWAP" in summary
+
+
+def test_dynamic_pullback_signal_and_anti_spam() -> None:
+    """Test dynamic ATR band, displacement check, and anti-spam lock."""
+    # Build 5 candles: 1-4 trending above VWAP, 5 pulling back into ATR band
+    dates = [datetime(2026, 8, 24, 9, 15 + i) for i in range(7)]
+    df = pd.DataFrame(
+        {
+            "Timestamp": dates,
+            "Open": [2500.0, 2508.0, 2511.0, 2515.0, 2521.0, 2519.0, 2525.0],
+            "High": [2505.0, 2512.0, 2516.0, 2522.0, 2522.0, 2526.0, 2530.0],
+            "Low":  [2499.8, 2508.0, 2511.0, 2515.0, 2513.0, 2514.0, 2524.0],
+            "Close": [2504.0, 2511.0, 2515.0, 2521.0, 2519.0, 2525.0, 2529.0],
+            "Volume": [1200, 1350, 1450, 1550, 1700, 1600, 1500],
+        }
+    )
+
+    signals = generate_vwap_signal(df)
+    assert "VWAP" in signals.columns
+    assert "ATR_14" in signals.columns
+    assert "Buy_Signal" in signals.columns
+
+    # Candle index 4 (5th candle) should fire a buy signal
+    assert bool(signals["Buy_Signal"].iloc[4]) is True
+    # Candle index 5 is consecutive right after signal -> anti-spam lock prevents signal
+    assert bool(signals["Buy_Signal"].iloc[5]) is False
+
+
+def test_breakeven_trailing_stop(tmp_path) -> None:
+    """Unrealized profit reaching +0.50% moves Stop Loss to Entry Price."""
+    csv_path = str(tmp_path / "test_trades.csv")
+    trader = PaperTrader(
+        total_capital=10017.00,
+        working_capital_pct=0.50,
+        csv_log_path=csv_path,
+    )
+    entry_ts = datetime(2026, 8, 24, 9, 20)
+    ticket = trader.execute_trade(
+        {"VWAP": 2000.00, "Close": 2005.00, "symbol": "M&M"},
+        timestamp=entry_ts,
+    )
+    assert ticket is not None
+    assert trader.has_open_position
+
+    initial_sl = trader._open_position["stop_loss_price"]
+    assert initial_sl == 2000.00 * (1 - 0.005)  # 1990.00
+
+    # Price moves to +0.55% (2011.00 >= 2010.00 trigger)
+    trader.check_exit(2011.00, timestamp=datetime(2026, 8, 24, 9, 22))
+    assert trader._open_position["breakeven_armed"] is True
+    assert trader._open_position["stop_loss_price"] == 2000.00
+
+    # Price dips back to breakeven stop (2000.00)
+    exit_summary = trader.check_exit(2000.00, timestamp=datetime(2026, 8, 24, 9, 25))
+    assert exit_summary is not None
+    assert exit_summary["exit_reason"] == "Breakeven Stop"
+    assert not trader.has_open_position
+
+
+def test_time_stop_at_40_candles(tmp_path) -> None:
+    """Position automatically closes at market when 40 candles elapse."""
+    csv_path = str(tmp_path / "test_time_stop.csv")
+    trader = PaperTrader(
+        total_capital=10017.00,
+        working_capital_pct=0.50,
+        csv_log_path=csv_path,
+    )
+    entry_ts = datetime(2026, 8, 24, 9, 20)
+    trader.execute_trade(
+        {"VWAP": 2000.00, "Close": 2002.00, "symbol": "M&M"},
+        timestamp=entry_ts,
+    )
+
+    # Simulate 39 candles
+    for i in range(1, 40):
+        res = trader.notify_candle_close(
+            timestamp=entry_ts + timedelta(minutes=i),
+            latest_price=2001.00,
+        )
+        assert res is None
+        assert trader.has_open_position
+
+    # 40th candle triggers Time Stop
+    exit_summary = trader.notify_candle_close(
+        timestamp=entry_ts + timedelta(minutes=40),
+        latest_price=2003.00,
+    )
+    assert exit_summary is not None
+    assert exit_summary["exit_reason"] == "Time Stop"
+    assert exit_summary["exit_price"] == 2003.00
+    assert not trader.has_open_position
+
+
+def test_trades_csv_13_headers(tmp_path) -> None:
+    """CSV log contains exact 13 structured fields."""
+    csv_path = str(tmp_path / "trades_check.csv")
+    trader = PaperTrader(
+        total_capital=10017.00,
+        working_capital_pct=0.50,
+        csv_log_path=csv_path,
+    )
+    trader.execute_trade(
+        {"VWAP": 2000.00, "Close": 2005.00, "symbol": "M&M"},
+        timestamp=datetime(2026, 8, 24, 9, 20),
+    )
+    trader.close_position(
+        exit_price=2020.00,
+        timestamp=datetime(2026, 8, 24, 9, 30),
+        reason="Target Hit",
+    )
+
+    with open(csv_path, "r", encoding="utf-8") as f:
+        lines = [line.strip() for line in f.readlines() if line.strip()]
+
+    header_cols = lines[0].split(",")
+    expected_headers = [
+        "timestamp", "trade_id", "symbol", "side", "entry_price", "exit_price",
+        "quantity", "hold_duration_mins", "exit_reason", "gross_pnl",
+        "charges", "net_pnl", "final_balance",
+    ]
+    assert header_cols == expected_headers
+    data_cols = lines[1].split(",")
+    assert len(data_cols) == 13
+    assert data_cols[2] == "M&M"
+    assert data_cols[3] == "BUY"
+    assert data_cols[8] == "Target Hit"
 
 
 def run_scenario(

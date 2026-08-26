@@ -63,7 +63,7 @@ def compute_atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
     atr = true_range.ewm(
         alpha=1.0 / period,
         adjust=False,
-        min_periods=period,
+        min_periods=1,
     ).mean()
 
     return atr

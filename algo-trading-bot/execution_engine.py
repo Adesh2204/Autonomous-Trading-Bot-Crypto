@@ -30,6 +30,12 @@ from datetime import date, datetime
 from typing import Optional
 
 
+TOTAL_CAPITAL = 10017.00
+WORKING_CAPITAL = 5008.50  # 50% allocation
+BACKUP_CAPITAL = 5008.50   # 50% allocation
+RISK_PER_TRADE = 100.00
+DAILY_LOSS_LIMIT = 200.00
+
 CSV_HEADERS = [
     "timestamp",
     "trade_id",
@@ -43,7 +49,6 @@ CSV_HEADERS = [
     "gross_pnl",
     "charges",
     "net_pnl",
-    "net_roi_pct",
     "final_balance",
 ]
 
@@ -61,10 +66,10 @@ class PaperTrader:
 
     Parameters
     ----------
-    total_capital       : float — Starting paper capital (default ₹10,000).
+    total_capital       : float — Starting paper capital (default ₹10,017.00).
     working_capital_pct : float — Fraction of capital deployable (default 0.50).
-    daily_loss_limit_pct: float — Max daily loss as fraction of total (default 0.02).
-    risk_per_trade_pct  : float — Risk per trade as fraction of total (default 0.01).
+    daily_loss_limit    : float — Max daily loss in INR (default ₹200.00).
+    risk_per_trade      : float — Risk per trade in INR (default ₹100.00).
     stop_loss_pct       : float — Stop-loss distance below entry (default 0.005 = 0.5%).
     reward_to_risk      : float — Reward-to-risk ratio for target (default 2.0).
     slippage_pct        : float — Per-side estimated slippage (default 0.05%).
@@ -74,9 +79,11 @@ class PaperTrader:
 
     def __init__(
         self,
-        total_capital: float = 10_000.0,
+        total_capital: float = TOTAL_CAPITAL,
         working_capital_pct: float = 0.50,
+        daily_loss_limit: Optional[float] = None,
         daily_loss_limit_pct: float = 0.02,
+        risk_per_trade: Optional[float] = None,
         risk_per_trade_pct: float = 0.01,
         stop_loss_pct: float = 0.005,
         reward_to_risk: float = 2.0,
@@ -95,11 +102,22 @@ class PaperTrader:
         # ── Capital Configuration ───────────────────────────────────
         self.total_capital       = total_capital
         self.working_capital     = total_capital * working_capital_pct
-        self.backup_capital      = total_capital * (1 - working_capital_pct)
+        self.backup_capital      = total_capital * (1.0 - working_capital_pct)
 
         # ── Risk Limits ─────────────────────────────────────────────
-        self.daily_loss_limit    = total_capital * daily_loss_limit_pct
-        self.risk_per_trade      = total_capital * risk_per_trade_pct
+        if daily_loss_limit is not None:
+            self.daily_loss_limit = daily_loss_limit
+        elif total_capital == TOTAL_CAPITAL:
+            self.daily_loss_limit = DAILY_LOSS_LIMIT
+        else:
+            self.daily_loss_limit = total_capital * daily_loss_limit_pct
+
+        if risk_per_trade is not None:
+            self.risk_per_trade = risk_per_trade
+        elif total_capital == TOTAL_CAPITAL:
+            self.risk_per_trade = RISK_PER_TRADE
+        else:
+            self.risk_per_trade = total_capital * risk_per_trade_pct
         self.stop_loss_pct       = stop_loss_pct
         self.reward_to_risk      = reward_to_risk
         self.slippage_pct        = slippage_pct
@@ -193,7 +211,7 @@ class PaperTrader:
                 return None
 
             entry_price = float(signal_data.get("VWAP", 0))
-            symbol      = signal_data.get("symbol", "RELIANCE")
+            symbol      = signal_data.get("symbol", "M&M")
             close_price = signal_data.get("Close")
             if close_price is not None:
                 self._set_latest_price(float(close_price), trade_timestamp)
@@ -361,6 +379,7 @@ class PaperTrader:
             summary = {
                 "trade_id":    pos["position_id"],
                 "symbol":      pos["symbol"],
+                "side":        pos.get("side", "BUY"),
                 "entry_price": round(avg_entry_price, 2),
                 "exit_price":  round(exit_price, 2),
                 "quantity":    total_qty,
@@ -372,6 +391,7 @@ class PaperTrader:
                 "pnl":         round(net_pnl, 2),
                 "pnl_pct":     round(pnl_pct, 2),
                 "result":      result,
+                "exit_reason": reason,
                 "reason":      reason,
                 "hold_duration_mins": hold_mins,
                 "final_balance": round(final_balance, 2),
@@ -422,7 +442,11 @@ class PaperTrader:
 
             return summary
 
-    def notify_candle_close(self, timestamp: Optional[datetime] = None) -> Optional[dict]:
+    def notify_candle_close(
+        self,
+        timestamp: Optional[datetime] = None,
+        latest_price: Optional[float] = None,
+    ) -> Optional[dict]:
         """
         Must be called from `on_candle_close` so we can track candle
         count since entry for the Time-Based Momentum Stop.
@@ -438,6 +462,9 @@ class PaperTrader:
                 return None
 
             ts = self._resolve_timestamp(timestamp)
+            if latest_price is not None:
+                self._set_latest_price(latest_price, ts)
+
             self._candle_close_count_since_entry += 1
             elapsed = self._candle_close_count_since_entry
 
@@ -657,16 +684,15 @@ class PaperTrader:
             ts_str,
             summary.get("trade_id", ""),
             summary.get("symbol", ""),
-            "BUY",
+            summary.get("side", "BUY"),
             f"{summary.get('entry_price', 0.0):.2f}",
             f"{summary.get('exit_price', 0.0):.2f}",
             summary.get("quantity", 0),
             f"{summary.get('hold_duration_mins', 0.0):.2f}",
-            summary.get("reason", ""),
+            summary.get("exit_reason", summary.get("reason", "")),
             f"{summary.get('gross_pnl', 0.0):.2f}",
             f"{summary.get('charges', 0.0):.2f}",
             f"{summary.get('net_pnl', 0.0):.2f}",
-            f"{summary.get('pnl_pct', 0.0):.2f}",
             f"{summary.get('final_balance', 0.0):.2f}",
         ]
         with open(self._csv_log_path, "a", newline="", encoding="utf-8") as fh:

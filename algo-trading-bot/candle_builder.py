@@ -72,7 +72,7 @@ class CandleBuilder:
         self.on_candle_close = on_candle_close
 
         # ── Master DataFrame — stores all finalized candles ─────────
-        self._columns = ["Timestamp", "Open", "High", "Low", "Close", "Volume"]
+        self._columns = ["Timestamp", "Open", "High", "Low", "Close", "Volume", "VWAP", "ATR_14"]
         self.df = self._empty_dataframe()
 
         # ── Current (in-progress) candle buffer ─────────────────────
@@ -152,6 +152,48 @@ class CandleBuilder:
             "Volume": self._volume,
         }
 
+    @property
+    def atr_14(self) -> Optional[float]:
+        """Current rolling 14-period ATR from the most recent completed candle."""
+        if self.df.empty or "ATR_14" not in self.df.columns:
+            return None
+        val = self.df["ATR_14"].iloc[-1]
+        return float(val) if pd.notna(val) else None
+
+    @property
+    def vwap(self) -> Optional[float]:
+        """Current cumulative session VWAP from the most recent completed candle."""
+        if self.df.empty or "VWAP" not in self.df.columns:
+            return None
+        val = self.df["VWAP"].iloc[-1]
+        return float(val) if pd.notna(val) else None
+
+    @property
+    def latest_completed_candle(self) -> Optional[dict]:
+        """Snapshot summary of the most recently completed candle with VWAP and ATR_14."""
+        if self.df.empty:
+            return None
+        last_row = self.df.iloc[-1]
+        vwap_val = last_row.get("VWAP")
+        atr_val = last_row.get("ATR_14")
+        return {
+            "Timestamp": last_row["Timestamp"],
+            "Open": float(last_row["Open"]),
+            "High": float(last_row["High"]),
+            "Low": float(last_row["Low"]),
+            "Close": float(last_row["Close"]),
+            "Volume": float(last_row["Volume"]),
+            "VWAP": float(vwap_val) if pd.notna(vwap_val) else None,
+            "vwap": float(vwap_val) if pd.notna(vwap_val) else None,
+            "ATR_14": float(atr_val) if pd.notna(atr_val) else None,
+            "atr_14": float(atr_val) if pd.notna(atr_val) else None,
+        }
+
+    @property
+    def last_candle_summary(self) -> Optional[dict]:
+        """Alias for latest_completed_candle."""
+        return self.latest_completed_candle
+
     # ────────────────────────────────────────────────────────────────
     #  INTERNAL HELPERS
     # ────────────────────────────────────────────────────────────────
@@ -197,6 +239,8 @@ class CandleBuilder:
                 "Low": pd.Series(dtype="float64"),
                 "Close": pd.Series(dtype="float64"),
                 "Volume": pd.Series(dtype="float64"),
+                "VWAP": pd.Series(dtype="float64"),
+                "ATR_14": pd.Series(dtype="float64"),
             },
             columns=self._columns,
         )
@@ -237,11 +281,55 @@ class CandleBuilder:
         self._close   = price           # last tick = Close
         self._volume += volume          # accumulate volume
 
+    def _compute_indicators(self) -> None:
+        """Compute cumulative session VWAP and rolling 14-period Wilder ATR."""
+        if self.df.empty:
+            return
+
+        high = self.df["High"].astype(float)
+        low = self.df["Low"].astype(float)
+        close = self.df["Close"].astype(float)
+        volume = self.df["Volume"].astype(float)
+        typical_price = (high + low + close) / 3.0
+
+        if "Timestamp" in self.df.columns and not self.df["Timestamp"].empty:
+            ts = pd.to_datetime(self.df["Timestamp"])
+            session_key = pd.Index(ts.dt.date.to_list(), name="session_key")
+        elif isinstance(self.df.index, pd.DatetimeIndex):
+            session_key = pd.Index(self.df.index.date, name="session_key")
+        else:
+            session_key = pd.Index(np.zeros(len(self.df)), name="session_key")
+
+        cumulative_tp_vol = (typical_price * volume).groupby(session_key).cumsum()
+        cumulative_vol = volume.groupby(session_key).cumsum()
+
+        self.df["VWAP"] = np.where(
+            cumulative_vol == 0,
+            np.nan,
+            cumulative_tp_vol / cumulative_vol,
+        )
+
+        prev_close = close.shift(1)
+        true_range = pd.concat(
+            [
+                high - low,
+                (high - prev_close).abs(),
+                (low - prev_close).abs(),
+            ],
+            axis=1,
+        ).max(axis=1)
+
+        self.df["ATR_14"] = true_range.ewm(
+            alpha=1.0 / 14,
+            adjust=False,
+            min_periods=1,
+        ).mean()
+
     def _finalize_candle(self) -> None:
         """
         Freeze the current buffer into a finalized candle row,
-        append it to the master DataFrame, then fire the downstream
-        callback (if registered).
+        append it to the master DataFrame, compute VWAP and rolling ATR-14,
+        then fire the downstream callback (if registered).
         """
         new_candle = pd.DataFrame(
             [{
@@ -251,12 +339,15 @@ class CandleBuilder:
                 "Low":       self._low,
                 "Close":     self._close,
                 "Volume":    self._volume,
+                "VWAP":      np.nan,
+                "ATR_14":    np.nan,
             }],
             columns=self._columns,
         )
 
-        # Grow the master DataFrame by one row.
+        # Grow the master DataFrame by one row and calculate indicators
         self.df = pd.concat([self.df, new_candle], ignore_index=True)
+        self._compute_indicators()
 
         # ── Fire callback so signal_brain can react immediately ─────
         if self.on_candle_close is not None:
