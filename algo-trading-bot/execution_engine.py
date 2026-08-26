@@ -1,8 +1,23 @@
 """
-execution_engine.py — Paper-Trading Execution Layer
-====================================================
-Simulates trade execution with strict, mathematical risk management.
+execution_engine.py — Paper-Trading Execution Layer (Pyramiding Enabled)
+========================================================================
+Simulates trade execution with strict, mathematical risk management
+and Scale-In (Pyramiding / Multi-Tranche Entry) support on consecutive
+valid VWAP Pullback buy signals.
+
 No real orders are placed; every trade is logged as a simulated ticket.
+
+Scale-In (Pyramiding) Architecture
+──────────────────────────────────
+• Maximum 3 tranches (entries) per trading session on the same symbol.
+• Total combined exposure ≤ Working Capital (50% of Total Capital).
+• Total combined risk ≤ Daily Loss Limit (₹200) and per-trade cap (₹100).
+• On each scale-in fill:
+    – Volume Weighted Average Entry Price is recalculated (Σ(Pᵢ×Qᵢ) / ΣQᵢ)
+    – Global Stop Loss updates (−0.5% from new average entry price)
+    – Global Take Profit updates (1:2 R:R from new average entry price)
+• Friction Gate runs on every incoming tranche to ensure positive net expectancy.
+• Unified exit on SL / Target / 15:20 IST EOD — entire Q_total sold in single tx.
 
 Risk Management Model
 ─────────────────────
@@ -11,8 +26,8 @@ Risk Management Model
 • Daily Loss Limit    : 2%  of Total  (₹200)    — halt trading if breached
 • Risk Per Trade      : 1%  of Total  (₹100)    — max loss on any single trade
 • Quantity Formula    : Risk_Per_Trade / (Entry - Stop_Loss)
-• Stop Loss           : VWAP - 0.5%
-• Target              : Entry + 2 × (Entry - Stop_Loss)   [1:2 R:R]
+• Stop Loss           : Avg Entry − 0.5%
+• Target              : Avg Entry + 2 × (Avg Entry − Stop Loss)  [1:2 R:R]
 """
 
 import logging
@@ -155,12 +170,37 @@ class PaperTrader:
                 return None
 
             current_position = self._open_position
+
             if current_position is not None and current_position["symbol"] != symbol:
                 logging.info(
                     "⏳  Skipping signal — already holding an open position "
-                    f"in {current_position['symbol']} (Entry: ₹{current_position['average_entry_price']:,.2f})"
+                    f"in {current_position['symbol']} "
+                    f"(Tranches: {current_position['current_tranches']}/{current_position['max_tranches']}, "
+                    f"Avg Entry: ₹{current_position['average_entry_price']:,.2f})"
                 )
                 return None
+
+            if current_position is not None:
+                ct = current_position["current_tranches"]
+                mt = current_position["max_tranches"]
+                total_invested = current_position["total_cost"]
+                logging.info(
+                    f"[SCALE-IN CHECK] Detected open position in {symbol} | "
+                    f"Tranches: {ct}/{mt} | "
+                    f"Total Invested: ₹{total_invested:,.2f} / ₹{self.working_capital:,.2f} Working Cap | "
+                    f"Evaluating scale-in eligibility..."
+                )
+                if ct >= mt:
+                    logging.info(
+                        "⏳ Max scale-in limit reached — holding full position "
+                        f"({ct}/{mt} tranches deployed)."
+                    )
+                    return None
+            else:
+                logging.info(
+                    f"[SCALE-IN CHECK] No open position in {symbol} | "
+                    f"Evaluating ENTRY TRANCHE 1/{self.max_tranches}..."
+                )
 
             trade_id = self._trade_count + 1
             snapshot, ticket, rejection_reason = self._find_valid_scale_in(
@@ -173,11 +213,32 @@ class PaperTrader:
 
             if snapshot is None or ticket is None:
                 if current_position is not None and rejection_reason in {"max_tranches", "capital_or_risk"}:
-                    logging.info("⏳ Max scale-in limit reached — holding full position")
+                    if rejection_reason == "capital_or_risk":
+                        logging.info(
+                            "⏳ Max scale-in limit reached — holding full position "
+                            "(capital or risk budget exhausted)."
+                        )
+                    else:
+                        logging.info(
+                            "⏳ Max scale-in limit reached — holding full position "
+                            f"({current_position['current_tranches']}/{self.max_tranches} tranches)."
+                        )
                 elif rejection_reason == "symbol_mismatch":
                     logging.info(
                         "⏳  Skipping signal — already holding an open position "
                         f"in {current_position['symbol']}"
+                    )
+                elif rejection_reason == "friction":
+                    logging.warning(
+                        "[FRICTION GATE FAILED] Incoming tranche rejected — "
+                        "transaction costs (STT + Stamp Duty + Brokerage + Exchange Turnover) "
+                        "would make net trade expectancy negative."
+                    )
+                elif rejection_reason in {"capital", "risk"}:
+                    constraint = "Working Capital" if rejection_reason == "capital" else "Risk Budget"
+                    logging.warning(
+                        f"[TRADE REJECTED] {constraint} constraint violated — "
+                        "added tranche would exceed allowable exposure."
                     )
                 else:
                     logging.warning(
@@ -188,12 +249,22 @@ class PaperTrader:
             tranche_number = snapshot["current_tranches"]
             if current_position is None:
                 logging.info(
-                    f"[ENTRY TRANCHE {tranche_number}/{self.max_tranches}] Initial VWAP buy signal accepted."
+                    f"✅ [ENTRY TRANCHE {tranche_number}/{self.max_tranches}] "
+                    f"Initial VWAP buy signal accepted. All gates passed."
                 )
             else:
+                new_avg = snapshot["average_entry_price"]
+                new_sl = snapshot["stop_loss_price"]
+                new_tp = snapshot["target_price"]
                 logging.info(
-                    f"[SCALE-IN TRANCHE {tranche_number}/{self.max_tranches}] "
-                    f"Adding qty {ticket['tranche_quantity']} at ₹{entry_price:,.2f}."
+                    f"✅ [SCALE-IN TRANCHE {tranche_number}/{self.max_tranches}] "
+                    f"Adding qty {ticket['tranche_quantity']} at ₹{entry_price:,.2f}. "
+                    f"All gates passed."
+                )
+                logging.info(
+                    f"🔄 [POSITION RECALCULATED] New Avg Entry: ₹{new_avg:,.2f} | "
+                    f"Updated SL: ₹{new_sl:,.2f} (−{self.stop_loss_pct*100:.1f}%) | "
+                    f"Updated TP: ₹{new_tp:,.2f} (1:{self.reward_to_risk:.0f} R:R)"
                 )
 
             self._open_position = snapshot
@@ -594,7 +665,19 @@ class PaperTrader:
         position_id: int,
         timestamp: Optional[datetime],
     ) -> dict:
-        """Create an aggregated open-position snapshot from tranche fills."""
+        """
+        Create an aggregated open-position snapshot from tranche fills.
+
+        Dynamic Position Recalculation (per tranche fill):
+        ──────────────────────────────────────────────────
+        Volume Weighted Average Entry Price:
+            Avg Entry = Σ (Pᵢ × Qᵢ) / Σ Qᵢ
+
+        Global Stop Loss  : −0.5% from the NEW average entry price.
+        Global Take Profit: 1:2 R:R from the NEW average entry price.
+        """
+        num_tranches = len(tranches)
+
         total_quantity = sum(tranche["quantity"] for tranche in tranches)
         entry_notional = sum(tranche["entry_turnover"] for tranche in tranches)
         entry_friction = sum(tranche["entry_friction"] for tranche in tranches)
@@ -613,6 +696,17 @@ class PaperTrader:
         projected_net_profit_at_target = gross_target_profit - entry_friction - target_exit_costs["total_charges"]
         total_cost = entry_notional + entry_friction
 
+        if num_tranches > 1:
+            tranche_detail = " | ".join(
+                f"T{i+1}:₹{t['entry_price']:,.2f}×{t['quantity']}"
+                for i, t in enumerate(tranches)
+            )
+            logging.debug(
+                f"[VWAP RECALC] Tranches[{num_tranches}]: {tranche_detail} "
+                f"→ Weighted Avg: ₹{average_entry_price:,.2f} | "
+                f"Σ(Q): {total_quantity} | Σ(P×Q): ₹{entry_notional:,.2f}"
+            )
+
         return {
             "position_id": position_id,
             "symbol": symbol,
@@ -622,7 +716,7 @@ class PaperTrader:
             "entry_notional": entry_notional,
             "entry_friction_total": entry_friction,
             "total_cost": total_cost,
-            "current_tranches": len(tranches),
+            "current_tranches": num_tranches,
             "max_tranches": self.max_tranches,
             "stop_loss_price": stop_loss_price,
             "target_price": target_price,
@@ -669,6 +763,7 @@ class PaperTrader:
             timestamp=timestamp,
         )
 
+        rr_ratio = f"1:{self.reward_to_risk:.1f}"
         ticket = {
             "trade_id": trade_id,
             "position_id": position_id,
@@ -685,6 +780,7 @@ class PaperTrader:
             "total_quantity": snapshot["quantity"],
             "total_cost": round(snapshot["total_cost"], 2),
             "risk_distance": round(snapshot["risk_distance"], 2),
+            "risk_reward": rr_ratio,
             "potential_loss": round(snapshot["projected_net_loss_at_stop"], 2),
             "potential_profit": round(snapshot["projected_net_profit_at_target"], 2),
             "estimated_charges_at_stop": round(snapshot["stop_exit_charges"] + snapshot["entry_friction_total"], 2),
@@ -703,16 +799,45 @@ class PaperTrader:
         self,
         snapshot: dict,
     ) -> tuple[bool, Optional[str]]:
-        """Check combined exposure, risk, and expectancy for a candidate snapshot."""
+        """
+        Friction Gate + Risk + Capital Validator per tranche.
+
+        Runs the Net-Profit Gate check on the incoming tranche to ensure
+        added transaction costs (STT + Stamp Duty + Brokerage + Exchange
+        Turnover) do not make the net trade expectancy negative.
+
+        Also enforces:
+        • Total combined exposure ≤ Working Capital (50% of Total Capital)
+        • Total combined risk     ≤ Daily Loss Limit (₹200) ∩ Per-trade cap (₹100)
+        • Projected net profit at target  >  0  (Friction Gate)
+        """
         risk_cap = min(self.risk_per_trade, self.daily_loss_limit)
+        nt = snapshot["current_tranches"]
 
         if snapshot["total_cost"] > self.working_capital:
+            logging.debug(
+                f"[GATE FAIL] Tranche {nt}: Capital breach — "
+                f"₹{snapshot['total_cost']:,.2f} > ₹{self.working_capital:,.2f} Working Cap"
+            )
             return False, "capital"
 
         if snapshot["projected_net_loss_at_stop"] > risk_cap:
+            logging.debug(
+                f"[GATE FAIL] Tranche {nt}: Risk breach — "
+                f"₹{snapshot['projected_net_loss_at_stop']:,.2f} > ₹{risk_cap:,.2f} Risk Cap"
+            )
             return False, "risk"
 
         if snapshot["projected_net_profit_at_target"] <= 0:
+            friction_total = (
+                snapshot["entry_friction_total"]
+                + snapshot["target_exit_charges"]
+            )
+            logging.debug(
+                f"[GATE FAIL] Tranche {nt}: Friction Gate failed — "
+                f"Net Profit at Target ₹{snapshot['projected_net_profit_at_target']:,.2f} ≤ 0 | "
+                f"Total Charges ₹{friction_total:,.2f}"
+            )
             return False, "friction"
 
         return True, None
@@ -777,20 +902,29 @@ class PaperTrader:
         return None, None, "friction"
 
     def _print_trade_ticket(self, ticket: dict) -> None:
-        """Print a clear, structured simulated trade ticket."""
+        """Print a clear, structured simulated trade ticket with tranche info."""
+        tranche_label = f"[TRANCHE {ticket['tranche_number']}/{ticket['max_tranches']}]"
+        if ticket['tranche_number'] == 1:
+            ticket_type = "📝  INITIAL ENTRY"
+        else:
+            ticket_type = "📐  SCALE-IN (PYRAMID)"
         logging.info("")
         logging.info("╔══════════════════════════════════════════════════════════╗")
-        logging.info("║           📝  SIMULATED TRADE TICKET                   ║")
+        logging.info(f"║  {ticket_type:<45} {tranche_label}║")
+        logging.info(f"║           SIMULATED TRADE TICKET                        ║")
         logging.info("╠══════════════════════════════════════════════════════════╣")
         logging.info(f"║  Trade ID     :  #{ticket['trade_id']:<39}║")
+        logging.info(f"║  Position ID  :  #{ticket['position_id']:<39}║")
         logging.info(f"║  Symbol       :  {ticket['symbol']:<40}║")
         logging.info(f"║  Side         :  {ticket['side']:<40}║")
         logging.info(f"║──────────────────────────────────────────────────────────║")
         logging.info(f"║  Entry Price  :  ₹{ticket['entry_price']:>10,.2f}{'':<28}║")
+        logging.info(f"║  Avg Entry    :  ₹{ticket['avg_entry_price']:>10,.2f}  (VWAP Weighted){'':<10}║")
         logging.info(f"║  Stop Loss    :  ₹{ticket['stop_loss_price']:>10,.2f}  (−{self.stop_loss_pct*100:.1f}%){'':<18}║")
         logging.info(f"║  Target Price :  ₹{ticket['target_price']:>10,.2f}  ({ticket['risk_reward']}){'':<19}║")
         logging.info(f"║──────────────────────────────────────────────────────────║")
-        logging.info(f"║  Quantity     :  {ticket['quantity']:<40}║")
+        logging.info(f"║  Tranche Qty  :  {ticket['tranche_quantity']:<40}║")
+        logging.info(f"║  Total Qty    :  {ticket['total_quantity']:<40}║")
         logging.info(f"║  Total Cost   :  ₹{ticket['total_cost']:>10,.2f}{'':<28}║")
         logging.info(f"║──────────────────────────────────────────────────────────║")
         logging.info(f"║  Max Loss     :  ₹{ticket['potential_loss']:>10,.2f}{'':<28}║")
@@ -799,6 +933,7 @@ class PaperTrader:
         logging.info(f"║  Net Loss Est.:  ₹{ticket['estimated_net_loss']:>10,.2f}{'':<28}║")
         logging.info(f"║  Net Prof Est.:  ₹{ticket['estimated_net_profit']:>10,.2f}{'':<28}║")
         logging.info(f"║  Risk : Reward:  {ticket['risk_reward']:<40}║")
+        logging.info(f"║  Friction Gate:  PASSED ✅{'':<32}║")
         logging.info("╚══════════════════════════════════════════════════════════╝")
         logging.info("")
 
@@ -826,14 +961,16 @@ class PaperTrader:
         daily_label = f"₹{self._daily_pnl:,.2f}"
         wcap_label  = f"₹{self.working_capital:,.2f}"
 
+        tranche_label = f"{pos['current_tranches']}/{pos['max_tranches']}"
         logging.info("")
         logging.info("╔══════════════════════════════════════════════════════════╗")
         logging.info(f"║  {pnl_icon}  TRADE CLOSED  ──  {result:<35}║")
         logging.info("╠══════════════════════════════════════════════════════════╣")
-        logging.info(f"║  Trade ID     :  #{pos['trade_id']:<39}║")
+        logging.info(f"║  Position ID  :  #{pos['position_id']:<39}║")
         logging.info(f"║  Symbol       :  {pos['symbol']:<40}║")
+        logging.info(f"║  Tranches     :  {tranche_label:<40}║")
         logging.info("║──────────────────────────────────────────────────────────║")
-        logging.info(f"║  Entry Price  :  ₹{pos['entry_price']:>10,.2f}{'':<28}║")
+        logging.info(f"║  Avg Entry    :  ₹{pos['average_entry_price']:>10,.2f}{'':<28}║")
         logging.info(f"║  Exit  Price  :  {exit_label:<42}║")
         logging.info(f"║  Quantity     :  {pos['quantity']:<40}║")
         logging.info("║──────────────────────────────────────────────────────────║")

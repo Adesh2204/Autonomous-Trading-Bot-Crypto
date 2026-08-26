@@ -4,6 +4,22 @@ signal_brain.py — Signal Generation Layer (The Brain)
 Contains vectorized indicator calculations and high-probability
 signal detection logic. Designed for sub-millisecond execution
 on DataFrames populated by the Data Ingestion Layer.
+
+Scale-In (Pyramiding) Support
+─────────────────────────────
+Consecutive valid VWAP Pullback buy signals are emitted so the
+Execution Layer can execute multi-tranche entries (max 3 tranches
+per session, same symbol). Each consecutive signal represents a
+candidate scale-in (pyramid up) opportunity. Risk + capital gates
+are enforced downstream in paper_trader.py / execution_engine.py.
+
+The signal itself remains binary (Buy_Signal = True/False per
+candle). It is the Execution Layer's responsibility to check:
+  1. Are we in an open position for the same symbol?
+  2. If yes: current_tranches < MAX_TRANCHES?
+  3. If yes: working_capital and risk budgets still available?
+  4. If yes: execute SCALE-IN tranche with VWAP recalc.
+  5. If no : log "Max scale-in limit reached" and skip.
 """
 
 import pandas as pd
@@ -14,6 +30,11 @@ def generate_vwap_signal(df: pd.DataFrame) -> pd.DataFrame:
     """
     Calculate Intraday VWAP and detect a high-probability
     "VWAP Pullback Buy Signal" using purely vectorized Pandas logic.
+
+    Consecutive True signals on subsequent candles are valid and
+    represent scale-in (pyramiding / multi-tranche entry) candidates
+    for the Execution Layer. The Execution Layer is responsible for
+    enforcing MAX_TRANCHES (=3), working-capital, and risk caps.
 
     Strategy Logic
     ──────────────
@@ -37,7 +58,8 @@ def generate_vwap_signal(df: pd.DataFrame) -> pd.DataFrame:
         Original DataFrame enriched with two new columns:
         • VWAP       (float)  — The running intraday VWAP value.
         • Buy_Signal (bool)   — True ONLY on candles where all three
-                                conditions converge.
+                                conditions converge. Multiple consecutive
+                                True signals = scale-in candidates.
     """
 
     # ── 0. Input Validation ─────────────────────────────────────────────
