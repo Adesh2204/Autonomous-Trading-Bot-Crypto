@@ -50,6 +50,7 @@ class PaperTrader:
         reward_to_risk: float = 2.0,
         slippage_pct: float = 0.0005,
         brokerage_per_order: float = 20.0,
+        max_tranches: int = 3,
         stt_sell_pct: float = 0.00025,
         exchange_txn_pct: float = 0.0000322,
         sebi_turnover_pct: float = 0.000001,
@@ -68,6 +69,7 @@ class PaperTrader:
         self.reward_to_risk      = reward_to_risk
         self.slippage_pct        = slippage_pct
         self.brokerage_per_order = brokerage_per_order
+        self.max_tranches        = max_tranches
         self.stt_sell_pct        = stt_sell_pct
         self.exchange_txn_pct    = exchange_txn_pct
         self.sebi_turnover_pct   = sebi_turnover_pct
@@ -129,7 +131,6 @@ class PaperTrader:
             (e.g. when halted or position already open).
         """
 
-        # ── Day-reset check ─────────────────────────────────────────
         with self.lock:
             trade_timestamp = self._resolve_timestamp(timestamp, signal_data)
             self._check_day_reset(trade_timestamp)
@@ -143,15 +144,6 @@ class PaperTrader:
                 )
                 return None
 
-            # ── Guard: already in an open position ──────────────────────
-            if self._open_position is not None:
-                logging.info(
-                    "⏳  Skipping signal — already holding an open position "
-                    f"(Entry: ₹{self._open_position['entry_price']:,.2f})"
-                )
-                return None
-
-            # ── Extract data ────────────────────────────────────────────
             entry_price = float(signal_data.get("VWAP", 0))
             symbol      = signal_data.get("symbol", "RELIANCE")
             close_price = signal_data.get("Close")
@@ -162,114 +154,53 @@ class PaperTrader:
                 logging.error("Invalid VWAP value for trade entry. Skipping.")
                 return None
 
-            # ── 1. Calculate Stop-Loss (VWAP - 0.5%) ───────────────────
-            stop_loss_price = entry_price * (1 - self.stop_loss_pct)
-
-            # ── 2. Calculate Target (1:2 Risk-to-Reward) ────────────────
-            risk_distance   = entry_price - stop_loss_price
-            target_price    = entry_price + (self.reward_to_risk * risk_distance)
-
-            # ── 3. Quantity Sizing ──────────────────────────────────────
-            #    Quantity = Risk_Per_Trade / (Entry - Stop_Loss)
-            if risk_distance <= 0:
-                logging.error("Risk distance is zero or negative. Skipping.")
-                return None
-
-            raw_quantity = self.risk_per_trade / risk_distance
-            quantity     = int(raw_quantity)  # Floor to whole shares
-
-            if quantity <= 0:
-                logging.warning(
-                    "Calculated quantity is 0 (price too high for current "
-                    "risk budget). Skipping."
+            current_position = self._open_position
+            if current_position is not None and current_position["symbol"] != symbol:
+                logging.info(
+                    "⏳  Skipping signal — already holding an open position "
+                    f"in {current_position['symbol']} (Entry: ₹{current_position['average_entry_price']:,.2f})"
                 )
                 return None
 
-            # ── 4. Capital and net-risk adequacy checks ─────────────────
-            while quantity > 0:
-                costs_at_stop = self._estimate_round_trip_costs(
-                    quantity=quantity,
-                    entry_price=entry_price,
-                    exit_price=stop_loss_price,
-                )
-                gross_stop_loss = quantity * risk_distance
-                net_stop_loss = gross_stop_loss + costs_at_stop["total_charges"]
-                total_cost = costs_at_stop["buy_turnover"] + costs_at_stop["entry_charges"]
-
-                if total_cost <= self.working_capital and net_stop_loss <= self.risk_per_trade:
-                    break
-                quantity -= 1
-
-            if quantity <= 0:
-                logging.warning(
-                    "Insufficient working capital or net risk budget after "
-                    "statutory charges. Skipping."
-                )
-                return None
-
-            # ── 5. Net-Profit Gate (target-side projection) ───────────
-            gross_expected_reward = quantity * (target_price - entry_price)
-            projected_friction = self.calculate_friction(
-                qty=quantity,
+            trade_id = self._trade_count + 1
+            snapshot, ticket, rejection_reason = self._find_valid_scale_in(
+                current_position=current_position,
+                symbol=symbol,
                 entry_price=entry_price,
-                exit_price=target_price,
+                trade_id=trade_id,
+                timestamp=trade_timestamp,
             )
-            expected_net_pnl = gross_expected_reward - projected_friction
 
-            if expected_net_pnl <= 0:
-                logging.warning(
-                    "[TRADE REJECTED] Gross Target Profit "
-                    f"(₹{gross_expected_reward:,.2f}) is fully consumed by "
-                    f"Transaction Friction (₹{projected_friction:,.2f}). "
-                    f"Net Expected PnL: ₹{expected_net_pnl:,.2f}."
-                )
+            if snapshot is None or ticket is None:
+                if current_position is not None and rejection_reason in {"max_tranches", "capital_or_risk"}:
+                    logging.info("⏳ Max scale-in limit reached — holding full position")
+                elif rejection_reason == "symbol_mismatch":
+                    logging.info(
+                        "⏳  Skipping signal — already holding an open position "
+                        f"in {current_position['symbol']}"
+                    )
+                else:
+                    logging.warning(
+                        "[TRADE REJECTED] Added tranche would violate capital, risk, or net expectancy constraints."
+                    )
                 return None
 
-            # ── 6. Build the Trade Ticket ───────────────────────────────
-            costs_at_stop = self._estimate_round_trip_costs(
-                quantity=quantity,
-                entry_price=entry_price,
-                exit_price=stop_loss_price,
-            )
-            costs_at_target = self._estimate_round_trip_costs(
-                quantity=quantity,
-                entry_price=entry_price,
-                exit_price=target_price,
-            )
-            potential_loss = quantity * risk_distance
-            potential_profit = quantity * (target_price - entry_price)
-            estimated_net_loss = potential_loss + costs_at_stop["total_charges"]
-            estimated_net_profit = potential_profit - costs_at_target["total_charges"]
-            total_cost = costs_at_stop["buy_turnover"] + costs_at_stop["entry_charges"]
+            tranche_number = snapshot["current_tranches"]
+            if current_position is None:
+                logging.info(
+                    f"[ENTRY TRANCHE {tranche_number}/{self.max_tranches}] Initial VWAP buy signal accepted."
+                )
+            else:
+                logging.info(
+                    f"[SCALE-IN TRANCHE {tranche_number}/{self.max_tranches}] "
+                    f"Adding qty {ticket['tranche_quantity']} at ₹{entry_price:,.2f}."
+                )
 
-            ticket = {
-                "trade_id":        self._trade_count + 1,
-                "symbol":          symbol,
-                "side":            "BUY",
-                "entry_price":     round(entry_price, 2),
-                "stop_loss_price": round(stop_loss_price, 2),
-                "target_price":    round(target_price, 2),
-                "quantity":        quantity,
-                "total_cost":      round(total_cost, 2),
-                "risk_distance":   round(risk_distance, 2),
-                "potential_loss":  round(potential_loss, 2),
-                "potential_profit": round(potential_profit, 2),
-                "estimated_charges_at_stop": round(costs_at_stop["total_charges"], 2),
-                "estimated_charges_at_target": round(costs_at_target["total_charges"], 2),
-                "estimated_net_loss": round(estimated_net_loss, 2),
-                "estimated_net_profit": round(estimated_net_profit, 2),
-                "risk_reward":     f"1:{self.reward_to_risk:.0f}",
-                "timestamp":       trade_timestamp,
-            }
-
-            # ── 7. Record the position ─────────────────────────────────
-            self._open_position = ticket
-            self._trade_count  += 1
+            self._open_position = snapshot
+            self._trade_count += 1
             self._trade_log.append(ticket)
 
-            # ── 8. Print the Simulated Trade Ticket ─────────────────────
             self._print_trade_ticket(ticket)
-
             return ticket
 
     def close_position(
@@ -299,26 +230,27 @@ class PaperTrader:
             self._check_day_reset(exit_timestamp)
             self._set_latest_price(exit_price, exit_timestamp)
 
-            pos       = self._open_position
-            gross_pnl = (exit_price - pos["entry_price"]) * pos["quantity"]
-            cost_breakdown = self._estimate_round_trip_costs(
-                quantity=pos["quantity"],
-                entry_price=pos["entry_price"],
-                exit_price=exit_price,
-            )
-            net_pnl = gross_pnl - cost_breakdown["total_charges"]
+            pos = self._open_position
+            total_qty = pos["quantity"]
+            avg_entry_price = pos["average_entry_price"]
+            gross_pnl = (exit_price - avg_entry_price) * total_qty
+            exit_leg_costs = self._calculate_exit_leg_charges(total_qty, exit_price)
+            total_charges = pos["entry_friction_total"] + exit_leg_costs["total_charges"]
+            net_pnl = gross_pnl - total_charges
             pnl_pct = (net_pnl / pos["total_cost"]) * 100 if pos["total_cost"] else 0
 
             result = "PROFIT ✅" if net_pnl >= 0 else "LOSS ❌"
 
             summary = {
-                "trade_id":    pos["trade_id"],
+                "trade_id":    pos["position_id"],
                 "symbol":      pos["symbol"],
-                "entry_price": pos["entry_price"],
+                "entry_price": round(avg_entry_price, 2),
                 "exit_price":  round(exit_price, 2),
-                "quantity":    pos["quantity"],
+                "quantity":    total_qty,
+                "avg_entry_price": round(avg_entry_price, 2),
+                "tranches":    pos["current_tranches"],
                 "gross_pnl":   round(gross_pnl, 2),
-                "charges":     round(cost_breakdown["total_charges"], 2),
+                "charges":     round(total_charges, 2),
                 "net_pnl":     round(net_pnl, 2),
                 "pnl":         round(net_pnl, 2),
                 "pnl_pct":     round(pnl_pct, 2),
@@ -336,7 +268,7 @@ class PaperTrader:
                 pos,
                 exit_price,
                 gross_pnl,
-                cost_breakdown["total_charges"],
+                total_charges,
                 net_pnl,
                 pnl_pct,
                 result,
@@ -407,7 +339,7 @@ class PaperTrader:
                 )
                 logging.info(
                     f"🔴  STOP-LOSS TRIGGERED  @  ₹{live_price:,.2f}  "
-                    f"(SL was ₹{pos['stop_loss_price']:,.2f})"
+                    f"(SL was ₹{pos['stop_loss_price']:,.2f}) | Tranches: {pos['current_tranches']}/{pos['max_tranches']}"
                 )
                 logging.info(
                     "🔴 ════════════════════════════════════════════════════════"
@@ -427,7 +359,7 @@ class PaperTrader:
                 )
                 logging.info(
                     f"🟢  TARGET HIT  @  ₹{live_price:,.2f}  "
-                    f"(Target was ₹{pos['target_price']:,.2f})"
+                    f"(Target was ₹{pos['target_price']:,.2f}) | Tranches: {pos['current_tranches']}/{pos['max_tranches']}"
                 )
                 logging.info(
                     "🟢 ════════════════════════════════════════════════════════"
@@ -487,7 +419,7 @@ class PaperTrader:
                 logging.info(
                     "[AUTO-SQUARE-OFF] Closed position at "
                     f"₹{summary['exit_price']:,.2f}. Realized Net P&L: "
-                    f"₹{summary['net_pnl']:,.2f} | Reason: {reason}"
+                    f"₹{summary['net_pnl']:,.2f} | Tranches: {summary.get('tranches', 1)} | Reason: {reason}"
                 )
 
             return summary
@@ -571,6 +503,40 @@ class PaperTrader:
         self._latest_price = float(price)
         self._latest_timestamp = timestamp
 
+    def _calculate_entry_leg_charges(self, quantity: int, price: float) -> dict:
+        """Calculate buy-leg turnover and statutory charges for one tranche."""
+        turnover = quantity * price
+        brokerage = min(20.0, turnover * 0.0003)
+        exchange_txn = turnover * 0.0000325
+        stamp_duty = turnover * 0.00003
+        gst = (brokerage + exchange_txn) * 0.18
+        total_charges = brokerage + exchange_txn + stamp_duty + gst
+        return {
+            "turnover": turnover,
+            "brokerage": brokerage,
+            "exchange_txn": exchange_txn,
+            "stamp_duty": stamp_duty,
+            "gst": gst,
+            "total_charges": total_charges,
+        }
+
+    def _calculate_exit_leg_charges(self, quantity: int, price: float) -> dict:
+        """Calculate sell-leg turnover and statutory charges for one exit."""
+        turnover = quantity * price
+        brokerage = min(20.0, turnover * 0.0003)
+        stt = turnover * 0.00025
+        exchange_txn = turnover * 0.0000325
+        gst = (brokerage + exchange_txn) * 0.18
+        total_charges = brokerage + stt + exchange_txn + gst
+        return {
+            "turnover": turnover,
+            "brokerage": brokerage,
+            "stt": stt,
+            "exchange_txn": exchange_txn,
+            "gst": gst,
+            "total_charges": total_charges,
+        }
+
     def _estimate_round_trip_costs(
         self,
         quantity: int,
@@ -578,34 +544,29 @@ class PaperTrader:
         exit_price: float,
     ) -> dict:
         """Estimate NSE intraday equity round-trip friction components."""
-        buy_turnover = quantity * entry_price
-        sell_turnover = quantity * exit_price
-        total_turnover = buy_turnover + sell_turnover
-
-        buy_brokerage = min(20.0, buy_turnover * 0.0003)
-        sell_brokerage = min(20.0, sell_turnover * 0.0003)
-        brokerage = buy_brokerage + sell_brokerage
-        stt = sell_turnover * 0.00025
-        exchange_txn = total_turnover * 0.0000325
-        stamp_duty = buy_turnover * 0.00003
-        gst = (brokerage + exchange_txn) * 0.18
-        total_charges = brokerage + stt + exchange_txn + stamp_duty + gst
-
-        entry_charges = buy_brokerage + stamp_duty + (buy_turnover * 0.0000325) + ((buy_brokerage + (buy_turnover * 0.0000325)) * 0.18)
-        exit_charges = sell_brokerage + stt + (sell_turnover * 0.0000325) + ((sell_brokerage + (sell_turnover * 0.0000325)) * 0.18)
+        entry_leg = self._calculate_entry_leg_charges(quantity, entry_price)
+        exit_leg = self._calculate_exit_leg_charges(quantity, exit_price)
+        buy_turnover = entry_leg["turnover"]
+        sell_turnover = exit_leg["turnover"]
+        brokerage = entry_leg["brokerage"] + exit_leg["brokerage"]
+        stt = exit_leg["stt"]
+        exchange_txn = entry_leg["exchange_txn"] + exit_leg["exchange_txn"]
+        stamp_duty = entry_leg["stamp_duty"]
+        gst = entry_leg["gst"] + exit_leg["gst"]
+        total_charges = entry_leg["total_charges"] + exit_leg["total_charges"]
 
         return {
             "buy_turnover": buy_turnover,
             "sell_turnover": sell_turnover,
             "brokerage": brokerage,
-            "buy_brokerage": buy_brokerage,
-            "sell_brokerage": sell_brokerage,
+            "buy_brokerage": entry_leg["brokerage"],
+            "sell_brokerage": exit_leg["brokerage"],
             "stt": stt,
             "exchange_txn": exchange_txn,
             "stamp_duty": stamp_duty,
             "gst": gst,
-            "entry_charges": entry_charges,
-            "exit_charges": exit_charges,
+            "entry_charges": entry_leg["total_charges"],
+            "exit_charges": exit_leg["total_charges"],
             "total_charges": total_charges,
         }
 
@@ -619,19 +580,201 @@ class PaperTrader:
         if qty <= 0 or entry_price <= 0 or exit_price <= 0:
             return 0.0
 
-        buy_turnover = qty * entry_price
-        sell_turnover = qty * exit_price
-        total_turnover = buy_turnover + sell_turnover
+        return self._estimate_round_trip_costs(
+            quantity=qty,
+            entry_price=entry_price,
+            exit_price=exit_price,
+        )["total_charges"]
 
-        buy_brokerage = min(20.0, buy_turnover * 0.0003)
-        sell_brokerage = min(20.0, sell_turnover * 0.0003)
-        brokerage = buy_brokerage + sell_brokerage
-        stt = sell_turnover * 0.00025
-        exchange_txn = total_turnover * 0.0000325
-        stamp_duty = buy_turnover * 0.00003
-        gst = (brokerage + exchange_txn) * 0.18
+    def _build_position_snapshot(
+        self,
+        *,
+        symbol: str,
+        tranches: list,
+        position_id: int,
+        timestamp: Optional[datetime],
+    ) -> dict:
+        """Create an aggregated open-position snapshot from tranche fills."""
+        total_quantity = sum(tranche["quantity"] for tranche in tranches)
+        entry_notional = sum(tranche["entry_turnover"] for tranche in tranches)
+        entry_friction = sum(tranche["entry_friction"] for tranche in tranches)
 
-        return brokerage + stt + exchange_txn + stamp_duty + gst
+        average_entry_price = entry_notional / total_quantity
+        stop_loss_price = average_entry_price * (1 - self.stop_loss_pct)
+        risk_distance = average_entry_price - stop_loss_price
+        target_price = average_entry_price + (self.reward_to_risk * risk_distance)
+
+        stop_exit_costs = self._calculate_exit_leg_charges(total_quantity, stop_loss_price)
+        target_exit_costs = self._calculate_exit_leg_charges(total_quantity, target_price)
+        gross_stop_loss = total_quantity * risk_distance
+        gross_target_profit = total_quantity * (target_price - average_entry_price)
+
+        projected_net_loss_at_stop = gross_stop_loss + entry_friction + stop_exit_costs["total_charges"]
+        projected_net_profit_at_target = gross_target_profit - entry_friction - target_exit_costs["total_charges"]
+        total_cost = entry_notional + entry_friction
+
+        return {
+            "position_id": position_id,
+            "symbol": symbol,
+            "side": "BUY",
+            "quantity": total_quantity,
+            "average_entry_price": average_entry_price,
+            "entry_notional": entry_notional,
+            "entry_friction_total": entry_friction,
+            "total_cost": total_cost,
+            "current_tranches": len(tranches),
+            "max_tranches": self.max_tranches,
+            "stop_loss_price": stop_loss_price,
+            "target_price": target_price,
+            "risk_distance": risk_distance,
+            "projected_net_loss_at_stop": projected_net_loss_at_stop,
+            "projected_net_profit_at_target": projected_net_profit_at_target,
+            "stop_exit_charges": stop_exit_costs["total_charges"],
+            "target_exit_charges": target_exit_costs["total_charges"],
+            "tranches": tranches,
+            "timestamp": timestamp,
+        }
+
+    def _project_position_after_tranche(
+        self,
+        current_position: Optional[dict],
+        symbol: str,
+        entry_price: float,
+        quantity: int,
+        trade_id: int,
+        timestamp: Optional[datetime],
+    ) -> tuple[dict, dict]:
+        """Return a new position snapshot and tranche ticket for the candidate fill."""
+        tranche_entry_charges = self._calculate_entry_leg_charges(quantity, entry_price)
+        tranche = {
+            "trade_id": trade_id,
+            "quantity": quantity,
+            "entry_price": entry_price,
+            "entry_turnover": tranche_entry_charges["turnover"],
+            "entry_friction": tranche_entry_charges["total_charges"],
+            "timestamp": timestamp,
+        }
+
+        if current_position is None:
+            position_id = trade_id
+            tranches = [tranche]
+        else:
+            position_id = current_position["position_id"]
+            tranches = [*current_position["tranches"], tranche]
+
+        snapshot = self._build_position_snapshot(
+            symbol=symbol,
+            tranches=tranches,
+            position_id=position_id,
+            timestamp=timestamp,
+        )
+
+        ticket = {
+            "trade_id": trade_id,
+            "position_id": position_id,
+            "symbol": symbol,
+            "side": "BUY",
+            "tranche_number": snapshot["current_tranches"],
+            "max_tranches": snapshot["max_tranches"],
+            "entry_price": round(entry_price, 2),
+            "quantity": quantity,
+            "tranche_quantity": quantity,
+            "avg_entry_price": round(snapshot["average_entry_price"], 2),
+            "stop_loss_price": round(snapshot["stop_loss_price"], 2),
+            "target_price": round(snapshot["target_price"], 2),
+            "total_quantity": snapshot["quantity"],
+            "total_cost": round(snapshot["total_cost"], 2),
+            "risk_distance": round(snapshot["risk_distance"], 2),
+            "potential_loss": round(snapshot["projected_net_loss_at_stop"], 2),
+            "potential_profit": round(snapshot["projected_net_profit_at_target"], 2),
+            "estimated_charges_at_stop": round(snapshot["stop_exit_charges"] + snapshot["entry_friction_total"], 2),
+            "estimated_charges_at_target": round(snapshot["target_exit_charges"] + snapshot["entry_friction_total"], 2),
+            "estimated_net_loss": round(snapshot["projected_net_loss_at_stop"], 2),
+            "estimated_net_profit": round(snapshot["projected_net_profit_at_target"], 2),
+            "entry_friction_total": round(snapshot["entry_friction_total"], 2),
+            "current_tranches": snapshot["current_tranches"],
+            "timestamp": timestamp,
+            "tranches": tranches,
+        }
+
+        return snapshot, ticket
+
+    def _can_accept_position_snapshot(
+        self,
+        snapshot: dict,
+    ) -> tuple[bool, Optional[str]]:
+        """Check combined exposure, risk, and expectancy for a candidate snapshot."""
+        risk_cap = min(self.risk_per_trade, self.daily_loss_limit)
+
+        if snapshot["total_cost"] > self.working_capital:
+            return False, "capital"
+
+        if snapshot["projected_net_loss_at_stop"] > risk_cap:
+            return False, "risk"
+
+        if snapshot["projected_net_profit_at_target"] <= 0:
+            return False, "friction"
+
+        return True, None
+
+    def _find_valid_scale_in(
+        self,
+        current_position: Optional[dict],
+        symbol: str,
+        entry_price: float,
+        trade_id: int,
+        timestamp: Optional[datetime],
+    ) -> tuple[Optional[dict], Optional[dict], Optional[str]]:
+        """Search for the largest valid tranche size under the current constraints."""
+        risk_cap = min(self.risk_per_trade, self.daily_loss_limit)
+
+        if current_position is not None and current_position["current_tranches"] >= self.max_tranches:
+            return None, None, "max_tranches"
+
+        if current_position is not None and current_position["symbol"] != symbol:
+            return None, None, "symbol_mismatch"
+
+        if current_position is None:
+            committed_cost = 0.0
+            current_net_risk = 0.0
+        else:
+            committed_cost = current_position["total_cost"]
+            current_net_risk = current_position["projected_net_loss_at_stop"]
+
+        remaining_risk_budget = risk_cap - current_net_risk
+        remaining_capital = self.working_capital - committed_cost
+
+        if remaining_risk_budget <= 0 or remaining_capital <= 0:
+            return None, None, "capital_or_risk"
+
+        raw_risk_distance = entry_price * self.stop_loss_pct
+        if raw_risk_distance <= 0:
+            return None, None, "risk"
+
+        max_by_risk = int(remaining_risk_budget // raw_risk_distance)
+        max_by_capital = int(remaining_capital // entry_price)
+        candidate_max = min(max_by_risk, max_by_capital)
+
+        if candidate_max <= 0:
+            return None, None, "capital_or_risk"
+
+        for quantity in range(candidate_max, 0, -1):
+            snapshot, ticket = self._project_position_after_tranche(
+                current_position=current_position,
+                symbol=symbol,
+                entry_price=entry_price,
+                quantity=quantity,
+                trade_id=trade_id,
+                timestamp=timestamp,
+            )
+            is_valid, reason = self._can_accept_position_snapshot(snapshot)
+            if is_valid:
+                return snapshot, ticket, None
+
+            if reason == "capital" and current_position is not None and current_position["current_tranches"] >= self.max_tranches:
+                return None, None, "max_tranches"
+
+        return None, None, "friction"
 
     def _print_trade_ticket(self, ticket: dict) -> None:
         """Print a clear, structured simulated trade ticket."""
