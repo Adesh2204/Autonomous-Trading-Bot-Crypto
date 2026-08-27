@@ -676,18 +676,18 @@ def test_seconds_until_market_start_skips_closed_days() -> None:
 def test_capital_allocation_and_tranches() -> None:
     """Verify production capital allocation and 3-stage tranche partitions."""
     trader = PaperTrader()
-    assert trader.total_capital == 10017.00
-    assert trader.working_capital == 5008.50
-    assert trader.backup_capital == 5008.50
+    assert trader.total_capital == 10006.00
+    assert trader.working_capital == 5003.00
+    assert trader.backup_capital == 5003.00
     assert trader.risk_per_trade == 100.00
     assert trader.daily_loss_limit == 200.00
 
-    # Tranches: 33%, 33%, 34% of 5008.50
+    # Tranches: 33%, 33%, 34% of 5003.00
     assert len(trader.tranche_capitals) == 3
-    assert trader.tranche_capitals[0] == 1652.80
-    assert trader.tranche_capitals[1] == 1652.80
-    assert trader.tranche_capitals[2] == 1702.90
-    assert round(sum(trader.tranche_capitals), 2) == 5008.50
+    assert trader.tranche_capitals[0] == 1650.99
+    assert trader.tranche_capitals[1] == 1650.99
+    assert trader.tranche_capitals[2] == 1701.02
+    assert round(sum(trader.tranche_capitals), 2) == 5003.00
 
 
 def test_rolling_atr_and_candle_builder_exposure() -> None:

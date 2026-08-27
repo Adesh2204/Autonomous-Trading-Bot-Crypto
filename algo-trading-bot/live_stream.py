@@ -24,6 +24,16 @@ from dotenv import load_dotenv
 from SmartApi.smartConnect import SmartConnect
 from SmartApi.smartWebSocketV2 import SmartWebSocketV2
 
+# Monkeypatch to absorb modern websocket-client 4-arg signature
+_orig_on_close = getattr(SmartWebSocketV2, "_on_close", None)
+def _patched_on_close(self, *args, **kwargs):
+    try:
+        if hasattr(self, "_user_on_close") and self._user_on_close:
+            self._user_on_close(self, *args, **kwargs)
+    except Exception:
+        pass
+SmartWebSocketV2._on_close = _patched_on_close
+
 from candle_builder import CandleBuilder
 from execution_engine import PaperTrader
 from market_schedule import (
@@ -333,14 +343,42 @@ class AngelOneLiveStream:
             sys.exit(0)
 
     def request_shutdown(self, reason: str) -> None:
-        """Mark the stream for shutdown and close the active websocket."""
+        """Mark the stream for shutdown, disable SDK auto-reconnect, and close active websocket."""
         logging.info("Shutdown requested: %s", reason)
         self._shutdown_requested = True
-        if self.websocket is not None:
+
+        sws = getattr(self, "websocket", None)
+        if sws is not None:
+            if hasattr(sws, "auto_reconnect"):
+                sws.auto_reconnect = False
+            if hasattr(sws, "wsapp") and sws.wsapp:
+                sws.wsapp.keep_running = False
             try:
-                self.websocket.close_connection()
+                sws.close_connection()
             except Exception:
-                logging.exception("Error while closing SmartWebSocketV2 during shutdown.")
+                pass
+
+        if hasattr(self, "paper_trader") and self.paper_trader is not None:
+            try:
+                if hasattr(self.paper_trader, "flush_logs"):
+                    self.paper_trader.flush_logs()
+            except Exception:
+                pass
+
+        # Flush all logging handlers
+        for handler in logging.root.handlers[:]:
+            try:
+                handler.flush()
+            except Exception:
+                pass
+
+        # Ensure process exits cleanly within 1.0s if blocked by external threads
+        def _force_exit():
+            time_module.sleep(1.0)
+            os._exit(0)
+
+        t = threading.Thread(target=_force_exit, daemon=True)
+        t.start()
 
     def _build_websocket(self) -> SmartWebSocketV2:
         if self._shutdown_requested:

@@ -56,9 +56,9 @@ from market_schedule import BaseMarketSchedule, NSEMarketSchedule, get_market_sc
 
 
 # ── Global Capital Partitioning & Risk Constants ────────────────────────
-TOTAL_CAPITAL = 10017.00
-WORKING_CAPITAL = 5008.50   # 50% intraday deployment limit
-BACKUP_CAPITAL = 5008.50    # 50% reserve buffer
+TOTAL_CAPITAL = 10006.00
+WORKING_CAPITAL = 5003.00   # 50% intraday deployment limit
+BACKUP_CAPITAL = 5003.00    # 50% reserve buffer
 RISK_PER_TRADE = 100.00     # Max initial risk per setup
 DAILY_LOSS_LIMIT = 200.00   # Hard daily loss circuit breaker
 
@@ -151,16 +151,13 @@ class PaperTrader:
         self.max_tranches = max_tranches
 
         # Compute per-tranche nominal capital partitions (33%, 33%, 34%)
-        if total_capital == TOTAL_CAPITAL and self.working_capital == WORKING_CAPITAL and max_tranches == 3:
-            self.tranche_capitals = [1652.80, 1652.80, 1702.90]
-        else:
-            self.tranche_capitals = [
-                round(self.working_capital * frac, 2)
-                for frac in TRANCHE_FRACTIONS[:max_tranches]
-            ]
-            diff = self.working_capital - sum(self.tranche_capitals)
-            if self.tranche_capitals:
-                self.tranche_capitals[-1] = round(self.tranche_capitals[-1] + diff, 2)
+        self.tranche_capitals = [
+            round(self.working_capital * frac, 2)
+            for frac in TRANCHE_FRACTIONS[:max_tranches]
+        ]
+        diff = round(self.working_capital - sum(self.tranche_capitals), 2)
+        if self.tranche_capitals:
+            self.tranche_capitals[-1] = round(self.tranche_capitals[-1] + diff, 2)
 
         # ── Persistent CSV Log ──────────────────────────────────────────
         if csv_log_path is None:
