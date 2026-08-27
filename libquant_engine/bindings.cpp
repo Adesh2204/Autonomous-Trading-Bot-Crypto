@@ -69,19 +69,30 @@ inline bool parse_python_tick(py::handle obj, TickFrame& out) {
         volume_value = get_value("qty");
     }
     if (volume_value.is_none()) {
-        volume_value = get_value("v");
-    }
-    if (volume_value.is_none()) {
         volume_value = py::int_(0);
+    }
+
+    py::handle atr_value = get_value("atr");
+    if (atr_value.is_none()) {
+        atr_value = get_value("atr_14");
+    }
+    if (atr_value.is_none()) {
+        atr_value = get_value("current_atr");
+    }
+    if (atr_value.is_none()) {
+        atr_value = py::float_(0.0);
     }
 
     out.timestamp_ns = py::cast<std::int64_t>(ts_value);
     out.price = py::cast<double>(price_value);
     out.volume = py::cast<std::int64_t>(volume_value);
+    out.atr = py::cast<double>(atr_value);
     return is_valid_tick(out);
 }
 
 }  // namespace
+
+#include <mutex>
 
 class PyQuantEngine {
 public:
@@ -103,7 +114,34 @@ public:
         ring_buffer_.try_push(tick);
     }
 
+    void update_tick(double price, double volume, double current_atr = 0.0) {
+        TickFrame tick{};
+        tick.timestamp_ns = static_cast<std::int64_t>(
+            std::chrono::duration_cast<std::chrono::nanoseconds>(
+                std::chrono::system_clock::now().time_since_epoch()
+            ).count()
+        );
+        tick.price = price;
+        tick.volume = static_cast<std::int64_t>(volume);
+        tick.atr = current_atr;
+        if (is_valid_tick(tick)) {
+            ring_buffer_.try_push(tick);
+        }
+    }
+
+    void update_tick_full(std::int64_t ts_ns, double price, std::int64_t volume, double current_atr = 0.0) {
+        TickFrame tick{};
+        tick.timestamp_ns = ts_ns;
+        tick.price = price;
+        tick.volume = volume;
+        tick.atr = current_atr;
+        if (is_valid_tick(tick)) {
+            ring_buffer_.try_push(tick);
+        }
+    }
+
     py::dict snapshot() const {
+        std::lock_guard<std::mutex> lock(mtx_);
         const auto candle = engine_.latest_candle();
         const auto signal = engine_.latest_signal();
 
@@ -116,6 +154,7 @@ public:
         out["candle_low"] = candle.low;
         out["candle_close"] = candle.close;
         out["candle_volume"] = candle.volume;
+        out["candle_atr"] = candle.atr;
         return out;
     }
 
@@ -124,12 +163,14 @@ private:
         while (running_) {
             TickFrame tick{};
             while (ring_buffer_.try_pop(tick)) {
-                engine_.update_tick(tick.timestamp_ns, tick.price, tick.volume);
+                std::lock_guard<std::mutex> lock(mtx_);
+                engine_.update_tick(tick.timestamp_ns, tick.price, tick.volume, tick.atr);
             }
             std::this_thread::yield();
         }
     }
 
+    mutable std::mutex mtx_;
     std::atomic<bool> running_;
     SPSCQueue<TickFrame, 4096> ring_buffer_;
     VwapEngine engine_;
@@ -144,5 +185,22 @@ PYBIND11_MODULE(libquant_engine, m) {
     py::class_<quant::PyQuantEngine>(m, "PyQuantEngine")
         .def(py::init<>())
         .def("push_tick", &quant::PyQuantEngine::push_tick, py::arg("tick"))
+        .def("update_tick", &quant::PyQuantEngine::update_tick,
+             py::arg("price"), py::arg("volume"), py::arg("current_atr") = 0.0)
+        .def("update_tick_full", &quant::PyQuantEngine::update_tick_full,
+             py::arg("ts_ns"), py::arg("price"), py::arg("volume"), py::arg("current_atr") = 0.0)
         .def("snapshot", &quant::PyQuantEngine::snapshot);
+
+    py::class_<quant::VwapEngine>(m, "VwapEngine")
+        .def(py::init<>())
+        .def("update_tick",
+             static_cast<void (quant::VwapEngine::*)(std::int64_t, double, std::int64_t, double)>(&quant::VwapEngine::update_tick),
+             py::arg("ts_ns"), py::arg("price"), py::arg("volume"), py::arg("current_atr") = 0.0)
+        .def("update_tick",
+             static_cast<void (quant::VwapEngine::*)(double, double, double)>(&quant::VwapEngine::update_tick),
+             py::arg("price"), py::arg("volume"), py::arg("current_atr") = 0.0)
+        .def("latest_vwap", &quant::VwapEngine::latest_vwap)
+        .def("latest_candle", &quant::VwapEngine::latest_candle)
+        .def("latest_signal", &quant::VwapEngine::latest_signal)
+        .def("reset_session", &quant::VwapEngine::reset_session);
 }

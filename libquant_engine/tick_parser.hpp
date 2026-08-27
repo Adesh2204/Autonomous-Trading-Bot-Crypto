@@ -12,6 +12,7 @@ struct TickFrame {
     std::int64_t timestamp_ns;
     double price;
     std::int64_t volume;
+    double atr = 0.0;
 };
 
 inline bool is_valid_tick(const TickFrame& tick) {

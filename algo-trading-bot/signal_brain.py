@@ -24,8 +24,10 @@ Execution Layer treats it as a candidate scale-in (subject to its own
 MAX_TRANCHES, Working Capital, and Risk Budget caps).
 """
 
-import pandas as pd
+from typing import Any, Optional, Union
+
 import numpy as np
+import pandas as pd
 
 
 def compute_atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
@@ -192,3 +194,29 @@ def generate_vwap_signal(df: pd.DataFrame) -> pd.DataFrame:
     out["Buy_Signal"] = buy_signal_vals
 
     return out
+
+
+def update_cpp_tick(
+    cpp_engine: Any,
+    price: float,
+    volume: float,
+    current_atr: Optional[float] = None,
+) -> dict:
+    """
+    Feed live price, volume, and dynamic ATR into the native C++ VwapEngine / PyQuantEngine.
+    If current_atr is not yet calculated (e.g. initial bars), safely passes 0.0 fallback.
+    """
+    atr_val = (
+        float(current_atr)
+        if (current_atr is not None and not np.isnan(current_atr) and current_atr > 0.0)
+        else 0.0
+    )
+    if hasattr(cpp_engine, "update_tick"):
+        cpp_engine.update_tick(price, volume, atr_val)
+    elif hasattr(cpp_engine, "push_tick"):
+        cpp_engine.push_tick({
+            "price": price,
+            "volume": volume,
+            "current_atr": atr_val,
+        })
+    return cpp_engine.snapshot() if hasattr(cpp_engine, "snapshot") else {}

@@ -15,6 +15,7 @@ for i in range(200_000):
         "timestamp_ns": int((time.time_ns() // 1_000_000_000) * 1_000_000_000) + i,
         "price": 100.0 + (i % 5) * 0.25,
         "volume": 10 + (i % 17),
+        "current_atr": 1.25,
     }
     engine.push_tick(tick)
 

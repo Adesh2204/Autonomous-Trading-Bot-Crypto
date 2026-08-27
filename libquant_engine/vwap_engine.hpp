@@ -3,11 +3,13 @@
 #include <algorithm>
 #include <array>
 #include <atomic>
+#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <deque>
 #include <limits>
+#include <mutex>
 
 namespace quant {
 
@@ -19,6 +21,7 @@ struct Candle {
     double close = 0.0;
     std::int64_t volume = 0;
     double vwap = 0.0;
+    double atr = 0.0;
 };
 
 struct SignalFlags {
@@ -32,19 +35,25 @@ class alignas(64) VwapEngine {
 public:
     static constexpr std::int64_t kNsPerMinute = 60LL * 1000000000LL;
 
-    VwapEngine() : current_day_(0), current_minute_bucket_(0), last_minute_bucket_(-1), cum_volume_price_(0.0), cum_volume_(0.0) {
+    VwapEngine() : current_day_(0), current_minute_bucket_(0), last_minute_bucket_(-1),
+                   cum_volume_price_(0.0), cum_volume_(0.0), current_atr_(0.0) {
         reset_candle();
     }
 
-    void update_tick(std::int64_t ts_ns, double price, std::int64_t volume) {
+    void update_tick(std::int64_t ts_ns, double price, std::int64_t volume, double current_atr = 0.0) {
         if (price <= 0.0 || !std::isfinite(price) || volume <= 0) {
             return;
+        }
+
+        std::lock_guard<std::mutex> lock(mtx_);
+        if (current_atr > 0.0 && std::isfinite(current_atr)) {
+            current_atr_ = current_atr;
         }
 
         const std::int64_t epoch_seconds = ts_ns / 1000000000LL;
         const std::int64_t day = epoch_seconds / 86400LL;
         if (day != current_day_) {
-            reset_session();
+            reset_session_unlocked();
             current_day_ = day;
         }
 
@@ -72,20 +81,40 @@ public:
         latest_vwap_ = (cum_volume_ > 0.0) ? cum_volume_price_ / cum_volume_ : 0.0;
     }
 
-    void reset_session() {
-        cum_volume_price_ = 0.0;
-        cum_volume_ = 0.0;
-        latest_vwap_ = 0.0;
-        recent_closed_.clear();
-        reset_candle();
-        last_minute_bucket_ = -1;
+    void update_tick(double price, double volume, double current_atr = 0.0) {
+        const std::int64_t now_ns = ts_ns_now();
+        update_tick(now_ns, price, static_cast<std::int64_t>(volume), current_atr);
     }
 
-    double latest_vwap() const { return latest_vwap_; }
-    Candle latest_candle() const { return latest_candle_; }
-    SignalFlags latest_signal() const { return latest_signal_; }
+    void reset_session() {
+        std::lock_guard<std::mutex> lock(mtx_);
+        reset_session_unlocked();
+    }
+
+    double latest_vwap() const {
+        std::lock_guard<std::mutex> lock(mtx_);
+        return latest_vwap_;
+    }
+
+    Candle latest_candle() const {
+        std::lock_guard<std::mutex> lock(mtx_);
+        return latest_candle_;
+    }
+
+    SignalFlags latest_signal() const {
+        std::lock_guard<std::mutex> lock(mtx_);
+        return latest_signal_;
+    }
 
 private:
+    static std::int64_t ts_ns_now() {
+        return static_cast<std::int64_t>(
+            std::chrono::duration_cast<std::chrono::nanoseconds>(
+                std::chrono::system_clock::now().time_since_epoch()
+            ).count()
+        );
+    }
+
     void start_new_candle(std::int64_t ts_ns, double price, std::int64_t volume) {
         current_candle_start_ns_ = ts_ns;
         candle_open_ = price;
@@ -115,6 +144,7 @@ private:
         closed.close = candle_close_;
         closed.volume = candle_volume_;
         closed.vwap = latest_vwap_;
+        closed.atr = current_atr_;
 
         recent_closed_.push_back(closed);
         if (recent_closed_.size() > 3) {
@@ -152,18 +182,38 @@ private:
         flags.trend_confirmed = all_close_above_vwap;
 
         const Candle& current = latest_candle_;
-        flags.low_tests_vwap = current.low <= (current.vwap * 1.001);
+
+        // Dynamic volatility alignment with Python backtester:
+        // Candle N Low <= VWAP_N + (0.20 * current_atr)
+        if (current_atr_ > 0.0) {
+            flags.low_tests_vwap = current.low <= (current.vwap + (0.20 * current_atr_));
+        } else {
+            flags.low_tests_vwap = current.low <= (current.vwap * 1.001);
+        }
+
         flags.close_bounces_vwap = current.close > current.vwap;
         flags.buy_signal = flags.trend_confirmed && flags.low_tests_vwap && flags.close_bounces_vwap;
         return flags;
     }
 
+    void reset_session_unlocked() {
+        cum_volume_price_ = 0.0;
+        cum_volume_ = 0.0;
+        latest_vwap_ = 0.0;
+        recent_closed_.clear();
+        reset_candle();
+        last_minute_bucket_ = -1;
+        current_atr_ = 0.0;
+    }
+
+    mutable std::mutex mtx_;
     std::int64_t current_day_;
     std::int64_t current_minute_bucket_;
     std::int64_t last_minute_bucket_;
     double cum_volume_price_;
     double cum_volume_;
     double latest_vwap_ = 0.0;
+    double current_atr_ = 0.0;
     SignalFlags latest_signal_{};
     Candle latest_candle_{};
     std::deque<Candle> recent_closed_;

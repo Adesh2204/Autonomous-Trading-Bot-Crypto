@@ -10,8 +10,11 @@ from __future__ import annotations
 import logging
 import math
 import os
+import random
+import socket
 import sys
 import threading
+import time
 import time as time_module
 from datetime import datetime
 from typing import Any, Optional
@@ -24,8 +27,10 @@ from SmartApi.smartWebSocketV2 import SmartWebSocketV2
 from candle_builder import CandleBuilder
 from execution_engine import PaperTrader
 from market_schedule import (
+    BaseMarketSchedule,
     MarketPhase,
     can_enter_new_positions,
+    get_market_schedule,
     get_market_state,
     holiday_name,
     is_trading_day,
@@ -132,7 +137,14 @@ DEFAULT_SYMBOL = "M&M"
 class AngelOneLiveStream:
     """Manage authenticated live streaming, candle generation, and pyramiding lifecycle."""
 
-    def __init__(self, target_symbol: str = DEFAULT_SYMBOL) -> None:
+    def __init__(
+        self,
+        target_symbol: str = DEFAULT_SYMBOL,
+        schedule: Optional[BaseMarketSchedule] = None,
+    ) -> None:
+        self.schedule: BaseMarketSchedule = (
+            schedule if schedule is not None else get_market_schedule(os.getenv("MARKET_SCHEDULE", "NSE"))
+        )
         self.target_symbol = os.getenv("TRADING_SYMBOL", target_symbol).upper()
         if self.target_symbol not in INSTRUMENTS:
             logging.warning(
@@ -147,8 +159,8 @@ class AngelOneLiveStream:
         self.symbol = self.instrument_info["symbol"]
         self.trading_symbol = self.instrument_info["trading_symbol"]
         self.exchange_type = self.instrument_info["exchange_type"]
-        self.correlation_id = f"{self.symbol.lower()}-ltp"
-        self.subscription_mode = SmartWebSocketV2.LTP_MODE
+        self.correlation_id = f"{self.symbol.lower()}-snapquote"
+        self.subscription_mode = getattr(SmartWebSocketV2, "SNAPQUOTE_MODE", 3)
 
         self.api_key = _first_env("BROKER_API_KEY")
         self.client_code = _first_env("BROKER_CLIENT_ID", "BROKER_CLIENT_CODE")
@@ -180,6 +192,7 @@ class AngelOneLiveStream:
             risk_per_trade=RISK_PER_TRADE,
             stop_loss_pct=0.005,
             reward_to_risk=2.0,
+            schedule=self.schedule,
         )
 
         self.builder = CandleBuilder(interval_seconds=60, on_candle_close=self.on_candle_close)
@@ -188,7 +201,8 @@ class AngelOneLiveStream:
         self._eod_square_off_done = False
         self._watchdog_thread: Optional[threading.Thread] = None
         self._watchdog_stop_event: Optional[threading.Event] = None
-        self._reconnect_delay = 5
+        self._reconnect_delay = 1.0
+        self._retry_attempt = 0
 
         self._install_signal_handlers()
 
@@ -211,19 +225,20 @@ class AngelOneLiveStream:
 
     def validate_market_startup(self) -> None:
         """Validate that today is a trading day and wait for the open if needed."""
-        now = to_ist()
+        now = self.schedule.localize()
         today = now.date()
 
-        if not is_trading_day(today):
-            reason = holiday_name(today) or "Weekend/Holiday"
+        if not self.schedule.is_trading_day(today):
+            reason = self.schedule.holiday_name(today) or "Weekend/Holiday"
             logging.info(f"Market is closed today ({reason}). Exiting.")
             sys.exit(0)
 
-        state = get_market_state(now)
+        state = self.schedule.get_market_state(now)
         if state == MarketPhase.PRE_MARKET:
-            wait_seconds = seconds_until_market_start(now)
+            wait_seconds = self.schedule.seconds_until_market_start(now)
+            open_str = self.schedule.market_open_time.strftime("%H:%M:%S")
             logging.info(
-                "Pre-market startup detected. Waiting until 09:15:00 IST "
+                f"Pre-market startup detected. Waiting until {open_str} "
                 f"({wait_seconds:.0f}s)."
             )
             time_module.sleep(wait_seconds)
@@ -231,7 +246,8 @@ class AngelOneLiveStream:
             logging.info("Market is already in shutdown window. Exiting.")
             sys.exit(0)
         elif state == MarketPhase.CLOSE_ONLY:
-            logging.info("Started after 15:15 IST. Entries are disabled; exits only.")
+            cutoff_str = self.schedule.entry_cutoff_time.strftime("%H:%M:%S")
+            logging.info(f"Started after {cutoff_str}. Entries are disabled; exits only.")
 
     def login(self) -> None:
         """Authenticate with SmartAPI and cache jwt/feed tokens for the stream."""
@@ -257,7 +273,7 @@ class AngelOneLiveStream:
     # ──────────────────────────────────────────────────────────────
 
     def run(self) -> None:
-        """Login, connect, and keep the live stream running until shutdown."""
+        """Login, connect, and keep the live stream running until shutdown with Exponential Backoff + Jitter."""
         self.validate_market_startup()
         self.login()
 
@@ -266,27 +282,49 @@ class AngelOneLiveStream:
         logging.info("  Authenticated live feed -> CandleBuilder -> Signal Brain -> PaperTrader")
         logging.info("=" * 60)
 
+        retry_attempt = 0
+
         while not self._shutdown_requested:
+            if self._shutdown_requested:
+                return
             try:
+                if self._shutdown_requested:
+                    return
                 self.websocket = self._build_websocket()
                 self._start_watchdog_thread()
                 self.websocket.connect()
                 if self._shutdown_requested:
                     break
+                # Reset retry attempt on clean disconnect/completion
+                retry_attempt = 0
+                self._retry_attempt = 0
             except KeyboardInterrupt:
                 logging.info("Keyboard interrupt received. Shutting down live stream.")
                 self.request_shutdown("KeyboardInterrupt")
                 break
-            except Exception as exc:
+            except (socket.gaierror, ConnectionError, ConnectionRefusedError, Exception) as exc:
                 if self._shutdown_requested:
                     break
-                logging.exception("SmartWebSocketV2 stream error: %s", exc)
+
+                # Exponential Backoff with Jitter:
+                # Base Delay = 1.0s, Delay = min(30.0, 1.0 * (2 ** retry_attempt))
+                # FinalDelay = Delay + random.uniform(0.0, Delay * 0.3)
+                base_delay = 1.0
+                delay = min(30.0, base_delay * (2.0 ** retry_attempt))
+                jitter = random.uniform(0.0, delay * 0.30)
+                final_delay = round(delay + jitter, 2)
+
                 logging.warning(
-                    "WebSocket disconnected unexpectedly. Reconnecting in %ss.",
-                    self._reconnect_delay,
+                    "Connection failed: %s. Retrying in %.2f seconds... (Attempt %d)",
+                    exc,
+                    final_delay,
+                    retry_attempt + 1,
                 )
-                time_module.sleep(self._reconnect_delay)
-                self._reconnect_delay = min(self._reconnect_delay * 2, 300)
+                time_module.sleep(final_delay)
+                retry_attempt += 1
+                self._retry_attempt = retry_attempt
+                if self._shutdown_requested:
+                    break
             finally:
                 self._stop_watchdog_thread()
                 self.websocket = None
@@ -305,6 +343,8 @@ class AngelOneLiveStream:
                 logging.exception("Error while closing SmartWebSocketV2 during shutdown.")
 
     def _build_websocket(self) -> SmartWebSocketV2:
+        if self._shutdown_requested:
+            raise RuntimeError("Shutdown already requested; cannot build new WebSocket.")
         if not self.auth_token or not self.feed_token or not self.client_code:
             raise RuntimeError("Cannot build SmartWebSocketV2 without auth/feed tokens.")
 
@@ -346,7 +386,9 @@ class AngelOneLiveStream:
             f"ATR_14:{atr_val:.2f}"
         )
 
+        # Explicitly notify execution engine that 1-minute candle completed
         self.paper_trader.notify_candle_close(
+            candle=latest.to_dict() if hasattr(latest, "to_dict") else dict(latest),
             timestamp=signal_timestamp,
             latest_price=float(latest["Close"]),
         )
@@ -375,8 +417,10 @@ class AngelOneLiveStream:
         )
 
     def _extract_tick_fields(self, data: dict) -> tuple[float, int, datetime]:
-        """Extract LTP, a usable volume fallback, and a timestamp from SmartAPI data."""
+        """Extract LTP, actual trade volume (without fake fallback), and timestamp from SmartAPI data."""
         raw_price = data.get("last_traded_price")
+        if raw_price is None:
+            raw_price = data.get("ltp") or data.get("price")
         if raw_price is None:
             raise ValueError(f"Invalid SmartAPI tick payload: missing last_traded_price ({data!r})")
 
@@ -385,19 +429,21 @@ class AngelOneLiveStream:
         if price <= 0 or not math.isfinite(price):
             raise ValueError(f"Invalid SmartAPI tick payload: non-positive LTP ({raw_price!r})")
 
+        # Map actual trade volume (SnapQuote mode 3 / Quote mode 2 packet structure)
         raw_volume = (
             data.get("last_traded_quantity")
+            or data.get("last_traded_qty")
+            or data.get("trade_volume")
             or data.get("volume_trade_for_the_day")
-            or data.get("total_buy_quantity")
-            or 1
+            or data.get("volume_traded_today")
+            or data.get("volume")
         )
-        try:
-            volume = int(float(raw_volume))
-        except (TypeError, ValueError):
-            volume = 1
-
-        if volume <= 0:
-            volume = 1
+        volume = 0
+        if raw_volume is not None:
+            try:
+                volume = int(float(raw_volume))
+            except (TypeError, ValueError):
+                volume = 0
 
         timestamp = _parse_tick_timestamp(data.get("exchange_timestamp", data.get("last_traded_timestamp")))
         return price, volume, timestamp
@@ -410,13 +456,18 @@ class AngelOneLiveStream:
 
             price, volume, timestamp = self._extract_tick_fields(data)
 
-            # LTP mode carries price only; use a unit-volume fallback so the
-            # existing candle/VWAP pipeline keeps functioning deterministically.
             if price <= 0 or not math.isfinite(price):
                 logging.warning("Rejected invalid LTP payload: %r", data)
                 return
 
-            self.builder.on_tick(price=price, volume=volume, timestamp=timestamp)
+            # Failsafe: Only feed ticks with genuine trade volume into the Candle/VWAP builder.
+            # If a tick genuinely arrives with 0 volume or missing volume keys from the exchange,
+            # skip passing that specific tick to the VWAP engine entirely rather than defaulting to 1.
+            if volume > 0:
+                self.builder.on_tick(price=price, volume=volume, timestamp=timestamp)
+            else:
+                logging.debug("Skipped tick with zero volume for VWAP builder: price=%.2f", price)
+
             self.paper_trader.check_exit(live_price=price, timestamp=timestamp)
             self.enforce_lifecycle(ws=self.websocket, current_dt=timestamp)
         except Exception as exc:
@@ -431,6 +482,7 @@ class AngelOneLiveStream:
 
     def _on_open(self, wsapp) -> None:
         logging.info("WebSocket connection established successfully.")
+        self._retry_attempt = 0
 
         token_list = [
             {
@@ -448,16 +500,17 @@ class AngelOneLiveStream:
             token_list,
         )
         logging.info(
-            "Subscribed to %s token %s in LTP mode (exchangeType=%s).",
+            "Subscribed to %s token %s in SnapQuote mode (mode=%s, exchangeType=%s).",
             self.symbol,
             self.token,
+            self.subscription_mode,
             self.exchange_type,
         )
 
-    def _on_error(self, wsapp, error) -> None:
+    def _on_error(self, wsapp, error, *args, **kwargs) -> None:
         logging.error("WebSocket Error: %s", error)
 
-    def _on_close(self, wsapp) -> None:
+    def _on_close(self, wsapp, *args, **kwargs) -> None:
         logging.warning("SmartAPI websocket closed.")
         if not self._shutdown_requested:
             logging.info("Connection dropped. Reconnect supervisor will retry.")
@@ -480,7 +533,8 @@ class AngelOneLiveStream:
             return
 
         self._eod_square_off_done = True
-        logging.info(f"{reason} triggered at {to_ist(current_dt).strftime('%H:%M:%S')} IST.")
+        loc_dt = self.schedule.localize(current_dt)
+        logging.info(f"{reason} triggered at {loc_dt.strftime('%H:%M:%S')}.")
         self.paper_trader.cancel_pending_orders(reason)
         self.paper_trader.square_off_all_positions(reason, timestamp=current_dt)
         self.log_daily_summary("Final Daily P&L")
@@ -494,10 +548,10 @@ class AngelOneLiveStream:
 
     def enforce_lifecycle(self, ws=None, current_dt: Optional[datetime] = None) -> MarketPhase:
         """Apply session lifecycle actions for the supplied clock time."""
-        clock = to_ist(current_dt)
-        state = get_market_state(clock)
+        clock = self.schedule.localize(current_dt)
+        state = self.schedule.get_market_state(clock)
 
-        if state == MarketPhase.SQUARE_OFF:
+        if state == MarketPhase.SQUARE_OFF or self.schedule.is_eod_square_off(clock):
             self.trigger_eod_square_off(ws, clock, "EOD Auto-Square-Off")
         elif state == MarketPhase.CLOSED:
             if self.paper_trader.has_open_position:
@@ -512,7 +566,9 @@ class AngelOneLiveStream:
     def lifecycle_watchdog(self, ws, stop_event: threading.Event) -> None:
         """Timer-based lifecycle enforcement independent of incoming ticks."""
         while not self._shutdown_requested and not stop_event.is_set():
-            state = self.enforce_lifecycle(ws=ws, current_dt=to_ist())
+            if self._shutdown_requested:
+                return
+            state = self.enforce_lifecycle(ws=ws, current_dt=self.schedule.localize())
             if state in {MarketPhase.SQUARE_OFF, MarketPhase.CLOSED}:
                 return
             time_module.sleep(5)

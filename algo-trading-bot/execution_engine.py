@@ -47,9 +47,12 @@ from enum import Enum
 import logging
 import math
 import os
+import queue
 import threading
 from datetime import date, datetime
-from typing import Optional
+from typing import Any, Optional, Union
+
+from market_schedule import BaseMarketSchedule, NSEMarketSchedule, get_market_schedule
 
 
 # ── Global Capital Partitioning & Risk Constants ────────────────────────
@@ -114,8 +117,14 @@ class PaperTrader:
         slippage_pct: float = 0.0005,
         max_tranches: int = MAX_TRANCHES,
         csv_log_path: Optional[str] = None,
+        schedule: Optional[BaseMarketSchedule] = None,
         **kwargs,
     ):
+        # ── Market Schedule Strategy Provider ───────────────────────────
+        self.schedule: BaseMarketSchedule = (
+            schedule if schedule is not None else get_market_schedule("NSE")
+        )
+
         # ── Capital Configuration ───────────────────────────────────────
         self.total_capital = total_capital
         self.working_capital = total_capital * working_capital_pct
@@ -159,6 +168,16 @@ class PaperTrader:
             csv_log_path = os.path.join(base_dir, "trades.csv")
         self._csv_log_path = csv_log_path
         self._init_csv_log(self._csv_log_path)
+
+        # ── Asynchronous Background CSV Writer ──────────────────────────
+        self._trade_log_queue: queue.Queue = queue.Queue()
+        self._stop_writer = threading.Event()
+        self._writer_thread = threading.Thread(
+            target=self._csv_writer_worker,
+            name="CSVWriterWorker",
+            daemon=True,
+        )
+        self._writer_thread.start()
 
         # ── Daily State (resets each trading session) ───────────────────
         self._current_date: Optional[date] = None
@@ -439,6 +458,7 @@ class PaperTrader:
             "symbol": symbol,
             "side": "BUY",
             "quantity": qty,
+            "initial_entry_price": entry_price,
             "average_entry_price": entry_price,
             "entry_notional": turnover,
             "entry_friction_total": friction,
@@ -447,6 +467,7 @@ class PaperTrader:
             "max_tranches": self.max_tranches,
             "stop_loss_price": stop_loss_price,
             "target_price": target_price,
+            "initial_target_price": target_price,
             "risk_distance": entry_price - stop_loss_price,
             "projected_net_loss_at_stop": net_loss_at_stop,
             "projected_net_profit_at_target": projected_net_profit,
@@ -516,14 +537,15 @@ class PaperTrader:
 
         # Zero-Risk Lock: Trail SL to max(P_entry_1, Avg_Entry × 0.995)
         new_stop_loss = round(max(p1, vwap_avg_entry * (1.0 - self.stop_loss_pct)), 2)
-        # Global 1:2 Profit Target from new average entry
-        new_target_price = round(vwap_avg_entry * (1.0 + (self.stop_loss_pct * self.reward_to_risk)), 2)
 
-        # Friction validation on combined position
+        # ANCHORED TAKE-PROFIT TARGET: Target is permanently anchored to Tranche 1 setup (P1 * 1.010)
+        anchored_target_price = pos.get("initial_target_price", pos["target_price"])
+
+        # Friction validation on combined position using anchored target
         total_entry_friction = pos["entry_friction_total"] + entry_costs2["total_charges"]
-        exit_costs_target = self.calculate_exit_leg_charges(total_qty, new_target_price)
+        exit_costs_target = self.calculate_exit_leg_charges(total_qty, anchored_target_price)
         total_friction = total_entry_friction + exit_costs_target["total_charges"]
-        projected_net_profit = (total_qty * (new_target_price - vwap_avg_entry)) - total_friction
+        projected_net_profit = (total_qty * (anchored_target_price - vwap_avg_entry)) - total_friction
 
         if projected_net_profit <= 0:
             logging.warning(
@@ -542,7 +564,8 @@ class PaperTrader:
         pos["total_cost"] = new_total_cost
         pos["current_tranches"] = 2
         pos["stop_loss_price"] = new_stop_loss
-        pos["target_price"] = new_target_price
+        pos["target_price"] = anchored_target_price
+        pos["initial_target_price"] = anchored_target_price
         pos["risk_distance"] = vwap_avg_entry - new_stop_loss
         pos["projected_net_loss_at_stop"] = net_loss_at_stop
         pos["projected_net_profit_at_target"] = projected_net_profit
@@ -562,7 +585,7 @@ class PaperTrader:
         )
         logging.info(
             f"🔄 [POSITION RECALCULATED] Tranches: 2/{self.max_tranches} | "
-            f"New VWAP Avg Entry: ₹{vwap_avg_entry:,.2f} | Target: ₹{new_target_price:,.2f} | "
+            f"New VWAP Avg Entry: ₹{vwap_avg_entry:,.2f} | Anchored Target: ₹{anchored_target_price:,.2f} | "
             f"State: {self._state.value}"
         )
         return ticket
@@ -613,12 +636,14 @@ class PaperTrader:
 
         # Zero-Risk Lock: Trail SL to ≥ P_entry_2 (Locking profit on T1, breakeven on T2)
         new_stop_loss = round(max(p2, vwap_avg_entry * (1.0 - self.stop_loss_pct)), 2)
-        new_target_price = round(vwap_avg_entry * (1.0 + (self.stop_loss_pct * self.reward_to_risk)), 2)
+
+        # ANCHORED TAKE-PROFIT TARGET: Target is permanently anchored to Tranche 1 setup (P1 * 1.010)
+        anchored_target_price = pos.get("initial_target_price", pos["target_price"])
 
         total_entry_friction = pos["entry_friction_total"] + entry_costs3["total_charges"]
-        exit_costs_target = self.calculate_exit_leg_charges(total_qty, new_target_price)
+        exit_costs_target = self.calculate_exit_leg_charges(total_qty, anchored_target_price)
         total_friction = total_entry_friction + exit_costs_target["total_charges"]
-        projected_net_profit = (total_qty * (new_target_price - vwap_avg_entry)) - total_friction
+        projected_net_profit = (total_qty * (anchored_target_price - vwap_avg_entry)) - total_friction
 
         if projected_net_profit <= 0:
             logging.warning(
@@ -637,7 +662,8 @@ class PaperTrader:
         pos["total_cost"] = new_total_cost
         pos["current_tranches"] = 3
         pos["stop_loss_price"] = new_stop_loss
-        pos["target_price"] = new_target_price
+        pos["target_price"] = anchored_target_price
+        pos["initial_target_price"] = anchored_target_price
         pos["risk_distance"] = vwap_avg_entry - new_stop_loss
         pos["projected_net_loss_at_stop"] = net_loss_at_stop
         pos["projected_net_profit_at_target"] = projected_net_profit
@@ -657,7 +683,7 @@ class PaperTrader:
         )
         logging.info(
             f"🔄 [POSITION FULLY SCALED] Tranches: 3/{self.max_tranches} | "
-            f"Final VWAP Avg Entry: ₹{vwap_avg_entry:,.2f} | Target: ₹{new_target_price:,.2f} | "
+            f"Final VWAP Avg Entry: ₹{vwap_avg_entry:,.2f} | Anchored Target: ₹{anchored_target_price:,.2f} | "
             f"State: {self._state.value}"
         )
         return ticket
@@ -758,6 +784,17 @@ class PaperTrader:
                     exit_price=pos["target_price"],
                     timestamp=tick_timestamp,
                     reason="Target Hit",
+                )
+
+            # ── PRIORITY 3: Mandatory EOD Auto-Square-Off ────────────────
+            if tick_timestamp is not None and self.schedule.is_eod_square_off(tick_timestamp):
+                logging.info(
+                    f"⏰ [EOD AUTO-SQUARE-OFF] Mandatory cutoff reached ({tick_timestamp}). Closing position."
+                )
+                return self.square_off_all_positions(
+                    reason="EOD Auto-Square-Off",
+                    latest_price=live_price,
+                    timestamp=tick_timestamp,
                 )
 
             return None
@@ -868,17 +905,29 @@ class PaperTrader:
 
     def notify_candle_close(
         self,
+        candle: Optional[Union[dict, Any]] = None,
         timestamp: Optional[datetime] = None,
         latest_price: Optional[float] = None,
     ) -> Optional[dict]:
         """
-        Candle close notification. (Time stop is permanently eliminated;
-        this method updates the latest reference price/timestamp without closing).
+        Candle close notification called when a 1-minute candle completes.
+        Updates engine with latest price and timestamp.
+        (Time stop is permanently eliminated; trades run to SL, TP, or 15:20 EOD).
         """
         with self.lock:
-            ts = self._resolve_timestamp(timestamp)
-            if latest_price is not None:
-                self._set_latest_price(latest_price, ts)
+            ts = timestamp
+            px = latest_price
+
+            if candle is not None:
+                if isinstance(candle, dict) or hasattr(candle, "get"):
+                    ts = candle.get("Timestamp", candle.get("timestamp", ts))
+                    px = candle.get("Close", candle.get("close", px))
+                elif isinstance(candle, datetime):
+                    ts = candle
+
+            resolved_ts = self._resolve_timestamp(ts)
+            if px is not None:
+                self._set_latest_price(float(px), resolved_ts)
             return None
 
     def square_off_all_positions(
@@ -958,10 +1007,15 @@ class PaperTrader:
 
     def _append_trade_csv(self, summary: dict) -> None:
         """
-        Append structured 13-field trade record to `trades.csv`:
-          timestamp, trade_id, symbol, tranches_filled, avg_entry_price,
-          exit_price, total_quantity, exit_reason, gross_pnl, statutory_charges,
-          net_pnl, net_roi_pct, ending_working_capital
+        Non-blocking enqueue of completed trade summary record.
+        Offloads synchronous disk I/O to dedicated CSVWriterWorker thread.
+        """
+        self._trade_log_queue.put(summary)
+
+    def _write_row_to_file(self, summary: dict) -> None:
+        """
+        Synchronous file append isolated strictly to background worker thread.
+        Writes structured 13-field trade record to `trades.csv`.
         """
         ts = summary.get("timestamp")
         ts_str = ts.isoformat() if isinstance(ts, datetime) else str(ts)
@@ -984,6 +1038,42 @@ class PaperTrader:
         with open(self._csv_log_path, "a", newline="", encoding="utf-8") as fh:
             writer = csv.writer(fh)
             writer.writerow(row)
+            fh.flush()
+
+    def _csv_writer_worker(self) -> None:
+        """
+        Background daemon worker loop for non-blocking disk persistence.
+        Consumes trade records from queue and flushes them to trades.csv.
+        """
+        while not self._stop_writer.is_set() or not self._trade_log_queue.empty():
+            try:
+                trade_record = self._trade_log_queue.get(timeout=0.5)
+                if trade_record is None:
+                    self._trade_log_queue.task_done()
+                    break
+
+                self._write_row_to_file(trade_record)
+                self._trade_log_queue.task_done()
+            except queue.Empty:
+                continue
+            except Exception as exc:
+                logging.error(f"[CSV WRITER ERROR] Failed writing to trades.csv: {exc}", exc_info=True)
+
+    def flush_logs(self, timeout: float = 2.0) -> None:
+        """Wait for pending trade logs in the queue to be fully written to disk."""
+        try:
+            self._trade_log_queue.join()
+        except Exception as exc:
+            logging.warning(f"Error while flushing trade log queue: {exc}")
+
+    def shutdown(self, timeout: float = 2.0) -> None:
+        """
+        Gracefully stop background CSV writer worker thread and flush pending records.
+        """
+        self._stop_writer.set()
+        self._trade_log_queue.put(None)
+        if hasattr(self, "_writer_thread") and self._writer_thread.is_alive():
+            self._writer_thread.join(timeout=timeout)
 
     # ────────────────────────────────────────────────────────────────────
     #  STATE PROPERTIES & TERMINAL TICKETS
@@ -1009,7 +1099,8 @@ class PaperTrader:
     def latest_price(self) -> Optional[float]:
         return self._latest_price
 
-    def _check_day_reset(self, current_dt: Optional[datetime] = None) -> None:
+    def check_day_reset(self, current_dt: Optional[datetime] = None) -> None:
+        """Public method to reset intraday state if session date changes."""
         today = current_dt.date() if current_dt is not None else date.today()
         if self._current_date != today:
             if self._current_date is not None:
@@ -1019,6 +1110,9 @@ class PaperTrader:
             self._trade_count = 0
             self._halted = False
             self._state = PyramidingState.IDLE
+
+    # Backward compatibility alias
+    _check_day_reset = check_day_reset
 
     def _resolve_timestamp(
         self,
@@ -1114,3 +1208,7 @@ class PaperTrader:
         logging.info(f"║  Working Cap  :  {wcap_label:<42}║")
         logging.info("╚══════════════════════════════════════════════════════════╝")
         logging.info("")
+
+
+# ── Execution Engine Alias ──────────────────────────────────────────────
+ExecutionEngine = PaperTrader

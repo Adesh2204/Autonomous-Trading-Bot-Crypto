@@ -34,8 +34,12 @@ from candle_builder import CandleBuilder
 from execution_engine import PaperTrader
 from market_schedule import (
     IST,
+    BaseMarketSchedule,
     MarketPhase,
+    NSEMarketSchedule,
+    NYSEMarketSchedule,
     can_enter_new_positions,
+    get_market_schedule,
     get_market_state,
     is_trading_day,
     seconds_until_market_start,
@@ -522,6 +526,8 @@ class FlightSimulator:
         if exit_summary is not None:
             self.exit_summary = exit_summary
             self._print_exit_summary(exit_summary)
+            if exit_summary.get("reason") == "EOD Auto-Square-Off" or exit_summary.get("exit_reason") == "EOD Auto-Square-Off":
+                self.square_off_triggered = True
             return
 
         self.enforce_lifecycle(tick)
@@ -792,8 +798,8 @@ def test_multi_tranche_pyramiding_state_machine(tmp_path) -> None:
     assert trader._open_position["average_entry_price"] == 100.30
     # Zero-Risk Lock: SL trailed to max(P_entry_1=100.00, 100.30*0.995=99.80) -> 100.00 (Breakeven Floor)
     assert trader._open_position["stop_loss_price"] == 100.00
-    # Target: 100.30 * 1.010 = 101.30
-    assert trader._open_position["target_price"] == 101.30
+    # Anchored Target: Remains fixed at Tranche 1 target (100 * 1.010 = 101.00)
+    assert trader._open_position["target_price"] == 101.00
 
     # ── 4. TRANCHE 3 (Scale 2 @ ₹101.20, gain +0.60% from T2 >= +0.50%)
     t2 = t0 + timedelta(minutes=4)
@@ -812,11 +818,11 @@ def test_multi_tranche_pyramiding_state_machine(tmp_path) -> None:
     assert trader._open_position["average_entry_price"] == 100.60
     # Zero-Risk Lock: SL trailed to max(P_entry_2=100.60, 100.60*0.995=100.10) -> 100.60
     assert trader._open_position["stop_loss_price"] == 100.60
-    # Target: 100.60 * 1.010 = 101.61
-    assert trader._open_position["target_price"] == 101.61
+    # Anchored Target: Remains fixed at Tranche 1 target (100 * 1.010 = 101.00)
+    assert trader._open_position["target_price"] == 101.00
 
-    # ── 5. Target Hit Exit @ ₹101.65 ──────────────────────────────────
-    exit_summary = trader.check_exit(101.65, timestamp=t0 + timedelta(minutes=6))
+    # ── 5. Target Hit Exit @ ₹101.05 (Exits at Anchored Target ₹101.00) ────
+    exit_summary = trader.check_exit(101.05, timestamp=t0 + timedelta(minutes=6))
     assert exit_summary is not None
     assert exit_summary["exit_reason"] == "Target Hit"
     assert exit_summary["tranches_filled"] == 3
@@ -919,6 +925,7 @@ def test_trades_csv_13_columns_schema(tmp_path) -> None:
         timestamp=datetime(2026, 8, 24, 9, 35),
         reason="Target Hit",
     )
+    trader.flush_logs()
 
     with open(csv_path, "r", encoding="utf-8") as f:
         lines = [line.strip() for line in f.readlines() if line.strip()]
@@ -945,6 +952,31 @@ def test_trades_csv_13_columns_schema(tmp_path) -> None:
     assert data_cols[2] == "COALINDIA"
     assert data_cols[3] == "1"
     assert data_cols[7] == "Target Hit"
+
+
+def test_pluggable_market_schedule_providers() -> None:
+    """Verify Provider Strategy Pattern for NSE and NYSE market schedules."""
+    nse = get_market_schedule("NSE")
+    assert isinstance(nse, NSEMarketSchedule)
+    assert str(nse.timezone) == "Asia/Kolkata"
+    assert nse.market_open_time == time(9, 15, 0)
+    assert nse.eod_square_off_time == time(15, 20, 0)
+    assert nse.market_close_time == time(15, 30, 0)
+
+    nyse = get_market_schedule("NYSE")
+    assert isinstance(nyse, NYSEMarketSchedule)
+    assert str(nyse.timezone) == "America/New_York"
+    assert nyse.market_open_time == time(9, 30, 0)
+    assert nyse.eod_square_off_time == time(15, 45, 0)
+    assert nyse.market_close_time == time(16, 0, 0)
+
+    # Dependency Injection into PaperTrader
+    trader_nyse = PaperTrader(schedule=nyse)
+    assert trader_nyse.schedule == nyse
+
+    # Test EOD square-off evaluation on NYSE schedule (15:45 EST)
+    nyse_eod_ts = datetime(2026, 8, 24, 15, 46, tzinfo=nyse.timezone)
+    assert nyse.is_eod_square_off(nyse_eod_ts) is True
 
 
 def run_scenario(
