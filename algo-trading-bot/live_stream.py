@@ -450,8 +450,11 @@ class AngelOneLiveStream:
                 "VWAP": float(latest["VWAP"]),
                 "Close": float(latest["Close"]),
                 "symbol": self.symbol,
+                "ATR_14": atr_val,
+                "atr": atr_val,
             },
             timestamp=signal_timestamp,
+            atr_14=atr_val,
         )
 
     def _extract_tick_fields(self, data: dict) -> tuple[float, int, datetime]:

@@ -308,10 +308,13 @@ class PaperTrader:
         self,
         signal_data: dict,
         timestamp: Optional[datetime] = None,
+        atr_14: Optional[float] = None,
+        atr: Optional[float] = None,
     ) -> Optional[dict]:
         """
         Process a confirmed VWAP_PULLBACK_BUY signal and advance the
         Pyramiding State Machine (State 0 -> State 1 -> State 2 -> State 3).
+        Ingests dynamic ATR_14 for volatility-based risk-to-reward calculation.
         """
         with self.lock:
             trade_timestamp = self._resolve_timestamp(timestamp, signal_data)
@@ -334,6 +337,11 @@ class PaperTrader:
                 logging.error("Invalid entry price for execution. Skipping.")
                 return None
 
+            # Ingest and validate dynamic ATR (14-period)
+            raw_atr = atr_14 if atr_14 is not None else atr
+            if raw_atr is None:
+                raw_atr = signal_data.get("ATR_14", signal_data.get("atr", signal_data.get("atr_14")))
+
             pos = self._open_position
 
             # ── Guard: Symbol Mismatch ──────────────────────────────────
@@ -346,7 +354,34 @@ class PaperTrader:
 
             # ── STATE 0: IDLE → TRANCHE 1 (Base Entry) ──────────────────
             if pos is None:
-                return self._execute_tranche_1(symbol, entry_price, trade_timestamp)
+                # Type & Value Failsafe: ATR validation for Tranche 1 dynamic volatility distance
+                if raw_atr is None:
+                    logging.error(
+                        f"[ATR GATE] Rejected trade entry in {symbol}: missing atr_14 parameter. "
+                        "Engine remains in IDLE."
+                    )
+                    return None
+                try:
+                    current_atr = float(raw_atr)
+                    if current_atr <= 0.0 or not math.isfinite(current_atr):
+                        logging.error(
+                            f"[ATR GATE] Rejected trade entry in {symbol}: invalid atr_14 value ({raw_atr}). "
+                            "Engine remains in IDLE."
+                        )
+                        return None
+                except (ValueError, TypeError):
+                    logging.error(
+                        f"[ATR GATE] Rejected trade entry in {symbol}: non-numeric atr_14 ({raw_atr}). "
+                        "Engine remains in IDLE."
+                    )
+                    return None
+
+                return self._execute_tranche_1(
+                    symbol=symbol,
+                    entry_price=entry_price,
+                    timestamp=trade_timestamp,
+                    current_atr=current_atr,
+                )
 
             # ── Scale-In Evaluation (State 1 or State 2) ────────────────
             current_tranches = pos["current_tranches"]
@@ -394,8 +429,9 @@ class PaperTrader:
         symbol: str,
         entry_price: float,
         timestamp: datetime,
+        current_atr: float,
     ) -> Optional[dict]:
-        """Execute Base Entry (Tranche 1: 33% of Working Capital)."""
+        """Execute Base Entry (Tranche 1: 33% of Working Capital) with dynamic ATR volatility model."""
         tranche_idx = 0
         allocated_capital = self.tranche_capitals[tranche_idx]
         qty = math.floor(allocated_capital / entry_price)
@@ -406,9 +442,16 @@ class PaperTrader:
         turnover = entry_costs["turnover"]
         friction = entry_costs["total_charges"]
 
-        # Risk & Target Calculations (Initial 1:2 R:R)
-        stop_loss_price = round(entry_price * (1.0 - self.stop_loss_pct), 2)
-        target_price = round(entry_price * (1.0 + (self.stop_loss_pct * self.reward_to_risk)), 2)
+        # ── Dynamic Volatility (ATR) Model ──────────────────────────────
+        # Volatility unit: 1.5 * current_atr
+        stop_loss_distance = round(1.5 * current_atr, 2)
+        initial_stop_loss = round(entry_price - stop_loss_distance, 2)
+
+        # Anchored Take-Profit: strictly 1:2 R:R (reward = 2.0 * risk)
+        initial_target_price = round(entry_price + (2.0 * stop_loss_distance), 2)
+
+        stop_loss_price = initial_stop_loss
+        target_price = initial_target_price
 
         # Friction Gate Validation
         exit_costs_target = self.calculate_exit_leg_charges(qty, target_price)
@@ -462,10 +505,12 @@ class PaperTrader:
             "total_cost": total_cost,
             "current_tranches": 1,
             "max_tranches": self.max_tranches,
+            "atr_14": current_atr,
+            "stop_loss_distance": stop_loss_distance,
             "stop_loss_price": stop_loss_price,
             "target_price": target_price,
             "initial_target_price": target_price,
-            "risk_distance": entry_price - stop_loss_price,
+            "risk_distance": stop_loss_distance,
             "projected_net_loss_at_stop": net_loss_at_stop,
             "projected_net_profit_at_target": projected_net_profit,
             "stop_exit_charges": exit_costs_stop["total_charges"],
@@ -485,6 +530,8 @@ class PaperTrader:
 
         logging.info(
             f"✅ [ENTRY TRANCHE 1/{self.max_tranches}] Base position established in {symbol}. "
+            f"ATR_14: {current_atr:.2f} | SL Distance: ₹{stop_loss_distance:.2f} | "
+            f"SL: ₹{stop_loss_price:,.2f} | Target: ₹{target_price:,.2f} | "
             f"State: {self._state.value}"
         )
         return ticket
@@ -710,6 +757,8 @@ class PaperTrader:
             "total_quantity": snapshot["quantity"],
             "total_cost": round(snapshot["total_cost"], 2),
             "risk_distance": round(snapshot["risk_distance"], 2),
+            "atr_14": snapshot.get("atr_14"),
+            "stop_loss_distance": snapshot.get("stop_loss_distance"),
             "risk_reward": rr_ratio,
             "potential_loss": round(snapshot["projected_net_loss_at_stop"], 2),
             "potential_profit": round(snapshot["projected_net_profit_at_target"], 2),
@@ -1135,6 +1184,10 @@ class PaperTrader:
     def _print_trade_ticket(self, ticket: dict) -> None:
         tranche_label = f"[TRANCHE {ticket['tranche_number']}/{ticket['max_tranches']}]"
         ticket_type = "📝  INITIAL ENTRY" if ticket['tranche_number'] == 1 else "📐  SCALE-IN (PYRAMID)"
+        atr_val = ticket.get("atr_14")
+        sl_dist = ticket.get("stop_loss_distance")
+        sl_dist_display = f"  (−₹{sl_dist:,.2f})" if sl_dist is not None else f"  (−{self.stop_loss_pct*100:.1f}%)"
+
         logging.info("")
         logging.info("╔══════════════════════════════════════════════════════════╗")
         logging.info(f"║  {ticket_type:<45} {tranche_label}║")
@@ -1147,7 +1200,10 @@ class PaperTrader:
         logging.info("║──────────────────────────────────────────────────────────║")
         logging.info(f"║  Entry Price  :  ₹{ticket['entry_price']:>10,.2f}{'':<28}║")
         logging.info(f"║  Avg Entry    :  ₹{ticket['avg_entry_price']:>10,.2f}  (VWAP Weighted){'':<10}║")
-        logging.info(f"║  Stop Loss    :  ₹{ticket['stop_loss_price']:>10,.2f}  (−{self.stop_loss_pct*100:.1f}%){'':<18}║")
+        if atr_val is not None and sl_dist is not None:
+            logging.info(f"║  ATR (14)     :  {atr_val:>10.2f}  (Volatility Proxy){'':<11}║")
+            logging.info(f"║  SL Distance  :  ₹{sl_dist:>10.2f}  (1.50 × ATR_14){'':<13}║")
+        logging.info(f"║  Stop Loss    :  ₹{ticket['stop_loss_price']:>10,.2f}{sl_dist_display:<28}║")
         logging.info(f"║  Target Price :  ₹{ticket['target_price']:>10,.2f}  ({ticket['risk_reward']}){'':<19}║")
         logging.info("║──────────────────────────────────────────────────────────║")
         logging.info(f"║  Tranche Qty  :  {ticket['tranche_quantity']:<40}║")

@@ -341,54 +341,54 @@ def scenario_c_path() -> List[CandleSpec]:
         CandleSpec(
             label="Phase 3C - Controlled Hold 1",
             open_price=2518.90,
-            high_price=2523.20,
+            high_price=2521.20,
             low_price=2517.60,
-            close_price=2521.20,
+            close_price=2520.20,
             volume=1500,
             pattern="open_low_high_close",
         ),
         CandleSpec(
             label="Phase 3C - Controlled Hold 2",
-            open_price=2521.20,
-            high_price=2525.00,
-            low_price=2520.60,
-            close_price=2524.60,
+            open_price=2520.20,
+            high_price=2522.00,
+            low_price=2518.60,
+            close_price=2521.60,
             volume=1450,
             pattern="open_low_high_close",
         ),
         CandleSpec(
             label="Phase 3C - Controlled Hold 3",
-            open_price=2524.60,
-            high_price=2527.00,
-            low_price=2522.70,
-            close_price=2526.10,
+            open_price=2521.60,
+            high_price=2523.00,
+            low_price=2519.70,
+            close_price=2522.10,
             volume=1400,
-            pattern="open_high_low_close",
+            pattern="open_low_high_close",
         ),
         CandleSpec(
             label="Phase 3C - Controlled Hold 4",
-            open_price=2526.10,
-            high_price=2528.00,
-            low_price=2524.20,
-            close_price=2526.40,
+            open_price=2522.10,
+            high_price=2523.50,
+            low_price=2520.20,
+            close_price=2522.40,
             volume=1350,
             pattern="open_low_high_close",
         ),
         CandleSpec(
             label="Phase 3C - Controlled Hold 5",
-            open_price=2526.40,
-            high_price=2528.00,
-            low_price=2523.80,
-            close_price=2525.00,
+            open_price=2522.40,
+            high_price=2523.80,
+            low_price=2519.80,
+            close_price=2521.00,
             volume=1300,
             pattern="open_high_low_close",
         ),
         CandleSpec(
             label="Phase 3C - Into Square-Off",
-            open_price=2525.00,
-            high_price=2527.50,
-            low_price=2522.90,
-            close_price=2525.00,
+            open_price=2521.00,
+            high_price=2522.50,
+            low_price=2519.90,
+            close_price=2521.00,
             volume=1250,
             pattern="open_low_high_close",
         ),
@@ -449,14 +449,17 @@ class FlightSimulator:
                 return
 
             available_capital = float(self.trader.working_capital)
+            atr_val = float(latest["ATR_14"]) if "ATR_14" in latest and pd.notna(latest["ATR_14"]) else 8.35
             ticket = self.trader.execute_trade(
                 {
                     "VWAP": vwap,
                     "Close": close_price,
                     "symbol": SYMBOL,
                     "timestamp": signal_timestamp,
+                    "ATR_14": atr_val,
                 },
                 timestamp=signal_timestamp,
+                atr_14=atr_val,
             )
             if ticket is not None:
                 self.trade_taken = True
@@ -760,9 +763,9 @@ def test_multi_tranche_pyramiding_state_machine(tmp_path) -> None:
 
     t0 = datetime(2026, 8, 24, 9, 20)
 
-    # ── 1. TRANCHE 1 (Base Entry @ ₹100) ──────────────────────────────
+    # ── 1. TRANCHE 1 (Base Entry @ ₹100, ATR=0.3333333333333333 -> SL dist=0.50)
     ticket1 = trader.execute_trade(
-        {"VWAP": 100.00, "Close": 100.20, "symbol": "TATASTEEL"},
+        {"VWAP": 100.00, "Close": 100.20, "symbol": "TATASTEEL", "ATR_14": 0.3333333333333333},
         timestamp=t0,
     )
     assert ticket1 is not None
@@ -770,12 +773,12 @@ def test_multi_tranche_pyramiding_state_machine(tmp_path) -> None:
     assert ticket1["tranche_number"] == 1
     # Quantity: floor(1652.80 / 100) = 16 shares
     assert ticket1["quantity"] == 16
-    assert trader._open_position["stop_loss_price"] == 99.50   # 100 * 0.995 (-0.5%)
-    assert trader._open_position["target_price"] == 101.00      # 100 * 1.010 (+1.0%, 1:2 R:R)
+    assert trader._open_position["stop_loss_price"] == 99.50   # 100 - 1.5*0.3333 = 99.50
+    assert trader._open_position["target_price"] == 101.00      # 100 + 2.0*0.50 = 101.00 (1:2 R:R)
 
     # ── 2. Guard: Scale-in below +0.50% gain is rejected ──────────────
     ticket_fail = trader.execute_trade(
-        {"VWAP": 100.30, "Close": 100.30, "symbol": "TATASTEEL"},
+        {"VWAP": 100.30, "Close": 100.30, "symbol": "TATASTEEL", "ATR_14": 0.3333333333333333},
         timestamp=t0 + timedelta(minutes=1),
     )
     assert ticket_fail is None
@@ -784,7 +787,7 @@ def test_multi_tranche_pyramiding_state_machine(tmp_path) -> None:
     # ── 3. TRANCHE 2 (Scale 1 @ ₹100.60, gain +0.60% >= +0.50%) ───────
     t1 = t0 + timedelta(minutes=2)
     ticket2 = trader.execute_trade(
-        {"VWAP": 100.60, "Close": 100.60, "symbol": "TATASTEEL"},
+        {"VWAP": 100.60, "Close": 100.60, "symbol": "TATASTEEL", "ATR_14": 0.3333333333333333},
         timestamp=t1,
     )
     assert ticket2 is not None
@@ -804,7 +807,7 @@ def test_multi_tranche_pyramiding_state_machine(tmp_path) -> None:
     # ── 4. TRANCHE 3 (Scale 2 @ ₹101.20, gain +0.60% from T2 >= +0.50%)
     t2 = t0 + timedelta(minutes=4)
     ticket3 = trader.execute_trade(
-        {"VWAP": 101.20, "Close": 101.20, "symbol": "TATASTEEL"},
+        {"VWAP": 101.20, "Close": 101.20, "symbol": "TATASTEEL", "ATR_14": 0.3333333333333333},
         timestamp=t2,
     )
     assert ticket3 is not None
@@ -841,7 +844,7 @@ def test_no_time_stop_at_40_or_more_candles(tmp_path) -> None:
     )
     entry_ts = datetime(2026, 8, 24, 9, 20)
     trader.execute_trade(
-        {"VWAP": 200.00, "Close": 200.20, "symbol": "TATAMOTORS"},
+        {"VWAP": 200.00, "Close": 200.20, "symbol": "TATAMOTORS", "ATR_14": 0.6666666666666666},
         timestamp=entry_ts,
     )
     assert trader.has_open_position
@@ -862,21 +865,30 @@ def test_exit_priorities_sl_tp_eod(tmp_path) -> None:
 
     # Case 1: Stop Loss Triggered
     trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50, csv_log_path=csv_path)
-    trader.execute_trade({"VWAP": 100.00, "Close": 100.00, "symbol": "ITC"}, timestamp=datetime(2026, 8, 24, 9, 20))
+    trader.execute_trade(
+        {"VWAP": 100.00, "Close": 100.00, "symbol": "ITC", "ATR_14": 0.3333333333333333},
+        timestamp=datetime(2026, 8, 24, 9, 20),
+    )
     res_sl = trader.check_exit(99.40, timestamp=datetime(2026, 8, 24, 9, 25))
     assert res_sl is not None
     assert res_sl["exit_reason"] == "Stop Loss"
 
     # Case 2: Target Triggered
     trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50, csv_log_path=csv_path)
-    trader.execute_trade({"VWAP": 100.00, "Close": 100.00, "symbol": "ITC"}, timestamp=datetime(2026, 8, 24, 9, 20))
+    trader.execute_trade(
+        {"VWAP": 100.00, "Close": 100.00, "symbol": "ITC", "ATR_14": 0.3333333333333333},
+        timestamp=datetime(2026, 8, 24, 9, 20),
+    )
     res_tp = trader.check_exit(101.10, timestamp=datetime(2026, 8, 24, 9, 25))
     assert res_tp is not None
     assert res_tp["exit_reason"] == "Target Hit"
 
     # Case 3: EOD Auto-Square-Off
     trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50, csv_log_path=csv_path)
-    trader.execute_trade({"VWAP": 100.00, "Close": 100.00, "symbol": "ITC"}, timestamp=datetime(2026, 8, 24, 9, 20))
+    trader.execute_trade(
+        {"VWAP": 100.00, "Close": 100.00, "symbol": "ITC", "ATR_14": 0.3333333333333333},
+        timestamp=datetime(2026, 8, 24, 9, 20),
+    )
     res_eod = trader.square_off_all_positions(
         "EOD Auto-Square-Off",
         latest_price=100.20,
@@ -884,6 +896,46 @@ def test_exit_priorities_sl_tp_eod(tmp_path) -> None:
     )
     assert res_eod is not None
     assert res_eod["exit_reason"] == "EOD Auto-Square-Off"
+
+
+def test_dynamic_atr_stop_loss_and_failsafe() -> None:
+    """Verify ATR validation failsafes and dynamic distance calculations."""
+    trader = PaperTrader()
+    t0 = datetime(2026, 8, 24, 9, 20)
+
+    # 1. Missing ATR -> Rejection
+    ticket_no_atr = trader.execute_trade(
+        {"VWAP": 2500.00, "Close": 2502.00, "symbol": "M&M"},
+        timestamp=t0,
+    )
+    assert ticket_no_atr is None
+    assert trader.state.value == "IDLE"
+
+    # 2. Zero / Negative ATR -> Rejection
+    ticket_zero_atr = trader.execute_trade(
+        {"VWAP": 2500.00, "Close": 2502.00, "symbol": "M&M", "ATR_14": 0.0},
+        timestamp=t0,
+    )
+    assert ticket_zero_atr is None
+    assert trader.state.value == "IDLE"
+
+    # 3. Valid ATR -> Dynamic 1:2 R:R calculation
+    current_atr = 10.0
+    ticket_valid = trader.execute_trade(
+        {"VWAP": 2500.00, "Close": 2502.00, "symbol": "M&M", "ATR_14": current_atr},
+        timestamp=t0,
+    )
+    assert ticket_valid is not None
+    assert trader.state.value == "HOLDING_TRANCHE_1"
+
+    # stop_loss_distance = 1.5 * 10.0 = 15.00
+    # stop_loss = 2500.00 - 15.00 = 2485.00
+    # target_price = 2500.00 + (2.0 * 15.00) = 2530.00
+    assert ticket_valid["stop_loss_distance"] == 15.00
+    assert ticket_valid["stop_loss_price"] == 2485.00
+    assert ticket_valid["target_price"] == 2530.00
+    assert ticket_valid["risk_distance"] == 15.00
+    assert ticket_valid["atr_14"] == 10.0
 
 
 def test_statutory_friction_gate_nse_cash() -> None:
@@ -917,7 +969,7 @@ def test_trades_csv_13_columns_schema(tmp_path) -> None:
         csv_log_path=csv_path,
     )
     trader.execute_trade(
-        {"VWAP": 150.00, "Close": 150.20, "symbol": "COALINDIA"},
+        {"VWAP": 150.00, "Close": 150.20, "symbol": "COALINDIA", "ATR_14": 0.50},
         timestamp=datetime(2026, 8, 24, 9, 20),
     )
     trader.close_position(

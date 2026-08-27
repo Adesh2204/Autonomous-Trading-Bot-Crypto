@@ -298,8 +298,9 @@ def run_backtest(
                     "VWAP": vwap,
                     "Close": c_close,
                     "symbol": symbol,
+                    "ATR_14": atr14,
                 }
-                trader.execute_trade(signal_data=payload, timestamp=ts)
+                trader.execute_trade(signal_data=payload, timestamp=ts, atr_14=atr14)
 
         # ── Session end — force close any remaining (edge case past 15:20) ──
         last_ts_raw = sdf["Timestamp"].iloc[-1]
