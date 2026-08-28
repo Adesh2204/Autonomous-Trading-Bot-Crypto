@@ -56,9 +56,9 @@ from market_schedule import BaseMarketSchedule, NSEMarketSchedule, get_market_sc
 
 
 # ── Global Capital Partitioning & Risk Constants ────────────────────────
-TOTAL_CAPITAL = 10006.00
-WORKING_CAPITAL = 5003.00   # 50% intraday deployment limit
-BACKUP_CAPITAL = 5003.00    # 50% reserve buffer
+TOTAL_CAPITAL = 10010.06
+WORKING_CAPITAL = 5005.03   # 50% intraday deployment limit
+BACKUP_CAPITAL = 5005.03    # 50% reserve buffer
 RISK_PER_TRADE = 100.00     # Max initial risk per setup
 DAILY_LOSS_LIMIT = 200.00   # Hard daily loss circuit breaker
 

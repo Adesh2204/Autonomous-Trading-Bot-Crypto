@@ -101,14 +101,20 @@ def _parse_tick_timestamp(value: Any) -> datetime:
 import signal
 
 
-TOTAL_CAPITAL = 10017.00
-WORKING_CAPITAL = 5008.50  # 50% allocation
-BACKUP_CAPITAL = 5008.50   # 50% allocation
+TOTAL_CAPITAL = 10010.06
+WORKING_CAPITAL = 5005.03  # 50% allocation
+BACKUP_CAPITAL = 5005.03   # 50% allocation
 RISK_PER_TRADE = 100.00
 DAILY_LOSS_LIMIT = 200.00
 
 # Liquid NSE cash equity instruments (<= ₹500 / share)
 INSTRUMENTS = {
+    "ADANIPOWER": {
+        "token": "17388",
+        "symbol": "ADANIPOWER",
+        "trading_symbol": "ADANIPOWER-EQ",
+        "exchange_type": 1,
+    },
     "TATASTEEL": {
         "token": "3499",
         "symbol": "TATASTEEL",
@@ -141,7 +147,7 @@ INSTRUMENTS = {
     },
 }
 
-DEFAULT_SYMBOL = "M&M"
+DEFAULT_SYMBOL = "ADANIPOWER"
 
 
 class AngelOneLiveStream:
