@@ -71,6 +71,8 @@ DEFAULT_STOP_LOSS_PCT = 0.0050   # 0.50% initial risk distance
 DEFAULT_PROFIT_TARGET_PCT = 0.0100  # 1.00% target (1:2 R:R)
 SCALE_IN_GAIN_TRIGGER_PCT = 0.0050  # +0.50% unrealized gain required to unlock next tranche
 REENTRY_COOLDOWN_CANDLES = 10       # Minimum completed candles before re-entering after an exit
+MIN_NET_RR = 1.5                    # Minimum Net Risk-to-Reward ratio after all statutory friction
+MIN_NET_PROFIT_MULTIPLIER = 2.0     # Profit must be at least 2x the cost of doing business
 
 # ── Persistent Trade Ledger Schema (13 Columns) ──────────────────────────
 CSV_HEADERS = [
@@ -464,18 +466,32 @@ class PaperTrader:
         stop_loss_price = initial_stop_loss
         target_price = initial_target_price
 
-        # Friction Gate Validation
+        # ── True Net-R:R Friction Gate Validation ─────────────────────────
         exit_costs_target = self.calculate_exit_leg_charges(qty, target_price)
         total_friction = friction + exit_costs_target["total_charges"]
-        gross_profit_target = qty * (target_price - entry_price)
-        projected_net_profit = gross_profit_target - total_friction
 
-        if projected_net_profit <= 0:
+        # Calculate Absolute True Math
+        gross_profit = (target_price - entry_price) * qty
+        net_profit = gross_profit - total_friction
+
+        gross_loss = (entry_price - stop_loss_price) * qty
+        net_loss = gross_loss + total_friction  # Losses are amplified by statutory friction
+
+        actual_net_rr = net_profit / net_loss if net_loss > 0 else 0.0
+
+        if actual_net_rr < MIN_NET_RR:
             logging.warning(
-                "[FRICTION GATE] Trade Expectancy Negative — Order Blocked. "
-                f"(Gross Profit: ₹{gross_profit_target:,.2f}, Total Friction: ₹{total_friction:,.2f})"
+                f"[FRICTION GATE FAILED] Net R:R is only 1:{actual_net_rr:.2f}. Requires 1:{MIN_NET_RR:.1f}."
             )
             return None
+
+        if net_profit < (MIN_NET_PROFIT_MULTIPLIER * total_friction):
+            logging.warning(
+                f"[FRICTION GATE FAILED] Net Profit (₹{net_profit:,.2f}) is too small compared to estimated costs (₹{total_friction:,.2f})."
+            )
+            return None
+
+        projected_net_profit = net_profit
 
         # Check working capital budget
         total_cost = turnover + friction

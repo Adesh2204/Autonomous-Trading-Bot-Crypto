@@ -773,9 +773,9 @@ def test_multi_tranche_pyramiding_state_machine(tmp_path) -> None:
 
     t0 = datetime(2026, 8, 24, 9, 20)
 
-    # ── 1. TRANCHE 1 (Base Entry @ ₹100, ATR=0.25 -> SL dist=0.50)
+    # ── 1. TRANCHE 1 (Base Entry @ ₹100, ATR=0.50 -> SL dist=1.00)
     ticket1 = trader.execute_trade(
-        {"VWAP": 100.00, "Close": 100.20, "symbol": "TATASTEEL", "ATR_14": 0.25},
+        {"VWAP": 100.00, "Close": 100.20, "symbol": "TATASTEEL", "ATR_14": 0.50},
         timestamp=t0,
     )
     assert ticket1 is not None
@@ -783,12 +783,12 @@ def test_multi_tranche_pyramiding_state_machine(tmp_path) -> None:
     assert ticket1["tranche_number"] == 1
     # Quantity: floor(1652.80 / 100) = 16 shares
     assert ticket1["quantity"] == 16
-    assert trader._open_position["stop_loss_price"] == 99.50   # 100 - 2.0*0.25 = 99.50
-    assert trader._open_position["target_price"] == 101.00      # 100 + 2.0*0.50 = 101.00 (1:2 R:R)
+    assert trader._open_position["stop_loss_price"] == 99.00   # 100 - 2.0*0.50 = 99.00
+    assert trader._open_position["target_price"] == 102.00      # 100 + 2.0*1.00 = 102.00 (1:2 R:R)
 
     # ── 2. Guard: Scale-in below +0.50% gain is rejected ──────────────
     ticket_fail = trader.execute_trade(
-        {"VWAP": 100.30, "Close": 100.30, "symbol": "TATASTEEL", "ATR_14": 0.25},
+        {"VWAP": 100.30, "Close": 100.30, "symbol": "TATASTEEL", "ATR_14": 0.50},
         timestamp=t0 + timedelta(minutes=1),
     )
     assert ticket_fail is None
@@ -797,7 +797,7 @@ def test_multi_tranche_pyramiding_state_machine(tmp_path) -> None:
     # ── 3. TRANCHE 2 (Scale 1 @ ₹100.60, gain +0.60% >= +0.50%) ───────
     t1 = t0 + timedelta(minutes=2)
     ticket2 = trader.execute_trade(
-        {"VWAP": 100.60, "Close": 100.60, "symbol": "TATASTEEL", "ATR_14": 0.25},
+        {"VWAP": 100.60, "Close": 100.60, "symbol": "TATASTEEL", "ATR_14": 0.50},
         timestamp=t1,
     )
     assert ticket2 is not None
@@ -811,13 +811,13 @@ def test_multi_tranche_pyramiding_state_machine(tmp_path) -> None:
     assert trader._open_position["average_entry_price"] == 100.30
     # Zero-Risk Lock: SL trailed to max(P_entry_1=100.00, 100.30*0.995=99.80) -> 100.00 (Breakeven Floor)
     assert trader._open_position["stop_loss_price"] == 100.00
-    # Anchored Target: Remains fixed at Tranche 1 target (100 * 1.010 = 101.00)
-    assert trader._open_position["target_price"] == 101.00
+    # Anchored Target: Remains fixed at Tranche 1 target (102.00)
+    assert trader._open_position["target_price"] == 102.00
 
     # ── 4. TRANCHE 3 (Scale 2 @ ₹101.20, gain +0.60% from T2 >= +0.50%)
     t2 = t0 + timedelta(minutes=4)
     ticket3 = trader.execute_trade(
-        {"VWAP": 101.20, "Close": 101.20, "symbol": "TATASTEEL", "ATR_14": 0.25},
+        {"VWAP": 101.20, "Close": 101.20, "symbol": "TATASTEEL", "ATR_14": 0.50},
         timestamp=t2,
     )
     assert ticket3 is not None
@@ -831,11 +831,11 @@ def test_multi_tranche_pyramiding_state_machine(tmp_path) -> None:
     assert trader._open_position["average_entry_price"] == 100.60
     # Zero-Risk Lock: SL trailed to max(P_entry_2=100.60, 100.60*0.995=100.10) -> 100.60
     assert trader._open_position["stop_loss_price"] == 100.60
-    # Anchored Target: Remains fixed at Tranche 1 target (100 * 1.010 = 101.00)
-    assert trader._open_position["target_price"] == 101.00
+    # Anchored Target: Remains fixed at Tranche 1 target (102.00)
+    assert trader._open_position["target_price"] == 102.00
 
-    # ── 5. Target Hit Exit @ ₹101.05 (Exits at Anchored Target ₹101.00) ────
-    exit_summary = trader.check_exit(101.05, timestamp=t0 + timedelta(minutes=6))
+    # ── 5. Target Hit Exit @ ₹102.05 (Exits at Anchored Target ₹102.00) ────
+    exit_summary = trader.check_exit(102.05, timestamp=t0 + timedelta(minutes=6))
     assert exit_summary is not None
     assert exit_summary["exit_reason"] == "Target Hit"
     assert exit_summary["tranches_filled"] == 3
@@ -1222,6 +1222,59 @@ def test_wick_immunity_and_candle_close_stop_loss() -> None:
     assert target_exit is not None
     assert target_exit["exit_reason"] == "Target Hit"
     assert trader.has_open_position is False
+
+
+def test_volatility_floor_gate() -> None:
+    """Verify that signal_brain blocks signals when ATR < MIN_ATR (0.30)."""
+    # 16 candles with micro-volatility (High - Low = 0.10 -> ATR ~ 0.10 < 0.30)
+    dates = [datetime(2026, 8, 24, 9, 15 + i) for i in range(16)]
+    open_prices = [100.0 + i * 0.05 for i in range(16)]
+    high_prices = [p + 0.08 for p in open_prices]
+    low_prices = [p - 0.02 for p in open_prices]
+    close_prices = [p + 0.05 for p in open_prices]
+
+    # Candle 14 pullback touch
+    open_prices[14] = 100.35
+    high_prices[14] = 100.40
+    low_prices[14] = 100.10
+    close_prices[14] = 100.36
+
+    df_low_vol = pd.DataFrame({
+        "Timestamp": dates,
+        "Open": open_prices,
+        "High": high_prices,
+        "Low": low_prices,
+        "Close": close_prices,
+        "Volume": [1000] * 16,
+    })
+
+    res_low = generate_vwap_signal(df_low_vol)
+    # Blocked by Volatility Floor Gate (ATR < 0.30)
+    assert not res_low["Buy_Signal"].any()
+
+
+def test_true_net_rr_friction_gate() -> None:
+    """Verify that execution_engine aborts trades if Net R:R < 1.5 or Net Profit < 2x friction."""
+    trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50)
+    t0 = datetime(2026, 8, 24, 9, 30)
+
+    # 1. Micro-ATR (e.g. 0.15) produces tiny profit where statutory friction destroys Net R:R
+    ticket_micro = trader.execute_trade(
+        {"VWAP": 100.0, "Close": 100.2, "symbol": "TATASTEEL", "ATR_14": 0.15},
+        timestamp=t0,
+        atr_14=0.15,
+    )
+    assert ticket_micro is None
+    assert trader.has_open_position is False
+
+    # 2. Healthy ATR (e.g. 1.0) produces robust profit and passes True Net-R:R Gate
+    ticket_healthy = trader.execute_trade(
+        {"VWAP": 100.0, "Close": 100.2, "symbol": "TATASTEEL", "ATR_14": 1.0},
+        timestamp=t0,
+        atr_14=1.0,
+    )
+    assert ticket_healthy is not None
+    assert trader.has_open_position is True
 
 
 def run_scenario(

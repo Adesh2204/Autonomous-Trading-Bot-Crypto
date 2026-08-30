@@ -41,6 +41,9 @@ logger = logging.getLogger(__name__)
 # Minimum session candles (15 mins @ 1-min interval) required for VWAP stabilization
 MIN_CANDLES_BEFORE_TRADE = 15
 
+# Absolute Volatility Floor (minimum ATR distance to overcome statutory friction)
+MIN_ATR = 0.30
+
 
 def compute_atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
     """
@@ -163,14 +166,16 @@ def _get_session_key(df: pd.DataFrame) -> pd.Index:
 def generate_vwap_signal(
     df: pd.DataFrame,
     min_candles_before_trade: int = MIN_CANDLES_BEFORE_TRADE,
+    min_atr: float = MIN_ATR,
 ) -> pd.DataFrame:
     """
     Calculate Intraday VWAP, rolling ATR-14, VWAP Slope (10-period), EMA(9), EMA(21),
     and detect a strict 3-condition "VWAP Pullback Buy Signal" guarded by:
     1. VWAP Stabilization Gate (requires >= min_candles_before_trade session candles).
-    2. Deep Breakdown Filter (prior candle low >= VWAP - 1.0 * ATR_14).
-    3. Dual-Layer Trend Regime Filter (VWAP_Slope > 0 & EMA_9 >= EMA_21).
-    4. Anti-Spam State Lock (2 consecutive candle displacement required after signal).
+    2. Absolute Volatility Floor (requires ATR_14 >= min_atr to outrun friction).
+    3. Deep Breakdown Filter (prior candle low >= VWAP - 1.0 * ATR_14).
+    4. Dual-Layer Trend Regime Filter (VWAP_Slope > 0 & EMA_9 >= EMA_21).
+    5. Anti-Spam State Lock (2 consecutive candle displacement required after signal).
 
     Parameters
     ----------
@@ -180,6 +185,8 @@ def generate_vwap_signal(
     min_candles_before_trade : int, optional
         Minimum number of completed candles required in the active session
         before allowing trade entries (default: 15).
+    min_atr : float, optional
+        Absolute volatility floor in price units (default: 0.30).
 
     Returns
     -------
@@ -287,6 +294,7 @@ def generate_vwap_signal(
     ema21_arr = out["EMA_21"].to_numpy()
     cum_count_arr = cum_count.to_numpy()
     prior_broke_support_arr = prior_broke_support.fillna(False).to_numpy()
+    atr_arr = out["ATR_14"].to_numpy()
 
     for i in range(len(raw_arr)):
         is_raw_true = bool(raw_arr[i])
@@ -306,6 +314,7 @@ def generate_vwap_signal(
         if is_raw_true:
             session_candle_count = int(cum_count_arr[i]) + 1
             potential_signal: Optional[str] = "BUY"
+            current_atr_val = float(atr_arr[i])
 
             # Check 1: VWAP Stabilization Gate
             if session_candle_count < min_candles_before_trade:
@@ -315,14 +324,22 @@ def generate_vwap_signal(
                 )
                 potential_signal = None
 
-            # Check 2: Deep Breakdown / Violent Knife Filter
+            # Check 2: Absolute Volatility Floor
+            elif np.isnan(current_atr_val) or current_atr_val < min_atr:
+                logger.debug(
+                    f"[VOLATILITY GATE] Signal blocked. Current ATR ({current_atr_val:.2f}) < "
+                    f"Minimum required ({min_atr:.2f}). Market is too choppy to overcome friction costs."
+                )
+                potential_signal = None
+
+            # Check 3: Deep Breakdown / Violent Knife Filter
             elif bool(prior_broke_support_arr[i]):
                 logger.info(
                     "[FILTER] Signal blocked: Prior candle broke down too aggressively. Not a safe pullback."
                 )
                 potential_signal = None
 
-            # Check 3: Dual-Layer Trend Regime Gates (VWAP Slope + EMA Crossover)
+            # Check 4: Dual-Layer Trend Regime Gates (VWAP Slope + EMA Crossover)
             else:
                 validated = evaluate_regime_gate(
                     potential_signal="BUY",
