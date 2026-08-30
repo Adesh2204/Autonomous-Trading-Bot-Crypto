@@ -73,6 +73,7 @@ TRANCHE2_TRIGGER_PCT = 0.0030       # +0.30% unrealized gain required to unlock 
 SCALE_IN_GAIN_TRIGGER_PCT = 0.0030  # +0.30% unrealized gain required to unlock next tranche
 REENTRY_COOLDOWN_CANDLES = 10       # Minimum completed candles before re-entering after an exit
 MIN_NET_RR = 1.5                    # Minimum Net Risk-to-Reward ratio after all statutory friction
+MIN_NET_PROFIT = 3.0                # Absolute floor in rupees to prevent microscopic wins
 MIN_NET_PROFIT_MULTIPLIER = 2.0     # Profit must be at least 2x the cost of doing business
 
 # ── Persistent Trade Ledger Schema (13 Columns) ──────────────────────────
@@ -195,8 +196,9 @@ class PaperTrader:
         self._latest_timestamp: Optional[datetime] = None
         self._entry_timestamp: Optional[datetime] = None
         self.candles_held: int = 0
-        self.candles_since_last_exit: int = 999
+        self.candles_since_last_sl: int = 999
         self.reentry_cooldown_candles: int = REENTRY_COOLDOWN_CANDLES
+        self.entry_atr: Optional[float] = None
         self.tranche2_trigger_pct: float = TRANCHE2_TRIGGER_PCT
         self.scale_in_gain_trigger_pct: float = SCALE_IN_GAIN_TRIGGER_PCT
         self.lock = threading.RLock()
@@ -363,11 +365,11 @@ class PaperTrader:
 
             # ── STATE 0: IDLE → TRANCHE 1 (Base Entry) ──────────────────
             if pos is None:
-                # ── Post-Exit Cooldown Firewall ─────────────────────────
-                if self.candles_since_last_exit < self.reentry_cooldown_candles:
+                # ── Post-Stop-Loss Cooldown Firewall ────────────────────
+                if self.candles_since_last_sl < self.reentry_cooldown_candles:
                     logging.info(
-                        f"[COOLDOWN] Signal ignored. Waiting {self.reentry_cooldown_candles - self.candles_since_last_exit} "
-                        "more candles after previous exit."
+                        f"[COOLDOWN] Signal ignored. Waiting {self.reentry_cooldown_candles - self.candles_since_last_sl} "
+                        "more candles after previous stop-out."
                     )
                     return None
 
@@ -413,13 +415,17 @@ class PaperTrader:
 
             # ── STATE 1: HOLDING_TRANCHE_1 → TRANCHE 2 (Scale 1) ────────
             if current_tranches == 1:
-                p1 = pos["tranches"][0]["entry_price"]
-                scale_in_trigger = p1 * (1.0 + self.tranche2_trigger_pct)
+                entry_atr = float(pos.get("atr_14") or self.entry_atr or 1.0)
+                avg_entry = float(pos["average_entry_price"])
+                # Scale-in requires a confirmed move of 2.0x the current ATR
+                tranche2_trigger_distance = round(2.0 * entry_atr, 2)
+                tranche2_trigger_price = round(avg_entry + tranche2_trigger_distance, 2)
 
-                if current_price < scale_in_trigger:
+                if current_price < tranche2_trigger_price:
                     logging.info(
-                        f"[SCALE-IN CHECK] Tranche 2 gate: Unrealized gain < +{self.tranche2_trigger_pct*100:.2f}% "
-                        f"(Price ₹{current_price:,.2f} < ₹{scale_in_trigger:,.2f} trigger). Holding Tranche 1."
+                        f"[SCALE-IN CHECK] Tranche 2 gate: Price ₹{current_price:,.2f} < "
+                        f"₹{tranche2_trigger_price:,.2f} trigger (2.0x ATR: ₹{tranche2_trigger_distance:.2f}). "
+                        "Holding Tranche 1."
                     )
                     return None
 
@@ -427,13 +433,16 @@ class PaperTrader:
 
             # ── STATE 2: HOLDING_TRANCHE_2 → TRANCHE 3 (Scale 2) ────────
             if current_tranches == 2:
-                p2 = pos["tranches"][1]["entry_price"]
-                scale_in_trigger = p2 * (1.0 + self.scale_in_gain_trigger_pct)
+                entry_atr = float(pos.get("atr_14") or self.entry_atr or 1.0)
+                p2 = float(pos["tranches"][1]["entry_price"])
+                tranche3_trigger_distance = round(2.0 * entry_atr, 2)
+                tranche3_trigger_price = round(p2 + tranche3_trigger_distance, 2)
 
-                if current_price < scale_in_trigger:
+                if current_price < tranche3_trigger_price:
                     logging.info(
-                        f"[SCALE-IN CHECK] Tranche 3 gate: Unrealized gain from T2 < +{self.scale_in_gain_trigger_pct*100:.2f}% "
-                        f"(Price ₹{current_price:,.2f} < ₹{scale_in_trigger:,.2f} trigger). Holding Tranche 2."
+                        f"[SCALE-IN CHECK] Tranche 3 gate: Price ₹{current_price:,.2f} < "
+                        f"₹{tranche3_trigger_price:,.2f} trigger (2.0x ATR: ₹{tranche3_trigger_distance:.2f}). "
+                        "Holding Tranche 2."
                     )
                     return None
 
@@ -479,13 +488,20 @@ class PaperTrader:
         net_profit = gross_profit - total_friction
 
         gross_loss = (entry_price - stop_loss_price) * qty
-        net_loss = gross_loss + total_friction  # Losses are amplified by statutory friction
+        net_loss = gross_loss + total_friction  # Costs amplify the total loss
 
         actual_net_rr = net_profit / net_loss if net_loss > 0 else 0.0
 
         if actual_net_rr < MIN_NET_RR:
             logging.warning(
-                f"[FRICTION GATE FAILED] Net R:R is only 1:{actual_net_rr:.2f}. Requires 1:{MIN_NET_RR:.1f}."
+                f"[FRICTION GATE FAILED] Net R:R is 1:{actual_net_rr:.2f} (Requires minimum 1:{MIN_NET_RR:.1f}). "
+                "Costs eating too much margin."
+            )
+            return None
+
+        if net_profit < MIN_NET_PROFIT:
+            logging.warning(
+                f"[FRICTION GATE FAILED] Net Profit (₹{net_profit:.2f}) is below absolute floor (₹{MIN_NET_PROFIT:.2f})."
             )
             return None
 
@@ -537,6 +553,7 @@ class PaperTrader:
             "current_tranches": 1,
             "max_tranches": self.max_tranches,
             "atr_14": current_atr,
+            "entry_atr": current_atr,
             "stop_loss_distance": stop_loss_distance,
             "stop_loss_price": stop_loss_price,
             "target_price": target_price,
@@ -554,6 +571,7 @@ class PaperTrader:
         self._open_position = snapshot
         self._state = PyramidingState.HOLDING_TRANCHE_1
         self._entry_timestamp = timestamp
+        self.entry_atr = current_atr
         self.candles_held = 0
 
         ticket = self._build_ticket(snapshot, 1, qty, entry_price, trade_id)
@@ -857,6 +875,17 @@ class PaperTrader:
 
             return None
 
+    def update_tick(
+        self,
+        live_price: float,
+        timestamp: Optional[datetime] = None,
+    ) -> Optional[dict]:
+        """
+        Alias for check_exit: evaluates tick-level exits (Take-Profit hit & EOD square-off).
+        Stop-Loss checks are strictly excluded here for Wick Immunity.
+        """
+        return self.check_exit(live_price=live_price, timestamp=timestamp)
+
     def close_position(
         self,
         exit_price: float,
@@ -948,7 +977,9 @@ class PaperTrader:
             self._open_position = None
             self._entry_timestamp = None
             self._state = PyramidingState.CLOSED
-            self.candles_since_last_exit = 0
+            self.entry_atr = None
+            if "Stop Loss" in reason:
+                self.candles_since_last_sl = 0
             self.candles_held = 0
 
             # Daily Circuit Breaker Check
@@ -976,7 +1007,7 @@ class PaperTrader:
         (Time stop is permanently eliminated; trades run to SL, TP, or 15:20 EOD).
         """
         with self.lock:
-            self.candles_since_last_exit += 1
+            self.candles_since_last_sl += 1
             ts = timestamp
             px = latest_price
 
@@ -1013,11 +1044,13 @@ class PaperTrader:
 
                 # ── State Telemetry Tracking ─────────────────────────────
                 if self._state == PyramidingState.HOLDING_TRANCHE_1:
-                    tranche2_trigger_price = avg_entry * (1.0 + self.tranche2_trigger_pct)
-                    distance_to_trigger = tranche2_trigger_price - close_val
+                    entry_atr = float(pos.get("atr_14") or (self.entry_atr if self.entry_atr is not None else 1.0))
+                    tranche2_trigger_distance = round(2.0 * entry_atr, 2)
+                    tranche2_trigger_price = round(avg_entry + tranche2_trigger_distance, 2)
+                    distance_to_trigger = round(tranche2_trigger_price - close_val, 2)
                     logging.debug(
-                        f"[TELEMETRY] State: {self._state.value} | Current: ₹{close_val:,.2f} | "
-                        f"Tranche 2 Gate: ₹{tranche2_trigger_price:,.2f} | Distance: ₹{distance_to_trigger:,.2f}"
+                        f"[SCALE-IN TELEMETRY] Current: ₹{close_val:.2f} | "
+                        f"T2 Gate: ₹{tranche2_trigger_price:.2f} (2x ATR) | Distance: ₹{distance_to_trigger:.2f}"
                     )
 
             # ── Wick-Immune Stop-Loss Evaluation (Confirmed Candle Close) ──
@@ -1228,6 +1261,20 @@ class PaperTrader:
     @property
     def latest_price(self) -> Optional[float]:
         return self._latest_price
+
+    @property
+    def avg_entry_price(self) -> Optional[float]:
+        if self._open_position is not None:
+            return float(self._open_position["average_entry_price"])
+        return None
+
+    @property
+    def candles_since_last_exit(self) -> int:
+        return self.candles_since_last_sl
+
+    @candles_since_last_exit.setter
+    def candles_since_last_exit(self, val: int) -> None:
+        self.candles_since_last_sl = val
 
     def check_day_reset(self, current_dt: Optional[datetime] = None) -> None:
         """Public method to reset intraday state if session date changes."""

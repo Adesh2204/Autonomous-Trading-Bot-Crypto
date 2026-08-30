@@ -112,19 +112,19 @@ def evaluate_regime_gate(
     _logger = log or logger
 
     if potential_signal == "BUY":
-        # Gate 1: VWAP Directionality
+        # Gate A (VWAP Trajectory)
         if np.isnan(vwap_slope) or vwap_slope <= 0:
-            _logger.info(
-                f"[REGIME FILTER] Signal blocked: VWAP slope is negative ({vwap_slope:.4f}). "
+            _logger.debug(
+                "[REGIME FILTER] Signal blocked: VWAP slope negative. "
                 "Market is not in a buy-side regime."
             )
             return None
 
-        # Gate 2: Fast vs Slow Momentum
+        # Gate B (EMA Alignment)
         if np.isnan(ema9) or np.isnan(ema21) or ema9 < ema21:
-            _logger.info(
-                f"[REGIME FILTER] Signal blocked: EMA(9) < EMA(21). "
-                f"Bearish trend structure detected (EMA9={ema9:.2f}, EMA21={ema21:.2f})."
+            _logger.debug(
+                "[REGIME FILTER] Signal blocked: EMA9 < EMA21. "
+                "Bearish trend structure detected."
             )
             return None
 
@@ -328,7 +328,7 @@ def generate_vwap_signal(
             elif np.isnan(current_atr_val) or current_atr_val < min_atr:
                 logger.debug(
                     f"[VOLATILITY GATE] Signal blocked. Current ATR ({current_atr_val:.2f}) < "
-                    f"Minimum required ({min_atr:.2f}). Market is too choppy to overcome friction costs."
+                    f"Minimum required ({min_atr:.2f}). Market is too tight to overcome friction costs."
                 )
                 potential_signal = None
 

@@ -786,51 +786,51 @@ def test_multi_tranche_pyramiding_state_machine(tmp_path) -> None:
     assert trader._open_position["stop_loss_price"] == 99.00   # 100 - 2.0*0.50 = 99.00
     assert trader._open_position["target_price"] == 102.00      # 100 + 2.0*1.00 = 102.00 (1:2 R:R)
 
-    # ── 2. Guard: Scale-in below +0.30% gain is rejected ──────────────
+    # ── 2. Guard: Scale-in below 2.0x ATR trigger is rejected ─────────
     ticket_fail = trader.execute_trade(
-        {"VWAP": 100.20, "Close": 100.20, "symbol": "TATASTEEL", "ATR_14": 0.50},
+        {"VWAP": 100.50, "Close": 100.50, "symbol": "TATASTEEL", "ATR_14": 0.50},
         timestamp=t0 + timedelta(minutes=1),
     )
     assert ticket_fail is None
     assert trader.state.value == "HOLDING_TRANCHE_1"
 
-    # ── 3. TRANCHE 2 (Scale 1 @ ₹100.60, gain +0.60% >= +0.50%) ───────
+    # ── 3. TRANCHE 2 (Scale 1 @ ₹101.00, gain +₹1.00 = 2.0x ATR) ──────
     t1 = t0 + timedelta(minutes=2)
     ticket2 = trader.execute_trade(
-        {"VWAP": 100.60, "Close": 100.60, "symbol": "TATASTEEL", "ATR_14": 0.50},
+        {"VWAP": 101.00, "Close": 101.00, "symbol": "TATASTEEL", "ATR_14": 0.50},
         timestamp=t1,
     )
     assert ticket2 is not None
     assert trader.state.value == "HOLDING_TRANCHE_2"
     assert ticket2["tranche_number"] == 2
-    # Q2: floor(1652.80 / 100.60) = 16 shares
+    # Q2: floor(1652.80 / 101.00) = 16 shares
     assert ticket2["quantity"] == 16
     assert trader._open_position["quantity"] == 32  # 16 + 16
 
-    # VWAP Avg Entry: (100*16 + 100.60*16)/32 = 100.30
-    assert trader._open_position["average_entry_price"] == 100.30
-    # Zero-Risk Lock: SL trailed to max(P_entry_1=100.00, 100.30*0.995=99.80) -> 100.00 (Breakeven Floor)
+    # VWAP Avg Entry: (100*16 + 101.00*16)/32 = 100.50
+    assert trader._open_position["average_entry_price"] == 100.50
+    # Zero-Risk Lock: SL trailed to max(P_entry_1=100.00, 100.50*0.995=99.9975) -> 100.00 (Breakeven Floor)
     assert trader._open_position["stop_loss_price"] == 100.00
     # Anchored Target: Remains fixed at Tranche 1 target (102.00)
     assert trader._open_position["target_price"] == 102.00
 
-    # ── 4. TRANCHE 3 (Scale 2 @ ₹101.20, gain +0.60% from T2 >= +0.50%)
+    # ── 4. TRANCHE 3 (Scale 2 @ ₹102.00, gain +₹1.00 from T2 = 2.0x ATR)
     t2 = t0 + timedelta(minutes=4)
     ticket3 = trader.execute_trade(
-        {"VWAP": 101.20, "Close": 101.20, "symbol": "TATASTEEL", "ATR_14": 0.50},
+        {"VWAP": 102.00, "Close": 102.00, "symbol": "TATASTEEL", "ATR_14": 0.50},
         timestamp=t2,
     )
     assert ticket3 is not None
     assert trader.state.value == "MAX_TRANCHES_HELD"
     assert ticket3["tranche_number"] == 3
-    # Q3: floor(1702.90 / 101.20) = 16 shares
+    # Q3: floor(1702.90 / 102.00) = 16 shares
     assert ticket3["quantity"] == 16
     assert trader._open_position["quantity"] == 48  # 32 + 16
 
-    # VWAP Avg Entry: (100*16 + 100.60*16 + 101.20*16)/48 = 100.60
-    assert trader._open_position["average_entry_price"] == 100.60
-    # Zero-Risk Lock: SL trailed to max(P_entry_2=100.60, 100.60*0.995=100.10) -> 100.60
-    assert trader._open_position["stop_loss_price"] == 100.60
+    # VWAP Avg Entry: (100*16 + 101.00*16 + 102.00*16)/48 = 101.00
+    assert trader._open_position["average_entry_price"] == 101.00
+    # Zero-Risk Lock: SL trailed to max(P_entry_2=101.00, 101.00*0.995=100.495) -> 101.00
+    assert trader._open_position["stop_loss_price"] == 101.00
     # Anchored Target: Remains fixed at Tranche 1 target (102.00)
     assert trader._open_position["target_price"] == 102.00
 
@@ -1278,11 +1278,11 @@ def test_true_net_rr_friction_gate() -> None:
 
 
 def test_recalibrated_pyramiding_tranche2_trigger() -> None:
-    """Verify that Tranche 2 unlocks at +0.30% gain (TRANCHE2_TRIGGER_PCT = 0.003)."""
+    """Verify that Tranche 2 unlocks at 2.0x ATR dynamic distance (tranche2_trigger_distance = 2.0 * ATR)."""
     trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50)
     t0 = datetime(2026, 8, 24, 9, 30)
 
-    # Base entry @ 100.00
+    # Base entry @ 100.00 with ATR = 1.0 -> T2 gate = 100.00 + 2.0*1.0 = 102.00
     ticket1 = trader.execute_trade(
         {"VWAP": 100.0, "Close": 100.0, "symbol": "TATASTEEL", "ATR_14": 1.0},
         timestamp=t0,
@@ -1291,17 +1291,17 @@ def test_recalibrated_pyramiding_tranche2_trigger() -> None:
     assert ticket1 is not None
     assert trader.state.value == "HOLDING_TRANCHE_1"
 
-    # Price at 100.25 (+0.25% < +0.30% trigger) -> rejected
+    # Price at 101.50 (< 102.00 trigger) -> rejected
     t_fail = trader.execute_trade(
-        {"VWAP": 100.25, "Close": 100.25, "symbol": "TATASTEEL", "ATR_14": 1.0},
+        {"VWAP": 101.50, "Close": 101.50, "symbol": "TATASTEEL", "ATR_14": 1.0},
         timestamp=t0 + timedelta(minutes=1),
     )
     assert t_fail is None
     assert trader.state.value == "HOLDING_TRANCHE_1"
 
-    # Price at 100.35 (+0.35% >= +0.30% trigger) -> Tranche 2 unlocked!
+    # Price at 102.00 (>= 102.00 trigger) -> Tranche 2 unlocked!
     ticket2 = trader.execute_trade(
-        {"VWAP": 100.35, "Close": 100.35, "symbol": "TATASTEEL", "ATR_14": 1.0},
+        {"VWAP": 102.00, "Close": 102.00, "symbol": "TATASTEEL", "ATR_14": 1.0},
         timestamp=t0 + timedelta(minutes=2),
     )
     assert ticket2 is not None
