@@ -1031,6 +1031,46 @@ def test_pluggable_market_schedule_providers() -> None:
     assert nyse.is_eod_square_off(nyse_eod_ts) is True
 
 
+def test_dual_layer_trend_regime_filter() -> None:
+    """Verify Dual-Layer Trend Regime Filter (VWAP Slope + EMA Crossover Gatekeeper)."""
+    from signal_brain import evaluate_regime_gate
+
+    # 1. Gate 1: Negative VWAP Slope blocks BUY
+    assert evaluate_regime_gate("BUY", vwap_slope=-0.05, ema9=105.0, ema21=100.0) is None
+    assert evaluate_regime_gate("BUY", vwap_slope=0.0, ema9=105.0, ema21=100.0) is None
+
+    # 2. Gate 2: EMA(9) < EMA(21) blocks BUY
+    assert evaluate_regime_gate("BUY", vwap_slope=0.05, ema9=95.0, ema21=100.0) is None
+
+    # 3. Both gates pass -> BUY validated
+    assert evaluate_regime_gate("BUY", vwap_slope=0.05, ema9=105.0, ema21=100.0) == "BUY"
+
+    # 4. Future Adaptive SHORT Regime Gate
+    assert evaluate_regime_gate("SHORT", vwap_slope=0.05, ema9=95.0, ema21=100.0) is None
+    assert evaluate_regime_gate("SHORT", vwap_slope=-0.05, ema9=105.0, ema21=100.0) is None
+    assert evaluate_regime_gate("SHORT", vwap_slope=-0.05, ema9=95.0, ema21=100.0) == "SHORT"
+
+    # 5. End-to-end integration: Bearish Downtrend suppresses raw pullback signals
+    dates = [datetime(2026, 8, 24, 9, 15 + i) for i in range(12)]
+    # Falling price series: 200 -> 190 -> 180 -> 170 -> 160 -> 150
+    bearish_df = pd.DataFrame(
+        {
+            "Timestamp": dates,
+            "Open":   [200.0, 198.0, 195.0, 190.0, 185.0, 180.0, 175.0, 170.0, 165.0, 160.0, 158.0, 157.0],
+            "High":   [201.0, 199.0, 196.0, 191.0, 186.0, 181.0, 176.0, 171.0, 166.0, 161.0, 159.0, 158.0],
+            "Low":    [197.0, 194.0, 189.0, 184.0, 179.0, 174.0, 169.0, 164.0, 159.0, 155.0, 156.0, 155.0],
+            "Close":  [198.0, 195.0, 190.0, 185.0, 180.0, 175.0, 170.0, 165.0, 160.0, 158.0, 157.0, 156.0],
+            "Volume": [1000] * 12,
+        }
+    )
+    result = generate_vwap_signal(bearish_df)
+    assert "VWAP_Slope" in result.columns
+    assert "EMA_9" in result.columns
+    assert "EMA_21" in result.columns
+    # Ensure no BUY signal was permitted in this severe downtrend regime
+    assert not result["Buy_Signal"].any()
+
+
 def run_scenario(
     name: str,
     extra_path: Sequence[CandleSpec],
