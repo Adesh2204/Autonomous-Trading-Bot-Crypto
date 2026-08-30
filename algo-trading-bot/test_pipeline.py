@@ -420,6 +420,7 @@ class FlightSimulator:
     def on_candle_close(self, df):
         """Called by CandleBuilder every time a 1-minute candle closes."""
         analyzed = generate_vwap_signal(df.copy())
+        analyzed = generate_vwap_signal(df.copy(), min_candles_before_trade=1)
         latest = analyzed.iloc[-1]
         candle_no = len(analyzed)
         timestamp = latest["Timestamp"]
@@ -742,6 +743,7 @@ def test_dynamic_pullback_signal_and_anti_spam_lock() -> None:
     )
 
     signals = generate_vwap_signal(df)
+    signals = generate_vwap_signal(df, min_candles_before_trade=1)
     assert "VWAP" in signals.columns
     assert "ATR_14" in signals.columns
     assert "Buy_Signal" in signals.columns
@@ -1064,11 +1066,102 @@ def test_dual_layer_trend_regime_filter() -> None:
         }
     )
     result = generate_vwap_signal(bearish_df)
+    result = generate_vwap_signal(bearish_df, min_candles_before_trade=1)
     assert "VWAP_Slope" in result.columns
     assert "EMA_9" in result.columns
     assert "EMA_21" in result.columns
     # Ensure no BUY signal was permitted in this severe downtrend regime
     assert not result["Buy_Signal"].any()
+
+
+def test_vwap_stabilization_and_deep_breakdown_filter() -> None:
+    """Verify VWAP 15-minute stabilization gate and violent knife breakdown filter."""
+    # 1. Test Stabilization Gate (Default 15 candles):
+    # 14 candles should all yield Buy_Signal = False
+    dates = [datetime(2026, 8, 24, 9, 15 + i) for i in range(16)]
+    # Trending up candles
+    open_prices = [100.0 + i * 2.0 for i in range(16)]
+    high_prices = [p + 2.0 for p in open_prices]
+    low_prices = [p - 0.5 for p in open_prices]
+    close_prices = [p + 1.5 for p in open_prices]
+
+    # Pre-calculate VWAP level up to candle 13 to place candle 14 pullback accurately
+    # Candle 14 (15th candle): pullback touches VWAP (~115) and closes back above VWAP
+    open_prices[14] = 118.0
+    high_prices[14] = 119.0
+    low_prices[14] = 114.0   # Dips below / tests VWAP + 0.2*ATR
+    close_prices[14] = 116.0 # Rebounds and closes above VWAP
+
+    df_16 = pd.DataFrame({
+        "Timestamp": dates,
+        "Open": open_prices,
+        "High": high_prices,
+        "Low": low_prices,
+        "Close": close_prices,
+        "Volume": [1000] * 16,
+    })
+
+    # Run with default MIN_CANDLES_BEFORE_TRADE = 15
+    res = generate_vwap_signal(df_16)
+    # The first 14 candles (< 15) must be False
+    assert not res["Buy_Signal"].iloc[:14].any()
+    # The 15th candle (index 14) passes stabilization gate and fires
+    assert bool(res["Buy_Signal"].iloc[14]) is True
+
+    # 2. Test Deep Breakdown / Falling Knife Filter:
+    # If candle N-1 low violently crashes < (VWAP - 1.0 * ATR), signal on candle N must be blocked
+    df_knife = df_16.copy()
+    # Force candle 13 (prior to pullback) to crash deeply below VWAP
+    df_knife.loc[13, "Low"] = 50.0  # deep knife crash
+    res_knife = generate_vwap_signal(df_knife)
+    assert bool(res_knife["Buy_Signal"].iloc[14]) is False
+
+
+def test_post_stop_loss_cooldown_firewall() -> None:
+    """Verify 10-candle cooldown firewall immediately following a Stop Loss."""
+    trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50)
+    # Default ready state
+    assert trader.candles_since_last_exit == 999
+
+    # Enter initial trade
+    t0 = datetime(2026, 8, 24, 9, 30)
+    ticket = trader.execute_trade(
+        {"VWAP": 100.0, "Close": 100.5, "symbol": "TATASTEEL", "ATR_14": 1.0},
+        timestamp=t0,
+        atr_14=1.0,
+    )
+    assert ticket is not None
+    assert trader.has_open_position is True
+
+    # Stop loss hit -> close position
+    t1 = datetime(2026, 8, 24, 9, 35)
+    trader.close_position(exit_price=98.50, timestamp=t1, reason="Stop Loss")
+    assert trader.has_open_position is False
+    assert trader.candles_since_last_exit == 0
+
+    # Next 1..9 candles: attempt to re-enter immediately -> blocked by cooldown
+    for c in range(1, 10):
+        trader.notify_candle_close(timestamp=datetime(2026, 8, 24, 9, 35 + c), latest_price=100.0)
+        assert trader.candles_since_last_exit == c
+        attempt = trader.execute_trade(
+            {"VWAP": 100.0, "Close": 100.5, "symbol": "TATASTEEL", "ATR_14": 1.0},
+            timestamp=datetime(2026, 8, 24, 9, 35 + c),
+            atr_14=1.0,
+        )
+        assert attempt is None  # Blocked by cooldown!
+
+    # 10th candle closes -> cooldown expires (candles_since_last_exit == 10)
+    trader.notify_candle_close(timestamp=datetime(2026, 8, 24, 9, 45), latest_price=100.0)
+    assert trader.candles_since_last_exit == 10
+
+    # Trade is now allowed
+    valid_ticket = trader.execute_trade(
+        {"VWAP": 100.0, "Close": 100.5, "symbol": "TATASTEEL", "ATR_14": 1.0},
+        timestamp=datetime(2026, 8, 24, 9, 45),
+        atr_14=1.0,
+    )
+    assert valid_ticket is not None
+    assert trader.has_open_position is True
 
 
 def run_scenario(

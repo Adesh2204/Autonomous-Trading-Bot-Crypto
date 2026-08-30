@@ -70,6 +70,7 @@ MAX_TRANCHES = 3
 DEFAULT_STOP_LOSS_PCT = 0.0050   # 0.50% initial risk distance
 DEFAULT_PROFIT_TARGET_PCT = 0.0100  # 1.00% target (1:2 R:R)
 SCALE_IN_GAIN_TRIGGER_PCT = 0.0050  # +0.50% unrealized gain required to unlock next tranche
+REENTRY_COOLDOWN_CANDLES = 10       # Minimum completed candles before re-entering after an exit
 
 # ── Persistent Trade Ledger Schema (13 Columns) ──────────────────────────
 CSV_HEADERS = [
@@ -190,6 +191,8 @@ class PaperTrader:
         self._latest_price: Optional[float] = None
         self._latest_timestamp: Optional[datetime] = None
         self._entry_timestamp: Optional[datetime] = None
+        self.candles_since_last_exit: int = 999
+        self.reentry_cooldown_candles: int = REENTRY_COOLDOWN_CANDLES
         self.lock = threading.RLock()
 
         logging.info("=" * 60)
@@ -354,6 +357,14 @@ class PaperTrader:
 
             # ── STATE 0: IDLE → TRANCHE 1 (Base Entry) ──────────────────
             if pos is None:
+                # ── Post-Exit Cooldown Firewall ─────────────────────────
+                if self.candles_since_last_exit < self.reentry_cooldown_candles:
+                    logging.info(
+                        f"[COOLDOWN] Signal ignored. Waiting {self.reentry_cooldown_candles - self.candles_since_last_exit} "
+                        "more candles after previous exit."
+                    )
+                    return None
+
                 # Type & Value Failsafe: ATR validation for Tranche 1 dynamic volatility distance
                 if raw_atr is None:
                     logging.error(
@@ -936,6 +947,7 @@ class PaperTrader:
             self._open_position = None
             self._entry_timestamp = None
             self._state = PyramidingState.CLOSED
+            self.candles_since_last_exit = 0
 
             # Daily Circuit Breaker Check
             if self._daily_pnl <= -self.daily_loss_limit:
@@ -958,9 +970,11 @@ class PaperTrader:
         """
         Candle close notification called when a 1-minute candle completes.
         Updates engine with latest price and timestamp.
+        Updates engine with latest price and timestamp, and increments cooldown counter.
         (Time stop is permanently eliminated; trades run to SL, TP, or 15:20 EOD).
         """
         with self.lock:
+            self.candles_since_last_exit += 1
             ts = timestamp
             px = latest_price
 
