@@ -69,7 +69,8 @@ MAX_TRANCHES = 3
 # Strategy parameters
 DEFAULT_STOP_LOSS_PCT = 0.0050   # 0.50% initial risk distance
 DEFAULT_PROFIT_TARGET_PCT = 0.0100  # 1.00% target (1:2 R:R)
-SCALE_IN_GAIN_TRIGGER_PCT = 0.0050  # +0.50% unrealized gain required to unlock next tranche
+TRANCHE2_TRIGGER_PCT = 0.0030       # +0.30% unrealized gain required to unlock Tranche 2
+SCALE_IN_GAIN_TRIGGER_PCT = 0.0030  # +0.30% unrealized gain required to unlock next tranche
 REENTRY_COOLDOWN_CANDLES = 10       # Minimum completed candles before re-entering after an exit
 MIN_NET_RR = 1.5                    # Minimum Net Risk-to-Reward ratio after all statutory friction
 MIN_NET_PROFIT_MULTIPLIER = 2.0     # Profit must be at least 2x the cost of doing business
@@ -193,8 +194,11 @@ class PaperTrader:
         self._latest_price: Optional[float] = None
         self._latest_timestamp: Optional[datetime] = None
         self._entry_timestamp: Optional[datetime] = None
+        self.candles_held: int = 0
         self.candles_since_last_exit: int = 999
         self.reentry_cooldown_candles: int = REENTRY_COOLDOWN_CANDLES
+        self.tranche2_trigger_pct: float = TRANCHE2_TRIGGER_PCT
+        self.scale_in_gain_trigger_pct: float = SCALE_IN_GAIN_TRIGGER_PCT
         self.lock = threading.RLock()
 
         logging.info("=" * 60)
@@ -410,11 +414,11 @@ class PaperTrader:
             # ── STATE 1: HOLDING_TRANCHE_1 → TRANCHE 2 (Scale 1) ────────
             if current_tranches == 1:
                 p1 = pos["tranches"][0]["entry_price"]
-                scale_in_trigger = p1 * (1.0 + SCALE_IN_GAIN_TRIGGER_PCT)
+                scale_in_trigger = p1 * (1.0 + self.tranche2_trigger_pct)
 
                 if current_price < scale_in_trigger:
                     logging.info(
-                        f"[SCALE-IN CHECK] Tranche 2 gate: Unrealized gain < +0.50% "
+                        f"[SCALE-IN CHECK] Tranche 2 gate: Unrealized gain < +{self.tranche2_trigger_pct*100:.2f}% "
                         f"(Price ₹{current_price:,.2f} < ₹{scale_in_trigger:,.2f} trigger). Holding Tranche 1."
                     )
                     return None
@@ -424,11 +428,11 @@ class PaperTrader:
             # ── STATE 2: HOLDING_TRANCHE_2 → TRANCHE 3 (Scale 2) ────────
             if current_tranches == 2:
                 p2 = pos["tranches"][1]["entry_price"]
-                scale_in_trigger = p2 * (1.0 + SCALE_IN_GAIN_TRIGGER_PCT)
+                scale_in_trigger = p2 * (1.0 + self.scale_in_gain_trigger_pct)
 
                 if current_price < scale_in_trigger:
                     logging.info(
-                        f"[SCALE-IN CHECK] Tranche 3 gate: Unrealized gain from T2 < +0.50% "
+                        f"[SCALE-IN CHECK] Tranche 3 gate: Unrealized gain from T2 < +{self.scale_in_gain_trigger_pct*100:.2f}% "
                         f"(Price ₹{current_price:,.2f} < ₹{scale_in_trigger:,.2f} trigger). Holding Tranche 2."
                     )
                     return None
@@ -550,6 +554,7 @@ class PaperTrader:
         self._open_position = snapshot
         self._state = PyramidingState.HOLDING_TRANCHE_1
         self._entry_timestamp = timestamp
+        self.candles_held = 0
 
         ticket = self._build_ticket(snapshot, 1, qty, entry_price, trade_id)
         self._trade_log.append(ticket)
@@ -944,6 +949,7 @@ class PaperTrader:
             self._entry_timestamp = None
             self._state = PyramidingState.CLOSED
             self.candles_since_last_exit = 0
+            self.candles_held = 0
 
             # Daily Circuit Breaker Check
             if self._daily_pnl <= -self.daily_loss_limit:
@@ -965,8 +971,8 @@ class PaperTrader:
     ) -> Optional[dict]:
         """
         Candle close notification called when a 1-minute candle completes.
-        Evaluates Wick-Immune Candle-Close Stop Loss, updates price/timestamp,
-        and increments cooldown counter.
+        Evaluates Theta-Decay Defense, logs State Telemetry, evaluates Wick-Immune
+        Candle-Close Stop Loss, updates price/timestamp, and increments cooldown counter.
         (Time stop is permanently eliminated; trades run to SL, TP, or 15:20 EOD).
         """
         with self.lock:
@@ -984,6 +990,35 @@ class PaperTrader:
             resolved_ts = self._resolve_timestamp(ts)
             if px is not None:
                 self._set_latest_price(float(px), resolved_ts)
+
+            # ── Active Position Management on Candle Close ───────────────
+            if self._open_position is not None:
+                self.candles_held += 1
+                pos = self._open_position
+                close_val = float(px) if px is not None else float(pos["average_entry_price"])
+                avg_entry = float(pos["average_entry_price"])
+
+                # ── Theta-Decay Defense (Time-Based Breakeven) ───────────
+                # If we have held the trade for 15+ candles and it is in profit, lock risk to zero.
+                if self._state == PyramidingState.HOLDING_TRANCHE_1 and self.candles_held >= 15:
+                    if close_val > avg_entry:
+                        current_sl = float(pos["stop_loss_price"])
+                        if current_sl < avg_entry:
+                            pos["stop_loss_price"] = avg_entry
+                            pos["breakeven_armed"] = True
+                            logging.info(
+                                f"[THETA DEFENSE] 15 candles elapsed in profit. "
+                                f"Stop Loss aggressively trailed to Breakeven (₹{avg_entry:,.2f}). Risk is now Zero."
+                            )
+
+                # ── State Telemetry Tracking ─────────────────────────────
+                if self._state == PyramidingState.HOLDING_TRANCHE_1:
+                    tranche2_trigger_price = avg_entry * (1.0 + self.tranche2_trigger_pct)
+                    distance_to_trigger = tranche2_trigger_price - close_val
+                    logging.debug(
+                        f"[TELEMETRY] State: {self._state.value} | Current: ₹{close_val:,.2f} | "
+                        f"Tranche 2 Gate: ₹{tranche2_trigger_price:,.2f} | Distance: ₹{distance_to_trigger:,.2f}"
+                    )
 
             # ── Wick-Immune Stop-Loss Evaluation (Confirmed Candle Close) ──
             if self._open_position is not None and px is not None:

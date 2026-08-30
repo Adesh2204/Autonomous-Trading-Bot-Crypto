@@ -786,9 +786,9 @@ def test_multi_tranche_pyramiding_state_machine(tmp_path) -> None:
     assert trader._open_position["stop_loss_price"] == 99.00   # 100 - 2.0*0.50 = 99.00
     assert trader._open_position["target_price"] == 102.00      # 100 + 2.0*1.00 = 102.00 (1:2 R:R)
 
-    # ── 2. Guard: Scale-in below +0.50% gain is rejected ──────────────
+    # ── 2. Guard: Scale-in below +0.30% gain is rejected ──────────────
     ticket_fail = trader.execute_trade(
-        {"VWAP": 100.30, "Close": 100.30, "symbol": "TATASTEEL", "ATR_14": 0.50},
+        {"VWAP": 100.20, "Close": 100.20, "symbol": "TATASTEEL", "ATR_14": 0.50},
         timestamp=t0 + timedelta(minutes=1),
     )
     assert ticket_fail is None
@@ -1275,6 +1275,66 @@ def test_true_net_rr_friction_gate() -> None:
     )
     assert ticket_healthy is not None
     assert trader.has_open_position is True
+
+
+def test_recalibrated_pyramiding_tranche2_trigger() -> None:
+    """Verify that Tranche 2 unlocks at +0.30% gain (TRANCHE2_TRIGGER_PCT = 0.003)."""
+    trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50)
+    t0 = datetime(2026, 8, 24, 9, 30)
+
+    # Base entry @ 100.00
+    ticket1 = trader.execute_trade(
+        {"VWAP": 100.0, "Close": 100.0, "symbol": "TATASTEEL", "ATR_14": 1.0},
+        timestamp=t0,
+        atr_14=1.0,
+    )
+    assert ticket1 is not None
+    assert trader.state.value == "HOLDING_TRANCHE_1"
+
+    # Price at 100.25 (+0.25% < +0.30% trigger) -> rejected
+    t_fail = trader.execute_trade(
+        {"VWAP": 100.25, "Close": 100.25, "symbol": "TATASTEEL", "ATR_14": 1.0},
+        timestamp=t0 + timedelta(minutes=1),
+    )
+    assert t_fail is None
+    assert trader.state.value == "HOLDING_TRANCHE_1"
+
+    # Price at 100.35 (+0.35% >= +0.30% trigger) -> Tranche 2 unlocked!
+    ticket2 = trader.execute_trade(
+        {"VWAP": 100.35, "Close": 100.35, "symbol": "TATASTEEL", "ATR_14": 1.0},
+        timestamp=t0 + timedelta(minutes=2),
+    )
+    assert ticket2 is not None
+    assert trader.state.value == "HOLDING_TRANCHE_2"
+    assert ticket2["tranche_number"] == 2
+
+
+def test_theta_decay_breakeven_defense() -> None:
+    """Verify that after 15 candles held in profit, Stop Loss is aggressively trailed to entry (risk = 0)."""
+    trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50)
+    t0 = datetime(2026, 8, 24, 9, 30)
+
+    # Base entry @ 100.00 with ATR = 1.0 -> initial SL = 98.00
+    ticket = trader.execute_trade(
+        {"VWAP": 100.0, "Close": 100.0, "symbol": "TATASTEEL", "ATR_14": 1.0},
+        timestamp=t0,
+        atr_14=1.0,
+    )
+    assert ticket is not None
+    assert trader.candles_held == 0
+    assert trader._open_position["stop_loss_price"] == 98.00
+
+    # Simulate 14 completed candles in mild profit (close = 100.15)
+    for c in range(1, 15):
+        trader.notify_candle_close(latest_price=100.15, timestamp=t0 + timedelta(minutes=c))
+        assert trader.candles_held == c
+        assert trader._open_position["stop_loss_price"] == 98.00  # Not yet 15 candles
+
+    # 15th candle closes in profit (close = 100.15 > 100.00 entry) -> Theta Defense triggers!
+    trader.notify_candle_close(latest_price=100.15, timestamp=t0 + timedelta(minutes=15))
+    assert trader.candles_held == 15
+    assert trader._open_position["stop_loss_price"] == 100.00  # Trailed to Breakeven!
+    assert trader._open_position["breakeven_armed"] is True
 
 
 def run_scenario(
