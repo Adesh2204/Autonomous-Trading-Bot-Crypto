@@ -160,35 +160,17 @@ def _get_session_key(df: pd.DataFrame) -> pd.Index:
     raise ValueError("DataFrame must contain a 'Timestamp' column or DatetimeIndex.")
 
 
-def generate_vwap_signal(df: pd.DataFrame) -> pd.DataFrame:
 def generate_vwap_signal(
     df: pd.DataFrame,
     min_candles_before_trade: int = MIN_CANDLES_BEFORE_TRADE,
 ) -> pd.DataFrame:
     """
     Calculate Intraday VWAP, rolling ATR-14, VWAP Slope (10-period), EMA(9), EMA(21),
-    and detect a strict 3-condition "VWAP Pullback Buy Signal" guarded by a
-    Dual-Layer Trend Regime Filter and Anti-Spam State Lock.
     and detect a strict 3-condition "VWAP Pullback Buy Signal" guarded by:
     1. VWAP Stabilization Gate (requires >= min_candles_before_trade session candles).
     2. Deep Breakdown Filter (prior candle low >= VWAP - 1.0 * ATR_14).
     3. Dual-Layer Trend Regime Filter (VWAP_Slope > 0 & EMA_9 >= EMA_21).
     4. Anti-Spam State Lock (2 consecutive candle displacement required after signal).
-
-    Strategy Logic (VWAP_PULLBACK_BUY)
-    ──────────────────────────────────
-    1. Prior Displacement: Close_{t-1} > VWAP_{t-1} (firmly above on previous bar).
-    2. Dynamic Volatility Touch: Low_t <= VWAP_t + (0.20 * ATR_{14, t}).
-    3. Bullish Rejection Close: Close_t > VWAP_t (closes back above VWAP).
-    4. Regime Gate 1: VWAP_Slope_10 > 0 (VWAP is actively ascending).
-    5. Regime Gate 2: EMA_9 >= EMA_21 (Bullish trend structure).
-
-    Anti-Spam State Lock
-    ────────────────────
-    After a signal fires at Candle T, state transitions to LOCKED.
-    To unlock, price must displace away from VWAP such that:
-        Low_k > VWAP_k + (0.20 * ATR_{14, k})
-    for at least 2 consecutive candles (k = T+1, T+2) before another touch can register.
 
     Parameters
     ----------
@@ -208,7 +190,6 @@ def generate_vwap_signal(
         • VWAP_Slope (float) — 10-period VWAP Slope.
         • EMA_9      (float) — 9-period EMA of Close.
         • EMA_21     (float) — 21-period EMA of Close.
-        • Buy_Signal (bool)  — True only if all conditions and regime gates converge and unlocked.
         • Buy_Signal (bool)  — True only if all conditions, filters, and gates converge.
     """
     # ── 0. Input Validation ─────────────────────────────────────────────
@@ -280,7 +261,6 @@ def generate_vwap_signal(
     # ── 6. Rebound & Close back above VWAP ────────────────────────────
     close_bounces = out["Close"].astype(float) > out["VWAP"]
 
-    # Raw signal (ignores anti-spam lock and regime gates)
     # ── 7. Deep Breakdown Filter (Prevent falling knives) ──────────────
     # Reject if prior candle broke down excessively: prev_candle.low < (VWAP - 1.0 * ATR_14)
     prior_low = out["Low"].astype(float).groupby(session_key).shift(1)
@@ -294,7 +274,6 @@ def generate_vwap_signal(
         & close_bounces.fillna(False).astype(bool)
     )
 
-    # ── 7. Dual-Layer Regime Gatekeeper & Anti-Spam State Lock ────────
     # ── 8. Gatekeepers, Filters & Anti-Spam State Lock ────────────────
     buy_signal_vals: list[bool] = [False] * len(raw_signal)
     locked = False
@@ -325,17 +304,9 @@ def generate_vwap_signal(
             continue
 
         if is_raw_true:
-            validated = evaluate_regime_gate(
-                potential_signal="BUY",
-                vwap_slope=float(vwap_slope_arr[i]),
-                ema9=float(ema9_arr[i]),
-                ema21=float(ema21_arr[i]),
-                log=logger,
-            )
             session_candle_count = int(cum_count_arr[i]) + 1
             potential_signal: Optional[str] = "BUY"
 
-            if validated == "BUY":
             # Check 1: VWAP Stabilization Gate
             if session_candle_count < min_candles_before_trade:
                 logger.debug(

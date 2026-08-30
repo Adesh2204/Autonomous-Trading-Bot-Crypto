@@ -419,7 +419,6 @@ class FlightSimulator:
 
     def on_candle_close(self, df):
         """Called by CandleBuilder every time a 1-minute candle closes."""
-        analyzed = generate_vwap_signal(df.copy())
         analyzed = generate_vwap_signal(df.copy(), min_candles_before_trade=1)
         latest = analyzed.iloc[-1]
         candle_no = len(analyzed)
@@ -439,8 +438,18 @@ class FlightSimulator:
             f"Signal:{signal_text}"
         )
 
+        signal_timestamp = self.current_timestamp or timestamp
+        candle_exit_summary = self.trader.notify_candle_close(
+            candle=latest.to_dict() if hasattr(latest, "to_dict") else dict(latest),
+            timestamp=signal_timestamp,
+            latest_price=close_price,
+        )
+        if candle_exit_summary is not None:
+            self.exit_summary = candle_exit_summary
+            self._print_exit_summary(candle_exit_summary)
+            return
+
         if bool(latest["Buy_Signal"]):
-            signal_timestamp = self.current_timestamp or timestamp
             state = get_market_state(signal_timestamp)
             if not can_enter_new_positions(signal_timestamp):
                 logging.info(
@@ -742,7 +751,6 @@ def test_dynamic_pullback_signal_and_anti_spam_lock() -> None:
         }
     )
 
-    signals = generate_vwap_signal(df)
     signals = generate_vwap_signal(df, min_candles_before_trade=1)
     assert "VWAP" in signals.columns
     assert "ATR_14" in signals.columns
@@ -765,9 +773,9 @@ def test_multi_tranche_pyramiding_state_machine(tmp_path) -> None:
 
     t0 = datetime(2026, 8, 24, 9, 20)
 
-    # ── 1. TRANCHE 1 (Base Entry @ ₹100, ATR=0.3333333333333333 -> SL dist=0.50)
+    # ── 1. TRANCHE 1 (Base Entry @ ₹100, ATR=0.25 -> SL dist=0.50)
     ticket1 = trader.execute_trade(
-        {"VWAP": 100.00, "Close": 100.20, "symbol": "TATASTEEL", "ATR_14": 0.3333333333333333},
+        {"VWAP": 100.00, "Close": 100.20, "symbol": "TATASTEEL", "ATR_14": 0.25},
         timestamp=t0,
     )
     assert ticket1 is not None
@@ -775,12 +783,12 @@ def test_multi_tranche_pyramiding_state_machine(tmp_path) -> None:
     assert ticket1["tranche_number"] == 1
     # Quantity: floor(1652.80 / 100) = 16 shares
     assert ticket1["quantity"] == 16
-    assert trader._open_position["stop_loss_price"] == 99.50   # 100 - 1.5*0.3333 = 99.50
+    assert trader._open_position["stop_loss_price"] == 99.50   # 100 - 2.0*0.25 = 99.50
     assert trader._open_position["target_price"] == 101.00      # 100 + 2.0*0.50 = 101.00 (1:2 R:R)
 
     # ── 2. Guard: Scale-in below +0.50% gain is rejected ──────────────
     ticket_fail = trader.execute_trade(
-        {"VWAP": 100.30, "Close": 100.30, "symbol": "TATASTEEL", "ATR_14": 0.3333333333333333},
+        {"VWAP": 100.30, "Close": 100.30, "symbol": "TATASTEEL", "ATR_14": 0.25},
         timestamp=t0 + timedelta(minutes=1),
     )
     assert ticket_fail is None
@@ -789,7 +797,7 @@ def test_multi_tranche_pyramiding_state_machine(tmp_path) -> None:
     # ── 3. TRANCHE 2 (Scale 1 @ ₹100.60, gain +0.60% >= +0.50%) ───────
     t1 = t0 + timedelta(minutes=2)
     ticket2 = trader.execute_trade(
-        {"VWAP": 100.60, "Close": 100.60, "symbol": "TATASTEEL", "ATR_14": 0.3333333333333333},
+        {"VWAP": 100.60, "Close": 100.60, "symbol": "TATASTEEL", "ATR_14": 0.25},
         timestamp=t1,
     )
     assert ticket2 is not None
@@ -809,7 +817,7 @@ def test_multi_tranche_pyramiding_state_machine(tmp_path) -> None:
     # ── 4. TRANCHE 3 (Scale 2 @ ₹101.20, gain +0.60% from T2 >= +0.50%)
     t2 = t0 + timedelta(minutes=4)
     ticket3 = trader.execute_trade(
-        {"VWAP": 101.20, "Close": 101.20, "symbol": "TATASTEEL", "ATR_14": 0.3333333333333333},
+        {"VWAP": 101.20, "Close": 101.20, "symbol": "TATASTEEL", "ATR_14": 0.25},
         timestamp=t2,
     )
     assert ticket3 is not None
@@ -862,26 +870,33 @@ def test_no_time_stop_at_40_or_more_candles(tmp_path) -> None:
 
 
 def test_exit_priorities_sl_tp_eod(tmp_path) -> None:
-    """Verify strict exit priority: Priority 1 (SL) -> Priority 2 (TP) -> Priority 3 (15:20 EOD)."""
+    """Verify strict exit priority: Priority 1 (TP tick) -> Priority 2 (15:20 EOD) -> Candle-Close SL."""
     csv_path = str(tmp_path / "test_exit_prio.csv")
 
-    # Case 1: Stop Loss Triggered
+    # Case 1: Stop Loss Triggered on Confirmed Candle Close (Wick-Immune)
     trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50, csv_log_path=csv_path)
     trader.execute_trade(
         {"VWAP": 100.00, "Close": 100.00, "symbol": "ITC", "ATR_14": 0.3333333333333333},
         timestamp=datetime(2026, 8, 24, 9, 20),
     )
-    res_sl = trader.check_exit(99.40, timestamp=datetime(2026, 8, 24, 9, 25))
-    assert res_sl is not None
-    assert res_sl["exit_reason"] == "Stop Loss"
+    # Intra-candle tick does NOT exit on SL (Wick Immunity)
+    res_tick_sl = trader.check_exit(99.00, timestamp=datetime(2026, 8, 24, 9, 25))
+    assert res_tick_sl is None
+    assert trader.has_open_position
 
-    # Case 2: Target Triggered
+    # Candle close confirms SL breach
+    res_sl = trader.notify_candle_close(latest_price=99.00, timestamp=datetime(2026, 8, 24, 9, 25))
+    assert res_sl is not None
+    assert res_sl["exit_reason"] == "Stop Loss (Close-Based)"
+    assert not trader.has_open_position
+
+    # Case 2: Target Triggered (Instant Tick Execution)
     trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50, csv_log_path=csv_path)
     trader.execute_trade(
         {"VWAP": 100.00, "Close": 100.00, "symbol": "ITC", "ATR_14": 0.3333333333333333},
         timestamp=datetime(2026, 8, 24, 9, 20),
     )
-    res_tp = trader.check_exit(101.10, timestamp=datetime(2026, 8, 24, 9, 25))
+    res_tp = trader.check_exit(101.50, timestamp=datetime(2026, 8, 24, 9, 25))
     assert res_tp is not None
     assert res_tp["exit_reason"] == "Target Hit"
 
@@ -921,7 +936,7 @@ def test_dynamic_atr_stop_loss_and_failsafe() -> None:
     assert ticket_zero_atr is None
     assert trader.state.value == "IDLE"
 
-    # 3. Valid ATR -> Dynamic 1:2 R:R calculation
+    # 3. Valid ATR -> Dynamic 1:2 R:R calculation (2.0 * ATR buffer)
     current_atr = 10.0
     ticket_valid = trader.execute_trade(
         {"VWAP": 2500.00, "Close": 2502.00, "symbol": "M&M", "ATR_14": current_atr},
@@ -930,13 +945,13 @@ def test_dynamic_atr_stop_loss_and_failsafe() -> None:
     assert ticket_valid is not None
     assert trader.state.value == "HOLDING_TRANCHE_1"
 
-    # stop_loss_distance = 1.5 * 10.0 = 15.00
-    # stop_loss = 2500.00 - 15.00 = 2485.00
-    # target_price = 2500.00 + (2.0 * 15.00) = 2530.00
-    assert ticket_valid["stop_loss_distance"] == 15.00
-    assert ticket_valid["stop_loss_price"] == 2485.00
-    assert ticket_valid["target_price"] == 2530.00
-    assert ticket_valid["risk_distance"] == 15.00
+    # stop_loss_distance = 2.0 * 10.0 = 20.00
+    # stop_loss = 2500.00 - 20.00 = 2480.00
+    # target_price = 2500.00 + (2.0 * 20.00) = 2540.00
+    assert ticket_valid["stop_loss_distance"] == 20.00
+    assert ticket_valid["stop_loss_price"] == 2480.00
+    assert ticket_valid["target_price"] == 2540.00
+    assert ticket_valid["risk_distance"] == 20.00
     assert ticket_valid["atr_14"] == 10.0
 
 
@@ -1065,7 +1080,6 @@ def test_dual_layer_trend_regime_filter() -> None:
             "Volume": [1000] * 12,
         }
     )
-    result = generate_vwap_signal(bearish_df)
     result = generate_vwap_signal(bearish_df, min_candles_before_trade=1)
     assert "VWAP_Slope" in result.columns
     assert "EMA_9" in result.columns
@@ -1162,6 +1176,52 @@ def test_post_stop_loss_cooldown_firewall() -> None:
     )
     assert valid_ticket is not None
     assert trader.has_open_position is True
+
+
+def test_wick_immunity_and_candle_close_stop_loss() -> None:
+    """Verify that intra-candle wicks do not trigger Stop Loss, while candle closes and tick targets do."""
+    trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50)
+    # Entry @ 100.00 with ATR = 1.0 -> SL = 100 - (2.0 * 1.0) = 98.00, Target = 100 + 4.0 = 104.00
+    t0 = datetime(2026, 8, 24, 9, 30)
+    ticket = trader.execute_trade(
+        {"VWAP": 100.0, "Close": 100.2, "symbol": "TATASTEEL", "ATR_14": 1.0},
+        timestamp=t0,
+        atr_14=1.0,
+    )
+    assert ticket is not None
+    assert ticket["stop_loss_price"] == 98.00
+    assert ticket["target_price"] == 104.00
+
+    # 1. Wick Shakeout Test: Intraday tick flashes down to 97.40 (< 98.00 SL)
+    wick_exit = trader.check_exit(97.40, timestamp=datetime(2026, 8, 24, 9, 31, 15))
+    # Wick Immunity: Tick-based SL is DISABLED -> position remains intact!
+    assert wick_exit is None
+    assert trader.has_open_position is True
+
+    # 2. Candle completes and closes at 98.50 (above SL) -> position survives!
+    c1_exit = trader.notify_candle_close(latest_price=98.50, timestamp=datetime(2026, 8, 24, 9, 32))
+    assert c1_exit is None
+    assert trader.has_open_position is True
+
+    # 3. Next candle formally closes at 97.80 (below 98.00 SL) -> Stop Loss triggers on candle close!
+    c2_exit = trader.notify_candle_close(latest_price=97.80, timestamp=datetime(2026, 8, 24, 9, 33))
+    assert c2_exit is not None
+    assert c2_exit["exit_reason"] == "Stop Loss (Close-Based)"
+    assert trader.has_open_position is False
+
+    # 4. Instant Tick-Based Target Hit: Re-enter and verify target hits immediately on tick
+    trader.candles_since_last_exit = 15  # bypass cooldown
+    t1 = datetime(2026, 8, 24, 9, 50)
+    trader.execute_trade(
+        {"VWAP": 100.0, "Close": 100.2, "symbol": "TATASTEEL", "ATR_14": 1.0},
+        timestamp=t1,
+        atr_14=1.0,
+    )
+    # Intra-candle tick surges to 104.50 (≥ 104.00 Target) -> triggers immediately on tick!
+    target_exit = trader.check_exit(104.50, timestamp=datetime(2026, 8, 24, 9, 51, 30))
+    assert target_exit is not None
+    assert target_exit["exit_reason"] == "Target Hit"
+    assert trader.has_open_position is False
 
 
 def run_scenario(

@@ -454,8 +454,8 @@ class PaperTrader:
         friction = entry_costs["total_charges"]
 
         # ── Dynamic Volatility (ATR) Model ──────────────────────────────
-        # Volatility unit: 1.5 * current_atr
-        stop_loss_distance = round(1.5 * current_atr, 2)
+        # Volatility unit: 2.0 * current_atr (Wick-Immune buffer)
+        stop_loss_distance = round(2.0 * current_atr, 2)
         initial_stop_loss = round(entry_price - stop_loss_distance, 2)
 
         # Anchored Take-Profit: strictly 1:2 R:R (reward = 2.0 * risk)
@@ -794,9 +794,9 @@ class PaperTrader:
     ) -> Optional[dict]:
         """
         Evaluate exits on incoming tick in strict priority order:
-          PRIORITY 1: Dynamic Stop Loss Hit (live_price ≤ Global Stop Loss)
-          PRIORITY 2: 1:2 Profit Target Hit (live_price ≥ Global Target Price)
-          (Time stop is permanently removed)
+          PRIORITY 1: 1:2 Profit Target Hit (live_price ≥ Global Target Price) [Instant Tick Execution]
+          PRIORITY 2: Mandatory EOD Auto-Square-Off (15:20 IST)
+          (Stop Loss is evaluated STRICTLY on confirmed 1-min Candle Close for Wick Immunity)
         """
         with self.lock:
             tick_timestamp = self._resolve_timestamp(timestamp)
@@ -808,27 +808,7 @@ class PaperTrader:
 
             pos = self._open_position
 
-            # ── PRIORITY 1: Dynamic Stop Loss Hit ───────────────────────
-            if live_price <= pos["stop_loss_price"]:
-                exit_reason = (
-                    "Breakeven Stop"
-                    if pos.get("breakeven_armed") and pos["stop_loss_price"] >= pos["tranches"][0]["entry_price"]
-                    else "Stop Loss"
-                )
-                logging.info("")
-                logging.info("🔴 ════════════════════════════════════════════════════════")
-                logging.info(
-                    f"🔴  {exit_reason.upper()} TRIGGERED  @  ₹{live_price:,.2f}  "
-                    f"(SL was ₹{pos['stop_loss_price']:,.2f}) | Tranches: {pos['current_tranches']}/{self.max_tranches}"
-                )
-                logging.info("🔴 ════════════════════════════════════════════════════════")
-                return self.close_position(
-                    exit_price=pos["stop_loss_price"],
-                    timestamp=tick_timestamp,
-                    reason=exit_reason,
-                )
-
-            # ── PRIORITY 2: 1:2 Profit Target Hit ───────────────────────
+            # ── PRIORITY 1: 1:2 Profit Target Hit (Instant Tick Execution) ──
             if live_price >= pos["target_price"]:
                 logging.info("")
                 logging.info("🟢 ════════════════════════════════════════════════════════")
@@ -843,7 +823,7 @@ class PaperTrader:
                     reason="Target Hit",
                 )
 
-            # ── PRIORITY 3: Mandatory EOD Auto-Square-Off ────────────────
+            # ── PRIORITY 2: Mandatory EOD Auto-Square-Off ────────────────
             if tick_timestamp is not None and self.schedule.is_eod_square_off(tick_timestamp):
                 logging.info(
                     f"⏰ [EOD AUTO-SQUARE-OFF] Mandatory cutoff reached ({tick_timestamp}). Closing position."
@@ -969,8 +949,8 @@ class PaperTrader:
     ) -> Optional[dict]:
         """
         Candle close notification called when a 1-minute candle completes.
-        Updates engine with latest price and timestamp.
-        Updates engine with latest price and timestamp, and increments cooldown counter.
+        Evaluates Wick-Immune Candle-Close Stop Loss, updates price/timestamp,
+        and increments cooldown counter.
         (Time stop is permanently eliminated; trades run to SL, TP, or 15:20 EOD).
         """
         with self.lock:
@@ -988,7 +968,46 @@ class PaperTrader:
             resolved_ts = self._resolve_timestamp(ts)
             if px is not None:
                 self._set_latest_price(float(px), resolved_ts)
+
+            # ── Wick-Immune Stop-Loss Evaluation (Confirmed Candle Close) ──
+            if self._open_position is not None and px is not None:
+                pos = self._open_position
+                close_val = float(px)
+                sl_price = float(pos["stop_loss_price"])
+
+                if close_val <= sl_price:
+                    exit_reason = (
+                        "Breakeven Stop (Close-Based)"
+                        if pos.get("breakeven_armed") and sl_price >= pos["tranches"][0]["entry_price"]
+                        else "Stop Loss (Close-Based)"
+                    )
+                    logging.warning(
+                        f"[STOP LOSS TRIGGERED] Candle closed at ₹{close_val:,.2f} below SL ₹{sl_price:,.2f}. "
+                        "Wick immunity breached."
+                    )
+                    logging.info("")
+                    logging.info("🔴 ════════════════════════════════════════════════════════")
+                    logging.info(
+                        f"🔴  {exit_reason.upper()} TRIGGERED  @  ₹{close_val:,.2f}  "
+                        f"(SL was ₹{sl_price:,.2f}) | Tranches: {pos['current_tranches']}/{self.max_tranches}"
+                    )
+                    logging.info("🔴 ════════════════════════════════════════════════════════")
+                    return self.close_position(
+                        exit_price=sl_price,
+                        timestamp=resolved_ts,
+                        reason=exit_reason,
+                    )
+
             return None
+
+    def on_candle_close(
+        self,
+        candle: Optional[Union[dict, Any]] = None,
+        timestamp: Optional[datetime] = None,
+        latest_price: Optional[float] = None,
+    ) -> Optional[dict]:
+        """Alias for notify_candle_close for plug-and-play candle stream consumers."""
+        return self.notify_candle_close(candle=candle, timestamp=timestamp, latest_price=latest_price)
 
     def square_off_all_positions(
         self,
@@ -1216,7 +1235,7 @@ class PaperTrader:
         logging.info(f"║  Avg Entry    :  ₹{ticket['avg_entry_price']:>10,.2f}  (VWAP Weighted){'':<10}║")
         if atr_val is not None and sl_dist is not None:
             logging.info(f"║  ATR (14)     :  {atr_val:>10.2f}  (Volatility Proxy){'':<11}║")
-            logging.info(f"║  SL Distance  :  ₹{sl_dist:>10.2f}  (1.50 × ATR_14){'':<13}║")
+            logging.info(f"║  SL Distance  :  ₹{sl_dist:>10.2f}  (2.00 × ATR_14){'':<13}║")
         logging.info(f"║  Stop Loss    :  ₹{ticket['stop_loss_price']:>10,.2f}{sl_dist_display:<28}║")
         logging.info(f"║  Target Price :  ₹{ticket['target_price']:>10,.2f}  ({ticket['risk_reward']}){'':<19}║")
         logging.info("║──────────────────────────────────────────────────────────║")
