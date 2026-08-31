@@ -38,11 +38,30 @@ import pandas as pd
 
 logger = logging.getLogger(__name__)
 
-# Minimum session candles (15 mins @ 1-min interval) required for VWAP stabilization
-MIN_CANDLES_BEFORE_TRADE = 15
-
-# Absolute Volatility Floor (minimum ATR distance to overcome statutory friction)
-MIN_ATR = 0.30
+try:
+    from config import (
+        MIN_CANDLES_BEFORE_TRADE,
+        MIN_ATR_PCT,
+        ATR_BAND_MULT,
+        VOL_SURGE_MULT,
+        BREAKOUT_CLOSE_MULT,
+        VOL_MA_PERIOD,
+        EMA_FAST,
+        EMA_SLOW,
+        VWAP_SLOPE_LOOKBACK,
+        ATR_PERIOD,
+    )
+except ImportError:
+    MIN_CANDLES_BEFORE_TRADE = 15
+    MIN_ATR_PCT = 0.0006
+    ATR_BAND_MULT = 1.50
+    VOL_SURGE_MULT = 1.50
+    BREAKOUT_CLOSE_MULT = 0.50
+    VOL_MA_PERIOD = 10
+    EMA_FAST = 9
+    EMA_SLOW = 21
+    VWAP_SLOPE_LOOKBACK = 10
+    ATR_PERIOD = 14
 
 
 def compute_atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
@@ -88,7 +107,7 @@ def evaluate_regime_gate(
 ) -> Optional[str]:
     """
     Dual-Layer Trend Regime Filter (VWAP Slope + EMA Crossover Gatekeeper).
-    Enforces strict uptrend validation before granting permission to execute LONG pullbacks.
+    Enforces strict uptrend validation before granting permission to execute LONG setups.
     Also scaffolds inverse logic for a future adaptive SHORT regime.
 
     Parameters
@@ -128,7 +147,7 @@ def evaluate_regime_gate(
             )
             return None
 
-        # If both gates pass, the trend is up. We have permission to buy the pullback.
+        # If both gates pass, the trend is up. We have permission to trade.
         return "BUY"
 
     if potential_signal == "SHORT":
@@ -166,14 +185,17 @@ def _get_session_key(df: pd.DataFrame) -> pd.Index:
 def generate_vwap_signal(
     df: pd.DataFrame,
     min_candles_before_trade: int = MIN_CANDLES_BEFORE_TRADE,
-    min_atr: float = MIN_ATR,
+    min_atr_pct: float = MIN_ATR_PCT,
+    min_atr: Optional[float] = None,
+    atr_band_mult: float = ATR_BAND_MULT,
+    vol_surge_mult: float = VOL_SURGE_MULT,
 ) -> pd.DataFrame:
     """
     Calculate Intraday VWAP, rolling ATR-14, VWAP Slope (10-period), EMA(9), EMA(21),
-    and detect a strict 3-condition "VWAP Pullback Buy Signal" guarded by:
+    and detect high-probability "VWAP Pullback" and "VWAP Breakout" Buy Signals guarded by:
     1. VWAP Stabilization Gate (requires >= min_candles_before_trade session candles).
-    2. Absolute Volatility Floor (requires ATR_14 >= min_atr to outrun friction).
-    3. Deep Breakdown Filter (prior candle low >= VWAP - 1.0 * ATR_14).
+    2. Price-Relative Volatility Floor (requires ATR_14 >= Close * min_atr_pct).
+    3. Deep Breakdown Filter for pullbacks (prior candle low >= VWAP - 1.0 * ATR_14).
     4. Dual-Layer Trend Regime Filter (VWAP_Slope > 0 & EMA_9 >= EMA_21).
     5. Anti-Spam State Lock (2 consecutive candle displacement required after signal).
 
@@ -185,19 +207,28 @@ def generate_vwap_signal(
     min_candles_before_trade : int, optional
         Minimum number of completed candles required in the active session
         before allowing trade entries (default: 15).
+    min_atr_pct : float, optional
+        Price-relative volatility floor fraction (default: 0.0006 = 0.06% of Close).
     min_atr : float, optional
-        Absolute volatility floor in price units (default: 0.30).
+        Explicit absolute volatility floor override in price units.
+    atr_band_mult : float, optional
+        ATR multiplier for the dynamic VWAP pullback zone (default: 1.50).
+    vol_surge_mult : float, optional
+        Volume multiplier over rolling 10-bar average for breakouts (default: 1.50).
 
     Returns
     -------
     pd.DataFrame
         Original DataFrame enriched with:
-        • VWAP       (float) — Running session intraday VWAP.
-        • ATR_14     (float) — Rolling 14-period ATR.
-        • VWAP_Slope (float) — 10-period VWAP Slope.
-        • EMA_9      (float) — 9-period EMA of Close.
-        • EMA_21     (float) — 21-period EMA of Close.
-        • Buy_Signal (bool)  — True only if all conditions, filters, and gates converge.
+        • VWAP            (float) — Running session intraday VWAP.
+        • ATR_14          (float) — Rolling 14-period ATR.
+        • VWAP_Slope      (float) — 10-period VWAP Slope.
+        • EMA_9           (float) — 9-period EMA of Close.
+        • EMA_21          (float) — 21-period EMA of Close.
+        • Vol_MA10        (float) — Rolling 10-period volume average.
+        • Buy_Signal      (bool)  — True if Pullback Buy conditions converge.
+        • Breakout_Signal (bool)  — True if Breakout Buy conditions converge.
+        • Signal_Type     (str)   — 'PULLBACK_LONG' | 'BREAKOUT_LONG' | None.
     """
     # ── 0. Input Validation ─────────────────────────────────────────────
     required_cols = {"Open", "High", "Low", "Close", "Volume"}
@@ -212,7 +243,10 @@ def generate_vwap_signal(
         df["VWAP_Slope"] = np.nan
         df["EMA_9"] = np.nan
         df["EMA_21"] = np.nan
+        df["Vol_MA10"] = np.nan
         df["Buy_Signal"] = False
+        df["Breakout_Signal"] = False
+        df["Signal_Type"] = None
         return df
 
     out = df.copy()
@@ -257,37 +291,57 @@ def generate_vwap_signal(
         lambda s: s.astype(float).ewm(span=21, adjust=False).mean()
     )
 
-    # ── 4. Trend Displacement Check (Candle t-1 firmly above VWAP) ────
+    # ── 4. Volume Moving Average (10-period, min_periods=5) ───────────
+    out["Vol_MA10"] = (
+        out.groupby(session_key)["Volume"]
+        .transform(lambda s: s.astype(float).rolling(10, min_periods=5).mean())
+        .fillna(out["Volume"].astype(float))
+    )
+
+    # ── 5. Pullback Indicators ────────────────────────────────────────
+    # Trend Displacement Check (Candle t-1 firmly above VWAP)
     close_above_vwap_tm1 = (out["Close"].astype(float) > out["VWAP"]).shift(1)
 
-    # ── 5. Dynamic ATR Penetration / Touch ────────────────────────────
-    # Low_t <= VWAP_t + (0.20 * ATR_14_t)
-    dynamic_band = out["VWAP"] + 0.20 * out["ATR_14"]
+    # Dynamic ATR Penetration / Touch: Low_t <= VWAP_t + (atr_band_mult * ATR_14_t)
+    dynamic_band = out["VWAP"] + atr_band_mult * out["ATR_14"]
     low_tests_vwap = out["Low"].astype(float) <= dynamic_band
 
-    # ── 6. Rebound & Close back above VWAP ────────────────────────────
+    # Rebound & Close back above VWAP
     close_bounces = out["Close"].astype(float) > out["VWAP"]
 
-    # ── 7. Deep Breakdown Filter (Prevent falling knives) ──────────────
-    # Reject if prior candle broke down excessively: prev_candle.low < (VWAP - 1.0 * ATR_14)
+    # Deep Breakdown Filter (Prevent falling knives)
     prior_low = out["Low"].astype(float).groupby(session_key).shift(1)
     deep_breakdown_threshold = out["VWAP"] - 1.0 * out["ATR_14"]
     prior_broke_support = prior_low < deep_breakdown_threshold
 
-    # Raw signal (ignores anti-spam lock, stabilization, and regime gates)
-    raw_signal = (
+    # Raw Pullback signal
+    raw_pullback_signal = (
         close_above_vwap_tm1.fillna(False).astype(bool)
         & low_tests_vwap.fillna(False).astype(bool)
         & close_bounces.fillna(False).astype(bool)
     )
 
-    # ── 8. Gatekeepers, Filters & Anti-Spam State Lock ────────────────
-    buy_signal_vals: list[bool] = [False] * len(raw_signal)
+    # ── 6. Breakout Indicators ────────────────────────────────────────
+    # A. Close_t > VWAP_t + 0.5 * ATR_14_t (decisive close above VWAP)
+    # B. Volume_t >= vol_surge_mult * Vol_MA10_t (volume surge confirmation)
+    raw_breakout_signal = (
+        (out["Close"].astype(float) > (out["VWAP"] + 0.5 * out["ATR_14"]))
+        & (out["Volume"].astype(float) >= vol_surge_mult * out["Vol_MA10"])
+    )
+
+    # ── 7. Gatekeepers, Filters & Anti-Spam State Lock ────────────────
+    buy_signal_vals: list[bool] = [False] * len(out)
+    breakout_signal_vals: list[bool] = [False] * len(out)
+    signal_type_vals: list[Optional[str]] = [None] * len(out)
+
     locked = False
     consecutive_displaced = 0
 
-    raw_arr = raw_signal.to_numpy()
+    raw_pullback_arr = raw_pullback_signal.to_numpy()
+    raw_breakout_arr = raw_breakout_signal.to_numpy()
     low_arr = out["Low"].astype(float).to_numpy()
+    close_arr = out["Close"].astype(float).to_numpy()
+    vwap_arr = out["VWAP"].astype(float).to_numpy()
     dynamic_band_arr = dynamic_band.to_numpy()
     vwap_slope_arr = out["VWAP_Slope"].to_numpy()
     ema9_arr = out["EMA_9"].to_numpy()
@@ -295,10 +349,30 @@ def generate_vwap_signal(
     cum_count_arr = cum_count.to_numpy()
     prior_broke_support_arr = prior_broke_support.fillna(False).to_numpy()
     atr_arr = out["ATR_14"].to_numpy()
+    vol_arr = out["Volume"].astype(float).to_numpy()
+    vol_ma10_arr = out["Vol_MA10"].astype(float).to_numpy()
+    ts_arr = (
+        out["Timestamp"].to_numpy()
+        if "Timestamp" in out.columns
+        else (out.index.to_numpy() if hasattr(out.index, "to_numpy") else None)
+    )
 
-    for i in range(len(raw_arr)):
-        is_raw_true = bool(raw_arr[i])
-        is_displaced_away = bool(low_arr[i] > dynamic_band_arr[i])
+    for i in range(len(out)):
+        session_candle_count = int(cum_count_arr[i]) + 1
+        current_close = float(close_arr[i])
+        current_low = float(low_arr[i])
+        current_vwap = float(vwap_arr[i])
+        current_atr_val = float(atr_arr[i])
+        current_band = float(dynamic_band_arr[i])
+        current_slope = float(vwap_slope_arr[i])
+        current_ema9 = float(ema9_arr[i])
+        current_ema21 = float(ema21_arr[i])
+        current_vol = float(vol_arr[i])
+        current_vol_ma10 = float(vol_ma10_arr[i])
+
+        min_floor = min_atr if min_atr is not None else (current_close * min_atr_pct)
+
+        is_displaced_away = bool(current_low > current_band)
 
         if locked:
             if is_displaced_away:
@@ -309,58 +383,108 @@ def generate_vwap_signal(
                 consecutive_displaced = 0
 
             buy_signal_vals[i] = False
-            continue
+            breakout_signal_vals[i] = False
+        else:
+            is_pullback_candidate = bool(raw_pullback_arr[i])
+            is_breakout_candidate = bool(raw_breakout_arr[i])
 
-        if is_raw_true:
-            session_candle_count = int(cum_count_arr[i]) + 1
-            potential_signal: Optional[str] = "BUY"
-            current_atr_val = float(atr_arr[i])
+            pullback_valid = False
+            breakout_valid = False
 
-            # Check 1: VWAP Stabilization Gate
-            if session_candle_count < min_candles_before_trade:
-                logger.debug(
-                    f"[FILTER] VWAP stabilizing. Candle count ({session_candle_count}) < {min_candles_before_trade}. "
-                    "Skipping evaluation."
-                )
-                potential_signal = None
+            # Evaluate Pullback Setup
+            if is_pullback_candidate:
+                if session_candle_count < min_candles_before_trade:
+                    logger.debug(
+                        f"[FILTER] VWAP stabilizing. Candle count ({session_candle_count}) < {min_candles_before_trade}. "
+                        "Skipping evaluation."
+                    )
+                elif np.isnan(current_atr_val) or current_atr_val < min_floor:
+                    logger.debug(
+                        f"[VOLATILITY GATE] Pullback blocked. Current ATR ({current_atr_val:.3f}) < "
+                        f"Minimum required ({min_floor:.3f}). Market is too tight to overcome friction costs."
+                    )
+                elif bool(prior_broke_support_arr[i]):
+                    logger.info(
+                        "[FILTER] Signal blocked: Prior candle broke down too aggressively. Not a safe pullback."
+                    )
+                else:
+                    validated = evaluate_regime_gate(
+                        potential_signal="BUY",
+                        vwap_slope=current_slope,
+                        ema9=current_ema9,
+                        ema21=current_ema21,
+                        log=logger,
+                    )
+                    if validated == "BUY":
+                        pullback_valid = True
 
-            # Check 2: Absolute Volatility Floor
-            elif np.isnan(current_atr_val) or current_atr_val < min_atr:
-                logger.debug(
-                    f"[VOLATILITY GATE] Signal blocked. Current ATR ({current_atr_val:.2f}) < "
-                    f"Minimum required ({min_atr:.2f}). Market is too tight to overcome friction costs."
-                )
-                potential_signal = None
+            # Evaluate Breakout Setup
+            if is_breakout_candidate and not pullback_valid:
+                if session_candle_count < min_candles_before_trade:
+                    logger.debug(
+                        f"[FILTER] VWAP stabilizing. Candle count ({session_candle_count}) < {min_candles_before_trade}. "
+                        "Skipping evaluation."
+                    )
+                elif np.isnan(current_atr_val) or current_atr_val < min_floor:
+                    logger.debug(
+                        f"[VOLATILITY GATE] Breakout blocked. Current ATR ({current_atr_val:.3f}) < "
+                        f"Minimum required ({min_floor:.3f}). Market is too tight to overcome friction costs."
+                    )
+                else:
+                    validated = evaluate_regime_gate(
+                        potential_signal="BUY",
+                        vwap_slope=current_slope,
+                        ema9=current_ema9,
+                        ema21=current_ema21,
+                        log=logger,
+                    )
+                    if validated == "BUY":
+                        breakout_valid = True
 
-            # Check 3: Deep Breakdown / Violent Knife Filter
-            elif bool(prior_broke_support_arr[i]):
-                logger.info(
-                    "[FILTER] Signal blocked: Prior candle broke down too aggressively. Not a safe pullback."
-                )
-                potential_signal = None
-
-            # Check 4: Dual-Layer Trend Regime Gates (VWAP Slope + EMA Crossover)
-            else:
-                validated = evaluate_regime_gate(
-                    potential_signal="BUY",
-                    vwap_slope=float(vwap_slope_arr[i]),
-                    ema9=float(ema9_arr[i]),
-                    ema21=float(ema21_arr[i]),
-                    log=logger,
-                )
-                if validated != "BUY":
-                    potential_signal = None
-
-            if potential_signal == "BUY":
+            if pullback_valid:
                 buy_signal_vals[i] = True
+                signal_type_vals[i] = "PULLBACK_LONG"
                 locked = True
                 consecutive_displaced = 0
-            else:
-                buy_signal_vals[i] = False
-        else:
-            buy_signal_vals[i] = False
+            elif breakout_valid:
+                breakout_signal_vals[i] = True
+                signal_type_vals[i] = "BREAKOUT_LONG"
+                locked = True
+                consecutive_displaced = 0
+
+        # Fix 4: SIGNAL_DEBUG per-candle logging
+        ts_display = ""
+        if ts_arr is not None:
+            ts_str = str(ts_arr[i])
+            ts_display = ts_str[11:16] if len(ts_str) >= 16 else ts_str
+
+        logger.debug(
+            "[SIGNAL_DEBUG] C#%03d %s | P:%.2f VWAP:%.2f Δ:%+.3f | "
+            "ATR:%.3f Floor:%.3f ATR_OK:%s | Band:%.3f Touch:%s | "
+            "Slope:%+.5f EMA_Bull:%s | Vol:%.0f VolMA10:%.0f Surge:%s | "
+            "PULLBACK:%s BREAKOUT:%s",
+            i + 1,
+            ts_display,
+            current_close,
+            current_vwap,
+            current_close - current_vwap,
+            current_atr_val,
+            min_floor,
+            bool(current_atr_val >= min_floor),
+            current_band,
+            bool(current_low <= current_band),
+            current_slope,
+            bool(current_ema9 >= current_ema21),
+            current_vol,
+            current_vol_ma10,
+            bool(current_vol >= vol_surge_mult * current_vol_ma10),
+            bool(buy_signal_vals[i]),
+            bool(breakout_signal_vals[i]),
+        )
 
     out["Buy_Signal"] = buy_signal_vals
+    out["Breakout_Signal"] = breakout_signal_vals
+    out["Signal_Type"] = signal_type_vals
 
     return out
 

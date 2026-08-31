@@ -419,7 +419,7 @@ class FlightSimulator:
 
     def on_candle_close(self, df):
         """Called by CandleBuilder every time a 1-minute candle closes."""
-        analyzed = generate_vwap_signal(df.copy(), min_candles_before_trade=1)
+        analyzed = generate_vwap_signal(df.copy(), min_candles_before_trade=1, atr_band_mult=0.20)
         latest = analyzed.iloc[-1]
         candle_no = len(analyzed)
         timestamp = latest["Timestamp"]
@@ -689,18 +689,18 @@ def test_seconds_until_market_start_skips_closed_days() -> None:
 def test_capital_allocation_and_tranches() -> None:
     """Verify production capital allocation and 3-stage tranche partitions."""
     trader = PaperTrader()
-    assert trader.total_capital == 10010.06
-    assert trader.working_capital == 5005.03
-    assert trader.backup_capital == 5005.03
+    assert trader.total_capital == 9999.46
+    assert trader.working_capital == 4999.73
+    assert trader.backup_capital == 4999.73
     assert trader.risk_per_trade == 100.00
     assert trader.daily_loss_limit == 200.00
 
-    # Tranches: 33%, 33%, 34% of 5005.03
+    # Tranches: 33%, 33%, 34% of 4999.73
     assert len(trader.tranche_capitals) == 3
-    assert trader.tranche_capitals[0] == 1651.66
-    assert trader.tranche_capitals[1] == 1651.66
-    assert trader.tranche_capitals[2] == 1701.71
-    assert round(sum(trader.tranche_capitals), 2) == 5005.03
+    assert trader.tranche_capitals[0] == 1649.91
+    assert trader.tranche_capitals[1] == 1649.91
+    assert trader.tranche_capitals[2] == 1699.91
+    assert round(sum(trader.tranche_capitals), 2) == 4999.73
 
 
 def test_rolling_atr_and_candle_builder_exposure() -> None:
@@ -751,7 +751,7 @@ def test_dynamic_pullback_signal_and_anti_spam_lock() -> None:
         }
     )
 
-    signals = generate_vwap_signal(df, min_candles_before_trade=1)
+    signals = generate_vwap_signal(df, min_candles_before_trade=1, atr_band_mult=0.20)
     assert "VWAP" in signals.columns
     assert "ATR_14" in signals.columns
     assert "Buy_Signal" in signals.columns
@@ -1233,11 +1233,16 @@ def test_volatility_floor_gate() -> None:
     low_prices = [p - 0.02 for p in open_prices]
     close_prices = [p + 0.05 for p in open_prices]
 
-    # Candle 14 pullback touch
-    open_prices[14] = 100.35
-    high_prices[14] = 100.40
-    low_prices[14] = 100.10
-    close_prices[14] = 100.36
+    # Candle 14 pullback touch with micro-volatility (High - Low = 0.02 -> ATR ~ 0.02 < 100.0 * 0.0006 = 0.06)
+    open_prices = [100.0 + i * 0.005 for i in range(16)]
+    high_prices = [p + 0.008 for p in open_prices]
+    low_prices = [p - 0.002 for p in open_prices]
+    close_prices = [p + 0.005 for p in open_prices]
+
+    open_prices[14] = 100.07
+    high_prices[14] = 100.08
+    low_prices[14] = 100.01
+    close_prices[14] = 100.07
 
     df_low_vol = pd.DataFrame({
         "Timestamp": dates,
@@ -1249,8 +1254,41 @@ def test_volatility_floor_gate() -> None:
     })
 
     res_low = generate_vwap_signal(df_low_vol)
-    # Blocked by Volatility Floor Gate (ATR < 0.30)
+    # Blocked by Volatility Floor Gate (ATR < Close * MIN_ATR_PCT)
     assert not res_low["Buy_Signal"].any()
+    assert not res_low["Breakout_Signal"].any()
+
+
+def test_vwap_breakout_signal() -> None:
+    """Verify that VWAP Breakout fires on decisive close above VWAP+0.5*ATR with 1.5x volume surge."""
+    dates = [datetime(2026, 8, 24, 9, 15 + i) for i in range(16)]
+    open_prices = [100.0 + i * 0.10 for i in range(16)]
+    high_prices = [p + 0.50 for p in open_prices]
+    low_prices = [p + 0.35 for p in open_prices]
+    close_prices = [p + 0.45 for p in open_prices]
+    volumes = [1000] * 16
+
+    # Candle 15: Big Breakout with volume surge (Volume = 3000 >= 1.5 * 1200)
+    open_prices[15] = 102.60
+    high_prices[15] = 103.50
+    low_prices[15] = 102.50
+    close_prices[15] = 103.20
+    volumes[15] = 3000
+
+    df = pd.DataFrame({
+        "Timestamp": dates,
+        "Open": open_prices,
+        "High": high_prices,
+        "Low": low_prices,
+        "Close": close_prices,
+        "Volume": volumes,
+    })
+
+    res = generate_vwap_signal(df)
+    assert "Breakout_Signal" in res.columns
+    assert "Vol_MA10" in res.columns
+    assert bool(res["Breakout_Signal"].iloc[15]) is True
+    assert res["Signal_Type"].iloc[15] == "BREAKOUT_LONG"
 
 
 def test_true_net_rr_friction_gate() -> None:

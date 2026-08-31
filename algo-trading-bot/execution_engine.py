@@ -55,26 +55,48 @@ from typing import Any, Optional, Union
 from market_schedule import BaseMarketSchedule, NSEMarketSchedule, get_market_schedule
 
 
-# ── Global Capital Partitioning & Risk Constants ────────────────────────
-TOTAL_CAPITAL = 10010.06
-WORKING_CAPITAL = 5005.03   # 50% intraday deployment limit
-BACKUP_CAPITAL = 5005.03    # 50% reserve buffer
-RISK_PER_TRADE = 100.00     # Max initial risk per setup
-DAILY_LOSS_LIMIT = 200.00   # Hard daily loss circuit breaker
+try:
+    from config import (
+        TOTAL_CAPITAL,
+        WORKING_CAPITAL,
+        BACKUP_CAPITAL,
+        RISK_PER_TRADE,
+        DAILY_LOSS_LIMIT,
+        TRANCHE_FRACTIONS,
+        MAX_TRANCHES,
+        SL_ATR_MULT,
+        TP_ATR_MULT,
+        BE_ATR_MULT,
+        TRAIL_ATR_MULT,
+        REENTRY_COOLDOWN_CANDLES,
+        MIN_NET_RR,
+        MIN_NET_PROFIT,
+        MIN_NET_PROFIT_MULTIPLIER,
+        PYRAMID_TRIGGER_ATR_MULT,
+    )
+except ImportError:
+    TOTAL_CAPITAL = 9999.46
+    WORKING_CAPITAL = 4999.73   # 50% intraday deployment limit
+    BACKUP_CAPITAL = 4999.73    # 50% reserve buffer
+    RISK_PER_TRADE = 100.00     # Max initial risk per setup
+    DAILY_LOSS_LIMIT = 200.00   # Hard daily loss circuit breaker
+    TRANCHE_FRACTIONS = [0.33, 0.33, 0.34]
+    MAX_TRANCHES = 3
+    SL_ATR_MULT = 2.00
+    TP_ATR_MULT = 4.00
+    BE_ATR_MULT = 1.00
+    TRAIL_ATR_MULT = 2.00
+    REENTRY_COOLDOWN_CANDLES = 10
+    MIN_NET_RR = 1.5
+    MIN_NET_PROFIT = 3.0
+    MIN_NET_PROFIT_MULTIPLIER = 2.0
+    PYRAMID_TRIGGER_ATR_MULT = 2.00
 
-# Tranche fractions of Working Capital
-TRANCHE_FRACTIONS = [0.33, 0.33, 0.34]
-MAX_TRANCHES = 3
-
-# Strategy parameters
+# Strategy legacy defaults
 DEFAULT_STOP_LOSS_PCT = 0.0050   # 0.50% initial risk distance
 DEFAULT_PROFIT_TARGET_PCT = 0.0100  # 1.00% target (1:2 R:R)
 TRANCHE2_TRIGGER_PCT = 0.0030       # +0.30% unrealized gain required to unlock Tranche 2
 SCALE_IN_GAIN_TRIGGER_PCT = 0.0030  # +0.30% unrealized gain required to unlock next tranche
-REENTRY_COOLDOWN_CANDLES = 10       # Minimum completed candles before re-entering after an exit
-MIN_NET_RR = 1.5                    # Minimum Net Risk-to-Reward ratio after all statutory friction
-MIN_NET_PROFIT = 3.0                # Absolute floor in rupees to prevent microscopic wins
-MIN_NET_PROFIT_MULTIPLIER = 2.0     # Profit must be at least 2x the cost of doing business
 
 # ── Persistent Trade Ledger Schema (13 Columns) ──────────────────────────
 CSV_HEADERS = [
@@ -395,11 +417,13 @@ class PaperTrader:
                     )
                     return None
 
+                signal_type = signal_data.get("signal_type")
                 return self._execute_tranche_1(
                     symbol=symbol,
                     entry_price=entry_price,
                     timestamp=trade_timestamp,
                     current_atr=current_atr,
+                    signal_type=signal_type,
                 )
 
             # ── Scale-In Evaluation (State 1 or State 2) ────────────────
@@ -417,14 +441,14 @@ class PaperTrader:
             if current_tranches == 1:
                 entry_atr = float(pos.get("atr_14") or self.entry_atr or 1.0)
                 avg_entry = float(pos["average_entry_price"])
-                # Scale-in requires a confirmed move of 2.0x the current ATR
-                tranche2_trigger_distance = round(2.0 * entry_atr, 2)
+                # Scale-in requires a confirmed move of PYRAMID_TRIGGER_ATR_MULT x the current ATR
+                tranche2_trigger_distance = round(PYRAMID_TRIGGER_ATR_MULT * entry_atr, 2)
                 tranche2_trigger_price = round(avg_entry + tranche2_trigger_distance, 2)
 
                 if current_price < tranche2_trigger_price:
                     logging.info(
                         f"[SCALE-IN CHECK] Tranche 2 gate: Price ₹{current_price:,.2f} < "
-                        f"₹{tranche2_trigger_price:,.2f} trigger (2.0x ATR: ₹{tranche2_trigger_distance:.2f}). "
+                        f"₹{tranche2_trigger_price:,.2f} trigger ({PYRAMID_TRIGGER_ATR_MULT:.1f}x ATR: ₹{tranche2_trigger_distance:.2f}). "
                         "Holding Tranche 1."
                     )
                     return None
@@ -435,13 +459,13 @@ class PaperTrader:
             if current_tranches == 2:
                 entry_atr = float(pos.get("atr_14") or self.entry_atr or 1.0)
                 p2 = float(pos["tranches"][1]["entry_price"])
-                tranche3_trigger_distance = round(2.0 * entry_atr, 2)
+                tranche3_trigger_distance = round(PYRAMID_TRIGGER_ATR_MULT * entry_atr, 2)
                 tranche3_trigger_price = round(p2 + tranche3_trigger_distance, 2)
 
                 if current_price < tranche3_trigger_price:
                     logging.info(
                         f"[SCALE-IN CHECK] Tranche 3 gate: Price ₹{current_price:,.2f} < "
-                        f"₹{tranche3_trigger_price:,.2f} trigger (2.0x ATR: ₹{tranche3_trigger_distance:.2f}). "
+                        f"₹{tranche3_trigger_price:,.2f} trigger ({PYRAMID_TRIGGER_ATR_MULT:.1f}x ATR: ₹{tranche3_trigger_distance:.2f}). "
                         "Holding Tranche 2."
                     )
                     return None
@@ -456,6 +480,7 @@ class PaperTrader:
         entry_price: float,
         timestamp: datetime,
         current_atr: float,
+        signal_type: Optional[str] = None,
     ) -> Optional[dict]:
         """Execute Base Entry (Tranche 1: 33% of Working Capital) with dynamic ATR volatility model."""
         tranche_idx = 0
@@ -469,8 +494,8 @@ class PaperTrader:
         friction = entry_costs["total_charges"]
 
         # ── Dynamic Volatility (ATR) Model ──────────────────────────────
-        # Volatility unit: 2.0 * current_atr (Wick-Immune buffer)
-        stop_loss_distance = round(2.0 * current_atr, 2)
+        # Volatility unit: SL_ATR_MULT * current_atr (Wick-Immune buffer)
+        stop_loss_distance = round(SL_ATR_MULT * current_atr, 2)
         initial_stop_loss = round(entry_price - stop_loss_distance, 2)
 
         # Anchored Take-Profit: strictly 1:2 R:R (reward = 2.0 * risk)
@@ -578,8 +603,9 @@ class PaperTrader:
         self._trade_log.append(ticket)
         self._print_trade_ticket(ticket)
 
+        sig_tag = f" {signal_type}" if signal_type else ""
         logging.info(
-            f"✅ [ENTRY TRANCHE 1/{self.max_tranches}] Base position established in {symbol}. "
+            f"✅ [ENTRY TRANCHE 1/{self.max_tranches}] Base position established{sig_tag} in {symbol}. "
             f"ATR_14: {current_atr:.2f} | SL Distance: ₹{stop_loss_distance:.2f} | "
             f"SL: ₹{stop_loss_price:,.2f} | Target: ₹{target_price:,.2f} | "
             f"State: {self._state.value}"

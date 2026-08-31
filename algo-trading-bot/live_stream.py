@@ -101,14 +101,33 @@ def _parse_tick_timestamp(value: Any) -> datetime:
 import signal
 
 
-TOTAL_CAPITAL = 10010.06
-WORKING_CAPITAL = 5005.03  # 50% allocation
-BACKUP_CAPITAL = 5005.03   # 50% allocation
-RISK_PER_TRADE = 100.00
-DAILY_LOSS_LIMIT = 200.00
+try:
+    from config import (
+        SYMBOL as DEFAULT_SYMBOL,
+        TOTAL_CAPITAL,
+        WORKING_CAPITAL,
+        BACKUP_CAPITAL,
+        RISK_PER_TRADE,
+        DAILY_LOSS_LIMIT,
+        TOKEN as CONFIG_TOKEN,
+    )
+except ImportError:
+    DEFAULT_SYMBOL = "BANKBARODA"
+    TOTAL_CAPITAL = 9999.46
+    WORKING_CAPITAL = 4999.73
+    BACKUP_CAPITAL = 4999.73
+    RISK_PER_TRADE = 100.00
+    DAILY_LOSS_LIMIT = 200.00
+    CONFIG_TOKEN = "4668"
 
-# Liquid NSE cash equity instruments (<= ₹500 / share)
+# Liquid NSE cash equity instruments
 INSTRUMENTS = {
+    "BANKBARODA": {
+        "token": "4668",
+        "symbol": "BANKBARODA",
+        "trading_symbol": "BANKBARODA-EQ",
+        "exchange_type": 1,
+    },
     "ADANIPOWER": {
         "token": "17388",
         "symbol": "ADANIPOWER",
@@ -147,8 +166,6 @@ INSTRUMENTS = {
     },
 }
 
-DEFAULT_SYMBOL = "ADANIPOWER"
-
 
 class AngelOneLiveStream:
     """Manage authenticated live streaming, candle generation, and pyramiding lifecycle."""
@@ -162,15 +179,15 @@ class AngelOneLiveStream:
             schedule if schedule is not None else get_market_schedule(os.getenv("MARKET_SCHEDULE", "NSE"))
         )
         self.target_symbol = os.getenv("TRADING_SYMBOL", target_symbol).upper()
-        if self.target_symbol not in INSTRUMENTS:
-            logging.warning(
-                "Symbol %s not in pre-configured INSTRUMENTS dictionary. Using %s.",
-                self.target_symbol,
-                DEFAULT_SYMBOL,
-            )
-            self.target_symbol = DEFAULT_SYMBOL
-
-        self.instrument_info = INSTRUMENTS[self.target_symbol]
+        if self.target_symbol in INSTRUMENTS:
+            self.instrument_info = INSTRUMENTS[self.target_symbol]
+        else:
+            self.instrument_info = {
+                "token": CONFIG_TOKEN,
+                "symbol": self.target_symbol,
+                "trading_symbol": f"{self.target_symbol}-EQ",
+                "exchange_type": 1,
+            }
         self.token = self.instrument_info["token"]
         self.symbol = self.instrument_info["symbol"]
         self.trading_symbol = self.instrument_info["trading_symbol"]
@@ -296,6 +313,12 @@ class AngelOneLiveStream:
         logging.info("=" * 60)
         logging.info("  STARTING ALGO TRADING BOT — SMARTAPI V2 STREAM")
         logging.info("  Authenticated live feed -> CandleBuilder -> Signal Brain -> PaperTrader")
+        logging.info(f"  Target Asset      : {self.symbol} ({self.trading_symbol}, Token: {self.token})")
+        logging.info(f"  Total Capital     : ₹{TOTAL_CAPITAL:,.2f}")
+        logging.info(f"  Working Capital   : ₹{WORKING_CAPITAL:,.2f}")
+        logging.info(f"  Backup Capital    : ₹{BACKUP_CAPITAL:,.2f}")
+        logging.info(f"  Daily Loss Limit  : ₹{DAILY_LOSS_LIMIT:,.2f}")
+        logging.info(f"  Risk Per Setup    : ≤ ₹{RISK_PER_TRADE:,.2f}")
         logging.info("=" * 60)
 
         retry_attempt = 0
@@ -437,7 +460,10 @@ class AngelOneLiveStream:
             latest_price=float(latest["Close"]),
         )
 
-        if not bool(latest.get("Buy_Signal")):
+        is_pullback = bool(latest.get("Buy_Signal"))
+        is_breakout = bool(latest.get("Breakout_Signal"))
+
+        if not (is_pullback or is_breakout):
             return
 
         if not can_enter_new_positions(signal_timestamp):
@@ -447,8 +473,15 @@ class AngelOneLiveStream:
             )
             return
 
+        sig_type = "BREAKOUT" if (is_breakout and not is_pullback) else "PULLBACK"
+        sig_banner = (
+            "🚀  VWAP BREAKOUT BUY SIGNAL [BREAKOUT_LONG]"
+            if sig_type == "BREAKOUT"
+            else "🚀  VWAP PULLBACK BUY SIGNAL [PULLBACK_LONG]"
+        )
+
         logging.info("🚀 ════════════════════════════════════════════════════════")
-        logging.info(f"🚀  VWAP PULLBACK BUY SIGNAL  @  VWAP {latest['VWAP']:.2f} (ATR: {atr_val:.2f})")
+        logging.info(f"{sig_banner}  @  VWAP {latest['VWAP']:.2f} (ATR: {atr_val:.2f})")
         logging.info("🚀 ════════════════════════════════════════════════════════")
 
         self.paper_trader.execute_trade(
@@ -458,6 +491,7 @@ class AngelOneLiveStream:
                 "symbol": self.symbol,
                 "ATR_14": atr_val,
                 "atr": atr_val,
+                "signal_type": f"[{sig_type}_LONG]",
             },
             timestamp=signal_timestamp,
             atr_14=atr_val,
