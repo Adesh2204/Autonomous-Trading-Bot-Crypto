@@ -4,10 +4,10 @@
 # ─────────────────────────────────────────────────────────────
 
 # ── UNIVERSE ──────────────────────────────────────────────────
-SYMBOL = "BANKBARODA"       # Change this to trade a different stock
-EXCHANGE = "NSE"
-TOKEN = "4668"             # Angel One instrument token for SYMBOL
-SEGMENT = 1                # NSE equity
+SYMBOL = "NIACL-EQ"          # New India Assurance Co. Ltd.
+EXCHANGE = "NSE"               # unchanged
+TOKEN = "399"                  # Angel One instrument token for NIACL-EQ
+SEGMENT = 1                   # unchanged (NSE equity)
 
 # ── CAPITAL (absolute ₹ — intentionally fixed, user config) ───
 TOTAL_CAPITAL = 9999.46
@@ -41,9 +41,18 @@ BE_ATR_MULT = 1.00                # Breakeven trigger (profit ≥ mult × ATR)
 TRAIL_ATR_MULT = 2.00             # Trailing stop gap in ATR units
 REENTRY_ATR_MULT = 1.50           # Anti-spam: price must be > VWAP + mult×ATR
 REENTRY_COOLDOWN_CANDLES = 10     # Post-SL cooldown in candles (unitless)
-MIN_NET_RR = 1.5                  # Minimum Net Risk-to-Reward ratio after all statutory friction
-MIN_NET_PROFIT = 3.0              # Absolute floor in rupees for minimum net gain
-MIN_NET_PROFIT_MULTIPLIER = 2.0   # Net Profit must be at least 2x the cost of doing business
+
+# ── ADAPTIVE FRICTION GATE ────────────────────────────────────
+MIN_NET_RR = 1.2                  # Legacy alias (used by fallback imports)
+MIN_NET_RR_NORMAL = 1.2           # R:R floor in normal volatility (was 1.5)
+MIN_NET_RR_LOW_VOL = 0.8          # R:R floor when ATR < LOW_VOL_ATR_PCT
+LOW_VOL_ATR_PCT = 0.0010          # Below this = "low vol regime"
+MIN_NET_PROFIT = 2.0              # Absolute floor in rupees for minimum net gain (was 3.0)
+MIN_NET_PROFIT_RS = 2.0           # Alias for MIN_NET_PROFIT (explicit name)
+# MIN_NET_PROFIT_MULTIPLIER = 2.0
+# DEPRECATED — removed from all logic paths 2026-09-07.
+# Replaced by MIN_NET_PROFIT_RS inside friction_gate_check().
+# Do not uncomment or reference in any logic.
 
 # ── PYRAMIDING ────────────────────────────────────────────────
 TRANCHE_1_PCT = 0.33              # 33% of working capital
@@ -53,6 +62,16 @@ TRANCHE_FRACTIONS = [TRANCHE_1_PCT, TRANCHE_2_PCT, TRANCHE_3_PCT]
 MAX_TRANCHES = 3
 PYRAMID_TRIGGER_ATR_MULT = 2.00   # 2.0x ATR above base/previous tranche
 
+# ── SHORT SIGNAL PARAMS ──────────────────────────────────────
+SHORT_BAND_MULT = 1.50            # Same as ATR_BAND_MULT (symmetric)
+SHORT_CLOSE_MULT = 0.50           # Breakdown: close < VWAP - mult × ATR
+KNIFE_UP_MULT = 1.00              # Knife-up filter for short signals
+
+# ── DAILY BIAS DETECTOR ──────────────────────────────────────
+BIAS_VWAP_GAP_PCT = 0.0005        # Threshold for VWAP position check
+BIAS_VOTES_NEEDED = 2             # Min confluence votes to declare bias
+
 # ── TIMING ────────────────────────────────────────────────────
 EOD_SQUAREOFF_TIME = "15:20"      # HH:MM IST — EOD auto square-off
 MARKET_OPEN_TIME = "09:15"        # HH:MM IST
+

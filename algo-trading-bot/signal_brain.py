@@ -50,6 +50,11 @@ try:
         EMA_SLOW,
         VWAP_SLOPE_LOOKBACK,
         ATR_PERIOD,
+        SHORT_BAND_MULT,
+        SHORT_CLOSE_MULT,
+        KNIFE_UP_MULT,
+        BIAS_VWAP_GAP_PCT,
+        BIAS_VOTES_NEEDED,
     )
 except ImportError:
     MIN_CANDLES_BEFORE_TRADE = 15
@@ -62,6 +67,11 @@ except ImportError:
     EMA_SLOW = 21
     VWAP_SLOPE_LOOKBACK = 10
     ATR_PERIOD = 14
+    SHORT_BAND_MULT = 1.50
+    SHORT_CLOSE_MULT = 0.50
+    KNIFE_UP_MULT = 1.00
+    BIAS_VWAP_GAP_PCT = 0.0005
+    BIAS_VOTES_NEEDED = 2
 
 
 def compute_atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
@@ -329,9 +339,36 @@ def generate_vwap_signal(
         & (out["Volume"].astype(float) >= vol_surge_mult * out["Vol_MA10"])
     )
 
-    # ── 7. Gatekeepers, Filters & Anti-Spam State Lock ────────────────
+    # ── 8. Short Pullback Indicators ──────────────────────────────────
+    # Mirror of long pullback: rally to VWAP that fails, resumes downtrend
+    close_below_vwap_tm1 = (out["Close"].astype(float) < out["VWAP"]).shift(1)
+    short_dynamic_band = out["VWAP"] - SHORT_BAND_MULT * out["ATR_14"]
+    high_tests_vwap_short = out["High"].astype(float) >= short_dynamic_band
+    close_below_vwap = out["Close"].astype(float) < out["VWAP"]
+
+    # Knife-up filter: prior candle must not have spiked violently upward
+    prior_high = out["High"].astype(float).groupby(session_key).shift(1)
+    knife_up_threshold = out["VWAP"] + KNIFE_UP_MULT * out["ATR_14"]
+    prior_spiked_up = prior_high > knife_up_threshold
+
+    raw_pullback_short_signal = (
+        close_below_vwap_tm1.fillna(False).astype(bool)
+        & high_tests_vwap_short.fillna(False).astype(bool)
+        & close_below_vwap.fillna(False).astype(bool)
+    )
+
+    # ── 9. Breakdown Short Indicators ─────────────────────────────────
+    # Mirror of breakout long: decisive close below VWAP with volume surge
+    raw_breakdown_short_signal = (
+        (out["Close"].astype(float) < (out["VWAP"] - SHORT_CLOSE_MULT * out["ATR_14"]))
+        & (out["Volume"].astype(float) >= vol_surge_mult * out["Vol_MA10"])
+    )
+
+    # ── 10. Gatekeepers, Filters & Anti-Spam State Lock ───────────────
     buy_signal_vals: list[bool] = [False] * len(out)
     breakout_signal_vals: list[bool] = [False] * len(out)
+    sell_signal_vals: list[bool] = [False] * len(out)
+    breakdown_sell_signal_vals: list[bool] = [False] * len(out)
     signal_type_vals: list[Optional[str]] = [None] * len(out)
 
     locked = False
@@ -339,15 +376,20 @@ def generate_vwap_signal(
 
     raw_pullback_arr = raw_pullback_signal.to_numpy()
     raw_breakout_arr = raw_breakout_signal.to_numpy()
+    raw_pullback_short_arr = raw_pullback_short_signal.to_numpy()
+    raw_breakdown_short_arr = raw_breakdown_short_signal.to_numpy()
     low_arr = out["Low"].astype(float).to_numpy()
+    high_arr = out["High"].astype(float).to_numpy()
     close_arr = out["Close"].astype(float).to_numpy()
     vwap_arr = out["VWAP"].astype(float).to_numpy()
     dynamic_band_arr = dynamic_band.to_numpy()
+    short_dynamic_band_arr = short_dynamic_band.to_numpy()
     vwap_slope_arr = out["VWAP_Slope"].to_numpy()
     ema9_arr = out["EMA_9"].to_numpy()
     ema21_arr = out["EMA_21"].to_numpy()
     cum_count_arr = cum_count.to_numpy()
     prior_broke_support_arr = prior_broke_support.fillna(False).to_numpy()
+    prior_spiked_up_arr = prior_spiked_up.fillna(False).to_numpy()
     atr_arr = out["ATR_14"].to_numpy()
     vol_arr = out["Volume"].astype(float).to_numpy()
     vol_ma10_arr = out["Vol_MA10"].astype(float).to_numpy()
@@ -361,9 +403,11 @@ def generate_vwap_signal(
         session_candle_count = int(cum_count_arr[i]) + 1
         current_close = float(close_arr[i])
         current_low = float(low_arr[i])
+        current_high = float(high_arr[i])
         current_vwap = float(vwap_arr[i])
         current_atr_val = float(atr_arr[i])
         current_band = float(dynamic_band_arr[i])
+        current_short_band = float(short_dynamic_band_arr[i])
         current_slope = float(vwap_slope_arr[i])
         current_ema9 = float(ema9_arr[i])
         current_ema21 = float(ema21_arr[i])
@@ -372,7 +416,12 @@ def generate_vwap_signal(
 
         min_floor = min_atr if min_atr is not None else (current_close * min_atr_pct)
 
-        is_displaced_away = bool(current_low > current_band)
+        # Displacement check for anti-spam unlock:
+        # Long displacement: low is above the upper VWAP band
+        # Short displacement: high is below the lower VWAP band
+        is_displaced_long = bool(current_low > current_band)
+        is_displaced_short = bool(current_high < current_short_band)
+        is_displaced_away = is_displaced_long or is_displaced_short
 
         if locked:
             if is_displaced_away:
@@ -384,14 +433,20 @@ def generate_vwap_signal(
 
             buy_signal_vals[i] = False
             breakout_signal_vals[i] = False
+            sell_signal_vals[i] = False
+            breakdown_sell_signal_vals[i] = False
         else:
             is_pullback_candidate = bool(raw_pullback_arr[i])
             is_breakout_candidate = bool(raw_breakout_arr[i])
+            is_pullback_short_candidate = bool(raw_pullback_short_arr[i])
+            is_breakdown_short_candidate = bool(raw_breakdown_short_arr[i])
 
             pullback_valid = False
             breakout_valid = False
+            short_pullback_valid = False
+            short_breakdown_valid = False
 
-            # Evaluate Pullback Setup
+            # ── Evaluate LONG Pullback Setup ──────────────────────────
             if is_pullback_candidate:
                 if session_candle_count < min_candles_before_trade:
                     logger.debug(
@@ -418,7 +473,7 @@ def generate_vwap_signal(
                     if validated == "BUY":
                         pullback_valid = True
 
-            # Evaluate Breakout Setup
+            # ── Evaluate LONG Breakout Setup ──────────────────────────
             if is_breakout_candidate and not pullback_valid:
                 if session_candle_count < min_candles_before_trade:
                     logger.debug(
@@ -441,6 +496,51 @@ def generate_vwap_signal(
                     if validated == "BUY":
                         breakout_valid = True
 
+            # ── Evaluate SHORT Pullback Setup ─────────────────────────
+            if is_pullback_short_candidate and not (pullback_valid or breakout_valid):
+                if session_candle_count < min_candles_before_trade:
+                    pass  # Already logged above if long candidate also existed
+                elif np.isnan(current_atr_val) or current_atr_val < min_floor:
+                    logger.debug(
+                        f"[VOLATILITY GATE] Short pullback blocked. ATR ({current_atr_val:.3f}) < "
+                        f"floor ({min_floor:.3f})."
+                    )
+                elif bool(prior_spiked_up_arr[i]):
+                    logger.debug(
+                        "[FILTER] Short pullback blocked: Prior candle spiked up too aggressively."
+                    )
+                else:
+                    validated = evaluate_regime_gate(
+                        potential_signal="SHORT",
+                        vwap_slope=current_slope,
+                        ema9=current_ema9,
+                        ema21=current_ema21,
+                        log=logger,
+                    )
+                    if validated == "SHORT":
+                        short_pullback_valid = True
+
+            # ── Evaluate SHORT Breakdown Setup ────────────────────────
+            if is_breakdown_short_candidate and not (pullback_valid or breakout_valid or short_pullback_valid):
+                if session_candle_count < min_candles_before_trade:
+                    pass
+                elif np.isnan(current_atr_val) or current_atr_val < min_floor:
+                    logger.debug(
+                        f"[VOLATILITY GATE] Short breakdown blocked. ATR ({current_atr_val:.3f}) < "
+                        f"floor ({min_floor:.3f})."
+                    )
+                else:
+                    validated = evaluate_regime_gate(
+                        potential_signal="SHORT",
+                        vwap_slope=current_slope,
+                        ema9=current_ema9,
+                        ema21=current_ema21,
+                        log=logger,
+                    )
+                    if validated == "SHORT":
+                        short_breakdown_valid = True
+
+            # ── Record validated signals & lock anti-spam ─────────────
             if pullback_valid:
                 buy_signal_vals[i] = True
                 signal_type_vals[i] = "PULLBACK_LONG"
@@ -451,8 +551,18 @@ def generate_vwap_signal(
                 signal_type_vals[i] = "BREAKOUT_LONG"
                 locked = True
                 consecutive_displaced = 0
+            elif short_pullback_valid:
+                sell_signal_vals[i] = True
+                signal_type_vals[i] = "PULLBACK_SHORT"
+                locked = True
+                consecutive_displaced = 0
+            elif short_breakdown_valid:
+                breakdown_sell_signal_vals[i] = True
+                signal_type_vals[i] = "BREAKDOWN_SHORT"
+                locked = True
+                consecutive_displaced = 0
 
-        # Fix 4: SIGNAL_DEBUG per-candle logging
+        # SIGNAL_DEBUG per-candle logging
         ts_display = ""
         if ts_arr is not None:
             ts_str = str(ts_arr[i])
@@ -460,9 +570,9 @@ def generate_vwap_signal(
 
         logger.debug(
             "[SIGNAL_DEBUG] C#%03d %s | P:%.2f VWAP:%.2f Δ:%+.3f | "
-            "ATR:%.3f Floor:%.3f ATR_OK:%s | Band:%.3f Touch:%s | "
+            "ATR:%.3f Floor:%.3f ATR_OK:%s | Band:%.3f ShortBand:%.3f | "
             "Slope:%+.5f EMA_Bull:%s | Vol:%.0f VolMA10:%.0f Surge:%s | "
-            "PULLBACK:%s BREAKOUT:%s",
+            "BUY:%s BREAKOUT:%s SELL:%s BREAKDOWN_S:%s",
             i + 1,
             ts_display,
             current_close,
@@ -472,7 +582,7 @@ def generate_vwap_signal(
             min_floor,
             bool(current_atr_val >= min_floor),
             current_band,
-            bool(current_low <= current_band),
+            current_short_band,
             current_slope,
             bool(current_ema9 >= current_ema21),
             current_vol,
@@ -480,13 +590,84 @@ def generate_vwap_signal(
             bool(current_vol >= vol_surge_mult * current_vol_ma10),
             bool(buy_signal_vals[i]),
             bool(breakout_signal_vals[i]),
+            bool(sell_signal_vals[i]),
+            bool(breakdown_sell_signal_vals[i]),
         )
 
     out["Buy_Signal"] = buy_signal_vals
     out["Breakout_Signal"] = breakout_signal_vals
+    out["Sell_Signal"] = sell_signal_vals
+    out["Breakdown_Sell_Signal"] = breakdown_sell_signal_vals
     out["Signal_Type"] = signal_type_vals
 
     return out
+
+
+def detect_daily_bias(df: pd.DataFrame) -> str:
+    """
+    Determine daily directional bias from 3 independent confluence checks.
+    Called after MIN_CANDLES_BEFORE_TRADE candles have closed.
+
+    Returns
+    -------
+    str
+        "LONG_BIAS", "SHORT_BIAS", or "NEUTRAL"
+
+    Uses 3 independent confluence checks and requires BIAS_VOTES_NEEDED
+    (default 2) of 3 to agree before declaring bias.
+    """
+    if len(df) < MIN_CANDLES_BEFORE_TRADE:
+        return "NEUTRAL"
+
+    latest = df.iloc[-1]
+
+    # Ensure required columns exist
+    for col in ("Close", "VWAP", "VWAP_Slope", "EMA_9", "EMA_21"):
+        if col not in df.columns:
+            return "NEUTRAL"
+
+    close_val = float(latest["Close"])
+    vwap_val = float(latest["VWAP"])
+    slope_val = float(latest["VWAP_Slope"])
+    ema9_val = float(latest["EMA_9"])
+    ema21_val = float(latest["EMA_21"])
+
+    # ── CHECK 1: VWAP Position ─────────────────────────────
+    vwap_gap_pct = (close_val - vwap_val) / vwap_val if vwap_val > 0 else 0.0
+
+    if vwap_gap_pct > BIAS_VWAP_GAP_PCT:
+        check1 = "LONG"
+    elif vwap_gap_pct < -BIAS_VWAP_GAP_PCT:
+        check1 = "SHORT"
+    else:
+        check1 = "NEUTRAL"
+
+    # ── CHECK 2: VWAP Slope ────────────────────────────────
+    if slope_val > 0:
+        check2 = "LONG"
+    elif slope_val < 0:
+        check2 = "SHORT"
+    else:
+        check2 = "NEUTRAL"
+
+    # ── CHECK 3: EMA Regime ────────────────────────────────
+    if ema9_val > ema21_val:
+        check3 = "LONG"
+    elif ema9_val < ema21_val:
+        check3 = "SHORT"
+    else:
+        check3 = "NEUTRAL"
+
+    # ── CONFLUENCE VOTE ────────────────────────────────────
+    votes = [check1, check2, check3]
+    long_votes = votes.count("LONG")
+    short_votes = votes.count("SHORT")
+
+    if long_votes >= BIAS_VOTES_NEEDED:
+        return "LONG_BIAS"
+    if short_votes >= BIAS_VOTES_NEEDED:
+        return "SHORT_BIAS"
+    return "NEUTRAL"
 
 
 def update_cpp_tick(

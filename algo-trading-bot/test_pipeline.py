@@ -45,6 +45,7 @@ from market_schedule import (
     seconds_until_market_start,
 )
 from signal_brain import generate_vwap_signal
+from signal_brain import detect_daily_bias, generate_vwap_signal
 
 
 SYMBOL = "M&M"
@@ -1292,20 +1293,30 @@ def test_vwap_breakout_signal() -> None:
 
 
 def test_true_net_rr_friction_gate() -> None:
-    """Verify that execution_engine aborts trades if Net R:R < 1.5 or Net Profit < 2x friction."""
+    """Verify that execution_engine aborts trades if Net R:R < adaptive floor (1.2 normal, 0.8 low-vol)."""
     trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50)
     t0 = datetime(2026, 8, 24, 9, 30)
 
-    # 1. Micro-ATR (e.g. 0.15) produces tiny profit where statutory friction destroys Net R:R
+    # 1. Low-vol Micro-ATR (e.g. 0.06) produces tiny profit where statutory friction destroys Net R:R (< 0.8)
     ticket_micro = trader.execute_trade(
-        {"VWAP": 100.0, "Close": 100.2, "symbol": "TATASTEEL", "ATR_14": 0.15},
+        {"VWAP": 100.0, "Close": 100.2, "symbol": "TATASTEEL", "ATR_14": 0.06},
         timestamp=t0,
-        atr_14=0.15,
+        atr_14=0.06,
     )
     assert ticket_micro is None
     assert trader.has_open_position is False
 
     # 2. Healthy ATR (e.g. 1.0) produces robust profit and passes True Net-R:R Gate
+    # 2. Normal regime with marginal ATR (e.g. 0.12) fails normal 1.2 floor (R:R ~ 1.07 < 1.2)
+    ticket_marginal = trader.execute_trade(
+        {"VWAP": 100.0, "Close": 100.2, "symbol": "TATASTEEL", "ATR_14": 0.12},
+        timestamp=t0,
+        atr_14=0.12,
+    )
+    assert ticket_marginal is None
+    assert trader.has_open_position is False
+
+    # 3. Healthy ATR (e.g. 1.0) produces robust profit and passes True Net-R:R Gate
     ticket_healthy = trader.execute_trade(
         {"VWAP": 100.0, "Close": 100.2, "symbol": "TATASTEEL", "ATR_14": 1.0},
         timestamp=t0,
@@ -1373,6 +1384,180 @@ def test_theta_decay_breakeven_defense() -> None:
     assert trader.candles_held == 15
     assert trader._open_position["stop_loss_price"] == 100.00  # Trailed to Breakeven!
     assert trader._open_position["breakeven_armed"] is True
+
+
+def test_adaptive_friction_gate_low_vol_regime() -> None:
+    """Verify BANKBARODA candle #19 scenario: low-vol regime (ATR/price < 0.0010) passes adaptive floor (0.8)."""
+    trader = PaperTrader(total_capital=9999.46, working_capital_pct=0.50)
+    t0 = datetime(2026, 9, 3, 9, 34)
+
+    # BANKBARODA: price=243.37, ATR=0.23 -> ATR/price = 0.000945 < 0.0010 (low-vol)
+    # Net R:R ~ 0.86 >= 0.80 -> PASSES under adaptive gate (would have failed under old 1.5)
+    ticket = trader.execute_trade(
+        {"VWAP": 243.37, "Close": 243.37, "symbol": "BANKBARODA", "ATR_14": 0.23},
+        timestamp=t0,
+        atr_14=0.23,
+    )
+    assert ticket is not None
+    assert trader.has_open_position is True
+    assert ticket["side"] == "BUY"
+
+
+def test_vwap_pullback_short_signal() -> None:
+    """Verify VWAP Pullback SELL signal fires in a confirmed downtrend when price tests VWAP from below."""
+    n = 25
+    base_ts = datetime(2026, 9, 3, 9, 15)
+    ts = [base_ts + timedelta(minutes=i) for i in range(n)]
+    prices = [245.0 - (i * 0.3) for i in range(n)]
+
+    data = []
+    for i in range(n):
+        p = prices[i]
+        data.append({
+            "Timestamp": ts[i],
+            "Open": p + 0.1,
+            "High": p + 0.2,
+            "Low": p - 0.2,
+            "Close": p - 0.1,
+            "Volume": 1000.0,
+        })
+
+    # At candle 18 (index 17): simulate pullback testing VWAP from below
+    df_temp = pd.DataFrame(data)
+    res_temp = generate_vwap_signal(df_temp, min_candles_before_trade=15)
+    vwap17 = res_temp["VWAP"].iloc[17]
+    atr17 = res_temp["ATR_14"].iloc[17]
+    data[17]["High"] = vwap17 - 0.5 * atr17   # Above VWAP - 1.5*ATR (tests band)
+    data[17]["Close"] = vwap17 - 0.5 * atr17 - 0.2  # Stays below VWAP
+
+    df = pd.DataFrame(data)
+    res = generate_vwap_signal(df, min_candles_before_trade=15)
+
+    assert bool(res["Sell_Signal"].iloc[17]) is True
+    assert res["Signal_Type"].iloc[17] == "PULLBACK_SHORT"
+
+
+def test_vwap_breakdown_short_signal() -> None:
+    """Verify VWAP Breakdown SELL signal fires on decisive close below VWAP with 1.5x volume surge."""
+    n = 25
+    base_ts = datetime(2026, 9, 3, 9, 15)
+    ts = [base_ts + timedelta(minutes=i) for i in range(n)]
+    prices = [245.0 - (i * 0.3) for i in range(n)]
+
+    data = []
+    for i in range(n):
+        p = prices[i]
+        data.append({
+            "Timestamp": ts[i],
+            "Open": p + 0.1,
+            "High": p + 0.2,
+            "Low": p - 0.2,
+            "Close": p - 0.1,
+            "Volume": 1000.0,
+        })
+
+    # At candle 18 (index 17): volume surge of 3000 (3x average 1000)
+    data[17]["Volume"] = 3000.0
+    df = pd.DataFrame(data)
+    res = generate_vwap_signal(df, min_candles_before_trade=15)
+
+    assert bool(res["Breakdown_Sell_Signal"].iloc[17]) is True
+    assert res["Signal_Type"].iloc[17] == "BREAKDOWN_SHORT"
+
+
+def test_daily_bias_detector() -> None:
+    """Verify 3-check confluence voting for daily bias detection."""
+    # 1. Bull session: Close > VWAP, Slope > 0, EMA9 > EMA21 -> LONG_BIAS
+    df_bull = pd.DataFrame({
+        "Close": [200.0 + i for i in range(20)],
+        "VWAP": [198.0 + i * 0.5 for i in range(20)],
+        "VWAP_Slope": [0.05] * 20,
+        "EMA_9": [205.0] * 20,
+        "EMA_21": [200.0] * 20,
+    })
+    assert detect_daily_bias(df_bull) == "LONG_BIAS"
+
+    # 2. Bear session: Close < VWAP, Slope < 0, EMA9 < EMA21 -> SHORT_BIAS
+    df_bear = pd.DataFrame({
+        "Close": [200.0 - i for i in range(20)],
+        "VWAP": [202.0 - i * 0.5 for i in range(20)],
+        "VWAP_Slope": [-0.05] * 20,
+        "EMA_9": [195.0] * 20,
+        "EMA_21": [200.0] * 20,
+    })
+    assert detect_daily_bias(df_bear) == "SHORT_BIAS"
+
+    # 3. Mixed session (2 bear votes, 1 bull vote) -> SHORT_BIAS
+    df_mixed = pd.DataFrame({
+        "Close": [202.0] * 20,         # Above VWAP -> Bull vote
+        "VWAP": [200.0] * 20,
+        "VWAP_Slope": [-0.02] * 20,     # Slope < 0 -> Bear vote
+        "EMA_9": [198.0] * 20,          # EMA9 < EMA21 -> Bear vote
+        "EMA_21": [200.0] * 20,
+    })
+    assert detect_daily_bias(df_mixed) == "SHORT_BIAS"
+
+    # 4. Warmup period (< 15 candles) -> NEUTRAL
+    df_short = df_bull.iloc[:10]
+    assert detect_daily_bias(df_short) == "NEUTRAL"
+
+
+def test_short_position_lifecycle() -> None:
+    """Verify end-to-end execution of a SHORT position: entry, SL above, TP below, and profitable close."""
+    trader = PaperTrader(total_capital=10000.0, working_capital_pct=0.50)
+    t0 = datetime(2026, 9, 3, 10, 0)
+
+    # Enter SHORT trade
+    ticket = trader.execute_trade(
+        {"VWAP": 240.0, "Close": 239.8, "symbol": "BANKBARODA", "ATR_14": 0.50},
+        timestamp=t0,
+        atr_14=0.50,
+        side="SELL",
+    )
+    assert ticket is not None
+    assert ticket["side"] == "SELL"
+    # SL is placed ABOVE entry: 240 + 2*0.5 = 241.0
+    assert ticket["stop_loss_price"] == 241.0
+    # TP is placed BELOW entry: 240 - 2*1.0 = 238.0
+    assert ticket["target_price"] == 238.0
+
+    # Price drops to 237.90 -> Target Hit!
+    exit_summary = trader.check_exit(live_price=237.90, timestamp=t0 + timedelta(minutes=5))
+    assert exit_summary is not None
+    assert exit_summary["reason"] == "Target Hit"
+    assert exit_summary["net_pnl"] > 0
+    assert exit_summary["gross_pnl"] > 0
+    assert trader.has_open_position is False
+
+
+def test_direction_flip_closes_opposite() -> None:
+    """Verify that entering a SHORT position automatically closes an existing LONG position."""
+    trader = PaperTrader(total_capital=10000.0, working_capital_pct=0.50)
+    t0 = datetime(2026, 9, 3, 10, 0)
+
+    # 1. Establish LONG position
+    long_ticket = trader.execute_trade(
+        {"VWAP": 240.0, "Close": 240.0, "symbol": "BANKBARODA", "ATR_14": 0.50},
+        timestamp=t0,
+        atr_14=0.50,
+        side="BUY",
+    )
+    assert long_ticket is not None
+    assert trader._open_position["side"] == "BUY"
+
+    # 2. Enter SHORT signal -> triggers direction flip
+    short_ticket = trader.execute_trade(
+        {"VWAP": 239.0, "Close": 239.0, "symbol": "BANKBARODA", "ATR_14": 0.50},
+        timestamp=t0 + timedelta(minutes=2),
+        atr_14=0.50,
+        side="SELL",
+    )
+    assert short_ticket is not None
+    assert trader._open_position["side"] == "SELL"
+    assert trader._state.value == "HOLDING_TRANCHE_1"
+
+    # Check that previous long trade was closed with Direction Flip reason
+    assert len(trader.trade_log) >= 2
 
 
 def run_scenario(

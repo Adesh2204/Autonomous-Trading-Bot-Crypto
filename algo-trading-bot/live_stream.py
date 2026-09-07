@@ -47,7 +47,7 @@ from market_schedule import (
     seconds_until_market_start,
     to_ist,
 )
-from signal_brain import generate_vwap_signal
+from signal_brain import detect_daily_bias, generate_vwap_signal
 
 
 logging.basicConfig(
@@ -453,48 +453,99 @@ class AngelOneLiveStream:
             f"ATR_14:{atr_val:.2f}"
         )
 
-        # Explicitly notify execution engine that 1-minute candle completed
-        self.paper_trader.notify_candle_close(
-            candle=latest.to_dict() if hasattr(latest, "to_dict") else dict(latest),
-            timestamp=signal_timestamp,
-            latest_price=float(latest["Close"]),
-        )
+        # Update and apply daily directional bias
+        daily_bias = detect_daily_bias(result)
+        self.paper_trader.update_daily_bias(daily_bias)
 
         is_pullback = bool(latest.get("Buy_Signal"))
         is_breakout = bool(latest.get("Breakout_Signal"))
+        is_short_pullback = bool(latest.get("Sell_Signal"))
+        is_short_breakdown = bool(latest.get("Breakdown_Sell_Signal"))
 
-        if not (is_pullback or is_breakout):
-            return
+        # Bias-based signal filtering:
+        # LONG_BIAS: accept only longs
+        # SHORT_BIAS: accept only shorts
+        # NEUTRAL: accept all signals
+        if daily_bias == "LONG_BIAS":
+            is_short_pullback = False
+            is_short_breakdown = False
+        elif daily_bias == "SHORT_BIAS":
+            is_pullback = False
+            is_breakout = False
 
-        if not can_enter_new_positions(signal_timestamp):
+        has_long = is_pullback or is_breakout
+        has_short = is_short_pullback or is_short_breakdown
+
+        if has_long and not can_enter_new_positions(signal_timestamp):
             logging.info(
-                "Buy signal rejected - entries are disabled in %s after the 15:15 IST cutoff.",
+                "Signal rejected - entries are disabled in %s after the 15:15 IST cutoff.",
                 get_market_state(signal_timestamp).value,
             )
-            return
+            has_long = False
 
-        sig_type = "BREAKOUT" if (is_breakout and not is_pullback) else "PULLBACK"
-        sig_banner = (
-            "🚀  VWAP BREAKOUT BUY SIGNAL [BREAKOUT_LONG]"
-            if sig_type == "BREAKOUT"
-            else "🚀  VWAP PULLBACK BUY SIGNAL [PULLBACK_LONG]"
-        )
+        if has_short and not can_enter_new_positions(signal_timestamp):
+            logging.info(
+                "Signal rejected - entries are disabled in %s after the 15:15 IST cutoff.",
+                get_market_state(signal_timestamp).value,
+            )
+            has_short = False
 
-        logging.info("🚀 ════════════════════════════════════════════════════════")
-        logging.info(f"{sig_banner}  @  VWAP {latest['VWAP']:.2f} (ATR: {atr_val:.2f})")
-        logging.info("🚀 ════════════════════════════════════════════════════════")
+        if has_long:
+            sig_type = "BREAKOUT" if (is_breakout and not is_pullback) else "PULLBACK"
+            sig_banner = (
+                "🚀  VWAP BREAKOUT BUY SIGNAL [BREAKOUT_LONG]"
+                if sig_type == "BREAKOUT"
+                else "🚀  VWAP PULLBACK BUY SIGNAL [PULLBACK_LONG]"
+            )
 
-        self.paper_trader.execute_trade(
-            {
-                "VWAP": float(latest["VWAP"]),
-                "Close": float(latest["Close"]),
-                "symbol": self.symbol,
-                "ATR_14": atr_val,
-                "atr": atr_val,
-                "signal_type": f"[{sig_type}_LONG]",
-            },
+            logging.info("🚀 ════════════════════════════════════════════════════════")
+            logging.info(f"{sig_banner}  @  VWAP {latest['VWAP']:.2f} (ATR: {atr_val:.2f}) | Bias: {daily_bias}")
+            logging.info("🚀 ════════════════════════════════════════════════════════")
+
+            self.paper_trader.execute_trade(
+                {
+                    "VWAP": float(latest["VWAP"]),
+                    "Close": float(latest["Close"]),
+                    "symbol": self.symbol,
+                    "ATR_14": atr_val,
+                    "atr": atr_val,
+                    "signal_type": f"[{sig_type}_LONG]",
+                },
+                timestamp=signal_timestamp,
+                atr_14=atr_val,
+                side="BUY",
+            )
+        elif has_short:
+            sig_type = "BREAKDOWN" if (is_short_breakdown and not is_short_pullback) else "PULLBACK"
+            sig_banner = (
+                "🔻  VWAP BREAKDOWN SELL SIGNAL [BREAKDOWN_SHORT]"
+                if sig_type == "BREAKDOWN"
+                else "🔻  VWAP PULLBACK SELL SIGNAL [PULLBACK_SHORT]"
+            )
+
+            logging.info("🔻 ════════════════════════════════════════════════════════")
+            logging.info(f"{sig_banner}  @  VWAP {latest['VWAP']:.2f} (ATR: {atr_val:.2f}) | Bias: {daily_bias}")
+            logging.info("🔻 ════════════════════════════════════════════════════════")
+
+            self.paper_trader.execute_trade(
+                {
+                    "VWAP": float(latest["VWAP"]),
+                    "Close": float(latest["Close"]),
+                    "symbol": self.symbol,
+                    "ATR_14": atr_val,
+                    "atr": atr_val,
+                    "signal_type": f"[{sig_type}_SHORT]",
+                },
+                timestamp=signal_timestamp,
+                atr_14=atr_val,
+                side="SELL",
+            )
+
+        # Position management on candle close
+        self.paper_trader.manage_open_position(
+            candle=latest.to_dict() if hasattr(latest, "to_dict") else dict(latest),
             timestamp=signal_timestamp,
-            atr_14=atr_val,
+            latest_price=float(latest["Close"]),
         )
 
     def _extract_tick_fields(self, data: dict) -> tuple[float, int, datetime]:
