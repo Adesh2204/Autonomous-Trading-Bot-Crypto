@@ -4,21 +4,21 @@
 # ─────────────────────────────────────────────────────────────
 
 # ── UNIVERSE ──────────────────────────────────────────────────
-SYMBOL = "NIACL-EQ"          # New India Assurance Co. Ltd.
+SYMBOL = "IFCI"               # IFCI Limited — NSE IPO catalyst play
 EXCHANGE = "NSE"               # unchanged
-TOKEN = "399"                  # Angel One instrument token for NIACL-EQ
+TOKEN = "1491"                 # Angel One instrument token for IFCI
 SEGMENT = 1                   # unchanged (NSE equity)
 
 # ── CAPITAL (absolute ₹ — intentionally fixed, user config) ───
-TOTAL_CAPITAL = 9999.46
+TOTAL_CAPITAL = 1000000.00    # ₹10,00,000 (₹10 Lakh)
 WORKING_CAPITAL_PCT = 0.50       # 50% of total
 DAILY_LOSS_LIMIT_PCT = 0.02      # 2% of total capital
 RISK_PER_SETUP_PCT = 0.01        # 1% of working capital per setup
 
-WORKING_CAPITAL = 4999.73        # 50% intraday deployment limit
-BACKUP_CAPITAL = 4999.73         # 50% reserve buffer
-RISK_PER_TRADE = 100.00          # Max initial risk per setup
-DAILY_LOSS_LIMIT = 200.00        # Hard daily loss circuit breaker
+WORKING_CAPITAL = 500000.00   # 50% of ₹10 Lakh
+BACKUP_CAPITAL = 500000.00    # 50% reserve buffer
+RISK_PER_TRADE = 5000.00      # 1% of ₹5,00,000 working capital
+DAILY_LOSS_LIMIT = 20000.00   # 2% of ₹10 Lakh = ₹20,000
 
 # ── SIGNAL BRAIN: PRICE-RELATIVE PARAMS ───────────────────────
 MIN_CANDLES_BEFORE_TRADE = 15     # Warmup period (unitless, keep)
