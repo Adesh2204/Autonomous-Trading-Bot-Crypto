@@ -112,16 +112,22 @@ try:
         TOKEN as CONFIG_TOKEN,
     )
 except ImportError:
-    DEFAULT_SYMBOL = "BANKBARODA"
-    TOTAL_CAPITAL = 9999.46
-    WORKING_CAPITAL = 4999.73
-    BACKUP_CAPITAL = 4999.73
-    RISK_PER_TRADE = 100.00
-    DAILY_LOSS_LIMIT = 200.00
-    CONFIG_TOKEN = "4668"
+    DEFAULT_SYMBOL = "IFCI"
+    TOTAL_CAPITAL = 2045282.00
+    WORKING_CAPITAL = 1022641.00
+    BACKUP_CAPITAL = 1022641.00
+    RISK_PER_TRADE = 10226.41
+    DAILY_LOSS_LIMIT = 40905.64
+    CONFIG_TOKEN = "1491"
 
 # Liquid NSE cash equity instruments
 INSTRUMENTS = {
+    "IFCI": {
+        "token": "1491",
+        "symbol": "IFCI",
+        "trading_symbol": "IFCI-EQ",
+        "exchange_type": 1,
+    },
     "BANKBARODA": {
         "token": "4668",
         "symbol": "BANKBARODA",

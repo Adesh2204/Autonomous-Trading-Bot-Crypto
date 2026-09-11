@@ -4,21 +4,21 @@
 # ─────────────────────────────────────────────────────────────
 
 # ── UNIVERSE ──────────────────────────────────────────────────
-SYMBOL = "STLTECH"            # Sterlite Technologies Ltd
+SYMBOL = "IFCI"               # IFCI Limited
 EXCHANGE = "NSE"               # unchanged
-TOKEN = "9313"                # Angel One instrument token for STLTECH
+TOKEN = "1491"                 # Angel One instrument token for IFCI
 SEGMENT = 1                   # unchanged (NSE equity)
 
 # ── CAPITAL (absolute ₹ — intentionally fixed, user config) ───
-TOTAL_CAPITAL = 1022496.53    # ₹10,22,496.53
+TOTAL_CAPITAL = 2045282.00    # ₹20,45,282.00 (Total capital for 50% partition)
 WORKING_CAPITAL_PCT = 0.50       # 50% of total
 DAILY_LOSS_LIMIT_PCT = 0.02      # 2% of total capital
 RISK_PER_SETUP_PCT = 0.01        # 1% of working capital per setup
 
-WORKING_CAPITAL = 511248.27   # 50% of ₹10,22,496.53
-BACKUP_CAPITAL = 511248.26    # remaining 50%
-RISK_PER_TRADE = 5112.48      # 1% of ₹5,11,248.27
-DAILY_LOSS_LIMIT = 20449.93   # 2% of ₹10,22,496.53
+WORKING_CAPITAL = 1022641.00   # ₹10,22,641.00 explicitly set
+BACKUP_CAPITAL = 1022641.00    # remaining 50%
+RISK_PER_TRADE = 10226.41      # 1% of ₹10,22,641.00
+DAILY_LOSS_LIMIT = 40905.64   # 2% of ₹20,45,282.00
 
 # ── SIGNAL BRAIN: PRICE-RELATIVE PARAMS ───────────────────────
 MIN_CANDLES_BEFORE_TRADE = 15     # Warmup period (unitless, keep)

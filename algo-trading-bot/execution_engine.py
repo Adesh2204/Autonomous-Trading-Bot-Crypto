@@ -78,11 +78,11 @@ try:
         MIN_NET_PROFIT_RS,
     )
 except ImportError:
-    TOTAL_CAPITAL = 9999.46
-    WORKING_CAPITAL = 4999.73   # 50% intraday deployment limit
-    BACKUP_CAPITAL = 4999.73    # 50% reserve buffer
-    RISK_PER_TRADE = 100.00     # Max initial risk per setup
-    DAILY_LOSS_LIMIT = 200.00   # Hard daily loss circuit breaker
+    TOTAL_CAPITAL = 2045282.00
+    WORKING_CAPITAL = 1022641.00   # 50% intraday deployment limit
+    BACKUP_CAPITAL = 1022641.00    # 50% reserve buffer
+    RISK_PER_TRADE = 10226.41      # Max initial risk per setup
+    DAILY_LOSS_LIMIT = 40905.64    # Hard daily loss circuit breaker
     TRANCHE_FRACTIONS = [0.33, 0.33, 0.34]
     MAX_TRANCHES = 3
     SL_ATR_MULT = 2.00
