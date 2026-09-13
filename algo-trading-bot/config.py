@@ -4,21 +4,21 @@
 # ─────────────────────────────────────────────────────────────
 
 # ── UNIVERSE ──────────────────────────────────────────────────
-SYMBOL = "IFCI"               # IFCI Limited
+SYMBOL = "ONGC"               # Oil and Natural Gas Corporation
 EXCHANGE = "NSE"               # unchanged
-TOKEN = "1491"                 # Angel One instrument token for IFCI
+TOKEN = "2475"                 # Angel One instrument token for ONGC
 SEGMENT = 1                   # unchanged (NSE equity)
 
 # ── CAPITAL (absolute ₹ — intentionally fixed, user config) ───
-TOTAL_CAPITAL = 2045282.00    # ₹20,45,282.00 (Total capital for 50% partition)
+TOTAL_CAPITAL = 10000.00      # ₹10,000.00 base capital
 WORKING_CAPITAL_PCT = 0.50       # 50% of total
 DAILY_LOSS_LIMIT_PCT = 0.02      # 2% of total capital
 RISK_PER_SETUP_PCT = 0.01        # 1% of working capital per setup
 
-WORKING_CAPITAL = 1022641.00   # ₹10,22,641.00 explicitly set
-BACKUP_CAPITAL = 1022641.00    # remaining 50%
-RISK_PER_TRADE = 10226.41      # 1% of ₹10,22,641.00
-DAILY_LOSS_LIMIT = 40905.64   # 2% of ₹20,45,282.00
+WORKING_CAPITAL = 5000.00      # 50% active allocation for 3-tranche pyramiding
+BACKUP_CAPITAL = 5000.00       # Capital reserve
+RISK_PER_TRADE = 100.00        # Standard 1% account risk
+DAILY_LOSS_LIMIT = 200.00      # 2% max daily drawdown limit
 
 # ── SIGNAL BRAIN: PRICE-RELATIVE PARAMS ───────────────────────
 MIN_CANDLES_BEFORE_TRADE = 15     # Warmup period (unitless, keep)

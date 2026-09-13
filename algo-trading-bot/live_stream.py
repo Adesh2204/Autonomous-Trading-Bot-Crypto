@@ -112,16 +112,22 @@ try:
         TOKEN as CONFIG_TOKEN,
     )
 except ImportError:
-    DEFAULT_SYMBOL = "IFCI"
-    TOTAL_CAPITAL = 2045282.00
-    WORKING_CAPITAL = 1022641.00
-    BACKUP_CAPITAL = 1022641.00
-    RISK_PER_TRADE = 10226.41
-    DAILY_LOSS_LIMIT = 40905.64
-    CONFIG_TOKEN = "1491"
+    DEFAULT_SYMBOL = "ONGC"
+    TOTAL_CAPITAL = 10000.00
+    WORKING_CAPITAL = 5000.00
+    BACKUP_CAPITAL = 5000.00
+    RISK_PER_TRADE = 100.00
+    DAILY_LOSS_LIMIT = 200.00
+    CONFIG_TOKEN = "2475"
 
 # Liquid NSE cash equity instruments
 INSTRUMENTS = {
+    "ONGC": {
+        "token": "2475",
+        "symbol": "ONGC",
+        "trading_symbol": "ONGC-EQ",
+        "exchange_type": 1,
+    },
     "IFCI": {
         "token": "1491",
         "symbol": "IFCI",
