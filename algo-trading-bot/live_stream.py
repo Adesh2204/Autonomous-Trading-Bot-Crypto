@@ -21,8 +21,16 @@ from typing import Any, Optional
 
 import pyotp
 from dotenv import load_dotenv
-from SmartApi.smartConnect import SmartConnect
+from SmartApi import SmartConnect
 from SmartApi.smartWebSocketV2 import SmartWebSocketV2
+from config import LIVE_MODE
+
+# Load .env credentials at startup
+load_dotenv(
+    dotenv_path=os.path.join(
+        os.path.dirname(__file__), ".env"
+    )
+)
 
 # Monkeypatch to absorb modern websocket-client 4-arg signature
 _orig_on_close = getattr(SmartWebSocketV2, "_on_close", None)
@@ -186,6 +194,7 @@ class AngelOneLiveStream:
         self,
         target_symbol: str = DEFAULT_SYMBOL,
         schedule: Optional[BaseMarketSchedule] = None,
+        angel_session: Optional[SmartConnect] = None,
     ) -> None:
         self.schedule: BaseMarketSchedule = (
             schedule if schedule is not None else get_market_schedule(os.getenv("MARKET_SCHEDULE", "NSE"))
@@ -238,6 +247,9 @@ class AngelOneLiveStream:
             stop_loss_pct=0.005,
             reward_to_risk=2.0,
             schedule=self.schedule,
+        )
+        self.angel_session: Optional[SmartConnect] = (
+            angel_session if angel_session is not None else (angel_login() if LIVE_MODE else None)
         )
 
         self.builder = CandleBuilder(interval_seconds=60, on_candle_close=self.on_candle_close)
@@ -526,6 +538,7 @@ class AngelOneLiveStream:
                 timestamp=signal_timestamp,
                 atr_14=atr_val,
                 side="BUY",
+                angel_session=self.angel_session,
             )
         elif has_short:
             sig_type = "BREAKDOWN" if (is_short_breakdown and not is_short_pullback) else "PULLBACK"
@@ -551,6 +564,7 @@ class AngelOneLiveStream:
                 timestamp=signal_timestamp,
                 atr_14=atr_val,
                 side="SELL",
+                angel_session=self.angel_session,
             )
 
         # Position management on candle close
@@ -742,8 +756,172 @@ class AngelOneLiveStream:
         self._watchdog_stop_event = None
 
 
+def angel_login() -> SmartConnect:
+    """
+    Authenticates with Angel One SmartAPI using
+    credentials from .env file.
+
+    Reads:
+      BROKER_API_KEY      → Angel One API key
+      BROKER_CLIENT_ID    → Angel One client/login ID
+      BROKER_PIN          → 4-digit trading PIN
+      BROKER_TOTP_SECRET  → TOTP secret for 2FA
+
+    Returns: authenticated SmartConnect session object
+    Raises:  Exception on login failure (bot will stop)
+    """
+    api_key      = os.getenv("BROKER_API_KEY")
+    client_id    = os.getenv("BROKER_CLIENT_ID")
+    pin          = os.getenv("BROKER_PIN")
+    totp_secret  = os.getenv("BROKER_TOTP_SECRET")
+
+    # Validate all credentials are present
+    missing = [
+        name for name, val in {
+            "BROKER_API_KEY":     api_key,
+            "BROKER_CLIENT_ID":   client_id,
+            "BROKER_PIN":         pin,
+            "BROKER_TOTP_SECRET": totp_secret,
+        }.items() if not val
+    ]
+    if missing:
+        raise ValueError(
+            f"[LIVE] Missing .env keys: {missing}. "
+            f"Check algo-trading-bot/.env file."
+        )
+
+    # Generate TOTP (time-based 2FA code)
+    totp_code = pyotp.TOTP(totp_secret).now()
+
+    # Authenticate with Angel One
+    angel = SmartConnect(api_key=api_key)
+    session = angel.generateSession(
+        clientCode=client_id,
+        password=pin,
+        totp=totp_code
+    )
+
+    if not session.get("status", False):
+        raise Exception(
+            f"[LIVE] Angel One login FAILED. "
+            f"Response: {session}. "
+            f"Check credentials in .env file."
+        )
+
+    logging.warning(
+        "══════════════════════════════════════════"
+    )
+    logging.warning(
+        "  ✅ ANGEL ONE LOGIN SUCCESS"
+    )
+    logging.warning(
+        f"  Client : {client_id}"
+    )
+    logging.warning(
+        f"  Mode   : LIVE — REAL MONEY ACTIVE ⚠️"
+    )
+    logging.warning(
+        f"  Capital: ₹20,000"
+    )
+    logging.warning(
+        "══════════════════════════════════════════"
+    )
+    return angel
+
+
+def place_live_order(
+    angel: SmartConnect,
+    symbol: str,
+    token: str,
+    side: str,
+    qty: int,
+) -> str | None:
+    """
+    Places a real MIS (intraday) MARKET order on NSE
+    via Angel One SmartAPI.
+
+    Parameters:
+      angel  : authenticated SmartConnect session
+      symbol : NSE trading symbol (e.g. "ONGC-EQ")
+      token  : Angel One instrument token (e.g. "1594")
+      side   : "BUY" or "SELL"
+      qty    : number of shares
+
+    Returns:
+      order_id (str) on success
+      None on failure (position NOT opened)
+
+    Notes:
+      - producttype "INTRADAY" = MIS (auto square-off)
+      - ordertype "MARKET" = best available price
+      - price "0" required for MARKET orders
+      - EOD auto square-off by bot at 15:20 IST
+      - Angel One also squares off at 15:20 as backup
+    """
+    order_params = {
+        "variety":          "NORMAL",
+        "tradingsymbol":    symbol,
+        "symboltoken":      token,
+        "transactiontype":  side,           # "BUY" / "SELL"
+        "exchange":         "NSE",
+        "ordertype":        "MARKET",
+        "producttype":      "INTRADAY",     # MIS
+        "duration":         "DAY",
+        "price":            "0",            # MARKET = 0
+        "squareoff":        "0",
+        "stoploss":         "0",
+        "quantity":         str(qty),
+    }
+
+    try:
+        response = angel.placeOrder(order_params)
+
+        if response.get("status", False):
+            order_id = response["data"]["orderid"]
+            logging.warning(
+                f"[LIVE ORDER ✅] {side} {qty} {symbol} "
+                f"| OrderID: {order_id}"
+            )
+            return order_id
+        else:
+            logging.error(
+                f"[LIVE ORDER ❌] FAILED: {response}"
+            )
+            return None
+
+    except Exception as e:
+        logging.error(
+            f"[LIVE ORDER ERROR] Exception: {e}"
+        )
+        return None
+
+
 def main() -> None:
-    stream = AngelOneLiveStream()
+    # ── LIVE MODE STARTUP ──────────────────────────────
+    angel_session = None   # default: paper mode
+
+    if LIVE_MODE:
+        # Real money mode — login to Angel One
+        angel_session = angel_login()
+        # angel_session passed to execution engine below
+    else:
+        logging.info(
+            "══════════════════════════════════════════"
+        )
+        logging.info(
+            "  📄 PAPER TRADING MODE ACTIVE"
+        )
+        logging.info(
+            "  No real orders will be placed."
+        )
+        logging.info(
+            "  Set LIVE_MODE=True in config.py to go live."
+        )
+        logging.info(
+            "══════════════════════════════════════════"
+        )
+
+    stream = AngelOneLiveStream(angel_session=angel_session)
     stream.run()
 
 

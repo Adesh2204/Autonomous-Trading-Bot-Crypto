@@ -10,15 +10,21 @@ TOKEN = "2475"                 # Angel One instrument token for ONGC
 SEGMENT = 1                   # unchanged (NSE equity)
 
 # ── CAPITAL (absolute ₹ — intentionally fixed, user config) ───
-TOTAL_CAPITAL = 10000.00      # ₹10,000.00 base capital
+TOTAL_CAPITAL = 20000.00      # ₹20,000 real money
 WORKING_CAPITAL_PCT = 0.50       # 50% of total
 DAILY_LOSS_LIMIT_PCT = 0.02      # 2% of total capital
 RISK_PER_SETUP_PCT = 0.01        # 1% of working capital per setup
 
-WORKING_CAPITAL = 5000.00      # 50% active allocation for 3-tranche pyramiding
-BACKUP_CAPITAL = 5000.00       # Capital reserve
-RISK_PER_TRADE = 100.00        # Standard 1% account risk
-DAILY_LOSS_LIMIT = 200.00      # 2% max daily drawdown limit
+WORKING_CAPITAL = 10000.00      # 50% of total
+BACKUP_CAPITAL = 10000.00       # 50% reserve
+RISK_PER_TRADE = 100.00        # 1% of working capital
+DAILY_LOSS_LIMIT = 400.00        # 2% of ₹20,000
+
+# ── BROKERAGE CONFIG ──────────────────────────────
+# Angel One 30-day free trial: Aug 25 → Sep 25 2026
+# Zero flat fee during this period.
+# After Sep 25: revert to 20.0 per trade.
+BROKERAGE_PER_TRADE = 0.0    # ₹0 until Sep 25 2026
 
 # ── SIGNAL BRAIN: PRICE-RELATIVE PARAMS ───────────────────────
 MIN_CANDLES_BEFORE_TRADE = 15     # Warmup period (unitless, keep)
@@ -74,4 +80,10 @@ BIAS_VOTES_NEEDED = 2             # Min confluence votes to declare bias
 # ── TIMING ────────────────────────────────────────────────────
 EOD_SQUAREOFF_TIME = "15:20"      # HH:MM IST — EOD auto square-off
 MARKET_OPEN_TIME = "09:15"        # HH:MM IST
+
+# ── TRADING MODE ─────────────────────────────────────────────
+# LIVE_MODE = False → Paper trading (default, safe)
+# LIVE_MODE = True  → Real Angel One API orders (real money)
+# ⚠️  Set True ONLY on Sep 15 morning, AFTER login test passes
+LIVE_MODE = False   # ← CHANGE TO True ON SEP 15 MORNING ONLY
 
