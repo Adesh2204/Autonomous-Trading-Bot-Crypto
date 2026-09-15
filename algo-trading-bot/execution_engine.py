@@ -789,9 +789,12 @@ class PaperTrader:
 
         # ── LIVE ORDER PLACEMENT ──────────────────────────
         from config import LIVE_MODE, SYMBOL, TOKEN
+        if LIVE_MODE and angel_session is not None:
+            from live_stream import place_live_order
         session = angel_session if angel_session is not None else getattr(self, "angel_session", None)
         if LIVE_MODE and session is not None:
             order_id = place_live_order(
+                angel=angel_session,
                 angel=session,
                 symbol=SYMBOL,
                 token=TOKEN,
@@ -953,9 +956,12 @@ class PaperTrader:
 
         # ── LIVE ORDER PLACEMENT ──────────────────────────
         from config import LIVE_MODE, SYMBOL, TOKEN
+        if LIVE_MODE and angel_session is not None:
+            from live_stream import place_live_order
         session = angel_session if angel_session is not None else getattr(self, "angel_session", None)
         if LIVE_MODE and session is not None:
             order_id = place_live_order(
+                angel=angel_session,
                 angel=session,
                 symbol=SYMBOL,
                 token=TOKEN,
@@ -1087,9 +1093,12 @@ class PaperTrader:
 
         # ── LIVE ORDER PLACEMENT ──────────────────────────
         from config import LIVE_MODE, SYMBOL, TOKEN
+        if LIVE_MODE and angel_session is not None:
+            from live_stream import place_live_order
         session = angel_session if angel_session is not None else getattr(self, "angel_session", None)
         if LIVE_MODE and session is not None:
             order_id = place_live_order(
+                angel=angel_session,
                 angel=session,
                 symbol=SYMBOL,
                 token=TOKEN,

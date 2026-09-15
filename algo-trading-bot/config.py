@@ -4,9 +4,9 @@
 # ─────────────────────────────────────────────────────────────
 
 # ── UNIVERSE ──────────────────────────────────────────────────
-SYMBOL = "ONGC"               # Oil and Natural Gas Corporation
+SYMBOL = "SJVN-EQ"               # SJVN Ltd
 EXCHANGE = "NSE"               # unchanged
-TOKEN = "2475"                 # Angel One instrument token for ONGC
+TOKEN = "18883"                 # Angel One instrument token for SJVN
 SEGMENT = 1                   # unchanged (NSE equity)
 
 # ── CAPITAL (absolute ₹ — intentionally fixed, user config) ───
@@ -85,5 +85,5 @@ MARKET_OPEN_TIME = "09:15"        # HH:MM IST
 # LIVE_MODE = False → Paper trading (default, safe)
 # LIVE_MODE = True  → Real Angel One API orders (real money)
 # ⚠️  Set True ONLY on Sep 15 morning, AFTER login test passes
-LIVE_MODE = False   # ← CHANGE TO True ON SEP 15 MORNING ONLY
+LIVE_MODE = True   # ← CHANGE TO True ON SEP 15 MORNING ONLY
 

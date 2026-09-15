@@ -251,6 +251,7 @@ class AngelOneLiveStream:
         self.angel_session: Optional[SmartConnect] = (
             angel_session if angel_session is not None else (angel_login() if LIVE_MODE else None)
         )
+        self.paper_trader.angel_session = self.angel_session
 
         self.builder = CandleBuilder(interval_seconds=60, on_candle_close=self.on_candle_close)
 
@@ -873,26 +874,44 @@ def place_live_order(
         "quantity":         str(qty),
     }
 
+    # ---------------------------------------------------------
+    # DEFENSIVE SMARTAPI RESPONSE PARSER (DO NOT ALTER LOGIC)
+    # ---------------------------------------------------------
     try:
         response = angel.placeOrder(order_params)
+        order_id = None
 
-        if response.get("status", False):
-            order_id = response["data"]["orderid"]
+        # Case 1: Standard SDK returns order ID as a raw string
+        if isinstance(response, str) and response.strip():
+            order_id = response.strip()
+            logging.info(f"[LIVE ORDER PLACED] Successfully routed. Order ID: {order_id}")
             logging.warning(
                 f"[LIVE ORDER ✅] {side} {qty} {symbol} "
                 f"| OrderID: {order_id}"
             )
             return order_id
+
+        # Case 2: Wrapper/SDK returns a response dictionary
+        elif isinstance(response, dict):
+            if response.get("status") is True or response.get("success") is True:
+                data_payload = response.get("data") or {}
+                order_id = data_payload.get("orderid") if isinstance(data_payload, dict) else str(data_payload)
+                logging.info(f"[LIVE ORDER PLACED] Successfully routed. Order ID: {order_id}")
+                logging.warning(
+                    f"[LIVE ORDER ✅] {side} {qty} {symbol} "
+                    f"| OrderID: {order_id}"
+                )
+                return order_id
+            else:
+                err_msg = response.get("message", "Unknown broker error")
+                logging.error(f"[LIVE ORDER REJECTED] Broker returned failure: {err_msg}")
+                return None
         else:
-            logging.error(
-                f"[LIVE ORDER ❌] FAILED: {response}"
-            )
+            logging.error(f"[LIVE ORDER ERROR] Unexpected response payload type: {type(response)} -> {response}")
             return None
 
     except Exception as e:
-        logging.error(
-            f"[LIVE ORDER ERROR] Exception: {e}"
-        )
+        logging.error(f"[LIVE ORDER EXCEPTION] Failed during placeOrder execution: {str(e)}")
         return None
 
 

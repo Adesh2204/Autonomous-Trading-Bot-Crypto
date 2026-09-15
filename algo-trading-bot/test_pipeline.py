@@ -1560,6 +1560,95 @@ def test_direction_flip_closes_opposite() -> None:
     assert len(trader.trade_log) >= 2
 
 
+def test_smartapi_place_live_order_defensive_parser():
+    import sys
+    from unittest.mock import MagicMock
+    if "pyotp" not in sys.modules:
+        sys.modules["pyotp"] = MagicMock()
+    if "SmartApi" not in sys.modules:
+        smartapi_mock = MagicMock()
+        sys.modules["SmartApi"] = smartapi_mock
+        sys.modules["SmartApi.smartWebSocketV2"] = MagicMock()
+
+    from execution_engine import place_live_order as ee_place_order
+    from live_stream import place_live_order as ls_place_order
+
+    for place_func in (ee_place_order, ls_place_order):
+        mock_angel = MagicMock()
+
+        # Case 1: Standard SDK returns order ID as raw string (reproduces fix for 'str' has no attribute 'get')
+        mock_angel.placeOrder.return_value = "260915000123"
+        order_id = place_func(mock_angel, "SJVN-EQ", "18883", "BUY", 10)
+        assert order_id == "260915000123"
+
+        # Case 2: Dict response with status=True
+        mock_angel.placeOrder.return_value = {"status": True, "data": {"orderid": "260915000456"}}
+        order_id = place_func(mock_angel, "SJVN-EQ", "18883", "BUY", 10)
+        assert order_id == "260915000456"
+
+        # Case 3: Dict response with success=True
+        mock_angel.placeOrder.return_value = {"success": True, "data": {"orderid": "260915000789"}}
+        order_id = place_func(mock_angel, "SJVN-EQ", "18883", "BUY", 10)
+        assert order_id == "260915000789"
+
+        # Case 4: Dict response with broker rejection
+        mock_angel.placeOrder.return_value = {"status": False, "message": "Insufficient funds"}
+        order_id = place_func(mock_angel, "SJVN-EQ", "18883", "BUY", 10)
+        assert order_id is None
+
+        # Case 5: Unexpected payload type (None, int, etc.)
+        mock_angel.placeOrder.return_value = None
+        order_id = place_func(mock_angel, "SJVN-EQ", "18883", "BUY", 10)
+        assert order_id is None
+
+        # Case 6: Exception thrown during placeOrder
+        mock_angel.placeOrder.side_effect = ConnectionError("Network down")
+        order_id = place_func(mock_angel, "SJVN-EQ", "18883", "BUY", 10)
+        assert order_id is None
+        mock_angel.placeOrder.side_effect = None
+
+
+def test_live_execution_state_transitions_and_exit(monkeypatch):
+    import config
+    from datetime import timezone
+    from unittest.mock import MagicMock
+    from execution_engine import PaperTrader, PyramidingState
+
+    monkeypatch.setattr(config, "LIVE_MODE", True)
+
+    mock_session = MagicMock()
+    mock_session.placeOrder.return_value = "260915999001"
+
+    trader = PaperTrader(total_capital=10000.0, working_capital_pct=0.50, angel_session=mock_session)
+    t0 = datetime(2026, 9, 15, 9, 20, tzinfo=timezone.utc)
+
+    # Base Entry (Tranche 1)
+    ticket = trader.execute_trade(
+        {"VWAP": 100.0, "Close": 100.0, "symbol": "SJVN-EQ", "ATR_14": 1.0},
+        timestamp=t0,
+        atr_14=1.0,
+        side="BUY",
+        angel_session=mock_session,
+    )
+    assert ticket is not None
+    assert trader.state == PyramidingState.HOLDING_TRANCHE_1
+    assert trader._pending_order_id == "260915999001"
+    assert trader._open_position["quantity"] > 0
+    assert mock_session.placeOrder.called
+
+    # Verify exit order routing in close_position
+    mock_session.placeOrder.reset_mock()
+    mock_session.placeOrder.return_value = "260915999002"
+    exit_summary = trader.close_position(exit_price=102.0, timestamp=t0 + timedelta(minutes=5), reason="Target Hit")
+
+    assert exit_summary is not None
+    assert trader.state == PyramidingState.CLOSED
+    assert mock_session.placeOrder.called
+    called_args = mock_session.placeOrder.call_args[0][0]
+    assert called_args["transactiontype"] == "SELL"
+    assert int(called_args["quantity"]) == exit_summary["total_quantity"]
+
+
 def run_scenario(
     name: str,
     extra_path: Sequence[CandleSpec],
