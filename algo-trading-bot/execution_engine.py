@@ -121,6 +121,73 @@ CSV_HEADERS = [
     "ending_working_capital",
 ]
 
+logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------
+# DEFENSIVE SMARTAPI RESPONSE PARSER (DO NOT ALTER LOGIC)
+# ---------------------------------------------------------
+def place_live_order(
+    angel: Any,
+    symbol: str,
+    token: str,
+    side: str,
+    qty: int,
+) -> Optional[str]:
+    """
+    Places a real MIS (intraday) MARKET order on NSE via Angel One SmartAPI.
+    Uses defensive SmartAPI response parser handling string order ID or response dict.
+    """
+    order_params = {
+        "variety":          "NORMAL",
+        "tradingsymbol":    symbol,
+        "symboltoken":      token,
+        "transactiontype":  side,           # "BUY" / "SELL"
+        "exchange":         "NSE",
+        "ordertype":        "MARKET",
+        "producttype":      "INTRADAY",     # MIS
+        "duration":         "DAY",
+        "price":            "0",            # MARKET = 0
+        "squareoff":        "0",
+        "stoploss":         "0",
+        "quantity":         str(qty),
+    }
+
+    try:
+        response = angel.placeOrder(order_params)
+        order_id = None
+
+        # Case 1: Standard SDK returns order ID as a raw string
+        if isinstance(response, str) and response.strip():
+            order_id = response.strip()
+            logger.info(f"[LIVE ORDER PLACED] Successfully routed. Order ID: {order_id}")
+            logging.warning(
+                f"[LIVE ORDER ✅] {side} {qty} {symbol} | OrderID: {order_id}"
+            )
+            return order_id
+
+        # Case 2: Wrapper/SDK returns a response dictionary
+        elif isinstance(response, dict):
+            if response.get("status") is True or response.get("success") is True:
+                data_payload = response.get("data") or {}
+                order_id = data_payload.get("orderid") if isinstance(data_payload, dict) else str(data_payload)
+                logger.info(f"[LIVE ORDER PLACED] Successfully routed. Order ID: {order_id}")
+                logging.warning(
+                    f"[LIVE ORDER ✅] {side} {qty} {symbol} | OrderID: {order_id}"
+                )
+                return order_id
+            else:
+                err_msg = response.get("message", "Unknown broker error")
+                logger.error(f"[LIVE ORDER REJECTED] Broker returned failure: {err_msg}")
+                return None
+        else:
+            logger.error(f"[LIVE ORDER ERROR] Unexpected response payload type: {type(response)} -> {response}")
+            return None
+
+    except Exception as e:
+        logger.error(f"[LIVE ORDER EXCEPTION] Failed during placeOrder execution: {str(e)}")
+        return None
+
 
 class PyramidingState(str, Enum):
     """Explicit multi-tranche pyramiding state machine."""
@@ -151,6 +218,7 @@ class PaperTrader:
         max_tranches: int = MAX_TRANCHES,
         csv_log_path: Optional[str] = None,
         schedule: Optional[BaseMarketSchedule] = None,
+        angel_session: Any = None,
         **kwargs,
     ):
         # ── Market Schedule Strategy Provider ───────────────────────────
@@ -229,6 +297,7 @@ class PaperTrader:
         self._trade_log: list = []
         self._pending_orders: list = []
         self._pending_order_id: Optional[str] = None
+        self.angel_session: Any = angel_session
         self._latest_price: Optional[float] = None
         self._latest_timestamp: Optional[datetime] = None
         self._entry_timestamp: Optional[datetime] = None
@@ -447,6 +516,8 @@ class PaperTrader:
         Ingests dynamic ATR_14 for volatility-based risk-to-reward calculation.
         """
         with self.lock:
+            if angel_session is not None:
+                self.angel_session = angel_session
             trade_timestamp = self._resolve_timestamp(timestamp, signal_data)
             self._check_day_reset(trade_timestamp)
 
@@ -718,10 +789,10 @@ class PaperTrader:
 
         # ── LIVE ORDER PLACEMENT ──────────────────────────
         from config import LIVE_MODE, SYMBOL, TOKEN
-        if LIVE_MODE and angel_session is not None:
-            from live_stream import place_live_order
+        session = angel_session if angel_session is not None else getattr(self, "angel_session", None)
+        if LIVE_MODE and session is not None:
             order_id = place_live_order(
-                angel=angel_session,
+                angel=session,
                 symbol=SYMBOL,
                 token=TOKEN,
                 side=side,
@@ -882,10 +953,10 @@ class PaperTrader:
 
         # ── LIVE ORDER PLACEMENT ──────────────────────────
         from config import LIVE_MODE, SYMBOL, TOKEN
-        if LIVE_MODE and angel_session is not None:
-            from live_stream import place_live_order
+        session = angel_session if angel_session is not None else getattr(self, "angel_session", None)
+        if LIVE_MODE and session is not None:
             order_id = place_live_order(
-                angel=angel_session,
+                angel=session,
                 symbol=SYMBOL,
                 token=TOKEN,
                 side=side,
@@ -1016,10 +1087,10 @@ class PaperTrader:
 
         # ── LIVE ORDER PLACEMENT ──────────────────────────
         from config import LIVE_MODE, SYMBOL, TOKEN
-        if LIVE_MODE and angel_session is not None:
-            from live_stream import place_live_order
+        session = angel_session if angel_session is not None else getattr(self, "angel_session", None)
+        if LIVE_MODE and session is not None:
             order_id = place_live_order(
-                angel=angel_session,
+                angel=session,
                 symbol=SYMBOL,
                 token=TOKEN,
                 side=side,
@@ -1189,6 +1260,7 @@ class PaperTrader:
         exit_price: float,
         timestamp: Optional[datetime] = None,
         reason: str = "Signal Exit",
+        angel_session: Any = None,
     ) -> Optional[dict]:
         """
         Close full position, calculate net P&L, update working capital,
@@ -1209,6 +1281,30 @@ class PaperTrader:
             tranches_filled = pos["current_tranches"]
 
             side = pos.get("side", "BUY")
+
+            # ── LIVE EXIT ORDER PLACEMENT ───────────────────────
+            from config import LIVE_MODE, SYMBOL, TOKEN
+            session = angel_session if angel_session is not None else getattr(self, "angel_session", None)
+            if LIVE_MODE and session is not None:
+                exit_side = "SELL" if side == "BUY" else "BUY"
+                exit_order_id = place_live_order(
+                    angel=session,
+                    symbol=pos.get("symbol", SYMBOL),
+                    token=pos.get("token", TOKEN),
+                    side=exit_side,
+                    qty=total_qty,
+                )
+                if exit_order_id is None:
+                    logger.error(
+                        f"[LIVE EXIT ERROR] Exit order failed for {pos.get('symbol', SYMBOL)} x {total_qty}. "
+                        "Broker position may still be open!"
+                    )
+                else:
+                    logger.info(
+                        f"[LIVE EXIT ORDER ✅] Routed exit order {pos.get('symbol', SYMBOL)} x {total_qty} "
+                        f"({exit_side}) | OrderID: {exit_order_id}"
+                    )
+
             if side == "BUY":
                 gross_pnl = (exit_price - avg_entry_price) * total_qty
             else:  # SELL (short)
