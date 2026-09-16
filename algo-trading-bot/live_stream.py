@@ -43,7 +43,18 @@ def _patched_on_close(self, *args, **kwargs):
 SmartWebSocketV2._on_close = _patched_on_close
 
 from candle_builder import CandleBuilder
-from execution_engine import PaperTrader
+from execution_engine import (
+    PaperTrader,
+    get_actual_fill_price,
+    get_live_capital,
+    reconcile_trade,
+    reconcile_trade_intraday,
+    reconcile_end_of_day,
+    init_reconciliation_baselines,
+    alert_human,
+    calculate_true_friction,
+    validate_trade_margin,
+)
 from market_schedule import (
     BaseMarketSchedule,
     MarketPhase,
@@ -356,6 +367,22 @@ class AngelOneLiveStream:
         """Login, connect, and keep the live stream running until shutdown with Exponential Backoff + Jitter."""
         self.validate_market_startup()
         self.login()
+
+        # Fix #2: Sync capital with the real account at startup
+        session = self.angel_session if self.angel_session is not None else self.smart_api
+        if LIVE_MODE and session is not None:
+            try:
+                live_cap = get_live_capital(session)
+                self.paper_trader.working_capital = live_cap
+                self._day_opening_capital = live_cap
+                logging.info(f"[CAPITAL SYNC ✅] Synchronized Working Capital with Angel One: ₹{live_cap:,.2f}")
+                # Fix #6: Snapshot broker position baselines for restart safety
+                self.paper_trader.init_reconciliation_baselines(session)
+            except Exception as exc:
+                logging.error(f"[CAPITAL SYNC ERROR] Failed to fetch live capital at startup: {exc}")
+                self._day_opening_capital = self.paper_trader.working_capital
+        else:
+            self._day_opening_capital = self.paper_trader.working_capital
 
         logging.info("=" * 60)
         logging.info("  STARTING ALGO TRADING BOT — SMARTAPI V2 STREAM")
@@ -718,6 +745,19 @@ class AngelOneLiveStream:
         logging.info(f"{reason} triggered at {loc_dt.strftime('%H:%M:%S')}.")
         self.paper_trader.cancel_pending_orders(reason)
         self.paper_trader.square_off_all_positions(reason, timestamp=current_dt)
+
+        # Fix #6: Layer B — End-of-Day authoritative reconciliation pass
+        session = self.angel_session if self.angel_session is not None else self.smart_api
+        if LIVE_MODE and session is not None and hasattr(self, "_day_opening_capital"):
+            try:
+                reconcile_end_of_day(
+                    smart_api=session,
+                    opening_capital=self._day_opening_capital,
+                    logged_daily_net_pnl=self.paper_trader.daily_pnl,
+                )
+            except Exception as exc:
+                logging.error(f"[EOD RECONCILIATION ERROR] Failed to compute EOD reconciliation: {exc}")
+
         self.log_daily_summary("Final Daily P&L")
         self.request_shutdown(reason)
 

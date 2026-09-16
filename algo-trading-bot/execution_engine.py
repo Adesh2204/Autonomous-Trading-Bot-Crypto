@@ -43,12 +43,14 @@ Core Architectural Features
 """
 
 import csv
+from dataclasses import dataclass
 from enum import Enum
 import logging
 import math
 import os
 import queue
 import threading
+import time
 from datetime import date, datetime
 from typing import Any, Optional, Union
 
@@ -80,6 +82,10 @@ try:
         BROKERAGE_CAP,
         BROKERAGE_MIN,
         SLIPPAGE_HAIRCUT_PCT,
+        RECONCILIATION_TOLERANCE_INTRADAY,
+        RECONCILIATION_TOLERANCE_EOD,
+        RECONCILIATION_MAX_RETRIES,
+        RECONCILIATION_RETRY_INTERVAL,
     )
 except ImportError:
     TOTAL_CAPITAL = 10000.00
@@ -105,6 +111,10 @@ except ImportError:
     BROKERAGE_CAP = 20.0
     BROKERAGE_MIN = 5.0
     SLIPPAGE_HAIRCUT_PCT = 0.0005
+    RECONCILIATION_TOLERANCE_INTRADAY = 0.50
+    RECONCILIATION_TOLERANCE_EOD = 1.00
+    RECONCILIATION_MAX_RETRIES = 3
+    RECONCILIATION_RETRY_INTERVAL = 0.5
 
 # Strategy legacy defaults
 DEFAULT_STOP_LOSS_PCT = 0.0050   # 0.50% initial risk distance
@@ -131,10 +141,351 @@ CSV_HEADERS = [
 
 logger = logging.getLogger(__name__)
 
+# ── Startup Validation: SLIPPAGE_HAIRCUT_PCT ──────────────────────────────
+if (not isinstance(SLIPPAGE_HAIRCUT_PCT, (int, float))
+        or math.isnan(SLIPPAGE_HAIRCUT_PCT)
+        or math.isinf(SLIPPAGE_HAIRCUT_PCT)
+        or SLIPPAGE_HAIRCUT_PCT < 0):
+    raise ValueError(
+        f"SLIPPAGE_HAIRCUT_PCT must be a finite number >= 0, got: {SLIPPAGE_HAIRCUT_PCT!r}"
+    )
+
 
 # ---------------------------------------------------------
-# DEFENSIVE SMARTAPI RESPONSE PARSER (DO NOT ALTER LOGIC)
+# BROKER ORDER RECOVERY PROTOCOL & DEFENSIVE PARSER
 # ---------------------------------------------------------
+class RecoveryStatus(str, Enum):
+    CONFIRMED_ORDER = "CONFIRMED_ORDER"
+    CONFIRMED_REJECTION = "CONFIRMED_REJECTION"
+    CONFIRMED_NO_ORDER = "CONFIRMED_NO_ORDER"
+    STATE_UNKNOWN = "STATE_UNKNOWN"
+
+
+@dataclass
+class OrderRecoveryResult:
+    status: RecoveryStatus
+    order_id: Optional[str] = None
+    filled_qty: int = 0
+    average_price: float = 0.0
+    message: str = ""
+    order_data: Optional[dict] = None
+
+
+LAST_ORDER_RECOVERY: Optional[OrderRecoveryResult] = None
+
+
+def get_last_order_recovery() -> Optional[OrderRecoveryResult]:
+    """Returns the most recent order recovery result."""
+    return LAST_ORDER_RECOVERY
+
+
+def _is_order_within_window(
+    order: dict,
+    attempt_time: float,
+    window_sec: float = 120.0,
+) -> bool:
+    """
+    Validates whether an orderBook record falls within a bounded window
+    around attempt_time (default: 120s), rejecting stale historical orders.
+    """
+    raw_time = (
+        order.get("ordertime")
+        or order.get("updatetime")
+        or order.get("exchtime")
+        or order.get("order_time")
+        or order.get("timestamp")
+    )
+    if raw_time is None or raw_time == "":
+        return True
+
+    if isinstance(raw_time, (int, float)):
+        return abs(float(raw_time) - attempt_time) <= window_sec
+
+    if isinstance(raw_time, str):
+        raw_str = raw_time.strip()
+        try:
+            num = float(raw_str)
+            return abs(num - attempt_time) <= window_sec
+        except ValueError:
+            pass
+
+        dt_formats = [
+            "%Y-%m-%d %H:%M:%S",
+            "%Y-%m-%dT%H:%M:%S",
+            "%d-%b-%Y %H:%M:%S",
+            "%d-%m-%Y %H:%M:%S",
+            "%Y/%m/%d %H:%M:%S",
+            "%d/%m/%Y %H:%M:%S",
+        ]
+        clean_str = raw_str.split(".")[0]
+        for fmt in dt_formats:
+            try:
+                parsed_dt = datetime.strptime(clean_str, fmt)
+                attempt_dt = datetime.fromtimestamp(attempt_time)
+                diff = abs((parsed_dt - attempt_dt).total_seconds())
+                return diff <= window_sec
+            except Exception:
+                pass
+
+        time_formats = ["%H:%M:%S", "%H:%M"]
+        for fmt in time_formats:
+            try:
+                parsed_t = datetime.strptime(clean_str, fmt).time()
+                attempt_dt = datetime.fromtimestamp(attempt_time)
+                order_dt = datetime.combine(attempt_dt.date(), parsed_t)
+                diff = abs((order_dt - attempt_dt).total_seconds())
+                return diff <= window_sec
+            except Exception:
+                pass
+
+    return True
+
+
+def check_broker_position_netqty(
+    smart_api: Any,
+    symbol: str,
+    token: str = "",
+    exchange: str = "NSE",
+    producttype: str = "INTRADAY",
+) -> tuple[Optional[float], bool]:
+    """
+    Queries smart_api.position() and extracts the net quantity for symbol/token.
+    Returns (netqty, is_success).
+    - If API call succeeds and symbol found: returns (net_qty, True).
+    - If API call succeeds but symbol not present in positions list: returns (0.0, True) (flat).
+    - If API call fails or raises exception: returns (None, False).
+    """
+    if smart_api is None or not hasattr(smart_api, "position"):
+        return None, False
+    try:
+        resp = smart_api.position()
+        if not isinstance(resp, dict):
+            return None, False
+        if resp.get("status") is False:
+            return None, False
+        data = resp.get("data")
+        if data is None:
+            return None, False
+        if not isinstance(data, list):
+            return None, False
+
+        token_clean = str(token).strip()
+        sym_clean = str(symbol).strip().upper()
+        ex_clean = str(exchange).strip().upper()
+        prod_clean = str(producttype).strip().upper()
+
+        matched_rows = []
+        if token_clean:
+            matched_rows = [
+                r for r in data
+                if isinstance(r, dict)
+                and str(r.get("symboltoken", "")).strip() == token_clean
+                and str(r.get("exchange", "")).strip().upper() == ex_clean
+                and str(r.get("producttype", "")).strip().upper() == prod_clean
+            ]
+        if not matched_rows:
+            matched_rows = [
+                r for r in data
+                if isinstance(r, dict)
+                and str(r.get("tradingsymbol", "")).strip().upper() == sym_clean
+                and str(r.get("exchange", "")).strip().upper() == ex_clean
+                and str(r.get("producttype", "")).strip().upper() == prod_clean
+            ]
+        if not matched_rows:
+            matched_rows = [
+                r for r in data
+                if isinstance(r, dict)
+                and str(r.get("tradingsymbol", "")).strip().upper() == sym_clean
+            ]
+
+        if not matched_rows:
+            return 0.0, True
+
+        target_row = matched_rows[0]
+        net_qty = safe_float(
+            target_row.get("netqty") if target_row.get("netqty") is not None else target_row.get("netquantity", 0)
+        )
+        return net_qty, True
+    except Exception as exc:
+        logger.error(f"[CHECK POSITION NETQTY ERROR] Failed to query position: {exc}")
+        return None, False
+
+
+def recover_broker_order(
+    smart_api: Any,
+    symbol: str,
+    token: str,
+    side: str,
+    qty: int,
+    exchange: str = "NSE",
+    producttype: str = "INTRADAY",
+    attempt_time: Optional[float] = None,
+    max_attempts: int = 3,
+    retry_delay: float = 0.5,
+    window_sec: float = 120.0,
+) -> OrderRecoveryResult:
+    """
+    Authoritative Broker Order Recovery Protocol.
+    Searches orderBook() using strong multi-attribute identity matching:
+      (tradingsymbol/symboltoken, transactiontype, exchange, producttype, quantity, time window).
+    Falls back to position() verification to determine if exposure exists at the broker.
+    """
+    if attempt_time is None:
+        attempt_time = time.time()
+
+    if smart_api is None:
+        return OrderRecoveryResult(
+            status=RecoveryStatus.STATE_UNKNOWN,
+            message="No active broker session provided for recovery",
+        )
+
+    order_candidates: list[dict] = []
+    sym_clean = str(symbol).strip().upper()
+    tok_clean = str(token).strip()
+    side_clean = str(side).strip().upper()
+    ex_clean = str(exchange).strip().upper()
+    prod_clean = str(producttype).strip().upper()
+    qty_int = int(qty)
+
+    for attempt in range(1, max_attempts + 1):
+        if not hasattr(smart_api, "orderBook"):
+            break
+        try:
+            resp = smart_api.orderBook()
+            if isinstance(resp, dict) and resp.get("status") is not False:
+                data = resp.get("data")
+                if isinstance(data, list):
+                    order_candidates.clear()
+                    for o in data:
+                        if not isinstance(o, dict):
+                            continue
+
+                        # 1. Match symbol or token
+                        o_sym = str(o.get("tradingsymbol", "")).strip().upper()
+                        o_tok = str(o.get("symboltoken", "")).strip()
+                        sym_match = (o_sym == sym_clean) or (tok_clean and o_tok == tok_clean)
+                        if not sym_match:
+                            continue
+
+                        # 2. Match transactiontype (side)
+                        o_side = str(o.get("transactiontype", "")).strip().upper()
+                        if o_side != side_clean:
+                            continue
+
+                        # 3. Match exchange
+                        o_ex = str(o.get("exchange", "")).strip().upper()
+                        if ex_clean and o_ex and o_ex != ex_clean:
+                            continue
+
+                        # 4. Match producttype
+                        o_prod = str(o.get("producttype", "")).strip().upper()
+                        if prod_clean and o_prod and o_prod != prod_clean:
+                            continue
+
+                        # 5. Match quantity
+                        o_qty = int(safe_float(o.get("quantity", 0)))
+                        if o_qty > 0 and o_qty != qty_int:
+                            continue
+
+                        # 6. Check time window
+                        if not _is_order_within_window(o, attempt_time, window_sec):
+                            continue
+
+                        order_candidates.append(o)
+
+                    if order_candidates:
+                        break
+        except Exception as exc:
+            logger.warning(f"[RECOVERY QUERY ERROR] orderBook attempt {attempt}/{max_attempts} failed: {exc}")
+
+        if attempt < max_attempts:
+            time.sleep(retry_delay)
+
+    # Inspect results from orderBook
+    if len(order_candidates) == 1:
+        cand = order_candidates[0]
+        rec_oid = str(cand.get("orderid", "")).strip()
+        status = str(cand.get("status", "")).strip().lower()
+        avg_px = safe_float(cand.get("averageprice", 0.0))
+        filled_shares = int(safe_float(cand.get("filledshares", qty_int)))
+
+        if status in ("complete", "open", "pending", "trigger pending"):
+            logger.info(
+                f"[RECOVERY SUCCESS] Found matching broker order {rec_oid} "
+                f"with status '{status}', filled={filled_shares} @ ₹{avg_px:.2f}."
+            )
+            return OrderRecoveryResult(
+                status=RecoveryStatus.CONFIRMED_ORDER,
+                order_id=rec_oid,
+                filled_qty=filled_shares,
+                average_price=avg_px,
+                message=f"Order {rec_oid} found in orderBook with status '{status}'",
+                order_data=cand,
+            )
+        elif status in ("rejected", "cancelled", "canceled"):
+            rej_reason = str(cand.get("text", "") or cand.get("rejectionreason", "") or status)
+            logger.warning(
+                f"[RECOVERY REJECTION] Found matching order {rec_oid} confirmed {status}: {rej_reason}"
+            )
+            return OrderRecoveryResult(
+                status=RecoveryStatus.CONFIRMED_REJECTION,
+                order_id=rec_oid,
+                message=f"Order {rec_oid} confirmed {status}: {rej_reason}",
+                order_data=cand,
+            )
+        else:
+            logger.error(f"[RECOVERY UNEXPECTED STATUS] Order {rec_oid} has status '{status}'")
+            return OrderRecoveryResult(
+                status=RecoveryStatus.STATE_UNKNOWN,
+                order_id=rec_oid,
+                message=f"Order {rec_oid} has unhandled status '{status}'",
+                order_data=cand,
+            )
+
+    elif len(order_candidates) > 1:
+        oids = [str(c.get("orderid", "")) for c in order_candidates]
+        logger.error(
+            f"[RECOVERY AMBIGUOUS] Multiple ({len(order_candidates)}) matching orders found in orderBook: {oids}"
+        )
+        return OrderRecoveryResult(
+            status=RecoveryStatus.STATE_UNKNOWN,
+            message=f"Ambiguous matches: found {len(order_candidates)} candidates ({', '.join(oids)})",
+        )
+
+    # Cross-check broker position netqty
+    broker_net_qty, pos_ok = check_broker_position_netqty(
+        smart_api=smart_api,
+        symbol=symbol,
+        token=token,
+        exchange=exchange,
+        producttype=producttype,
+    )
+
+    if pos_ok:
+        if broker_net_qty == 0.0:
+            logger.info(
+                "[RECOVERY CONFIRMED NO ORDER] No order found in orderBook and broker position netqty is 0."
+            )
+            return OrderRecoveryResult(
+                status=RecoveryStatus.CONFIRMED_NO_ORDER,
+                message="No order found in orderBook and broker position is flat (netqty=0)",
+            )
+        else:
+            logger.critical(
+                f"[RECOVERY POSITION MISMATCH] No order found in orderBook but broker netqty is {broker_net_qty}!"
+            )
+            return OrderRecoveryResult(
+                status=RecoveryStatus.STATE_UNKNOWN,
+                message=f"No order found in orderBook but broker position netqty is {broker_net_qty}",
+            )
+
+    logger.critical("[RECOVERY FAILED] Broker state unreachable or unparseable. Unknown state.")
+    return OrderRecoveryResult(
+        status=RecoveryStatus.STATE_UNKNOWN,
+        message="Broker orderBook and position() queries failed or returned inconclusive data",
+    )
+
+
 def place_live_order(
     angel: Any,
     symbol: str,
@@ -145,7 +496,11 @@ def place_live_order(
     """
     Places a real MIS (intraday) MARKET order on NSE via Angel One SmartAPI.
     Uses defensive SmartAPI response parser handling string order ID or response dict.
+    Integrates automated Broker Order Recovery Protocol for transport/API ambiguities.
     """
+    global LAST_ORDER_RECOVERY
+    LAST_ORDER_RECOVERY = None
+
     order_params = {
         "variety":          "NORMAL",
         "tradingsymbol":    symbol,
@@ -160,6 +515,10 @@ def place_live_order(
         "stoploss":         "0",
         "quantity":         str(qty),
     }
+
+    attempt_time = time.time()
+    needs_recovery = False
+    recovery_reason = ""
 
     try:
         response = angel.placeOrder(order_params)
@@ -178,23 +537,602 @@ def place_live_order(
         elif isinstance(response, dict):
             if response.get("status") is True or response.get("success") is True:
                 data_payload = response.get("data") or {}
-                order_id = data_payload.get("orderid") if isinstance(data_payload, dict) else str(data_payload)
-                logger.info(f"[LIVE ORDER PLACED] Successfully routed. Order ID: {order_id}")
-                logging.warning(
-                    f"[LIVE ORDER ✅] {side} {qty} {symbol} | OrderID: {order_id}"
-                )
-                return order_id
+                if isinstance(data_payload, dict):
+                    order_id = data_payload.get("orderid")
+                elif data_payload:
+                    order_id = str(data_payload).strip()
+
+                if order_id and str(order_id).strip():
+                    order_id = str(order_id).strip()
+                    logger.info(f"[LIVE ORDER PLACED] Successfully routed. Order ID: {order_id}")
+                    logging.warning(
+                        f"[LIVE ORDER ✅] {side} {qty} {symbol} | OrderID: {order_id}"
+                    )
+                    return order_id
+                else:
+                    # status=True but missing/empty orderid
+                    needs_recovery = True
+                    recovery_reason = "Missing order ID in status=True response"
             else:
                 err_msg = response.get("message", "Unknown broker error")
                 logger.error(f"[LIVE ORDER REJECTED] Broker returned failure: {err_msg}")
                 return None
         else:
-            logger.error(f"[LIVE ORDER ERROR] Unexpected response payload type: {type(response)} -> {response}")
-            return None
+            needs_recovery = True
+            recovery_reason = f"Unexpected response payload type: {type(response)} -> {response}"
 
     except Exception as e:
         logger.error(f"[LIVE ORDER EXCEPTION] Failed during placeOrder execution: {str(e)}")
-        return None
+        needs_recovery = True
+        recovery_reason = f"Transport/API Exception: {str(e)}"
+
+    if needs_recovery:
+        logger.warning(
+            f"[ORDER RECOVERY INITIATED] Reason: {recovery_reason} | "
+            f"Checking broker state for {side} {qty} {symbol}..."
+        )
+        rec = recover_broker_order(
+            smart_api=angel,
+            symbol=symbol,
+            token=token,
+            side=side,
+            qty=qty,
+            exchange="NSE",
+            producttype="INTRADAY",
+            attempt_time=attempt_time,
+        )
+        LAST_ORDER_RECOVERY = rec
+        if rec.status == RecoveryStatus.CONFIRMED_ORDER:
+            logger.info(f"[ORDER RECOVERED] Successfully recovered order ID: {rec.order_id}")
+            return rec.order_id
+        elif rec.status == RecoveryStatus.CONFIRMED_REJECTION:
+            logger.warning(f"[RECOVERY CONFIRMED REJECTION] Order was rejected at broker: {rec.message}")
+            return None
+        elif rec.status == RecoveryStatus.CONFIRMED_NO_ORDER:
+            logger.info(f"[RECOVERY CONFIRMED NO ORDER] Order never reached broker: {rec.message}")
+            return None
+        else:
+            # STATE_UNKNOWN
+            logger.critical(f"[RECOVERY STATE UNKNOWN] Broker state inconclusive: {rec.message}")
+            alert_human(
+                f"[CRITICAL STATE UNKNOWN] Operation: ORDER_PLACEMENT | Symbol: {symbol} | Side: {side} | "
+                f"Qty: {qty} | Reason: {rec.message}. Duplicate order submission BLOCKED. Human intervention required."
+            )
+            return None
+
+    return None
+
+
+# ---------------------------------------------------------
+# EXECUTION & ACCOUNTING LAYER: LIVE FILLS, CAPITAL & RECONCILIATION
+# ---------------------------------------------------------
+def get_actual_fill_price(
+    smart_api: Any,
+    order_id: str,
+    expected_qty: int,
+    timeout_sec: float = 5.0,
+    poll_interval: float = 0.5,
+    max_interval: float = 2.0,
+) -> tuple[Optional[float], int]:
+    """
+    Polls Angel One's order book until the given order is confirmed
+    complete, then returns (average_price, filled_qty).
+
+    Uses increasing backoff between polls (not fixed-interval) to avoid
+    hitting Angel One's documented rate limits on repeated calls.
+
+    Returns (None, 0) and logs a warning if not confirmed within timeout.
+    Callers must NOT silently fall back to the planned price if this
+    returns None -- that's exactly the bug you're fixing.
+    """
+    if smart_api is None or not order_id:
+        return None, 0
+
+    waited = 0.0
+    interval = poll_interval
+    while waited < timeout_sec:
+        try:
+            if hasattr(smart_api, "orderBook"):
+                order_book_resp = smart_api.orderBook()
+                order_data = order_book_resp.get("data", []) if isinstance(order_book_resp, dict) else []
+                if isinstance(order_data, list):
+                    for order in order_data:
+                        if isinstance(order, dict):
+                            oid = str(order.get("orderid", "")).strip()
+                            status = str(order.get("status", "")).strip().lower()
+                            if oid == str(order_id).strip() and status == "complete":
+                                filled_qty = int(order.get("filledshares", expected_qty))
+                                if filled_qty != expected_qty:
+                                    logger.warning(
+                                        f"[PARTIAL FILL] Order {order_id} filled {filled_qty}/"
+                                        f"{expected_qty} shares -- P&L math must use {filled_qty}, not the requested qty."
+                                    )
+                                avg_price = float(order.get("averageprice", 0.0))
+                                return avg_price, filled_qty
+        except Exception as e:
+            logger.warning(f"[ORDER BOOK POLL ERROR] Error querying order book for {order_id}: {e}")
+
+        time.sleep(interval)
+        waited += interval
+        interval = min(interval * 1.5, max_interval)
+
+    logger.warning(
+        f"[FILL CHECK TIMEOUT] Order {order_id} not confirmed "
+        f"complete after {timeout_sec}s -- do not assume a price."
+    )
+    return None, 0
+
+
+def alert_human(message: str) -> None:
+    """
+    Alerts human operator when unconfirmed or ambiguous order states arise.
+    Logs as CRITICAL and serves as dispatch hook for notification channels.
+    """
+    logger.critical(f"🚨 [HUMAN INTERVENTION REQUIRED] {message}")
+
+
+def get_live_capital(smart_api: Any) -> float:
+    """
+    Returns real available trading capital from the broker.
+    Replaces the internal simulated Working Capital counter entirely.
+    """
+    if smart_api is None:
+        return float(WORKING_CAPITAL)
+    try:
+        if hasattr(smart_api, "rmsLimit"):
+            funds = smart_api.rmsLimit()
+            if isinstance(funds, dict) and funds.get("status") is not False:
+                data = funds.get("data", {}) or {}
+                if "availablecash" in data:
+                    return float(data["availablecash"])
+                elif "net" in data:
+                    return float(data["net"])
+            logger.warning(f"[RMS LIMIT] Unexpected rmsLimit response: {funds}")
+    except Exception as e:
+        logger.error(f"[RMS LIMIT ERROR] Failed to fetch live capital: {e}")
+    return float(WORKING_CAPITAL)
+
+
+class ReconciliationStatus(str, Enum):
+    RECONCILED = "RECONCILED"
+    PENDING = "PENDING"
+    SKIPPED = "SKIPPED"
+    API_ERROR = "API_ERROR"
+    DATA_ERROR = "DATA_ERROR"
+    MISMATCH = "MISMATCH"
+    UNVERIFIED = "UNVERIFIED"
+
+
+def safe_float(val: Any, default: float = 0.0) -> float:
+    """Safely converts input to float, guarding against None, invalid strings, and binary float issues."""
+    if val is None:
+        return default
+    try:
+        return float(val)
+    except (ValueError, TypeError):
+        return default
+
+
+_GLOBAL_RECONCILIATION_BASELINES: dict[str, float] = {}
+
+
+def init_reconciliation_baselines(
+    smart_api: Any,
+    baselines: Optional[dict] = None,
+) -> dict:
+    """
+    Initializes reconciliation baselines from live broker position() state.
+    Essential for restart safety: captures any pre-existing realized P&L from earlier
+    trades so that subsequent trades are evaluated strictly against the delta.
+    """
+    if baselines is None:
+        baselines = _GLOBAL_RECONCILIATION_BASELINES
+    if smart_api is None:
+        return baselines
+    try:
+        if hasattr(smart_api, "position"):
+            resp = smart_api.position()
+            if isinstance(resp, dict) and resp.get("status") is not False:
+                data = resp.get("data")
+                if isinstance(data, list):
+                    for row in data:
+                        token = str(row.get("symboltoken", "")).strip()
+                        sym = str(row.get("tradingsymbol", "")).strip().upper()
+                        ex = str(row.get("exchange", "NSE")).strip().upper()
+                        prod = str(row.get("producttype", "INTRADAY")).strip().upper()
+                        realised = safe_float(row.get("realised") if "realised" in row else row.get("realized", 0.0))
+                        if token:
+                            baselines[f"{ex}:{token}:{prod}"] = realised
+                        if sym:
+                            baselines[f"{ex}:{sym}:{prod}"] = realised
+                    logger.info(f"[RECONCILIATION BASELINE INITIALIZED] Baselines snapshot captured from broker.")
+    except Exception as exc:
+        logger.warning(f"[RECONCILIATION BASELINE ERROR] Failed to fetch position baseline: {exc}")
+    return baselines
+
+
+def reconcile_trade_intraday(
+    smart_api: Any,
+    symbol: str,
+    logged_gross_pnl: float,
+    trade_context: Optional[dict] = None,
+    tolerance: float = RECONCILIATION_TOLERANCE_INTRADAY,
+    max_retries: int = RECONCILIATION_MAX_RETRIES,
+    retry_interval: float = RECONCILIATION_RETRY_INTERVAL,
+    baselines: Optional[dict] = None,
+) -> dict:
+    """
+    Layer A — Intraday Trade Reconciliation (Fix #6)
+    Executed immediately after each completed trade.
+    Compares logged_gross_pnl against broker realised P&L delta from smart_api.position().
+    Strictly decouples trade-level gross P&L from account-level RMS availablecash.
+    """
+    if baselines is None:
+        baselines = _GLOBAL_RECONCILIATION_BASELINES
+
+    ctx = trade_context or {}
+    trade_id = ctx.get("trade_id", "N/A")
+    token = str(ctx.get("token", "")).strip()
+    exchange = str(ctx.get("exchange", "NSE")).strip().upper()
+    producttype = str(ctx.get("producttype", "INTRADAY")).strip().upper()
+    sym_clean = symbol.strip().upper()
+
+    pos_key = f"{exchange}:{token}:{producttype}" if token else f"{exchange}:{sym_clean}:{producttype}"
+    alias_key = f"{exchange}:{sym_clean}:{producttype}" if token else None
+
+    if smart_api is None:
+        logger.warning("[RECONCILIATION SKIPPED] No SmartAPI broker session provided.")
+        return {
+            "status": ReconciliationStatus.SKIPPED,
+            "trade_id": trade_id,
+            "symbol": symbol,
+            "logged_gross_pnl": logged_gross_pnl,
+            "broker_realised_before": 0.0,
+            "broker_realised_after": 0.0,
+            "broker_realised_delta": 0.0,
+            "difference": 0.0,
+            "tolerance": tolerance,
+        }
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            if not hasattr(smart_api, "position"):
+                logger.warning("[RECONCILIATION SKIPPED] SmartAPI client does not implement position().")
+                return {
+                    "status": ReconciliationStatus.SKIPPED,
+                    "trade_id": trade_id,
+                    "symbol": symbol,
+                    "logged_gross_pnl": logged_gross_pnl,
+                    "difference": 0.0,
+                    "tolerance": tolerance,
+                }
+
+            resp = smart_api.position()
+        except Exception as exc:
+            logger.error(f"[RECONCILIATION API ERROR] position() request failed: {exc}. Trade remains unverified.")
+            return {
+                "status": ReconciliationStatus.API_ERROR,
+                "trade_id": trade_id,
+                "symbol": symbol,
+                "logged_gross_pnl": logged_gross_pnl,
+                "error": str(exc),
+                "tolerance": tolerance,
+            }
+
+        if not isinstance(resp, dict):
+            logger.warning(f"[RECONCILIATION SKIPPED] position() returned non-dict response: {type(resp)}")
+            return {
+                "status": ReconciliationStatus.SKIPPED,
+                "trade_id": trade_id,
+                "symbol": symbol,
+                "logged_gross_pnl": logged_gross_pnl,
+                "tolerance": tolerance,
+            }
+
+        if resp.get("status") is False:
+            err_msg = resp.get("message", "Unknown error")
+            if attempt < max_retries:
+                time.sleep(retry_interval)
+                continue
+            logger.error(f"[RECONCILIATION API ERROR] position() returned status False: {err_msg}")
+            return {
+                "status": ReconciliationStatus.API_ERROR,
+                "trade_id": trade_id,
+                "symbol": symbol,
+                "logged_gross_pnl": logged_gross_pnl,
+                "error": err_msg,
+                "tolerance": tolerance,
+            }
+
+        data = resp.get("data")
+        if data is None:
+            if attempt < max_retries:
+                time.sleep(retry_interval)
+                continue
+            logger.warning("[RECONCILIATION SKIPPED] No data field in position response.")
+            return {
+                "status": ReconciliationStatus.SKIPPED,
+                "trade_id": trade_id,
+                "symbol": symbol,
+                "logged_gross_pnl": logged_gross_pnl,
+                "tolerance": tolerance,
+            }
+
+        if not isinstance(data, list):
+            logger.error(f"[RECONCILIATION DATA_ERROR] Expected list in position data, got {type(data)}")
+            return {
+                "status": ReconciliationStatus.DATA_ERROR,
+                "trade_id": trade_id,
+                "symbol": symbol,
+                "logged_gross_pnl": logged_gross_pnl,
+                "tolerance": tolerance,
+            }
+
+        if len(data) == 0:
+            if attempt < max_retries:
+                time.sleep(retry_interval)
+                continue
+            logger.warning("[RECONCILIATION SKIPPED] No positions returned in broker response.")
+            return {
+                "status": ReconciliationStatus.SKIPPED,
+                "trade_id": trade_id,
+                "symbol": symbol,
+                "logged_gross_pnl": logged_gross_pnl,
+                "tolerance": tolerance,
+            }
+
+        # Hierarchy Matching (Section 8)
+        matched_rows = []
+        if token:
+            matched_rows = [
+                r for r in data
+                if str(r.get("symboltoken", "")).strip() == token
+                and str(r.get("exchange", "")).strip().upper() == exchange
+                and str(r.get("producttype", "")).strip().upper() == producttype
+            ]
+        if not matched_rows:
+            matched_rows = [
+                r for r in data
+                if str(r.get("tradingsymbol", "")).strip().upper() == sym_clean
+                and str(r.get("exchange", "")).strip().upper() == exchange
+                and str(r.get("producttype", "")).strip().upper() == producttype
+            ]
+        if not matched_rows:
+            matched_rows = [
+                r for r in data
+                if str(r.get("tradingsymbol", "")).strip().upper() == sym_clean
+            ]
+
+        if not matched_rows:
+            if attempt < max_retries:
+                time.sleep(retry_interval)
+                continue
+            logger.warning(
+                f"[RECONCILIATION SKIPPED] No matching broker position found for {sym_clean} "
+                f"(token={token}, exchange={exchange}, product={producttype})."
+            )
+            return {
+                "status": ReconciliationStatus.SKIPPED,
+                "trade_id": trade_id,
+                "symbol": symbol,
+                "logged_gross_pnl": logged_gross_pnl,
+                "tolerance": tolerance,
+            }
+
+        target_row = matched_rows[0]
+
+        # Guard: Check if position is still open (Section 39)
+        net_qty = safe_float(target_row.get("netqty") or target_row.get("netquantity", 0))
+        if net_qty != 0:
+            if attempt < max_retries:
+                logger.info(
+                    f"[RECONCILIATION PENDING] Position netqty={net_qty} != 0. "
+                    f"Waiting for square-off to settle. Retry {attempt}/{max_retries}."
+                )
+                time.sleep(retry_interval)
+                continue
+            logger.warning(
+                f"[RECONCILIATION UNVERIFIED] Position netqty={net_qty} != 0 (open position). "
+                f"Trade remains unverified as closed."
+            )
+            return {
+                "status": ReconciliationStatus.UNVERIFIED,
+                "trade_id": trade_id,
+                "symbol": symbol,
+                "logged_gross_pnl": logged_gross_pnl,
+                "net_qty": net_qty,
+                "tolerance": tolerance,
+            }
+
+        # Extract realized P&L from broker
+        realised_str = target_row.get("realised") if "realised" in target_row else target_row.get("realized", 0.0)
+        current_broker_realised = safe_float(realised_str)
+        previous_broker_realised = baselines.get(pos_key, baselines.get(alias_key, 0.0))
+        broker_trade_realised_delta = round(current_broker_realised - previous_broker_realised, 4)
+
+        # Freshness Check (Section 13, 40, 41):
+        # If broker realized delta is 0 but logged gross PnL is non-zero, broker position may not have updated yet
+        if abs(broker_trade_realised_delta) < 1e-6 and abs(logged_gross_pnl) > tolerance:
+            if attempt < max_retries:
+                logger.info(
+                    f"[RECONCILIATION PENDING]\n"
+                    f"Broker position state has not yet reflected the completed trade.\n"
+                    f"Retry attempt: {attempt}/{max_retries}"
+                )
+                time.sleep(retry_interval * (1.5 ** (attempt - 1)))
+                continue
+            else:
+                logger.warning(
+                    f"[RECONCILIATION UNVERIFIED]\n"
+                    f"Trade ID: {trade_id}\n"
+                    f"Symbol: {symbol}\n"
+                    f"Broker position state did not update after {max_retries} attempts.\n"
+                    f"Trade remains unverified."
+                )
+                return {
+                    "status": ReconciliationStatus.UNVERIFIED,
+                    "trade_id": trade_id,
+                    "symbol": symbol,
+                    "logged_gross_pnl": logged_gross_pnl,
+                    "broker_realised_before": previous_broker_realised,
+                    "broker_realised_after": current_broker_realised,
+                    "broker_realised_delta": broker_trade_realised_delta,
+                    "difference": round(abs(broker_trade_realised_delta - logged_gross_pnl), 4),
+                    "tolerance": tolerance,
+                }
+
+        diff = round(abs(broker_trade_realised_delta - logged_gross_pnl), 4)
+
+        if diff <= tolerance:
+            status = ReconciliationStatus.RECONCILED
+            baselines[pos_key] = current_broker_realised
+            if alias_key:
+                baselines[alias_key] = current_broker_realised
+            logger.info(
+                f"[RECONCILIATION]\n"
+                f"Trade ID: {trade_id}\n"
+                f"Symbol: {symbol}\n"
+                f"Logged Gross P&L: ₹{logged_gross_pnl:.2f}\n"
+                f"Broker Realised Before: ₹{previous_broker_realised:.2f}\n"
+                f"Broker Realised After: ₹{current_broker_realised:.2f}\n"
+                f"Broker Realised Delta: ₹{broker_trade_realised_delta:.2f}\n"
+                f"Difference: ₹{diff:.2f}\n"
+                f"Status: RECONCILED"
+            )
+        else:
+            status = ReconciliationStatus.MISMATCH
+            logger.error(
+                f"[RECONCILIATION MISMATCH]\n"
+                f"Trade ID: {trade_id}\n"
+                f"Symbol: {symbol}\n"
+                f"Logged Gross P&L: ₹{logged_gross_pnl:.2f}\n"
+                f"Broker Realised Before: ₹{previous_broker_realised:.2f}\n"
+                f"Broker Realised After: ₹{current_broker_realised:.2f}\n"
+                f"Broker Realised Delta: ₹{broker_trade_realised_delta:.2f}\n"
+                f"Difference: ₹{diff:.2f}\n"
+                f"Tolerance: ₹{tolerance:.2f}"
+            )
+
+        return {
+            "status": status,
+            "trade_id": trade_id,
+            "symbol": symbol,
+            "logged_gross_pnl": logged_gross_pnl,
+            "broker_realised_before": previous_broker_realised,
+            "broker_realised_after": current_broker_realised,
+            "broker_realised_delta": broker_trade_realised_delta,
+            "difference": diff,
+            "tolerance": tolerance,
+        }
+
+    return {
+        "status": ReconciliationStatus.UNVERIFIED,
+        "trade_id": trade_id,
+        "symbol": symbol,
+        "logged_gross_pnl": logged_gross_pnl,
+        "tolerance": tolerance,
+    }
+
+
+def reconcile_end_of_day(
+    smart_api: Any,
+    opening_capital: float,
+    logged_daily_net_pnl: float,
+    closing_snapshot: Optional[float] = None,
+    tolerance: float = RECONCILIATION_TOLERANCE_EOD,
+) -> dict:
+    """
+    Layer B — End-of-Day Account Reconciliation (Fix #6)
+    Executed once after all trading and square-offs are complete.
+    Compares account-level capital movement against cumulative session net P&L.
+    """
+    closing_capital = None
+    if closing_snapshot is not None:
+        closing_capital = safe_float(closing_snapshot)
+    elif smart_api is not None:
+        try:
+            if hasattr(smart_api, "rmsLimit"):
+                funds = smart_api.rmsLimit()
+                if isinstance(funds, dict) and funds.get("status") is not False:
+                    data = funds.get("data", {}) or {}
+                    if "availablecash" in data:
+                        closing_capital = safe_float(data["availablecash"])
+                    elif "net" in data:
+                        closing_capital = safe_float(data["net"])
+                else:
+                    closing_capital = None
+            else:
+                closing_capital = None
+        except Exception as exc:
+            logger.error(f"[EOD RECONCILIATION ERROR] Failed to fetch closing capital: {exc}")
+            closing_capital = None
+
+    if closing_capital is None:
+        logger.warning("[EOD RECONCILIATION UNVERIFIED] Closing capital unavailable from broker.")
+        return {
+            "status": ReconciliationStatus.UNVERIFIED,
+            "opening_capital": opening_capital,
+            "closing_capital": None,
+            "broker_capital_change": None,
+            "logged_daily_net_pnl": logged_daily_net_pnl,
+            "difference": None,
+            "tolerance": tolerance,
+        }
+
+    broker_capital_change = round(closing_capital - opening_capital, 4)
+    diff = round(abs(broker_capital_change - logged_daily_net_pnl), 4)
+    is_reconciled = diff <= tolerance
+    status = ReconciliationStatus.RECONCILED if is_reconciled else ReconciliationStatus.MISMATCH
+
+    logger.info("════════════════════════════════════════════════════════════")
+    logger.info("  📊 END-OF-DAY RECONCILIATION SUMMARY")
+    logger.info(f"  Opening Capital: ₹{opening_capital:,.2f}")
+    logger.info(f"  Closing Capital: ₹{closing_capital:,.2f}")
+    logger.info(f"  Broker Day P&L : ₹{broker_capital_change:,.2f}")
+    logger.info(f"  Bot Logged P&L : ₹{logged_daily_net_pnl:,.2f}")
+    logger.info(f"  Difference     : ₹{diff:,.2f}")
+    if is_reconciled:
+        logger.info(f"  Status         : RECONCILED ✅ (within ₹{tolerance:.2f} tolerance)")
+    else:
+        logger.error(f"  Status         : MISMATCH ❌ (diff ₹{diff:.2f} > ₹{tolerance:.2f})")
+    logger.info("════════════════════════════════════════════════════════════")
+
+    return {
+        "status": status,
+        "opening_capital": opening_capital,
+        "closing_capital": closing_capital,
+        "broker_capital_change": broker_capital_change,
+        "logged_daily_net_pnl": logged_daily_net_pnl,
+        "difference": diff,
+        "tolerance": tolerance,
+    }
+
+
+def reconcile_trade(
+    capital_before: float,
+    capital_after: float,
+    logged_net_pnl: float,
+    tolerance: float = 5.00,
+) -> bool:
+    """
+    [DEPRECATED] Legacy per-trade cash comparison.
+    Do NOT use in live intraday execution -- replaced by reconcile_trade_intraday()
+    which uses broker position() realized P&L delta, and reconcile_end_of_day()
+    which reconciles account-level capital.
+    Retained solely for backward compatibility with legacy unit tests.
+    """
+    real_pnl = capital_after - capital_before
+    diff = abs(real_pnl - logged_net_pnl)
+
+    if diff > tolerance:
+        logger.error(
+            f"[RECONCILIATION MISMATCH] Bot logged ₹{logged_net_pnl:.2f}, "
+            f"real balance moved by ₹{real_pnl:.2f} (diff ₹{diff:.2f}). "
+            f"Trust the broker figure, not the bot's own log."
+        )
+    else:
+        logger.info(f"[RECONCILED ✅] Bot ₹{logged_net_pnl:.2f} ≈ Real ₹{real_pnl:.2f}")
+    return diff <= tolerance
 
 
 # ---------------------------------------------------------
@@ -269,25 +1207,149 @@ def validate_trade_margin(
     target_price: float,
     qty: int,
     side: str = "SHORT",
-    slippage_pct: float = SLIPPAGE_HAIRCUT_PCT,
+    slippage_pct: Optional[float] = None,
 ) -> bool:
-    if side in {"SHORT", "SELL"}:
-        adj_entry = entry_price * (1.0 - slippage_pct) if slippage_pct else entry_price
-        buy_price, sell_price = target_price, adj_entry
-    else:
-        adj_entry = entry_price * (1.0 + slippage_pct) if slippage_pct else entry_price
-        buy_price, sell_price = adj_entry, target_price
+    """
+    Pre-trade Friction Gate with Slippage Haircut Simulation.
 
-    costs = calculate_true_friction(buy_price, sell_price, qty)
-    if costs["net_pnl"] >= MIN_NET_PROFIT:
-        logger.info(
-            f"[FRICTION GATE PASSED] Net in hand: ₹{costs['net_pnl']} "
-            f"(Gross ₹{costs['gross_pnl']}, Friction ₹{costs['total_friction']})"
+    Applies a configured adverse execution haircut to BOTH entry and exit
+    prices, then passes the penalised simulated prices into
+    calculate_true_friction() to determine whether the projected net P&L
+    clears MIN_NET_PROFIT.
+
+    The haircut is a simulation-only financial penalty — it never reaches
+    live order payloads or alters strategy state.
+
+    Args:
+        entry_price: Strategy's expected entry price (never modified).
+        target_price: Strategy's expected exit/target price (never modified).
+        qty: Number of shares.
+        side: "LONG"/"BUY" or "SHORT"/"SELL".
+        slippage_pct: Override haircut. None → use SLIPPAGE_HAIRCUT_PCT from config.
+
+    Returns:
+        True if projected net P&L >= MIN_NET_PROFIT, False otherwise.
+    """
+    # ── Step 1: Validate inputs ──────────────────────────────────────────
+    if not isinstance(entry_price, (int, float)) or entry_price <= 0:
+        logger.error(
+            f"[FRICTION GATE ERROR] Invalid entry_price: {entry_price}"
         )
+        return False
+    if not isinstance(target_price, (int, float)) or target_price <= 0:
+        logger.error(
+            f"[FRICTION GATE ERROR] Invalid target_price: {target_price}"
+        )
+        return False
+    if not isinstance(qty, (int, float)) or qty <= 0:
+        logger.error(f"[FRICTION GATE ERROR] Invalid qty: {qty}")
+        return False
+
+    side_upper = side.upper() if isinstance(side, str) else ""
+    if side_upper not in {"LONG", "SHORT", "BUY", "SELL"}:
+        logger.error(f"[FRICTION GATE ERROR] Invalid trade side: {side}")
+        return False
+
+    # ── Step 2: Resolve configured haircut ────────────────────────────────
+    if slippage_pct is None:
+        slippage_pct = SLIPPAGE_HAIRCUT_PCT
+
+    if (not isinstance(slippage_pct, (int, float))
+            or math.isnan(slippage_pct)
+            or math.isinf(slippage_pct)):
+        logger.error(
+            f"[FRICTION GATE ERROR] Invalid slippage_pct: {slippage_pct}"
+        )
+        return False
+    if slippage_pct < 0:
+        logger.error(
+            f"[FRICTION GATE ERROR] Negative slippage_pct ({slippage_pct}) "
+            f"rejected — haircut must be >= 0"
+        )
+        return False
+
+    # ── Step 3: Preserve original prices (never mutated) ──────────────────
+    expected_entry_price = entry_price
+    expected_exit_price = target_price
+
+    # ── Step 4: Compute adverse simulated prices ──────────────────────────
+    if side_upper in {"LONG", "BUY"}:
+        # LONG: Buy more expensively, sell more cheaply
+        simulated_buy_price = expected_entry_price * (1.0 + slippage_pct)
+        simulated_sell_price = expected_exit_price * (1.0 - slippage_pct)
+        buy_price = simulated_buy_price
+        sell_price = simulated_sell_price
+    else:
+        # SHORT: Sell at lower price (entry), buy back at higher price (exit)
+        simulated_sell_price = expected_entry_price * (1.0 - slippage_pct)
+        simulated_buy_price = expected_exit_price * (1.0 + slippage_pct)
+        buy_price = simulated_buy_price
+        sell_price = simulated_sell_price
+
+    # ── Step 5: Call existing friction engine (unchanged) ─────────────────
+    costs = calculate_true_friction(buy_price, sell_price, qty)
+
+    # ── Step 6: Decision against MIN_NET_PROFIT threshold ─────────────────
+    haircut_display = f"{slippage_pct * 100:.4f}%"
+
+    if costs["net_pnl"] >= MIN_NET_PROFIT:
+        if side_upper in {"LONG", "BUY"}:
+            logger.info(
+                f"[FRICTION GATE PASSED] Slippage Haircut: {haircut_display} | "
+                f"Expected Entry: ₹{expected_entry_price:.2f}, "
+                f"Simulated BUY Entry: ₹{simulated_buy_price:.4f} | "
+                f"Expected Exit: ₹{expected_exit_price:.2f}, "
+                f"Simulated SELL Exit: ₹{simulated_sell_price:.4f} | "
+                f"Qty: {qty} | "
+                f"Gross P&L: ₹{costs['gross_pnl']}, "
+                f"Friction: ₹{costs['total_friction']}, "
+                f"Net P&L: ₹{costs['net_pnl']} | "
+                f"Min Required: ₹{MIN_NET_PROFIT:.2f}"
+            )
+        else:
+            logger.info(
+                f"[FRICTION GATE PASSED] Slippage Haircut: {haircut_display} | "
+                f"Expected Short Entry: ₹{expected_entry_price:.2f}, "
+                f"Simulated SELL Entry: ₹{simulated_sell_price:.4f} | "
+                f"Expected Buyback: ₹{expected_exit_price:.2f}, "
+                f"Simulated BUY Exit: ₹{simulated_buy_price:.4f} | "
+                f"Qty: {qty} | "
+                f"Gross P&L: ₹{costs['gross_pnl']}, "
+                f"Friction: ₹{costs['total_friction']}, "
+                f"Net P&L: ₹{costs['net_pnl']} | "
+                f"Min Required: ₹{MIN_NET_PROFIT:.2f}"
+            )
         return True
-    logger.warning(
-        f"[FRICTION GATE BLOCKED] Only ₹{costs['net_pnl']} net after real charges — skipping."
-    )
+
+    # ── BLOCKED — projected net P&L below threshold ───────────────────────
+    if side_upper in {"LONG", "BUY"}:
+        logger.warning(
+            f"[FRICTION GATE BLOCKED] Slippage Haircut: {haircut_display} | "
+            f"Expected Entry: ₹{expected_entry_price:.2f}, "
+            f"Simulated BUY Entry: ₹{simulated_buy_price:.4f} | "
+            f"Expected Exit: ₹{expected_exit_price:.2f}, "
+            f"Simulated SELL Exit: ₹{simulated_sell_price:.4f} | "
+            f"Qty: {qty} | "
+            f"Projected Net P&L: ₹{costs['net_pnl']}, "
+            f"Required Min: ₹{MIN_NET_PROFIT:.2f}, "
+            f"Friction: ₹{costs['total_friction']} | "
+            f"Reason: projected net P&L does not survive the configured "
+            f"slippage haircut and existing transaction costs."
+        )
+    else:
+        logger.warning(
+            f"[FRICTION GATE BLOCKED] Slippage Haircut: {haircut_display} | "
+            f"Expected Short Entry: ₹{expected_entry_price:.2f}, "
+            f"Simulated SELL Entry: ₹{simulated_sell_price:.4f} | "
+            f"Expected Buyback: ₹{expected_exit_price:.2f}, "
+            f"Simulated BUY Exit: ₹{simulated_buy_price:.4f} | "
+            f"Qty: {qty} | "
+            f"Projected Net P&L: ₹{costs['net_pnl']}, "
+            f"Required Min: ₹{MIN_NET_PROFIT:.2f}, "
+            f"Friction: ₹{costs['total_friction']} | "
+            f"Reason: projected net P&L does not survive the configured "
+            f"slippage haircut and existing transaction costs."
+        )
     return False
 
 
@@ -298,6 +1360,7 @@ class PyramidingState(str, Enum):
     HOLDING_TRANCHE_2 = "HOLDING_TRANCHE_2"
     MAX_TRANCHES_HELD = "MAX_TRANCHES_HELD"
     CLOSED = "CLOSED"
+    STATE_UNKNOWN = "STATE_UNKNOWN"
 
 
 class PaperTrader:
@@ -412,6 +1475,7 @@ class PaperTrader:
         self.scale_in_gain_trigger_pct: float = SCALE_IN_GAIN_TRIGGER_PCT
         self.lock = threading.RLock()
         self.daily_bias: str = "NEUTRAL"  # Updated by live_stream on each candle close
+        self._reconciliation_baselines: dict[str, float] = {}
 
         logging.info("=" * 60)
         logging.info("  PAPER TRADER INITIALIZED (Multi-Tranche Pyramiding v3)")
@@ -426,6 +1490,11 @@ class PaperTrader:
         logging.info("  Time Stop         : PERMANENTLY DISABLED (MOC Removed)")
         logging.info(f"  Trade Log (CSV)   : {self._csv_log_path}")
         logging.info("=" * 60)
+
+    def init_reconciliation_baselines(self, smart_api: Any = None) -> dict:
+        """Query live broker positions to initialize or recover realized P&L baselines."""
+        session = smart_api if smart_api is not None else self.angel_session
+        return init_reconciliation_baselines(session, self._reconciliation_baselines)
 
     def update_daily_bias(self, bias: str) -> None:
         """Update the daily directional bias. Called from live_stream after each candle."""
@@ -623,6 +1692,13 @@ class PaperTrader:
                 logging.warning(
                     "⛔  TRADE BLOCKED — Daily loss limit "
                     f"(₹{self.daily_loss_limit:,.2f}) reached. All trading halted."
+                )
+                return None
+
+            if self._state == PyramidingState.STATE_UNKNOWN:
+                logging.error(
+                    "⛔  TRADE BLOCKED — Engine is quarantined in STATE_UNKNOWN after ambiguous broker order. "
+                    "Manual operator intervention required. Duplicate order submission blocked."
                 )
                 return None
 
@@ -888,6 +1964,7 @@ class PaperTrader:
         from config import LIVE_MODE, SYMBOL, TOKEN
         session = angel_session if angel_session is not None else getattr(self, "angel_session", None)
         if LIVE_MODE and session is not None:
+            signal_time = time.time()
             order_id = place_live_order(
                 angel=session,
                 symbol=SYMBOL,
@@ -895,13 +1972,47 @@ class PaperTrader:
                 side=side,
                 qty=qty,
             )
+            order_placed_time = time.time()
             if order_id is None:
-                # Order failed — abort this trade entirely
-                logging.error(
-                    "[LIVE] Order failed. "
-                    "Skipping position open."
+                if LAST_ORDER_RECOVERY and LAST_ORDER_RECOVERY.status == RecoveryStatus.STATE_UNKNOWN:
+                    self._state = PyramidingState.STATE_UNKNOWN
+                    logger.critical(
+                        f"[STATE_UNKNOWN] Entry Tranche 1 order for {SYMBOL} x {qty} is unconfirmed. "
+                        "Engine quarantined in STATE_UNKNOWN. Duplicate entries blocked."
+                    )
+                    alert_human(
+                        f"[CRITICAL STATE UNKNOWN] Operation: ENTRY_TRANCHE_1 | Symbol: {SYMBOL} | Side: {side} | "
+                        f"Qty: {qty} | Reason: {LAST_ORDER_RECOVERY.message}. Engine quarantined. Duplicate orders blocked."
+                    )
+                else:
+                    logging.error(
+                        "[LIVE] Order failed. "
+                        "Skipping position open."
+                    )
+                return None
+
+            real_entry_price, filled_qty = get_actual_fill_price(session, order_id, expected_qty=qty)
+            order_filled_time = time.time()
+
+            if real_entry_price is None:
+                self._state = PyramidingState.STATE_UNKNOWN
+                logger.critical(f"[ENTRY UNCONFIRMED] {order_id} -- engine quarantined in STATE_UNKNOWN, alerting.")
+                alert_human(
+                    f"[CRITICAL STATE UNKNOWN] Operation: ENTRY_TRANCHE_1 | Symbol: {SYMBOL} | Side: {side} | "
+                    f"Qty: {qty} | OrderID: {order_id} | Reason: Entry fill unconfirmed after timeout. Engine quarantined."
                 )
                 return None
+
+            logger.info(
+                f"[SLIPPAGE] Signal->Order: {order_placed_time - signal_time:.3f}s | "
+                f"Order->Fill: {order_filled_time - order_placed_time:.3f}s | "
+                f"Signal ₹{entry_price:.2f} vs Fill ₹{real_entry_price:.2f} "
+                f"(slip ₹{real_entry_price - entry_price:+.2f})"
+            )
+            entry_price = real_entry_price
+            qty = filled_qty
+            turnover = entry_price * qty
+            friction = self.calculate_entry_leg_charges(qty, entry_price)["total_charges"]
             # Store order ID for reconciliation
             self._pending_order_id = order_id
         # Paper mode: no order placed, position tracked in memory
@@ -1052,6 +2163,7 @@ class PaperTrader:
         from config import LIVE_MODE, SYMBOL, TOKEN
         session = angel_session if angel_session is not None else getattr(self, "angel_session", None)
         if LIVE_MODE and session is not None:
+            signal_time = time.time()
             order_id = place_live_order(
                 angel=session,
                 symbol=SYMBOL,
@@ -1059,11 +2171,49 @@ class PaperTrader:
                 side=side,
                 qty=qty2,
             )
+            order_placed_time = time.time()
             if order_id is None:
-                logging.error(
-                    "[LIVE] Tranche 2 Order failed. Skipping scale-in."
+                if LAST_ORDER_RECOVERY and LAST_ORDER_RECOVERY.status == RecoveryStatus.STATE_UNKNOWN:
+                    self._state = PyramidingState.STATE_UNKNOWN
+                    logger.critical(
+                        f"[STATE_UNKNOWN] Scale-In Tranche 2 order for {SYMBOL} x {qty2} is unconfirmed. "
+                        "Engine quarantined in STATE_UNKNOWN."
+                    )
+                    alert_human(
+                        f"[CRITICAL STATE UNKNOWN] Operation: SCALE_IN_TRANCHE_2 | Symbol: {SYMBOL} | Side: {side} | "
+                        f"Qty: {qty2} | Reason: {LAST_ORDER_RECOVERY.message}. Engine quarantined."
+                    )
+                else:
+                    logging.error(
+                        "[LIVE] Tranche 2 Order failed. Skipping scale-in."
+                    )
+                return None
+
+            real_entry_price, filled_qty = get_actual_fill_price(session, order_id, expected_qty=qty2)
+            order_filled_time = time.time()
+
+            if real_entry_price is None:
+                self._state = PyramidingState.STATE_UNKNOWN
+                logger.critical(f"[TRANCHE 2 UNCONFIRMED] {order_id} -- engine quarantined in STATE_UNKNOWN, alerting.")
+                alert_human(
+                    f"[CRITICAL STATE UNKNOWN] Operation: SCALE_IN_TRANCHE_2 | Symbol: {SYMBOL} | Side: {side} | "
+                    f"Qty: {qty2} | OrderID: {order_id} | Reason: Scale-in fill unconfirmed after timeout. Engine quarantined."
                 )
                 return None
+
+            logger.info(
+                f"[SLIPPAGE] Signal->Order: {order_placed_time - signal_time:.3f}s | "
+                f"Order->Fill: {order_filled_time - order_placed_time:.3f}s | "
+                f"Signal ₹{entry_price:.2f} vs Fill ₹{real_entry_price:.2f} "
+                f"(slip ₹{real_entry_price - entry_price:+.2f})"
+            )
+            entry_price = real_entry_price
+            qty2 = filled_qty
+            total_qty = q1 + qty2
+            entry_costs2 = self.calculate_entry_leg_charges(qty2, entry_price)
+            total_entry_friction = pos["entry_friction_total"] + entry_costs2["total_charges"]
+            vwap_avg_entry = round(((p1 * q1) + (entry_price * qty2)) / total_qty, 2)
+            new_total_cost = pos["total_cost"] + entry_costs2["turnover"] + entry_costs2["total_charges"]
             self._pending_order_id = order_id
         # Paper mode: no order placed, position tracked in memory
 
@@ -1186,6 +2336,7 @@ class PaperTrader:
         from config import LIVE_MODE, SYMBOL, TOKEN
         session = angel_session if angel_session is not None else getattr(self, "angel_session", None)
         if LIVE_MODE and session is not None:
+            signal_time = time.time()
             order_id = place_live_order(
                 angel=session,
                 symbol=SYMBOL,
@@ -1193,11 +2344,50 @@ class PaperTrader:
                 side=side,
                 qty=qty3,
             )
+            order_placed_time = time.time()
             if order_id is None:
-                logging.error(
-                    "[LIVE] Tranche 3 Order failed. Skipping scale-in."
+                if LAST_ORDER_RECOVERY and LAST_ORDER_RECOVERY.status == RecoveryStatus.STATE_UNKNOWN:
+                    self._state = PyramidingState.STATE_UNKNOWN
+                    logger.critical(
+                        f"[STATE_UNKNOWN] Scale-In Tranche 3 order for {SYMBOL} x {qty3} is unconfirmed. "
+                        "Engine quarantined in STATE_UNKNOWN."
+                    )
+                    alert_human(
+                        f"[CRITICAL STATE UNKNOWN] Operation: SCALE_IN_TRANCHE_3 | Symbol: {SYMBOL} | Side: {side} | "
+                        f"Qty: {qty3} | Reason: {LAST_ORDER_RECOVERY.message}. Engine quarantined."
+                    )
+                else:
+                    logging.error(
+                        "[LIVE] Tranche 3 Order failed. Skipping scale-in."
+                    )
+                return None
+
+            real_entry_price, filled_qty = get_actual_fill_price(session, order_id, expected_qty=qty3)
+            order_filled_time = time.time()
+
+            if real_entry_price is None:
+                self._state = PyramidingState.STATE_UNKNOWN
+                logger.critical(f"[TRANCHE 3 UNCONFIRMED] {order_id} -- engine quarantined in STATE_UNKNOWN, alerting.")
+                alert_human(
+                    f"[CRITICAL STATE UNKNOWN] Operation: SCALE_IN_TRANCHE_3 | Symbol: {SYMBOL} | Side: {side} | "
+                    f"Qty: {qty3} | OrderID: {order_id} | Reason: Scale-in fill unconfirmed after timeout. Engine quarantined."
                 )
                 return None
+
+            logger.info(
+                f"[SLIPPAGE] Signal->Order: {order_placed_time - signal_time:.3f}s | "
+                f"Order->Fill: {order_filled_time - order_placed_time:.3f}s | "
+                f"Signal ₹{entry_price:.2f} vs Fill ₹{real_entry_price:.2f} "
+                f"(slip ₹{real_entry_price - entry_price:+.2f})"
+            )
+            entry_price = real_entry_price
+            qty3 = filled_qty
+            total_qty = q1 + q2 + qty3
+            entry_costs3 = self.calculate_entry_leg_charges(qty3, entry_price)
+            total_entry_friction = pos["entry_friction_total"] + entry_costs3["total_charges"]
+            total_notional = (p1 * q1) + (p2 * q2) + (entry_price * qty3)
+            vwap_avg_entry = round(total_notional / total_qty, 2)
+            new_total_cost = pos["total_cost"] + entry_costs3["turnover"] + entry_costs3["total_charges"]
             self._pending_order_id = order_id
         # Paper mode: no order placed, position tracked in memory
 
@@ -1384,33 +2574,159 @@ class PaperTrader:
             session = angel_session if angel_session is not None else getattr(self, "angel_session", None)
             if LIVE_MODE and session is not None:
                 exit_side = "SELL" if side == "BUY" else "BUY"
-                exit_order_id = place_live_order(
-                    angel=session,
-                    symbol=pos.get("symbol", SYMBOL),
-                    token=pos.get("token", TOKEN),
-                    side=exit_side,
-                    qty=total_qty,
-                )
-                if exit_order_id is None:
-                    logger.error(
-                        f"[LIVE EXIT ERROR] Exit order failed for {pos.get('symbol', SYMBOL)} x {total_qty}. "
-                        "Broker position may still be open!"
-                    )
-                else:
-                    logger.info(
-                        f"[LIVE EXIT ORDER ✅] Routed exit order {pos.get('symbol', SYMBOL)} x {total_qty} "
-                        f"({exit_side}) | OrderID: {exit_order_id}"
-                    )
+                sym = pos.get("symbol", SYMBOL)
+                tok = pos.get("token", TOKEN)
+                ex = pos.get("exchange", "NSE")
+                prod = pos.get("producttype", "INTRADAY")
 
-            if side == "BUY":
-                gross_pnl = (exit_price - avg_entry_price) * total_qty
-            else:  # SELL (short)
-                gross_pnl = (avg_entry_price - exit_price) * total_qty
-            
-            exit_leg_costs = self.calculate_exit_leg_charges(total_qty, exit_price)
-            total_charges = pos["entry_friction_total"] + exit_leg_costs["total_charges"]
-            net_pnl = gross_pnl - total_charges
+                # Checkpoint A: Pre-Flight Check (§28, §56)
+                # Verify if broker position is ALREADY flat before sending order
+                broker_net_qty, pos_ok = check_broker_position_netqty(
+                    session,
+                    symbol=sym,
+                    token=tok,
+                    exchange=ex,
+                    producttype=prod,
+                )
+                if pos_ok and broker_net_qty == 0.0:
+                    logger.warning(
+                        f"[PRE-FLIGHT RECOVERY] Broker position for {sym} is ALREADY flat (netqty=0). "
+                        "Recovering fill and finalizing trade closure without placing duplicate exit order."
+                    )
+                    recovered_exit_price = None
+                    if hasattr(session, "orderBook"):
+                        try:
+                            ob_resp = session.orderBook()
+                            ob_data = ob_resp.get("data", []) if isinstance(ob_resp, dict) else []
+                            if isinstance(ob_data, list):
+                                for o in reversed(ob_data):
+                                    o_sym = str(o.get("tradingsymbol", "")).strip().upper()
+                                    o_tok = str(o.get("symboltoken", "")).strip()
+                                    if ((o_sym == sym.upper() or (tok and o_tok == str(tok).strip()))
+                                            and str(o.get("transactiontype", "")).strip().upper() == exit_side
+                                            and str(o.get("status", "")).strip().lower() == "complete"):
+                                        recovered_exit_price = safe_float(o.get("averageprice"))
+                                        break
+                        except Exception:
+                            pass
+                    if recovered_exit_price and recovered_exit_price > 0:
+                        exit_price = recovered_exit_price
+                else:
+                    if pos.get("exit_in_flight", False):
+                        logger.warning(
+                            f"[EXIT IN FLIGHT] Previous exit order is still in-flight for {sym}. "
+                            "Blocking duplicate SELL."
+                        )
+                        return None
+
+                    signal_time = time.time()
+                    exit_order_id = place_live_order(
+                        angel=session,
+                        symbol=sym,
+                        token=tok,
+                        side=exit_side,
+                        qty=total_qty,
+                    )
+                    order_placed_time = time.time()
+
+                    if exit_order_id is None:
+                        # Checkpoint B: Post-order failure verification (§26, §27)
+                        post_net_qty, post_pos_ok = check_broker_position_netqty(
+                            session,
+                            symbol=sym,
+                            token=tok,
+                            exchange=ex,
+                            producttype=prod,
+                        )
+                        if post_pos_ok and post_net_qty == 0.0:
+                            logger.warning(
+                                f"[POST-ORDER RECOVERY] Exit order outcome was ambiguous, but broker position is now flat (netqty=0). "
+                                "Finalizing trade closure."
+                            )
+                        else:
+                            pos["exit_in_flight"] = True
+                            self._state = PyramidingState.STATE_UNKNOWN
+                            reason_msg = LAST_ORDER_RECOVERY.message if LAST_ORDER_RECOVERY else "Exit order placement failed"
+                            logger.critical(
+                                f"[LIVE EXIT ERROR] Exit order unconfirmed for {sym} x {total_qty}. "
+                                f"Broker netqty: {post_net_qty}. Duplicate exit blocked!"
+                            )
+                            alert_human(
+                                f"[CRITICAL STATE UNKNOWN] Operation: EXIT | Symbol: {sym} | Side: {exit_side} | "
+                                f"Qty: {total_qty} | Reason: {reason_msg} (broker netqty={post_net_qty}). Engine quarantined in STATE_UNKNOWN. Duplicate exit blocked."
+                            )
+                            return None
+                    else:
+                        real_exit_price, exit_filled_qty = get_actual_fill_price(session, exit_order_id, expected_qty=total_qty)
+                        order_filled_time = time.time()
+
+                        if real_exit_price is None:
+                            post_net_qty, post_pos_ok = check_broker_position_netqty(
+                                session,
+                                symbol=sym,
+                                token=tok,
+                                exchange=ex,
+                                producttype=prod,
+                            )
+                            if post_pos_ok and post_net_qty == 0.0:
+                                logger.warning(
+                                    f"[FILL TIMEOUT RECOVERY] Fill confirmation timed out for {exit_order_id}, "
+                                    "but broker position is flat (netqty=0). Finalizing trade closure."
+                                )
+                            else:
+                                pos["exit_in_flight"] = True
+                                self._state = PyramidingState.STATE_UNKNOWN
+                                logger.critical(
+                                    f"[EXIT UNCONFIRMED] {exit_order_id} -- position may still be open (broker netqty={post_net_qty}). Alerting."
+                                )
+                                alert_human(
+                                    f"[CRITICAL STATE UNKNOWN] Operation: EXIT | Symbol: {sym} | Side: {exit_side} | "
+                                    f"Qty: {total_qty} | OrderID: {exit_order_id} | Reason: Exit order unconfirmed after timeout (broker netqty={post_net_qty}). Engine quarantined in STATE_UNKNOWN. Duplicate exit blocked."
+                                )
+                                return None
+                        else:
+                            # Verify if partial exit fill occurred (§43, §61)
+                            post_net_qty, post_pos_ok = check_broker_position_netqty(
+                                session,
+                                symbol=sym,
+                                token=tok,
+                                exchange=ex,
+                                producttype=prod,
+                            )
+                            if post_pos_ok and post_net_qty is not None and post_net_qty != 0.0:
+                                pos["quantity"] = int(post_net_qty)
+                                pos["exit_in_flight"] = True
+                                self._state = PyramidingState.STATE_UNKNOWN
+                                logger.warning(
+                                    f"[PARTIAL EXIT FILL] Exit filled {exit_filled_qty}/{total_qty}. "
+                                    f"Remaining broker exposure: {post_net_qty}. Trade NOT marked closed."
+                                )
+                                alert_human(
+                                    f"[CRITICAL STATE UNKNOWN] Operation: EXIT | Symbol: {sym} | Side: {exit_side} | "
+                                    f"Qty: {total_qty} | Filled: {exit_filled_qty} | Remaining: {post_net_qty} | "
+                                    "Reason: Partial exit fill. Trade remains open. Engine quarantined."
+                                )
+                                return None
+
+                            logger.info(
+                                f"[SLIPPAGE] Exit Order->Fill: {order_filled_time - order_placed_time:.3f}s | "
+                                f"Planned ₹{exit_price:.2f} vs Fill ₹{real_exit_price:.2f} "
+                                f"(slip ₹{real_exit_price - exit_price:+.2f})"
+                            )
+                            exit_price = real_exit_price
+                            total_qty = exit_filled_qty
+
+            buy_price, sell_price = (exit_price, avg_entry_price) if side == "SELL" else (avg_entry_price, exit_price)
+            costs = calculate_true_friction(buy_price, sell_price, total_qty)
+            gross_pnl = costs["gross_pnl"]
+            total_charges = costs["total_friction"]
+            net_pnl = costs["net_pnl"]
             net_roi_pct = (net_pnl / pos["total_cost"]) * 100.0 if pos["total_cost"] > 0 else 0.0
+
+            logger.info(
+                f"[TRADE CLOSED] Entry ₹{avg_entry_price:.2f} -> Exit ₹{exit_price:.2f} | "
+                f"Net P&L ₹{costs['net_pnl']:.2f} (Gross ₹{costs['gross_pnl']:.2f}, Friction ₹{costs['total_friction']:.2f})"
+            )
 
             # Hold duration
             entry_ts = pos.get("timestamp") or self._entry_timestamp
@@ -1421,9 +2737,32 @@ class PaperTrader:
 
             result = "PROFIT ✅" if net_pnl >= 0 else "LOSS ❌"
 
-            # Update working capital & daily PnL
+            # Update working capital & daily PnL (with live broker reconciliation if in LIVE_MODE)
             self._daily_pnl += net_pnl
-            self.working_capital += net_pnl
+            recon_status = "SIMULATED"
+            if LIVE_MODE and session is not None:
+                trade_context = {
+                    "trade_id": pos.get("position_id", "N/A"),
+                    "symbol": pos.get("symbol", SYMBOL),
+                    "token": pos.get("token", TOKEN),
+                    "exchange": pos.get("exchange", "NSE"),
+                    "producttype": "INTRADAY",
+                    "quantity": total_qty,
+                    "side": side,
+                }
+                recon_result = reconcile_trade_intraday(
+                    smart_api=session,
+                    symbol=pos.get("symbol", SYMBOL),
+                    logged_gross_pnl=gross_pnl,
+                    trade_context=trade_context,
+                    baselines=self._reconciliation_baselines,
+                )
+                recon_status = recon_result.get("status", ReconciliationStatus.SKIPPED).value
+                # Synchronize live available cash for capital management
+                # (NOTE: availablecash is never used to validate trade P&L)
+                self.working_capital = get_live_capital(session)
+            else:
+                self.working_capital += net_pnl
             final_balance = self.working_capital + self.backup_capital
 
             summary = {
@@ -1449,6 +2788,7 @@ class PaperTrader:
                 "hold_duration_mins": hold_mins,
                 "timestamp": exit_timestamp,
                 "result": result,
+                "reconciliation_status": recon_status,
             }
 
             # Persistent CSV ledger write

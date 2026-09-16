@@ -95,3 +95,10 @@ MARKET_OPEN_TIME = "09:15"        # HH:MM IST
 # ⚠️  Set True ONLY on Sep 15 morning, AFTER login test passes
 LIVE_MODE = False   # ← CHANGE TO True ON SEP 15 MORNING ONLY
 
+# ── RECONCILIATION ───────────────────────────────────────────
+RECONCILIATION_TOLERANCE_INTRADAY = 0.50   # ₹0.50 tolerance for per-trade gross P&L vs broker realised delta
+RECONCILIATION_TOLERANCE_EOD = 1.00        # ₹1.00 tolerance for EOD account net P&L vs capital movement
+RECONCILIATION_MAX_RETRIES = 3             # Max retries for delayed broker position state
+RECONCILIATION_RETRY_INTERVAL = 0.5        # Seconds between position refresh retries
+
+

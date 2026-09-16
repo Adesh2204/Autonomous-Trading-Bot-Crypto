@@ -1620,6 +1620,27 @@ def test_live_execution_state_transitions_and_exit(monkeypatch):
 
     mock_session = MagicMock()
     mock_session.placeOrder.return_value = "260915999001"
+    mock_session.orderBook.return_value = {
+        "status": True,
+        "data": [
+            {
+                "orderid": "260915999001",
+                "status": "complete",
+                "averageprice": 100.0,
+                "filledshares": 33,
+            },
+            {
+                "orderid": "260915999002",
+                "status": "complete",
+                "averageprice": 102.0,
+                "filledshares": 33,
+            },
+        ],
+    }
+    mock_session.rmsLimit.return_value = {
+        "status": True,
+        "data": {"availablecash": "10050.00"},
+    }
 
     trader = PaperTrader(total_capital=config.TOTAL_CAPITAL, working_capital_pct=0.50, angel_session=mock_session)
     t0 = datetime(2026, 9, 15, 9, 20, tzinfo=timezone.utc)
