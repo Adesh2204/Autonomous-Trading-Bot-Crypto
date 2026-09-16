@@ -308,23 +308,45 @@ class AngelOneLiveStream:
             logging.info(f"Started after {cutoff_str}. Entries are disabled; exits only.")
 
     def login(self) -> None:
-        """Authenticate with SmartAPI and cache jwt/feed tokens for the stream."""
-        self.smart_api = SmartConnect(api_key=self.api_key)
-        totp = pyotp.TOTP(self.totp_secret).now()
-        login_data = self.smart_api.generateSession(self.client_code, self.client_pin, totp)
+        """Authenticate with SmartAPI and cache jwt/feed tokens for the stream.
+        Includes retry with exponential backoff for rate-limit / transient errors."""
+        max_retries = 5
+        base_delay = 30  # seconds — Angel One rate-limit window
 
-        if not isinstance(login_data, dict) or not login_data.get("status"):
-            raise RuntimeError(f"SmartAPI login failed: {login_data}")
+        for attempt in range(1, max_retries + 1):
+            try:
+                self.smart_api = SmartConnect(api_key=self.api_key)
+                totp = pyotp.TOTP(self.totp_secret).now()
+                login_data = self.smart_api.generateSession(self.client_code, self.client_pin, totp)
 
-        data = login_data.get("data", {}) or {}
-        self.auth_token = _normalize_bearer_token(data.get("jwtToken"))
-        self.feed_token = data.get("feedToken") or self.smart_api.getfeedToken()
-        self.client_code = data.get("clientcode") or self.client_code
+                if not isinstance(login_data, dict) or not login_data.get("status"):
+                    raise RuntimeError(f"SmartAPI login failed: {login_data}")
 
-        if not self.auth_token or not self.feed_token or not self.client_code:
-            raise RuntimeError("SmartAPI login did not return required auth/feed tokens.")
+                data = login_data.get("data", {}) or {}
+                self.auth_token = _normalize_bearer_token(data.get("jwtToken"))
+                self.feed_token = data.get("feedToken") or self.smart_api.getfeedToken()
+                self.client_code = data.get("clientcode") or self.client_code
 
-        logging.info("Angel One SmartAPI authenticated successfully.")
+                if not self.auth_token or not self.feed_token or not self.client_code:
+                    raise RuntimeError("SmartAPI login did not return required auth/feed tokens.")
+
+                logging.info("Angel One SmartAPI authenticated successfully.")
+                return  # ← success, exit retry loop
+
+            except Exception as e:
+                err_msg = str(e).lower()
+                is_rate_limit = "access rate" in err_msg or "rate" in err_msg or "too many" in err_msg
+                is_transient = "json" in err_msg or "parse" in err_msg or "connection" in err_msg
+
+                if (is_rate_limit or is_transient) and attempt < max_retries:
+                    wait = base_delay * attempt  # 30s, 60s, 90s, 120s
+                    logging.warning(
+                        f"[LOGIN RETRY {attempt}/{max_retries}] {e} — "
+                        f"waiting {wait}s before retry..."
+                    )
+                    time_module.sleep(wait)
+                else:
+                    raise  # non-recoverable or max retries exhausted
 
     # ──────────────────────────────────────────────────────────────
     #  Trading Lifecycle

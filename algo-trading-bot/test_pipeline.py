@@ -30,6 +30,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
+import config
 from candle_builder import CandleBuilder
 from execution_engine import PaperTrader
 from market_schedule import (
@@ -770,6 +771,7 @@ def test_multi_tranche_pyramiding_state_machine(tmp_path) -> None:
         total_capital=10017.00,
         working_capital_pct=0.50,
         csv_log_path=csv_path,
+        bypass_friction_gate=True,
     )
 
     t0 = datetime(2026, 8, 24, 9, 20)
@@ -852,6 +854,7 @@ def test_no_time_stop_at_40_or_more_candles(tmp_path) -> None:
         total_capital=10017.00,
         working_capital_pct=0.50,
         csv_log_path=csv_path,
+        bypass_friction_gate=True,
     )
     entry_ts = datetime(2026, 8, 24, 9, 20)
     trader.execute_trade(
@@ -875,7 +878,7 @@ def test_exit_priorities_sl_tp_eod(tmp_path) -> None:
     csv_path = str(tmp_path / "test_exit_prio.csv")
 
     # Case 1: Stop Loss Triggered on Confirmed Candle Close (Wick-Immune)
-    trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50, csv_log_path=csv_path)
+    trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50, csv_log_path=csv_path, bypass_friction_gate=True)
     trader.execute_trade(
         {"VWAP": 100.00, "Close": 100.00, "symbol": "ITC", "ATR_14": 0.3333333333333333},
         timestamp=datetime(2026, 8, 24, 9, 20),
@@ -892,7 +895,7 @@ def test_exit_priorities_sl_tp_eod(tmp_path) -> None:
     assert not trader.has_open_position
 
     # Case 2: Target Triggered (Instant Tick Execution)
-    trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50, csv_log_path=csv_path)
+    trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50, csv_log_path=csv_path, bypass_friction_gate=True)
     trader.execute_trade(
         {"VWAP": 100.00, "Close": 100.00, "symbol": "ITC", "ATR_14": 0.3333333333333333},
         timestamp=datetime(2026, 8, 24, 9, 20),
@@ -902,7 +905,7 @@ def test_exit_priorities_sl_tp_eod(tmp_path) -> None:
     assert res_tp["exit_reason"] == "Target Hit"
 
     # Case 3: EOD Auto-Square-Off
-    trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50, csv_log_path=csv_path)
+    trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50, csv_log_path=csv_path, bypass_friction_gate=True)
     trader.execute_trade(
         {"VWAP": 100.00, "Close": 100.00, "symbol": "ITC", "ATR_14": 0.3333333333333333},
         timestamp=datetime(2026, 8, 24, 9, 20),
@@ -918,7 +921,7 @@ def test_exit_priorities_sl_tp_eod(tmp_path) -> None:
 
 def test_dynamic_atr_stop_loss_and_failsafe() -> None:
     """Verify ATR validation failsafes and dynamic distance calculations."""
-    trader = PaperTrader()
+    trader = PaperTrader(bypass_friction_gate=True)
     t0 = datetime(2026, 8, 24, 9, 20)
 
     # 1. Missing ATR -> Rejection
@@ -957,7 +960,7 @@ def test_dynamic_atr_stop_loss_and_failsafe() -> None:
 
 
 def test_statutory_friction_gate_nse_cash() -> None:
-    """Verify statutory charge model matches NSE cash equity rates."""
+    """Verify statutory charge model matches correct Angel One NSE equity intraday rates."""
     trader = PaperTrader()
 
     # Calculate round trip for 100 shares @ 100 entry, 101 exit
@@ -966,14 +969,14 @@ def test_statutory_friction_gate_nse_cash() -> None:
     assert costs["buy_turnover"] == 10000.0
     assert costs["sell_turnover"] == 10100.0
 
-    # Brokerage: min(20, 10000*0.0003) = 3.00 buy, min(20, 10100*0.0003) = 3.03 sell -> total 6.03
-    assert round(costs["brokerage"], 2) == 6.03
+    # Brokerage: max(5, min(20, 10000*0.001)) = 10.00 buy, max(5, min(20, 10100*0.001)) = 10.10 sell -> 20.10
+    assert round(costs["brokerage"], 2) == 20.10
     # STT: 10100 * 0.00025 = 2.525 -> 2.525
     assert round(costs["stt"], 3) == 2.525
     # Stamp Duty: 10000 * 0.00003 = 0.30
     assert round(costs["stamp_duty"], 2) == 0.30
-    # Exchange Fee: (10000 + 10100) * 0.0000345 = 0.69345
-    assert abs(costs["exchange_fee"] - 0.69345) < 1e-6
+    # Exchange Fee: (10000 + 10100) * 0.000030699 = 0.617...
+    assert abs(costs["exchange_fee"] - 20100 * 0.000030699) < 1e-6
 
     assert costs["total_charges"] > 0
 
@@ -985,6 +988,7 @@ def test_trades_csv_13_columns_schema(tmp_path) -> None:
         total_capital=10017.00,
         working_capital_pct=0.50,
         csv_log_path=csv_path,
+        bypass_friction_gate=True,
     )
     trader.execute_trade(
         {"VWAP": 150.00, "Close": 150.20, "symbol": "COALINDIA", "ATR_14": 0.50},
@@ -1134,7 +1138,7 @@ def test_vwap_stabilization_and_deep_breakdown_filter() -> None:
 
 def test_post_stop_loss_cooldown_firewall() -> None:
     """Verify 10-candle cooldown firewall immediately following a Stop Loss."""
-    trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50)
+    trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50, bypass_friction_gate=True)
     # Default ready state
     assert trader.candles_since_last_exit == 999
 
@@ -1181,7 +1185,7 @@ def test_post_stop_loss_cooldown_firewall() -> None:
 
 def test_wick_immunity_and_candle_close_stop_loss() -> None:
     """Verify that intra-candle wicks do not trigger Stop Loss, while candle closes and tick targets do."""
-    trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50)
+    trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50, bypass_friction_gate=True)
     # Entry @ 100.00 with ATR = 1.0 -> SL = 100 - (2.0 * 1.0) = 98.00, Target = 100 + 4.0 = 104.00
     t0 = datetime(2026, 8, 24, 9, 30)
     ticket = trader.execute_trade(
@@ -1316,11 +1320,11 @@ def test_true_net_rr_friction_gate() -> None:
     assert ticket_marginal is None
     assert trader.has_open_position is False
 
-    # 3. Healthy ATR (e.g. 1.0) produces robust profit and passes True Net-R:R Gate
+    # 3. Healthy ATR (e.g. 1.5) produces robust profit and passes True Net-R:R Gate
     ticket_healthy = trader.execute_trade(
-        {"VWAP": 100.0, "Close": 100.2, "symbol": "TATASTEEL", "ATR_14": 1.0},
+        {"VWAP": 100.0, "Close": 100.2, "symbol": "TATASTEEL", "ATR_14": 1.5},
         timestamp=t0,
-        atr_14=1.0,
+        atr_14=1.5,
     )
     assert ticket_healthy is not None
     assert trader.has_open_position is True
@@ -1328,7 +1332,7 @@ def test_true_net_rr_friction_gate() -> None:
 
 def test_recalibrated_pyramiding_tranche2_trigger() -> None:
     """Verify that Tranche 2 unlocks at 2.0x ATR dynamic distance (tranche2_trigger_distance = 2.0 * ATR)."""
-    trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50)
+    trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50, bypass_friction_gate=True)
     t0 = datetime(2026, 8, 24, 9, 30)
 
     # Base entry @ 100.00 with ATR = 1.0 -> T2 gate = 100.00 + 2.0*1.0 = 102.00
@@ -1360,7 +1364,7 @@ def test_recalibrated_pyramiding_tranche2_trigger() -> None:
 
 def test_theta_decay_breakeven_defense() -> None:
     """Verify that after 15 candles held in profit, Stop Loss is aggressively trailed to entry (risk = 0)."""
-    trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50)
+    trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50, bypass_friction_gate=True)
     t0 = datetime(2026, 8, 24, 9, 30)
 
     # Base entry @ 100.00 with ATR = 1.0 -> initial SL = 98.00
@@ -1387,20 +1391,18 @@ def test_theta_decay_breakeven_defense() -> None:
 
 
 def test_adaptive_friction_gate_low_vol_regime() -> None:
-    """Verify BANKBARODA candle #19 scenario: low-vol regime (ATR/price < 0.0010) passes adaptive floor (0.8)."""
-    trader = PaperTrader(total_capital=9999.46, working_capital_pct=0.50)
-    t0 = datetime(2026, 9, 3, 9, 34)
-
-    # BANKBARODA: price=243.37, ATR=0.23 -> ATR/price = 0.000945 < 0.0010 (low-vol)
-    # Net R:R ~ 0.86 >= 0.80 -> PASSES under adaptive gate (would have failed under old 1.5)
-    ticket = trader.execute_trade(
-        {"VWAP": 243.37, "Close": 243.37, "symbol": "BANKBARODA", "ATR_14": 0.23},
-        timestamp=t0,
-        atr_14=0.23,
+    """Verify low-vol regime (ATR/price < 0.0010) passes adaptive floor (0.80)."""
+    trader = PaperTrader()
+    # SJVN: entry=65.0, ATR=0.06 -> ATR/price = 0.06 / 65.0 = 0.000923 < 0.0010 (low-vol)
+    # Net R:R ~ 0.87 >= 0.80 -> PASSES under adaptive low-vol floor (would fail normal 1.20 floor)
+    passed, reason = trader.friction_gate_check(
+        entry_price=65.0,
+        sl_price=65.0 - 0.43,
+        tp_price=65.0 + 0.86,
+        qty=50,
+        atr=0.06,
     )
-    assert ticket is not None
-    assert trader.has_open_position is True
-    assert ticket["side"] == "BUY"
+    assert passed is True, f"Adaptive friction gate check failed: {reason}"
 
 
 def test_vwap_pullback_short_signal() -> None:
@@ -1504,7 +1506,7 @@ def test_daily_bias_detector() -> None:
 
 def test_short_position_lifecycle() -> None:
     """Verify end-to-end execution of a SHORT position: entry, SL above, TP below, and profitable close."""
-    trader = PaperTrader(total_capital=10000.0, working_capital_pct=0.50)
+    trader = PaperTrader(total_capital=config.TOTAL_CAPITAL, working_capital_pct=0.50, bypass_friction_gate=True)
     t0 = datetime(2026, 9, 3, 10, 0)
 
     # Enter SHORT trade
@@ -1532,7 +1534,7 @@ def test_short_position_lifecycle() -> None:
 
 def test_direction_flip_closes_opposite() -> None:
     """Verify that entering a SHORT position automatically closes an existing LONG position."""
-    trader = PaperTrader(total_capital=10000.0, working_capital_pct=0.50)
+    trader = PaperTrader(total_capital=10000.0, working_capital_pct=0.50, bypass_friction_gate=True)
     t0 = datetime(2026, 9, 3, 10, 0)
 
     # 1. Establish LONG position
@@ -1619,7 +1621,7 @@ def test_live_execution_state_transitions_and_exit(monkeypatch):
     mock_session = MagicMock()
     mock_session.placeOrder.return_value = "260915999001"
 
-    trader = PaperTrader(total_capital=10000.0, working_capital_pct=0.50, angel_session=mock_session)
+    trader = PaperTrader(total_capital=config.TOTAL_CAPITAL, working_capital_pct=0.50, angel_session=mock_session)
     t0 = datetime(2026, 9, 15, 9, 20, tzinfo=timezone.utc)
 
     # Base Entry (Tranche 1)

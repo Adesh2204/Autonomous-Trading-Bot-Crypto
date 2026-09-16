@@ -21,10 +21,18 @@ RISK_PER_TRADE = 100.00        # 1% of working capital
 DAILY_LOSS_LIMIT = 400.00        # 2% of ₹20,000
 
 # ── BROKERAGE CONFIG ──────────────────────────────
-# Angel One 30-day free trial: Aug 25 → Sep 25 2026
-# Zero flat fee during this period.
-# After Sep 25: revert to 20.0 per trade.
-BROKERAGE_PER_TRADE = 0.0    # ₹0 until Sep 25 2026
+# Always assume FULL standard brokerage. The ₹0 new-user offer is
+# capped at ₹500 cumulative — a bot burning 18 orders/day exhausts
+# it in days. Treat any remaining discount as a bonus, never a gate input.
+# Rates verified against angelone.in/exchange-transaction-charges (2026-09-16).
+BROKERAGE_PCT = 0.001        # 0.1% of order value
+BROKERAGE_CAP = 20.0         # ₹20 max per order
+BROKERAGE_MIN = 5.0          # ₹5 min per order
+
+# ── SLIPPAGE ──────────────────────────────────────
+# Assume entry fills slightly worse than signal price.
+# Calibrate from historical fill data as more days are logged.
+SLIPPAGE_HAIRCUT_PCT = 0.0005  # 0.05% — conservative default
 
 # ── SIGNAL BRAIN: PRICE-RELATIVE PARAMS ───────────────────────
 MIN_CANDLES_BEFORE_TRADE = 15     # Warmup period (unitless, keep)
@@ -53,8 +61,8 @@ MIN_NET_RR = 1.2                  # Legacy alias (used by fallback imports)
 MIN_NET_RR_NORMAL = 1.2           # R:R floor in normal volatility (was 1.5)
 MIN_NET_RR_LOW_VOL = 0.8          # R:R floor when ATR < LOW_VOL_ATR_PCT
 LOW_VOL_ATR_PCT = 0.0010          # Below this = "low vol regime"
-MIN_NET_PROFIT = 2.0              # Absolute floor in rupees for minimum net gain (was 3.0)
-MIN_NET_PROFIT_RS = 2.0           # Alias for MIN_NET_PROFIT (explicit name)
+MIN_NET_PROFIT = 5.0              # Absolute floor in rupees for minimum net gain
+MIN_NET_PROFIT_RS = 5.0           # Alias for MIN_NET_PROFIT (explicit name)
 # MIN_NET_PROFIT_MULTIPLIER = 2.0
 # DEPRECATED — removed from all logic paths 2026-09-07.
 # Replaced by MIN_NET_PROFIT_RS inside friction_gate_check().
@@ -85,5 +93,5 @@ MARKET_OPEN_TIME = "09:15"        # HH:MM IST
 # LIVE_MODE = False → Paper trading (default, safe)
 # LIVE_MODE = True  → Real Angel One API orders (real money)
 # ⚠️  Set True ONLY on Sep 15 morning, AFTER login test passes
-LIVE_MODE = True   # ← CHANGE TO True ON SEP 15 MORNING ONLY
+LIVE_MODE = False   # ← CHANGE TO True ON SEP 15 MORNING ONLY
 

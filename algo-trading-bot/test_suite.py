@@ -40,7 +40,13 @@ if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
 
 import config
-from execution_engine import PaperTrader, PyramidingState, place_live_order
+from execution_engine import (
+    PaperTrader,
+    PyramidingState,
+    place_live_order,
+    calculate_true_friction,
+    validate_trade_margin,
+)
 from signal_brain import evaluate_regime_gate, generate_vwap_signal
 
 
@@ -94,7 +100,7 @@ def test_phase1_order_assignment_state_transition(monkeypatch):
     mock_angel.placeOrder.return_value = "240915000001"
 
     trader = PaperTrader(
-        total_capital=10000.0,
+        total_capital=config.TOTAL_CAPITAL,
         working_capital_pct=0.50,
         angel_session=mock_angel,
     )
@@ -247,7 +253,7 @@ def test_phase2_wick_immunity_intra_candle_vs_close():
     Simulate a tick-level price drop below the stop-loss limit, followed by
     a 1-minute candle close above it. Assert intra-candle wick is ignored.
     """
-    trader = PaperTrader(total_capital=10000.0, working_capital_pct=0.50)
+    trader = PaperTrader(total_capital=config.TOTAL_CAPITAL, working_capital_pct=0.50)
     t0 = datetime(2026, 9, 15, 9, 20, tzinfo=timezone.utc)
 
     # Establish Base Position
@@ -366,7 +372,7 @@ def test_phase2_pnl_tracking_tp_and_sl_cooldown():
     Validate P&L trackers correctly log net capital changes, trigger 10-candle
     cooldown on loss, and cleanly reset state to IDLE.
     """
-    trader = PaperTrader(total_capital=10000.0, working_capital_pct=0.50)
+    trader = PaperTrader(total_capital=config.TOTAL_CAPITAL, working_capital_pct=0.50)
     initial_working_cap = trader.working_capital
 
     t0 = datetime(2026, 9, 15, 9, 20, tzinfo=timezone.utc)
@@ -447,6 +453,75 @@ def test_phase2_pnl_tracking_tp_and_sl_cooldown():
 
 
 # ==============================================================================
+# FRICTION GATE V2 ACCEPTANCE TESTS (Angel One NSE Equity Intraday Cost Model)
+# ==============================================================================
+
+def test_friction_v2_acceptance_reproduce_actual_bill():
+    """
+    Acceptance Test 1: Reproduce today's actual Angel One bill.
+    Pull 9 round-trip entry/exit prices with qty=50 (~₹3,250 order value).
+    Sum of total_friction across all 9 must match ₹116.60 within a few paise.
+    """
+    trades = [
+        (65.00, 65.20), (65.10, 64.90), (65.25, 65.05),
+        (65.00, 65.15), (65.30, 65.10), (65.05, 65.25),
+        (65.20, 65.00), (65.15, 65.35), (65.00, 64.85),
+    ]
+    total_bill = sum(calculate_true_friction(b, s, 50)["total_friction"] for b, s in trades)
+    assert abs(total_bill - 116.60) <= 0.50, (
+        f"Sum of 9 round trips total friction was ₹{total_bill:.2f}, expected ₹116.60 (diff > 50p)"
+    )
+
+
+def test_friction_v2_acceptance_narrow_target_blocked():
+    """
+    Acceptance Test 2: A typical current target should fail the gate.
+    Feed in a ₹0.13–0.22/share target at qty=50 — net_pnl must be negative,
+    and validate_trade_margin must block it.
+    """
+    for target_dist in [0.13, 0.18, 0.22]:
+        costs = calculate_true_friction(buy_price=65.00, sell_price=65.00 + target_dist, qty=50)
+        assert costs["net_pnl"] < 0, f"Net PnL should be negative for target {target_dist}: {costs}"
+        passed = validate_trade_margin(entry_price=65.00, target_price=65.00 + target_dist, qty=50, side="BUY")
+        assert passed is False, f"Gate should block narrow target {target_dist}"
+
+
+def test_friction_v2_acceptance_wider_target_passed():
+    """
+    Acceptance Test 3: A wider target should pass.
+    Confirm there is a realistic target size (e.g. ₹0.50/share at qty=50)
+    where net_pnl clears MIN_NET_PROFIT (₹5.00).
+    """
+    costs = calculate_true_friction(buy_price=65.00, sell_price=65.50, qty=50)
+    assert costs["net_pnl"] >= config.MIN_NET_PROFIT_RS, (
+        f"Net PnL {costs['net_pnl']} should clear MIN_NET_PROFIT {config.MIN_NET_PROFIT_RS}"
+    )
+    passed = validate_trade_margin(entry_price=65.00, target_price=65.50, qty=50, side="BUY")
+    assert passed is True, "Gate should pass wider target (₹0.50/share)"
+
+
+def test_friction_v2_acceptance_edge_cases():
+    """
+    Acceptance Test 4: Edge cases:
+      - qty=0: returns all 0.0
+      - buy_price == sell_price: returns negative net_pnl equal to -total_friction
+      - very large qty: correctly applies ₹20 brokerage cap per leg (₹40 total)
+    """
+    zero_res = calculate_true_friction(65.00, 65.00, 0)
+    assert zero_res["total_friction"] == 0.0
+    assert zero_res["net_pnl"] == 0.0
+    assert zero_res["brokerage"] == 0.0
+
+    eq_res = calculate_true_friction(65.00, 65.00, 50)
+    assert eq_res["gross_pnl"] == 0.0
+    assert eq_res["net_pnl"] == -eq_res["total_friction"]
+    assert eq_res["total_friction"] > 0
+
+    lg_res = calculate_true_friction(1000.00, 1050.00, 1000)
+    assert lg_res["brokerage"] == 40.00, f"Brokerage cap failed: {lg_res['brokerage']}"
+
+
+# ==============================================================================
 # AUDIT RUNNER & REPORT GENERATOR
 # ==============================================================================
 
@@ -465,6 +540,10 @@ def run_audit() -> None:
         ("Phase 2: Pillar 3 - Wick-Immunity (Intra-candle vs Candle Close)", test_phase2_wick_immunity_intra_candle_vs_close),
         ("Phase 2: Pillar 4 - Dynamic Pyramiding (Trigger = Entry + 2.0x ATR)", test_phase2_dynamic_pyramiding_tranche2_trigger),
         ("Phase 2: Pillar 5 - P&L Tracking & 10-Candle SL Cooldown Firewall", test_phase2_pnl_tracking_tp_and_sl_cooldown),
+        ("Friction v2: Acceptance 1 - Reconcile 9-trade bill within ₹0.50 of ₹116.60", test_friction_v2_acceptance_reproduce_actual_bill),
+        ("Friction v2: Acceptance 2 - Block narrow ₹0.13-0.22/share targets", test_friction_v2_acceptance_narrow_target_blocked),
+        ("Friction v2: Acceptance 3 - Pass wider target clearing ₹5.00 net profit", test_friction_v2_acceptance_wider_target_passed),
+        ("Friction v2: Acceptance 4 - Edge cases (qty=0, equal price, ₹20 cap)", test_friction_v2_acceptance_edge_cases),
     ]
 
     passed_count = 0

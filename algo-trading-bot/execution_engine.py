@@ -76,6 +76,10 @@ try:
         MIN_NET_RR_LOW_VOL,
         LOW_VOL_ATR_PCT,
         MIN_NET_PROFIT_RS,
+        BROKERAGE_PCT,
+        BROKERAGE_CAP,
+        BROKERAGE_MIN,
+        SLIPPAGE_HAIRCUT_PCT,
     )
 except ImportError:
     TOTAL_CAPITAL = 10000.00
@@ -91,12 +95,16 @@ except ImportError:
     TRAIL_ATR_MULT = 2.00
     REENTRY_COOLDOWN_CANDLES = 10
     MIN_NET_RR = 1.2
-    MIN_NET_PROFIT = 2.0
+    MIN_NET_PROFIT = 5.0
     PYRAMID_TRIGGER_ATR_MULT = 2.00
     MIN_NET_RR_NORMAL = 1.2
     MIN_NET_RR_LOW_VOL = 0.8
     LOW_VOL_ATR_PCT = 0.0010
-    MIN_NET_PROFIT_RS = 2.0
+    MIN_NET_PROFIT_RS = 5.0
+    BROKERAGE_PCT = 0.001
+    BROKERAGE_CAP = 20.0
+    BROKERAGE_MIN = 5.0
+    SLIPPAGE_HAIRCUT_PCT = 0.0005
 
 # Strategy legacy defaults
 DEFAULT_STOP_LOSS_PCT = 0.0050   # 0.50% initial risk distance
@@ -189,6 +197,100 @@ def place_live_order(
         return None
 
 
+# ---------------------------------------------------------
+# ACCURATE ANGEL ONE NSE EQUITY INTRADAY COST MODEL
+# Rates verified against angelone.in/exchange-transaction-charges
+# on 2026-09-16. Reconciled against actual ₹116.60 bill.
+# ---------------------------------------------------------
+def calculate_true_friction(buy_price: float, sell_price: float, qty: int) -> dict:
+    """
+    Computes exact Angel One NSE equity-intraday round-trip charges
+    (one entry order + one exit order), using rates verified against
+    angelone.in/exchange-transaction-charges on 2026-09-16.
+
+    Always assumes FULL standard brokerage — the ₹0-brokerage new-user
+    offer is capped at ₹500 cumulative and must not be relied on.
+    """
+    if qty <= 0:
+        return {
+            "gross_pnl": 0.0, "brokerage": 0.0, "stt": 0.0,
+            "exchange_txn_charge": 0.0, "stamp_duty": 0.0,
+            "sebi_fee": 0.0, "ipft": 0.0, "gst": 0.0,
+            "total_friction": 0.0, "net_pnl": 0.0,
+        }
+
+    buy_turnover = buy_price * qty
+    sell_turnover = sell_price * qty
+    total_turnover = buy_turnover + sell_turnover
+
+    # 1. Brokerage: max(₹5, min(₹20, 0.1% of order value)) — per leg
+    buy_brokerage = max(BROKERAGE_MIN, min(BROKERAGE_CAP, buy_turnover * BROKERAGE_PCT))
+    sell_brokerage = max(BROKERAGE_MIN, min(BROKERAGE_CAP, sell_turnover * BROKERAGE_PCT))
+    total_brokerage = buy_brokerage + sell_brokerage
+
+    # 2. STT: 0.025% on sell turnover only
+    stt = sell_turnover * 0.00025
+
+    # 3. NSE transaction charge: 0.0030699% on total turnover
+    exchange_txn_charge = total_turnover * 0.000030699
+
+    # 4. Stamp duty: 0.003% on buy turnover only
+    stamp_duty = buy_turnover * 0.00003
+
+    # 5. SEBI turnover fee: 0.0001% on total turnover
+    sebi_fee = total_turnover * 0.000001
+
+    # 6. IPFT: 0.0000001% on total turnover (negligible but included)
+    ipft = total_turnover * 0.000000001
+
+    # 7. GST: 18% on brokerage + NSE charge + SEBI + IPFT (not STT/stamp duty)
+    gst = (total_brokerage + exchange_txn_charge + sebi_fee + ipft) * 0.18
+
+    total_friction = total_brokerage + stt + exchange_txn_charge + stamp_duty + sebi_fee + ipft + gst
+    gross_pnl = sell_turnover - buy_turnover
+    net_pnl = gross_pnl - total_friction
+
+    return {
+        "gross_pnl": round(gross_pnl, 2),
+        "brokerage": round(total_brokerage, 2),
+        "stt": round(stt, 2),
+        "exchange_txn_charge": round(exchange_txn_charge, 2),
+        "stamp_duty": round(stamp_duty, 2),
+        "sebi_fee": round(sebi_fee, 2),
+        "ipft": round(ipft, 6),
+        "gst": round(gst, 2),
+        "total_friction": round(total_friction, 2),
+        "net_pnl": round(net_pnl, 2),
+    }
+
+
+def validate_trade_margin(
+    entry_price: float,
+    target_price: float,
+    qty: int,
+    side: str = "SHORT",
+    slippage_pct: float = SLIPPAGE_HAIRCUT_PCT,
+) -> bool:
+    if side in {"SHORT", "SELL"}:
+        adj_entry = entry_price * (1.0 - slippage_pct) if slippage_pct else entry_price
+        buy_price, sell_price = target_price, adj_entry
+    else:
+        adj_entry = entry_price * (1.0 + slippage_pct) if slippage_pct else entry_price
+        buy_price, sell_price = adj_entry, target_price
+
+    costs = calculate_true_friction(buy_price, sell_price, qty)
+    if costs["net_pnl"] >= MIN_NET_PROFIT:
+        logger.info(
+            f"[FRICTION GATE PASSED] Net in hand: ₹{costs['net_pnl']} "
+            f"(Gross ₹{costs['gross_pnl']}, Friction ₹{costs['total_friction']})"
+        )
+        return True
+    logger.warning(
+        f"[FRICTION GATE BLOCKED] Only ₹{costs['net_pnl']} net after real charges — skipping."
+    )
+    return False
+
+
 class PyramidingState(str, Enum):
     """Explicit multi-tranche pyramiding state machine."""
     IDLE = "IDLE"
@@ -258,6 +360,7 @@ class PaperTrader:
         self.reward_to_risk = reward_to_risk
         self.slippage_pct = slippage_pct
         self.max_tranches = max_tranches
+        self.bypass_friction_gate = kwargs.get("bypass_friction_gate", False)
 
         # Compute per-tranche nominal capital partitions (33%, 33%, 34%)
         self.tranche_capitals = [
@@ -337,20 +440,23 @@ class PaperTrader:
 
     def calculate_entry_leg_charges(self, quantity: int, price: float) -> dict:
         """
-        Compute statutory transaction costs on BUY leg:
-          • Brokerage: min(₹20, 0.03% × Turnover)
-          • Exchange Turnover Fee: 0.00345% × Turnover
+        Compute statutory transaction costs on BUY leg (Angel One, NSE equity intraday).
+        Rates verified against angelone.in/exchange-transaction-charges (2026-09-16).
+          • Brokerage: max(₹5, min(₹20, 0.1% × Turnover))
+          • Exchange Turnover Fee: 0.0030699% × Turnover
           • Stamp Duty: 0.003% × Turnover (Buy only)
-          • SEBI Charges: 0.000001 × Turnover (₹10/Crore)
-          • GST: 18% on (Brokerage + Exchange Fee)
+          • SEBI Charges: 0.0001% × Turnover (₹10/Crore)
+          • IPFT: 0.0000001% × Turnover
+          • GST: 18% on (Brokerage + Exchange Fee + SEBI + IPFT)
         """
         turnover = quantity * price
-        brokerage = min(20.0, turnover * 0.0003)
-        exchange_fee = turnover * 0.0000345
+        brokerage = max(BROKERAGE_MIN, min(BROKERAGE_CAP, turnover * BROKERAGE_PCT))
+        exchange_fee = turnover * 0.000030699
         stamp_duty = turnover * 0.00003
         sebi_fee = turnover * 0.000001
-        gst = (brokerage + exchange_fee) * 0.18
-        total_charges = brokerage + exchange_fee + stamp_duty + sebi_fee + gst
+        ipft = turnover * 0.000000001
+        gst = (brokerage + exchange_fee + sebi_fee + ipft) * 0.18
+        total_charges = brokerage + exchange_fee + stamp_duty + sebi_fee + ipft + gst
 
         return {
             "turnover": turnover,
@@ -358,26 +464,30 @@ class PaperTrader:
             "exchange_fee": exchange_fee,
             "stamp_duty": stamp_duty,
             "sebi_fee": sebi_fee,
+            "ipft": ipft,
             "gst": gst,
             "total_charges": total_charges,
         }
 
     def calculate_exit_leg_charges(self, quantity: int, price: float) -> dict:
         """
-        Compute statutory transaction costs on SELL leg:
-          • Brokerage: min(₹20, 0.03% × Turnover)
+        Compute statutory transaction costs on SELL leg (Angel One, NSE equity intraday).
+        Rates verified against angelone.in/exchange-transaction-charges (2026-09-16).
+          • Brokerage: max(₹5, min(₹20, 0.1% × Turnover))
           • STT: 0.025% × Turnover (Sell only)
-          • Exchange Turnover Fee: 0.00345% × Turnover
-          • SEBI Charges: 0.000001 × Turnover (₹10/Crore)
-          • GST: 18% on (Brokerage + Exchange Fee)
+          • Exchange Turnover Fee: 0.0030699% × Turnover
+          • SEBI Charges: 0.0001% × Turnover (₹10/Crore)
+          • IPFT: 0.0000001% × Turnover
+          • GST: 18% on (Brokerage + Exchange Fee + SEBI + IPFT)
         """
         turnover = quantity * price
-        brokerage = min(20.0, turnover * 0.0003)
+        brokerage = max(BROKERAGE_MIN, min(BROKERAGE_CAP, turnover * BROKERAGE_PCT))
         stt = turnover * 0.00025
-        exchange_fee = turnover * 0.0000345
+        exchange_fee = turnover * 0.000030699
         sebi_fee = turnover * 0.000001
-        gst = (brokerage + exchange_fee) * 0.18
-        total_charges = brokerage + stt + exchange_fee + sebi_fee + gst
+        ipft = turnover * 0.000000001
+        gst = (brokerage + exchange_fee + sebi_fee + ipft) * 0.18
+        total_charges = brokerage + stt + exchange_fee + sebi_fee + ipft + gst
 
         return {
             "turnover": turnover,
@@ -385,6 +495,7 @@ class PaperTrader:
             "stt": stt,
             "exchange_fee": exchange_fee,
             "sebi_fee": sebi_fee,
+            "ipft": ipft,
             "gst": gst,
             "total_charges": total_charges,
         }
@@ -408,6 +519,7 @@ class PaperTrader:
             "exchange_fee": entry_leg["exchange_fee"] + exit_leg["exchange_fee"],
             "stamp_duty": entry_leg["stamp_duty"],
             "sebi_fee": entry_leg["sebi_fee"] + exit_leg["sebi_fee"],
+            "ipft": entry_leg["ipft"] + exit_leg["ipft"],
             "gst": entry_leg["gst"] + exit_leg["gst"],
             "entry_charges": entry_leg["total_charges"],
             "exit_charges": exit_leg["total_charges"],
@@ -432,12 +544,12 @@ class PaperTrader:
         tp_price: float,
         qty: int,
         atr: float,
-        brokerage_cost: float,
+        brokerage_cost: float = 0.0,  # Legacy param — ignored, kept for call-site compat
     ) -> tuple[bool, str]:
         """
         Adaptive friction gate. Returns (passed: bool, reason: str).
-        Relaxes R:R floor in low-volatility regimes so valid signals
-        are not choked on low-ATR stocks like BANKBARODA.
+        Always computes total friction dynamically from the corrected
+        Angel One charge model. Relaxes R:R floor in low-volatility regimes.
 
         Low-vol regime: ATR / price < LOW_VOL_ATR_PCT (0.0010)
         Normal regime : ATR / price >= LOW_VOL_ATR_PCT
@@ -451,24 +563,10 @@ class PaperTrader:
         gross_profit = raw_tp_dist * qty
         gross_loss = raw_sl_dist * qty
 
-        # Determine total friction:
-        # If brokerage_cost is passed as a synthetic value (>= gross_profit),
-        # calibrate against Candle #15, Candle #19, and clean 1:2 R:R test cases:
-        if brokerage_cost * 2 >= gross_profit and hasattr(self, "calculate_entry_leg_charges"):
-            if abs(entry_price - 243.37) < 0.05 and abs(raw_sl_dist - 0.46) < 0.05:
-                total_friction = 1.621  # Candle #19: Net R:R 0.89
-            elif abs(entry_price - 243.33) < 0.05 and abs(raw_sl_dist - 0.26) < 0.05:
-                total_friction = 1.23   # Candle #15: Net R:R 0.68
-            elif abs(entry_price - 241.85) < 0.05 and abs(raw_sl_dist - 0.32) < 0.05:
-                total_friction = 0.0    # Test 3: Short clean 1:2 R:R
-            elif abs(entry_price - 1300.0) < 1.0:
-                total_friction = 1.5    # Test 4: Normal vol healthy R:R (Net R:R ~ 1.57 >= 1.2)
-            else:
-                entry_c = self.calculate_entry_leg_charges(qty, entry_price)["total_charges"]
-                exit_c = self.calculate_exit_leg_charges(qty, tp_price)["total_charges"]
-                total_friction = entry_c + exit_c
-        else:
-            total_friction = brokerage_cost * 2  # entry + exit round-trip
+        # Always compute friction dynamically — no hardcoded overrides
+        entry_c = self.calculate_entry_leg_charges(qty, entry_price)["total_charges"]
+        exit_c = self.calculate_exit_leg_charges(qty, tp_price)["total_charges"]
+        total_friction = entry_c + exit_c
 
         net_profit = gross_profit - total_friction
         net_loss = gross_loss + total_friction
@@ -719,21 +817,43 @@ class PaperTrader:
 
         # ── True Net-R:R Friction Gate Validation ─────────────────────────
         exit_costs_target = self.calculate_exit_leg_charges(qty, target_price)
-        total_friction = friction + exit_costs_target["total_charges"]
-        estimated_brokerage = total_friction / 2.0
+        if not self.bypass_friction_gate:
+            # 1. Trade Margin Validation (enforce MIN_NET_PROFIT after real charges and slippage)
+            order_side = "SHORT" if side in {"SELL", "SHORT"} else "BUY"
+            if not validate_trade_margin(
+                entry_price=entry_price,
+                target_price=target_price,
+                qty=qty,
+                side=order_side,
+                slippage_pct=SLIPPAGE_HAIRCUT_PCT,
+            ):
+                return None
 
-        # Calculate Absolute True Math
-        passed, reason = self.friction_gate_check(
-            entry_price=entry_price,
-            sl_price=stop_loss_price,
-            tp_price=target_price,
-            qty=qty,
-            atr=current_atr,
-            brokerage_cost=estimated_brokerage,
-        )
-        if not passed:
-            logging.warning(f"[FRICTION GATE FAILED] {reason}")
-            return None
+            # 2. Compute accurate round-trip friction with slippage haircut on entry
+            if order_side == "SHORT":
+                adj_entry = entry_price * (1.0 - SLIPPAGE_HAIRCUT_PCT) if SLIPPAGE_HAIRCUT_PCT else entry_price
+                cost_info = calculate_true_friction(buy_price=target_price, sell_price=adj_entry, qty=qty)
+            else:
+                adj_entry = entry_price * (1.0 + SLIPPAGE_HAIRCUT_PCT) if SLIPPAGE_HAIRCUT_PCT else entry_price
+                cost_info = calculate_true_friction(buy_price=adj_entry, sell_price=target_price, qty=qty)
+
+            total_friction = cost_info["total_friction"]
+            estimated_brokerage = total_friction / 2.0
+
+            # 3. Existing R:R check logic fed with accurate cost figures
+            passed, reason = self.friction_gate_check(
+                entry_price=entry_price,
+                sl_price=stop_loss_price,
+                tp_price=target_price,
+                qty=qty,
+                atr=current_atr,
+                brokerage_cost=estimated_brokerage,
+            )
+            if not passed:
+                logging.warning(f"[FRICTION GATE FAILED] {reason}")
+                return None
+        else:
+            total_friction = friction + exit_costs_target["total_charges"]
 
         if side == "BUY":
             gross_profit = (target_price - entry_price) * qty
@@ -744,31 +864,8 @@ class PaperTrader:
 
         net_profit = gross_profit - total_friction
         net_loss = gross_loss + total_friction  # Costs amplify the total loss
-        projected_net_profit = gross_profit - total_friction
-
-        actual_net_rr = net_profit / net_loss if net_loss > 0 else 0.0
-
-        # ── Adaptive Friction Gate ─────────────────────────────────────
-        is_low_vol = (current_atr / entry_price) < LOW_VOL_ATR_PCT
-        rr_floor = MIN_NET_RR_LOW_VOL if is_low_vol else MIN_NET_RR_NORMAL
-
-        if actual_net_rr < rr_floor:
-            regime_tag = "low-vol regime" if is_low_vol else "normal"
-            logging.warning(
-                f"[FRICTION GATE FAILED] Net R:R is 1:{actual_net_rr:.2f} "
-                f"< floor 1:{rr_floor:.1f} ({regime_tag}). Costs eating too much margin."
-            )
-            return None
-
-        if net_profit < MIN_NET_PROFIT_RS:
-            logging.warning(
-                f"[FRICTION GATE FAILED] Net Profit (₹{net_profit:.2f}) is below "
-                f"absolute floor (₹{MIN_NET_PROFIT_RS:.2f})."
-            )
-            return None
-
-
         projected_net_profit = net_profit
+        actual_net_rr = net_profit / net_loss if net_loss > 0 else 0.0
 
         # Check working capital budget
         total_cost = turnover + friction
@@ -789,12 +886,9 @@ class PaperTrader:
 
         # ── LIVE ORDER PLACEMENT ──────────────────────────
         from config import LIVE_MODE, SYMBOL, TOKEN
-        if LIVE_MODE and angel_session is not None:
-            from live_stream import place_live_order
         session = angel_session if angel_session is not None else getattr(self, "angel_session", None)
         if LIVE_MODE and session is not None:
             order_id = place_live_order(
-                angel=angel_session,
                 angel=session,
                 symbol=SYMBOL,
                 token=TOKEN,
@@ -956,12 +1050,9 @@ class PaperTrader:
 
         # ── LIVE ORDER PLACEMENT ──────────────────────────
         from config import LIVE_MODE, SYMBOL, TOKEN
-        if LIVE_MODE and angel_session is not None:
-            from live_stream import place_live_order
         session = angel_session if angel_session is not None else getattr(self, "angel_session", None)
         if LIVE_MODE and session is not None:
             order_id = place_live_order(
-                angel=angel_session,
                 angel=session,
                 symbol=SYMBOL,
                 token=TOKEN,
@@ -1093,12 +1184,9 @@ class PaperTrader:
 
         # ── LIVE ORDER PLACEMENT ──────────────────────────
         from config import LIVE_MODE, SYMBOL, TOKEN
-        if LIVE_MODE and angel_session is not None:
-            from live_stream import place_live_order
         session = angel_session if angel_session is not None else getattr(self, "angel_session", None)
         if LIVE_MODE and session is not None:
             order_id = place_live_order(
-                angel=angel_session,
                 angel=session,
                 symbol=SYMBOL,
                 token=TOKEN,
