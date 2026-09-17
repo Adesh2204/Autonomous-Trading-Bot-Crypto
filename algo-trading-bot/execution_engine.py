@@ -52,7 +52,7 @@ import queue
 import threading
 import time
 from datetime import date, datetime
-from typing import Any, Optional, Union
+from typing import Any, Optional, Tuple, Union
 
 from market_schedule import BaseMarketSchedule, NSEMarketSchedule, get_market_schedule
 
@@ -671,26 +671,89 @@ def alert_human(message: str) -> None:
     logger.critical(f"🚨 [HUMAN INTERVENTION REQUIRED] {message}")
 
 
-def get_live_capital(smart_api: Any) -> float:
+def get_live_capital(smart_api: Any) -> Optional[float]:
     """
-    Returns real available trading capital from the broker.
-    Replaces the internal simulated Working Capital counter entirely.
+    Returns real available trading cash from Angel One RMS.
+    Used strictly for funds sufficiency validation and raw broker cash reporting.
+    NEVER overwrites the bot's configured WORKING_CAPITAL.
     """
     if smart_api is None:
-        return float(WORKING_CAPITAL)
+        return None
     try:
         if hasattr(smart_api, "rmsLimit"):
             funds = smart_api.rmsLimit()
             if isinstance(funds, dict) and funds.get("status") is not False:
                 data = funds.get("data", {}) or {}
+                raw_val = None
                 if "availablecash" in data:
-                    return float(data["availablecash"])
+                    raw_val = data["availablecash"]
                 elif "net" in data:
-                    return float(data["net"])
+                    raw_val = data["net"]
+                if raw_val is not None:
+                    if isinstance(raw_val, bool):
+                        logger.error(f"[RMS LIMIT] Invalid boolean availablecash: {raw_val}")
+                        return None
+                    try:
+                        val = float(raw_val)
+                        if math.isfinite(val):
+                            return val
+                        logger.error(f"[RMS LIMIT] Non-finite availablecash: {val}")
+                        return None
+                    except (ValueError, TypeError):
+                        logger.error(f"[RMS LIMIT] Malformed non-numeric availablecash: {raw_val}")
+                        return None
             logger.warning(f"[RMS LIMIT] Unexpected rmsLimit response: {funds}")
     except Exception as e:
         logger.error(f"[RMS LIMIT ERROR] Failed to fetch live capital: {e}")
-    return float(WORKING_CAPITAL)
+    return None
+
+
+def validate_broker_capital(
+    smart_api: Any,
+    required_capital: float = WORKING_CAPITAL,
+    engine: Optional[Any] = None,
+) -> Tuple[bool, Optional[float]]:
+    """
+    Validates that Angel One availablecash is sufficient to support WORKING_CAPITAL.
+    Broker availablecash is used EXCLUSIVELY for pre-flight fund sufficiency validation.
+    It NEVER overwrites the bot's internal WORKING_CAPITAL or active position sizing.
+
+    Returns:
+        (is_sufficient: bool, broker_available_cash: Optional[float])
+    """
+    broker_available_cash = get_live_capital(smart_api)
+
+    # ── Step 1: Validate Broker Response / Numeric Normalization ────────
+    if broker_available_cash is None:
+        logger.critical(
+            "🚨 [CAPITAL SYNC ERROR] Failed to retrieve or parse broker availablecash from Angel One RMS. "
+            "Cannot verify fund sufficiency."
+        )
+        alert_human(
+            "[CRITICAL CAPITAL SYNC FAILURE] Angel One availablecash could not be verified. Trading halted."
+        )
+        if engine is not None and hasattr(engine, "_halted"):
+            engine._halted = True
+        return False, None
+
+    # ── Step 2: Pre-Flight Funds Sufficiency Check ──────────────────────
+    if broker_available_cash >= required_capital:
+        logger.info(
+            f"[CAPITAL SYNC ✅] Broker balance (₹{broker_available_cash:,.2f}) covers Working Capital (₹{required_capital:,.2f})."
+        )
+        return True, broker_available_cash
+    else:
+        logger.critical(
+            f"⛔ [CRITICAL INSUFFICIENT FUNDS] Broker available cash: ₹{broker_available_cash:,.2f} < "
+            f"Required Working Capital: ₹{required_capital:,.2f}. Trading halted."
+        )
+        alert_human(
+            f"[CRITICAL INSUFFICIENT FUNDS] Broker available cash: ₹{broker_available_cash:,.2f} < "
+            f"Required Working Capital: ₹{required_capital:,.2f}. Trading halted."
+        )
+        if engine is not None and hasattr(engine, "_halted"):
+            engine._halted = True
+        return False, broker_available_cash
 
 
 class ReconciliationStatus(str, Enum):
@@ -2765,11 +2828,9 @@ class PaperTrader:
                     baselines=self._reconciliation_baselines,
                 )
                 recon_status = recon_result.get("status", ReconciliationStatus.SKIPPED).value
-                # Synchronize live available cash for capital management
-                # (NOTE: availablecash is never used to validate trade P&L)
-                self.working_capital = get_live_capital(session)
-            else:
-                self.working_capital += net_pnl
+                # Pre-flight / Post-trade broker funds sufficiency check (never overwrites working_capital)
+                validate_broker_capital(smart_api=session, required_capital=WORKING_CAPITAL, engine=self)
+            self.working_capital += net_pnl
             final_balance = self.working_capital + self.backup_capital
 
             summary = {
@@ -3124,6 +3185,23 @@ class PaperTrader:
     @property
     def is_halted(self) -> bool:
         return self._halted
+
+    def validate_preflight_capital(self, session: Optional[Any] = None) -> bool:
+        """
+        Pre-flight RMS validation gate.
+        Validates broker available cash >= config.WORKING_CAPITAL.
+        Halts engine and alerts operator if funds are insufficient or unverified.
+        """
+        from config import LIVE_MODE
+        sess = session if session is not None else getattr(self, "angel_session", None)
+        if not LIVE_MODE or sess is None:
+            return True
+        is_sufficient, _ = validate_broker_capital(
+            smart_api=sess,
+            required_capital=WORKING_CAPITAL,
+            engine=self,
+        )
+        return is_sufficient
 
     @property
     def has_open_position(self) -> bool:

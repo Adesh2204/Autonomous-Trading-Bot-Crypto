@@ -47,6 +47,7 @@ from execution_engine import (
     PaperTrader,
     get_actual_fill_price,
     get_live_capital,
+    validate_broker_capital,
     reconcile_trade,
     reconcile_trade_intraday,
     reconcile_end_of_day,
@@ -377,18 +378,28 @@ class AngelOneLiveStream:
         self.validate_market_startup()
         self.login()
 
-        # Fix #2: Sync capital with the real account at startup
+        # Capital Synchronization & Pre-flight RMS Validation
         session = self.angel_session if self.angel_session is not None else self.smart_api
         if LIVE_MODE and session is not None:
             try:
-                live_cap = get_live_capital(session)
-                self.paper_trader.working_capital = live_cap
-                self._day_opening_capital = live_cap
-                logging.info(f"[CAPITAL SYNC ✅] Synchronized Working Capital with Angel One: ₹{live_cap:,.2f}")
+                is_sufficient, broker_cash = validate_broker_capital(
+                    smart_api=session,
+                    required_capital=WORKING_CAPITAL,
+                    engine=self.paper_trader,
+                )
+                if not is_sufficient:
+                    logging.critical("[STARTUP HALT] Broker available cash insufficient or unverified. Halting trading.")
+                    self.paper_trader._halted = True
+                if broker_cash is not None:
+                    self._day_opening_capital = broker_cash
+                else:
+                    self._day_opening_capital = self.paper_trader.working_capital
                 # Fix #6: Snapshot broker position baselines for restart safety
                 self.paper_trader.init_reconciliation_baselines(session)
             except Exception as exc:
-                logging.error(f"[CAPITAL SYNC ERROR] Failed to fetch live capital at startup: {exc}")
+                logging.error(f"[CAPITAL SYNC ERROR] Failed to validate live capital at startup: {exc}")
+                self.paper_trader._halted = True
+                alert_human(f"[CRITICAL STARTUP ERROR] Live capital validation exception: {exc}. Trading halted.")
                 self._day_opening_capital = self.paper_trader.working_capital
         else:
             self._day_opening_capital = self.paper_trader.working_capital
@@ -737,12 +748,25 @@ class AngelOneLiveStream:
     # ──────────────────────────────────────────────────────────────
 
     def log_daily_summary(self, prefix: str = "Daily Summary") -> None:
-        virtual_equity = self.paper_trader.backup_capital + self.paper_trader.working_capital
-        logging.info(
-            f"{prefix} | Daily P&L: ₹{self.paper_trader.daily_pnl:,.2f} | "
-            f"Working Capital: ₹{self.paper_trader.working_capital:,.2f} | "
-            f"Virtual Equity: ₹{virtual_equity:,.2f}"
-        )
+        session = self.angel_session if self.angel_session is not None else self.smart_api
+        broker_cash = None
+        if LIVE_MODE and session is not None:
+            try:
+                broker_cash = get_live_capital(session)
+            except Exception:
+                broker_cash = None
+
+        if broker_cash is not None:
+            logging.info(
+                f"{prefix} | Daily P&L: ₹{self.paper_trader.daily_pnl:,.2f} | "
+                f"Working Capital: ₹{self.paper_trader.working_capital:,.2f} | "
+                f"Broker Available Cash: ₹{broker_cash:,.2f}"
+            )
+        else:
+            logging.info(
+                f"{prefix} | Daily P&L: ₹{self.paper_trader.daily_pnl:,.2f} | "
+                f"Working Capital: ₹{self.paper_trader.working_capital:,.2f}"
+            )
 
     def trigger_eod_square_off(self, ws, current_dt: datetime, reason: str) -> None:
         """Run the mandatory EOD cleanup exactly once."""
