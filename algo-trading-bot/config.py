@@ -4,9 +4,9 @@
 # ─────────────────────────────────────────────────────────────
 
 # ── UNIVERSE ──────────────────────────────────────────────────
-SYMBOL = "SJVN-EQ"               # SJVN Ltd
+SYMBOL = "YESBANK-EQ"            # Yes Bank
 EXCHANGE = "NSE"               # unchanged
-TOKEN = "18883"                 # Angel One instrument token for SJVN
+TOKEN = "11915"                 # Angel One instrument token for YESBANK
 SEGMENT = 1                   # unchanged (NSE equity)
 
 # ── CAPITAL (absolute ₹ — intentionally fixed, user config) ───

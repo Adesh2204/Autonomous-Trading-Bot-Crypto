@@ -195,6 +195,12 @@ INSTRUMENTS = {
         "trading_symbol": "M&M-EQ",
         "exchange_type": 1,
     },
+    "YESBANK": {
+        "token": "11915",
+        "symbol": "YESBANK",
+        "trading_symbol": "YESBANK-EQ",
+        "exchange_type": 1,
+    },
 }
 
 
@@ -211,13 +217,16 @@ class AngelOneLiveStream:
             schedule if schedule is not None else get_market_schedule(os.getenv("MARKET_SCHEDULE", "NSE"))
         )
         self.target_symbol = os.getenv("TRADING_SYMBOL", target_symbol).upper()
+        base_sym = self.target_symbol.replace("-EQ", "")
         if self.target_symbol in INSTRUMENTS:
             self.instrument_info = INSTRUMENTS[self.target_symbol]
+        elif base_sym in INSTRUMENTS:
+            self.instrument_info = INSTRUMENTS[base_sym]
         else:
             self.instrument_info = {
                 "token": CONFIG_TOKEN,
-                "symbol": self.target_symbol,
-                "trading_symbol": f"{self.target_symbol}-EQ",
+                "symbol": base_sym,
+                "trading_symbol": f"{base_sym}-EQ",
                 "exchange_type": 1,
             }
         self.token = self.instrument_info["token"]

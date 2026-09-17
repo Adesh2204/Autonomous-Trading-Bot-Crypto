@@ -1962,13 +1962,15 @@ class PaperTrader:
 
         # ── LIVE ORDER PLACEMENT ──────────────────────────
         from config import LIVE_MODE, SYMBOL, TOKEN
+        target_sym = symbol if symbol else SYMBOL
+        target_token = TOKEN if target_sym == SYMBOL else ("18883" if "SJVN" in target_sym else ("11915" if "YESBANK" in target_sym else TOKEN))
         session = angel_session if angel_session is not None else getattr(self, "angel_session", None)
         if LIVE_MODE and session is not None:
             signal_time = time.time()
             order_id = place_live_order(
                 angel=session,
-                symbol=SYMBOL,
-                token=TOKEN,
+                symbol=target_sym,
+                token=target_token,
                 side=side,
                 qty=qty,
             )
@@ -2041,6 +2043,7 @@ class PaperTrader:
         snapshot = {
             "position_id": position_id,
             "symbol": symbol,
+            "token": target_token,
             "side": side,
             "quantity": qty,
             "initial_entry_price": entry_price,
@@ -2163,11 +2166,13 @@ class PaperTrader:
         from config import LIVE_MODE, SYMBOL, TOKEN
         session = angel_session if angel_session is not None else getattr(self, "angel_session", None)
         if LIVE_MODE and session is not None:
+            sym = pos.get("symbol", SYMBOL)
+            tok = pos.get("token", TOKEN)
             signal_time = time.time()
             order_id = place_live_order(
                 angel=session,
-                symbol=SYMBOL,
-                token=TOKEN,
+                symbol=sym,
+                token=tok,
                 side=side,
                 qty=qty2,
             )
@@ -2336,11 +2341,13 @@ class PaperTrader:
         from config import LIVE_MODE, SYMBOL, TOKEN
         session = angel_session if angel_session is not None else getattr(self, "angel_session", None)
         if LIVE_MODE and session is not None:
+            sym = pos.get("symbol", SYMBOL)
+            tok = pos.get("token", TOKEN)
             signal_time = time.time()
             order_id = place_live_order(
                 angel=session,
-                symbol=SYMBOL,
-                token=TOKEN,
+                symbol=sym,
+                token=tok,
                 side=side,
                 qty=qty3,
             )
