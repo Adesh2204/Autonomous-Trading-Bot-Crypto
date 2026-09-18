@@ -4,9 +4,9 @@
 # ─────────────────────────────────────────────────────────────
 
 # ── UNIVERSE ──────────────────────────────────────────────────
-SYMBOL = "YESBANK-EQ"            # Yes Bank
+SYMBOL = "NHPC-EQ"               # NHPC Ltd
 EXCHANGE = "NSE"               # unchanged
-TOKEN = "11915"                 # Angel One instrument token for YESBANK
+TOKEN = "11262"                 # Angel One instrument token for NHPC
 SEGMENT = 1                   # unchanged (NSE equity)
 
 # ── CAPITAL (absolute ₹ — intentionally fixed, user config) ───
@@ -93,7 +93,7 @@ MARKET_OPEN_TIME = "09:15"        # HH:MM IST
 # LIVE_MODE = False → Paper trading (default, safe)
 # LIVE_MODE = True  → Real Angel One API orders (real money)
 # ⚠️  Set True ONLY on Sep 15 morning, AFTER login test passes
-LIVE_MODE = False   # ← CHANGE TO True ON SEP 15 MORNING ONLY
+LIVE_MODE = True   # ← CHANGE TO True ON SEP 15 MORNING ONLY
 
 # ── RECONCILIATION ───────────────────────────────────────────
 RECONCILIATION_TOLERANCE_INTRADAY = 0.50   # ₹0.50 tolerance for per-trade gross P&L vs broker realised delta
