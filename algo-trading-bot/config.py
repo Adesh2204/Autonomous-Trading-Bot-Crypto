@@ -42,8 +42,18 @@ SCREEN_API_REQUEST_INTERVAL = 0.5 # Sequential pacing delay (seconds)
 SCREEN_API_MAX_RETRIES = 3        # Retries for rate limits / broker errors
 SCREEN_API_BACKOFF_BASE = 1.0     # Base backoff multiplier (seconds)
 SCREEN_MIN_CANDLE_COUNT = 300     # Minimum 1-minute bars required in completed session
-SCREEN_TOP_N = 1                  # Single top qualifier for Phase 1-4
+SCREEN_TOP_N = 3                  # Top N qualifiers for Watchlist (Default: 3, Min: 1)
+WATCHLIST_MODE = True             # Enable Phase 5 multi-symbol execution architecture
+WATCHLIST_SIZE = 3                # Watchlist maximum capacity
 EXCLUSION_LIST = []               # Excluded symbols list
+
+# ── PHASE 5 DYNAMIC STANDBY & ORCHESTRATION ───────────────────
+STANDBY_ATR_THRESHOLD = 0.0035    # 0.35% ATR floor below which symbol enters STANDBY
+STANDBY_CONFIRMATION_COUNT = 2    # Consecutive low readings required to enter STANDBY
+STANDBY_RECOVERY_THRESHOLD = 0.0040 # 0.40% ATR required to recover back to ACTIVE
+STANDBY_RECOVERY_CONFIRMATION_COUNT = 2 # Consecutive healthy readings required to recover
+WATCHLIST_EVALUATION_INTERVAL = 1.0 # Pacing interval for watchlist evaluation (seconds)
+MAX_OPEN_POSITIONS = 1            # STRICT GLOBAL PORTFOLIO LIMIT: At most 1 open position across all symbols
 
 # ── INTRADAY ATR FIREWALL ─────────────────────────────────────
 INTRADAY_ATR_MIN_PCT = 0.0040     # 0.40% minimum intraday ATR floor

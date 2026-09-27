@@ -103,6 +103,7 @@ class PremarketScreenResult:
     selected_candidate: Optional[CandidateDiagnostic]
     trading_day_status: str  # "ACTIVE" or "NO_TRADE"
     diagnostics: List[CandidateDiagnostic]
+    watchlist: List[CandidateDiagnostic] = field(default_factory=list)
 
 
 def find_previous_completed_market_session(
@@ -490,18 +491,26 @@ def run_premarket_screener(
 
     # Explicit deterministic ranking: sort by ATR% descending
     qualified.sort(key=lambda x: x.atr_pct, reverse=True)
+    watchlist = qualified[:top_n]
 
-    if qualified:
-        selected = qualified[0]
+    if watchlist:
+        selected = watchlist[0]
         status = "ACTIVE"
         logger.info("=" * 80)
-        logger.info(f"  🏆 PREMARKET SCREEN COMPLETE — WINNER SELECTED: {selected.trading_symbol}")
         logger.info(
-            f"  LTP: ₹{selected.ltp:.2f} | ATR: ₹{selected.atr:.2f} | ATR%: {selected.atr_pct:.3f}%"
+            f"  🏆 PREMARKET SCREEN COMPLETE — TOP-{len(watchlist)} WATCHLIST SELECTED: "
+            f"{[c.trading_symbol for c in watchlist]}"
         )
+        for rank_idx, cand in enumerate(watchlist, 1):
+            logger.info(
+                f"  Rank {rank_idx}: {cand.trading_symbol:<12} (Token: {cand.token}) | "
+                f"LTP: ₹{cand.ltp:.2f} | ATR: ₹{cand.atr:.2f} | ATR%: {cand.atr_pct:.3f}%"
+            )
+        logger.info(f"  Primary Winner (Rank 1) : {selected.trading_symbol}")
         logger.info(f"  Qualified: {len(qualified)}/{len(_universe)}")
         logger.info("=" * 80)
     else:
+        watchlist = []
         selected = None
         status = "NO_TRADE"
         logger.warning("=" * 80)
@@ -520,5 +529,6 @@ def run_premarket_screener(
         selected_candidate=selected,
         trading_day_status=status,
         diagnostics=diagnostics,
+        watchlist=watchlist,
     )
 

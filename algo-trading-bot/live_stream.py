@@ -134,6 +134,15 @@ try:
         DAILY_LOSS_LIMIT,
         TOKEN as CONFIG_TOKEN,
         CANDIDATE_UNIVERSE,
+        MAX_OPEN_POSITIONS,
+        SCREEN_TOP_N,
+        STANDBY_ATR_THRESHOLD,
+        STANDBY_CONFIRMATION_COUNT,
+        STANDBY_RECOVERY_CONFIRMATION_COUNT,
+        STANDBY_RECOVERY_THRESHOLD,
+        WATCHLIST_EVALUATION_INTERVAL,
+        WATCHLIST_MODE,
+        WATCHLIST_SIZE,
     )
 except ImportError:
     CANDIDATE_UNIVERSE = []
@@ -144,6 +153,17 @@ except ImportError:
     RISK_PER_TRADE = 100.00
     DAILY_LOSS_LIMIT = 200.00
     CONFIG_TOKEN = "2475"
+    MAX_OPEN_POSITIONS = 1
+    SCREEN_TOP_N = 3
+    STANDBY_ATR_THRESHOLD = 0.0035
+    STANDBY_CONFIRMATION_COUNT = 2
+    STANDBY_RECOVERY_CONFIRMATION_COUNT = 2
+    STANDBY_RECOVERY_THRESHOLD = 0.0040
+    WATCHLIST_EVALUATION_INTERVAL = 1.0
+    WATCHLIST_MODE = True
+    WATCHLIST_SIZE = 3
+
+from symbol_state import SymbolExecutionState, SymbolState, create_isolated_symbol_state
 
 # Liquid NSE cash equity instruments
 INSTRUMENTS = {
@@ -220,11 +240,13 @@ class AngelOneLiveStream:
         schedule: Optional[BaseMarketSchedule] = None,
         angel_session: Optional[SmartConnect] = None,
         screener_diagnostic: Optional[Any] = None,
+        watchlist: Optional[List[Any]] = None,
     ) -> None:
         self.schedule: BaseMarketSchedule = (
             schedule if schedule is not None else get_market_schedule(os.getenv("MARKET_SCHEDULE", "NSE"))
         )
         self.screener_diagnostic = screener_diagnostic
+        self._execution_lock = threading.Lock()
 
         # Build candidate lookup dictionary from CANDIDATE_UNIVERSE
         universe_map = {}
@@ -237,56 +259,109 @@ class AngelOneLiveStream:
                 if trd_k:
                     universe_map[trd_k] = c
 
-        resolved_sym = os.getenv("TRADING_SYMBOL") or target_symbol or DEFAULT_SYMBOL
-        self.target_symbol = str(resolved_sym).upper()
-        base_sym = self.target_symbol.replace("-EQ", "")
+        # Setup active symbols container (token -> SymbolState)
+        self.active_symbols: Dict[str, SymbolState] = {}
 
-        if target_token:
-            self.instrument_info = {
-                "token": str(target_token),
-                "symbol": base_sym,
-                "trading_symbol": f"{base_sym}-EQ",
-                "exchange_type": 1,
-            }
-        elif self.target_symbol in INSTRUMENTS:
-            self.instrument_info = INSTRUMENTS[self.target_symbol]
-        elif base_sym in INSTRUMENTS:
-            self.instrument_info = INSTRUMENTS[base_sym]
-        elif self.target_symbol in universe_map:
-            u_info = universe_map[self.target_symbol]
-            self.instrument_info = {
-                "token": str(u_info.get("token", CONFIG_TOKEN)),
-                "symbol": base_sym,
-                "trading_symbol": u_info.get("trading_symbol", f"{base_sym}-EQ"),
-                "exchange_type": 1,
-            }
-        elif base_sym in universe_map:
-            u_info = universe_map[base_sym]
-            self.instrument_info = {
-                "token": str(u_info.get("token", CONFIG_TOKEN)),
-                "symbol": base_sym,
-                "trading_symbol": u_info.get("trading_symbol", f"{base_sym}-EQ"),
-                "exchange_type": 1,
-            }
+        if watchlist and len(watchlist) > 0:
+            self.watchlist = watchlist[:SCREEN_TOP_N]
+            for idx, cand in enumerate(self.watchlist):
+                c_sym = getattr(cand, "symbol", None) or cand.get("symbol", "")
+                c_tok = str(getattr(cand, "token", None) or cand.get("token", ""))
+                c_trd = getattr(cand, "trading_symbol", None) or cand.get("trading_symbol", f"{c_sym}-EQ")
+                c_exch = getattr(cand, "exchange", None) or cand.get("exchange", "NSE")
+                c_ex_type = 1
+                state = create_isolated_symbol_state(
+                    symbol=c_sym,
+                    token=c_tok,
+                    trading_symbol=c_trd,
+                    exchange=c_exch,
+                    exchange_type=c_ex_type,
+                    rank=idx + 1,
+                    candle_close_callback=self._on_symbol_candle_close,
+                )
+                state.execution_state = SymbolExecutionState.ACTIVE
+                self.active_symbols[c_tok] = state
         else:
-            self.instrument_info = {
-                "token": CONFIG_TOKEN,
-                "symbol": base_sym,
-                "trading_symbol": f"{base_sym}-EQ",
-                "exchange_type": 1,
-            }
+            self.watchlist = []
+            resolved_sym = os.getenv("TRADING_SYMBOL") or target_symbol or DEFAULT_SYMBOL
+            self.target_symbol = str(resolved_sym).upper()
+            base_sym = self.target_symbol.replace("-EQ", "")
 
-        self.token = str(self.instrument_info["token"])
-        self.symbol = self.instrument_info["symbol"]
-        self.trading_symbol = self.instrument_info["trading_symbol"]
-        self.exchange_type = self.instrument_info["exchange_type"]
+            if target_token:
+                self.instrument_info = {
+                    "token": str(target_token),
+                    "symbol": base_sym,
+                    "trading_symbol": f"{base_sym}-EQ",
+                    "exchange_type": 1,
+                }
+            elif self.target_symbol in INSTRUMENTS:
+                self.instrument_info = INSTRUMENTS[self.target_symbol]
+            elif base_sym in INSTRUMENTS:
+                self.instrument_info = INSTRUMENTS[base_sym]
+            elif self.target_symbol in universe_map:
+                u_info = universe_map[self.target_symbol]
+                self.instrument_info = {
+                    "token": str(u_info.get("token", CONFIG_TOKEN)),
+                    "symbol": base_sym,
+                    "trading_symbol": u_info.get("trading_symbol", f"{base_sym}-EQ"),
+                    "exchange_type": 1,
+                }
+            elif base_sym in universe_map:
+                u_info = universe_map[base_sym]
+                self.instrument_info = {
+                    "token": str(u_info.get("token", CONFIG_TOKEN)),
+                    "symbol": base_sym,
+                    "trading_symbol": u_info.get("trading_symbol", f"{base_sym}-EQ"),
+                    "exchange_type": 1,
+                }
+            else:
+                self.instrument_info = {
+                    "token": CONFIG_TOKEN,
+                    "symbol": base_sym,
+                    "trading_symbol": f"{base_sym}-EQ",
+                    "exchange_type": 1,
+                }
+
+            single_state = create_isolated_symbol_state(
+                symbol=self.instrument_info["symbol"],
+                token=str(self.instrument_info["token"]),
+                trading_symbol=self.instrument_info["trading_symbol"],
+                exchange="NSE",
+                exchange_type=self.instrument_info["exchange_type"],
+                rank=1,
+                candle_close_callback=self._on_symbol_candle_close,
+            )
+            single_state.execution_state = SymbolExecutionState.ACTIVE
+            self.active_symbols[single_state.token] = single_state
+
+        # Validate token uniqueness across active symbols
+        tokens = [s.token for s in self.active_symbols.values()]
+        if len(tokens) != len(set(tokens)):
+            raise ValueError(f"Duplicate tokens detected in watchlist: {tokens}")
+
+        # Primary symbol properties (backward compatibility pointing to Rank 1)
+        primary = sorted(self.active_symbols.values(), key=lambda s: s.rank)[0]
+        self.target_symbol = primary.symbol
+        self.token = str(primary.token)
+        self.symbol = primary.symbol
+        self.trading_symbol = primary.trading_symbol
+        self.exchange_type = primary.exchange_type
+        self.instrument_info = {
+            "token": primary.token,
+            "symbol": primary.symbol,
+            "trading_symbol": primary.trading_symbol,
+            "exchange_type": primary.exchange_type,
+        }
         self.correlation_id = f"{self.symbol.lower()}-snapquote"
         self.subscription_mode = getattr(SmartWebSocketV2, "SNAPQUOTE_MODE", 3)
 
+        # Primary isolated components for backward compatibility
+        self.feed_monitor = primary.feed_monitor
+        self.atr_firewall = primary.atr_firewall
+        self.builder = primary.builder
+
         # Feed Integrity, Concurrency Queue, and ATR Firewall
-        self.feed_monitor = FeedHealthMonitor(symbol=self.symbol, token=self.token)
         self.ingestion_queue = ThreadSafeTickIngestionQueue()
-        self.atr_firewall = ATRFirewall()
         self._consumer_thread: Optional[threading.Thread] = None
         self._last_spread_pct: Optional[float] = None
         self._last_depth_available: bool = True
@@ -593,160 +668,242 @@ class AngelOneLiveStream:
         return websocket
 
     # ──────────────────────────────────────────────────────────────
-    #  Candle / Signal / Trade Pipeline
+    #  Candle / Signal / Trade Pipeline & Watchlist Orchestrator
     # ──────────────────────────────────────────────────────────────
 
-    def on_candle_close(self, df) -> None:
-        """Run VWAP signal detection and execute/scale-in paper trades on buy signals."""
-        result = generate_vwap_signal(df.copy())
-        latest = result.iloc[-1]
-        signal_timestamp = to_ist()
-        atr_val = float(latest.get("ATR_14", float("nan")))
+    def _on_symbol_candle_close(self, symbol: str, token: str, df: pd.DataFrame) -> None:
+        """Isolated candle-close callback preserving symbol identity."""
+        state = self.active_symbols.get(token)
+        if state is None:
+            return
 
-        # Record periodic ATR in firewall
-        self.atr_firewall.record_periodic_atr(
-            atr=atr_val,
-            ltp=float(latest["Close"]),
-            timestamp=signal_timestamp,
-        )
+        state.current_candle_df = df.copy()
+        latest = df.iloc[-1]
+        candle_timestamp = to_ist()
+        atr_val = float(latest.get("ATR_14", float("nan")))
+        close_p = float(latest.get("Close", 0.0))
+
+        # Record ATR in symbol's isolated firewall and evaluate STANDBY transitions
+        state.record_periodic_atr(atr=atr_val, ltp=close_p, timestamp=candle_timestamp)
 
         logging.info(
-            f"Candle #{len(result)} closed | "
+            f"Candle #{len(df)} closed for {symbol} (Rank {state.rank}) | "
             f"O:{latest['Open']:.2f}  H:{latest['High']:.2f}  "
             f"L:{latest['Low']:.2f}  C:{latest['Close']:.2f}  "
-            f"V:{latest['Volume']:.0f}  |  VWAP:{latest['VWAP']:.2f}  |  "
-            f"ATR_14:{atr_val:.2f}"
+            f"V:{latest['Volume']:.0f}  |  ATR_14:{atr_val:.2f}  |  "
+            f"State: {state.execution_state.value}"
         )
 
-        # Update and apply daily directional bias
-        daily_bias = detect_daily_bias(result)
-        self.paper_trader.update_daily_bias(daily_bias)
+        # Position management on candle close (strictly for the open position's matching symbol)
+        if self.paper_trader.has_open_position:
+            pos = self.paper_trader._open_position
+            if pos is not None:
+                pos_sym = pos.get("symbol")
+                pos_tok = pos.get("token")
+                if symbol == pos_sym or (pos_tok and token == str(pos_tok)):
+                    self.paper_trader.manage_open_position(
+                        candle=latest.to_dict() if hasattr(latest, "to_dict") else dict(latest),
+                        timestamp=candle_timestamp,
+                        latest_price=close_p,
+                    )
 
-        is_pullback = bool(latest.get("Buy_Signal"))
-        is_breakout = bool(latest.get("Breakout_Signal"))
-        is_short_pullback = bool(latest.get("Sell_Signal"))
-        is_short_breakdown = bool(latest.get("Breakdown_Sell_Signal"))
+        # Trigger Watchlist Execution Orchestration
+        self._evaluate_watchlist_orchestrator(triggered_by_symbol=symbol, evaluation_time=candle_timestamp)
 
-        # Bias-based signal filtering:
-        # LONG_BIAS: accept only longs
-        # SHORT_BIAS: accept only shorts
-        # NEUTRAL: accept all signals
-        if daily_bias == "LONG_BIAS":
-            is_short_pullback = False
-            is_short_breakdown = False
-        elif daily_bias == "SHORT_BIAS":
-            is_pullback = False
-            is_breakout = False
+    def on_candle_close(self, df: pd.DataFrame) -> None:
+        """Legacy entry point routing candle close to primary symbol."""
+        self._on_symbol_candle_close(self.symbol, self.token, df)
 
-        has_long = is_pullback or is_breakout
-        has_short = is_short_pullback or is_short_breakdown
-
-        if has_long and not can_enter_new_positions(signal_timestamp):
-            logging.info(
-                "Signal rejected - entries are disabled in %s after the 15:15 IST cutoff.",
-                get_market_state(signal_timestamp).value,
-            )
-            has_long = False
-
-        if has_short and not can_enter_new_positions(signal_timestamp):
-            logging.info(
-                "Signal rejected - entries are disabled in %s after the 15:15 IST cutoff.",
-                get_market_state(signal_timestamp).value,
-            )
-            has_short = False
-
-        # ATR Firewall & Feed Integrity Pre-Entry Gating:
-        if has_long:
-            pre_eval = self.atr_firewall.validate_pre_entry(
-                atr=atr_val,
-                ltp=float(latest["Close"]),
-                feed_health=self.feed_monitor.state.value,
-                spread_pct=self._last_spread_pct,
-                depth_available=self._last_depth_available,
-                is_new_entry=True,
-            )
-            if not pre_eval.execution_allowed:
-                logging.warning(
-                    f"🛑 [FIREWALL GATE BLOCKED] LONG entry rejected: {pre_eval.rejection_reason} "
-                    f"| ATR%: {pre_eval.atr_pct:.3f}% | Feed: {pre_eval.feed_health}"
+    def _evaluate_watchlist_orchestrator(
+        self,
+        triggered_by_symbol: Optional[str] = None,
+        evaluation_time: Optional[datetime] = None,
+    ) -> None:
+        """
+        Phase 5 Watchlist Execution Orchestrator:
+        1. Observes all symbols.
+        2. Filters unsafe symbols (STANDBY, degraded feed, ERROR, BLOCKED).
+        3. Evaluates symbols in strict premarket ranking order (Rank 1 -> Rank 2 -> Rank 3).
+        4. Finds actionable signal via unmodified signal_brain.
+        5. Applies global position limit (MAX_OPEN_POSITIONS = 1) under lock.
+        6. Applies symbol's isolated ATR firewall.
+        7. Executes trade via existing execution engine.
+        8. Halts candidate search upon first valid execution (One-cycle rule).
+        """
+        with self._execution_lock:
+            # 1. Global Position Gate
+            if self.paper_trader.has_open_position:
+                logging.debug(
+                    "[ORCHESTRATOR] Global position limit occupied (has_open_position=True). "
+                    "Skipping entry search."
                 )
-                has_long = False
+                return
 
-        if has_short:
-            pre_eval = self.atr_firewall.validate_pre_entry(
-                atr=atr_val,
-                ltp=float(latest["Close"]),
-                feed_health=self.feed_monitor.state.value,
-                spread_pct=self._last_spread_pct,
-                depth_available=self._last_depth_available,
-                is_new_entry=True,
-            )
-            if not pre_eval.execution_allowed:
-                logging.warning(
-                    f"🛑 [FIREWALL GATE BLOCKED] SHORT entry rejected: {pre_eval.rejection_reason} "
-                    f"| ATR%: {pre_eval.atr_pct:.3f}% | Feed: {pre_eval.feed_health}"
+            current_time = to_ist(evaluation_time) if evaluation_time is not None else to_ist()
+            if not can_enter_new_positions(current_time):
+                logging.info(
+                    "Signal rejected - entries are disabled in %s after the 15:15 IST cutoff.",
+                    get_market_state(current_time).value,
                 )
-                has_short = False
+                return
 
-        if has_long:
-            sig_type = "BREAKOUT" if (is_breakout and not is_pullback) else "PULLBACK"
-            sig_banner = (
-                "🚀  VWAP BREAKOUT BUY SIGNAL [BREAKOUT_LONG]"
-                if sig_type == "BREAKOUT"
-                else "🚀  VWAP PULLBACK BUY SIGNAL [PULLBACK_LONG]"
-            )
 
-            logging.info("🚀 ════════════════════════════════════════════════════════")
-            logging.info(f"{sig_banner}  @  VWAP {latest['VWAP']:.2f} (ATR: {atr_val:.2f}) | Bias: {daily_bias}")
-            logging.info("🚀 ════════════════════════════════════════════════════════")
+            # 2. Evaluate in strict premarket ranking order
+            sorted_states = sorted(self.active_symbols.values(), key=lambda s: s.rank)
 
-            self.paper_trader.execute_trade(
-                {
-                    "VWAP": float(latest["VWAP"]),
-                    "Close": float(latest["Close"]),
-                    "symbol": self.symbol,
-                    "ATR_14": atr_val,
-                    "atr": atr_val,
-                    "signal_type": f"[{sig_type}_LONG]",
-                },
-                timestamp=signal_timestamp,
-                atr_14=atr_val,
-                side="BUY",
-                angel_session=self.angel_session,
-            )
-        elif has_short:
-            sig_type = "BREAKDOWN" if (is_short_breakdown and not is_short_pullback) else "PULLBACK"
-            sig_banner = (
-                "🔻  VWAP BREAKDOWN SELL SIGNAL [BREAKDOWN_SHORT]"
-                if sig_type == "BREAKDOWN"
-                else "🔻  VWAP PULLBACK SELL SIGNAL [PULLBACK_SHORT]"
-            )
+            for state in sorted_states:
+                # 3. Candidate Filters
+                if state.execution_state == SymbolExecutionState.STANDBY:
+                    logging.info(
+                        f"[ORCHESTRATOR] Skipping {state.symbol} (Rank {state.rank}): "
+                        "Symbol in STANDBY (low volatility)."
+                    )
+                    continue
 
-            logging.info("🔻 ════════════════════════════════════════════════════════")
-            logging.info(f"{sig_banner}  @  VWAP {latest['VWAP']:.2f} (ATR: {atr_val:.2f}) | Bias: {daily_bias}")
-            logging.info("🔻 ════════════════════════════════════════════════════════")
+                if state.feed_monitor.state != FeedHealthState.HEALTHY:
+                    logging.warning(
+                        f"[ORCHESTRATOR] Skipping {state.symbol} (Rank {state.rank}): "
+                        f"Feed not healthy ({state.feed_monitor.state.value})."
+                    )
+                    continue
 
-            self.paper_trader.execute_trade(
-                {
-                    "VWAP": float(latest["VWAP"]),
-                    "Close": float(latest["Close"]),
-                    "symbol": self.symbol,
-                    "ATR_14": atr_val,
-                    "atr": atr_val,
-                    "signal_type": f"[{sig_type}_SHORT]",
-                },
-                timestamp=signal_timestamp,
-                atr_14=atr_val,
-                side="SELL",
-                angel_session=self.angel_session,
-            )
+                if state.execution_state in (SymbolExecutionState.BLOCKED, SymbolExecutionState.ERROR):
+                    logging.info(
+                        f"[ORCHESTRATOR] Skipping {state.symbol} (Rank {state.rank}): "
+                        f"Symbol in state {state.execution_state.value}."
+                    )
+                    continue
 
-        # Position management on candle close
-        self.paper_trader.manage_open_position(
-            candle=latest.to_dict() if hasattr(latest, "to_dict") else dict(latest),
-            timestamp=signal_timestamp,
-            latest_price=float(latest["Close"]),
-        )
+                if state.current_candle_df is None or len(state.current_candle_df) < 15:
+                    logging.debug(
+                        f"[ORCHESTRATOR] Skipping {state.symbol} (Rank {state.rank}): "
+                        "Insufficient candles for signal evaluation."
+                    )
+                    continue
+
+                try:
+                    df = state.current_candle_df.copy()
+                    result = generate_vwap_signal(df)
+                    latest = result.iloc[-1]
+                    atr_val = float(latest.get("ATR_14", float("nan")))
+
+                    # Directional bias detection
+                    daily_bias = detect_daily_bias(result)
+
+                    is_pullback = bool(latest.get("Buy_Signal"))
+                    is_breakout = bool(latest.get("Breakout_Signal"))
+                    is_short_pullback = bool(latest.get("Sell_Signal"))
+                    is_short_breakdown = bool(latest.get("Breakdown_Sell_Signal"))
+
+                    if daily_bias == "LONG_BIAS":
+                        is_short_pullback = False
+                        is_short_breakdown = False
+                    elif daily_bias == "SHORT_BIAS":
+                        is_pullback = False
+                        is_breakout = False
+
+                    has_long = is_pullback or is_breakout
+                    has_short = is_short_pullback or is_short_breakdown
+
+                    if not (has_long or has_short):
+                        continue
+
+                    # 4. ATR Firewall Pre-Entry Gating (isolated per symbol)
+                    pre_eval = state.atr_firewall.validate_pre_entry(
+                        atr=atr_val,
+                        ltp=float(latest["Close"]),
+                        feed_health=state.feed_monitor.state.value,
+                        spread_pct=state.last_spread_pct,
+                        depth_available=state.last_depth_available,
+                        is_new_entry=True,
+                    )
+                    if not pre_eval.execution_allowed:
+                        logging.warning(
+                            f"🛑 [FIREWALL GATE BLOCKED] {state.symbol} (Rank {state.rank}) "
+                            f"{'LONG' if has_long else 'SHORT'} rejected: {pre_eval.rejection_reason} "
+                            f"| ATR%: {pre_eval.atr_pct:.3f}% | Feed: {pre_eval.feed_health}"
+                        )
+                        continue
+
+                    # 5. Global Position Re-Check before execution
+                    if self.paper_trader.has_open_position:
+                        logging.warning(
+                            f"🛑 [GLOBAL POSITION BLOCK] {state.symbol} (Rank {state.rank}) blocked: "
+                            "Position already open."
+                        )
+                        break
+
+                    # 6. Execute Trade via Existing Engine
+                    self.paper_trader.update_daily_bias(daily_bias)
+                    if has_long:
+                        sig_type = "BREAKOUT" if (is_breakout and not is_pullback) else "PULLBACK"
+                        sig_banner = (
+                            "🚀  VWAP BREAKOUT BUY SIGNAL [BREAKOUT_LONG]"
+                            if sig_type == "BREAKOUT"
+                            else "🚀  VWAP PULLBACK BUY SIGNAL [PULLBACK_LONG]"
+                        )
+                        logging.info("🚀 ════════════════════════════════════════════════════════")
+                        logging.info(
+                            f"🚀  WATCHLIST ORCHESTRATOR EXECUTION: {state.symbol} (Rank {state.rank}) "
+                            f"{sig_banner} @ VWAP {latest['VWAP']:.2f} (ATR: {atr_val:.2f}) | Bias: {daily_bias}"
+                        )
+                        logging.info("🚀 ════════════════════════════════════════════════════════")
+                        self.paper_trader.execute_trade(
+                            {
+                                "VWAP": float(latest["VWAP"]),
+                                "Close": float(latest["Close"]),
+                                "symbol": state.symbol,
+                                "ATR_14": atr_val,
+                                "atr": atr_val,
+                                "signal_type": f"[{sig_type}_LONG]",
+                            },
+                            timestamp=current_time,
+                            atr_14=atr_val,
+                            side="BUY",
+                            angel_session=self.angel_session,
+                        )
+                    elif has_short:
+                        sig_type = "BREAKDOWN" if (is_short_breakdown and not is_short_pullback) else "PULLBACK"
+                        sig_banner = (
+                            "🔻  VWAP BREAKDOWN SELL SIGNAL [BREAKDOWN_SHORT]"
+                            if sig_type == "BREAKDOWN"
+                            else "🔻  VWAP PULLBACK SELL SIGNAL [PULLBACK_SHORT]"
+                        )
+                        logging.info("🔻 ════════════════════════════════════════════════════════")
+                        logging.info(
+                            f"🔻  WATCHLIST ORCHESTRATOR EXECUTION: {state.symbol} (Rank {state.rank}) "
+                            f"{sig_banner} @ VWAP {latest['VWAP']:.2f} (ATR: {atr_val:.2f}) | Bias: {daily_bias}"
+                        )
+                        logging.info("🔻 ════════════════════════════════════════════════════════")
+                        self.paper_trader.execute_trade(
+                            {
+                                "VWAP": float(latest["VWAP"]),
+                                "Close": float(latest["Close"]),
+                                "symbol": state.symbol,
+                                "ATR_14": atr_val,
+                                "atr": atr_val,
+                                "signal_type": f"[{sig_type}_SHORT]",
+                            },
+                            timestamp=current_time,
+                            atr_14=atr_val,
+                            side="SELL",
+                            angel_session=self.angel_session,
+                        )
+
+                    # 7. One-Cycle Execution Rule: Stop searching!
+                    logging.info(
+                        f"[ORCHESTRATOR] Order placed for {state.symbol} (Rank {state.rank}). "
+                        "One-cycle execution complete. Halting candidate search."
+                    )
+                    break
+
+                except Exception as exc:
+                    state.mark_error(str(exc))
+                    logging.error(
+                        f"[ORCHESTRATOR ERROR] Error evaluating {state.symbol} (Rank {state.rank}): {exc}",
+                        exc_info=True,
+                    )
+                    continue
 
     def _extract_tick_fields(self, data: dict) -> tuple[float, int, datetime, Optional[float], Optional[float], bool]:
         """Extract LTP, actual trade volume (without fake fallback), timestamp, best bid, best ask, and depth availability from SmartAPI data."""
@@ -819,10 +976,24 @@ class AngelOneLiveStream:
                 logging.warning("Rejected invalid LTP payload: %r", data)
                 return
 
+            raw_tok = data.get("token")
+            tok_str = str(raw_tok).strip() if raw_tok is not None else ""
+            if not tok_str:
+                if len(self.active_symbols) == 1:
+                    tok_str = list(self.active_symbols.keys())[0]
+                else:
+                    logging.debug("Tick missing token while multiple symbols active; dropped: %r", data)
+                    return
+
+            sym_state = self.active_symbols.get(tok_str)
+            if sym_state is None:
+                logging.debug("Tick received for unknown token %s; safely dropped.", tok_str)
+                return
+
             self.ingestion_queue.enqueue(
-                symbol=self.symbol,
-                token=self.token,
-                exchange_type=self.exchange_type,
+                symbol=sym_state.symbol,
+                token=sym_state.token,
+                exchange_type=sym_state.exchange_type,
                 price=price,
                 volume=volume,
                 timestamp=timestamp,
@@ -844,33 +1015,60 @@ class AngelOneLiveStream:
                     self.enforce_lifecycle(ws=self.websocket, current_dt=to_ist())
                     continue
 
-                # Feed health evaluation & duplicate/frozen tick filtration
-                is_genuine, state, reason = self.feed_monitor.evaluate_tick(tick)
+                symbol_state = self.active_symbols.get(tick.token)
+                if symbol_state is None:
+                    logging.debug("Consumer received tick for unknown token %s; dropped.", tick.token)
+                    continue
+
+                # Per-symbol feed health evaluation & duplicate/frozen tick filtration
+                is_genuine, state, reason = symbol_state.feed_monitor.evaluate_tick(tick)
                 if not is_genuine:
                     logging.debug(
-                        "Tick dropped by FeedHealthMonitor: %s | LTP: %.2f",
+                        "Tick dropped by FeedHealthMonitor for %s: %s | LTP: %.2f",
+                        symbol_state.symbol,
                         reason,
                         tick.price,
                     )
                     continue
 
-                # Update spread and depth telemetry from tick if present
+                # Update symbol-local spread, depth, and price telemetry
+                symbol_state.last_tick_price = tick.price
+                symbol_state.last_tick_volume = tick.volume
+                symbol_state.last_tick_time = tick.timestamp
+
                 if tick.best_bid and tick.best_ask and tick.best_bid > 0:
                     spread = tick.best_ask - tick.best_bid
-                    self._last_spread_pct = (spread / tick.best_bid) * 100.0
-                    self._last_depth_available = tick.depth_available
+                    symbol_state.last_spread_pct = (spread / tick.best_bid) * 100.0
+                    symbol_state.last_depth_available = tick.depth_available
                 else:
-                    self._last_spread_pct = None
-                    self._last_depth_available = tick.depth_available
+                    symbol_state.last_spread_pct = None
+                    symbol_state.last_depth_available = tick.depth_available
 
-                # Feed genuine trade ticks into candle/VWAP builder
+                # Backward compatibility for primary symbol attributes
+                if symbol_state.token == self.token:
+                    self._last_spread_pct = symbol_state.last_spread_pct
+                    self._last_depth_available = symbol_state.last_depth_available
+
+                # Feed genuine trade ticks into candle/VWAP builder (per-symbol isolation)
                 if tick.volume > 0:
-                    self.builder.on_tick(price=tick.price, volume=tick.volume, timestamp=tick.timestamp)
+                    try:
+                        symbol_state.builder.on_tick(price=tick.price, volume=tick.volume, timestamp=tick.timestamp)
+                    except Exception as b_exc:
+                        symbol_state.mark_error(str(b_exc))
+                        logging.error(f"[BUILDER ERROR] Error in {symbol_state.symbol} builder: {b_exc}", exc_info=True)
                 else:
-                    logging.debug("Skipped tick with zero volume for VWAP builder: price=%.2f", tick.price)
+                    logging.debug("Skipped tick with zero volume for %s builder: price=%.2f", symbol_state.symbol, tick.price)
 
-                # Exit checks and lifecycle enforcement
-                self.paper_trader.check_exit(live_price=tick.price, timestamp=tick.timestamp)
+                # Exit checks (only if open position symbol matches this tick's symbol)
+                if self.paper_trader.has_open_position:
+                    pos = self.paper_trader._open_position
+                    if pos is not None:
+                        pos_sym = pos.get("symbol")
+                        pos_tok = pos.get("token")
+                        if symbol_state.symbol == pos_sym or (pos_tok and symbol_state.token == str(pos_tok)):
+                            self.paper_trader.check_exit(live_price=tick.price, timestamp=tick.timestamp)
+
+                # Lifecycle enforcement
                 self.enforce_lifecycle(ws=self.websocket, current_dt=tick.timestamp)
             except Exception as exc:
                 logging.error("Error in tick consumer loop: %s", exc, exc_info=True)
@@ -885,13 +1083,16 @@ class AngelOneLiveStream:
     def _on_open(self, wsapp) -> None:
         logging.info("WebSocket connection established successfully.")
         self._retry_attempt = 0
-        self.feed_monitor.on_connect()
+        for state in self.active_symbols.values():
+            state.feed_monitor.on_connect()
+
+        by_exchange: Dict[int, List[str]] = {}
+        for state in self.active_symbols.values():
+            by_exchange.setdefault(state.exchange_type, []).append(state.token)
 
         token_list = [
-            {
-                "exchangeType": self.exchange_type,
-                "tokens": [self.token],
-            }
+            {"exchangeType": ex_type, "tokens": toks}
+            for ex_type, toks in by_exchange.items()
         ]
 
         if self.websocket is None:
@@ -902,23 +1103,24 @@ class AngelOneLiveStream:
             self.subscription_mode,
             token_list,
         )
+        subscribed_str = ", ".join([f"{s.symbol} ({s.token})" for s in self.active_symbols.values()])
         logging.info(
-            "Subscribed to %s token %s in SnapQuote mode (mode=%s, exchangeType=%s).",
-            self.symbol,
-            self.token,
-            self.subscription_mode,
-            self.exchange_type,
+            f"Subscribed to {len(self.active_symbols)} watchlist token(s): {subscribed_str} "
+            f"in SnapQuote mode (mode={self.subscription_mode})."
         )
 
     def _on_error(self, wsapp, error, *args, **kwargs) -> None:
         logging.error("WebSocket Error: %s", error)
-        self.feed_monitor.on_disconnect(reason=f"WebSocket error: {error}")
+        for state in self.active_symbols.values():
+            state.feed_monitor.on_disconnect(reason=f"WebSocket error: {error}")
 
     def _on_close(self, wsapp, *args, **kwargs) -> None:
         logging.warning("SmartAPI websocket closed.")
-        self.feed_monitor.on_disconnect(reason="SmartAPI websocket closed")
+        for state in self.active_symbols.values():
+            state.feed_monitor.on_disconnect(reason="SmartAPI websocket closed")
         if not self._shutdown_requested:
             logging.info("Connection dropped. Reconnect supervisor will retry.")
+
 
     # ──────────────────────────────────────────────────────────────
     #  EOD / Square-off / Watchdog
@@ -1003,8 +1205,9 @@ class AngelOneLiveStream:
             if state in {MarketPhase.SQUARE_OFF, MarketPhase.CLOSED}:
                 return
 
-            # Feed integrity check: detect silent websocket freeze / stale ticks
-            self.feed_monitor.check_heartbeat()
+            # Feed integrity check: detect silent websocket freeze / stale ticks across all symbols
+            for sym_state in self.active_symbols.values():
+                sym_state.feed_monitor.check_heartbeat()
 
             time_module.sleep(5)
 
@@ -1239,16 +1442,22 @@ def main() -> None:
         sys.exit(0)
 
     winner = screen_result.selected_candidate
+    watchlist = screen_result.watchlist if WATCHLIST_MODE else ([winner] if winner else [])
     logging.info(
         f"🎯 Premarket screening winner: {winner.symbol} (Token: {winner.token}) "
         f"| ATR%: {winner.atr_pct:.2f}% | Spread: {winner.spread_pct:.2f}%"
     )
+    if WATCHLIST_MODE and len(watchlist) > 1:
+        logging.info(
+            f"🎯 Phase 5 Watchlist: {[c.trading_symbol for c in watchlist]} ({len(watchlist)} symbols)"
+        )
 
     stream = AngelOneLiveStream(
         target_symbol=winner.symbol,
         target_token=winner.token,
         angel_session=angel_session,
         screener_diagnostic=winner,
+        watchlist=watchlist,
     )
     stream.run()
 

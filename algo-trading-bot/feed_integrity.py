@@ -238,3 +238,10 @@ class ThreadSafeTickIngestionQueue:
     def qsize(self) -> int:
         return self.queue.qsize()
 
+
+# Re-export Phase 5 Symbol State classes for backward compatibility
+try:
+    from symbol_state import SymbolExecutionState, SymbolState
+except ImportError:
+    pass
+
