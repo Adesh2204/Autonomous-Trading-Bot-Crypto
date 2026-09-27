@@ -10,7 +10,6 @@ Validates:
 6. Sep-15 historical regression fixture: Theoretical +42.53 vs Broker -117.60.
 """
 
-import pytest
 from execution_engine import (
     calculate_true_friction,
     generate_trade_reconciliation_report,
