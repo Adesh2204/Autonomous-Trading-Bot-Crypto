@@ -3,11 +3,59 @@
 # DO NOT hardcode these values anywhere else in the codebase.
 # ─────────────────────────────────────────────────────────────
 
-# ── UNIVERSE ──────────────────────────────────────────────────
-SYMBOL = "NHPC-EQ"               # NHPC Ltd
+# ── UNIVERSE & CANDIDATE POOL ─────────────────────────────────
+# Legacy default fallback (kept for offline tests & backward compatibility)
+SYMBOL = "UNIONBANK-EQ"          # Union Bank of India (Legacy default)
 EXCHANGE = "NSE"               # unchanged
-TOKEN = "11262"                 # Angel One instrument token for NHPC
+TOKEN = "10753"                 # Angel One instrument token for UNIONBANK
 SEGMENT = 1                   # unchanged (NSE equity)
+
+# Configured pool of liquid candidate instruments evaluated by run_premarket_screener()
+CANDIDATE_UNIVERSE = [
+    {"symbol": "ONGC", "trading_symbol": "ONGC-EQ", "token": "2475", "exchange": "NSE"},
+    {"symbol": "IFCI", "trading_symbol": "IFCI-EQ", "token": "1491", "exchange": "NSE"},
+    {"symbol": "BANKBARODA", "trading_symbol": "BANKBARODA-EQ", "token": "4668", "exchange": "NSE"},
+    {"symbol": "ADANIPOWER", "trading_symbol": "ADANIPOWER-EQ", "token": "17388", "exchange": "NSE"},
+    {"symbol": "TATASTEEL", "trading_symbol": "TATASTEEL-EQ", "token": "3499", "exchange": "NSE"},
+    {"symbol": "TATAMOTORS", "trading_symbol": "TATAMOTORS-EQ", "token": "3456", "exchange": "NSE"},
+    {"symbol": "ITC", "trading_symbol": "ITC-EQ", "token": "1660", "exchange": "NSE"},
+    {"symbol": "COALINDIA", "trading_symbol": "COALINDIA-EQ", "token": "20374", "exchange": "NSE"},
+    {"symbol": "M&M", "trading_symbol": "M&M-EQ", "token": "2031", "exchange": "NSE"},
+    {"symbol": "YESBANK", "trading_symbol": "YESBANK-EQ", "token": "11915", "exchange": "NSE"},
+    {"symbol": "NTPC", "trading_symbol": "NTPC-EQ", "token": "2977", "exchange": "NSE"},
+    {"symbol": "PNB", "trading_symbol": "PNB-EQ", "token": "10666", "exchange": "NSE"},
+    {"symbol": "SJVN", "trading_symbol": "SJVN-EQ", "token": "18883", "exchange": "NSE"},
+    {"symbol": "NHPC", "trading_symbol": "NHPC-EQ", "token": "11262", "exchange": "NSE"},
+    {"symbol": "UNIONBANK", "trading_symbol": "UNIONBANK-EQ", "token": "10753", "exchange": "NSE"},
+]
+
+# ── PRE-MARKET SCREENER CONFIG ────────────────────────────────
+SCREEN_MIN_LTP = 150.0            # Minimum Last Traded Price (₹)
+SCREEN_MAX_LTP = 350.0            # Maximum Last Traded Price (₹)
+SCREEN_MIN_ATR_PCT = 0.0040       # Minimum ATR% (0.40% of LTP)
+SCREEN_MAX_SPREAD_PCT = 0.0015    # Maximum normalized spread (0.15%)
+SCREEN_MIN_DAILY_VOLUME = 5000000 # Minimum previous session volume (shares)
+SCREEN_ATR_PERIOD = 14            # ATR period for 1-minute historical candles
+SCREEN_EMA_FAST_PERIOD = 9        # Fast EMA period for trend alignment
+SCREEN_EMA_SLOW_PERIOD = 21       # Slow EMA period for trend alignment
+SCREEN_API_REQUEST_INTERVAL = 0.5 # Sequential pacing delay (seconds)
+SCREEN_API_MAX_RETRIES = 3        # Retries for rate limits / broker errors
+SCREEN_API_BACKOFF_BASE = 1.0     # Base backoff multiplier (seconds)
+SCREEN_MIN_CANDLE_COUNT = 300     # Minimum 1-minute bars required in completed session
+SCREEN_TOP_N = 1                  # Single top qualifier for Phase 1-4
+EXCLUSION_LIST = []               # Excluded symbols list
+
+# ── INTRADAY ATR FIREWALL ─────────────────────────────────────
+INTRADAY_ATR_MIN_PCT = 0.0040     # 0.40% minimum intraday ATR floor
+ATR_RECHECK_INTERVAL_SECONDS = 1800 # 30-minute rolling recheck interval
+ATR_LOW_CONFIRMATION_COUNT = 2    # Consecutive low readings required to enter STANDBY
+ATR_RECOVERY_CONFIRMATION_COUNT = 2 # Consecutive healthy readings required to recover
+
+# ── FEED INTEGRITY & WATCHDOG ─────────────────────────────────
+STALE_TICK_TIMEOUT_SECONDS = 15.0 # Max seconds without genuine tick before STALE
+FEED_RECONNECT_WARMUP_TICKS = 3   # Fresh ticks required after reconnect before HEALTHY
+MAX_QUEUE_SIZE = 10000            # Thread-safe ingestion queue size
+
 
 # ── CAPITAL (absolute ₹ — intentionally fixed, user config) ───
 TOTAL_CAPITAL = 20000.00      # ₹20,000 real money
@@ -93,7 +141,7 @@ MARKET_OPEN_TIME = "09:15"        # HH:MM IST
 # LIVE_MODE = False → Paper trading (default, safe)
 # LIVE_MODE = True  → Real Angel One API orders (real money)
 # ⚠️  Set True ONLY on Sep 15 morning, AFTER login test passes
-LIVE_MODE = True   # ← CHANGE TO True ON SEP 15 MORNING ONLY
+LIVE_MODE = False   # ← CHANGE TO True ON SEP 15 MORNING ONLY
 
 # ── RECONCILIATION ───────────────────────────────────────────
 RECONCILIATION_TOLERANCE_INTRADAY = 0.50   # ₹0.50 tolerance for per-trade gross P&L vs broker realised delta

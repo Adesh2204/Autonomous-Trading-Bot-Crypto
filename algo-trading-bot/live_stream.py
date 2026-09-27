@@ -42,7 +42,10 @@ def _patched_on_close(self, *args, **kwargs):
         pass
 SmartWebSocketV2._on_close = _patched_on_close
 
+from atr_firewall import ATRFirewall, FirewallStatus
 from candle_builder import CandleBuilder
+from feed_integrity import FeedHealthMonitor, FeedHealthState, ThreadSafeTickIngestionQueue
+from premarket_screener import PremarketScreenResult, run_premarket_screener
 from execution_engine import (
     PaperTrader,
     get_actual_fill_price,
@@ -130,8 +133,10 @@ try:
         RISK_PER_TRADE,
         DAILY_LOSS_LIMIT,
         TOKEN as CONFIG_TOKEN,
+        CANDIDATE_UNIVERSE,
     )
 except ImportError:
+    CANDIDATE_UNIVERSE = []
     DEFAULT_SYMBOL = "ONGC"
     TOTAL_CAPITAL = 10000.00
     WORKING_CAPITAL = 5000.00
@@ -210,19 +215,59 @@ class AngelOneLiveStream:
 
     def __init__(
         self,
-        target_symbol: str = DEFAULT_SYMBOL,
+        target_symbol: Optional[str] = None,
+        target_token: Optional[str] = None,
         schedule: Optional[BaseMarketSchedule] = None,
         angel_session: Optional[SmartConnect] = None,
+        screener_diagnostic: Optional[Any] = None,
     ) -> None:
         self.schedule: BaseMarketSchedule = (
             schedule if schedule is not None else get_market_schedule(os.getenv("MARKET_SCHEDULE", "NSE"))
         )
-        self.target_symbol = os.getenv("TRADING_SYMBOL", target_symbol).upper()
+        self.screener_diagnostic = screener_diagnostic
+
+        # Build candidate lookup dictionary from CANDIDATE_UNIVERSE
+        universe_map = {}
+        for c in CANDIDATE_UNIVERSE:
+            if isinstance(c, dict):
+                sym_k = c.get("symbol", "").upper()
+                trd_k = c.get("trading_symbol", "").upper()
+                if sym_k:
+                    universe_map[sym_k] = c
+                if trd_k:
+                    universe_map[trd_k] = c
+
+        resolved_sym = os.getenv("TRADING_SYMBOL") or target_symbol or DEFAULT_SYMBOL
+        self.target_symbol = str(resolved_sym).upper()
         base_sym = self.target_symbol.replace("-EQ", "")
-        if self.target_symbol in INSTRUMENTS:
+
+        if target_token:
+            self.instrument_info = {
+                "token": str(target_token),
+                "symbol": base_sym,
+                "trading_symbol": f"{base_sym}-EQ",
+                "exchange_type": 1,
+            }
+        elif self.target_symbol in INSTRUMENTS:
             self.instrument_info = INSTRUMENTS[self.target_symbol]
         elif base_sym in INSTRUMENTS:
             self.instrument_info = INSTRUMENTS[base_sym]
+        elif self.target_symbol in universe_map:
+            u_info = universe_map[self.target_symbol]
+            self.instrument_info = {
+                "token": str(u_info.get("token", CONFIG_TOKEN)),
+                "symbol": base_sym,
+                "trading_symbol": u_info.get("trading_symbol", f"{base_sym}-EQ"),
+                "exchange_type": 1,
+            }
+        elif base_sym in universe_map:
+            u_info = universe_map[base_sym]
+            self.instrument_info = {
+                "token": str(u_info.get("token", CONFIG_TOKEN)),
+                "symbol": base_sym,
+                "trading_symbol": u_info.get("trading_symbol", f"{base_sym}-EQ"),
+                "exchange_type": 1,
+            }
         else:
             self.instrument_info = {
                 "token": CONFIG_TOKEN,
@@ -230,12 +275,21 @@ class AngelOneLiveStream:
                 "trading_symbol": f"{base_sym}-EQ",
                 "exchange_type": 1,
             }
-        self.token = self.instrument_info["token"]
+
+        self.token = str(self.instrument_info["token"])
         self.symbol = self.instrument_info["symbol"]
         self.trading_symbol = self.instrument_info["trading_symbol"]
         self.exchange_type = self.instrument_info["exchange_type"]
         self.correlation_id = f"{self.symbol.lower()}-snapquote"
         self.subscription_mode = getattr(SmartWebSocketV2, "SNAPQUOTE_MODE", 3)
+
+        # Feed Integrity, Concurrency Queue, and ATR Firewall
+        self.feed_monitor = FeedHealthMonitor(symbol=self.symbol, token=self.token)
+        self.ingestion_queue = ThreadSafeTickIngestionQueue()
+        self.atr_firewall = ATRFirewall()
+        self._consumer_thread: Optional[threading.Thread] = None
+        self._last_spread_pct: Optional[float] = None
+        self._last_depth_available: bool = True
 
         self.api_key = _first_env("BROKER_API_KEY")
         self.client_code = _first_env("BROKER_CLIENT_ID", "BROKER_CLIENT_CODE")
@@ -415,6 +469,16 @@ class AngelOneLiveStream:
         logging.info(f"  Risk Per Setup    : ≤ ₹{RISK_PER_TRADE:,.2f}")
         logging.info("=" * 60)
 
+        # Launch single consumer thread for thread-safe tick processing
+        if self._consumer_thread is None or not self._consumer_thread.is_alive():
+            self._consumer_thread = threading.Thread(
+                target=self._tick_consumer_loop,
+                daemon=True,
+                name="TickConsumerThread",
+            )
+            self._consumer_thread.start()
+            logging.info("Tick ingestion consumer thread started.")
+
         retry_attempt = 0
 
         while not self._shutdown_requested:
@@ -539,6 +603,13 @@ class AngelOneLiveStream:
         signal_timestamp = to_ist()
         atr_val = float(latest.get("ATR_14", float("nan")))
 
+        # Record periodic ATR in firewall
+        self.atr_firewall.record_periodic_atr(
+            atr=atr_val,
+            ltp=float(latest["Close"]),
+            timestamp=signal_timestamp,
+        )
+
         logging.info(
             f"Candle #{len(result)} closed | "
             f"O:{latest['Open']:.2f}  H:{latest['High']:.2f}  "
@@ -583,6 +654,39 @@ class AngelOneLiveStream:
                 get_market_state(signal_timestamp).value,
             )
             has_short = False
+
+        # ATR Firewall & Feed Integrity Pre-Entry Gating:
+        if has_long:
+            pre_eval = self.atr_firewall.validate_pre_entry(
+                atr=atr_val,
+                ltp=float(latest["Close"]),
+                feed_health=self.feed_monitor.state.value,
+                spread_pct=self._last_spread_pct,
+                depth_available=self._last_depth_available,
+                is_new_entry=True,
+            )
+            if not pre_eval.execution_allowed:
+                logging.warning(
+                    f"🛑 [FIREWALL GATE BLOCKED] LONG entry rejected: {pre_eval.rejection_reason} "
+                    f"| ATR%: {pre_eval.atr_pct:.3f}% | Feed: {pre_eval.feed_health}"
+                )
+                has_long = False
+
+        if has_short:
+            pre_eval = self.atr_firewall.validate_pre_entry(
+                atr=atr_val,
+                ltp=float(latest["Close"]),
+                feed_health=self.feed_monitor.state.value,
+                spread_pct=self._last_spread_pct,
+                depth_available=self._last_depth_available,
+                is_new_entry=True,
+            )
+            if not pre_eval.execution_allowed:
+                logging.warning(
+                    f"🛑 [FIREWALL GATE BLOCKED] SHORT entry rejected: {pre_eval.rejection_reason} "
+                    f"| ATR%: {pre_eval.atr_pct:.3f}% | Feed: {pre_eval.feed_health}"
+                )
+                has_short = False
 
         if has_long:
             sig_type = "BREAKOUT" if (is_breakout and not is_pullback) else "PULLBACK"
@@ -644,8 +748,8 @@ class AngelOneLiveStream:
             latest_price=float(latest["Close"]),
         )
 
-    def _extract_tick_fields(self, data: dict) -> tuple[float, int, datetime]:
-        """Extract LTP, actual trade volume (without fake fallback), and timestamp from SmartAPI data."""
+    def _extract_tick_fields(self, data: dict) -> tuple[float, int, datetime, Optional[float], Optional[float], bool]:
+        """Extract LTP, actual trade volume (without fake fallback), timestamp, best bid, best ask, and depth availability from SmartAPI data."""
         raw_price = data.get("last_traded_price")
         if raw_price is None:
             raw_price = data.get("ltp") or data.get("price")
@@ -674,32 +778,102 @@ class AngelOneLiveStream:
                 volume = 0
 
         timestamp = _parse_tick_timestamp(data.get("exchange_timestamp", data.get("last_traded_timestamp")))
-        return price, volume, timestamp
+
+        # Extract best bid and ask if present
+        best_bid: Optional[float] = None
+        best_ask: Optional[float] = None
+        depth_available = True
+
+        best_5_buy = data.get("best_5_buy_data")
+        if isinstance(best_5_buy, list) and len(best_5_buy) > 0 and isinstance(best_5_buy[0], dict):
+            b_price = best_5_buy[0].get("price")
+            if b_price is not None:
+                raw_b = float(b_price)
+                best_bid = raw_b / 100.0 if raw_b > 1000 else raw_b
+        elif data.get("buy_price") is not None:
+            raw_b = float(data["buy_price"])
+            best_bid = raw_b / 100.0 if raw_b > 1000 else raw_b
+
+        best_5_sell = data.get("best_5_sell_data")
+        if isinstance(best_5_sell, list) and len(best_5_sell) > 0 and isinstance(best_5_sell[0], dict):
+            s_price = best_5_sell[0].get("price")
+            if s_price is not None:
+                raw_s = float(s_price)
+                best_ask = raw_s / 100.0 if raw_s > 1000 else raw_s
+        elif data.get("sell_price") is not None:
+            raw_s = float(data["sell_price"])
+            best_ask = raw_s / 100.0 if raw_s > 1000 else raw_s
+
+        return price, volume, timestamp, best_bid, best_ask, depth_available
 
     def _on_data(self, wsapp, data: dict) -> None:
+        """Fast non-blocking WebSocket callback pushing raw ticks to the thread-safe ingestion queue."""
         try:
             if not isinstance(data, dict):
                 logging.warning("Received non-dict SmartAPI payload: %r", data)
                 return
 
-            price, volume, timestamp = self._extract_tick_fields(data)
+            price, volume, timestamp, best_bid, best_ask, depth_available = self._extract_tick_fields(data)
 
             if price <= 0 or not math.isfinite(price):
                 logging.warning("Rejected invalid LTP payload: %r", data)
                 return
 
-            # Failsafe: Only feed ticks with genuine trade volume into the Candle/VWAP builder.
-            # If a tick genuinely arrives with 0 volume or missing volume keys from the exchange,
-            # skip passing that specific tick to the VWAP engine entirely rather than defaulting to 1.
-            if volume > 0:
-                self.builder.on_tick(price=price, volume=volume, timestamp=timestamp)
-            else:
-                logging.debug("Skipped tick with zero volume for VWAP builder: price=%.2f", price)
-
-            self.paper_trader.check_exit(live_price=price, timestamp=timestamp)
-            self.enforce_lifecycle(ws=self.websocket, current_dt=timestamp)
+            self.ingestion_queue.enqueue(
+                symbol=self.symbol,
+                token=self.token,
+                exchange_type=self.exchange_type,
+                price=price,
+                volume=volume,
+                timestamp=timestamp,
+                best_bid=best_bid,
+                best_ask=best_ask,
+                depth_available=depth_available,
+            )
         except Exception as exc:
             logging.error("Error processing SmartAPI data frame: %s | payload=%r", exc, data)
+
+    def _tick_consumer_loop(self) -> None:
+        """Single consumer thread that drains the tick ingestion queue,
+        evaluates feed integrity, updates candle builder, checks exits, and enforces lifecycle.
+        This preserves single-threaded state ownership for candle building and execution."""
+        while not self._shutdown_requested:
+            try:
+                tick = self.ingestion_queue.get(timeout=0.5)
+                if tick is None:
+                    self.enforce_lifecycle(ws=self.websocket, current_dt=to_ist())
+                    continue
+
+                # Feed health evaluation & duplicate/frozen tick filtration
+                is_genuine, state, reason = self.feed_monitor.evaluate_tick(tick)
+                if not is_genuine:
+                    logging.debug(
+                        "Tick dropped by FeedHealthMonitor: %s | LTP: %.2f",
+                        reason,
+                        tick.price,
+                    )
+                    continue
+
+                # Update spread and depth telemetry from tick if present
+                if tick.best_bid and tick.best_ask and tick.best_bid > 0:
+                    spread = tick.best_ask - tick.best_bid
+                    self._last_spread_pct = (spread / tick.best_bid) * 100.0
+                    self._last_depth_available = tick.depth_available
+                else:
+                    self._last_spread_pct = None
+                    self._last_depth_available = tick.depth_available
+
+                # Feed genuine trade ticks into candle/VWAP builder
+                if tick.volume > 0:
+                    self.builder.on_tick(price=tick.price, volume=tick.volume, timestamp=tick.timestamp)
+                else:
+                    logging.debug("Skipped tick with zero volume for VWAP builder: price=%.2f", tick.price)
+
+                # Exit checks and lifecycle enforcement
+                self.paper_trader.check_exit(live_price=tick.price, timestamp=tick.timestamp)
+                self.enforce_lifecycle(ws=self.websocket, current_dt=tick.timestamp)
+            except Exception as exc:
+                logging.error("Error in tick consumer loop: %s", exc, exc_info=True)
 
     def _on_message(self, wsapp, message: str) -> None:
         if message == "pong":
@@ -711,6 +885,7 @@ class AngelOneLiveStream:
     def _on_open(self, wsapp) -> None:
         logging.info("WebSocket connection established successfully.")
         self._retry_attempt = 0
+        self.feed_monitor.on_connect()
 
         token_list = [
             {
@@ -737,9 +912,11 @@ class AngelOneLiveStream:
 
     def _on_error(self, wsapp, error, *args, **kwargs) -> None:
         logging.error("WebSocket Error: %s", error)
+        self.feed_monitor.on_disconnect(reason=f"WebSocket error: {error}")
 
     def _on_close(self, wsapp, *args, **kwargs) -> None:
         logging.warning("SmartAPI websocket closed.")
+        self.feed_monitor.on_disconnect(reason="SmartAPI websocket closed")
         if not self._shutdown_requested:
             logging.info("Connection dropped. Reconnect supervisor will retry.")
 
@@ -825,6 +1002,10 @@ class AngelOneLiveStream:
             state = self.enforce_lifecycle(ws=ws, current_dt=self.schedule.localize())
             if state in {MarketPhase.SQUARE_OFF, MarketPhase.CLOSED}:
                 return
+
+            # Feed integrity check: detect silent websocket freeze / stale ticks
+            self.feed_monitor.check_heartbeat()
+
             time_module.sleep(5)
 
     def _start_watchdog_thread(self) -> None:
@@ -1017,7 +1198,6 @@ def main() -> None:
     if LIVE_MODE:
         # Real money mode — login to Angel One
         angel_session = angel_login()
-        # angel_session passed to execution engine below
     else:
         logging.info(
             "══════════════════════════════════════════"
@@ -1034,8 +1214,42 @@ def main() -> None:
         logging.info(
             "══════════════════════════════════════════"
         )
+        try:
+            angel_session = angel_login()
+        except Exception as e:
+            logging.warning(f"Paper mode broker session creation skipped / failed: {e}")
 
-    stream = AngelOneLiveStream(angel_session=angel_session)
+    override_sym = os.getenv("TRADING_SYMBOL")
+    if override_sym:
+        logging.info(f"Manual TRADING_SYMBOL override specified: {override_sym}")
+        stream = AngelOneLiveStream(target_symbol=override_sym, angel_session=angel_session)
+        stream.run()
+        return
+
+    # Run the Pre-Market Screener
+    logging.info("Executing Pre-Market Screener across candidate universe...")
+    screen_result = run_premarket_screener(smart_api=angel_session)
+
+    if screen_result.trading_day_status == "NO_TRADE" or screen_result.selected_candidate is None:
+        logging.warning("=" * 70)
+        logging.warning("  🛑 [PREMARKET SCREENER: NO TRADE TODAY]")
+        logging.warning("  No candidate satisfied the ATR%, volume, or price thresholds.")
+        logging.warning("  Zero trade rule active: Bot will sit out this session.")
+        logging.warning("=" * 70)
+        sys.exit(0)
+
+    winner = screen_result.selected_candidate
+    logging.info(
+        f"🎯 Premarket screening winner: {winner.symbol} (Token: {winner.token}) "
+        f"| ATR%: {winner.atr_pct:.2f}% | Spread: {winner.spread_pct:.2f}%"
+    )
+
+    stream = AngelOneLiveStream(
+        target_symbol=winner.symbol,
+        target_token=winner.token,
+        angel_session=angel_session,
+        screener_diagnostic=winner,
+    )
     stream.run()
 
 

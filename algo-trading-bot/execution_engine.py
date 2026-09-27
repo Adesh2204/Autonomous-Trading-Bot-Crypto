@@ -615,15 +615,15 @@ def get_actual_fill_price(
     max_interval: float = 2.0,
 ) -> tuple[Optional[float], int]:
     """
-    Polls Angel One's order book until the given order is confirmed
-    complete, then returns (average_price, filled_qty).
+    Polls Angel One's trade book or order book until the given order is confirmed
+    complete, then returns (weighted_average_price, filled_qty).
 
-    Uses increasing backoff between polls (not fixed-interval) to avoid
-    hitting Angel One's documented rate limits on repeated calls.
+    Supports multi-fill execution:
+      weighted_fill_price = sum(quantity_i * price_i) / sum(quantity_i)
 
+    Uses increasing backoff between polls to avoid hitting Angel One's rate limits.
     Returns (None, 0) and logs a warning if not confirmed within timeout.
-    Callers must NOT silently fall back to the planned price if this
-    returns None -- that's exactly the bug you're fixing.
+    Callers must NOT silently fall back to the planned price if this returns None.
     """
     if smart_api is None or not order_id:
         return None, 0
@@ -631,6 +631,38 @@ def get_actual_fill_price(
     waited = 0.0
     interval = poll_interval
     while waited < timeout_sec:
+        # Check 1: Query tradeBook for multi-fill executions
+        try:
+            if hasattr(smart_api, "tradeBook"):
+                tb_resp = smart_api.tradeBook()
+                tb_data = tb_resp.get("data", []) if isinstance(tb_resp, dict) else []
+                if isinstance(tb_data, list):
+                    order_trades = [
+                        t for t in tb_data
+                        if isinstance(t, dict) and str(t.get("orderid", "")).strip() == str(order_id).strip()
+                    ]
+                    if order_trades:
+                        total_shares = sum(
+                            int(t.get("fillsize") or t.get("shares") or t.get("quantity") or 0)
+                            for t in order_trades
+                        )
+                        if total_shares > 0:
+                            total_val = sum(
+                                float(t.get("fillprice") or t.get("price") or 0.0)
+                                * int(t.get("fillsize") or t.get("shares") or t.get("quantity") or 0)
+                                for t in order_trades
+                            )
+                            weighted_price = round(total_val / total_shares, 4)
+                            if total_shares == expected_qty:
+                                logger.info(
+                                    f"[TRADE BOOK MULTI-FILL] Order {order_id} filled {total_shares} shares "
+                                    f"across {len(order_trades)} fills @ weighted average ₹{weighted_price:.2f}"
+                                )
+                                return weighted_price, total_shares
+        except Exception as e:
+            logger.debug(f"[TRADE BOOK QUERY] Exception checking tradeBook: {e}")
+
+        # Check 2: Query orderBook
         try:
             if hasattr(smart_api, "orderBook"):
                 order_book_resp = smart_api.orderBook()
@@ -661,6 +693,102 @@ def get_actual_fill_price(
         f"complete after {timeout_sec}s -- do not assume a price."
     )
     return None, 0
+
+
+def generate_trade_reconciliation_report(
+    symbol: str,
+    order_id: str,
+    bot_record: dict,
+    broker_record: dict,
+    tolerance: float = RECONCILIATION_TOLERANCE_INTRADAY,
+) -> dict:
+    """
+    Produces structured reconciliation record comparing bot internal fill records
+    against Angel One's broker-confirmed trade data (Section 44 audit spec).
+    """
+    bot_entry = safe_float(bot_record.get("actual_entry_fill_price") or bot_record.get("avg_entry_price"))
+    broker_entry = safe_float(broker_record.get("entry_fill") or broker_record.get("averageprice") or bot_entry)
+
+    bot_exit = safe_float(bot_record.get("actual_exit_fill_price") or bot_record.get("exit_price"))
+    broker_exit = safe_float(broker_record.get("exit_fill") or broker_record.get("averageprice") or bot_exit)
+
+    bot_qty = int(bot_record.get("quantity") or bot_record.get("total_quantity") or 0)
+    broker_qty = int(broker_record.get("quantity") or broker_record.get("filledshares") or bot_qty)
+
+    bot_gross = safe_float(bot_record.get("gross_pnl"))
+    broker_gross = safe_float(broker_record.get("gross_pnl") or broker_record.get("realised") or bot_gross)
+
+    bot_charges = safe_float(bot_record.get("charges") or bot_record.get("statutory_charges") or 0.0)
+    broker_charges = safe_float(broker_record.get("charges") or bot_charges)
+
+    bot_net = safe_float(bot_record.get("net_pnl"))
+    broker_net = safe_float(broker_record.get("net_pnl") or (broker_gross - broker_charges))
+
+    diff_entry = round(abs(bot_entry - broker_entry), 4) if (bot_entry and broker_entry) else 0.0
+    diff_exit = round(abs(bot_exit - broker_exit), 4) if (bot_exit and broker_exit) else 0.0
+    diff_qty = abs(bot_qty - broker_qty)
+    diff_gross = round(abs(bot_gross - broker_gross), 4) if (bot_gross is not None and broker_gross is not None) else 0.0
+    diff_charges = round(abs(bot_charges - broker_charges), 4)
+    diff_net = round(abs(bot_net - broker_net), 4) if (bot_net is not None and broker_net is not None) else 0.0
+
+    matched = (diff_qty == 0) and (diff_gross <= tolerance) and (diff_entry <= tolerance)
+    status_str = "MATCHED" if matched else "MISMATCH"
+
+    report_text = f"""
+TRADE RECONCILIATION
+────────────────────────────────────────
+Symbol:           {symbol}
+Order ID:         {order_id}
+Trade IDs:        {broker_record.get("trade_ids", "N/A")}
+
+BOT RECORD
+  Entry time:     {bot_record.get("entry_time", bot_record.get("timestamp", "N/A"))}
+  Entry quantity: {bot_qty}
+  Entry fill:     ₹{bot_entry:.2f}
+  Exit time:      {bot_record.get("exit_time", bot_record.get("timestamp", "N/A"))}
+  Exit quantity:  {bot_qty}
+  Exit fill:      ₹{bot_exit:.2f}
+  Gross P&L:      ₹{bot_gross:.2f}
+  Charges:        ₹{bot_charges:.2f}
+  Net P&L:        ₹{bot_net:.2f}
+
+BROKER RECORD
+  Entry:          ₹{broker_entry:.2f}
+  Exit:           ₹{broker_exit:.2f}
+  Quantity:       {broker_qty}
+  Charges:        ₹{broker_charges:.2f}
+  Net P&L:        ₹{broker_net:.2f}
+
+DIFFERENCES
+  Entry price:    ₹{diff_entry:.2f}
+  Exit price:     ₹{diff_exit:.2f}
+  Quantity:       {diff_qty}
+  Gross P&L:      ₹{diff_gross:.2f}
+  Charges:        ₹{diff_charges:.2f}
+  Net P&L:        ₹{diff_net:.2f}
+
+STATUS:           {status_str}
+────────────────────────────────────────"""
+
+    if matched:
+        logger.info(report_text)
+    else:
+        logger.error(report_text)
+
+    return {
+        "status": status_str,
+        "matched": matched,
+        "differences": {
+            "entry_price": diff_entry,
+            "exit_price": diff_exit,
+            "quantity": diff_qty,
+            "gross_pnl": diff_gross,
+            "charges": diff_charges,
+            "net_pnl": diff_net,
+        },
+        "report_text": report_text,
+    }
+
 
 
 def alert_human(message: str) -> None:
