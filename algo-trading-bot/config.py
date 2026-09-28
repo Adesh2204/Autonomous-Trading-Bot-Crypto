@@ -5,7 +5,7 @@
 
 # ── UNIVERSE & CANDIDATE POOL ─────────────────────────────────
 # Legacy default fallback (kept for offline tests & backward compatibility)
-SYMBOL = "ENGINERSIN"          # Union Bank of India (Legacy default)
+SYMBOL = "ENGINERSIN"          # Engineers India Ltd (Default fallback)
 EXCHANGE = "NSE"               # unchanged
 TOKEN = "4907"                 # Angel One instrument token for ENGINERSIN
 SEGMENT = 1                   # unchanged (NSE equity)

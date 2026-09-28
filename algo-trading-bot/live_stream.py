@@ -143,6 +143,7 @@ try:
         WATCHLIST_EVALUATION_INTERVAL,
         WATCHLIST_MODE,
         WATCHLIST_SIZE,
+        RUN_PREMARKET_SCREENER,
     )
 except ImportError:
     CANDIDATE_UNIVERSE = []
@@ -162,6 +163,7 @@ except ImportError:
     WATCHLIST_EVALUATION_INTERVAL = 1.0
     WATCHLIST_MODE = True
     WATCHLIST_SIZE = 3
+    RUN_PREMARKET_SCREENER = False
 
 from symbol_state import SymbolExecutionState, SymbolState, create_isolated_symbol_state
 
@@ -1429,37 +1431,49 @@ def main() -> None:
         stream.run()
         return
 
-    # Run the Pre-Market Screener
-    logging.info("Executing Pre-Market Screener across candidate universe...")
-    screen_result = run_premarket_screener(smart_api=angel_session)
+    if RUN_PREMARKET_SCREENER:
+        # Run the Pre-Market Screener
+        logging.info("Executing Pre-Market Screener across candidate universe...")
+        screen_result = run_premarket_screener(smart_api=angel_session)
 
-    if screen_result.trading_day_status == "NO_TRADE" or screen_result.selected_candidate is None:
-        logging.warning("=" * 70)
-        logging.warning("  🛑 [PREMARKET SCREENER: NO TRADE TODAY]")
-        logging.warning("  No candidate satisfied the ATR%, volume, or price thresholds.")
-        logging.warning("  Zero trade rule active: Bot will sit out this session.")
-        logging.warning("=" * 70)
-        sys.exit(0)
+        if screen_result.trading_day_status == "NO_TRADE" or screen_result.selected_candidate is None:
+            logging.warning("=" * 70)
+            logging.warning("  🛑 [PREMARKET SCREENER: NO TRADE TODAY]")
+            logging.warning("  No candidate satisfied the ATR%, volume, or price thresholds.")
+            logging.warning("  Zero trade rule active: Bot will sit out this session.")
+            logging.warning("=" * 70)
+            sys.exit(0)
 
-    winner = screen_result.selected_candidate
-    watchlist = screen_result.watchlist if WATCHLIST_MODE else ([winner] if winner else [])
-    logging.info(
-        f"🎯 Premarket screening winner: {winner.symbol} (Token: {winner.token}) "
-        f"| ATR%: {winner.atr_pct:.2f}% | Spread: {winner.spread_pct:.2f}%"
-    )
-    if WATCHLIST_MODE and len(watchlist) > 1:
+        winner = screen_result.selected_candidate
+        watchlist = screen_result.watchlist if WATCHLIST_MODE else ([winner] if winner else [])
         logging.info(
-            f"🎯 Phase 5 Watchlist: {[c.trading_symbol for c in watchlist]} ({len(watchlist)} symbols)"
+            f"🎯 Premarket screening winner: {winner.symbol} (Token: {winner.token}) "
+            f"| ATR%: {winner.atr_pct:.2f}% | Spread: {winner.spread_pct:.2f}%"
         )
+        if WATCHLIST_MODE and len(watchlist) > 1:
+            logging.info(
+                f"🎯 Phase 5 Watchlist: {[c.trading_symbol for c in watchlist]} ({len(watchlist)} symbols)"
+            )
 
-    stream = AngelOneLiveStream(
-        target_symbol=winner.symbol,
-        target_token=winner.token,
-        angel_session=angel_session,
-        screener_diagnostic=winner,
-        watchlist=watchlist,
-    )
-    stream.run()
+        stream = AngelOneLiveStream(
+            target_symbol=winner.symbol,
+            target_token=winner.token,
+            angel_session=angel_session,
+            screener_diagnostic=winner,
+            watchlist=watchlist,
+        )
+        stream.run()
+    else:
+        logging.info(
+            f"⏩ Pre-market screener bypassed (RUN_PREMARKET_SCREENER=False). "
+            f"Using configured default instrument: {DEFAULT_SYMBOL} (Token: {CONFIG_TOKEN})"
+        )
+        stream = AngelOneLiveStream(
+            target_symbol=DEFAULT_SYMBOL,
+            target_token=CONFIG_TOKEN,
+            angel_session=angel_session,
+        )
+        stream.run()
 
 
 if __name__ == "__main__":

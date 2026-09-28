@@ -291,3 +291,11 @@ def test_broker_api_failure_does_not_crash_screening():
     failed = next(d for d in result.diagnostics if d.symbol == "FAILING_STOCK")
     assert not failed.qualified
     assert RejectionReason.BROKER_DATA_ERROR in failed.rejection_reasons
+
+
+def test_premarket_screener_bypass_config():
+    """Verify RUN_PREMARKET_SCREENER is properly configured in config and live_stream."""
+    from config import RUN_PREMARKET_SCREENER, SYMBOL, TOKEN
+    assert isinstance(RUN_PREMARKET_SCREENER, bool)
+    assert SYMBOL == "ENGINERSIN"
+    assert TOKEN == "4907"
