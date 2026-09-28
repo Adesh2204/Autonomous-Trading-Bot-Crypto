@@ -16019,3 +16019,59 @@ Caught SIGINT (Ctrl+C). Initiating graceful shutdown...
 2026-09-28 13:12:40,934 [WARNING]   No candidate satisfied the ATR%, volume, or price thresholds.
 2026-09-28 13:12:40,934 [WARNING]   Zero trade rule active: Bot will sit out this session.
 2026-09-28 13:12:40,934 [WARNING] ======================================================================
+2026-09-28 13:52:12,303 [INFO] ══════════════════════════════════════════
+2026-09-28 13:52:12,311 [INFO]   📄 PAPER TRADING MODE ACTIVE
+2026-09-28 13:52:12,311 [INFO]   No real orders will be placed.
+2026-09-28 13:52:12,311 [INFO]   Set LIVE_MODE=True in config.py to go live.
+2026-09-28 13:52:12,311 [INFO] ══════════════════════════════════════════
+2026-09-28 13:52:12,594 [WARNING] ══════════════════════════════════════════
+2026-09-28 13:52:12,594 [WARNING]   ✅ ANGEL ONE LOGIN SUCCESS
+2026-09-28 13:52:12,594 [WARNING]   Client : AACL221967
+2026-09-28 13:52:12,594 [WARNING]   Mode   : LIVE — REAL MONEY ACTIVE ⚠️
+2026-09-28 13:52:12,594 [WARNING]   Capital: ₹20,000
+2026-09-28 13:52:12,594 [WARNING] ══════════════════════════════════════════
+2026-09-28 13:52:12,594 [INFO] ⏩ Pre-market screener bypassed (RUN_PREMARKET_SCREENER=False). Using configured default instrument: ENGINERSIN (Token: 4907)
+2026-09-28 13:52:12,599 [INFO] ============================================================
+2026-09-28 13:52:12,599 [INFO]   PAPER TRADER INITIALIZED (Multi-Tranche Pyramiding v3)
+2026-09-28 13:52:12,599 [INFO]   Total Capital     : ₹20,000.00
+2026-09-28 13:52:12,599 [INFO]   Working Capital   : ₹10,000.00
+2026-09-28 13:52:12,599 [INFO]   Backup Capital    : ₹10,000.00
+2026-09-28 13:52:12,599 [INFO]   Daily Loss Limit  : ₹400.00
+2026-09-28 13:52:12,600 [INFO]   Risk Per Setup    : ≤ ₹100.00
+2026-09-28 13:52:12,600 [INFO]   Tranche 1 (Base)  : ₹3,300.00 (33%)
+2026-09-28 13:52:12,600 [INFO]   Tranche 2 (Scale1): ₹3,300.00 (33%)
+2026-09-28 13:52:12,600 [INFO]   Tranche 3 (Scale2): ₹3,400.00 (34%)
+2026-09-28 13:52:12,600 [INFO]   Time Stop         : PERMANENTLY DISABLED (MOC Removed)
+2026-09-28 13:52:12,600 [INFO]   Trade Log (CSV)   : /Users/adesh/Desktop/SUPER PROJECTS /Autonomous Trading Bot/algo-trading-bot/trades.csv
+2026-09-28 13:52:12,600 [INFO] ============================================================
+2026-09-28 13:52:12,783 [WARNING] [LOGIN RETRY 1/5] Couldn't parse the JSON response received from the server: b'Access denied because of exceeding access rate' — waiting 30s before retry...
+2026-09-28 13:52:44,550 [INFO] Angel One SmartAPI authenticated successfully.
+2026-09-28 13:52:44,553 [INFO] ============================================================
+2026-09-28 13:52:44,553 [INFO]   STARTING ALGO TRADING BOT — SMARTAPI V2 STREAM
+2026-09-28 13:52:44,553 [INFO]   Authenticated live feed -> CandleBuilder -> Signal Brain -> PaperTrader
+2026-09-28 13:52:44,553 [INFO]   Target Asset      : ENGINERSIN (ENGINERSIN-EQ, Token: 4907)
+2026-09-28 13:52:44,553 [INFO]   Total Capital     : ₹20,000.00
+2026-09-28 13:52:44,553 [INFO]   Working Capital   : ₹10,000.00
+2026-09-28 13:52:44,553 [INFO]   Backup Capital    : ₹10,000.00
+2026-09-28 13:52:44,553 [INFO]   Daily Loss Limit  : ₹400.00
+2026-09-28 13:52:44,553 [INFO]   Risk Per Setup    : ≤ ₹100.00
+2026-09-28 13:52:44,553 [INFO] ============================================================
+2026-09-28 13:52:44,554 [INFO] Tick ingestion consumer thread started.
+2026-09-28 13:52:44,762 [INFO] Websocket connected
+2026-09-28 13:52:44,762 [INFO] WebSocket connection established successfully.
+2026-09-28 13:52:44,763 [INFO] [FEED HEALTH] ENGINERSIN state DISCONNECTED -> RECOVERING. Waiting for fresh ticks.
+2026-09-28 13:52:44,763 [INFO] Subscribed to 1 watchlist token(s): ENGINERSIN (4907) in SnapQuote mode (mode=3).
+2026-09-28 13:52:48,953 [INFO] ✅ [FEED HEALTH] ENGINERSIN state -> HEALTHY. Warmup complete (3 ticks).
+2026-09-28 13:53:01,749 [INFO] [ATR FIREWALL EVAL] Reading: 0.064% < 0.400% | Low Count: 1/2 | Current State: ACTIVE
+2026-09-28 13:53:01,749 [INFO] Candle #1 closed for ENGINERSIN (Rank 1) | O:313.65  H:313.85  L:313.65  C:313.65  V:483  |  ATR_14:0.20  |  State: ACTIVE
+2026-09-28 13:54:01,226 [INFO] [ATR FIREWALL EVAL] Reading: 0.072% < 0.400% | Low Count: 2/2 | Current State: ACTIVE
+2026-09-28 13:54:01,231 [WARNING] ⚠️ [ATR FIREWALL BLOCK] Volatility collapsed (0.072% < 0.400%). Confirmed 2 times. State -> STANDBY. New entries BLOCKED.
+2026-09-28 13:54:01,231 [WARNING] ⚠️ [STATE TRANSITION] ENGINERSIN ACTIVE -> STANDBY (ATR%: 0.072% below threshold 0.350% for 2 consecutive readings)
+2026-09-28 13:54:01,231 [INFO] Candle #2 closed for ENGINERSIN (Rank 1) | O:313.70  H:313.75  L:313.50  C:313.70  V:1359  |  ATR_14:0.23  |  State: STANDBY
+2026-09-28 13:54:01,234 [INFO] [ORCHESTRATOR] Skipping ENGINERSIN (Rank 1): Symbol in STANDBY (low volatility).
+2026-09-28 13:55:02,772 [INFO] [ATR FIREWALL EVAL] Reading: 0.090% < 0.400% | Low Count: 3/2 | Current State: STANDBY
+2026-09-28 13:55:02,777 [INFO] Candle #3 closed for ENGINERSIN (Rank 1) | O:313.70  H:313.75  L:313.35  C:313.35  V:1045  |  ATR_14:0.28  |  State: STANDBY
+2026-09-28 13:55:02,780 [INFO] [ORCHESTRATOR] Skipping ENGINERSIN (Rank 1): Symbol in STANDBY (low volatility).
+2026-09-28 13:55:37,714 [INFO] 
+Caught SIGINT (Ctrl+C). Initiating graceful shutdown...
+2026-09-28 13:55:37,719 [INFO] Shutdown requested: SIGINT (Ctrl+C)
