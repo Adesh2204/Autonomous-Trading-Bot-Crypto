@@ -5,31 +5,63 @@
 
 # ── UNIVERSE & CANDIDATE POOL ─────────────────────────────────
 # Legacy default fallback (kept for offline tests & backward compatibility)
-SYMBOL = "UNIONBANK-EQ"          # Union Bank of India (Legacy default)
+SYMBOL = "ENGINERSIN"          # Union Bank of India (Legacy default)
 EXCHANGE = "NSE"               # unchanged
-TOKEN = "10753"                 # Angel One instrument token for UNIONBANK
+TOKEN = "4907"                 # Angel One instrument token for ENGINERSIN
 SEGMENT = 1                   # unchanged (NSE equity)
 
 # Configured pool of liquid candidate instruments evaluated by run_premarket_screener()
 CANDIDATE_UNIVERSE = [
-    {"symbol": "ONGC", "trading_symbol": "ONGC-EQ", "token": "2475", "exchange": "NSE"},
-    {"symbol": "IFCI", "trading_symbol": "IFCI-EQ", "token": "1491", "exchange": "NSE"},
-    {"symbol": "BANKBARODA", "trading_symbol": "BANKBARODA-EQ", "token": "4668", "exchange": "NSE"},
-    {"symbol": "ADANIPOWER", "trading_symbol": "ADANIPOWER-EQ", "token": "17388", "exchange": "NSE"},
-    {"symbol": "TATASTEEL", "trading_symbol": "TATASTEEL-EQ", "token": "3499", "exchange": "NSE"},
-    {"symbol": "TATAMOTORS", "trading_symbol": "TATAMOTORS-EQ", "token": "3456", "exchange": "NSE"},
-    {"symbol": "ITC", "trading_symbol": "ITC-EQ", "token": "1660", "exchange": "NSE"},
-    {"symbol": "COALINDIA", "trading_symbol": "COALINDIA-EQ", "token": "20374", "exchange": "NSE"},
-    {"symbol": "M&M", "trading_symbol": "M&M-EQ", "token": "2031", "exchange": "NSE"},
-    {"symbol": "YESBANK", "trading_symbol": "YESBANK-EQ", "token": "11915", "exchange": "NSE"},
-    {"symbol": "NTPC", "trading_symbol": "NTPC-EQ", "token": "2977", "exchange": "NSE"},
-    {"symbol": "PNB", "trading_symbol": "PNB-EQ", "token": "10666", "exchange": "NSE"},
-    {"symbol": "SJVN", "trading_symbol": "SJVN-EQ", "token": "18883", "exchange": "NSE"},
-    {"symbol": "NHPC", "trading_symbol": "NHPC-EQ", "token": "11262", "exchange": "NSE"},
-    {"symbol": "UNIONBANK", "trading_symbol": "UNIONBANK-EQ", "token": "10753", "exchange": "NSE"},
+    # Stronger volatility/liquidity candidates
+    {"symbol": "ENGINERSIN", "trading_symbol": "ENGINERSIN-EQ",
+     "token": "4907", "exchange": "NSE"},
+
+    {"symbol": "JIOFIN", "trading_symbol": "JIOFIN-EQ",
+     "token": "18143", "exchange": "NSE"},
+
+    {"symbol": "POWERGRID", "trading_symbol": "POWERGRID-EQ",
+     "token": "14977", "exchange": "NSE"},
+
+    {"symbol": "GAIL", "trading_symbol": "GAIL-EQ",
+     "token": "4717", "exchange": "NSE"},
+
+    {"symbol": "NTPC", "trading_symbol": "NTPC-EQ",
+     "token": "11630", "exchange": "NSE"},
+
+    {"symbol": "ITC", "trading_symbol": "ITC-EQ",
+     "token": "1660", "exchange": "NSE"},
+
+    {"symbol": "WIPRO", "trading_symbol": "WIPRO-EQ",
+     "token": "3787", "exchange": "NSE"},
+
+    {"symbol": "MRPL", "trading_symbol": "MRPL-EQ",
+     "token": "2283", "exchange": "NSE"},
+
+    {"symbol": "PETRONET", "trading_symbol": "PETRONET-EQ",
+     "token": "11351", "exchange": "NSE"},
+
+    {"symbol": "RECLTD", "trading_symbol": "RECLTD-EQ",
+     "token": "15355", "exchange": "NSE"},
+
+    {"symbol": "RVNL", "trading_symbol": "RVNL-EQ",
+     "token": "9552", "exchange": "NSE"},
+
+    # Newer/high-beta candidates (Tokens dynamically resolved from OpenAPIScripMaster.json)
+    {"symbol": "ETERNAL", "trading_symbol": "ETERNAL-EQ",
+     "token": "5097", "exchange": "NSE"},
+
+    {"symbol": "SWIGGY", "trading_symbol": "SWIGGY-EQ",
+     "token": "27066", "exchange": "NSE"},
+
+    {"symbol": "MEESHO", "trading_symbol": "MEESHO-EQ",
+     "token": "760229", "exchange": "NSE"},
+
+    {"symbol": "PINELABS", "trading_symbol": "PINELABS-EQ",
+     "token": "759820", "exchange": "NSE"},
 ]
 
 # ── PRE-MARKET SCREENER CONFIG ────────────────────────────────
+RUN_PREMARKET_SCREENER = False    # Set False to bypass premarket screener and trade default SYMBOL/TOKEN
 SCREEN_MIN_LTP = 150.0            # Minimum Last Traded Price (₹)
 SCREEN_MAX_LTP = 350.0            # Maximum Last Traded Price (₹)
 SCREEN_MIN_ATR_PCT = 0.0040       # Minimum ATR% (0.40% of LTP)
