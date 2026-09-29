@@ -68,8 +68,9 @@ from signal_brain import evaluate_regime_gate, generate_vwap_signal
 # PHASE 1: ORDER EXECUTION & PAYLOAD VALIDATION
 # ==============================================================================
 
-def test_phase1_smartapi_string_payload():
+def test_phase1_smartapi_string_payload(monkeypatch):
     """Verify smartApi.placeOrder() handling when SDK returns a raw string."""
+    monkeypatch.setattr(config, "LIVE_MODE", True)
     mock_angel = MagicMock()
     raw_order_id = "240915000001"
     mock_angel.placeOrder.return_value = raw_order_id
@@ -85,8 +86,9 @@ def test_phase1_smartapi_string_payload():
     assert isinstance(order_id, str), "Order ID must be extracted as string"
 
 
-def test_phase1_smartapi_dict_payload():
+def test_phase1_smartapi_dict_payload(monkeypatch):
     """Verify smartApi.placeOrder() handling when wrapper returns a dictionary."""
+    monkeypatch.setattr(config, "LIVE_MODE", True)
     mock_angel = MagicMock()
 
     # Case A: status = True

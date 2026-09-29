@@ -23,6 +23,7 @@ import pyotp
 from dotenv import load_dotenv
 from SmartApi import SmartConnect
 from SmartApi.smartWebSocketV2 import SmartWebSocketV2
+import config
 from config import LIVE_MODE
 
 # Load .env credentials at startup
@@ -48,6 +49,8 @@ from feed_integrity import FeedHealthMonitor, FeedHealthState, ThreadSafeTickIng
 from premarket_screener import PremarketScreenResult, run_premarket_screener
 from execution_engine import (
     PaperTrader,
+    ReadOnlySmartConnectWrapper,
+    log_execution_mode_banner,
     get_actual_fill_price,
     get_live_capital,
     validate_broker_capital,
@@ -400,9 +403,13 @@ class AngelOneLiveStream:
             reward_to_risk=2.0,
             schedule=self.schedule,
         )
-        self.angel_session: Optional[SmartConnect] = (
-            angel_session if angel_session is not None else (angel_login() if LIVE_MODE else None)
+        raw_session = (
+            angel_session if angel_session is not None else (angel_login() if getattr(config, "LIVE_MODE", False) else None)
         )
+        if not getattr(config, "LIVE_MODE", False) and raw_session is not None and not isinstance(raw_session, ReadOnlySmartConnectWrapper):
+            self.angel_session = ReadOnlySmartConnectWrapper(raw_session)
+        else:
+            self.angel_session = raw_session
         self.paper_trader.angel_session = self.angel_session
 
         self.builder = CandleBuilder(interval_seconds=60, on_candle_close=self.on_candle_close)
@@ -510,8 +517,9 @@ class AngelOneLiveStream:
         self.login()
 
         # Capital Synchronization & Pre-flight RMS Validation
+        is_live = getattr(config, "LIVE_MODE", False)
         session = self.angel_session if self.angel_session is not None else self.smart_api
-        if LIVE_MODE and session is not None:
+        if is_live and session is not None:
             try:
                 is_sufficient, broker_cash = validate_broker_capital(
                     smart_api=session,
@@ -535,9 +543,17 @@ class AngelOneLiveStream:
         else:
             self._day_opening_capital = self.paper_trader.working_capital
 
+        log_execution_mode_banner(
+            live_mode=is_live,
+            client_id=_first_env("ANGEL_CLIENT_ID", "CLIENT_ID") or "UNKNOWN",
+            capital=TOTAL_CAPITAL,
+            working_tranche=getattr(config, "TRANCHE_1_CAPITAL", 3300.00),
+        )
+
+        mode_label = "LIVE TRADING" if is_live else "PAPER TRADING"
         logging.info("=" * 60)
         logging.info("  STARTING ALGO TRADING BOT — SMARTAPI V2 STREAM")
-        logging.info("  Authenticated live feed -> CandleBuilder -> Signal Brain -> PaperTrader")
+        logging.info(f"  Authenticated feed -> CandleBuilder -> Signal Brain -> {mode_label}")
         logging.info(f"  Target Asset      : {self.symbol} ({self.trading_symbol}, Token: {self.token})")
         logging.info(f"  Total Capital     : ₹{TOTAL_CAPITAL:,.2f}")
         logging.info(f"  Working Capital   : ₹{WORKING_CAPITAL:,.2f}")
@@ -1290,24 +1306,10 @@ def angel_login() -> SmartConnect:
             f"Check credentials in .env file."
         )
 
-    logging.warning(
-        "══════════════════════════════════════════"
-    )
-    logging.warning(
-        "  ✅ ANGEL ONE LOGIN SUCCESS"
-    )
-    logging.warning(
-        f"  Client : {client_id}"
-    )
-    logging.warning(
-        f"  Mode   : LIVE — REAL MONEY ACTIVE ⚠️"
-    )
-    logging.warning(
-        f"  Capital: ₹20,000"
-    )
-    logging.warning(
-        "══════════════════════════════════════════"
-    )
+    logging.info(f"✅ Angel One authentication successful for client {client_id}.")
+    is_live = getattr(config, "LIVE_MODE", False)
+    if not is_live and not isinstance(angel, ReadOnlySmartConnectWrapper):
+        angel = ReadOnlySmartConnectWrapper(angel)
     return angel
 
 
@@ -1321,25 +1323,11 @@ def place_live_order(
     """
     Places a real MIS (intraday) MARKET order on NSE
     via Angel One SmartAPI.
-
-    Parameters:
-      angel  : authenticated SmartConnect session
-      symbol : NSE trading symbol (e.g. "ONGC-EQ")
-      token  : Angel One instrument token (e.g. "1594")
-      side   : "BUY" or "SELL"
-      qty    : number of shares
-
-    Returns:
-      order_id (str) on success
-      None on failure (position NOT opened)
-
-    Notes:
-      - producttype "INTRADAY" = MIS (auto square-off)
-      - ordertype "MARKET" = best available price
-      - price "0" required for MARKET orders
-      - EOD auto square-off by bot at 15:20 IST
-      - Angel One also squares off at 15:20 as backup
     """
+    if not getattr(config, "LIVE_MODE", False):
+        logging.critical("🚨 SECURITY BREACH: place_live_order called with LIVE_MODE=False!")
+        raise RuntimeError("CRITICAL ERROR: Attempted to place a live broker order in Paper Mode.")
+
     order_params = {
         "variety":          "NORMAL",
         "tradingsymbol":    symbol,
@@ -1398,35 +1386,31 @@ def place_live_order(
 
 def main() -> None:
     # ── LIVE MODE STARTUP ──────────────────────────────
-    angel_session = None   # default: paper mode
+    is_live = getattr(config, "LIVE_MODE", False)
+    angel_session = None
 
-    if LIVE_MODE:
+    if is_live:
         # Real money mode — login to Angel One
         angel_session = angel_login()
     else:
-        logging.info(
-            "══════════════════════════════════════════"
-        )
-        logging.info(
-            "  📄 PAPER TRADING MODE ACTIVE"
-        )
-        logging.info(
-            "  No real orders will be placed."
-        )
-        logging.info(
-            "  Set LIVE_MODE=True in config.py to go live."
-        )
-        logging.info(
-            "══════════════════════════════════════════"
-        )
         try:
             angel_session = angel_login()
         except Exception as e:
             logging.warning(f"Paper mode broker session creation skipped / failed: {e}")
 
+    log_execution_mode_banner(
+        live_mode=is_live,
+        client_id=_first_env("ANGEL_CLIENT_ID", "CLIENT_ID") or "UNKNOWN",
+        capital=TOTAL_CAPITAL,
+        working_tranche=getattr(config, "TRANCHE_1_CAPITAL", 3300.00),
+    )
+
     override_sym = os.getenv("TRADING_SYMBOL")
     if override_sym:
-        logging.info(f"Manual TRADING_SYMBOL override specified: {override_sym}")
+        logging.warning("=" * 70)
+        logging.warning(f"⚠️  [MANUAL OVERRIDE] Manual TRADING_SYMBOL override specified: {override_sym}")
+        logging.warning(f"🔒  Execution Mode remains strictly: {'LIVE' if is_live else 'SIMULATION / PAPER'}")
+        logging.warning("=" * 70)
         stream = AngelOneLiveStream(target_symbol=override_sym, angel_session=angel_session)
         stream.run()
         return
@@ -1464,10 +1448,11 @@ def main() -> None:
         )
         stream.run()
     else:
-        logging.info(
-            f"⏩ Pre-market screener bypassed (RUN_PREMARKET_SCREENER=False). "
-            f"Using configured default instrument: {DEFAULT_SYMBOL} (Token: {CONFIG_TOKEN})"
-        )
+        logging.warning("=" * 70)
+        logging.warning("⚠️  [MANUAL OVERRIDE] RUN_PREMARKET_SCREENER is set to False!")
+        logging.warning(f"⏩  Bypassing screener; using default instrument: {DEFAULT_SYMBOL} (Token: {CONFIG_TOKEN})")
+        logging.warning(f"🔒  Execution Mode remains strictly: {'LIVE' if is_live else 'SIMULATION / PAPER'}")
+        logging.warning("=" * 70)
         stream = AngelOneLiveStream(
             target_symbol=DEFAULT_SYMBOL,
             target_token=CONFIG_TOKEN,

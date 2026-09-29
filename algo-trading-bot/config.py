@@ -61,7 +61,7 @@ CANDIDATE_UNIVERSE = [
 ]
 
 # ── PRE-MARKET SCREENER CONFIG ────────────────────────────────
-RUN_PREMARKET_SCREENER = False    # Set False to bypass premarket screener and trade default SYMBOL/TOKEN
+RUN_PREMARKET_SCREENER = True     # Master Directive: Active by default; set False only for manual single-symbol override
 SCREEN_MIN_LTP = 150.0            # Minimum Last Traded Price (₹)
 SCREEN_MAX_LTP = 350.0            # Maximum Last Traded Price (₹)
 SCREEN_MIN_ATR_PCT = 0.0040       # Minimum ATR% (0.40% of LTP)
@@ -165,6 +165,7 @@ TRANCHE_3_PCT = 0.34              # 34% of working capital
 TRANCHE_FRACTIONS = [TRANCHE_1_PCT, TRANCHE_2_PCT, TRANCHE_3_PCT]
 MAX_TRANCHES = 3
 PYRAMID_TRIGGER_ATR_MULT = 2.00   # 2.0x ATR above base/previous tranche
+TRANCHE_1_CAPITAL = 3300.00       # Nominal base tranche capital (33% of ₹10,000 working cap)
 
 # ── SHORT SIGNAL PARAMS ──────────────────────────────────────
 SHORT_BAND_MULT = 1.50            # Same as ATR_BAND_MULT (symmetric)

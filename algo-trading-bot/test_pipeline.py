@@ -1562,9 +1562,11 @@ def test_direction_flip_closes_opposite() -> None:
     assert len(trader.trade_log) >= 2
 
 
-def test_smartapi_place_live_order_defensive_parser():
+def test_smartapi_place_live_order_defensive_parser(monkeypatch):
     import sys
     from unittest.mock import MagicMock
+    import config
+    monkeypatch.setattr(config, "LIVE_MODE", True)
     if "pyotp" not in sys.modules:
         sys.modules["pyotp"] = MagicMock()
     if "SmartApi" not in sys.modules:

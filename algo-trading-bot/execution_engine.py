@@ -55,6 +55,7 @@ from datetime import date, datetime
 from typing import Any, Optional, Tuple, Union
 
 from market_schedule import BaseMarketSchedule, NSEMarketSchedule, get_market_schedule
+import config
 
 
 try:
@@ -149,6 +150,67 @@ if (not isinstance(SLIPPAGE_HAIRCUT_PCT, (int, float))
     raise ValueError(
         f"SLIPPAGE_HAIRCUT_PCT must be a finite number >= 0, got: {SLIPPAGE_HAIRCUT_PCT!r}"
     )
+
+
+# ---------------------------------------------------------
+# PHYSICAL API ISOLATION & VISUAL TRUTH INVARIANT
+# ---------------------------------------------------------
+class ReadOnlySmartConnectWrapper:
+    """
+    Defensive proxy wrapping an Angel One SmartConnect instance in Paper Mode.
+    Permits market data streaming / reads, but mechanically blocks placing,
+    modifying, or cancelling orders with an immediate AssertionError.
+    """
+    def __init__(self, target: Any):
+        self._target = target
+
+    def placeOrder(self, *args, **kwargs):
+        raise AssertionError("FATAL: placeOrder invoked while LIVE_MODE is False!")
+
+    def modifyOrder(self, *args, **kwargs):
+        raise AssertionError("FATAL: modifyOrder invoked while LIVE_MODE is False!")
+
+    def cancelOrder(self, *args, **kwargs):
+        raise AssertionError("FATAL: cancelOrder invoked while LIVE_MODE is False!")
+
+    def __getattr__(self, name: str):
+        return getattr(self._target, name)
+
+
+def log_execution_mode_banner(
+    live_mode: bool,
+    client_id: str = "N/A",
+    capital: float = TOTAL_CAPITAL,
+    working_tranche: float = 3300.0,
+) -> None:
+    """
+    Authoritative, centralized execution mode banner logger.
+    Enforces 100% physical reality with zero split-brain contradiction.
+    """
+    if not live_mode:
+        banner = (
+            "\n"
+            "============================================================\n"
+            "📄 EXECUTION MODE : SIMULATION / PAPER TRADING ONLY\n"
+            "🔒 BROKER STATUS  : READ-ONLY MARKET DATA STREAM\n"
+            "🛡️ CAPITAL RISK  : ₹0.00 (ZERO REAL MONEY AT RISK)\n"
+            "🚫 ORDER ROUTING  : PHYSICALLY LOCKED & DISCONNECTED\n"
+            "============================================================"
+        )
+        logger.info(banner)
+    else:
+        banner = (
+            "\n"
+            "================================================================================\n"
+            "⚠️ CRITICAL WARNING: LIVE TRADING ACTIVE — REAL MONEY AT RISK ⚠️\n"
+            f"Client ID     : {client_id}\n"
+            f"Live Capital  : ₹{capital:,.2f}\n"
+            f"Working Tranche: ₹{working_tranche:,.2f}\n"
+            "Order Routing : DIRECT CONNECTION TO ANGEL ONE PRODUCTION EXCHANGE\n"
+            "================================================================================"
+        )
+        logger.warning(banner)
+
 
 
 # ---------------------------------------------------------
@@ -498,6 +560,10 @@ def place_live_order(
     Uses defensive SmartAPI response parser handling string order ID or response dict.
     Integrates automated Broker Order Recovery Protocol for transport/API ambiguities.
     """
+    if not getattr(config, "LIVE_MODE", False):
+        logging.critical("🚨 SECURITY BREACH: place_live_order called with LIVE_MODE=False!")
+        raise RuntimeError("CRITICAL ERROR: Attempted to place a live broker order in Paper Mode.")
+
     global LAST_ORDER_RECOVERY
     LAST_ORDER_RECOVERY = None
 
@@ -706,6 +772,34 @@ def generate_trade_reconciliation_report(
     Produces structured reconciliation record comparing bot internal fill records
     against Angel One's broker-confirmed trade data (Section 44 audit spec).
     """
+    if broker_record.get("status") == "SIMULATED_PAPER_DISCONNECT":
+        status_str = "SIMULATED_PAPER_DISCONNECT"
+        report_text = f"""
+TRADE RECONCILIATION
+────────────────────────────────────────
+Symbol:           {symbol}
+Status:           SIMULATED_PAPER_DISCONNECT
+Broker Real P&L:  ₹0.00
+Orders Placed:    0 | Filled Shares: 0
+────────────────────────────────────────"""
+        logger.info(report_text)
+        return {
+            "status": status_str,
+            "matched": True,
+            "orders_placed": 0,
+            "filled_shares": 0,
+            "broker_real_pnl": 0.0,
+            "differences": {
+                "entry_price": 0.0,
+                "exit_price": 0.0,
+                "quantity": 0,
+                "gross_pnl": 0.0,
+                "charges": 0.0,
+                "net_pnl": 0.0,
+            },
+            "report_text": report_text,
+        }
+
     bot_entry = safe_float(bot_record.get("actual_entry_fill_price") or bot_record.get("avg_entry_price"))
     broker_entry = safe_float(broker_record.get("entry_fill") or broker_record.get("averageprice") or bot_entry)
 
@@ -2151,12 +2245,17 @@ class PaperTrader:
             f"SL: ₹{stop_loss_price:,.2f} | Target: ₹{target_price:,.2f}"
         )
 
+        signal_price = float(entry_price)
+        requested_order_price = float(entry_price)
+        actual_entry_fill = float(entry_price)
+
         # ── LIVE ORDER PLACEMENT ──────────────────────────
-        from config import LIVE_MODE, SYMBOL, TOKEN
+        from config import SYMBOL, TOKEN
+        is_live = getattr(config, "LIVE_MODE", False)
         target_sym = symbol if symbol else SYMBOL
         target_token = TOKEN if target_sym == SYMBOL else ("18883" if "SJVN" in target_sym else ("11915" if "YESBANK" in target_sym else TOKEN))
         session = angel_session if angel_session is not None else getattr(self, "angel_session", None)
-        if LIVE_MODE and session is not None:
+        if is_live and session is not None:
             signal_time = time.time()
             order_id = place_live_order(
                 angel=session,
@@ -2203,6 +2302,7 @@ class PaperTrader:
                 f"(slip ₹{real_entry_price - entry_price:+.2f})"
             )
             entry_price = real_entry_price
+            actual_entry_fill = real_entry_price
             qty = filled_qty
             turnover = entry_price * qty
             friction = self.calculate_entry_leg_charges(qty, entry_price)["total_charges"]
@@ -2219,6 +2319,7 @@ class PaperTrader:
             "trade_id": trade_id,
             "quantity": qty,
             "entry_price": entry_price,
+            "actual_entry_fill": actual_entry_fill,
             "entry_turnover": turnover,
             "entry_friction": friction,
             "timestamp": timestamp,
@@ -2239,6 +2340,11 @@ class PaperTrader:
             "quantity": qty,
             "initial_entry_price": entry_price,
             "average_entry_price": entry_price,
+            "signal_price": signal_price,
+            "requested_order_price": requested_order_price,
+            "actual_entry_fill": actual_entry_fill,
+            "actual_fill_price": actual_entry_fill,
+            "simulated": not is_live,
             "entry_notional": turnover,
             "entry_friction_total": friction,
             "total_cost": total_cost,
@@ -2648,6 +2754,11 @@ class PaperTrader:
             "tranche_number": tranche_num,
             "max_tranches": self.max_tranches,
             "entry_price": round(entry_price, 2),
+            "signal_price": snapshot.get("signal_price", round(entry_price, 2)),
+            "requested_order_price": snapshot.get("requested_order_price", round(entry_price, 2)),
+            "actual_entry_fill": snapshot.get("actual_entry_fill", round(entry_price, 2)),
+            "actual_fill_price": snapshot.get("actual_fill_price", round(entry_price, 2)),
+            "simulated": snapshot.get("simulated", not getattr(config, "LIVE_MODE", False)),
             "quantity": tranche_qty,
             "tranche_quantity": tranche_qty,
             "avg_entry_price": round(snapshot["average_entry_price"], 2),
@@ -2768,9 +2879,10 @@ class PaperTrader:
             side = pos.get("side", "BUY")
 
             # ── LIVE EXIT ORDER PLACEMENT ───────────────────────
-            from config import LIVE_MODE, SYMBOL, TOKEN
+            from config import SYMBOL, TOKEN
+            is_live = getattr(config, "LIVE_MODE", False)
             session = angel_session if angel_session is not None else getattr(self, "angel_session", None)
-            if LIVE_MODE and session is not None:
+            if is_live and session is not None:
                 exit_side = "SELL" if side == "BUY" else "BUY"
                 sym = pos.get("symbol", SYMBOL)
                 tok = pos.get("token", TOKEN)
@@ -2937,8 +3049,8 @@ class PaperTrader:
 
             # Update working capital & daily PnL (with live broker reconciliation if in LIVE_MODE)
             self._daily_pnl += net_pnl
-            recon_status = "SIMULATED"
-            if LIVE_MODE and session is not None:
+            recon_status = "SIMULATED_PAPER_DISCONNECT" if not is_live else "SIMULATED"
+            if is_live and session is not None:
                 trade_context = {
                     "trade_id": pos.get("position_id", "N/A"),
                     "symbol": pos.get("symbol", SYMBOL),
@@ -2968,6 +3080,14 @@ class PaperTrader:
                 "tranches_filled": tranches_filled,
                 "avg_entry_price": round(avg_entry_price, 2),
                 "exit_price": round(exit_price, 2),
+                "signal_price": pos.get("signal_price", round(avg_entry_price, 2)),
+                "requested_order_price": pos.get("requested_order_price", round(avg_entry_price, 2)),
+                "actual_entry_fill": pos.get("actual_entry_fill", round(avg_entry_price, 2)),
+                "actual_exit_fill": round(exit_price, 2),
+                "actual_fill_price": round(exit_price, 2),
+                "orders_placed": tranches_filled if is_live else 0,
+                "filled_shares": total_qty if is_live else 0,
+                "broker_real_pnl": round(gross_pnl, 2) if is_live else 0.0,
                 "total_quantity": total_qty,
                 "quantity": total_qty,
                 "exit_reason": reason,
@@ -3354,6 +3474,34 @@ class PaperTrader:
         return None
 
     @property
+    def open_position(self) -> Optional[dict]:
+        return self._open_position
+
+    @property
+    def actual_entry_fill(self) -> Optional[float]:
+        if self._open_position and "actual_entry_fill" in self._open_position:
+            return float(self._open_position["actual_entry_fill"])
+        if self._trade_log:
+            for item in reversed(self._trade_log):
+                if "actual_entry_fill" in item:
+                    return float(item["actual_entry_fill"])
+                if "avg_entry_price" in item:
+                    return float(item["avg_entry_price"])
+        return None
+
+    @property
+    def actual_exit_fill(self) -> Optional[float]:
+        if self._open_position and "actual_exit_fill" in self._open_position:
+            return float(self._open_position["actual_exit_fill"])
+        if self._trade_log:
+            for item in reversed(self._trade_log):
+                if "actual_exit_fill" in item:
+                    return float(item["actual_exit_fill"])
+                if "exit_price" in item:
+                    return float(item["exit_price"])
+        return None
+
+    @property
     def candles_since_last_exit(self) -> int:
         return self.candles_since_last_sl
 
@@ -3408,7 +3556,8 @@ class PaperTrader:
         logging.info("")
         logging.info("╔══════════════════════════════════════════════════════════╗")
         logging.info(f"║  {ticket_type:<45} {tranche_label}║")
-        logging.info("║           SIMULATED TRADE TICKET                        ║")
+        ticket_header = "LIVE TRADE TICKET" if getattr(config, "LIVE_MODE", False) else "SIMULATED TRADE TICKET"
+        logging.info(f"║           {ticket_header:<46}║")
         logging.info("╠══════════════════════════════════════════════════════════╣")
         logging.info(f"║  Trade ID     :  #{ticket['trade_id']:<39}║")
         logging.info(f"║  Position ID  :  #{ticket['position_id']:<39}║")
