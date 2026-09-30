@@ -20,11 +20,20 @@ from datetime import datetime
 from typing import Any, Optional
 
 import pyotp
+import pandas as pd
 from dotenv import load_dotenv
 from SmartApi import SmartConnect
 from SmartApi.smartWebSocketV2 import SmartWebSocketV2
 import config
 from config import LIVE_MODE
+from pathlib import Path
+import json
+from security_logging import install_broker_secret_filter
+install_broker_secret_filter()
+from execution_safety import InstrumentIdentity, MarketQuote, ExecutionQualityGate, SafetyError, solve_quantity
+from instrument_registry import InstrumentRegistry
+from execution_adapters import PaperExecutionAdapter, SmartAPIExecutionAdapter, BrokerCapabilities
+from opportunity_engine import score_opportunity, same_time_rvol, arbitration_key
 
 # Load .env credentials at startup
 load_dotenv(
@@ -81,6 +90,7 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[logging.FileHandler("trading_bot.log"), logging.StreamHandler()],
 )
+install_broker_secret_filter()
 
 load_dotenv()
 
@@ -103,7 +113,7 @@ def _normalize_bearer_token(token: Optional[str]) -> Optional[str]:
 def _parse_tick_timestamp(value: Any) -> datetime:
     """Parse SmartAPI timestamps to timezone-aware IST datetimes."""
     if value is None or value == "":
-        return to_ist()
+        raise ValueError('MISSING_EXCHANGE_TIMESTAMP')
 
     try:
         if isinstance(value, (int, float)):
@@ -121,118 +131,33 @@ def _parse_tick_timestamp(value: Any) -> datetime:
 
         return to_ist(datetime.fromisoformat(text))
     except (OverflowError, OSError, ValueError, TypeError):
-        return to_ist()
+        raise ValueError('INVALID_EXCHANGE_TIMESTAMP')
 
 
 import signal
 
 
-try:
-    from config import (
-        SYMBOL as DEFAULT_SYMBOL,
-        TOTAL_CAPITAL,
-        WORKING_CAPITAL,
-        BACKUP_CAPITAL,
-        RISK_PER_TRADE,
-        DAILY_LOSS_LIMIT,
-        TOKEN as CONFIG_TOKEN,
-        CANDIDATE_UNIVERSE,
-        MAX_OPEN_POSITIONS,
-        SCREEN_TOP_N,
-        STANDBY_ATR_THRESHOLD,
-        STANDBY_CONFIRMATION_COUNT,
-        STANDBY_RECOVERY_CONFIRMATION_COUNT,
-        STANDBY_RECOVERY_THRESHOLD,
-        WATCHLIST_EVALUATION_INTERVAL,
-        WATCHLIST_MODE,
-        WATCHLIST_SIZE,
-        RUN_PREMARKET_SCREENER,
-    )
-except ImportError:
-    CANDIDATE_UNIVERSE = []
-    DEFAULT_SYMBOL = "ONGC"
-    TOTAL_CAPITAL = 10000.00
-    WORKING_CAPITAL = 5000.00
-    BACKUP_CAPITAL = 5000.00
-    RISK_PER_TRADE = 100.00
-    DAILY_LOSS_LIMIT = 200.00
-    CONFIG_TOKEN = "2475"
-    MAX_OPEN_POSITIONS = 1
-    SCREEN_TOP_N = 3
-    STANDBY_ATR_THRESHOLD = 0.0035
-    STANDBY_CONFIRMATION_COUNT = 2
-    STANDBY_RECOVERY_CONFIRMATION_COUNT = 2
-    STANDBY_RECOVERY_THRESHOLD = 0.0040
-    WATCHLIST_EVALUATION_INTERVAL = 1.0
-    WATCHLIST_MODE = True
-    WATCHLIST_SIZE = 3
-    RUN_PREMARKET_SCREENER = False
-
+from config import (
+    SYMBOL as DEFAULT_SYMBOL,
+    TOTAL_CAPITAL,
+    WORKING_CAPITAL,
+    BACKUP_CAPITAL,
+    RISK_PER_TRADE,
+    DAILY_LOSS_LIMIT,
+    TOKEN as CONFIG_TOKEN,
+    CANDIDATE_UNIVERSE,
+    MAX_OPEN_POSITIONS,
+    SCREEN_TOP_N,
+    STANDBY_ATR_THRESHOLD,
+    STANDBY_CONFIRMATION_COUNT,
+    STANDBY_RECOVERY_CONFIRMATION_COUNT,
+    STANDBY_RECOVERY_THRESHOLD,
+    WATCHLIST_EVALUATION_INTERVAL,
+    WATCHLIST_MODE,
+    WATCHLIST_SIZE,
+    RUN_PREMARKET_SCREENER,
+)
 from symbol_state import SymbolExecutionState, SymbolState, create_isolated_symbol_state
-
-# Liquid NSE cash equity instruments
-INSTRUMENTS = {
-    "ONGC": {
-        "token": "2475",
-        "symbol": "ONGC",
-        "trading_symbol": "ONGC-EQ",
-        "exchange_type": 1,
-    },
-    "IFCI": {
-        "token": "1491",
-        "symbol": "IFCI",
-        "trading_symbol": "IFCI-EQ",
-        "exchange_type": 1,
-    },
-    "BANKBARODA": {
-        "token": "4668",
-        "symbol": "BANKBARODA",
-        "trading_symbol": "BANKBARODA-EQ",
-        "exchange_type": 1,
-    },
-    "ADANIPOWER": {
-        "token": "17388",
-        "symbol": "ADANIPOWER",
-        "trading_symbol": "ADANIPOWER-EQ",
-        "exchange_type": 1,
-    },
-    "TATASTEEL": {
-        "token": "3499",
-        "symbol": "TATASTEEL",
-        "trading_symbol": "TATASTEEL-EQ",
-        "exchange_type": 1,
-    },
-    "TATAMOTORS": {
-        "token": "3456",
-        "symbol": "TATAMOTORS",
-        "trading_symbol": "TATAMOTORS-EQ",
-        "exchange_type": 1,
-    },
-    "ITC": {
-        "token": "1660",
-        "symbol": "ITC",
-        "trading_symbol": "ITC-EQ",
-        "exchange_type": 1,
-    },
-    "COALINDIA": {
-        "token": "20374",
-        "symbol": "COALINDIA",
-        "trading_symbol": "COALINDIA-EQ",
-        "exchange_type": 1,
-    },
-    "M&M": {
-        "token": "2031",
-        "symbol": "M&M",
-        "trading_symbol": "M&M-EQ",
-        "exchange_type": 1,
-    },
-    "YESBANK": {
-        "token": "11915",
-        "symbol": "YESBANK",
-        "trading_symbol": "YESBANK-EQ",
-        "exchange_type": 1,
-    },
-}
 
 
 class AngelOneLiveStream:
@@ -246,6 +171,7 @@ class AngelOneLiveStream:
         angel_session: Optional[SmartConnect] = None,
         screener_diagnostic: Optional[Any] = None,
         watchlist: Optional[List[Any]] = None,
+        registry: Optional[InstrumentRegistry] = None,
     ) -> None:
         self.schedule: BaseMarketSchedule = (
             schedule if schedule is not None else get_market_schedule(os.getenv("MARKET_SCHEDULE", "NSE"))
@@ -253,16 +179,11 @@ class AngelOneLiveStream:
         self.screener_diagnostic = screener_diagnostic
         self._execution_lock = threading.Lock()
 
-        # Build candidate lookup dictionary from CANDIDATE_UNIVERSE
-        universe_map = {}
-        for c in CANDIDATE_UNIVERSE:
-            if isinstance(c, dict):
-                sym_k = c.get("symbol", "").upper()
-                trd_k = c.get("trading_symbol", "").upper()
-                if sym_k:
-                    universe_map[sym_k] = c
-                if trd_k:
-                    universe_map[trd_k] = c
+        self.registry = registry
+        if self.registry is None:
+            master_path = config.INSTRUMENT_MASTER_FILE or str(Path(__file__).parent/'data'/'instruments.json')
+            self.registry = InstrumentRegistry.load(master_path,to_ist())
+        self._cumulative_volumes = {}
 
         # Setup active symbols container (token -> SymbolState)
         self.active_symbols: Dict[str, SymbolState] = {}
@@ -270,10 +191,11 @@ class AngelOneLiveStream:
         if watchlist and len(watchlist) > 0:
             self.watchlist = watchlist[:SCREEN_TOP_N]
             for idx, cand in enumerate(self.watchlist):
-                c_sym = getattr(cand, "symbol", None) or cand.get("symbol", "")
-                c_tok = str(getattr(cand, "token", None) or cand.get("token", ""))
-                c_trd = getattr(cand, "trading_symbol", None) or cand.get("trading_symbol", f"{c_sym}-EQ")
-                c_exch = getattr(cand, "exchange", None) or cand.get("exchange", "NSE")
+                get = cand.get if isinstance(cand,dict) else lambda key,default=None:getattr(cand,key,default)
+                c_sym = get('symbol')
+                identity = get('instrument') or self.registry.resolve(c_sym,get('token'),to_ist())
+                identity.validate(c_sym,get('token'),now=to_ist())
+                c_tok, c_trd, c_exch = identity.token, identity.trading_symbol, identity.exchange
                 c_ex_type = 1
                 state = create_isolated_symbol_state(
                     symbol=c_sym,
@@ -284,6 +206,9 @@ class AngelOneLiveStream:
                     rank=idx + 1,
                     candle_close_callback=self._on_symbol_candle_close,
                 )
+                state.instrument = identity
+                state.volume_profiles = get("volume_profiles",[])
+                state.opportunity_score = get("opportunity_score",0.)
                 state.execution_state = SymbolExecutionState.ACTIVE
                 self.active_symbols[c_tok] = state
         else:
@@ -292,40 +217,9 @@ class AngelOneLiveStream:
             self.target_symbol = str(resolved_sym).upper()
             base_sym = self.target_symbol.replace("-EQ", "")
 
-            if target_token:
-                self.instrument_info = {
-                    "token": str(target_token),
-                    "symbol": base_sym,
-                    "trading_symbol": f"{base_sym}-EQ",
-                    "exchange_type": 1,
-                }
-            elif self.target_symbol in INSTRUMENTS:
-                self.instrument_info = INSTRUMENTS[self.target_symbol]
-            elif base_sym in INSTRUMENTS:
-                self.instrument_info = INSTRUMENTS[base_sym]
-            elif self.target_symbol in universe_map:
-                u_info = universe_map[self.target_symbol]
-                self.instrument_info = {
-                    "token": str(u_info.get("token", CONFIG_TOKEN)),
-                    "symbol": base_sym,
-                    "trading_symbol": u_info.get("trading_symbol", f"{base_sym}-EQ"),
-                    "exchange_type": 1,
-                }
-            elif base_sym in universe_map:
-                u_info = universe_map[base_sym]
-                self.instrument_info = {
-                    "token": str(u_info.get("token", CONFIG_TOKEN)),
-                    "symbol": base_sym,
-                    "trading_symbol": u_info.get("trading_symbol", f"{base_sym}-EQ"),
-                    "exchange_type": 1,
-                }
-            else:
-                self.instrument_info = {
-                    "token": CONFIG_TOKEN,
-                    "symbol": base_sym,
-                    "trading_symbol": f"{base_sym}-EQ",
-                    "exchange_type": 1,
-                }
+            identity = self.registry.resolve(base_sym,target_token,to_ist())
+            self.instrument_info = {'token':identity.token,'symbol':identity.symbol,
+                'trading_symbol':identity.trading_symbol,'exchange_type':1}
 
             single_state = create_isolated_symbol_state(
                 symbol=self.instrument_info["symbol"],
@@ -336,6 +230,7 @@ class AngelOneLiveStream:
                 rank=1,
                 candle_close_callback=self._on_symbol_candle_close,
             )
+            single_state.instrument = identity
             single_state.execution_state = SymbolExecutionState.ACTIVE
             self.active_symbols[single_state.token] = single_state
 
@@ -394,25 +289,26 @@ class AngelOneLiveStream:
         self.auth_token: Optional[str] = None
         self.feed_token: Optional[str] = None
 
-        self.paper_trader = PaperTrader(
-            total_capital=TOTAL_CAPITAL,
-            working_capital_pct=0.50,
-            daily_loss_limit=DAILY_LOSS_LIMIT,
-            risk_per_trade=RISK_PER_TRADE,
-            stop_loss_pct=0.005,
-            reward_to_risk=2.0,
-            schedule=self.schedule,
-        )
-        raw_session = (
-            angel_session if angel_session is not None else (angel_login() if getattr(config, "LIVE_MODE", False) else None)
-        )
-        if not getattr(config, "LIVE_MODE", False) and raw_session is not None and not isinstance(raw_session, ReadOnlySmartConnectWrapper):
-            self.angel_session = ReadOnlySmartConnectWrapper(raw_session)
+        raw_session = angel_session
+        is_live = getattr(config,'LIVE_MODE',False)
+        if is_live:
+            if not config.LIVE_VALIDATION_APPROVED or not config.BROKER_CAPABILITY_FILE:
+                raise SafetyError('LIVE_EXECUTION_BLOCKED')
+            if raw_session is None:raise SafetyError('BROKER_DATA_UNAVAILABLE')
+            capability_data=json.loads(Path(config.BROKER_CAPABILITY_FILE).read_text())
+            capability_data['verified_until']=datetime.fromisoformat(capability_data['verified_until'])
+            adapter=SmartAPIExecutionAdapter(raw_session,BrokerCapabilities(**capability_data),to_ist)
         else:
-            self.angel_session = raw_session
-        self.paper_trader.angel_session = self.angel_session
+            adapter=PaperExecutionAdapter()
+            if raw_session is not None and not isinstance(raw_session,ReadOnlySmartConnectWrapper):
+                raw_session=ReadOnlySmartConnectWrapper(raw_session)
+        self.angel_session=raw_session
+        self.paper_trader = PaperTrader(total_capital=TOTAL_CAPITAL,working_capital_pct=.50,
+            daily_loss_limit=DAILY_LOSS_LIMIT,risk_per_trade=RISK_PER_TRADE,schedule=self.schedule,
+            environment='LIVE' if is_live else config.EXECUTION_ENVIRONMENT,adapter=adapter)
+        self.paper_trader.angel_session=raw_session
 
-        self.builder = CandleBuilder(interval_seconds=60, on_candle_close=self.on_candle_close)
+        self.builder = primary.builder
 
         self._shutdown_requested = False
         self._eod_square_off_done = False
@@ -547,7 +443,7 @@ class AngelOneLiveStream:
             live_mode=is_live,
             client_id=_first_env("ANGEL_CLIENT_ID", "CLIENT_ID") or "UNKNOWN",
             capital=TOTAL_CAPITAL,
-            working_tranche=getattr(config, "TRANCHE_1_CAPITAL", 3300.00),
+            working_tranche=config.WORKING_CAPITAL,
         )
 
         mode_label = "LIVE TRADING" if is_live else "PAPER TRADING"
@@ -732,196 +628,83 @@ class AngelOneLiveStream:
         """Legacy entry point routing candle close to primary symbol."""
         self._on_symbol_candle_close(self.symbol, self.token, df)
 
-    def _evaluate_watchlist_orchestrator(
-        self,
-        triggered_by_symbol: Optional[str] = None,
-        evaluation_time: Optional[datetime] = None,
-    ) -> None:
-        """
-        Phase 5 Watchlist Execution Orchestrator:
-        1. Observes all symbols.
-        2. Filters unsafe symbols (STANDBY, degraded feed, ERROR, BLOCKED).
-        3. Evaluates symbols in strict premarket ranking order (Rank 1 -> Rank 2 -> Rank 3).
-        4. Finds actionable signal via unmodified signal_brain.
-        5. Applies global position limit (MAX_OPEN_POSITIONS = 1) under lock.
-        6. Applies symbol's isolated ATR firewall.
-        7. Executes trade via existing execution engine.
-        8. Halts candidate search upon first valid execution (One-cycle rule).
-        """
+    def _evaluate_watchlist_orchestrator(self,triggered_by_symbol=None,evaluation_time=None):
         with self._execution_lock:
-            # 1. Global Position Gate
-            if self.paper_trader.has_open_position:
-                logging.debug(
-                    "[ORCHESTRATOR] Global position limit occupied (has_open_position=True). "
-                    "Skipping entry search."
-                )
-                return
-
-            current_time = to_ist(evaluation_time) if evaluation_time is not None else to_ist()
-            if not can_enter_new_positions(current_time):
-                logging.info(
-                    "Signal rejected - entries are disabled in %s after the 15:15 IST cutoff.",
-                    get_market_state(current_time).value,
-                )
-                return
-
-
-            # 2. Evaluate in strict premarket ranking order
-            sorted_states = sorted(self.active_symbols.values(), key=lambda s: s.rank)
-
-            for state in sorted_states:
-                # 3. Candidate Filters
-                if state.execution_state == SymbolExecutionState.STANDBY:
-                    logging.info(
-                        f"[ORCHESTRATOR] Skipping {state.symbol} (Rank {state.rank}): "
-                        "Symbol in STANDBY (low volatility)."
-                    )
-                    continue
-
-                if state.feed_monitor.state != FeedHealthState.HEALTHY:
-                    logging.warning(
-                        f"[ORCHESTRATOR] Skipping {state.symbol} (Rank {state.rank}): "
-                        f"Feed not healthy ({state.feed_monitor.state.value})."
-                    )
-                    continue
-
-                if state.execution_state in (SymbolExecutionState.BLOCKED, SymbolExecutionState.ERROR):
-                    logging.info(
-                        f"[ORCHESTRATOR] Skipping {state.symbol} (Rank {state.rank}): "
-                        f"Symbol in state {state.execution_state.value}."
-                    )
-                    continue
-
-                if state.current_candle_df is None or len(state.current_candle_df) < 15:
-                    logging.debug(
-                        f"[ORCHESTRATOR] Skipping {state.symbol} (Rank {state.rank}): "
-                        "Insufficient candles for signal evaluation."
-                    )
-                    continue
-
+            now=to_ist(evaluation_time) if evaluation_time is not None else to_ist()
+            trader=self.paper_trader
+            existing=trader.open_position if trader.has_open_position else None
+            if existing is None and not self.schedule.can_enter_new_positions(now):
+                trader._event('REJECTED',reason='ENTRY_CUTOFF_REACHED'); return
+            candidates=[]
+            for state in sorted(self.active_symbols.values(),key=lambda x:(x.rank,x.symbol)):
+                side=None; atr=None; ref=None
                 try:
-                    df = state.current_candle_df.copy()
-                    result = generate_vwap_signal(df)
-                    latest = result.iloc[-1]
-                    atr_val = float(latest.get("ATR_14", float("nan")))
-
-                    # Directional bias detection
-                    daily_bias = detect_daily_bias(result)
-
-                    is_pullback = bool(latest.get("Buy_Signal"))
-                    is_breakout = bool(latest.get("Breakout_Signal"))
-                    is_short_pullback = bool(latest.get("Sell_Signal"))
-                    is_short_breakdown = bool(latest.get("Breakdown_Sell_Signal"))
-
-                    if daily_bias == "LONG_BIAS":
-                        is_short_pullback = False
-                        is_short_breakdown = False
-                    elif daily_bias == "SHORT_BIAS":
-                        is_pullback = False
-                        is_breakout = False
-
-                    has_long = is_pullback or is_breakout
-                    has_short = is_short_pullback or is_short_breakdown
-
-                    if not (has_long or has_short):
-                        continue
-
-                    # 4. ATR Firewall Pre-Entry Gating (isolated per symbol)
-                    pre_eval = state.atr_firewall.validate_pre_entry(
-                        atr=atr_val,
-                        ltp=float(latest["Close"]),
-                        feed_health=state.feed_monitor.state.value,
-                        spread_pct=state.last_spread_pct,
-                        depth_available=state.last_depth_available,
-                        is_new_entry=True,
-                    )
-                    if not pre_eval.execution_allowed:
-                        logging.warning(
-                            f"🛑 [FIREWALL GATE BLOCKED] {state.symbol} (Rank {state.rank}) "
-                            f"{'LONG' if has_long else 'SHORT'} rejected: {pre_eval.rejection_reason} "
-                            f"| ATR%: {pre_eval.atr_pct:.3f}% | Feed: {pre_eval.feed_health}"
-                        )
-                        continue
-
-                    # 5. Global Position Re-Check before execution
-                    if self.paper_trader.has_open_position:
-                        logging.warning(
-                            f"🛑 [GLOBAL POSITION BLOCK] {state.symbol} (Rank {state.rank}) blocked: "
-                            "Position already open."
-                        )
-                        break
-
-                    # 6. Execute Trade via Existing Engine
-                    self.paper_trader.update_daily_bias(daily_bias)
-                    if has_long:
-                        sig_type = "BREAKOUT" if (is_breakout and not is_pullback) else "PULLBACK"
-                        sig_banner = (
-                            "🚀  VWAP BREAKOUT BUY SIGNAL [BREAKOUT_LONG]"
-                            if sig_type == "BREAKOUT"
-                            else "🚀  VWAP PULLBACK BUY SIGNAL [PULLBACK_LONG]"
-                        )
-                        logging.info("🚀 ════════════════════════════════════════════════════════")
-                        logging.info(
-                            f"🚀  WATCHLIST ORCHESTRATOR EXECUTION: {state.symbol} (Rank {state.rank}) "
-                            f"{sig_banner} @ VWAP {latest['VWAP']:.2f} (ATR: {atr_val:.2f}) | Bias: {daily_bias}"
-                        )
-                        logging.info("🚀 ════════════════════════════════════════════════════════")
-                        self.paper_trader.execute_trade(
-                            {
-                                "VWAP": float(latest["VWAP"]),
-                                "Close": float(latest["Close"]),
-                                "symbol": state.symbol,
-                                "ATR_14": atr_val,
-                                "atr": atr_val,
-                                "signal_type": f"[{sig_type}_LONG]",
-                            },
-                            timestamp=current_time,
-                            atr_14=atr_val,
-                            side="BUY",
-                            angel_session=self.angel_session,
-                        )
-                    elif has_short:
-                        sig_type = "BREAKDOWN" if (is_short_breakdown and not is_short_pullback) else "PULLBACK"
-                        sig_banner = (
-                            "🔻  VWAP BREAKDOWN SELL SIGNAL [BREAKDOWN_SHORT]"
-                            if sig_type == "BREAKDOWN"
-                            else "🔻  VWAP PULLBACK SELL SIGNAL [PULLBACK_SHORT]"
-                        )
-                        logging.info("🔻 ════════════════════════════════════════════════════════")
-                        logging.info(
-                            f"🔻  WATCHLIST ORCHESTRATOR EXECUTION: {state.symbol} (Rank {state.rank}) "
-                            f"{sig_banner} @ VWAP {latest['VWAP']:.2f} (ATR: {atr_val:.2f}) | Bias: {daily_bias}"
-                        )
-                        logging.info("🔻 ════════════════════════════════════════════════════════")
-                        self.paper_trader.execute_trade(
-                            {
-                                "VWAP": float(latest["VWAP"]),
-                                "Close": float(latest["Close"]),
-                                "symbol": state.symbol,
-                                "ATR_14": atr_val,
-                                "atr": atr_val,
-                                "signal_type": f"[{sig_type}_SHORT]",
-                            },
-                            timestamp=current_time,
-                            atr_14=atr_val,
-                            side="SELL",
-                            angel_session=self.angel_session,
-                        )
-
-                    # 7. One-Cycle Execution Rule: Stop searching!
-                    logging.info(
-                        f"[ORCHESTRATOR] Order placed for {state.symbol} (Rank {state.rank}). "
-                        "One-cycle execution complete. Halting candidate search."
-                    )
-                    break
-
+                    if state.execution_state!=SymbolExecutionState.ACTIVE:raise SafetyError('SYMBOL_NOT_ACTIVE')
+                    if state.feed_monitor.state!=FeedHealthState.HEALTHY:raise SafetyError('NO_MARKET_DATA')
+                    if state.current_candle_df is None or len(state.current_candle_df)<15:raise SafetyError('WARMUP')
+                    result=generate_vwap_signal(state.current_candle_df.copy())
+                    latest=result.iloc[-1]; bias=detect_daily_bias(result)
+                    candle_time=to_ist(pd.Timestamp(latest['Timestamp']).to_pydatetime())
+                    if not 0 <= (now-candle_time).total_seconds() <= config.CLOSED_SIGNAL_MAX_AGE_SECONDS:
+                        raise SafetyError('STALE_SIGNAL_CANDLE')
+                    long=bool(latest.get('Buy_Signal')) or bool(latest.get('Breakout_Signal'))
+                    short=bool(latest.get('Sell_Signal')) or bool(latest.get('Breakdown_Sell_Signal'))
+                    if bias=='LONG_BIAS':short=False
+                    elif bias=='SHORT_BIAS':long=False
+                    if not (long or short):raise SafetyError('NO_CORE_SIGNAL')
+                    side='BUY' if long else 'SELL'; atr=float(latest['ATR_14']); ref=float(latest['VWAP'])
+                    if existing and (state.token!=existing['token'] or side==existing['side']):
+                        raise SafetyError('POSITION_ALREADY_OPEN')
+                    signal_id=f"{state.token}:{latest['Timestamp']}:{side}"
+                    # An already-evaluated completed bar cannot create repeated orders/events.
+                    if state.last_signal and state.last_signal.get('signal_id')==signal_id:continue
+                    state.last_signal={'signal_id':signal_id}
+                    trader._event('SIGNAL',side=side,symbol=state.symbol,signal_id=signal_id)
+                    if existing:
+                        # The frozen direction-flip exit precedes consideration of a
+                        # replacement entry. New entry ATR/economic gates still apply.
+                        if state.instrument!=existing['instrument']:raise SafetyError('INSTRUMENT_IDENTITY_MISMATCH')
+                        trader.set_quote(state.instrument,state.quote)
+                        result=trader.close_position(float(latest['Close']),now,
+                            f"Direction Flip ({existing['side']}→{side})")
+                        if result is None:raise SafetyError('UNKNOWN_BROKER_STATE')
+                        existing=None
+                    if not self.schedule.can_enter_new_positions(now):raise SafetyError('ENTRY_CUTOFF_REACHED')
+                    gate=state.atr_firewall.validate_pre_entry(atr=atr,ltp=float(latest['Close']),
+                        feed_health=state.feed_monitor.state.value,spread_pct=state.last_spread_pct,
+                        depth_available=state.last_depth_available,is_new_entry=True)
+                    if not gate.execution_allowed:raise SafetyError(gate.rejection_reason or 'ATR_FIREWALL')
+                    expected=ExecutionQualityGate().validate(state.quote,side,now)
+                    sign=1 if side=='BUY' else -1; distance=round(config.SL_ATR_MULT*atr,2)
+                    rounded=state.instrument.price(expected*(1+sign*config.SLIPPAGE_HAIRCUT_PCT),side)
+                    expected=rounded/(1+sign*config.SLIPPAGE_HAIRCUT_PCT)
+                    stop=round(ref-sign*distance,2); target=round(ref+sign*2*distance,2)
+                    depth=state.quote.ask_quantity if side=='BUY' else state.quote.bid_quantity
+                    floor=config.MIN_NET_RR_LOW_VOL if atr/ref<config.LOW_VOL_ATR_PCT else config.MIN_NET_RR_NORMAL
+                    economics=solve_quantity(side,expected,stop,target,trader.working_capital,trader.risk_per_trade,
+                        trader.journal.remaining(trader.daily_loss_limit),floor,config.SLIPPAGE_HAIRCUT_PCT,
+                        state.instrument.lot_size,int(depth*config.BEST_LEVEL_MAX_PARTICIPATION),
+                        exit_spread_pct=config.SCREEN_MAX_SPREAD_PCT/2,tick_size=state.instrument.tick_size)
+                    if economics is None:raise SafetyError('NO_ECONOMICALLY_VALID_QUANTITY')
+                    rvol=same_time_rvol(state.cumulative_volume,now.time().replace(tzinfo=None),state.volume_profiles,now.date())
+                    score=score_opportunity(state.cumulative_volume,state.quote.spread_pct*100,depth,atr/ref*100,rvol)
+                    trader._event('WATCHLIST',symbol=state.symbol,components=score.__dict__,rvol=rvol)
+                    payload={'instrument':state.instrument,'quote':state.quote,'symbol':state.symbol,
+                        'token':state.token,'exchange':state.exchange,'VWAP':ref,'Close':float(latest['Close']),
+                        'ATR_14':atr,'signal_type':latest.get('Signal_Type'),
+                        'signal_timestamp':latest['Timestamp'],'signal_id':signal_id}
+                    candidates.append({'payload':payload,'side':side,'bias':bias,
+                        'execution_quality':1-state.quote.spread_pct,'net_rr':economics.net_rr,
+                        'depth':depth,'opportunity_score':score.total,'timestamp':str(latest['Timestamp']),'symbol':state.symbol})
+                except SafetyError as exc:
+                    trader._event('REJECTED',reason=str(exc),symbol=state.symbol,
+                        side=side,atr=atr,reference_price=ref,
+                        candle=state.current_candle_df.iloc[-1].to_dict() if state.current_candle_df is not None and len(state.current_candle_df) else {})
                 except Exception as exc:
-                    state.mark_error(str(exc))
-                    logging.error(
-                        f"[ORCHESTRATOR ERROR] Error evaluating {state.symbol} (Rank {state.rank}): {exc}",
-                        exc_info=True,
-                    )
-                    continue
+                    state.mark_error(str(exc)); trader._event('EXCEPTION',symbol=state.symbol,reason=type(exc).__name__)
+            for candidate in sorted(candidates,key=arbitration_key):
+                trader.update_daily_bias(candidate['bias'])
+                if trader.execute_trade(candidate['payload'],timestamp=now,side=candidate['side'],angel_session=self.angel_session):break
 
     def _extract_tick_fields(self, data: dict) -> tuple[float, int, datetime, Optional[float], Optional[float], bool]:
         """Extract LTP, actual trade volume (without fake fallback), timestamp, best bid, best ask, and depth availability from SmartAPI data."""
@@ -932,7 +715,7 @@ class AngelOneLiveStream:
             raise ValueError(f"Invalid SmartAPI tick payload: missing last_traded_price ({data!r})")
 
         raw_price = float(raw_price)
-        price = raw_price / 100.0 if raw_price > 1000 else raw_price
+        price = raw_price / 100.0 if data.get('last_traded_price') is not None else raw_price
         if price <= 0 or not math.isfinite(price):
             raise ValueError(f"Invalid SmartAPI tick payload: non-positive LTP ({raw_price!r})")
 
@@ -957,28 +740,29 @@ class AngelOneLiveStream:
         # Extract best bid and ask if present
         best_bid: Optional[float] = None
         best_ask: Optional[float] = None
-        depth_available = True
+        depth_available = False
 
         best_5_buy = data.get("best_5_buy_data")
         if isinstance(best_5_buy, list) and len(best_5_buy) > 0 and isinstance(best_5_buy[0], dict):
             b_price = best_5_buy[0].get("price")
             if b_price is not None:
                 raw_b = float(b_price)
-                best_bid = raw_b / 100.0 if raw_b > 1000 else raw_b
+                best_bid = raw_b / 100.0
         elif data.get("buy_price") is not None:
             raw_b = float(data["buy_price"])
-            best_bid = raw_b / 100.0 if raw_b > 1000 else raw_b
+            best_bid = raw_b / 100.0
 
         best_5_sell = data.get("best_5_sell_data")
         if isinstance(best_5_sell, list) and len(best_5_sell) > 0 and isinstance(best_5_sell[0], dict):
             s_price = best_5_sell[0].get("price")
             if s_price is not None:
                 raw_s = float(s_price)
-                best_ask = raw_s / 100.0 if raw_s > 1000 else raw_s
+                best_ask = raw_s / 100.0
         elif data.get("sell_price") is not None:
             raw_s = float(data["sell_price"])
-            best_ask = raw_s / 100.0 if raw_s > 1000 else raw_s
+            best_ask = raw_s / 100.0
 
+        depth_available = bool(best_bid and best_ask)
         return price, volume, timestamp, best_bid, best_ask, depth_available
 
     def _on_data(self, wsapp, data: dict) -> None:
@@ -997,16 +781,25 @@ class AngelOneLiveStream:
             raw_tok = data.get("token")
             tok_str = str(raw_tok).strip() if raw_tok is not None else ""
             if not tok_str:
-                if len(self.active_symbols) == 1:
-                    tok_str = list(self.active_symbols.keys())[0]
-                else:
-                    logging.debug("Tick missing token while multiple symbols active; dropped: %r", data)
-                    return
+                logging.warning('Tick without instrument token rejected'); return
 
             sym_state = self.active_symbols.get(tok_str)
             if sym_state is None:
                 logging.debug("Tick received for unknown token %s; safely dropped.", tok_str)
                 return
+
+            cumulative=data.get('volume_trade_for_the_day',data.get('volume_traded_today'))
+            cumulative=float(cumulative) if cumulative is not None else 0.
+            previous=self._cumulative_volumes.get(tok_str)
+            if cumulative>0:
+                volume=max(0,int(cumulative-previous)) if previous is not None and cumulative>=previous else 0
+                self._cumulative_volumes[tok_str]=cumulative
+            else:
+                volume=0 # Unknown volume does not get invented for VWAP.
+            buys=data.get('best_5_buy_data') or []
+            sells=data.get('best_5_sell_data') or []
+            bid_qty=int(buys[0].get('quantity',0)) if buys else 0
+            ask_qty=int(sells[0].get('quantity',0)) if sells else 0
 
             self.ingestion_queue.enqueue(
                 symbol=sym_state.symbol,
@@ -1018,6 +811,7 @@ class AngelOneLiveStream:
                 best_bid=best_bid,
                 best_ask=best_ask,
                 depth_available=depth_available,
+                bid_quantity=bid_qty,ask_quantity=ask_qty,cumulative_volume=cumulative,
             )
         except Exception as exc:
             logging.error("Error processing SmartAPI data frame: %s | payload=%r", exc, data)
@@ -1062,6 +856,12 @@ class AngelOneLiveStream:
                     symbol_state.last_spread_pct = None
                     symbol_state.last_depth_available = tick.depth_available
 
+                symbol_state.cumulative_volume=tick.cumulative_volume
+                symbol_state.quote=MarketQuote(tick.best_bid or 0.,tick.best_ask or 0.,tick.bid_quantity,tick.ask_quantity,
+                    tick.timestamp,tick.price,tick.cumulative_volume)
+                if symbol_state.instrument is not None:
+                    self.paper_trader.set_quote(symbol_state.instrument,symbol_state.quote)
+
                 # Backward compatibility for primary symbol attributes
                 if symbol_state.token == self.token:
                     self._last_spread_pct = symbol_state.last_spread_pct
@@ -1101,6 +901,7 @@ class AngelOneLiveStream:
     def _on_open(self, wsapp) -> None:
         logging.info("WebSocket connection established successfully.")
         self._retry_attempt = 0
+        self.paper_trader.reconcile_broker('RECONNECT')
         for state in self.active_symbols.values():
             state.feed_monitor.on_connect()
 
@@ -1170,7 +971,6 @@ class AngelOneLiveStream:
         if self._eod_square_off_done:
             return
 
-        self._eod_square_off_done = True
         loc_dt = self.schedule.localize(current_dt)
         logging.info(f"{reason} triggered at {loc_dt.strftime('%H:%M:%S')}.")
         self.paper_trader.cancel_pending_orders(reason)
@@ -1188,6 +988,12 @@ class AngelOneLiveStream:
             except Exception as exc:
                 logging.error(f"[EOD RECONCILIATION ERROR] Failed to compute EOD reconciliation: {exc}")
 
+        flat = not self.paper_trader.has_open_position and self.paper_trader.reconcile_broker('EOD')
+        self.paper_trader.session_report()
+        if not flat:
+            logging.critical('EOD exposure unresolved; entries blocked, operator action required')
+            return
+        self._eod_square_off_done = True
         self.log_daily_summary("Final Daily P&L")
         self.request_shutdown(reason)
 
@@ -1220,7 +1026,7 @@ class AngelOneLiveStream:
             if self._shutdown_requested:
                 return
             state = self.enforce_lifecycle(ws=ws, current_dt=self.schedule.localize())
-            if state in {MarketPhase.SQUARE_OFF, MarketPhase.CLOSED}:
+            if state in {MarketPhase.SQUARE_OFF, MarketPhase.CLOSED} and self._eod_square_off_done:
                 return
 
             # Feed integrity check: detect silent websocket freeze / stale ticks across all symbols
@@ -1302,7 +1108,7 @@ def angel_login() -> SmartConnect:
     if not session.get("status", False):
         raise Exception(
             f"[LIVE] Angel One login FAILED. "
-            f"Response: {session}. "
+            f"Broker authentication rejected. "
             f"Check credentials in .env file."
         )
 
@@ -1313,75 +1119,37 @@ def angel_login() -> SmartConnect:
     return angel
 
 
-def place_live_order(
-    angel: SmartConnect,
-    symbol: str,
-    token: str,
-    side: str,
-    qty: int,
-) -> str | None:
-    """
-    Places a real MIS (intraday) MARKET order on NSE
-    via Angel One SmartAPI.
-    """
-    if not getattr(config, "LIVE_MODE", False):
-        logging.critical("🚨 SECURITY BREACH: place_live_order called with LIVE_MODE=False!")
-        raise RuntimeError("CRITICAL ERROR: Attempted to place a live broker order in Paper Mode.")
+def place_live_order(angel,symbol,token,side,qty,**kwargs):
+    from execution_engine import place_live_order as protected_order
+    return protected_order(angel,symbol,token,side,qty,**kwargs)
 
-    order_params = {
-        "variety":          "NORMAL",
-        "tradingsymbol":    symbol,
-        "symboltoken":      token,
-        "transactiontype":  side,           # "BUY" / "SELL"
-        "exchange":         "NSE",
-        "ordertype":        "MARKET",
-        "producttype":      "INTRADAY",     # MIS
-        "duration":         "DAY",
-        "price":            "0",            # MARKET = 0
-        "squareoff":        "0",
-        "stoploss":         "0",
-        "quantity":         str(qty),
-    }
 
-    # ---------------------------------------------------------
-    # DEFENSIVE SMARTAPI RESPONSE PARSER (DO NOT ALTER LOGIC)
-    # ---------------------------------------------------------
+def record_screening_report(result=None,reason=None,output_dir=None,now=None):
+    """Record a zero-trade session too, without constructing an execution engine."""
+    from safety_journal import SafetyJournal
+    current=now or to_ist()
+    environment='LIVE' if config.LIVE_MODE else config.EXECUTION_ENVIRONMENT
+    base=Path(output_dir) if output_dir else Path(__file__).parent/'data'/environment.lower()
+    base.mkdir(parents=True,exist_ok=True)
+    journal=SafetyJournal(base/'trades.sqlite3',environment)
+    journal.start_day(current.date())
     try:
-        response = angel.placeOrder(order_params)
-        order_id = None
-
-        # Case 1: Standard SDK returns order ID as a raw string
-        if isinstance(response, str) and response.strip():
-            order_id = response.strip()
-            logging.info(f"[LIVE ORDER PLACED] Successfully routed. Order ID: {order_id}")
-            logging.warning(
-                f"[LIVE ORDER ✅] {side} {qty} {symbol} "
-                f"| OrderID: {order_id}"
-            )
-            return order_id
-
-        # Case 2: Wrapper/SDK returns a response dictionary
-        elif isinstance(response, dict):
-            if response.get("status") is True or response.get("success") is True:
-                data_payload = response.get("data") or {}
-                order_id = data_payload.get("orderid") if isinstance(data_payload, dict) else str(data_payload)
-                logging.info(f"[LIVE ORDER PLACED] Successfully routed. Order ID: {order_id}")
-                logging.warning(
-                    f"[LIVE ORDER ✅] {side} {qty} {symbol} "
-                    f"| OrderID: {order_id}"
-                )
-                return order_id
-            else:
-                err_msg = response.get("message", "Unknown broker error")
-                logging.error(f"[LIVE ORDER REJECTED] Broker returned failure: {err_msg}")
-                return None
-        else:
-            logging.error(f"[LIVE ORDER ERROR] Unexpected response payload type: {type(response)} -> {response}")
-            return None
-
-    except Exception as e:
-        logging.error(f"[LIVE ORDER EXCEPTION] Failed during placeOrder execution: {str(e)}")
-        return None
+        if reason:journal.event(f'{current.date()}:startup:{reason}','REJECTED',{'reason':reason})
+        if result:
+            for candidate in result.diagnostics:
+                prefix=f'{current.date()}:{candidate.symbol}'
+                journal.event(prefix+':screen','SCREENED',{'symbol':candidate.symbol,'qualified':candidate.qualified,
+                    'opportunity_score':candidate.opportunity_score,'rejections':candidate.rejection_reasons})
+                if candidate.qualified:journal.event(prefix+':tradeable','TRADEABLE',{'symbol':candidate.symbol})
+                for rejection in candidate.rejection_reasons:
+                    journal.event(prefix+':'+str(rejection),'REJECTED',{'symbol':candidate.symbol,'reason':str(rejection),'stage':'SCREENING'})
+            for rank,candidate in enumerate(result.watchlist,1):
+                journal.event(f'{current.date()}:{candidate.symbol}:watchlist','WATCHLIST',{'symbol':candidate.symbol,
+                    'rank':rank,'components':candidate.opportunity_components,'rvol_history_sessions':len(candidate.volume_profiles)})
+        report=journal.report()
+        (base/'trades.report.json').write_text(json.dumps(report,indent=2,default=str))
+        return report
+    finally:journal.close()
 
 
 def main() -> None:
@@ -1402,8 +1170,20 @@ def main() -> None:
         live_mode=is_live,
         client_id=_first_env("ANGEL_CLIENT_ID", "CLIENT_ID") or "UNKNOWN",
         capital=TOTAL_CAPITAL,
-        working_tranche=getattr(config, "TRANCHE_1_CAPITAL", 3300.00),
+        working_tranche=config.WORKING_CAPITAL,
     )
+
+    master_path=config.INSTRUMENT_MASTER_FILE or str(Path(__file__).parent/'data'/'instruments.json')
+    try:
+        try:registry=InstrumentRegistry.load(master_path,to_ist())
+        except (SafetyError,FileNotFoundError):
+            from refresh_instruments import refresh_registry
+            registry=refresh_registry(angel_session,master_path,to_ist())
+    except Exception as exc:
+        logging.error('NO_TRADE: instrument/eligibility source unavailable (%s)',type(exc).__name__)
+        record_screening_report(reason='INSTRUMENT_SOURCE_UNAVAILABLE')
+        return
+    universe=registry.candidates([c['symbol'] for c in CANDIDATE_UNIVERSE])
 
     override_sym = os.getenv("TRADING_SYMBOL")
     if override_sym:
@@ -1411,14 +1191,15 @@ def main() -> None:
         logging.warning(f"⚠️  [MANUAL OVERRIDE] Manual TRADING_SYMBOL override specified: {override_sym}")
         logging.warning(f"🔒  Execution Mode remains strictly: {'LIVE' if is_live else 'SIMULATION / PAPER'}")
         logging.warning("=" * 70)
-        stream = AngelOneLiveStream(target_symbol=override_sym, angel_session=angel_session)
+        stream = AngelOneLiveStream(target_symbol=override_sym, angel_session=angel_session,registry=registry)
         stream.run()
         return
 
     if RUN_PREMARKET_SCREENER:
         # Run the Pre-Market Screener
         logging.info("Executing Pre-Market Screener across candidate universe...")
-        screen_result = run_premarket_screener(smart_api=angel_session)
+        screen_result = run_premarket_screener(smart_api=angel_session,universe=universe)
+        record_screening_report(screen_result)
 
         if screen_result.trading_day_status == "NO_TRADE" or screen_result.selected_candidate is None:
             logging.warning("=" * 70)
@@ -1444,18 +1225,19 @@ def main() -> None:
             target_token=winner.token,
             angel_session=angel_session,
             screener_diagnostic=winner,
-            watchlist=watchlist,
+            watchlist=watchlist,registry=registry,
         )
         stream.run()
     else:
         logging.warning("=" * 70)
         logging.warning("⚠️  [MANUAL OVERRIDE] RUN_PREMARKET_SCREENER is set to False!")
-        logging.warning(f"⏩  Bypassing screener; using default instrument: {DEFAULT_SYMBOL} (Token: {CONFIG_TOKEN})")
+        logging.warning(f"Configured symbol requires verified registry resolution: {DEFAULT_SYMBOL}")
         logging.warning(f"🔒  Execution Mode remains strictly: {'LIVE' if is_live else 'SIMULATION / PAPER'}")
         logging.warning("=" * 70)
         stream = AngelOneLiveStream(
             target_symbol=DEFAULT_SYMBOL,
-            target_token=CONFIG_TOKEN,
+            target_token=registry.resolve(DEFAULT_SYMBOL).token,
+            registry=registry,
             angel_session=angel_session,
         )
         stream.run()

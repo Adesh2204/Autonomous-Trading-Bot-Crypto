@@ -35,157 +35,26 @@ from execution_engine import (
 from live_stream import AngelOneLiveStream, place_live_order as stream_place_live_order
 
 
-def test_paper_mode_banner_and_order_lockout(monkeypatch, caplog):
-    """
-    Test Case 1: Paper Mode Banner & Order Lockout
-    - Ensure LIVE_MODE=False logs ONLY Paper Trading banner.
-    - Assert 'LIVE - REAL MONEY ACTIVE' is NOT in logs.
-    - Assert 'PAPER TRADING ONLY' IS in logs.
-    - Assert mock_session.placeOrder.call_count == 0 upon execute_trade().
-    - Directly calling place_live_order() raises RuntimeError.
-    - Calling placeOrder() on ReadOnlySmartConnectWrapper raises AssertionError.
-    """
-    monkeypatch.setattr(config, "LIVE_MODE", False)
-
-    mock_session = MagicMock()
-
-    # 1. Capture stream / mode banner logs
-    caplog.clear()
-    with caplog.at_level(logging.INFO):
-        log_execution_mode_banner(
-            live_mode=config.LIVE_MODE,
-            client_id="TEST_CLIENT",
-            capital=20000.0,
-            working_tranche=3300.0,
-        )
-
-    log_output = caplog.text
-    assert "LIVE - REAL MONEY ACTIVE" not in log_output
-    assert "ACTIVE — REAL MONEY AT RISK" not in log_output
-    assert "PLACING LIVE ORDER" not in log_output
-    assert "PAPER TRADING ONLY" in log_output
-    assert "SIMULATION / PAPER TRADING ONLY" in log_output
-    assert "PHYSICALLY LOCKED & DISCONNECTED" in log_output
-
-    # 2. Verify ReadOnlySmartConnectWrapper mechanical block
-    wrapper = ReadOnlySmartConnectWrapper(mock_session)
-    with pytest.raises(AssertionError, match="FATAL: placeOrder invoked while LIVE_MODE is False!"):
-        wrapper.placeOrder({"symbol": "SJVN-EQ"})
-    with pytest.raises(AssertionError, match="FATAL: modifyOrder invoked while LIVE_MODE is False!"):
-        wrapper.modifyOrder({"orderid": "123"})
-    with pytest.raises(AssertionError, match="FATAL: cancelOrder invoked while LIVE_MODE is False!"):
-        wrapper.cancelOrder("123")
-
-    # 3. Verify place_live_order raises RuntimeError in Paper Mode
-    with pytest.raises(RuntimeError, match="CRITICAL ERROR: Attempted to place a live broker order in Paper Mode."):
-        place_live_order(mock_session, "SJVN-EQ", "18883", "BUY", 10)
-
-    with pytest.raises(RuntimeError, match="CRITICAL ERROR: Attempted to place a live broker order in Paper Mode."):
-        stream_place_live_order(mock_session, "SJVN-EQ", "18883", "BUY", 10)
-
-    # 4. Verify PaperTrader.execute_trade routes exclusively to internal ledger
-    trader = PaperTrader(total_capital=10000.0, angel_session=wrapper, bypass_friction_gate=True)
-    signal = {
-        "Close": 150.0,
-        "VWAP": 150.0,
-        "symbol": "SJVN-EQ",
-        "token": "18883",
-        "ATR_14": 1.0,
-    }
-    ticket = trader.execute_trade(
-        signal_data=signal,
-        timestamp=datetime.now(timezone.utc),
-        atr_14=1.0,
-        side="BUY",
-    )
-    assert ticket is not None
-    assert mock_session.placeOrder.call_count == 0
-    assert trader.actual_entry_fill == 150.0
-    assert trader.open_position["simulated"] is True
+def test_paper_mode_banner_and_order_lockout(tmp_path,monkeypatch,caplog):
+    monkeypatch.setattr(config,'LIVE_MODE',False)
+    broker=MagicMock()
+    t=paper_trader(tmp_path,angel_session=broker)
+    assert t.execute_trade(payload(),timestamp=NOW)
+    assert t.open_position['simulated'] is True
+    assert t.close_position(300,NOW)['environment']=='TEST'
+    assert not broker.placeOrder.called
+    t.shutdown()
 
 
-def test_live_mode_banner_and_fill_accounting(monkeypatch, caplog):
-    """
-    Test Case 2: Live Mode Banner & Fill Accounting
-    - Set config.LIVE_MODE = True.
-    - Mock Angel One session returning confirmed tradeBook fills (Qty: 20 @ 150.50).
-    - Assert 'CRITICAL WARNING: LIVE TRADING ACTIVE' IS in logs.
-    - Assert 'SIMULATED TRADE TICKET' is NOT in live trade ticket log.
-    - Call execute_trade(); assert place_live_order() executes.
-    - Assert internal actual_entry_fill == 150.50 (matches broker fill, NOT signal price 150.00).
-    """
-    monkeypatch.setattr(config, "LIVE_MODE", True)
-
-    mock_session = MagicMock()
-    mock_session.placeOrder.return_value = "ORD_LIVE_999"
-    mock_session.tradeBook.return_value = {
-        "status": True,
-        "data": [
-            {
-                "orderid": "ORD_LIVE_999",
-                "fillsize": 20,
-                "fillprice": 150.50,
-            }
-        ],
-    }
-    mock_session.orderBook.return_value = {
-        "status": True,
-        "data": [
-            {
-                "orderid": "ORD_LIVE_999",
-                "status": "complete",
-                "filledshares": 20,
-                "averageprice": 150.50,
-            }
-        ],
-    }
-    mock_session.position.return_value = {"status": True, "data": []}
-    mock_session.rmsLimit.return_value = {
-        "status": True,
-        "data": {"net": "25000.00", "availablecash": "25000.00"},
-    }
-
-    # 1. Capture banner log
-    caplog.clear()
-    with caplog.at_level(logging.INFO):
-        log_execution_mode_banner(
-            live_mode=config.LIVE_MODE,
-            client_id="LIVE_CLIENT_01",
-            capital=20000.0,
-            working_tranche=3300.0,
-        )
-
-    log_output = caplog.text
-    assert "CRITICAL WARNING: LIVE TRADING ACTIVE" in log_output
-    assert "REAL MONEY AT RISK" in log_output
-    assert "DIRECT CONNECTION TO ANGEL ONE PRODUCTION EXCHANGE" in log_output
-
-    # 2. Execute live trade
-    trader = PaperTrader(total_capital=10000.0, angel_session=mock_session, bypass_friction_gate=True)
-    signal = {
-        "Close": 150.0,  # Signal price is 150.00
-        "VWAP": 150.0,
-        "symbol": "SJVN-EQ",
-        "token": "18883",
-        "ATR_14": 1.0,
-    }
-
-    ticket = trader.execute_trade(
-        signal_data=signal,
-        timestamp=datetime.now(timezone.utc),
-        atr_14=1.0,
-        side="BUY",
-        angel_session=mock_session,
-    )
-
-    assert ticket is not None
-    assert mock_session.placeOrder.call_count >= 1
-
-    # Invariant: internal actual_entry_fill must be broker confirmed fill (150.50), NOT signal price (150.00)
-    assert trader.actual_entry_fill == 150.50
-    assert trader.open_position["actual_entry_fill"] == 150.50
-    assert trader.open_position["signal_price"] == 150.00
-    assert trader.open_position["simulated"] is False
+def test_live_mode_banner_and_fill_accounting(tmp_path,monkeypatch,caplog):
+    t,b=live_trader(tmp_path,monkeypatch)
+    assert t.execute_trade(payload(),timestamp=NOW)
+    assert t.open_position['simulated'] is False
+    assert t.open_position['actual_entry_fill']==float(b.orders[0]['averageprice'])
+    summary=t.close_position(300,NOW)
+    assert summary['net_pnl']==round(summary['gross_pnl']-summary['entry_fees']-summary['exit_fees'],2)
+    assert summary['environment']=='LIVE' and b.netqty==0
+    t.shutdown()
 
 
 def test_signal_brain_untouched():
@@ -199,3 +68,7 @@ def test_signal_brain_untouched():
         text=True,
     )
     assert result.returncode == 0, f"signal_brain.py has unauthorized diff:\n{result.stdout}"
+
+from safety_test_support import ScenarioBroker, paper_trader, live_trader, assert_unknown_submission, assert_unknown_exit
+from test_safety_v6 import NOW, IDENTITY, payload, quote
+from execution_safety import SafetyError, MarketQuote, solve_quantity

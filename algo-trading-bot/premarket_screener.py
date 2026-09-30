@@ -92,6 +92,10 @@ class CandidateDiagnostic:
     data_ok: bool
     qualified: bool
     rejection_reasons: List[str] = field(default_factory=list)
+    instrument: Any = None
+    opportunity_score: float = 0.0
+    opportunity_components: dict = field(default_factory=dict)
+    volume_profiles: list = field(default_factory=list)
 
 
 @dataclass
@@ -353,8 +357,8 @@ def evaluate_candidate(
     if not volume_ok:
         rejection_reasons.append(RejectionReason.VOLUME_INSUFFICIENT)
 
-    # EMA trend filter (requires bullish structure EMA_fast >= EMA_slow)
-    ema_ok = not math.isnan(ema_fast) and not math.isnan(ema_slow) and ema_fast >= ema_slow
+    # Selection is direction-neutral; frozen strategy determines LONG/SHORT.
+    ema_ok = not math.isnan(ema_fast) and not math.isnan(ema_slow)
     if not ema_ok:
         rejection_reasons.append(RejectionReason.EMA_TREND_INVALID)
 
@@ -474,6 +478,16 @@ def run_premarket_screener(
         else:
             diag = evaluate_candidate(candidate=candidate, df=df)
 
+        diag.instrument = candidate.get('instrument')
+        from opportunity_engine import score_opportunity
+        score = score_opportunity(diag.total_volume, diag.spread_pct, 0, diag.atr_pct, reliable=diag.data_ok)
+        diag.opportunity_score = score.total
+        diag.opportunity_components = score.__dict__
+        diag.volume_profiles = list(candidate.get('volume_profiles', []))
+        if df is not None and diag.data_ok:
+            from opportunity_engine import build_volume_profile
+            diag.volume_profiles.append(build_volume_profile(df,target_session))
+
         diagnostics.append(diag)
 
         status_icon = "✅ QUALIFIED" if diag.qualified else "❌ REJECTED"
@@ -490,8 +504,23 @@ def run_premarket_screener(
     rejected = [d for d in diagnostics if not d.qualified]
 
     # Explicit deterministic ranking: sort by ATR% descending
-    qualified.sort(key=lambda x: x.atr_pct, reverse=True)
+    qualified.sort(key=lambda x: (-x.opportunity_score, -x.atr_pct, x.symbol))
     watchlist = qualified[:top_n]
+
+    # Only selected symbols need the extra read-only history calls. Missing sessions
+    # leave RVOL unknown; there is no replacement with a full-day volume estimate.
+    if smart_api is not None:
+        from opportunity_engine import build_volume_profile
+        import config
+        for selected_candidate in watchlist:
+            historical_day=target_session
+            for _ in range(config.OPPORTUNITY_RVOL_SESSIONS-1):
+                historical_day=find_previous_completed_market_session(historical_day,_sched)
+                history=fetch_historical_session_candles(smart_api,selected_candidate.symbol,
+                    selected_candidate.token,selected_candidate.exchange,historical_day)
+                if history is not None and validate_candle_data(history)[0]:
+                    selected_candidate.volume_profiles.append(build_volume_profile(history,historical_day))
+                if pacing_interval>0:time.sleep(pacing_interval)
 
     if watchlist:
         selected = watchlist[0]
@@ -531,4 +560,3 @@ def run_premarket_screener(
         diagnostics=diagnostics,
         watchlist=watchlist,
     )
-

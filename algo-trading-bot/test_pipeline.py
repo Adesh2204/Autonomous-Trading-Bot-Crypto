@@ -688,21 +688,12 @@ def test_seconds_until_market_start_skips_closed_days() -> None:
     assert abs(seconds_until_market_start(open_after_close) - next_delta) < 1.0
 
 
-def test_capital_allocation_and_tranches() -> None:
-    """Verify production capital allocation and 3-stage tranche partitions."""
-    trader = PaperTrader()
-    assert trader.total_capital == 9999.46
-    assert trader.working_capital == 4999.73
-    assert trader.backup_capital == 4999.73
-    assert trader.risk_per_trade == 100.00
-    assert trader.daily_loss_limit == 200.00
-
-    # Tranches: 33%, 33%, 34% of 4999.73
-    assert len(trader.tranche_capitals) == 3
-    assert trader.tranche_capitals[0] == 1649.91
-    assert trader.tranche_capitals[1] == 1649.91
-    assert trader.tranche_capitals[2] == 1699.91
-    assert round(sum(trader.tranche_capitals), 2) == 4999.73
+def test_capital_allocation_and_tranches(tmp_path):
+    t=paper_trader(tmp_path)
+    assert t.total_capital==20000 and t.working_capital==10000 and t.backup_capital==10000
+    assert t.risk_per_trade==100 and t.daily_loss_limit==200
+    assert t.max_tranches==1 and t.tranche_capitals==[10000]
+    t.shutdown()
 
 
 def test_rolling_atr_and_candle_builder_exposure() -> None:
@@ -764,199 +755,50 @@ def test_dynamic_pullback_signal_and_anti_spam_lock() -> None:
     assert bool(signals["Buy_Signal"].iloc[5]) is False
 
 
-def test_multi_tranche_pyramiding_state_machine(tmp_path) -> None:
-    """Test 3-stage pyramiding state machine with zero-risk trailing stop locks."""
-    csv_path = str(tmp_path / "test_pyramid_trades.csv")
-    trader = PaperTrader(
-        total_capital=10017.00,
-        working_capital_pct=0.50,
-        csv_log_path=csv_path,
-        bypass_friction_gate=True,
-    )
-
-    t0 = datetime(2026, 8, 24, 9, 20)
-
-    # ── 1. TRANCHE 1 (Base Entry @ ₹100, ATR=0.50 -> SL dist=1.00)
-    ticket1 = trader.execute_trade(
-        {"VWAP": 100.00, "Close": 100.20, "symbol": "TATASTEEL", "ATR_14": 0.50},
-        timestamp=t0,
-    )
-    assert ticket1 is not None
-    assert trader.state.value == "HOLDING_TRANCHE_1"
-    assert ticket1["tranche_number"] == 1
-    # Quantity: floor(1652.80 / 100) = 16 shares
-    assert ticket1["quantity"] == 16
-    assert trader._open_position["stop_loss_price"] == 99.00   # 100 - 2.0*0.50 = 99.00
-    assert trader._open_position["target_price"] == 102.00      # 100 + 2.0*1.00 = 102.00 (1:2 R:R)
-
-    # ── 2. Guard: Scale-in below 2.0x ATR trigger is rejected ─────────
-    ticket_fail = trader.execute_trade(
-        {"VWAP": 100.50, "Close": 100.50, "symbol": "TATASTEEL", "ATR_14": 0.50},
-        timestamp=t0 + timedelta(minutes=1),
-    )
-    assert ticket_fail is None
-    assert trader.state.value == "HOLDING_TRANCHE_1"
-
-    # ── 3. TRANCHE 2 (Scale 1 @ ₹101.00, gain +₹1.00 = 2.0x ATR) ──────
-    t1 = t0 + timedelta(minutes=2)
-    ticket2 = trader.execute_trade(
-        {"VWAP": 101.00, "Close": 101.00, "symbol": "TATASTEEL", "ATR_14": 0.50},
-        timestamp=t1,
-    )
-    assert ticket2 is not None
-    assert trader.state.value == "HOLDING_TRANCHE_2"
-    assert ticket2["tranche_number"] == 2
-    # Q2: floor(1652.80 / 101.00) = 16 shares
-    assert ticket2["quantity"] == 16
-    assert trader._open_position["quantity"] == 32  # 16 + 16
-
-    # VWAP Avg Entry: (100*16 + 101.00*16)/32 = 100.50
-    assert trader._open_position["average_entry_price"] == 100.50
-    # Zero-Risk Lock: SL trailed to max(P_entry_1=100.00, 100.50*0.995=99.9975) -> 100.00 (Breakeven Floor)
-    assert trader._open_position["stop_loss_price"] == 100.00
-    # Anchored Target: Remains fixed at Tranche 1 target (102.00)
-    assert trader._open_position["target_price"] == 102.00
-
-    # ── 4. TRANCHE 3 (Scale 2 @ ₹102.00, gain +₹1.00 from T2 = 2.0x ATR)
-    t2 = t0 + timedelta(minutes=4)
-    ticket3 = trader.execute_trade(
-        {"VWAP": 102.00, "Close": 102.00, "symbol": "TATASTEEL", "ATR_14": 0.50},
-        timestamp=t2,
-    )
-    assert ticket3 is not None
-    assert trader.state.value == "MAX_TRANCHES_HELD"
-    assert ticket3["tranche_number"] == 3
-    # Q3: floor(1702.90 / 102.00) = 16 shares
-    assert ticket3["quantity"] == 16
-    assert trader._open_position["quantity"] == 48  # 32 + 16
-
-    # VWAP Avg Entry: (100*16 + 101.00*16 + 102.00*16)/48 = 101.00
-    assert trader._open_position["average_entry_price"] == 101.00
-    # Zero-Risk Lock: SL trailed to max(P_entry_2=101.00, 101.00*0.995=100.495) -> 101.00
-    assert trader._open_position["stop_loss_price"] == 101.00
-    # Anchored Target: Remains fixed at Tranche 1 target (102.00)
-    assert trader._open_position["target_price"] == 102.00
-
-    # ── 5. Target Hit Exit @ ₹102.05 (Exits at Anchored Target ₹102.00) ────
-    exit_summary = trader.check_exit(102.05, timestamp=t0 + timedelta(minutes=6))
-    assert exit_summary is not None
-    assert exit_summary["exit_reason"] == "Target Hit"
-    assert exit_summary["tranches_filled"] == 3
-    assert exit_summary["total_quantity"] == 48
-    assert exit_summary["net_pnl"] > 0
-    assert not trader.has_open_position
+def test_multi_tranche_pyramiding_state_machine(tmp_path):
+    t=paper_trader(tmp_path)
+    assert t.execute_trade(payload(),timestamp=NOW)
+    assert t.execute_trade(payload(),timestamp=NOW) is None
+    assert t.open_position['current_tranches']==1
+    with pytest.raises(SafetyError,match='SCALE_IN_DISABLED'):t._execute_tranche_2(payload(),NOW)
+    t.shutdown()
 
 
-def test_no_time_stop_at_40_or_more_candles(tmp_path) -> None:
-    """Verify that all 40-candle / time-stop mechanisms are permanently eliminated."""
-    csv_path = str(tmp_path / "test_no_time_stop.csv")
-    trader = PaperTrader(
-        total_capital=10017.00,
-        working_capital_pct=0.50,
-        csv_log_path=csv_path,
-        bypass_friction_gate=True,
-    )
-    entry_ts = datetime(2026, 8, 24, 9, 20)
-    trader.execute_trade(
-        {"VWAP": 200.00, "Close": 200.20, "symbol": "TATAMOTORS", "ATR_14": 0.6666666666666666},
-        timestamp=entry_ts,
-    )
-    assert trader.has_open_position
-
-    # Simulate 60 candles (beyond 40 candles)
-    for i in range(1, 61):
-        res = trader.notify_candle_close(
-            timestamp=entry_ts + timedelta(minutes=i),
-            latest_price=200.10,
-        )
-        assert res is None
-        assert trader.has_open_position  # Position stays active!
+def test_no_time_stop_at_40_or_more_candles(tmp_path):
+    t=paper_trader(tmp_path)
+    assert t.execute_trade(payload(),timestamp=NOW)
+    for _ in range(45):
+        assert t.notify_candle_close({'Timestamp':NOW,'Close':t.avg_entry_price+1}) is None
+    assert t.has_open_position and t.candles_held==45
+    t.shutdown()
 
 
-def test_exit_priorities_sl_tp_eod(tmp_path) -> None:
-    """Verify strict exit priority: Priority 1 (TP tick) -> Priority 2 (15:20 EOD) -> Candle-Close SL."""
-    csv_path = str(tmp_path / "test_exit_prio.csv")
-
-    # Case 1: Stop Loss Triggered on Confirmed Candle Close (Wick-Immune)
-    trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50, csv_log_path=csv_path, bypass_friction_gate=True)
-    trader.execute_trade(
-        {"VWAP": 100.00, "Close": 100.00, "symbol": "ITC", "ATR_14": 0.3333333333333333},
-        timestamp=datetime(2026, 8, 24, 9, 20),
-    )
-    # Intra-candle tick does NOT exit on SL (Wick Immunity)
-    res_tick_sl = trader.check_exit(99.00, timestamp=datetime(2026, 8, 24, 9, 25))
-    assert res_tick_sl is None
-    assert trader.has_open_position
-
-    # Candle close confirms SL breach
-    res_sl = trader.notify_candle_close(latest_price=99.00, timestamp=datetime(2026, 8, 24, 9, 25))
-    assert res_sl is not None
-    assert res_sl["exit_reason"] == "Stop Loss (Close-Based)"
-    assert not trader.has_open_position
-
-    # Case 2: Target Triggered (Instant Tick Execution)
-    trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50, csv_log_path=csv_path, bypass_friction_gate=True)
-    trader.execute_trade(
-        {"VWAP": 100.00, "Close": 100.00, "symbol": "ITC", "ATR_14": 0.3333333333333333},
-        timestamp=datetime(2026, 8, 24, 9, 20),
-    )
-    res_tp = trader.check_exit(101.50, timestamp=datetime(2026, 8, 24, 9, 25))
-    assert res_tp is not None
-    assert res_tp["exit_reason"] == "Target Hit"
-
-    # Case 3: EOD Auto-Square-Off
-    trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50, csv_log_path=csv_path, bypass_friction_gate=True)
-    trader.execute_trade(
-        {"VWAP": 100.00, "Close": 100.00, "symbol": "ITC", "ATR_14": 0.3333333333333333},
-        timestamp=datetime(2026, 8, 24, 9, 20),
-    )
-    res_eod = trader.square_off_all_positions(
-        "EOD Auto-Square-Off",
-        latest_price=100.20,
-        timestamp=datetime(2026, 8, 24, 15, 20),
-    )
-    assert res_eod is not None
-    assert res_eod["exit_reason"] == "EOD Auto-Square-Off"
+def test_exit_priorities_sl_tp_eod(tmp_path):
+    t=paper_trader(tmp_path)
+    assert t.execute_trade(payload(),timestamp=NOW)
+    target=t.open_position['target_price']
+    t.set_quote(IDENTITY,MarketQuote(target-.05,target+.05,1000,1000,NOW,target))
+    summary=t.check_exit(target,NOW)
+    assert summary and summary['exit_reason']=='Target Hit'
+    assert summary['actual_exit_price']!=target
+    late=NOW.replace(hour=15,minute=0)
+    assert t.execute_trade(payload(),timestamp=late) is None
+    assert t.last_rejection=='ENTRY_CUTOFF_REACHED'
+    t.shutdown()
 
 
-def test_dynamic_atr_stop_loss_and_failsafe() -> None:
-    """Verify ATR validation failsafes and dynamic distance calculations."""
-    trader = PaperTrader(bypass_friction_gate=True)
-    t0 = datetime(2026, 8, 24, 9, 20)
-
-    # 1. Missing ATR -> Rejection
-    ticket_no_atr = trader.execute_trade(
-        {"VWAP": 2500.00, "Close": 2502.00, "symbol": "M&M"},
-        timestamp=t0,
-    )
-    assert ticket_no_atr is None
-    assert trader.state.value == "IDLE"
-
-    # 2. Zero / Negative ATR -> Rejection
-    ticket_zero_atr = trader.execute_trade(
-        {"VWAP": 2500.00, "Close": 2502.00, "symbol": "M&M", "ATR_14": 0.0},
-        timestamp=t0,
-    )
-    assert ticket_zero_atr is None
-    assert trader.state.value == "IDLE"
-
-    # 3. Valid ATR -> Dynamic 1:2 R:R calculation (2.0 * ATR buffer)
-    current_atr = 10.0
-    ticket_valid = trader.execute_trade(
-        {"VWAP": 2500.00, "Close": 2502.00, "symbol": "M&M", "ATR_14": current_atr},
-        timestamp=t0,
-    )
-    assert ticket_valid is not None
-    assert trader.state.value == "HOLDING_TRANCHE_1"
-
-    # stop_loss_distance = 2.0 * 10.0 = 20.00
-    # stop_loss = 2500.00 - 20.00 = 2480.00
-    # target_price = 2500.00 + (2.0 * 20.00) = 2540.00
-    assert ticket_valid["stop_loss_distance"] == 20.00
-    assert ticket_valid["stop_loss_price"] == 2480.00
-    assert ticket_valid["target_price"] == 2540.00
-    assert ticket_valid["risk_distance"] == 20.00
-    assert ticket_valid["atr_14"] == 10.0
+def test_dynamic_atr_stop_loss_and_failsafe(tmp_path):
+    t=paper_trader(tmp_path)
+    assert t.execute_trade(payload(),timestamp=NOW)
+    assert t.open_position['stop_loss_price']==290
+    assert t.open_position['target_price']==320
+    assert t.open_position['projected_net_loss_at_stop']<=100
+    t.shutdown()
+    other=paper_trader(tmp_path/'invalid')
+    assert other.execute_trade(payload(atr=0),timestamp=NOW) is None
+    assert other.last_rejection=='INVALID_ATR'
+    assert not other.journal.fills()
+    other.shutdown()
 
 
 def test_statutory_friction_gate_nse_cash() -> None:
@@ -981,51 +823,15 @@ def test_statutory_friction_gate_nse_cash() -> None:
     assert costs["total_charges"] > 0
 
 
-def test_trades_csv_13_columns_schema(tmp_path) -> None:
-    """Verify persistent trades.csv adheres to exact 13-field schema."""
-    csv_path = str(tmp_path / "test_schema_trades.csv")
-    trader = PaperTrader(
-        total_capital=10017.00,
-        working_capital_pct=0.50,
-        csv_log_path=csv_path,
-        bypass_friction_gate=True,
-    )
-    trader.execute_trade(
-        {"VWAP": 150.00, "Close": 150.20, "symbol": "COALINDIA", "ATR_14": 0.50},
-        timestamp=datetime(2026, 8, 24, 9, 20),
-    )
-    trader.close_position(
-        exit_price=151.50,
-        timestamp=datetime(2026, 8, 24, 9, 35),
-        reason="Target Hit",
-    )
-    trader.flush_logs()
-
-    with open(csv_path, "r", encoding="utf-8") as f:
-        lines = [line.strip() for line in f.readlines() if line.strip()]
-
-    headers = lines[0].split(",")
-    expected_headers = [
-        "timestamp",
-        "trade_id",
-        "symbol",
-        "tranches_filled",
-        "avg_entry_price",
-        "exit_price",
-        "total_quantity",
-        "exit_reason",
-        "gross_pnl",
-        "statutory_charges",
-        "net_pnl",
-        "net_roi_pct",
-        "ending_working_capital",
-    ]
-    assert headers == expected_headers
-    data_cols = lines[1].split(",")
-    assert len(data_cols) == 13
-    assert data_cols[2] == "COALINDIA"
-    assert data_cols[3] == "1"
-    assert data_cols[7] == "Target Hit"
+def test_trades_csv_13_columns_schema(tmp_path):
+    t=paper_trader(tmp_path)
+    assert t.execute_trade(payload(),timestamp=NOW)
+    assert t.close_position(300,NOW)
+    t.shutdown()
+    df=pd.read_csv(tmp_path/'trades.csv')
+    assert {'environment','trade_id','broker_order_id','broker_fill_id','actual_entry_price','actual_exit_price','net_pnl','entry_fee_source'}<=set(df)
+    assert len(df)==1 and df.iloc[0]['environment']=='TEST'
+    assert str(df.iloc[0]['trade_id'])
 
 
 def test_pluggable_market_schedule_providers() -> None:
@@ -1034,7 +840,7 @@ def test_pluggable_market_schedule_providers() -> None:
     assert isinstance(nse, NSEMarketSchedule)
     assert str(nse.timezone) == "Asia/Kolkata"
     assert nse.market_open_time == time(9, 15, 0)
-    assert nse.eod_square_off_time == time(15, 20, 0)
+    assert nse.eod_square_off_time == time(15, 0, 0)
     assert nse.market_close_time == time(15, 30, 0)
 
     nyse = get_market_schedule("NYSE")
@@ -1136,97 +942,28 @@ def test_vwap_stabilization_and_deep_breakdown_filter() -> None:
     assert bool(res_knife["Buy_Signal"].iloc[14]) is False
 
 
-def test_post_stop_loss_cooldown_firewall() -> None:
-    """Verify 10-candle cooldown firewall immediately following a Stop Loss."""
-    trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50, bypass_friction_gate=True)
-    # Default ready state
-    assert trader.candles_since_last_exit == 999
-
-    # Enter initial trade
-    t0 = datetime(2026, 8, 24, 9, 30)
-    ticket = trader.execute_trade(
-        {"VWAP": 100.0, "Close": 100.5, "symbol": "TATASTEEL", "ATR_14": 1.0},
-        timestamp=t0,
-        atr_14=1.0,
-    )
-    assert ticket is not None
-    assert trader.has_open_position is True
-
-    # Stop loss hit -> close position
-    t1 = datetime(2026, 8, 24, 9, 35)
-    trader.close_position(exit_price=98.50, timestamp=t1, reason="Stop Loss")
-    assert trader.has_open_position is False
-    assert trader.candles_since_last_exit == 0
-
-    # Next 1..9 candles: attempt to re-enter immediately -> blocked by cooldown
-    for c in range(1, 10):
-        trader.notify_candle_close(timestamp=datetime(2026, 8, 24, 9, 35 + c), latest_price=100.0)
-        assert trader.candles_since_last_exit == c
-        attempt = trader.execute_trade(
-            {"VWAP": 100.0, "Close": 100.5, "symbol": "TATASTEEL", "ATR_14": 1.0},
-            timestamp=datetime(2026, 8, 24, 9, 35 + c),
-            atr_14=1.0,
-        )
-        assert attempt is None  # Blocked by cooldown!
-
-    # 10th candle closes -> cooldown expires (candles_since_last_exit == 10)
-    trader.notify_candle_close(timestamp=datetime(2026, 8, 24, 9, 45), latest_price=100.0)
-    assert trader.candles_since_last_exit == 10
-
-    # Trade is now allowed
-    valid_ticket = trader.execute_trade(
-        {"VWAP": 100.0, "Close": 100.5, "symbol": "TATASTEEL", "ATR_14": 1.0},
-        timestamp=datetime(2026, 8, 24, 9, 45),
-        atr_14=1.0,
-    )
-    assert valid_ticket is not None
-    assert trader.has_open_position is True
+def test_post_stop_loss_cooldown_firewall(tmp_path):
+    t=paper_trader(tmp_path)
+    assert t.execute_trade(payload(),timestamp=NOW)
+    t.set_quote(IDENTITY,MarketQuote(289.75,289.85,1000,1000,NOW,289.8))
+    assert t.notify_candle_close({'Timestamp':NOW,'Close':289.8})
+    assert t.execute_trade(payload(),timestamp=NOW) is None
+    assert t.last_rejection=='COOLDOWN'
+    for _ in range(config.REENTRY_COOLDOWN_CANDLES):t.notify_candle_close({'Timestamp':NOW,'Close':300})
+    assert t.candles_since_last_sl==config.REENTRY_COOLDOWN_CANDLES
+    t.shutdown()
 
 
-def test_wick_immunity_and_candle_close_stop_loss() -> None:
-    """Verify that intra-candle wicks do not trigger Stop Loss, while candle closes and tick targets do."""
-    trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50, bypass_friction_gate=True)
-    # Entry @ 100.00 with ATR = 1.0 -> SL = 100 - (2.0 * 1.0) = 98.00, Target = 100 + 4.0 = 104.00
-    t0 = datetime(2026, 8, 24, 9, 30)
-    ticket = trader.execute_trade(
-        {"VWAP": 100.0, "Close": 100.2, "symbol": "TATASTEEL", "ATR_14": 1.0},
-        timestamp=t0,
-        atr_14=1.0,
-    )
-    assert ticket is not None
-    assert ticket["stop_loss_price"] == 98.00
-    assert ticket["target_price"] == 104.00
-
-    # 1. Wick Shakeout Test: Intraday tick flashes down to 97.40 (< 98.00 SL)
-    wick_exit = trader.check_exit(97.40, timestamp=datetime(2026, 8, 24, 9, 31, 15))
-    # Wick Immunity: Tick-based SL is DISABLED -> position remains intact!
-    assert wick_exit is None
-    assert trader.has_open_position is True
-
-    # 2. Candle completes and closes at 98.50 (above SL) -> position survives!
-    c1_exit = trader.notify_candle_close(latest_price=98.50, timestamp=datetime(2026, 8, 24, 9, 32))
-    assert c1_exit is None
-    assert trader.has_open_position is True
-
-    # 3. Next candle formally closes at 97.80 (below 98.00 SL) -> Stop Loss triggers on candle close!
-    c2_exit = trader.notify_candle_close(latest_price=97.80, timestamp=datetime(2026, 8, 24, 9, 33))
-    assert c2_exit is not None
-    assert c2_exit["exit_reason"] == "Stop Loss (Close-Based)"
-    assert trader.has_open_position is False
-
-    # 4. Instant Tick-Based Target Hit: Re-enter and verify target hits immediately on tick
-    trader.candles_since_last_exit = 15  # bypass cooldown
-    t1 = datetime(2026, 8, 24, 9, 50)
-    trader.execute_trade(
-        {"VWAP": 100.0, "Close": 100.2, "symbol": "TATASTEEL", "ATR_14": 1.0},
-        timestamp=t1,
-        atr_14=1.0,
-    )
-    # Intra-candle tick surges to 104.50 (≥ 104.00 Target) -> triggers immediately on tick!
-    target_exit = trader.check_exit(104.50, timestamp=datetime(2026, 8, 24, 9, 51, 30))
-    assert target_exit is not None
-    assert target_exit["exit_reason"] == "Target Hit"
-    assert trader.has_open_position is False
+def test_wick_immunity_and_candle_close_stop_loss(tmp_path):
+    t=paper_trader(tmp_path)
+    assert t.execute_trade(payload(),timestamp=NOW)
+    t.set_quote(IDENTITY,MarketQuote(289.75,289.85,1000,1000,NOW,289.8))
+    assert t.check_exit(289.8,NOW) is None
+    assert t.has_open_position
+    summary=t.notify_candle_close({'Timestamp':NOW,'Close':289.8})
+    assert summary and 'Stop Loss' in summary['exit_reason']
+    assert summary['actual_exit_price']<290
+    t.shutdown()
 
 
 def test_volatility_floor_gate() -> None:
@@ -1296,98 +1033,30 @@ def test_vwap_breakout_signal() -> None:
     assert res["Signal_Type"].iloc[15] == "BREAKOUT_LONG"
 
 
-def test_true_net_rr_friction_gate() -> None:
-    """Verify that execution_engine aborts trades if Net R:R < adaptive floor (1.2 normal, 0.8 low-vol)."""
-    trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50)
-    t0 = datetime(2026, 8, 24, 9, 30)
-
-    # 1. Low-vol Micro-ATR (e.g. 0.06) produces tiny profit where statutory friction destroys Net R:R (< 0.8)
-    ticket_micro = trader.execute_trade(
-        {"VWAP": 100.0, "Close": 100.2, "symbol": "TATASTEEL", "ATR_14": 0.06},
-        timestamp=t0,
-        atr_14=0.06,
-    )
-    assert ticket_micro is None
-    assert trader.has_open_position is False
-
-    # 2. Healthy ATR (e.g. 1.0) produces robust profit and passes True Net-R:R Gate
-    # 2. Normal regime with marginal ATR (e.g. 0.12) fails normal 1.2 floor (R:R ~ 1.07 < 1.2)
-    ticket_marginal = trader.execute_trade(
-        {"VWAP": 100.0, "Close": 100.2, "symbol": "TATASTEEL", "ATR_14": 0.12},
-        timestamp=t0,
-        atr_14=0.12,
-    )
-    assert ticket_marginal is None
-    assert trader.has_open_position is False
-
-    # 3. Healthy ATR (e.g. 1.5) produces robust profit and passes True Net-R:R Gate
-    ticket_healthy = trader.execute_trade(
-        {"VWAP": 100.0, "Close": 100.2, "symbol": "TATASTEEL", "ATR_14": 1.5},
-        timestamp=t0,
-        atr_14=1.5,
-    )
-    assert ticket_healthy is not None
-    assert trader.has_open_position is True
+def test_true_net_rr_friction_gate():
+    e=solve_quantity('BUY',300,290,320,10000,100,200,1.2,.0005)
+    assert e and e.net_stop_loss<=100 and e.net_rr>=1.2
+    assert e.quantity<11 and e.entry_fees>0 and e.stop_exit_fees>0
+    assert solve_quantity('BUY',303,299,304,10000,100,200,1.2,.0005) is None
 
 
-def test_recalibrated_pyramiding_tranche2_trigger() -> None:
-    """Verify that Tranche 2 unlocks at 2.0x ATR dynamic distance (tranche2_trigger_distance = 2.0 * ATR)."""
-    trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50, bypass_friction_gate=True)
-    t0 = datetime(2026, 8, 24, 9, 30)
-
-    # Base entry @ 100.00 with ATR = 1.0 -> T2 gate = 100.00 + 2.0*1.0 = 102.00
-    ticket1 = trader.execute_trade(
-        {"VWAP": 100.0, "Close": 100.0, "symbol": "TATASTEEL", "ATR_14": 1.0},
-        timestamp=t0,
-        atr_14=1.0,
-    )
-    assert ticket1 is not None
-    assert trader.state.value == "HOLDING_TRANCHE_1"
-
-    # Price at 101.50 (< 102.00 trigger) -> rejected
-    t_fail = trader.execute_trade(
-        {"VWAP": 101.50, "Close": 101.50, "symbol": "TATASTEEL", "ATR_14": 1.0},
-        timestamp=t0 + timedelta(minutes=1),
-    )
-    assert t_fail is None
-    assert trader.state.value == "HOLDING_TRANCHE_1"
-
-    # Price at 102.00 (>= 102.00 trigger) -> Tranche 2 unlocked!
-    ticket2 = trader.execute_trade(
-        {"VWAP": 102.00, "Close": 102.00, "symbol": "TATASTEEL", "ATR_14": 1.0},
-        timestamp=t0 + timedelta(minutes=2),
-    )
-    assert ticket2 is not None
-    assert trader.state.value == "HOLDING_TRANCHE_2"
-    assert ticket2["tranche_number"] == 2
+def test_recalibrated_pyramiding_tranche2_trigger(tmp_path):
+    t=paper_trader(tmp_path)
+    assert t.execute_trade(payload(),timestamp=NOW)
+    with pytest.raises(SafetyError,match='SCALE_IN_DISABLED'):t._execute_tranche_2({},NOW)
+    with pytest.raises(SafetyError,match='SCALE_IN_DISABLED'):t._execute_tranche_3({},NOW)
+    assert t.open_position['current_tranches']==1
+    t.shutdown()
 
 
-def test_theta_decay_breakeven_defense() -> None:
-    """Verify that after 15 candles held in profit, Stop Loss is aggressively trailed to entry (risk = 0)."""
-    trader = PaperTrader(total_capital=10017.00, working_capital_pct=0.50, bypass_friction_gate=True)
-    t0 = datetime(2026, 8, 24, 9, 30)
-
-    # Base entry @ 100.00 with ATR = 1.0 -> initial SL = 98.00
-    ticket = trader.execute_trade(
-        {"VWAP": 100.0, "Close": 100.0, "symbol": "TATASTEEL", "ATR_14": 1.0},
-        timestamp=t0,
-        atr_14=1.0,
-    )
-    assert ticket is not None
-    assert trader.candles_held == 0
-    assert trader._open_position["stop_loss_price"] == 98.00
-
-    # Simulate 14 completed candles in mild profit (close = 100.15)
-    for c in range(1, 15):
-        trader.notify_candle_close(latest_price=100.15, timestamp=t0 + timedelta(minutes=c))
-        assert trader.candles_held == c
-        assert trader._open_position["stop_loss_price"] == 98.00  # Not yet 15 candles
-
-    # 15th candle closes in profit (close = 100.15 > 100.00 entry) -> Theta Defense triggers!
-    trader.notify_candle_close(latest_price=100.15, timestamp=t0 + timedelta(minutes=15))
-    assert trader.candles_held == 15
-    assert trader._open_position["stop_loss_price"] == 100.00  # Trailed to Breakeven!
-    assert trader._open_position["breakeven_armed"] is True
+def test_theta_decay_breakeven_defense(tmp_path):
+    t=paper_trader(tmp_path)
+    assert t.execute_trade(payload(),timestamp=NOW)
+    entry=t.avg_entry_price
+    for _ in range(15):t.notify_candle_close({'Timestamp':NOW,'Close':entry+1})
+    assert t.open_position['breakeven_armed']
+    assert t.open_position['stop_loss_price']==entry
+    t.shutdown()
 
 
 def test_adaptive_friction_gate_low_vol_regime() -> None:
@@ -1504,174 +1173,47 @@ def test_daily_bias_detector() -> None:
     assert detect_daily_bias(df_short) == "NEUTRAL"
 
 
-def test_short_position_lifecycle() -> None:
-    """Verify end-to-end execution of a SHORT position: entry, SL above, TP below, and profitable close."""
-    trader = PaperTrader(total_capital=config.TOTAL_CAPITAL, working_capital_pct=0.50, bypass_friction_gate=True)
-    t0 = datetime(2026, 9, 3, 10, 0)
-
-    # Enter SHORT trade
-    ticket = trader.execute_trade(
-        {"VWAP": 240.0, "Close": 239.8, "symbol": "BANKBARODA", "ATR_14": 0.50},
-        timestamp=t0,
-        atr_14=0.50,
-        side="SELL",
-    )
-    assert ticket is not None
-    assert ticket["side"] == "SELL"
-    # SL is placed ABOVE entry: 240 + 2*0.5 = 241.0
-    assert ticket["stop_loss_price"] == 241.0
-    # TP is placed BELOW entry: 240 - 2*1.0 = 238.0
-    assert ticket["target_price"] == 238.0
-
-    # Price drops to 237.90 -> Target Hit!
-    exit_summary = trader.check_exit(live_price=237.90, timestamp=t0 + timedelta(minutes=5))
-    assert exit_summary is not None
-    assert exit_summary["reason"] == "Target Hit"
-    assert exit_summary["net_pnl"] > 0
-    assert exit_summary["gross_pnl"] > 0
-    assert trader.has_open_position is False
+def test_short_position_lifecycle(tmp_path):
+    t=paper_trader(tmp_path)
+    assert t.execute_trade(payload(),timestamp=NOW,side='SELL')
+    assert t.open_position['stop_loss_price']==310 and t.open_position['target_price']==280
+    t.set_quote(IDENTITY,MarketQuote(279.95,280.05,1000,1000,NOW,280))
+    summary=t.check_exit(280,NOW)
+    assert summary and summary['side']=='SELL' and summary['net_pnl']>0
+    assert summary['actual_entry_price']<300 and summary['actual_exit_price']>280
+    t.shutdown()
 
 
-def test_direction_flip_closes_opposite() -> None:
-    """Verify that entering a SHORT position automatically closes an existing LONG position."""
-    trader = PaperTrader(total_capital=10000.0, working_capital_pct=0.50, bypass_friction_gate=True)
-    t0 = datetime(2026, 9, 3, 10, 0)
-
-    # 1. Establish LONG position
-    long_ticket = trader.execute_trade(
-        {"VWAP": 240.0, "Close": 240.0, "symbol": "BANKBARODA", "ATR_14": 0.50},
-        timestamp=t0,
-        atr_14=0.50,
-        side="BUY",
-    )
-    assert long_ticket is not None
-    assert trader._open_position["side"] == "BUY"
-
-    # 2. Enter SHORT signal -> triggers direction flip
-    short_ticket = trader.execute_trade(
-        {"VWAP": 239.0, "Close": 239.0, "symbol": "BANKBARODA", "ATR_14": 0.50},
-        timestamp=t0 + timedelta(minutes=2),
-        atr_14=0.50,
-        side="SELL",
-    )
-    assert short_ticket is not None
-    assert trader._open_position["side"] == "SELL"
-    assert trader._state.value == "HOLDING_TRANCHE_1"
-
-    # Check that previous long trade was closed with Direction Flip reason
-    assert len(trader.trade_log) >= 2
+def test_direction_flip_closes_opposite(tmp_path):
+    t=paper_trader(tmp_path)
+    assert t.execute_trade(payload(),timestamp=NOW)
+    second=t.execute_trade(payload(),timestamp=NOW,side='SELL')
+    assert len(t.journal.trades())==1
+    assert t.journal.trades()[0]['exit_reason']=='Direction Flip (BUY→SELL)'
+    assert second and t.open_position['side']=='SELL'
+    assert t.journal.budget()[1]==2
+    t.shutdown()
 
 
 def test_smartapi_place_live_order_defensive_parser(monkeypatch):
-    import sys
-    from unittest.mock import MagicMock
-    import config
-    monkeypatch.setattr(config, "LIVE_MODE", True)
-    if "pyotp" not in sys.modules:
-        sys.modules["pyotp"] = MagicMock()
-    if "SmartApi" not in sys.modules:
-        smartapi_mock = MagicMock()
-        sys.modules["SmartApi"] = smartapi_mock
-        sys.modules["SmartApi.smartWebSocketV2"] = MagicMock()
-
-    from execution_engine import place_live_order as ee_place_order
-    from live_stream import place_live_order as ls_place_order
-
-    for place_func in (ee_place_order, ls_place_order):
-        mock_angel = MagicMock()
-
-        # Case 1: Standard SDK returns order ID as raw string (reproduces fix for 'str' has no attribute 'get')
-        mock_angel.placeOrder.return_value = "260915000123"
-        order_id = place_func(mock_angel, "SJVN-EQ", "18883", "BUY", 10)
-        assert order_id == "260915000123"
-
-        # Case 2: Dict response with status=True
-        mock_angel.placeOrder.return_value = {"status": True, "data": {"orderid": "260915000456"}}
-        order_id = place_func(mock_angel, "SJVN-EQ", "18883", "BUY", 10)
-        assert order_id == "260915000456"
-
-        # Case 3: Dict response with success=True
-        mock_angel.placeOrder.return_value = {"success": True, "data": {"orderid": "260915000789"}}
-        order_id = place_func(mock_angel, "SJVN-EQ", "18883", "BUY", 10)
-        assert order_id == "260915000789"
-
-        # Case 4: Dict response with broker rejection
-        mock_angel.placeOrder.return_value = {"status": False, "message": "Insufficient funds"}
-        order_id = place_func(mock_angel, "SJVN-EQ", "18883", "BUY", 10)
-        assert order_id is None
-
-        # Case 5: Unexpected payload type (None, int, etc.)
-        mock_angel.placeOrder.return_value = None
-        order_id = place_func(mock_angel, "SJVN-EQ", "18883", "BUY", 10)
-        assert order_id is None
-
-        # Case 6: Exception thrown during placeOrder
-        mock_angel.placeOrder.side_effect = ConnectionError("Network down")
-        order_id = place_func(mock_angel, "SJVN-EQ", "18883", "BUY", 10)
-        assert order_id is None
-        mock_angel.placeOrder.side_effect = None
+    from execution_engine import place_live_order
+    b=ScenarioBroker()
+    monkeypatch.setattr(config,'LIVE_MODE',True)
+    monkeypatch.setattr(config,'LIVE_VALIDATION_APPROVED',False)
+    with pytest.raises(SafetyError,match='LIVE_EXECUTION_BLOCKED'):
+        place_live_order(b,'JIOFIN-EQ','18143','BUY',8)
+    assert not b.requests
 
 
-def test_live_execution_state_transitions_and_exit(monkeypatch):
-    import config
-    from datetime import timezone
-    from unittest.mock import MagicMock
-    from execution_engine import PaperTrader, PyramidingState
-
-    monkeypatch.setattr(config, "LIVE_MODE", True)
-
-    mock_session = MagicMock()
-    mock_session.placeOrder.return_value = "260915999001"
-    mock_session.orderBook.return_value = {
-        "status": True,
-        "data": [
-            {
-                "orderid": "260915999001",
-                "status": "complete",
-                "averageprice": 100.0,
-                "filledshares": 33,
-            },
-            {
-                "orderid": "260915999002",
-                "status": "complete",
-                "averageprice": 102.0,
-                "filledshares": 33,
-            },
-        ],
-    }
-    mock_session.rmsLimit.return_value = {
-        "status": True,
-        "data": {"availablecash": "10050.00"},
-    }
-
-    trader = PaperTrader(total_capital=config.TOTAL_CAPITAL, working_capital_pct=0.50, angel_session=mock_session)
-    t0 = datetime(2026, 9, 15, 9, 20, tzinfo=timezone.utc)
-
-    # Base Entry (Tranche 1)
-    ticket = trader.execute_trade(
-        {"VWAP": 100.0, "Close": 100.0, "symbol": "SJVN-EQ", "ATR_14": 1.0},
-        timestamp=t0,
-        atr_14=1.0,
-        side="BUY",
-        angel_session=mock_session,
-    )
-    assert ticket is not None
-    assert trader.state == PyramidingState.HOLDING_TRANCHE_1
-    assert trader._pending_order_id == "260915999001"
-    assert trader._open_position["quantity"] > 0
-    assert mock_session.placeOrder.called
-
-    # Verify exit order routing in close_position
-    mock_session.placeOrder.reset_mock()
-    mock_session.placeOrder.return_value = "260915999002"
-    exit_summary = trader.close_position(exit_price=102.0, timestamp=t0 + timedelta(minutes=5), reason="Target Hit")
-
-    assert exit_summary is not None
-    assert trader.state == PyramidingState.CLOSED
-    assert mock_session.placeOrder.called
-    called_args = mock_session.placeOrder.call_args[0][0]
-    assert called_args["transactiontype"] == "SELL"
-    assert int(called_args["quantity"]) == exit_summary["total_quantity"]
+def test_live_execution_state_transitions_and_exit(tmp_path,monkeypatch):
+    t,b=live_trader(tmp_path,monkeypatch)
+    assert t.execute_trade(payload(),timestamp=NOW)
+    assert t.execution_state=='POSITION_OPEN'
+    assert t.close_position(300,NOW)
+    assert t.execution_state=='ACCOUNTED' and b.netqty==0
+    assert t.journal.trades()[0]['reconciliation_status']=='BROKER_QUANTITY_MATCHED'
+    assert all(p['ordertype'] in {'LIMIT','STOPLOSS_LIMIT'} for p in b.requests)
+    t.shutdown()
 
 
 def run_scenario(
@@ -1726,3 +1268,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+from safety_test_support import ScenarioBroker, paper_trader, live_trader, assert_unknown_submission, assert_unknown_exit
+from test_safety_v6 import NOW, IDENTITY, payload, quote
+from execution_safety import SafetyError, MarketQuote, solve_quantity

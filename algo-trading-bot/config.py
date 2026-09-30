@@ -102,13 +102,13 @@ MAX_QUEUE_SIZE = 10000            # Thread-safe ingestion queue size
 # ── CAPITAL (absolute ₹ — intentionally fixed, user config) ───
 TOTAL_CAPITAL = 20000.00      # ₹20,000 real money
 WORKING_CAPITAL_PCT = 0.50       # 50% of total
-DAILY_LOSS_LIMIT_PCT = 0.02      # 2% of total capital
+DAILY_LOSS_LIMIT_PCT = 0.01      # Pilot: 1% of total capital
 RISK_PER_SETUP_PCT = 0.01        # 1% of working capital per setup
 
 WORKING_CAPITAL = 10000.00      # 50% of total
 BACKUP_CAPITAL = 10000.00       # 50% reserve
 RISK_PER_TRADE = 100.00        # 1% of working capital
-DAILY_LOSS_LIMIT = 400.00        # 2% of ₹20,000
+DAILY_LOSS_LIMIT = 200.00        # Planned pilot daily loss allowance
 
 # ── BROKERAGE CONFIG ──────────────────────────────
 # Always assume FULL standard brokerage. The ₹0 new-user offer is
@@ -177,19 +177,45 @@ BIAS_VWAP_GAP_PCT = 0.0005        # Threshold for VWAP position check
 BIAS_VOTES_NEEDED = 2             # Min confluence votes to declare bias
 
 # ── TIMING ────────────────────────────────────────────────────
-EOD_SQUAREOFF_TIME = "15:20"      # HH:MM IST — EOD auto square-off
+EOD_SQUAREOFF_TIME = "15:00"      # Flatten before cash RMS; confirm broker flat
+ENTRY_CUTOFF_TIME = "14:30"
 MARKET_OPEN_TIME = "09:15"        # HH:MM IST
 
 # ── TRADING MODE ─────────────────────────────────────────────
 # LIVE_MODE = False → Paper trading (default, safe)
 # LIVE_MODE = True  → Real Angel One API orders (real money)
-# ⚠️  Set True ONLY on Sep 15 morning, AFTER login test passes
-LIVE_MODE = False   # ← CHANGE TO True ON SEP 15 MORNING ONLY
+# Enable only after a dated code-matched activation report and broker verification.
+LIVE_MODE = False
+
+# Execution infrastructure only; no signal/indicator parameters overridden.
+MAX_NEW_SETUPS = 2
+SCALE_IN_ENABLED = False
+EXECUTION_ENVIRONMENT = "PAPER"
+STRATEGY_VERSION = "vwap-1m-bff940ac5ed3"
+INSTRUMENT_MAX_AGE_HOURS = 24
+EXECUTION_QUOTE_MAX_AGE_SECONDS = 5.0
+CLOSED_SIGNAL_MAX_AGE_SECONDS = 120.0
+BEST_LEVEL_MAX_PARTICIPATION = 0.10
+MAX_QUOTE_DISCONTINUITY_PCT = 0.005
+CASH_BUFFER_RS = 20.0
+NSE_TRANSACTION_RATE = 0.000030699
+SEBI_TURNOVER_RATE = 0.000001
+IPFT_RATE = 0.000000001
+INTRADAY_STT_SELL_RATE = 0.00025
+INTRADAY_STAMP_BUY_RATE = 0.00003
+GST_RATE = 0.18
+BROKER_ORDER_TIMEOUT_SECONDS = 3.0
+BROKER_POLL_SECONDS = 0.20
+LIVE_VALIDATION_APPROVED = False
+LIVE_ACTIVATION_EVIDENCE_FILE = None
+BROKER_CAPABILITY_FILE = None   # Dated account-specific verification; never inferred
+INSTRUMENT_MASTER_FILE = None # JSON envelope: source_timestamp, records, intraday_symbols
+MAX_DISCOVERY_CANDIDATES = 60
+OPPORTUNITY_RVOL_SESSIONS = 10
+REPLAY_HALF_SPREAD_PCT = 0.00025 # Explicit candle-only research approximation
 
 # ── RECONCILIATION ───────────────────────────────────────────
 RECONCILIATION_TOLERANCE_INTRADAY = 0.50   # ₹0.50 tolerance for per-trade gross P&L vs broker realised delta
 RECONCILIATION_TOLERANCE_EOD = 1.00        # ₹1.00 tolerance for EOD account net P&L vs capital movement
 RECONCILIATION_MAX_RETRIES = 3             # Max retries for delayed broker position state
 RECONCILIATION_RETRY_INTERVAL = 0.5        # Seconds between position refresh retries
-
-

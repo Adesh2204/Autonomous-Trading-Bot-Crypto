@@ -50,6 +50,21 @@ from symbol_state import (
 )
 
 
+@pytest.fixture(autouse=True)
+def isolated_execution_environment(monkeypatch):
+    import config
+    monkeypatch.setattr(config,'LIVE_MODE',False)
+    monkeypatch.setattr(config,'EXECUTION_ENVIRONMENT','TEST')
+
+
+def _verified_test_stream(candidates):
+    from instrument_registry import InstrumentRegistry
+    now=to_ist()
+    records=[{'exch_seg':'NSE','symbol':c.trading_symbol,'token':c.token,'tick_size':'5','lotsize':'1'} for c in candidates]
+    registry=InstrumentRegistry(records,now,[c.symbol for c in candidates])
+    return AngelOneLiveStream(watchlist=candidates,registry=registry)
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Helper Fixtures & Synthetic Generators
 # ─────────────────────────────────────────────────────────────────────────────
@@ -326,7 +341,7 @@ def test_dynamic_standby_swapping():
             "BROKER_TOTP_SECRET": "dummy",
         },
     ):
-        stream = AngelOneLiveStream(watchlist=[c1, c2])
+        stream = _verified_test_stream([c1, c2])
 
     s1 = stream.active_symbols["1001"]
     s2 = stream.active_symbols["1002"]
@@ -354,11 +369,20 @@ def test_dynamic_standby_swapping():
     df2 = _generate_synthetic_candle_df("SYM2", base_price=200.0, atr=healthy_atr)
     s1.current_candle_df = df1
     s2.current_candle_df = df2
+    s2.feed_monitor.state=FeedHealthState.HEALTHY
+    from execution_safety import MarketQuote
+    from signal_brain import generate_vwap_signal
+    evaluation=to_ist(datetime(2026,9,23,10,15))
+    observed=float(generate_vwap_signal(df2)['VWAP'].iloc[-1])+.1
+    s2.quote=MarketQuote(observed-.05,observed+.05,10000,10000,evaluation,observed)
+    s2.last_spread_pct=.05; s2.last_depth_available=True
 
     # Run orchestrator
     with patch.object(stream.paper_trader, "execute_trade") as mock_exec:
         eval_time = to_ist(datetime(2026, 9, 23, 10, 15))
         stream._evaluate_watchlist_orchestrator(evaluation_time=eval_time)
+        mock_exec.assert_called_once()
+        assert mock_exec.call_args[0][0]['symbol']=='SYM2'
 
         # Symbol 1 was in STANDBY, so it was skipped.
         # If any trade was executed, it MUST be Symbol 2, NOT Symbol 1!
@@ -389,7 +413,7 @@ def test_global_position_limit_enforced():
             "BROKER_TOTP_SECRET": "dummy",
         },
     ):
-        stream = AngelOneLiveStream(watchlist=[c1, c2, c3])
+        stream = _verified_test_stream([c1, c2, c3])
 
     s1 = stream.active_symbols["1001"]
     s2 = stream.active_symbols["1002"]
@@ -417,12 +441,21 @@ def test_global_position_limit_enforced():
         # Simulate position becoming occupied
         stream.paper_trader._open_position = {
             "symbol": signal_data["symbol"],
+            "token": signal_data['token'],
             "side": kwargs.get("side", "BUY"),
             "target_price": 210.0,
             "stop_loss_price": 195.0,
         }
+        return {'quantity':1}
 
     eval_time = to_ist(datetime(2026, 9, 23, 10, 15))
+    from execution_safety import MarketQuote
+    from signal_brain import generate_vwap_signal
+    for state in (s2,s3):
+        observed=float(generate_vwap_signal(state.current_candle_df)['VWAP'].iloc[-1])+.1
+        state.quote=MarketQuote(observed-.05,observed+.05,10000,10000,eval_time,observed)
+        state.last_spread_pct=.09
+        state.last_depth_available=True
     with patch.object(stream.paper_trader, "execute_trade", side_effect=_mock_execute_trade):
         stream._evaluate_watchlist_orchestrator(evaluation_time=eval_time)
 
@@ -493,7 +526,7 @@ def test_failure_containment_isolated_error():
             "BROKER_TOTP_SECRET": "dummy",
         },
     ):
-        stream = AngelOneLiveStream(watchlist=[c1, c2])
+        stream = _verified_test_stream([c1, c2])
 
     s1 = stream.active_symbols["1001"]
     s2 = stream.active_symbols["1002"]
@@ -531,7 +564,7 @@ def test_websocket_reconnect_restores_all_watchlist_tokens():
             "BROKER_TOTP_SECRET": "dummy",
         },
     ):
-        stream = AngelOneLiveStream(watchlist=[c1, c2, c3])
+        stream = _verified_test_stream([c1, c2, c3])
 
     mock_ws = MagicMock()
     stream.websocket = mock_ws
@@ -568,7 +601,7 @@ def test_unknown_token_safely_ignored():
             "BROKER_TOTP_SECRET": "dummy",
         },
     ):
-        stream = AngelOneLiveStream(watchlist=[c1])
+        stream = _verified_test_stream([c1])
 
     # Tick for unknown token "99999"
     now_ts = int(datetime(2026, 9, 23, 10, 0, tzinfo=timezone.utc).timestamp())

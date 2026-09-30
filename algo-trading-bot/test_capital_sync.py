@@ -162,7 +162,7 @@ def test_scenario_6_broker_cash_extremely_high():
     assert is_sufficient is True
     assert broker_cash == 1000000.00
     assert engine.working_capital == config.WORKING_CAPITAL  # Stays ₹10,000.00!
-    assert engine.tranche_capitals == [3300.00, 3300.00, 3400.00]
+    assert engine.tranche_capitals == [10000.00]
 
 
 def test_scenario_7_missing_broker_cash():
@@ -230,47 +230,21 @@ def test_scenario_9_rms_api_failure():
         mock_alert.assert_called_once()
 
 
-def test_scenario_10_position_sizing_integration():
-    """
-    TEST 10: Position Sizing Integration.
-    With Broker = ₹50,000 and Working Capital = ₹10,000,
-    verify that position sizing and tranche 1 execution strictly uses ₹3,300.00, not ₹50,000.
-    """
-    mock_api = MagicMock()
-    mock_api.rmsLimit.return_value = {
-        "status": True,
-        "data": {"availablecash": "50000.00"},
-    }
-    engine = PaperTrader(total_capital=config.TOTAL_CAPITAL, working_capital_pct=0.50)
-    assert engine.working_capital == 10000.00
-
-    # Tranche 1 capital nominal fraction: 33% of ₹10,000 = ₹3,300
-    assert engine.tranche_capitals[0] == 3300.00
-    assert engine.tranche_capitals[1] == 3300.00
-    assert engine.tranche_capitals[2] == 3400.00
-
-    # Assume entry price = 20.00 (Yes Bank approx)
-    entry_price = 20.00
-    expected_qty = math.floor(3300.00 / entry_price)  # 165 shares
-    # If it erroneously used broker cash (50,000), 33% would be ₹16,500 / 20 = 825 shares!
-
-    allocated_capital = engine.tranche_capitals[0]
-    calculated_qty = math.floor(allocated_capital / entry_price)
-    assert calculated_qty == expected_qty == 165
-    assert calculated_qty != 825
+def test_scenario_10_position_sizing_integration(tmp_path):
+    t=paper_trader(tmp_path)
+    assert t.execute_trade(payload(),timestamp=NOW)
+    assert t.open_position['total_cost']<=10000
+    assert t.open_position['projected_net_loss_at_stop']<=100
+    assert t.open_position['quantity']<int(10000/300)
+    t.shutdown()
 
 
-def test_scenario_11_tranche_allocation_percentages():
-    """
-    TEST 11: Tranche Allocation Invariant.
-    Verify 33%, 33%, 34% is unchanged and calculated against config.WORKING_CAPITAL base.
-    """
-    engine = PaperTrader()
-    assert config.TRANCHE_FRACTIONS == [0.33, 0.33, 0.34]
-    assert engine.tranche_capitals[0] == 3300.00
-    assert engine.tranche_capitals[1] == 3300.00
-    assert engine.tranche_capitals[2] == 3400.00
-    assert sum(engine.tranche_capitals) == config.WORKING_CAPITAL == 10000.00
+def test_scenario_11_tranche_allocation_percentages(tmp_path):
+    t=paper_trader(tmp_path)
+    assert t.total_capital==20000 and t.working_capital==10000 and t.backup_capital==10000
+    assert t.risk_per_trade==100 and t.daily_loss_limit==200
+    assert t.max_tranches==1 and t.tranche_capitals==[10000]
+    t.shutdown()
 
 
 def test_scenario_12_eod_summary_no_fabricated_virtual_equity(caplog):
@@ -302,3 +276,7 @@ def test_scenario_12_eod_summary_no_fabricated_virtual_equity(caplog):
     assert "Working Capital: ₹10,150.25" in log_output
     # 4. Must contain Daily P&L
     assert "Daily P&L: ₹150.25" in log_output
+
+from safety_test_support import ScenarioBroker, paper_trader, live_trader, assert_unknown_submission, assert_unknown_exit
+from test_safety_v6 import NOW, IDENTITY, payload, quote
+from execution_safety import SafetyError, MarketQuote, solve_quantity

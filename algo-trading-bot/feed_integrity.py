@@ -54,6 +54,9 @@ class RawTick:
     best_bid: Optional[float] = None
     best_ask: Optional[float] = None
     depth_available: bool = True
+    bid_quantity: int = 0
+    ask_quantity: int = 0
+    cumulative_volume: float = 0.0
 
 
 class FeedHealthMonitor:
@@ -198,6 +201,9 @@ class ThreadSafeTickIngestionQueue:
         best_bid: Optional[float] = None,
         best_ask: Optional[float] = None,
         depth_available: bool = True,
+        bid_quantity: int = 0,
+        ask_quantity: int = 0,
+        cumulative_volume: float = 0.0,
     ) -> bool:
         """Enqueue tick safely from the WebSocket callback thread."""
         with self._lock:
@@ -216,6 +222,9 @@ class ThreadSafeTickIngestionQueue:
             best_bid=best_bid,
             best_ask=best_ask,
             depth_available=depth_available,
+            bid_quantity=bid_quantity,
+            ask_quantity=ask_quantity,
+            cumulative_volume=cumulative_volume,
         )
 
         try:
@@ -244,4 +253,3 @@ try:
     from symbol_state import SymbolExecutionState, SymbolState
 except ImportError:
     pass
-

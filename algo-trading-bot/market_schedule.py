@@ -173,8 +173,7 @@ class NSEMarketSchedule(BaseMarketSchedule):
     National Stock Exchange of India (NSE) / BSE Market Schedule Provider.
     Timezone: Asia/Kolkata (IST)
     Trading Hours: 09:15 - 15:30 IST
-    Entry Cutoff: 15:15 IST
-    EOD Auto-Square-Off: 15:20 IST
+    Entry cutoff and flatten time come from config (14:30 and 15:00 IST).
     """
 
     def __init__(self, calendar_name: str = "BSE") -> None:
@@ -191,11 +190,13 @@ class NSEMarketSchedule(BaseMarketSchedule):
 
     @property
     def entry_cutoff_time(self) -> time:
-        return time(15, 15, 0)
+        from config import ENTRY_CUTOFF_TIME
+        return time.fromisoformat(ENTRY_CUTOFF_TIME)
 
     @property
     def eod_square_off_time(self) -> time:
-        return time(15, 20, 0)
+        from config import EOD_SQUAREOFF_TIME
+        return time.fromisoformat(EOD_SQUAREOFF_TIME)
 
     @property
     def market_close_time(self) -> time:
@@ -396,4 +397,3 @@ def can_enter_new_positions(current_time: ClockValue) -> bool:
 def seconds_until_market_start(current_dt: Optional[datetime] = None) -> float:
     """Return seconds until next NSE market open."""
     return _DEFAULT_SCHEDULE.seconds_until_market_start(current_dt)
-

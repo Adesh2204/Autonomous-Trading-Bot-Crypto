@@ -70,6 +70,11 @@ class SymbolState:
     standby_low_count: int = 0
     standby_recovery_count: int = 0
     error_message: Optional[str] = None
+    instrument: Any = None
+    quote: Any = None
+    opportunity_score: float = 0.0
+    volume_profiles: list = field(default_factory=list)
+    cumulative_volume: float = 0.0
 
     def record_periodic_atr(self, atr: float, ltp: float, timestamp: datetime) -> None:
         """
@@ -169,4 +174,3 @@ def create_isolated_symbol_state(
         rank=rank,
     )
     return state
-

@@ -68,96 +68,31 @@ from signal_brain import evaluate_regime_gate, generate_vwap_signal
 # PHASE 1: ORDER EXECUTION & PAYLOAD VALIDATION
 # ==============================================================================
 
-def test_phase1_smartapi_string_payload(monkeypatch):
-    """Verify smartApi.placeOrder() handling when SDK returns a raw string."""
-    monkeypatch.setattr(config, "LIVE_MODE", True)
-    mock_angel = MagicMock()
-    raw_order_id = "240915000001"
-    mock_angel.placeOrder.return_value = raw_order_id
-
-    order_id = place_live_order(
-        angel=mock_angel,
-        symbol="SJVN-EQ",
-        token="18883",
-        side="BUY",
-        qty=50,
-    )
-    assert order_id == raw_order_id, f"Expected {raw_order_id}, got {order_id}"
-    assert isinstance(order_id, str), "Order ID must be extracted as string"
+def test_phase1_smartapi_string_payload(tmp_path,monkeypatch):
+    t,b=live_trader(tmp_path,monkeypatch,ScenarioBroker(response='string'))
+    assert t.execute_trade(payload(),timestamp=NOW)
+    assert t.open_position['entry_order_id']=='1'
+    assert t.open_position['actual_entry_fill']==float(b.orders[0]['averageprice'])
+    t.shutdown()
 
 
-def test_phase1_smartapi_dict_payload(monkeypatch):
-    """Verify smartApi.placeOrder() handling when wrapper returns a dictionary."""
-    monkeypatch.setattr(config, "LIVE_MODE", True)
-    mock_angel = MagicMock()
-
-    # Case A: status = True
-    mock_angel.placeOrder.return_value = {
-        "status": True,
-        "data": {"orderid": "240915000002"},
-    }
-    order_id_a = place_live_order(mock_angel, "SJVN-EQ", "18883", "BUY", 50)
-    assert order_id_a == "240915000002"
-
-    # Case B: success = True
-    mock_angel.placeOrder.return_value = {
-        "success": True,
-        "data": {"orderid": "240915000003"},
-    }
-    order_id_b = place_live_order(mock_angel, "SJVN-EQ", "18883", "BUY", 50)
-    assert order_id_b == "240915000003"
+def test_phase1_smartapi_dict_payload(tmp_path,monkeypatch):
+    t,b=live_trader(tmp_path,monkeypatch,ScenarioBroker(response='dict'))
+    assert t.execute_trade(payload(),timestamp=NOW)
+    assert t.open_position['entry_order_id']=='1'
+    assert t.open_position['actual_entry_fill']==float(b.orders[0]['averageprice'])
+    t.shutdown()
 
 
-def test_phase1_order_assignment_state_transition(monkeypatch):
-    """Confirm internal position state strictly transitions to HOLDING_TRANCHE_1."""
-    monkeypatch.setattr(config, "LIVE_MODE", True)
-
-    mock_angel = MagicMock()
-    mock_angel.placeOrder.return_value = "240915000001"
-    mock_angel.orderBook.return_value = {
-        "status": True,
-        "data": [
-            {
-                "orderid": "240915000001",
-                "status": "complete",
-                "averageprice": 100.0,
-                "filledshares": 33,
-            }
-        ],
-    }
-
-    trader = PaperTrader(
-        total_capital=config.TOTAL_CAPITAL,
-        working_capital_pct=0.50,
-        angel_session=mock_angel,
-    )
-    assert trader.state == PyramidingState.IDLE
-
-    t0 = datetime(2026, 9, 15, 9, 20, tzinfo=timezone.utc)
-    signal_data = {
-        "VWAP": 100.0,
-        "Close": 100.0,
-        "symbol": "SJVN-EQ",
-        "ATR_14": 1.0,
-    }
-
-    ticket = trader.execute_trade(
-        signal_data=signal_data,
-        timestamp=t0,
-        atr_14=1.0,
-        side="BUY",
-        angel_session=mock_angel,
-    )
-
-    assert ticket is not None, "Trade execution returned None on valid order"
-    assert trader.state == PyramidingState.HOLDING_TRANCHE_1, (
-        f"State did not transition to HOLDING_TRANCHE_1: {trader.state}"
-    )
-    assert trader._pending_order_id == "240915000001"
-    assert trader._open_position is not None
-    assert trader._open_position["current_tranches"] == 1
-    assert trader._open_position["quantity"] > 0
-    assert mock_angel.placeOrder.called
+def test_phase1_order_assignment_state_transition(tmp_path,monkeypatch):
+    t,b=live_trader(tmp_path,monkeypatch)
+    assert t.execute_trade(payload(),timestamp=NOW)
+    assert t.execution_state=='POSITION_OPEN'
+    assert t.close_position(300,NOW)
+    assert t.execution_state=='ACCOUNTED' and b.netqty==0
+    assert t.journal.trades()[0]['reconciliation_status']=='BROKER_QUANTITY_MATCHED'
+    assert all(p['ordertype'] in {'LIMIT','STOPLOSS_LIMIT'} for p in b.requests)
+    t.shutdown()
 
 
 def test_phase1_order_failure_graceful_skip(monkeypatch):
@@ -275,208 +210,37 @@ def test_phase2_friction_gate_statutory_taxes_and_rr():
     assert passed is True, f"Friction gate check failed: {reason}"
 
 
-def test_phase2_wick_immunity_intra_candle_vs_close():
-    """
-    Simulate a tick-level price drop below the stop-loss limit, followed by
-    a 1-minute candle close above it. Assert intra-candle wick is ignored.
-    """
-    trader = PaperTrader(total_capital=config.TOTAL_CAPITAL, working_capital_pct=0.50)
-    t0 = datetime(2026, 9, 15, 9, 20, tzinfo=timezone.utc)
-
-    # Establish Base Position
-    ticket = trader.execute_trade(
-        {"VWAP": 100.0, "Close": 100.0, "symbol": "SJVN-EQ", "ATR_14": 1.0},
-        timestamp=t0,
-        atr_14=1.0,
-        side="BUY",
-    )
-    assert ticket is not None
-    assert trader.state == PyramidingState.HOLDING_TRANCHE_1
-    stop_loss = trader._open_position["stop_loss_price"]  # ₹98.00
-
-    # 1. Tick-level breach (Wick test): Price plunges below SL to ₹97.50
-    t1 = t0 + timedelta(seconds=30)
-    tick_exit = trader.check_exit(live_price=97.50, timestamp=t1)
-    assert tick_exit is None, "check_exit prematurely triggered SL on intra-candle wick!"
-    assert trader.state == PyramidingState.HOLDING_TRANCHE_1, "Position must remain open during intra-candle wick"
-
-    # 2. Candle Close ABOVE Stop Loss (Wick absorbed): Close = ₹98.50 > ₹98.00
-    t2 = t0 + timedelta(minutes=1)
-    candle_payload = {
-        "Timestamp": t2,
-        "Open": 100.0,
-        "High": 100.5,
-        "Low": 97.50,    # Deep wick below SL
-        "Close": 98.50,  # Rebounded above SL
-        "Volume": 1000,
-    }
-    close_exit = trader.notify_candle_close(
-        candle=candle_payload,
-        timestamp=t2,
-        latest_price=98.50,
-    )
-    assert close_exit is None, "notify_candle_close falsely triggered SL when close was above SL!"
-    assert trader.state == PyramidingState.HOLDING_TRANCHE_1, "Position must survive wick"
-
-    # 3. Candle Close BELOW Stop Loss (True Breach): Close = ₹97.80 < ₹98.00
-    t3 = t0 + timedelta(minutes=2)
-    candle_breach = {
-        "Timestamp": t3,
-        "Open": 98.50,
-        "High": 98.60,
-        "Low": 97.50,
-        "Close": 97.80,  # Closed below SL
-        "Volume": 1000,
-    }
-    sl_exit = trader.notify_candle_close(
-        candle=candle_breach,
-        timestamp=t3,
-        latest_price=97.80,
-    )
-    assert sl_exit is not None, "notify_candle_close failed to trigger SL on confirmed candle close"
-    assert "Stop Loss" in sl_exit["exit_reason"]
-    assert trader._open_position is None
+def test_phase2_wick_immunity_intra_candle_vs_close(tmp_path):
+    t=paper_trader(tmp_path)
+    assert t.execute_trade(payload(),timestamp=NOW)
+    t.set_quote(IDENTITY,MarketQuote(289.75,289.85,1000,1000,NOW,289.8))
+    assert t.check_exit(289.8,NOW) is None
+    assert t.has_open_position
+    summary=t.notify_candle_close({'Timestamp':NOW,'Close':289.8})
+    assert summary and 'Stop Loss' in summary['exit_reason']
+    assert summary['actual_exit_price']<290
+    t.shutdown()
 
 
-def test_phase2_dynamic_pyramiding_tranche2_trigger():
-    """Verify Tranche 2 scale-in trigger dynamically calculates to exactly entry_price + (2.0 * ATR)."""
-    trader = PaperTrader(total_capital=10000.0, working_capital_pct=0.50)
-    t0 = datetime(2026, 9, 15, 9, 20, tzinfo=timezone.utc)
-
-    entry_price = 100.0
-    entry_atr = 1.50
-    ticket = trader.execute_trade(
-        {"VWAP": entry_price, "Close": entry_price, "symbol": "SJVN-EQ", "ATR_14": entry_atr},
-        timestamp=t0,
-        atr_14=entry_atr,
-        side="BUY",
-    )
-    assert ticket is not None
-
-    # Expected trigger price: entry_price + (2.0 * ATR) = 100.0 + 3.0 = ₹103.00
-    expected_trigger = entry_price + (2.0 * entry_atr)
-    assert trader.entry_atr == entry_atr
-
-    # Scale-in blocked when price is below trigger (e.g. ₹101.50)
-    t1 = t0 + timedelta(minutes=2)
-    sub_trigger_signal = {
-        "VWAP": 101.50,
-        "Close": 101.50,
-        "symbol": "SJVN-EQ",
-        "ATR_14": entry_atr,
-    }
-    blocked_res = trader.execute_trade(
-        signal_data=sub_trigger_signal,
-        timestamp=t1,
-        atr_14=entry_atr,
-        side="BUY",
-    )
-    assert blocked_res is None, "Scale-in must be blocked before price reaches 2.0x ATR"
-    assert trader.state == PyramidingState.HOLDING_TRANCHE_1
-
-    # Scale-in permitted when price meets/exceeds trigger (e.g. ₹103.05)
-    t2 = t0 + timedelta(minutes=4)
-    valid_scale_signal = {
-        "VWAP": expected_trigger + 0.05,
-        "Close": expected_trigger + 0.05,
-        "symbol": "SJVN-EQ",
-        "ATR_14": entry_atr,
-    }
-    scale_res = trader.execute_trade(
-        signal_data=valid_scale_signal,
-        timestamp=t2,
-        atr_14=entry_atr,
-        side="BUY",
-    )
-    assert scale_res is not None, "Scale-in must execute when price reaches entry + 2.0x ATR"
-    assert trader.state == PyramidingState.HOLDING_TRANCHE_2
-    assert trader._open_position["current_tranches"] == 2
+def test_phase2_dynamic_pyramiding_tranche2_trigger(tmp_path):
+    t=paper_trader(tmp_path)
+    assert t.execute_trade(payload(),timestamp=NOW)
+    with pytest.raises(SafetyError,match='SCALE_IN_DISABLED'):t._execute_tranche_2({},NOW)
+    with pytest.raises(SafetyError,match='SCALE_IN_DISABLED'):t._execute_tranche_3({},NOW)
+    assert t.open_position['current_tranches']==1
+    t.shutdown()
 
 
-def test_phase2_pnl_tracking_tp_and_sl_cooldown():
-    """
-    Trigger simulated take-profit exit and stop-loss exit.
-    Validate P&L trackers correctly log net capital changes, trigger 10-candle
-    cooldown on loss, and cleanly reset state to IDLE.
-    """
-    trader = PaperTrader(total_capital=config.TOTAL_CAPITAL, working_capital_pct=0.50)
-    initial_working_cap = trader.working_capital
-
-    t0 = datetime(2026, 9, 15, 9, 20, tzinfo=timezone.utc)
-
-    # ── Part 1: Take-Profit Exit ──────────────────────────────────────────────
-    trader.execute_trade(
-        {"VWAP": 100.0, "Close": 100.0, "symbol": "SJVN-EQ", "ATR_14": 1.0},
-        timestamp=t0,
-        atr_14=1.0,
-        side="BUY",
-    )
-    tp_summary = trader.close_position(
-        exit_price=104.0,
-        timestamp=t0 + timedelta(minutes=5),
-        reason="Target Hit",
-    )
-    assert tp_summary is not None
-    assert tp_summary["net_pnl"] > 0
-    assert trader.working_capital > initial_working_cap
-    assert trader._open_position is None
-
-    # Reset state to IDLE for next trade
-    trader._state = PyramidingState.IDLE
-
-    # ── Part 2: Stop-Loss Exit & 10-Candle Cooldown ───────────────────────────
-    cap_before_loss = trader.working_capital
-    t1 = t0 + timedelta(minutes=10)
-    trader.execute_trade(
-        {"VWAP": 100.0, "Close": 100.0, "symbol": "SJVN-EQ", "ATR_14": 1.0},
-        timestamp=t1,
-        atr_14=1.0,
-        side="BUY",
-    )
-    sl_summary = trader.close_position(
-        exit_price=98.0,
-        timestamp=t1 + timedelta(minutes=2),
-        reason="Stop Loss (Wick-Immune Candle Close)",
-    )
-    assert sl_summary is not None
-    assert sl_summary["net_pnl"] < 0
-    assert trader.working_capital < cap_before_loss
-
-    # Verify Cooldown Firewall Triggered
-    assert trader.candles_since_last_sl == 0, "Stop loss must reset cooldown counter to 0"
-
-    # Reset state to IDLE
-    trader._state = PyramidingState.IDLE
-
-    # Immediate next signal must be BLOCKED by Cooldown Firewall (< 10 candles)
-    t2 = t1 + timedelta(minutes=3)
-    blocked_trade = trader.execute_trade(
-        {"VWAP": 100.0, "Close": 100.0, "symbol": "SJVN-EQ", "ATR_14": 1.0},
-        timestamp=t2,
-        atr_14=1.0,
-        side="BUY",
-    )
-    assert blocked_trade is None, "Cooldown firewall must block trade immediately after stop loss"
-
-    # Advance 10 candles
-    for i in range(1, 11):
-        trader.notify_candle_close(
-            candle={"Close": 100.0, "Volume": 500},
-            timestamp=t2 + timedelta(minutes=i),
-            latest_price=100.0,
-        )
-    assert trader.candles_since_last_sl >= 10, "Cooldown counter must reach >= 10 after 10 candle closes"
-
-    # Now trade must be PERMITTED
-    t3 = t2 + timedelta(minutes=11)
-    allowed_trade = trader.execute_trade(
-        {"VWAP": 100.0, "Close": 100.0, "symbol": "SJVN-EQ", "ATR_14": 1.0},
-        timestamp=t3,
-        atr_14=1.0,
-        side="BUY",
-    )
-    assert allowed_trade is not None, "Trade must be permitted once 10-candle cooldown expires"
-    assert trader.state == PyramidingState.HOLDING_TRANCHE_1
+def test_phase2_pnl_tracking_tp_and_sl_cooldown(tmp_path):
+    t=paper_trader(tmp_path)
+    assert t.execute_trade(payload(),timestamp=NOW)
+    t.set_quote(IDENTITY,MarketQuote(289.75,289.85,1000,1000,NOW,289.8))
+    assert t.notify_candle_close({'Timestamp':NOW,'Close':289.8})
+    assert t.execute_trade(payload(),timestamp=NOW) is None
+    assert t.last_rejection=='COOLDOWN'
+    for _ in range(config.REENTRY_COOLDOWN_CANDLES):t.notify_candle_close({'Timestamp':NOW,'Close':300})
+    assert t.candles_since_last_sl==config.REENTRY_COOLDOWN_CANDLES
+    t.shutdown()
 
 
 # ==============================================================================
@@ -1229,185 +993,36 @@ def test_eod_recon_api_failure():
 # PHASE 3: SURGICAL BROKER ORDER RECOVERY & SAFETY AUDIT (18 SCENARIOS)
 # ==============================================================================
 
-def test_recovery_entry_timeout_broker_executed(monkeypatch=None):
-    """Scenario 1: Entry timeout + broker execution -> recovers order ID, establishes position."""
-    mp = monkeypatch or pytest.MonkeyPatch()
-    mp.setattr(config, "LIVE_MODE", True)
-
-    mock_angel = MagicMock()
-    mock_angel.placeOrder.side_effect = TimeoutError("Connection timed out waiting for gateway")
-    mock_angel.orderBook.return_value = {
-        "status": True,
-        "data": [
-            {
-                "orderid": "REC_BUY_001",
-                "tradingsymbol": "SJVN-EQ",
-                "symboltoken": "18883",
-                "transactiontype": "BUY",
-                "producttype": "INTRADAY",
-                "quantity": 50,
-                "status": "complete",
-                "averageprice": 100.10,
-                "filledshares": 50,
-                "ordertype": "MARKET",
-                "ordertime": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            }
-        ],
-    }
-    mock_angel.position.return_value = {
-        "status": True,
-        "data": [{"tradingsymbol": "SJVN-EQ", "symboltoken": "18883", "netqty": "50", "producttype": "INTRADAY", "exchange": "NSE"}]
-    }
-
-    # 1. Direct verification of place_live_order recovery
-    oid = place_live_order(mock_angel, "SJVN-EQ", "18883", "BUY", 50)
-    assert oid == "REC_BUY_001", f"Expected recovered order ID 'REC_BUY_001', got: {oid}"
-    last_rec = get_last_order_recovery()
-    assert last_rec is not None
-    assert last_rec.status == RecoveryStatus.CONFIRMED_ORDER
-    assert last_rec.order_id == "REC_BUY_001"
-
-    # 2. Integration test: PaperTrader executes Tranche 1 using recovered order
-    mock_angel.orderBook.return_value = {
-        "status": True,
-        "data": [
-            {
-                "orderid": "REC_BUY_001",
-                "tradingsymbol": "SJVN-EQ",
-                "symboltoken": "18883",
-                "transactiontype": "BUY",
-                "producttype": "INTRADAY",
-                "status": "complete",
-                "averageprice": 100.10,
-                "filledshares": 33,
-                "ordertype": "MARKET",
-                "ordertime": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            }
-        ],
-    }
-    trader = PaperTrader(total_capital=config.TOTAL_CAPITAL, working_capital_pct=0.50, angel_session=mock_angel)
-    t0 = datetime(2026, 9, 15, 9, 20, tzinfo=timezone.utc)
-    signal_data = {"VWAP": 100.0, "Close": 100.0, "symbol": "SJVN-EQ", "ATR_14": 1.0}
-    ticket = trader.execute_trade(signal_data=signal_data, timestamp=t0, atr_14=1.0, side="BUY", angel_session=mock_angel)
-    assert ticket is not None
-    assert trader.state == PyramidingState.HOLDING_TRANCHE_1
-    assert trader._pending_order_id == "REC_BUY_001"
-    assert trader._open_position is not None
+def test_recovery_entry_timeout_broker_executed(tmp_path,monkeypatch):
+    assert_unknown_submission(tmp_path,monkeypatch,TimeoutError('mock lost acknowledgement'))
 
 
-def test_recovery_entry_timeout_broker_rejected(monkeypatch=None):
-    """Scenario 2: Entry timeout + broker rejection -> confirmed rejection, returns IDLE, no ghost position."""
-    mp = monkeypatch or pytest.MonkeyPatch()
-    mp.setattr(config, "LIVE_MODE", True)
-
-    mock_angel = MagicMock()
-    mock_angel.placeOrder.side_effect = TimeoutError("Connection timed out")
-    mock_angel.orderBook.return_value = {
-        "status": True,
-        "data": [
-            {
-                "orderid": "REC_REJ_001",
-                "tradingsymbol": "SJVN-EQ",
-                "symboltoken": "18883",
-                "transactiontype": "BUY",
-                "producttype": "INTRADAY",
-                "quantity": 50,
-                "status": "rejected",
-                "text": "RMS: Margin Insufficient",
-                "ordertype": "MARKET",
-                "ordertime": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            }
-        ],
-    }
-
-    oid = place_live_order(mock_angel, "SJVN-EQ", "18883", "BUY", 50)
-    assert oid is None
-    last_rec = get_last_order_recovery()
-    assert last_rec is not None
-    assert last_rec.status == RecoveryStatus.CONFIRMED_REJECTION
-
-    trader = PaperTrader(total_capital=10000.0, working_capital_pct=0.50, angel_session=mock_angel)
-    t0 = datetime(2026, 9, 15, 9, 20, tzinfo=timezone.utc)
-    signal_data = {"VWAP": 100.0, "Close": 100.0, "symbol": "SJVN-EQ", "ATR_14": 1.0}
-    ticket = trader.execute_trade(signal_data=signal_data, timestamp=t0, atr_14=1.0, side="BUY", angel_session=mock_angel)
-    assert ticket is None
-    assert trader.state == PyramidingState.IDLE
-    assert trader._open_position is None
+def test_recovery_entry_timeout_broker_rejected(tmp_path,monkeypatch):
+    t,b=live_trader(tmp_path,monkeypatch)
+    b.reject=True
+    assert t.execute_trade(payload(),timestamp=NOW) is None
+    assert t.last_rejection=='BROKER_ORDER_REJECTED'
+    assert not t.has_open_position and not t.journal.reservations() and not t.journal.fills()
+    t.shutdown()
 
 
-def test_recovery_entry_timeout_no_order(monkeypatch=None):
-    """Scenario 3: Entry timeout + no immediate order visibility & netqty==0 -> CONFIRMED_NO_ORDER."""
-    mp = monkeypatch or pytest.MonkeyPatch()
-    mp.setattr(config, "LIVE_MODE", True)
-
-    mock_angel = MagicMock()
-    mock_angel.placeOrder.side_effect = TimeoutError("Connection timed out")
-    mock_angel.orderBook.return_value = {"status": True, "data": []}
-    mock_angel.position.return_value = {"status": True, "data": []}
-
-    oid = place_live_order(mock_angel, "SJVN-EQ", "18883", "BUY", 50)
-    assert oid is None
-    last_rec = get_last_order_recovery()
-    assert last_rec is not None
-    assert last_rec.status == RecoveryStatus.CONFIRMED_NO_ORDER
-
-    trader = PaperTrader(total_capital=10000.0, working_capital_pct=0.50, angel_session=mock_angel)
-    t0 = datetime(2026, 9, 15, 9, 20, tzinfo=timezone.utc)
-    signal_data = {"VWAP": 100.0, "Close": 100.0, "symbol": "SJVN-EQ", "ATR_14": 1.0}
-    ticket = trader.execute_trade(signal_data=signal_data, timestamp=t0, atr_14=1.0, side="BUY", angel_session=mock_angel)
-    assert ticket is None
-    assert trader.state == PyramidingState.IDLE
-    assert trader._open_position is None
+def test_recovery_entry_timeout_no_order(tmp_path,monkeypatch):
+    t,b=live_trader(tmp_path,monkeypatch)
+    b.placeOrder=lambda params:None
+    assert t.execute_trade(payload(),timestamp=NOW) is None
+    assert t.is_halted and t.journal.reservations() and not t.has_open_position
+    assert t.execute_trade(payload(),timestamp=NOW) is None
+    t.shutdown()
 
 
-def test_recovery_entry_timeout_multiple_matches(monkeypatch=None):
-    """Scenario 4: Entry timeout + multiple matching orders -> STATE_UNKNOWN, quarantines engine."""
-    mp = monkeypatch or pytest.MonkeyPatch()
-    mp.setattr(config, "LIVE_MODE", True)
-
-    mock_angel = MagicMock()
-    mock_angel.placeOrder.side_effect = TimeoutError("Connection timed out")
-    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    mock_angel.orderBook.return_value = {
-        "status": True,
-        "data": [
-            {
-                "orderid": "OID_1",
-                "tradingsymbol": "SJVN-EQ",
-                "symboltoken": "18883",
-                "transactiontype": "BUY",
-                "producttype": "INTRADAY",
-                "quantity": 50,
-                "status": "complete",
-                "ordertype": "MARKET",
-                "ordertime": now_str,
-            },
-            {
-                "orderid": "OID_2",
-                "tradingsymbol": "SJVN-EQ",
-                "symboltoken": "18883",
-                "transactiontype": "BUY",
-                "producttype": "INTRADAY",
-                "quantity": 50,
-                "status": "complete",
-                "ordertype": "MARKET",
-                "ordertime": now_str,
-            },
-        ],
-    }
-
-    oid = place_live_order(mock_angel, "SJVN-EQ", "18883", "BUY", 50)
-    assert oid is None
-    last_rec = get_last_order_recovery()
-    assert last_rec is not None
-    assert last_rec.status == RecoveryStatus.STATE_UNKNOWN
-
-    trader = PaperTrader(total_capital=config.TOTAL_CAPITAL, working_capital_pct=0.50, angel_session=mock_angel)
-    t0 = datetime(2026, 9, 15, 9, 20, tzinfo=timezone.utc)
-    signal_data = {"VWAP": 100.0, "Close": 100.0, "symbol": "SJVN-EQ", "ATR_14": 1.0}
-    ticket = trader.execute_trade(signal_data=signal_data, timestamp=t0, atr_14=1.0, side="BUY", angel_session=mock_angel)
-    assert ticket is None
-    assert trader.state == PyramidingState.STATE_UNKNOWN
+def test_recovery_entry_timeout_multiple_matches(tmp_path,monkeypatch):
+    t,b=live_trader(tmp_path,monkeypatch)
+    row={'orderid':'duplicate','symboltoken':IDENTITY.token,'tradingsymbol':IDENTITY.trading_symbol,
+        'transactiontype':'BUY','status':'open','quantity':'8','exchange':'NSE'}
+    b.orders=[row,dict(row)]
+    assert t.execute_trade(payload(),timestamp=NOW) is None
+    assert t.is_halted and not b.requests
+    t.shutdown()
 
 
 def test_recovery_entry_duplicate_blocked(monkeypatch=None):
@@ -1429,477 +1044,88 @@ def test_recovery_entry_duplicate_blocked(monkeypatch=None):
     assert mock_angel.placeOrder.call_count == 0
 
 
-def test_recovery_exit_timeout_broker_executed(monkeypatch=None):
-    """Scenario 6: Exit timeout + broker execution -> confirms closure, updates P&L."""
-    mp = monkeypatch or pytest.MonkeyPatch()
-    mp.setattr(config, "LIVE_MODE", True)
-
-    mock_angel = MagicMock()
-    mock_angel.placeOrder.side_effect = TimeoutError("Exit order timeout")
-    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    mock_angel.orderBook.return_value = {
-        "status": True,
-        "data": [
-            {
-                "orderid": "REC_EXIT_001",
-                "tradingsymbol": "SJVN-EQ",
-                "symboltoken": "18883",
-                "transactiontype": "SELL",
-                "producttype": "INTRADAY",
-                "quantity": 50,
-                "status": "complete",
-                "averageprice": 105.0,
-                "filledshares": 50,
-                "ordertype": "MARKET",
-                "ordertime": now_str,
-            }
-        ],
-    }
-    # Checkpoint A sees open (50), post-flight sees flat (0)
-    mock_angel.position.side_effect = [
-        {"status": True, "data": [{"tradingsymbol": "SJVN-EQ", "symboltoken": "18883", "netqty": "50", "producttype": "INTRADAY", "exchange": "NSE"}]},
-        {"status": True, "data": [{"tradingsymbol": "SJVN-EQ", "symboltoken": "18883", "netqty": "0", "producttype": "INTRADAY", "exchange": "NSE"}]},
-        {"status": True, "data": [{"tradingsymbol": "SJVN-EQ", "symboltoken": "18883", "netqty": "0", "producttype": "INTRADAY", "exchange": "NSE"}]},
-    ]
-
-    trader = PaperTrader(total_capital=10000.0, working_capital_pct=0.50, angel_session=mock_angel)
-    trader._open_position = {
-        "position_id": "P1",
-        "symbol": "SJVN-EQ",
-        "token": "18883",
-        "side": "BUY",
-        "quantity": 50,
-        "avg_entry_price": 100.0,
-        "average_entry_price": 100.0,
-        "total_cost": 5000.0,
-        "entry_timestamp": datetime.now(),
-        "current_tranches": 1,
-        "tranches": [1],
-        "exit_in_flight": False,
-    }
-    trader._state = PyramidingState.HOLDING_TRANCHE_1
-
-    summary = trader.close_position(exit_price=105.0, reason="Target Reached", timestamp=datetime.now())
-    assert trader._open_position is None
-    assert trader.state == PyramidingState.CLOSED
-    assert summary is not None
-    assert summary["exit_price"] == 105.0
+def test_recovery_exit_timeout_broker_executed(tmp_path,monkeypatch):
+    assert_unknown_exit(tmp_path,monkeypatch)
 
 
-def test_recovery_exit_timeout_broker_rejected(monkeypatch=None):
-    """Scenario 7: Exit timeout + broker rejection -> trade remains open locally, no false closure."""
-    mp = monkeypatch or pytest.MonkeyPatch()
-    mp.setattr(config, "LIVE_MODE", True)
-
-    mock_angel = MagicMock()
-    mock_angel.placeOrder.side_effect = TimeoutError("Exit order timeout")
-    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    mock_angel.orderBook.return_value = {
-        "status": True,
-        "data": [
-            {
-                "orderid": "REJ_EXIT_001",
-                "tradingsymbol": "SJVN-EQ",
-                "symboltoken": "18883",
-                "transactiontype": "SELL",
-                "producttype": "INTRADAY",
-                "quantity": 50,
-                "status": "rejected",
-                "text": "Market closed",
-                "ordertype": "MARKET",
-                "ordertime": now_str,
-            }
-        ],
-    }
-    mock_angel.position.return_value = {
-        "status": True,
-        "data": [{"tradingsymbol": "SJVN-EQ", "symboltoken": "18883", "netqty": "50", "producttype": "INTRADAY", "exchange": "NSE"}]
-    }
-
-    trader = PaperTrader(total_capital=10000.0, working_capital_pct=0.50, angel_session=mock_angel)
-    trader._open_position = {
-        "position_id": "P1",
-        "symbol": "SJVN-EQ",
-        "token": "18883",
-        "side": "BUY",
-        "quantity": 50,
-        "avg_entry_price": 100.0,
-        "average_entry_price": 100.0,
-        "total_cost": 5000.0,
-        "entry_timestamp": datetime.now(),
-        "current_tranches": 1,
-        "tranches": [1],
-        "exit_in_flight": False,
-    }
-    trader._state = PyramidingState.HOLDING_TRANCHE_1
-
-    summary = trader.close_position(exit_price=105.0, reason="Target Reached", timestamp=datetime.now())
-    assert summary is None
-    assert trader._open_position is not None
-    assert trader.state == PyramidingState.STATE_UNKNOWN
+def test_recovery_exit_timeout_broker_rejected(tmp_path,monkeypatch):
+    t,b=live_trader(tmp_path,monkeypatch)
+    assert t.execute_trade(payload(),timestamp=NOW)
+    b.reject=True
+    assert t.close_position(300,NOW) is None
+    assert t.has_open_position and t.is_halted and b.netqty>0
+    assert not t.journal.trades()
+    t.shutdown()
 
 
-def test_recovery_exit_timeout_netqty_zero_prevents_second_sell(monkeypatch=None):
-    """Scenario 8: Exit timeout + netqty == 0 -> Checkpoint A intercepts, zero new SELLs placed."""
-    mp = monkeypatch or pytest.MonkeyPatch()
-    mp.setattr(config, "LIVE_MODE", True)
-
-    mock_angel = MagicMock()
-    mock_angel.position.return_value = {
-        "status": True,
-        "data": [{"tradingsymbol": "SJVN-EQ", "symboltoken": "18883", "netqty": "0", "producttype": "INTRADAY", "exchange": "NSE"}]
-    }
-    mock_angel.orderBook.return_value = {
-        "status": True,
-        "data": [
-            {
-                "orderid": "ALREADY_CLOSED_OID",
-                "tradingsymbol": "SJVN-EQ",
-                "symboltoken": "18883",
-                "transactiontype": "SELL",
-                "producttype": "INTRADAY",
-                "quantity": 50,
-                "status": "complete",
-                "averageprice": 102.5,
-                "ordertype": "MARKET",
-            }
-        ]
-    }
-
-    trader = PaperTrader(total_capital=10000.0, working_capital_pct=0.50, angel_session=mock_angel)
-    trader._open_position = {
-        "position_id": "P1",
-        "symbol": "SJVN-EQ",
-        "token": "18883",
-        "side": "BUY",
-        "quantity": 50,
-        "avg_entry_price": 100.0,
-        "average_entry_price": 100.0,
-        "total_cost": 5000.0,
-        "entry_timestamp": datetime.now(),
-        "current_tranches": 1,
-        "tranches": [1],
-        "exit_in_flight": False,
-    }
-    trader._state = PyramidingState.HOLDING_TRANCHE_1
-
-    summary = trader.close_position(exit_price=103.0, reason="Target Reached", timestamp=datetime.now())
-    assert mock_angel.placeOrder.call_count == 0
-    assert trader._open_position is None
-    assert trader.state == PyramidingState.CLOSED
-    assert summary is not None
-    assert summary["exit_price"] == 102.5
+def test_recovery_exit_timeout_netqty_zero_prevents_second_sell(tmp_path,monkeypatch):
+    assert_unknown_exit(tmp_path,monkeypatch)
 
 
-def test_recovery_exit_timeout_netqty_nonzero_prevents_false_closure(monkeypatch=None):
-    """Scenario 9: Exit timeout + netqty != 0 -> prevents false trade closure, sets exit_in_flight."""
-    mp = monkeypatch or pytest.MonkeyPatch()
-    mp.setattr(config, "LIVE_MODE", True)
-
-    mock_angel = MagicMock()
-    mock_angel.placeOrder.side_effect = TimeoutError("Exit timeout")
-    mock_angel.orderBook.return_value = {"status": True, "data": []}
-    mock_angel.position.return_value = {
-        "status": True,
-        "data": [{"tradingsymbol": "SJVN-EQ", "symboltoken": "18883", "netqty": "50", "producttype": "INTRADAY", "exchange": "NSE"}]
-    }
-
-    trader = PaperTrader(total_capital=10000.0, working_capital_pct=0.50, angel_session=mock_angel)
-    trader._open_position = {
-        "position_id": "P1",
-        "symbol": "SJVN-EQ",
-        "token": "18883",
-        "side": "BUY",
-        "quantity": 50,
-        "avg_entry_price": 100.0,
-        "average_entry_price": 100.0,
-        "total_cost": 5000.0,
-        "entry_timestamp": datetime.now(),
-        "current_tranches": 1,
-        "tranches": [1],
-        "exit_in_flight": False,
-    }
-    trader._state = PyramidingState.HOLDING_TRANCHE_1
-
-    summary = trader.close_position(exit_price=105.0, reason="Target Reached", timestamp=datetime.now())
-    assert summary is None
-    assert trader._open_position is not None
-    assert trader._open_position["exit_in_flight"] is True
-    assert trader.state == PyramidingState.STATE_UNKNOWN
+def test_recovery_exit_timeout_netqty_nonzero_prevents_false_closure(tmp_path,monkeypatch):
+    b=ScenarioBroker(partial_exit=2); t,b=live_trader(tmp_path,monkeypatch,b)
+    assert t.execute_trade(payload(),timestamp=NOW)
+    alerts=MagicMock(); monkeypatch.setattr('execution_engine.alert_human',alerts)
+    b.fail_submit=TimeoutError('mock partial exit lost acknowledgement')
+    assert t.close_position(300,NOW) is None
+    assert t.has_open_position and b.netqty>0 and t.is_halted and alerts.called
+    assert not t.journal.trades()
+    t.shutdown()
 
 
-def test_recovery_exit_timeout_ambiguous(monkeypatch=None):
-    """Scenario 10: Exit timeout + ambiguous broker state -> quarantines, second call blocked by exit_in_flight."""
-    mp = monkeypatch or pytest.MonkeyPatch()
-    mp.setattr(config, "LIVE_MODE", True)
-
-    mock_angel = MagicMock()
-    mock_angel.placeOrder.side_effect = TimeoutError("Gateway timeout")
-    mock_angel.orderBook.side_effect = Exception("Orderbook API down")
-    mock_angel.position.side_effect = Exception("Position API down")
-
-    trader = PaperTrader(total_capital=10000.0, working_capital_pct=0.50, angel_session=mock_angel)
-    trader._open_position = {
-        "position_id": "P1",
-        "symbol": "SJVN-EQ",
-        "token": "18883",
-        "side": "BUY",
-        "quantity": 50,
-        "avg_entry_price": 100.0,
-        "average_entry_price": 100.0,
-        "total_cost": 5000.0,
-        "entry_timestamp": datetime.now(),
-        "current_tranches": 1,
-        "tranches": [1],
-        "exit_in_flight": False,
-    }
-    trader._state = PyramidingState.HOLDING_TRANCHE_1
-
-    # First exit attempt
-    trader.close_position(exit_price=105.0, reason="Stop Loss", timestamp=datetime.now())
-    assert trader._open_position is not None
-    assert trader._open_position["exit_in_flight"] is True
-    assert trader.state == PyramidingState.STATE_UNKNOWN
-    assert mock_angel.placeOrder.call_count == 1
-
-    # Second exit call on subsequent candle - blocked by exit_in_flight
-    trader.close_position(exit_price=104.0, reason="Stop Loss", timestamp=datetime.now())
-    assert mock_angel.placeOrder.call_count == 1
+def test_recovery_exit_timeout_ambiguous(tmp_path,monkeypatch):
+    assert_unknown_exit(tmp_path,monkeypatch)
 
 
-def test_recovery_partial_entry_fill(monkeypatch=None):
-    """Scenario 11: Partial entry fill -> position quantity records actual filled shares (30/50)."""
-    mp = monkeypatch or pytest.MonkeyPatch()
-    mp.setattr(config, "LIVE_MODE", True)
-
-    mock_angel = MagicMock()
-    mock_angel.placeOrder.return_value = "ORD_PART_001"
-    mock_angel.orderBook.return_value = {
-        "status": True,
-        "data": [
-            {
-                "orderid": "ORD_PART_001",
-                "tradingsymbol": "SJVN-EQ",
-                "symboltoken": "18883",
-                "transactiontype": "BUY",
-                "status": "complete",
-                "averageprice": 100.5,
-                "filledshares": 30,
-                "unfilledshares": 20,
-            }
-        ],
-    }
-
-    actual_price, filled_qty = get_actual_fill_price(mock_angel, "ORD_PART_001", expected_qty=50)
-    assert actual_price == 100.5
-    assert filled_qty == 30
-
-    trader = PaperTrader(total_capital=config.TOTAL_CAPITAL, working_capital_pct=0.50, angel_session=mock_angel)
-    t0 = datetime(2026, 9, 15, 9, 20, tzinfo=timezone.utc)
-    signal_data = {"VWAP": 100.0, "Close": 100.0, "symbol": "SJVN-EQ", "ATR_14": 1.0}
-    ticket = trader.execute_trade(signal_data=signal_data, timestamp=t0, atr_14=1.0, side="BUY", angel_session=mock_angel)
-    assert ticket is not None
-    assert trader._open_position["quantity"] == 30
+def test_recovery_partial_entry_fill(tmp_path,monkeypatch):
+    b=ScenarioBroker(partial_entry=8); t,b=live_trader(tmp_path,monkeypatch,b)
+    ticket=t.execute_trade(payload(atr=4),timestamp=NOW)
+    assert ticket and ticket['quantity']==8 and t.open_position['quantity']==8
+    assert b.requests[-1]['quantity']=='8' and b.requests[-1]['ordertype']=='STOPLOSS_LIMIT'
+    assert t.close_position(300,NOW)['filled_quantity']==8
+    t.shutdown()
 
 
-def test_recovery_partial_exit_fill(monkeypatch=None):
-    """Scenario 12: Partial exit fill -> remaining exposure retained (20 shares), trade not closed."""
-    mp = monkeypatch or pytest.MonkeyPatch()
-    mp.setattr(config, "LIVE_MODE", True)
-
-    mock_angel = MagicMock()
-    mock_angel.placeOrder.return_value = "EXIT_PART_001"
-    mock_angel.orderBook.return_value = {
-        "status": True,
-        "data": [
-            {
-                "orderid": "EXIT_PART_001",
-                "tradingsymbol": "SJVN-EQ",
-                "symboltoken": "18883",
-                "transactiontype": "SELL",
-                "status": "complete",
-                "averageprice": 105.0,
-                "filledshares": 30,
-                "unfilledshares": 20,
-            }
-        ],
-    }
-    # Checkpoint A sees 50, post-flight sees 20 remaining
-    mock_angel.position.side_effect = [
-        {"status": True, "data": [{"tradingsymbol": "SJVN-EQ", "symboltoken": "18883", "netqty": "50", "producttype": "INTRADAY", "exchange": "NSE"}]},
-        {"status": True, "data": [{"tradingsymbol": "SJVN-EQ", "symboltoken": "18883", "netqty": "20", "producttype": "INTRADAY", "exchange": "NSE"}]},
-        {"status": True, "data": [{"tradingsymbol": "SJVN-EQ", "symboltoken": "18883", "netqty": "20", "producttype": "INTRADAY", "exchange": "NSE"}]},
-    ]
-
-    trader = PaperTrader(total_capital=10000.0, working_capital_pct=0.50, angel_session=mock_angel)
-    trader._open_position = {
-        "position_id": "P1",
-        "symbol": "SJVN-EQ",
-        "token": "18883",
-        "side": "BUY",
-        "quantity": 50,
-        "avg_entry_price": 100.0,
-        "average_entry_price": 100.0,
-        "total_cost": 5000.0,
-        "entry_timestamp": datetime.now(),
-        "current_tranches": 1,
-        "tranches": [1],
-        "exit_in_flight": False,
-    }
-    trader._state = PyramidingState.HOLDING_TRANCHE_1
-
-    summary = trader.close_position(exit_price=105.0, reason="Target Reached", timestamp=datetime.now())
-    assert summary is None
-    assert trader._open_position is not None
-    assert trader._open_position["quantity"] == 20
-    assert trader._open_position["exit_in_flight"] is True
-    assert trader.state == PyramidingState.STATE_UNKNOWN
+def test_recovery_partial_exit_fill(tmp_path,monkeypatch):
+    b=ScenarioBroker(partial_exit=2); t,b=live_trader(tmp_path,monkeypatch,b)
+    ticket=t.execute_trade(payload(),timestamp=NOW); qty=ticket['quantity']
+    assert t.close_position(300,NOW) is None
+    assert t.open_position['quantity']==qty-2 and b.netqty==qty-2
+    assert t.execution_state=='PARTIALLY_EXITED' and t.open_position['protection_id']
+    assert not t.journal.trades()
+    for _ in range(qty):
+        if t.has_open_position:t.close_position(300,NOW)
+    assert b.netqty==0 and len(t.journal.trades())==1
+    t.shutdown()
 
 
-def test_recovery_http_502(monkeypatch=None):
-    """Scenario 13: HTTP 502 Bad Gateway -> treated as ambiguous transport error, initiates recovery."""
-    mock_angel = MagicMock()
-    mock_angel.placeOrder.side_effect = Exception("502 Server Error: Bad Gateway for url: https://apiconnect.angelbroking.com")
-    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    mock_angel.orderBook.return_value = {
-        "status": True,
-        "data": [
-            {
-                "orderid": "502_REC_OID",
-                "tradingsymbol": "SJVN-EQ",
-                "symboltoken": "18883",
-                "transactiontype": "BUY",
-                "quantity": 50,
-                "status": "complete",
-                "averageprice": 100.0,
-                "ordertype": "MARKET",
-                "ordertime": now_str,
-            }
-        ],
-    }
-
-    oid = place_live_order(mock_angel, "SJVN-EQ", "18883", "BUY", 50)
-    assert oid == "502_REC_OID"
-    last_rec = get_last_order_recovery()
-    assert last_rec is not None
-    assert last_rec.status == RecoveryStatus.CONFIRMED_ORDER
+def test_recovery_http_502(tmp_path,monkeypatch):
+    assert_unknown_submission(tmp_path,monkeypatch,ConnectionError('502 mock gateway'))
 
 
-def test_recovery_http_504(monkeypatch=None):
-    """Scenario 14: HTTP 504 Gateway Timeout -> treated as ambiguous, initiates recovery."""
-    mock_angel = MagicMock()
-    mock_angel.placeOrder.side_effect = Exception("504 Gateway Time-out")
-    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    mock_angel.orderBook.return_value = {
-        "status": True,
-        "data": [
-            {
-                "orderid": "504_REC_OID",
-                "tradingsymbol": "SJVN-EQ",
-                "symboltoken": "18883",
-                "transactiontype": "BUY",
-                "quantity": 50,
-                "status": "complete",
-                "averageprice": 100.0,
-                "ordertype": "MARKET",
-                "ordertime": now_str,
-            }
-        ],
-    }
-
-    oid = place_live_order(mock_angel, "SJVN-EQ", "18883", "BUY", 50)
-    assert oid == "504_REC_OID"
-    last_rec = get_last_order_recovery()
-    assert last_rec is not None
-    assert last_rec.status == RecoveryStatus.CONFIRMED_ORDER
+def test_recovery_http_504(tmp_path,monkeypatch):
+    assert_unknown_submission(tmp_path,monkeypatch,TimeoutError('504 mock gateway'))
 
 
-def test_recovery_connection_error(monkeypatch=None):
-    """Scenario 15: ConnectionError / ConnectionResetError -> triggers recovery protocol."""
-    mock_angel = MagicMock()
-    mock_angel.placeOrder.side_effect = ConnectionResetError("Connection reset by peer [Errno 54]")
-    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    mock_angel.orderBook.return_value = {
-        "status": True,
-        "data": [
-            {
-                "orderid": "CONN_REC_OID",
-                "tradingsymbol": "SJVN-EQ",
-                "symboltoken": "18883",
-                "transactiontype": "BUY",
-                "quantity": 50,
-                "status": "complete",
-                "averageprice": 100.0,
-                "ordertype": "MARKET",
-                "ordertime": now_str,
-            }
-        ],
-    }
-
-    oid = place_live_order(mock_angel, "SJVN-EQ", "18883", "BUY", 50)
-    assert oid == "CONN_REC_OID"
-    last_rec = get_last_order_recovery()
-    assert last_rec is not None
-    assert last_rec.status == RecoveryStatus.CONFIRMED_ORDER
+def test_recovery_connection_error(tmp_path,monkeypatch):
+    assert_unknown_submission(tmp_path,monkeypatch,ConnectionError('mock disconnected'))
 
 
-def test_recovery_missing_order_id(monkeypatch=None):
-    """Scenario 16: Missing order ID in 200 OK response -> triggers orderBook recovery."""
-    mock_angel = MagicMock()
-    mock_angel.placeOrder.return_value = {"status": True, "message": "SUCCESS", "data": {}}
-    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    mock_angel.orderBook.return_value = {
-        "status": True,
-        "data": [
-            {
-                "orderid": "MISSING_ID_RECOVERED",
-                "tradingsymbol": "SJVN-EQ",
-                "symboltoken": "18883",
-                "transactiontype": "BUY",
-                "quantity": 50,
-                "status": "complete",
-                "averageprice": 100.0,
-                "ordertype": "MARKET",
-                "ordertime": now_str,
-            }
-        ],
-    }
-
-    oid = place_live_order(mock_angel, "SJVN-EQ", "18883", "BUY", 50)
-    assert oid == "MISSING_ID_RECOVERED"
-    last_rec = get_last_order_recovery()
-    assert last_rec is not None
-    assert last_rec.status == RecoveryStatus.CONFIRMED_ORDER
+def test_recovery_missing_order_id(tmp_path,monkeypatch):
+    assert_unknown_submission(tmp_path,monkeypatch,response='missing')
 
 
-def test_recovery_human_alert_fired(monkeypatch=None):
-    """Scenario 17: Human alert invocation verification -> context rich, zero credentials leaked."""
-    mp = monkeypatch or pytest.MonkeyPatch()
-    alert_messages = []
-    def mock_alert(msg: str):
-        alert_messages.append(msg)
-
-    mp.setattr("execution_engine.alert_human", mock_alert)
-    mp.setattr(config, "LIVE_MODE", True)
-
-    mock_angel = MagicMock()
-    mock_angel.placeOrder.side_effect = TimeoutError("Simulated timeout")
-    mock_angel.orderBook.side_effect = Exception("Service unavailable")
-    mock_angel.position.side_effect = Exception("Service unavailable")
-
-    oid = place_live_order(mock_angel, "SJVN-EQ", "18883", "BUY", 50)
-    assert oid is None
-    assert len(alert_messages) >= 1
-    alert_text = alert_messages[0]
-
-    assert "[CRITICAL STATE UNKNOWN]" in alert_text
-    assert "Symbol: SJVN-EQ" in alert_text
-    assert "Side: BUY" in alert_text
-    assert "Qty: 50" in alert_text
-    assert "BLOCKED" in alert_text
-    forbidden_tokens = ["jwtToken", "apiKey", "password", "feedToken", "secret", "privateKey"]
-    for token in forbidden_tokens:
-        assert token not in alert_text
+def test_recovery_human_alert_fired(tmp_path,monkeypatch):
+    t,b=live_trader(tmp_path,monkeypatch)
+    alerts=MagicMock(); monkeypatch.setattr('execution_engine.alert_human',alerts)
+    original=b.placeOrder
+    def failed(params):
+        result=original(params); b.fail_snapshot=True; raise TimeoutError('mock timeout')
+    b.placeOrder=failed
+    assert t.execute_trade(payload(),timestamp=NOW) is None
+    assert t.is_halted and alerts.called and t.journal.reservations()
+    assert not t.reconcile_broker('RESTART')
+    t.shutdown()
 
 
 def test_recovery_restart_after_unknown_state(monkeypatch=None):
@@ -2033,3 +1259,7 @@ def run_audit() -> None:
 if __name__ == "__main__":
     run_audit()
 
+
+from safety_test_support import ScenarioBroker, paper_trader, live_trader, assert_unknown_submission, assert_unknown_exit
+from test_safety_v6 import NOW, IDENTITY, payload, quote
+from execution_safety import SafetyError, MarketQuote, solve_quantity

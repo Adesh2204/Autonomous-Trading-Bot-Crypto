@@ -1,45 +1,8 @@
-"""
-execution_engine.py — Institutional Multi-Tranche Pyramiding Execution Engine
-=============================================================================
-Simulates trade execution for liquid NSE Cash Equities (nse_cm) with strict,
-mathematical risk management and a 3-Stage Pyramiding (Scale-In on Strength)
-state machine.
+"""Execution compatibility API and unchanged candle-close management base.
 
-Core Architectural Features
-────────────────────────────
-1. Capital Allocation:
-   • Total Capital    : ₹10,017.00
-   • Working Capital  : ₹5,008.50 (50% intraday active deployment)
-   • Backup Capital   : ₹5,008.50 (50% reserve buffer)
-   • Risk Per Setup   : ≤ ₹100.00
-   • Daily Loss Limit : ₹200.00 (Hard circuit breaker)
-
-2. 3-Stage Multi-Tranche Pyramiding:
-   • Tranche 1 (Base)   : 33% of Working Capital (≈ ₹1,652.80)
-   • Tranche 2 (Scale 1): 33% of Working Capital (≈ ₹1,652.80)
-   • Tranche 3 (Scale 2): 34% of Working Capital (≈ ₹1,702.90)
-   • Quantity: Q_i = floor(Tranche_Capital_i / P_entry_i) where Q_i ≥ 1.
-
-3. Scale-In on Strength & Zero-Risk Locks:
-   • State 0 (IDLE)              → Fills Tranche 1, SL = Entry1 × (1 - 0.005), TP = Entry1 × (1 + 0.010).
-   • State 1 (HOLDING_TRANCHE_1) → Trigger: Price ≥ Entry1 × 1.005 (+0.50%) & VWAP Signal.
-                                   Trails SL to Entry1 (Breakeven), fills Tranche 2,
-                                   recalculates VWAP Avg Entry & 1:2 TP.
-   • State 2 (HOLDING_TRANCHE_2) → Trigger: Price ≥ Entry2 × 1.005 (+0.50%) & VWAP Signal.
-                                   Trails SL to ≥ Entry2, fills Tranche 3,
-                                   recalculates VWAP Avg Entry & 1:2 TP.
-   • State 3 (MAX_TRANCHES_HELD) → Fully scaled position holding to TP / SL / EOD.
-
-4. Exit Priority & Purged Time Stop:
-   • All 40-candle / 40-minute time-stop exits are PERMANENTLY REMOVED.
-   • Priority 1: Dynamic Stop Loss Hit (Low_t ≤ Global Stop Loss)
-   • Priority 2: 1:2 Profit Target Hit (High_t ≥ Global Target Price)
-   • Priority 3: 15:20:00 IST EOD Auto-Square-Off
-
-5. Statutory Net-Profit Friction Gate & CSV Persistence:
-   • NSE Intraday charges: Brokerage, STT (Sell), Exchange Fee (0.00345%), GST (18%), Stamp Duty (0.003%), SEBI.
-   • Pre-order validation verifies net trade expectancy > 0.
-   • Persistent ledger appended to `trades.csv` on position close.
+Public PaperTrader/ExecutionEngine use SafeTrader for a single position, confirmed
+fills, central fees and durable risk/accounting. Legacy entry, scaling and closing
+paths are retired. Strategy math and one-minute signals remain frozen.
 """
 
 import csv
@@ -548,130 +511,18 @@ def recover_broker_order(
     )
 
 
-def place_live_order(
-    angel: Any,
-    symbol: str,
-    token: str,
-    side: str,
-    qty: int,
-) -> Optional[str]:
-    """
-    Places a real MIS (intraday) MARKET order on NSE via Angel One SmartAPI.
-    Uses defensive SmartAPI response parser handling string order ID or response dict.
-    Integrates automated Broker Order Recovery Protocol for transport/API ambiguities.
-    """
-    if not getattr(config, "LIVE_MODE", False):
-        logging.critical("🚨 SECURITY BREACH: place_live_order called with LIVE_MODE=False!")
-        raise RuntimeError("CRITICAL ERROR: Attempted to place a live broker order in Paper Mode.")
-
-    global LAST_ORDER_RECOVERY
-    LAST_ORDER_RECOVERY = None
-
-    order_params = {
-        "variety":          "NORMAL",
-        "tradingsymbol":    symbol,
-        "symboltoken":      token,
-        "transactiontype":  side,           # "BUY" / "SELL"
-        "exchange":         "NSE",
-        "ordertype":        "MARKET",
-        "producttype":      "INTRADAY",     # MIS
-        "duration":         "DAY",
-        "price":            "0",            # MARKET = 0
-        "squareoff":        "0",
-        "stoploss":         "0",
-        "quantity":         str(qty),
-    }
-
-    attempt_time = time.time()
-    needs_recovery = False
-    recovery_reason = ""
-
-    try:
-        response = angel.placeOrder(order_params)
-        order_id = None
-
-        # Case 1: Standard SDK returns order ID as a raw string
-        if isinstance(response, str) and response.strip():
-            order_id = response.strip()
-            logger.info(f"[LIVE ORDER PLACED] Successfully routed. Order ID: {order_id}")
-            logging.warning(
-                f"[LIVE ORDER ✅] {side} {qty} {symbol} | OrderID: {order_id}"
-            )
-            return order_id
-
-        # Case 2: Wrapper/SDK returns a response dictionary
-        elif isinstance(response, dict):
-            if response.get("status") is True or response.get("success") is True:
-                data_payload = response.get("data") or {}
-                if isinstance(data_payload, dict):
-                    order_id = data_payload.get("orderid")
-                elif data_payload:
-                    order_id = str(data_payload).strip()
-
-                if order_id and str(order_id).strip():
-                    order_id = str(order_id).strip()
-                    logger.info(f"[LIVE ORDER PLACED] Successfully routed. Order ID: {order_id}")
-                    logging.warning(
-                        f"[LIVE ORDER ✅] {side} {qty} {symbol} | OrderID: {order_id}"
-                    )
-                    return order_id
-                else:
-                    # status=True but missing/empty orderid
-                    needs_recovery = True
-                    recovery_reason = "Missing order ID in status=True response"
-            else:
-                err_msg = response.get("message", "Unknown broker error")
-                logger.error(f"[LIVE ORDER REJECTED] Broker returned failure: {err_msg}")
-                return None
-        else:
-            needs_recovery = True
-            recovery_reason = f"Unexpected response payload type: {type(response)} -> {response}"
-
-    except Exception as e:
-        logger.error(f"[LIVE ORDER EXCEPTION] Failed during placeOrder execution: {str(e)}")
-        needs_recovery = True
-        recovery_reason = f"Transport/API Exception: {str(e)}"
-
-    if needs_recovery:
-        logger.warning(
-            f"[ORDER RECOVERY INITIATED] Reason: {recovery_reason} | "
-            f"Checking broker state for {side} {qty} {symbol}..."
-        )
-        rec = recover_broker_order(
-            smart_api=angel,
-            symbol=symbol,
-            token=token,
-            side=side,
-            qty=qty,
-            exchange="NSE",
-            producttype="INTRADAY",
-            attempt_time=attempt_time,
-        )
-        LAST_ORDER_RECOVERY = rec
-        if rec.status == RecoveryStatus.CONFIRMED_ORDER:
-            logger.info(f"[ORDER RECOVERED] Successfully recovered order ID: {rec.order_id}")
-            return rec.order_id
-        elif rec.status == RecoveryStatus.CONFIRMED_REJECTION:
-            logger.warning(f"[RECOVERY CONFIRMED REJECTION] Order was rejected at broker: {rec.message}")
-            return None
-        elif rec.status == RecoveryStatus.CONFIRMED_NO_ORDER:
-            logger.info(f"[RECOVERY CONFIRMED NO ORDER] Order never reached broker: {rec.message}")
-            return None
-        else:
-            # STATE_UNKNOWN
-            logger.critical(f"[RECOVERY STATE UNKNOWN] Broker state inconclusive: {rec.message}")
-            alert_human(
-                f"[CRITICAL STATE UNKNOWN] Operation: ORDER_PLACEMENT | Symbol: {symbol} | Side: {side} | "
-                f"Qty: {qty} | Reason: {rec.message}. Duplicate order submission BLOCKED. Human intervention required."
-            )
-            return None
-
-    return None
+def place_live_order(angel, symbol, token, side, qty, *, instrument=None, quote=None, adapter=None):
+    """Legacy public entry point: require the verified execution adapter; no MARKET bypass."""
+    if not config.LIVE_MODE:
+        raise RuntimeError('CRITICAL ERROR: Attempted to place a live broker order in Paper Mode.')
+    from execution_safety import SafetyError
+    if not config.LIVE_VALIDATION_APPROVED or instrument is None or quote is None or adapter is None:
+        raise SafetyError('LIVE_EXECUTION_BLOCKED')
+    # A direct order lacks the engine's durable reservation and complete signal economics.
+    # Keep the old import/signature for a clear failure instead of a bypass around SafeTrader.
+    raise SafetyError('DIRECT_ORDER_SUBMISSION_FORBIDDEN_USE_EXECUTION_ENGINE')
 
 
-# ---------------------------------------------------------
-# EXECUTION & ACCOUNTING LAYER: LIVE FILLS, CAPITAL & RECONCILIATION
-# ---------------------------------------------------------
 def get_actual_fill_price(
     smart_api: Any,
     order_id: str,
@@ -1426,65 +1277,17 @@ def reconcile_trade(
 # on 2026-09-16. Reconciled against actual ₹116.60 bill.
 # ---------------------------------------------------------
 def calculate_true_friction(buy_price: float, sell_price: float, qty: int) -> dict:
-    """
-    Computes exact Angel One NSE equity-intraday round-trip charges
-    (one entry order + one exit order), using rates verified against
-    angelone.in/exchange-transaction-charges on 2026-09-16.
-
-    Always assumes FULL standard brokerage — the ₹0-brokerage new-user
-    offer is capped at ₹500 cumulative and must not be relied on.
-    """
+    """Compatibility API backed by the single per-order fee implementation."""
+    from execution_safety import FeeModel
     if qty <= 0:
-        return {
-            "gross_pnl": 0.0, "brokerage": 0.0, "stt": 0.0,
-            "exchange_txn_charge": 0.0, "stamp_duty": 0.0,
-            "sebi_fee": 0.0, "ipft": 0.0, "gst": 0.0,
-            "total_friction": 0.0, "net_pnl": 0.0,
-        }
-
-    buy_turnover = buy_price * qty
-    sell_turnover = sell_price * qty
-    total_turnover = buy_turnover + sell_turnover
-
-    # 1. Brokerage: max(₹5, min(₹20, 0.1% of order value)) — per leg
-    buy_brokerage = max(BROKERAGE_MIN, min(BROKERAGE_CAP, buy_turnover * BROKERAGE_PCT))
-    sell_brokerage = max(BROKERAGE_MIN, min(BROKERAGE_CAP, sell_turnover * BROKERAGE_PCT))
-    total_brokerage = buy_brokerage + sell_brokerage
-
-    # 2. STT: 0.025% on sell turnover only
-    stt = sell_turnover * 0.00025
-
-    # 3. NSE transaction charge: 0.0030699% on total turnover
-    exchange_txn_charge = total_turnover * 0.000030699
-
-    # 4. Stamp duty: 0.003% on buy turnover only
-    stamp_duty = buy_turnover * 0.00003
-
-    # 5. SEBI turnover fee: 0.0001% on total turnover
-    sebi_fee = total_turnover * 0.000001
-
-    # 6. IPFT: 0.0000001% on total turnover (negligible but included)
-    ipft = total_turnover * 0.000000001
-
-    # 7. GST: 18% on brokerage + NSE charge + SEBI + IPFT (not STT/stamp duty)
-    gst = (total_brokerage + exchange_txn_charge + sebi_fee + ipft) * 0.18
-
-    total_friction = total_brokerage + stt + exchange_txn_charge + stamp_duty + sebi_fee + ipft + gst
-    gross_pnl = sell_turnover - buy_turnover
-    net_pnl = gross_pnl - total_friction
-
-    return {
-        "gross_pnl": round(gross_pnl, 2),
-        "brokerage": round(total_brokerage, 2),
-        "stt": round(stt, 2),
-        "exchange_txn_charge": round(exchange_txn_charge, 2),
-        "stamp_duty": round(stamp_duty, 2),
-        "sebi_fee": round(sebi_fee, 2),
-        "ipft": round(ipft, 6),
-        "gst": round(gst, 2),
-        "total_friction": round(total_friction, 2),
-        "net_pnl": round(net_pnl, 2),
-    }
+        return {k: 0.0 for k in ('gross_pnl','brokerage','stt','exchange_txn_charge','stamp_duty','sebi_fee','ipft','gst','total_friction','net_pnl')}
+    fees=FeeModel(); buy=fees.leg('BUY',buy_price,qty); sell=fees.leg('SELL',sell_price,qty)
+    gross=(sell_price-buy_price)*qty
+    total=buy['total_charges']+sell['total_charges']
+    result={k:round(buy[k]+sell[k],6 if k=='ipft' else 2) for k in ('brokerage','stt','stamp_duty','sebi_fee','ipft','gst')}
+    result.update(gross_pnl=round(gross,2),exchange_txn_charge=round(buy['exchange_fee']+sell['exchange_fee'],2),
+                  total_friction=round(total,2),net_pnl=round(gross-total,2))
+    return result
 
 
 def validate_trade_margin(
@@ -1648,10 +1451,10 @@ class PyramidingState(str, Enum):
     STATE_UNKNOWN = "STATE_UNKNOWN"
 
 
-class PaperTrader:
+class LegacyPaperTrader:
     """
-    Production-grade Quantitative Paper-Trading Engine with Multi-Tranche
-    Pyramiding (Scale-In on Strength) state machine and statutory friction validation.
+    Management compatibility base. Entry, scaling and accounting paths are retired.
+    Public PaperTrader/ExecutionEngine resolve to the safety executor at module end.
     """
 
     def __init__(
@@ -1677,32 +1480,24 @@ class PaperTrader:
         )
 
         # ── Capital Configuration ───────────────────────────────────────
-        if total_capital == TOTAL_CAPITAL and "test_capital_allocation_and_tranches" in os.environ.get("PYTEST_CURRENT_TEST", ""):
-            total_capital = 9999.46
-            self.total_capital = 9999.46
-            self.working_capital = 4999.73
-            self.backup_capital = 4999.73
-            self.daily_loss_limit = 200.00
-            self.risk_per_trade = 100.00
+        self.total_capital = total_capital
+        self.working_capital = total_capital * working_capital_pct
+        self.backup_capital = total_capital * (1.0 - working_capital_pct)
+
+        # ── Risk Limits ─────────────────────────────────────────────────
+        if daily_loss_limit is not None:
+            self.daily_loss_limit = daily_loss_limit
+        elif total_capital == TOTAL_CAPITAL:
+            self.daily_loss_limit = DAILY_LOSS_LIMIT
         else:
-            self.total_capital = total_capital
-            self.working_capital = total_capital * working_capital_pct
-            self.backup_capital = total_capital * (1.0 - working_capital_pct)
+            self.daily_loss_limit = total_capital * daily_loss_limit_pct
 
-            # ── Risk Limits ─────────────────────────────────────────────────
-            if daily_loss_limit is not None:
-                self.daily_loss_limit = daily_loss_limit
-            elif total_capital == TOTAL_CAPITAL:
-                self.daily_loss_limit = DAILY_LOSS_LIMIT
-            else:
-                self.daily_loss_limit = total_capital * daily_loss_limit_pct
-
-            if risk_per_trade is not None:
-                self.risk_per_trade = risk_per_trade
-            elif total_capital == TOTAL_CAPITAL:
-                self.risk_per_trade = RISK_PER_TRADE
-            else:
-                self.risk_per_trade = total_capital * risk_per_trade_pct
+        if risk_per_trade is not None:
+            self.risk_per_trade = risk_per_trade
+        elif total_capital == TOTAL_CAPITAL:
+            self.risk_per_trade = RISK_PER_TRADE
+        else:
+            self.risk_per_trade = total_capital * risk_per_trade_pct
 
         self.stop_loss_pct = stop_loss_pct
         self.reward_to_risk = reward_to_risk
@@ -1763,15 +1558,14 @@ class PaperTrader:
         self._reconciliation_baselines: dict[str, float] = {}
 
         logging.info("=" * 60)
-        logging.info("  PAPER TRADER INITIALIZED (Multi-Tranche Pyramiding v3)")
+        logging.info("  EXECUTION MANAGEMENT INITIALIZED (single-position safety policy)")
         logging.info(f"  Total Capital     : ₹{self.total_capital:,.2f}")
         logging.info(f"  Working Capital   : ₹{self.working_capital:,.2f}")
         logging.info(f"  Backup Capital    : ₹{self.backup_capital:,.2f}")
         logging.info(f"  Daily Loss Limit  : ₹{self.daily_loss_limit:,.2f}")
         logging.info(f"  Risk Per Setup    : ≤ ₹{self.risk_per_trade:,.2f}")
-        logging.info(f"  Tranche 1 (Base)  : ₹{self.tranche_capitals[0]:,.2f} (33%)")
-        logging.info(f"  Tranche 2 (Scale1): ₹{self.tranche_capitals[1]:,.2f} (33%)")
-        logging.info(f"  Tranche 3 (Scale2): ₹{self.tranche_capitals[2]:,.2f} (34%)")
+        for index, capital in enumerate(self.tranche_capitals, 1):
+            logging.info("  Tranche %s: ₹%.2f", index, capital)
         logging.info("  Time Stop         : PERMANENTLY DISABLED (MOC Removed)")
         logging.info(f"  Trade Log (CSV)   : {self._csv_log_path}")
         logging.info("=" * 60)
@@ -1793,66 +1587,12 @@ class PaperTrader:
     # ────────────────────────────────────────────────────────────────────
 
     def calculate_entry_leg_charges(self, quantity: int, price: float) -> dict:
-        """
-        Compute statutory transaction costs on BUY leg (Angel One, NSE equity intraday).
-        Rates verified against angelone.in/exchange-transaction-charges (2026-09-16).
-          • Brokerage: max(₹5, min(₹20, 0.1% × Turnover))
-          • Exchange Turnover Fee: 0.0030699% × Turnover
-          • Stamp Duty: 0.003% × Turnover (Buy only)
-          • SEBI Charges: 0.0001% × Turnover (₹10/Crore)
-          • IPFT: 0.0000001% × Turnover
-          • GST: 18% on (Brokerage + Exchange Fee + SEBI + IPFT)
-        """
-        turnover = quantity * price
-        brokerage = max(BROKERAGE_MIN, min(BROKERAGE_CAP, turnover * BROKERAGE_PCT))
-        exchange_fee = turnover * 0.000030699
-        stamp_duty = turnover * 0.00003
-        sebi_fee = turnover * 0.000001
-        ipft = turnover * 0.000000001
-        gst = (brokerage + exchange_fee + sebi_fee + ipft) * 0.18
-        total_charges = brokerage + exchange_fee + stamp_duty + sebi_fee + ipft + gst
-
-        return {
-            "turnover": turnover,
-            "brokerage": brokerage,
-            "exchange_fee": exchange_fee,
-            "stamp_duty": stamp_duty,
-            "sebi_fee": sebi_fee,
-            "ipft": ipft,
-            "gst": gst,
-            "total_charges": total_charges,
-        }
+        from execution_safety import FeeModel
+        return FeeModel().leg('BUY',price,quantity)
 
     def calculate_exit_leg_charges(self, quantity: int, price: float) -> dict:
-        """
-        Compute statutory transaction costs on SELL leg (Angel One, NSE equity intraday).
-        Rates verified against angelone.in/exchange-transaction-charges (2026-09-16).
-          • Brokerage: max(₹5, min(₹20, 0.1% × Turnover))
-          • STT: 0.025% × Turnover (Sell only)
-          • Exchange Turnover Fee: 0.0030699% × Turnover
-          • SEBI Charges: 0.0001% × Turnover (₹10/Crore)
-          • IPFT: 0.0000001% × Turnover
-          • GST: 18% on (Brokerage + Exchange Fee + SEBI + IPFT)
-        """
-        turnover = quantity * price
-        brokerage = max(BROKERAGE_MIN, min(BROKERAGE_CAP, turnover * BROKERAGE_PCT))
-        stt = turnover * 0.00025
-        exchange_fee = turnover * 0.000030699
-        sebi_fee = turnover * 0.000001
-        ipft = turnover * 0.000000001
-        gst = (brokerage + exchange_fee + sebi_fee + ipft) * 0.18
-        total_charges = brokerage + stt + exchange_fee + sebi_fee + ipft + gst
-
-        return {
-            "turnover": turnover,
-            "brokerage": brokerage,
-            "stt": stt,
-            "exchange_fee": exchange_fee,
-            "sebi_fee": sebi_fee,
-            "ipft": ipft,
-            "gst": gst,
-            "total_charges": total_charges,
-        }
+        from execution_safety import FeeModel
+        return FeeModel().leg('SELL',price,quantity)
 
     def estimate_round_trip_costs(
         self,
@@ -1952,790 +1692,25 @@ class PaperTrader:
     #  PYRAMIDING STATE MACHINE & EXECUTION
     # ────────────────────────────────────────────────────────────────────
 
-    def execute_trade(
-        self,
-        signal_data: dict,
-        timestamp: Optional[datetime] = None,
-        atr_14: Optional[float] = None,
-        atr: Optional[float] = None,
-        side: str = "BUY",
-        angel_session: Any = None,
-        **kwargs,
-    ) -> Optional[dict]:
-        """
-        Process a confirmed VWAP_PULLBACK_BUY signal and advance the
-        Pyramiding State Machine (State 0 -> State 1 -> State 2 -> State 3).
-        Ingests dynamic ATR_14 for volatility-based risk-to-reward calculation.
-        """
-        with self.lock:
-            if angel_session is not None:
-                self.angel_session = angel_session
-            trade_timestamp = self._resolve_timestamp(timestamp, signal_data)
-            self._check_day_reset(trade_timestamp)
-
-            if self._halted:
-                logging.warning(
-                    "⛔  TRADE BLOCKED — Daily loss limit "
-                    f"(₹{self.daily_loss_limit:,.2f}) reached. All trading halted."
-                )
-                return None
-
-            if self._state == PyramidingState.STATE_UNKNOWN:
-                logging.error(
-                    "⛔  TRADE BLOCKED — Engine is quarantined in STATE_UNKNOWN after ambiguous broker order. "
-                    "Manual operator intervention required. Duplicate order submission blocked."
-                )
-                return None
-
-            entry_price = float(signal_data.get("VWAP", 0))
-            symbol = signal_data.get("symbol", "M&M")
-            close_price = signal_data.get("Close")
-            if close_price is not None:
-                self._set_latest_price(float(close_price), trade_timestamp)
-
-            if entry_price <= 0:
-                logging.error("Invalid entry price for execution. Skipping.")
-                return None
-
-            # Ingest and validate dynamic ATR (14-period)
-            raw_atr = atr_14 if atr_14 is not None else atr
-            if raw_atr is None:
-                raw_atr = signal_data.get("ATR_14", signal_data.get("atr", signal_data.get("atr_14")))
-
-            pos = self._open_position
-
-            # ── Guard: Symbol Mismatch ──────────────────────────────────
-            if pos is not None and pos["symbol"] != symbol:
-                logging.info(
-                    f"⏳ Skipping signal — already holding open position in {pos['symbol']} "
-                    f"({pos['current_tranches']}/{self.max_tranches} tranches)."
-                )
-                return None
-
-            # ── Direction Flip: exit opposite position before entering ────
-            if pos is not None and pos.get("side", "BUY") != side:
-                logging.info(
-                    f"[DIRECTION FLIP] Closing {pos['side']} position in {pos['symbol']} "
-                    f"before entering {side} position."
-                )
-                self.close_position(
-                    exit_price=entry_price,
-                    timestamp=trade_timestamp,
-                    reason=f"Direction Flip ({pos['side']}→{side})",
-                )
-                pos = None
-                self._open_position = None
-                self._state = PyramidingState.IDLE
-
-            # ── STATE 0: IDLE → TRANCHE 1 (Base Entry) ──────────────────
-            if pos is None:
-                # ── Post-Stop-Loss Cooldown Firewall ────────────────────
-                if self.candles_since_last_sl < self.reentry_cooldown_candles:
-                    logging.info(
-                        f"[COOLDOWN] Signal ignored. Waiting {self.reentry_cooldown_candles - self.candles_since_last_sl} "
-                        "more candles after previous stop-out."
-                    )
-                    return None
-
-                # Type & Value Failsafe: ATR validation for Tranche 1 dynamic volatility distance
-                if raw_atr is None:
-                    logging.error(
-                        f"[ATR GATE] Rejected trade entry in {symbol}: missing atr_14 parameter. "
-                        "Engine remains in IDLE."
-                    )
-                    return None
-                try:
-                    current_atr = float(raw_atr)
-                    if current_atr <= 0.0 or not math.isfinite(current_atr):
-                        logging.error(
-                            f"[ATR GATE] Rejected trade entry in {symbol}: invalid atr_14 value ({raw_atr}). "
-                            "Engine remains in IDLE."
-                        )
-                        return None
-                except (ValueError, TypeError):
-                    logging.error(
-                        f"[ATR GATE] Rejected trade entry in {symbol}: non-numeric atr_14 ({raw_atr}). "
-                        "Engine remains in IDLE."
-                    )
-                    return None
-
-                signal_type = signal_data.get("signal_type")
-                return self._execute_tranche_1(
-                    symbol=symbol,
-                    entry_price=entry_price,
-                    timestamp=trade_timestamp,
-                    current_atr=current_atr,
-                    signal_type=signal_type,
-                    side=side,
-                    angel_session=angel_session,
-                )
-
-            # ── Scale-In Evaluation (State 1 or State 2) ────────────────
-            current_tranches = pos["current_tranches"]
-            if current_tranches >= self.max_tranches:
-                logging.info(
-                    f"⏳ Max pyramiding tranches reached ({current_tranches}/{self.max_tranches}) "
-                    f"— holding full position in {symbol}."
-                )
-                return None
-
-            current_price = self._latest_price if self._latest_price is not None else entry_price
-            side = pos.get("side", "BUY")
-
-            # ── STATE 1: HOLDING_TRANCHE_1 → TRANCHE 2 (Scale 1) ────────
-            if current_tranches == 1:
-                entry_atr = float(pos.get("atr_14") or self.entry_atr or 1.0)
-                avg_entry = float(pos["average_entry_price"])
-                # Scale-in requires a confirmed move of PYRAMID_TRIGGER_ATR_MULT x the current ATR
-                tranche2_trigger_distance = round(PYRAMID_TRIGGER_ATR_MULT * entry_atr, 2)
-                tranche2_trigger_price = round(avg_entry + tranche2_trigger_distance, 2)
-                if side == "BUY":
-                    tranche2_trigger_price = round(avg_entry + tranche2_trigger_distance, 2)
-                    scale_needed = current_price < tranche2_trigger_price
-                else:
-                    tranche2_trigger_price = round(avg_entry - tranche2_trigger_distance, 2)
-                    scale_needed = current_price > tranche2_trigger_price
-
-                scale_condition = (
-                    (side == "BUY" and current_price < tranche2_trigger_price)
-                    or
-                    (side == "SELL" and current_price > tranche2_trigger_price)
-                )
-                if scale_condition and scale_needed:
-                    cmp_op = "<" if side == "BUY" else ">"
-                    logging.info(
-                        f"[SCALE-IN CHECK] Tranche 2 gate: Price ₹{current_price:,.2f} {cmp_op} "
-                        f"₹{tranche2_trigger_price:,.2f} trigger ({PYRAMID_TRIGGER_ATR_MULT:.1f}x ATR: ₹{tranche2_trigger_distance:.2f}). "
-                        "Holding Tranche 1."
-                    )
-                    return None
-
-                return self._execute_tranche_2(entry_price, trade_timestamp, angel_session=angel_session)
-
-            # ── STATE 2: HOLDING_TRANCHE_2 → TRANCHE 3 (Scale 2) ────────
-            if current_tranches == 2:
-                entry_atr = float(pos.get("atr_14") or self.entry_atr or 1.0)
-                p2 = float(pos["tranches"][1]["entry_price"])
-                tranche3_trigger_distance = round(PYRAMID_TRIGGER_ATR_MULT * entry_atr, 2)
-                tranche3_trigger_price = round(p2 + tranche3_trigger_distance, 2)
-                if side == "BUY":
-                    tranche3_trigger_price = round(p2 + tranche3_trigger_distance, 2)
-                    scale_needed = current_price < tranche3_trigger_price
-                else:
-                    tranche3_trigger_price = round(p2 - tranche3_trigger_distance, 2)
-                    scale_needed = current_price > tranche3_trigger_price
-
-                scale_condition = (
-                    (side == "BUY" and current_price < tranche3_trigger_price)
-                    or
-                    (side == "SELL" and current_price > tranche3_trigger_price)
-                )
-                if scale_condition and scale_needed:
-                    cmp_op = "<" if side == "BUY" else ">"
-                    logging.info(
-                        f"[SCALE-IN CHECK] Tranche 3 gate: Price ₹{current_price:,.2f} {cmp_op} "
-                        f"₹{tranche3_trigger_price:,.2f} trigger ({PYRAMID_TRIGGER_ATR_MULT:.1f}x ATR: ₹{tranche3_trigger_distance:.2f}). "
-                        "Holding Tranche 2."
-                    )
-                    return None
-
-                return self._execute_tranche_3(entry_price, trade_timestamp, angel_session=angel_session)
-
-            return None
-
-    def _execute_tranche_1(
-        self,
-        symbol: str,
-        entry_price: float,
-        timestamp: datetime,
-        current_atr: float,
-        signal_type: Optional[str] = None,
-        side: str = "BUY",
-        angel_session: Any = None,
-    ) -> Optional[dict]:
-        """Execute Base Entry (Tranche 1: 33% of Working Capital) with dynamic ATR volatility model."""
-        tranche_idx = 0
-        allocated_capital = self.tranche_capitals[tranche_idx]
-        qty = math.floor(allocated_capital / entry_price)
-        if qty < 1:
-            qty = 1  # Minimum 1 share for liquid lower denomination stocks
-
-        entry_costs = self.calculate_entry_leg_charges(qty, entry_price)
-        turnover = entry_costs["turnover"]
-        friction = entry_costs["total_charges"]
-
-        # ── Dynamic Volatility (ATR) Model ──────────────────────────────
-        stop_loss_distance = round(SL_ATR_MULT * current_atr, 2)
-        if side == "BUY":
-            initial_stop_loss = round(entry_price - stop_loss_distance, 2)
-            initial_target_price = round(entry_price + (2.0 * stop_loss_distance), 2)
-        else:  # SELL (short)
-            initial_stop_loss = round(entry_price + stop_loss_distance, 2)
-            initial_target_price = round(entry_price - (2.0 * stop_loss_distance), 2)
-
-        stop_loss_price = initial_stop_loss
-        target_price = initial_target_price
-
-        # ── True Net-R:R Friction Gate Validation ─────────────────────────
-        exit_costs_target = self.calculate_exit_leg_charges(qty, target_price)
-        if not self.bypass_friction_gate:
-            # 1. Trade Margin Validation (enforce MIN_NET_PROFIT after real charges and slippage)
-            order_side = "SHORT" if side in {"SELL", "SHORT"} else "BUY"
-            if not validate_trade_margin(
-                entry_price=entry_price,
-                target_price=target_price,
-                qty=qty,
-                side=order_side,
-                slippage_pct=SLIPPAGE_HAIRCUT_PCT,
-            ):
-                return None
-
-            # 2. Compute accurate round-trip friction with slippage haircut on entry
-            if order_side == "SHORT":
-                adj_entry = entry_price * (1.0 - SLIPPAGE_HAIRCUT_PCT) if SLIPPAGE_HAIRCUT_PCT else entry_price
-                cost_info = calculate_true_friction(buy_price=target_price, sell_price=adj_entry, qty=qty)
-            else:
-                adj_entry = entry_price * (1.0 + SLIPPAGE_HAIRCUT_PCT) if SLIPPAGE_HAIRCUT_PCT else entry_price
-                cost_info = calculate_true_friction(buy_price=adj_entry, sell_price=target_price, qty=qty)
-
-            total_friction = cost_info["total_friction"]
-            estimated_brokerage = total_friction / 2.0
-
-            # 3. Existing R:R check logic fed with accurate cost figures
-            passed, reason = self.friction_gate_check(
-                entry_price=entry_price,
-                sl_price=stop_loss_price,
-                tp_price=target_price,
-                qty=qty,
-                atr=current_atr,
-                brokerage_cost=estimated_brokerage,
-            )
-            if not passed:
-                logging.warning(f"[FRICTION GATE FAILED] {reason}")
-                return None
-        else:
-            total_friction = friction + exit_costs_target["total_charges"]
-
-        if side == "BUY":
-            gross_profit = (target_price - entry_price) * qty
-            gross_loss = (entry_price - stop_loss_price) * qty
-        else:
-            gross_profit = (entry_price - target_price) * qty
-            gross_loss = (stop_loss_price - entry_price) * qty
-
-        net_profit = gross_profit - total_friction
-        net_loss = gross_loss + total_friction  # Costs amplify the total loss
-        projected_net_profit = net_profit
-        actual_net_rr = net_profit / net_loss if net_loss > 0 else 0.0
-
-        # Check working capital budget
-        total_cost = turnover + friction
-        if total_cost > self.working_capital:
-            logging.warning(
-                f"[CAPITAL GATE] Tranche 1 cost (₹{total_cost:,.2f}) exceeds "
-                f"Working Capital (₹{self.working_capital:,.2f}). Order blocked."
-            )
-            return None
-
-        entry_banner = "[LONG_ENTRY]" if side == "BUY" else "[SHORT_ENTRY]"
-        sig_tag = f" {signal_type}" if signal_type else ""
-        logging.info(
-            f"✅ {entry_banner} [ENTRY TRANCHE 1/{self.max_tranches}] Base position established{sig_tag} in {symbol}. "
-            f"ATR_14: {current_atr:.2f} | SL Distance: ₹{stop_loss_distance:.2f} | "
-            f"SL: ₹{stop_loss_price:,.2f} | Target: ₹{target_price:,.2f}"
-        )
-
-        signal_price = float(entry_price)
-        requested_order_price = float(entry_price)
-        actual_entry_fill = float(entry_price)
-
-        # ── LIVE ORDER PLACEMENT ──────────────────────────
-        from config import SYMBOL, TOKEN
-        is_live = getattr(config, "LIVE_MODE", False)
-        target_sym = symbol if symbol else SYMBOL
-        target_token = TOKEN if target_sym == SYMBOL else ("18883" if "SJVN" in target_sym else ("11915" if "YESBANK" in target_sym else TOKEN))
-        session = angel_session if angel_session is not None else getattr(self, "angel_session", None)
-        if is_live and session is not None:
-            signal_time = time.time()
-            order_id = place_live_order(
-                angel=session,
-                symbol=target_sym,
-                token=target_token,
-                side=side,
-                qty=qty,
-            )
-            order_placed_time = time.time()
-            if order_id is None:
-                if LAST_ORDER_RECOVERY and LAST_ORDER_RECOVERY.status == RecoveryStatus.STATE_UNKNOWN:
-                    self._state = PyramidingState.STATE_UNKNOWN
-                    logger.critical(
-                        f"[STATE_UNKNOWN] Entry Tranche 1 order for {SYMBOL} x {qty} is unconfirmed. "
-                        "Engine quarantined in STATE_UNKNOWN. Duplicate entries blocked."
-                    )
-                    alert_human(
-                        f"[CRITICAL STATE UNKNOWN] Operation: ENTRY_TRANCHE_1 | Symbol: {SYMBOL} | Side: {side} | "
-                        f"Qty: {qty} | Reason: {LAST_ORDER_RECOVERY.message}. Engine quarantined. Duplicate orders blocked."
-                    )
-                else:
-                    logging.error(
-                        "[LIVE] Order failed. "
-                        "Skipping position open."
-                    )
-                return None
-
-            real_entry_price, filled_qty = get_actual_fill_price(session, order_id, expected_qty=qty)
-            order_filled_time = time.time()
-
-            if real_entry_price is None:
-                self._state = PyramidingState.STATE_UNKNOWN
-                logger.critical(f"[ENTRY UNCONFIRMED] {order_id} -- engine quarantined in STATE_UNKNOWN, alerting.")
-                alert_human(
-                    f"[CRITICAL STATE UNKNOWN] Operation: ENTRY_TRANCHE_1 | Symbol: {SYMBOL} | Side: {side} | "
-                    f"Qty: {qty} | OrderID: {order_id} | Reason: Entry fill unconfirmed after timeout. Engine quarantined."
-                )
-                return None
-
-            logger.info(
-                f"[SLIPPAGE] Signal->Order: {order_placed_time - signal_time:.3f}s | "
-                f"Order->Fill: {order_filled_time - order_placed_time:.3f}s | "
-                f"Signal ₹{entry_price:.2f} vs Fill ₹{real_entry_price:.2f} "
-                f"(slip ₹{real_entry_price - entry_price:+.2f})"
-            )
-            entry_price = real_entry_price
-            actual_entry_fill = real_entry_price
-            qty = filled_qty
-            turnover = entry_price * qty
-            friction = self.calculate_entry_leg_charges(qty, entry_price)["total_charges"]
-            # Store order ID for reconciliation
-            self._pending_order_id = order_id
-        # Paper mode: no order placed, position tracked in memory
-
-        self._trade_count += 1
-        trade_id = self._trade_count
-        position_id = trade_id
-
-        tranche_record = {
-            "tranche_num": 1,
-            "trade_id": trade_id,
-            "quantity": qty,
-            "entry_price": entry_price,
-            "actual_entry_fill": actual_entry_fill,
-            "entry_turnover": turnover,
-            "entry_friction": friction,
-            "timestamp": timestamp,
-        }
-
-        exit_costs_stop = self.calculate_exit_leg_charges(qty, stop_loss_price)
-        if side == "BUY":
-            gross_loss_stop = qty * (entry_price - stop_loss_price)
-        else:
-            gross_loss_stop = qty * (stop_loss_price - entry_price)
-        net_loss_at_stop = gross_loss_stop + friction + exit_costs_stop["total_charges"]
-
-        snapshot = {
-            "position_id": position_id,
-            "symbol": symbol,
-            "token": target_token,
-            "side": side,
-            "quantity": qty,
-            "initial_entry_price": entry_price,
-            "average_entry_price": entry_price,
-            "signal_price": signal_price,
-            "requested_order_price": requested_order_price,
-            "actual_entry_fill": actual_entry_fill,
-            "actual_fill_price": actual_entry_fill,
-            "simulated": not is_live,
-            "entry_notional": turnover,
-            "entry_friction_total": friction,
-            "total_cost": total_cost,
-            "current_tranches": 1,
-            "max_tranches": self.max_tranches,
-            "atr_14": current_atr,
-            "entry_atr": current_atr,
-            "stop_loss_distance": stop_loss_distance,
-            "stop_loss_price": stop_loss_price,
-            "target_price": target_price,
-            "initial_target_price": target_price,
-            "risk_distance": stop_loss_distance,
-            "projected_net_loss_at_stop": net_loss_at_stop,
-            "projected_net_profit_at_target": projected_net_profit,
-            "stop_exit_charges": exit_costs_stop["total_charges"],
-            "target_exit_charges": exit_costs_target["total_charges"],
-            "tranches": [tranche_record],
-            "timestamp": timestamp,
-            "breakeven_armed": False,
-        }
-
-        self._open_position = snapshot
-        self._state = PyramidingState.HOLDING_TRANCHE_1
-        self._entry_timestamp = timestamp
-        self.entry_atr = current_atr
-        self.candles_held = 0
-
-        ticket = self._build_ticket(snapshot, 1, qty, entry_price, trade_id)
-        self._trade_log.append(ticket)
-        self._print_trade_ticket(ticket)
-
-        entry_banner = "[LONG_ENTRY]" if side == "BUY" else "[SHORT_ENTRY]"
-        sig_tag = f" {signal_type}" if signal_type else ""
-        logging.info(
-            f"✅ {entry_banner} [ENTRY TRANCHE 1/{self.max_tranches}] Base position established{sig_tag} in {symbol}. "
-            f"ATR_14: {current_atr:.2f} | SL Distance: ₹{stop_loss_distance:.2f} | "
-            f"SL: ₹{stop_loss_price:,.2f} | Target: ₹{target_price:,.2f} | "
-            f"State: {self._state.value}"
-        )
-        return ticket
-
-    def _execute_tranche_2(
-        self,
-        entry_price: float,
-        timestamp: datetime,
-        angel_session: Any = None,
-    ) -> Optional[dict]:
-        """Execute Scale 1 (Tranche 2: 33% of Working Capital) + Zero-Risk Lock."""
-        pos = self._open_position
-        tranche_idx = 1
-        allocated_capital = self.tranche_capitals[tranche_idx]
-        qty2 = math.floor(allocated_capital / entry_price)
-        if qty2 < 1:
-            qty2 = 1
-
-        entry_costs2 = self.calculate_entry_leg_charges(qty2, entry_price)
-        new_total_cost = pos["total_cost"] + entry_costs2["turnover"] + entry_costs2["total_charges"]
-
-        if new_total_cost > self.working_capital:
-            logging.warning(
-                f"[CAPITAL GATE] Scale-In Tranche 2 would exceed Working Capital "
-                f"(₹{new_total_cost:,.2f} > ₹{self.working_capital:,.2f}). Scale-in skipped."
-            )
-            return None
-
-        # Record Tranche 2
-        self._trade_count += 1
-        trade_id = self._trade_count
-        t1 = pos["tranches"][0]
-        q1 = t1["quantity"]
-        p1 = t1["entry_price"]
-
-        t2_record = {
-            "tranche_num": 2,
-            "trade_id": trade_id,
-            "quantity": qty2,
-            "entry_price": entry_price,
-            "entry_turnover": entry_costs2["turnover"],
-            "entry_friction": entry_costs2["total_charges"],
-            "timestamp": timestamp,
-        }
-
-        total_qty = q1 + qty2
-        vwap_avg_entry = round(((p1 * q1) + (entry_price * qty2)) / total_qty, 2)
-
-        # Zero-Risk Lock: Trail SL to max(P_entry_1, Avg_Entry × 0.995)
-        new_stop_loss = round(max(p1, vwap_avg_entry * (1.0 - self.stop_loss_pct)), 2)
-        # Zero-Risk Lock & Friction validation
-        side = pos.get("side", "BUY")
-        if side == "BUY":
-            new_stop_loss = round(max(p1, vwap_avg_entry * (1.0 - self.stop_loss_pct)), 2)
-        else:
-            new_stop_loss = round(min(p1, vwap_avg_entry * (1.0 + self.stop_loss_pct)), 2)
-
-        # ANCHORED TAKE-PROFIT TARGET: Target is permanently anchored to Tranche 1 setup (P1 * 1.010)
-        anchored_target_price = pos.get("initial_target_price", pos["target_price"])
-
-        # Friction validation on combined position using anchored target
-        total_entry_friction = pos["entry_friction_total"] + entry_costs2["total_charges"]
-        exit_costs_target = self.calculate_exit_leg_charges(total_qty, anchored_target_price)
-        total_friction = total_entry_friction + exit_costs_target["total_charges"]
-        projected_net_profit = (total_qty * (anchored_target_price - vwap_avg_entry)) - total_friction
-
-        if side == "BUY":
-            projected_net_profit = (total_qty * (anchored_target_price - vwap_avg_entry)) - total_friction
-        else:
-            projected_net_profit = (total_qty * (vwap_avg_entry - anchored_target_price)) - total_friction
-
-        if projected_net_profit <= 0:
-            logging.warning(
-                "[FRICTION GATE] Scale-In Tranche 2 Expectancy Negative — Scale-in Blocked."
-            )
-            return None
-
-        # ── LIVE ORDER PLACEMENT ──────────────────────────
-        from config import LIVE_MODE, SYMBOL, TOKEN
-        session = angel_session if angel_session is not None else getattr(self, "angel_session", None)
-        if LIVE_MODE and session is not None:
-            sym = pos.get("symbol", SYMBOL)
-            tok = pos.get("token", TOKEN)
-            signal_time = time.time()
-            order_id = place_live_order(
-                angel=session,
-                symbol=sym,
-                token=tok,
-                side=side,
-                qty=qty2,
-            )
-            order_placed_time = time.time()
-            if order_id is None:
-                if LAST_ORDER_RECOVERY and LAST_ORDER_RECOVERY.status == RecoveryStatus.STATE_UNKNOWN:
-                    self._state = PyramidingState.STATE_UNKNOWN
-                    logger.critical(
-                        f"[STATE_UNKNOWN] Scale-In Tranche 2 order for {SYMBOL} x {qty2} is unconfirmed. "
-                        "Engine quarantined in STATE_UNKNOWN."
-                    )
-                    alert_human(
-                        f"[CRITICAL STATE UNKNOWN] Operation: SCALE_IN_TRANCHE_2 | Symbol: {SYMBOL} | Side: {side} | "
-                        f"Qty: {qty2} | Reason: {LAST_ORDER_RECOVERY.message}. Engine quarantined."
-                    )
-                else:
-                    logging.error(
-                        "[LIVE] Tranche 2 Order failed. Skipping scale-in."
-                    )
-                return None
-
-            real_entry_price, filled_qty = get_actual_fill_price(session, order_id, expected_qty=qty2)
-            order_filled_time = time.time()
-
-            if real_entry_price is None:
-                self._state = PyramidingState.STATE_UNKNOWN
-                logger.critical(f"[TRANCHE 2 UNCONFIRMED] {order_id} -- engine quarantined in STATE_UNKNOWN, alerting.")
-                alert_human(
-                    f"[CRITICAL STATE UNKNOWN] Operation: SCALE_IN_TRANCHE_2 | Symbol: {SYMBOL} | Side: {side} | "
-                    f"Qty: {qty2} | OrderID: {order_id} | Reason: Scale-in fill unconfirmed after timeout. Engine quarantined."
-                )
-                return None
-
-            logger.info(
-                f"[SLIPPAGE] Signal->Order: {order_placed_time - signal_time:.3f}s | "
-                f"Order->Fill: {order_filled_time - order_placed_time:.3f}s | "
-                f"Signal ₹{entry_price:.2f} vs Fill ₹{real_entry_price:.2f} "
-                f"(slip ₹{real_entry_price - entry_price:+.2f})"
-            )
-            entry_price = real_entry_price
-            qty2 = filled_qty
-            total_qty = q1 + qty2
-            entry_costs2 = self.calculate_entry_leg_charges(qty2, entry_price)
-            total_entry_friction = pos["entry_friction_total"] + entry_costs2["total_charges"]
-            vwap_avg_entry = round(((p1 * q1) + (entry_price * qty2)) / total_qty, 2)
-            new_total_cost = pos["total_cost"] + entry_costs2["turnover"] + entry_costs2["total_charges"]
-            self._pending_order_id = order_id
-        # Paper mode: no order placed, position tracked in memory
-
-        exit_costs_stop = self.calculate_exit_leg_charges(total_qty, new_stop_loss)
-        net_loss_at_stop = (total_qty * max(0.0, vwap_avg_entry - new_stop_loss)) + total_entry_friction + exit_costs_stop["total_charges"]
-        if side == "BUY":
-            gross_loss_stop = total_qty * max(0.0, vwap_avg_entry - new_stop_loss)
-        else:
-            gross_loss_stop = total_qty * max(0.0, new_stop_loss - vwap_avg_entry)
-        net_loss_at_stop = gross_loss_stop + total_entry_friction + exit_costs_stop["total_charges"]
-
-        # Update position snapshot
-        pos["quantity"] = total_qty
-        pos["average_entry_price"] = vwap_avg_entry
-        pos["entry_notional"] = (p1 * q1) + entry_costs2["turnover"]
-        pos["entry_friction_total"] = total_entry_friction
-        pos["total_cost"] = new_total_cost
-        pos["current_tranches"] = 2
-        pos["stop_loss_price"] = new_stop_loss
-        pos["target_price"] = anchored_target_price
-        pos["initial_target_price"] = anchored_target_price
-        pos["risk_distance"] = vwap_avg_entry - new_stop_loss
-        pos["projected_net_loss_at_stop"] = net_loss_at_stop
-        pos["projected_net_profit_at_target"] = projected_net_profit
-        pos["stop_exit_charges"] = exit_costs_stop["total_charges"]
-        pos["target_exit_charges"] = exit_costs_target["total_charges"]
-        pos["tranches"].append(t2_record)
-        pos["breakeven_armed"] = True
-
-        self._state = PyramidingState.HOLDING_TRANCHE_2
-
-        ticket = self._build_ticket(pos, 2, qty2, entry_price, trade_id)
-        self._trade_log.append(ticket)
-        self._print_trade_ticket(ticket)
-
-        logging.info(
-            f"🛡️  [ZERO-RISK LOCK ARMED] Tranche 1 protected at breakeven floor (SL: ₹{new_stop_loss:,.2f})."
-        )
-        logging.info(
-            f"🔄 [POSITION RECALCULATED] Tranches: 2/{self.max_tranches} | "
-            f"New VWAP Avg Entry: ₹{vwap_avg_entry:,.2f} | Anchored Target: ₹{anchored_target_price:,.2f} | "
-            f"State: {self._state.value}"
-        )
-        return ticket
-
-    def _execute_tranche_3(
-        self,
-        entry_price: float,
-        timestamp: datetime,
-        angel_session: Any = None,
-    ) -> Optional[dict]:
-        """Execute Scale 2 (Tranche 3: 34% of Working Capital) + Full Zero-Risk Lock."""
-        pos = self._open_position
-        tranche_idx = 2
-        allocated_capital = self.tranche_capitals[tranche_idx]
-        qty3 = math.floor(allocated_capital / entry_price)
-        if qty3 < 1:
-            qty3 = 1
-
-        entry_costs3 = self.calculate_entry_leg_charges(qty3, entry_price)
-        new_total_cost = pos["total_cost"] + entry_costs3["turnover"] + entry_costs3["total_charges"]
-
-        if new_total_cost > self.working_capital:
-            logging.warning(
-                f"[CAPITAL GATE] Scale-In Tranche 3 would exceed Working Capital "
-                f"(₹{new_total_cost:,.2f} > ₹{self.working_capital:,.2f}). Scale-in skipped."
-            )
-            return None
-
-        # Record Tranche 3
-        self._trade_count += 1
-        trade_id = self._trade_count
-        t1, t2 = pos["tranches"][0], pos["tranches"][1]
-        p1, q1 = t1["entry_price"], t1["quantity"]
-        p2, q2 = t2["entry_price"], t2["quantity"]
-
-        t3_record = {
-            "tranche_num": 3,
-            "trade_id": trade_id,
-            "quantity": qty3,
-            "entry_price": entry_price,
-            "entry_turnover": entry_costs3["turnover"],
-            "entry_friction": entry_costs3["total_charges"],
-            "timestamp": timestamp,
-        }
-
-        total_qty = q1 + q2 + qty3
-        total_notional = (p1 * q1) + (p2 * q2) + (entry_price * qty3)
-        vwap_avg_entry = round(total_notional / total_qty, 2)
-
-        # Zero-Risk Lock: Trail SL to ≥ P_entry_2 (Locking profit on T1, breakeven on T2)
-        new_stop_loss = round(max(p2, vwap_avg_entry * (1.0 - self.stop_loss_pct)), 2)
-        # Zero-Risk Lock & Friction validation
-        side = pos.get("side", "BUY")
-        if side == "BUY":
-            new_stop_loss = round(max(p2, vwap_avg_entry * (1.0 - self.stop_loss_pct)), 2)
-        else:
-            new_stop_loss = round(min(p2, vwap_avg_entry * (1.0 + self.stop_loss_pct)), 2)
-
-        # ANCHORED TAKE-PROFIT TARGET: Target is permanently anchored to Tranche 1 setup (P1 * 1.010)
-        anchored_target_price = pos.get("initial_target_price", pos["target_price"])
-
-        total_entry_friction = pos["entry_friction_total"] + entry_costs3["total_charges"]
-        exit_costs_target = self.calculate_exit_leg_charges(total_qty, anchored_target_price)
-        total_friction = total_entry_friction + exit_costs_target["total_charges"]
-        projected_net_profit = (total_qty * (anchored_target_price - vwap_avg_entry)) - total_friction
-
-        if side == "BUY":
-            projected_net_profit = (total_qty * (anchored_target_price - vwap_avg_entry)) - total_friction
-        else:
-            projected_net_profit = (total_qty * (vwap_avg_entry - anchored_target_price)) - total_friction
-
-        if projected_net_profit <= 0:
-            logging.warning(
-                "[FRICTION GATE] Scale-In Tranche 3 Expectancy Negative — Scale-in Blocked."
-            )
-            return None
-
-        # ── LIVE ORDER PLACEMENT ──────────────────────────
-        from config import LIVE_MODE, SYMBOL, TOKEN
-        session = angel_session if angel_session is not None else getattr(self, "angel_session", None)
-        if LIVE_MODE and session is not None:
-            sym = pos.get("symbol", SYMBOL)
-            tok = pos.get("token", TOKEN)
-            signal_time = time.time()
-            order_id = place_live_order(
-                angel=session,
-                symbol=sym,
-                token=tok,
-                side=side,
-                qty=qty3,
-            )
-            order_placed_time = time.time()
-            if order_id is None:
-                if LAST_ORDER_RECOVERY and LAST_ORDER_RECOVERY.status == RecoveryStatus.STATE_UNKNOWN:
-                    self._state = PyramidingState.STATE_UNKNOWN
-                    logger.critical(
-                        f"[STATE_UNKNOWN] Scale-In Tranche 3 order for {SYMBOL} x {qty3} is unconfirmed. "
-                        "Engine quarantined in STATE_UNKNOWN."
-                    )
-                    alert_human(
-                        f"[CRITICAL STATE UNKNOWN] Operation: SCALE_IN_TRANCHE_3 | Symbol: {SYMBOL} | Side: {side} | "
-                        f"Qty: {qty3} | Reason: {LAST_ORDER_RECOVERY.message}. Engine quarantined."
-                    )
-                else:
-                    logging.error(
-                        "[LIVE] Tranche 3 Order failed. Skipping scale-in."
-                    )
-                return None
-
-            real_entry_price, filled_qty = get_actual_fill_price(session, order_id, expected_qty=qty3)
-            order_filled_time = time.time()
-
-            if real_entry_price is None:
-                self._state = PyramidingState.STATE_UNKNOWN
-                logger.critical(f"[TRANCHE 3 UNCONFIRMED] {order_id} -- engine quarantined in STATE_UNKNOWN, alerting.")
-                alert_human(
-                    f"[CRITICAL STATE UNKNOWN] Operation: SCALE_IN_TRANCHE_3 | Symbol: {SYMBOL} | Side: {side} | "
-                    f"Qty: {qty3} | OrderID: {order_id} | Reason: Scale-in fill unconfirmed after timeout. Engine quarantined."
-                )
-                return None
-
-            logger.info(
-                f"[SLIPPAGE] Signal->Order: {order_placed_time - signal_time:.3f}s | "
-                f"Order->Fill: {order_filled_time - order_placed_time:.3f}s | "
-                f"Signal ₹{entry_price:.2f} vs Fill ₹{real_entry_price:.2f} "
-                f"(slip ₹{real_entry_price - entry_price:+.2f})"
-            )
-            entry_price = real_entry_price
-            qty3 = filled_qty
-            total_qty = q1 + q2 + qty3
-            entry_costs3 = self.calculate_entry_leg_charges(qty3, entry_price)
-            total_entry_friction = pos["entry_friction_total"] + entry_costs3["total_charges"]
-            total_notional = (p1 * q1) + (p2 * q2) + (entry_price * qty3)
-            vwap_avg_entry = round(total_notional / total_qty, 2)
-            new_total_cost = pos["total_cost"] + entry_costs3["turnover"] + entry_costs3["total_charges"]
-            self._pending_order_id = order_id
-        # Paper mode: no order placed, position tracked in memory
-
-        exit_costs_stop = self.calculate_exit_leg_charges(total_qty, new_stop_loss)
-        net_loss_at_stop = (total_qty * max(0.0, vwap_avg_entry - new_stop_loss)) + total_entry_friction + exit_costs_stop["total_charges"]
-        if side == "BUY":
-            gross_loss_stop = total_qty * max(0.0, vwap_avg_entry - new_stop_loss)
-        else:
-            gross_loss_stop = total_qty * max(0.0, new_stop_loss - vwap_avg_entry)
-        net_loss_at_stop = gross_loss_stop + total_entry_friction + exit_costs_stop["total_charges"]
-
-        # Update position snapshot
-        pos["quantity"] = total_qty
-        pos["average_entry_price"] = vwap_avg_entry
-        pos["entry_notional"] = total_notional
-        pos["entry_friction_total"] = total_entry_friction
-        pos["total_cost"] = new_total_cost
-        pos["current_tranches"] = 3
-        pos["stop_loss_price"] = new_stop_loss
-        pos["target_price"] = anchored_target_price
-        pos["initial_target_price"] = anchored_target_price
-        pos["risk_distance"] = vwap_avg_entry - new_stop_loss
-        pos["projected_net_loss_at_stop"] = net_loss_at_stop
-        pos["projected_net_profit_at_target"] = projected_net_profit
-        pos["stop_exit_charges"] = exit_costs_stop["total_charges"]
-        pos["target_exit_charges"] = exit_costs_target["total_charges"]
-        pos["tranches"].append(t3_record)
-        pos["breakeven_armed"] = True
-
-        self._state = PyramidingState.MAX_TRANCHES_HELD
-
-        ticket = self._build_ticket(pos, 3, qty3, entry_price, trade_id)
-        self._trade_log.append(ticket)
-        self._print_trade_ticket(ticket)
-
-        logging.info(
-            f"🛡️  [PROFIT LOCK ARMED] SL ratcheted to ₹{new_stop_loss:,.2f} (Locking T1 profit & T2 breakeven)."
-        )
-        logging.info(
-            f"🔄 [POSITION FULLY SCALED] Tranches: 3/{self.max_tranches} | "
-            f"Final VWAP Avg Entry: ₹{vwap_avg_entry:,.2f} | Anchored Target: ₹{anchored_target_price:,.2f} | "
-            f"State: {self._state.value}"
-        )
-        return ticket
+    def execute_trade(self,*args,**kwargs):
+        """Retired execution path; public PaperTrader resolves to SafeTrader."""
+        from execution_safety import SafetyError
+        raise SafetyError("LEGACY_ENTRY_PATH_DISABLED")
+
+    def _execute_tranche_1(self,*args,**kwargs):
+        """Retired execution path; public PaperTrader resolves to SafeTrader."""
+        from execution_safety import SafetyError
+        raise SafetyError("LEGACY_ENTRY_PATH_DISABLED")
+
+    def _execute_tranche_2(self,*args,**kwargs):
+        """Retired execution path; public PaperTrader resolves to SafeTrader."""
+        from execution_safety import SafetyError
+        raise SafetyError("SCALE_IN_DISABLED")
+
+    def _execute_tranche_3(self,*args,**kwargs):
+        """Retired execution path; public PaperTrader resolves to SafeTrader."""
+        from execution_safety import SafetyError
+        raise SafetyError("SCALE_IN_DISABLED")
 
     def _build_ticket(
         self,
@@ -2851,300 +1826,10 @@ class PaperTrader:
         """
         return self.check_exit(live_price=live_price, timestamp=timestamp)
 
-    def close_position(
-        self,
-        exit_price: float,
-        timestamp: Optional[datetime] = None,
-        reason: str = "Signal Exit",
-        angel_session: Any = None,
-    ) -> Optional[dict]:
-        """
-        Close full position, calculate net P&L, update working capital,
-        and append a structured record to `trades.csv`.
-        """
-        with self.lock:
-            if self._open_position is None:
-                logging.info("No open position to close.")
-                return None
-
-            exit_timestamp = self._resolve_timestamp(timestamp)
-            self._check_day_reset(exit_timestamp)
-            self._set_latest_price(exit_price, exit_timestamp)
-
-            pos = self._open_position
-            total_qty = pos["quantity"]
-            avg_entry_price = pos["average_entry_price"]
-            tranches_filled = pos["current_tranches"]
-
-            side = pos.get("side", "BUY")
-
-            # ── LIVE EXIT ORDER PLACEMENT ───────────────────────
-            from config import SYMBOL, TOKEN
-            is_live = getattr(config, "LIVE_MODE", False)
-            session = angel_session if angel_session is not None else getattr(self, "angel_session", None)
-            if is_live and session is not None:
-                exit_side = "SELL" if side == "BUY" else "BUY"
-                sym = pos.get("symbol", SYMBOL)
-                tok = pos.get("token", TOKEN)
-                ex = pos.get("exchange", "NSE")
-                prod = pos.get("producttype", "INTRADAY")
-
-                # Checkpoint A: Pre-Flight Check (§28, §56)
-                # Verify if broker position is ALREADY flat before sending order
-                broker_net_qty, pos_ok = check_broker_position_netqty(
-                    session,
-                    symbol=sym,
-                    token=tok,
-                    exchange=ex,
-                    producttype=prod,
-                )
-                if pos_ok and broker_net_qty == 0.0:
-                    logger.warning(
-                        f"[PRE-FLIGHT RECOVERY] Broker position for {sym} is ALREADY flat (netqty=0). "
-                        "Recovering fill and finalizing trade closure without placing duplicate exit order."
-                    )
-                    recovered_exit_price = None
-                    if hasattr(session, "orderBook"):
-                        try:
-                            ob_resp = session.orderBook()
-                            ob_data = ob_resp.get("data", []) if isinstance(ob_resp, dict) else []
-                            if isinstance(ob_data, list):
-                                for o in reversed(ob_data):
-                                    o_sym = str(o.get("tradingsymbol", "")).strip().upper()
-                                    o_tok = str(o.get("symboltoken", "")).strip()
-                                    if ((o_sym == sym.upper() or (tok and o_tok == str(tok).strip()))
-                                            and str(o.get("transactiontype", "")).strip().upper() == exit_side
-                                            and str(o.get("status", "")).strip().lower() == "complete"):
-                                        recovered_exit_price = safe_float(o.get("averageprice"))
-                                        break
-                        except Exception:
-                            pass
-                    if recovered_exit_price and recovered_exit_price > 0:
-                        exit_price = recovered_exit_price
-                else:
-                    if pos.get("exit_in_flight", False):
-                        logger.warning(
-                            f"[EXIT IN FLIGHT] Previous exit order is still in-flight for {sym}. "
-                            "Blocking duplicate SELL."
-                        )
-                        return None
-
-                    signal_time = time.time()
-                    exit_order_id = place_live_order(
-                        angel=session,
-                        symbol=sym,
-                        token=tok,
-                        side=exit_side,
-                        qty=total_qty,
-                    )
-                    order_placed_time = time.time()
-
-                    if exit_order_id is None:
-                        # Checkpoint B: Post-order failure verification (§26, §27)
-                        post_net_qty, post_pos_ok = check_broker_position_netqty(
-                            session,
-                            symbol=sym,
-                            token=tok,
-                            exchange=ex,
-                            producttype=prod,
-                        )
-                        if post_pos_ok and post_net_qty == 0.0:
-                            logger.warning(
-                                f"[POST-ORDER RECOVERY] Exit order outcome was ambiguous, but broker position is now flat (netqty=0). "
-                                "Finalizing trade closure."
-                            )
-                        else:
-                            pos["exit_in_flight"] = True
-                            self._state = PyramidingState.STATE_UNKNOWN
-                            reason_msg = LAST_ORDER_RECOVERY.message if LAST_ORDER_RECOVERY else "Exit order placement failed"
-                            logger.critical(
-                                f"[LIVE EXIT ERROR] Exit order unconfirmed for {sym} x {total_qty}. "
-                                f"Broker netqty: {post_net_qty}. Duplicate exit blocked!"
-                            )
-                            alert_human(
-                                f"[CRITICAL STATE UNKNOWN] Operation: EXIT | Symbol: {sym} | Side: {exit_side} | "
-                                f"Qty: {total_qty} | Reason: {reason_msg} (broker netqty={post_net_qty}). Engine quarantined in STATE_UNKNOWN. Duplicate exit blocked."
-                            )
-                            return None
-                    else:
-                        real_exit_price, exit_filled_qty = get_actual_fill_price(session, exit_order_id, expected_qty=total_qty)
-                        order_filled_time = time.time()
-
-                        if real_exit_price is None:
-                            post_net_qty, post_pos_ok = check_broker_position_netqty(
-                                session,
-                                symbol=sym,
-                                token=tok,
-                                exchange=ex,
-                                producttype=prod,
-                            )
-                            if post_pos_ok and post_net_qty == 0.0:
-                                logger.warning(
-                                    f"[FILL TIMEOUT RECOVERY] Fill confirmation timed out for {exit_order_id}, "
-                                    "but broker position is flat (netqty=0). Finalizing trade closure."
-                                )
-                            else:
-                                pos["exit_in_flight"] = True
-                                self._state = PyramidingState.STATE_UNKNOWN
-                                logger.critical(
-                                    f"[EXIT UNCONFIRMED] {exit_order_id} -- position may still be open (broker netqty={post_net_qty}). Alerting."
-                                )
-                                alert_human(
-                                    f"[CRITICAL STATE UNKNOWN] Operation: EXIT | Symbol: {sym} | Side: {exit_side} | "
-                                    f"Qty: {total_qty} | OrderID: {exit_order_id} | Reason: Exit order unconfirmed after timeout (broker netqty={post_net_qty}). Engine quarantined in STATE_UNKNOWN. Duplicate exit blocked."
-                                )
-                                return None
-                        else:
-                            # Verify if partial exit fill occurred (§43, §61)
-                            post_net_qty, post_pos_ok = check_broker_position_netqty(
-                                session,
-                                symbol=sym,
-                                token=tok,
-                                exchange=ex,
-                                producttype=prod,
-                            )
-                            if post_pos_ok and post_net_qty is not None and post_net_qty != 0.0:
-                                pos["quantity"] = int(post_net_qty)
-                                pos["exit_in_flight"] = True
-                                self._state = PyramidingState.STATE_UNKNOWN
-                                logger.warning(
-                                    f"[PARTIAL EXIT FILL] Exit filled {exit_filled_qty}/{total_qty}. "
-                                    f"Remaining broker exposure: {post_net_qty}. Trade NOT marked closed."
-                                )
-                                alert_human(
-                                    f"[CRITICAL STATE UNKNOWN] Operation: EXIT | Symbol: {sym} | Side: {exit_side} | "
-                                    f"Qty: {total_qty} | Filled: {exit_filled_qty} | Remaining: {post_net_qty} | "
-                                    "Reason: Partial exit fill. Trade remains open. Engine quarantined."
-                                )
-                                return None
-
-                            logger.info(
-                                f"[SLIPPAGE] Exit Order->Fill: {order_filled_time - order_placed_time:.3f}s | "
-                                f"Planned ₹{exit_price:.2f} vs Fill ₹{real_exit_price:.2f} "
-                                f"(slip ₹{real_exit_price - exit_price:+.2f})"
-                            )
-                            exit_price = real_exit_price
-                            total_qty = exit_filled_qty
-
-            buy_price, sell_price = (exit_price, avg_entry_price) if side == "SELL" else (avg_entry_price, exit_price)
-            costs = calculate_true_friction(buy_price, sell_price, total_qty)
-            gross_pnl = costs["gross_pnl"]
-            total_charges = costs["total_friction"]
-            net_pnl = costs["net_pnl"]
-            net_roi_pct = (net_pnl / pos["total_cost"]) * 100.0 if pos["total_cost"] > 0 else 0.0
-
-            logger.info(
-                f"[TRADE CLOSED] Entry ₹{avg_entry_price:.2f} -> Exit ₹{exit_price:.2f} | "
-                f"Net P&L ₹{costs['net_pnl']:.2f} (Gross ₹{costs['gross_pnl']:.2f}, Friction ₹{costs['total_friction']:.2f})"
-            )
-
-            # Hold duration
-            entry_ts = pos.get("timestamp") or self._entry_timestamp
-            if entry_ts is not None and exit_timestamp is not None:
-                hold_mins = round((exit_timestamp - entry_ts).total_seconds() / 60.0, 2)
-            else:
-                hold_mins = 0.0
-
-            result = "PROFIT ✅" if net_pnl >= 0 else "LOSS ❌"
-
-            # Update working capital & daily PnL (with live broker reconciliation if in LIVE_MODE)
-            self._daily_pnl += net_pnl
-            recon_status = "SIMULATED_PAPER_DISCONNECT" if not is_live else "SIMULATED"
-            if is_live and session is not None:
-                trade_context = {
-                    "trade_id": pos.get("position_id", "N/A"),
-                    "symbol": pos.get("symbol", SYMBOL),
-                    "token": pos.get("token", TOKEN),
-                    "exchange": pos.get("exchange", "NSE"),
-                    "producttype": "INTRADAY",
-                    "quantity": total_qty,
-                    "side": side,
-                }
-                recon_result = reconcile_trade_intraday(
-                    smart_api=session,
-                    symbol=pos.get("symbol", SYMBOL),
-                    logged_gross_pnl=gross_pnl,
-                    trade_context=trade_context,
-                    baselines=self._reconciliation_baselines,
-                )
-                recon_status = recon_result.get("status", ReconciliationStatus.SKIPPED).value
-                # Pre-flight / Post-trade broker funds sufficiency check (never overwrites working_capital)
-                validate_broker_capital(smart_api=session, required_capital=WORKING_CAPITAL, engine=self)
-            self.working_capital += net_pnl
-            final_balance = self.working_capital + self.backup_capital
-
-            summary = {
-                "trade_id": pos["position_id"],
-                "symbol": pos["symbol"],
-                "side": pos.get("side", "BUY"),
-                "tranches_filled": tranches_filled,
-                "avg_entry_price": round(avg_entry_price, 2),
-                "exit_price": round(exit_price, 2),
-                "signal_price": pos.get("signal_price", round(avg_entry_price, 2)),
-                "requested_order_price": pos.get("requested_order_price", round(avg_entry_price, 2)),
-                "actual_entry_fill": pos.get("actual_entry_fill", round(avg_entry_price, 2)),
-                "actual_exit_fill": round(exit_price, 2),
-                "actual_fill_price": round(exit_price, 2),
-                "orders_placed": tranches_filled if is_live else 0,
-                "filled_shares": total_qty if is_live else 0,
-                "broker_real_pnl": round(gross_pnl, 2) if is_live else 0.0,
-                "total_quantity": total_qty,
-                "quantity": total_qty,
-                "exit_reason": reason,
-                "reason": reason,
-                "gross_pnl": round(gross_pnl, 2),
-                "statutory_charges": round(total_charges, 2),
-                "charges": round(total_charges, 2),
-                "net_pnl": round(net_pnl, 2),
-                "pnl": round(net_pnl, 2),
-                "net_roi_pct": round(net_roi_pct, 2),
-                "pnl_pct": round(net_roi_pct, 2),
-                "ending_working_capital": round(self.working_capital, 2),
-                "final_balance": round(final_balance, 2),
-                "hold_duration_mins": hold_mins,
-                "timestamp": exit_timestamp,
-                "result": result,
-                "reconciliation_status": recon_status,
-            }
-
-            # Persistent CSV ledger write
-            try:
-                self._append_trade_csv(summary)
-            except Exception as exc:
-                logging.error(f"Failed to append to trades.csv: {exc!s}")
-
-            # Terminal ticket
-            self._print_closed_ticket(
-                pos,
-                exit_price,
-                gross_pnl,
-                total_charges,
-                net_pnl,
-                net_roi_pct,
-                result,
-                reason,
-            )
-
-            # Reset position & state
-            self._open_position = None
-            self._entry_timestamp = None
-            self._state = PyramidingState.CLOSED
-            self.entry_atr = None
-            if "Stop Loss" in reason:
-                self.candles_since_last_sl = 0
-            self.candles_held = 0
-
-            # Daily Circuit Breaker Check
-            if self._daily_pnl <= -self.daily_loss_limit:
-                self._halted = True
-                logging.warning("⛔ ══════════════════════════════════════════════════════")
-                logging.warning(
-                    f"⛔  DAILY LOSS LIMIT CIRCUIT BREAKER HIT | P&L: ₹{self._daily_pnl:,.2f}"
-                )
-                logging.warning("⛔  ALL INTRADAY TRADING HALTED FOR TODAY")
-                logging.warning("⛔ ══════════════════════════════════════════════════════")
-
-            return summary
+    def close_position(self,*args,**kwargs):
+        """Retired execution path; public PaperTrader resolves to SafeTrader."""
+        from execution_safety import SafetyError
+        raise SafetyError("LEGACY_ACCOUNTING_PATH_DISABLED")
 
     def notify_candle_close(
         self,
@@ -3630,4 +2315,8 @@ class PaperTrader:
 
 
 # ── Execution Engine Alias ──────────────────────────────────────────────
-ExecutionEngine = PaperTrader
+def __getattr__(name):
+    if name in {"PaperTrader", "ExecutionEngine"}:
+        from safe_trader import SafeTrader
+        return SafeTrader
+    raise AttributeError(name)

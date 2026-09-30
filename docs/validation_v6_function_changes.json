@@ -1,0 +1,517 @@
+{
+  "algo-trading-bot/backtest_engine.py": {
+    "modified_functions": [
+      "fetch_historical_candles",
+      "run_backtest",
+      "run_historical_backtest"
+    ],
+    "added_functions": [],
+    "removed_functions": [
+      "_generate_synthetic_historical_data"
+    ],
+    "class_rename": null
+  },
+  "algo-trading-bot/config.py": {
+    "modified_functions": [],
+    "added_functions": [],
+    "removed_functions": [],
+    "class_rename": null
+  },
+  "algo-trading-bot/execution_engine.py": {
+    "modified_functions": [
+      "LegacyPaperTrader.__init__",
+      "LegacyPaperTrader._execute_tranche_1",
+      "LegacyPaperTrader._execute_tranche_2",
+      "LegacyPaperTrader._execute_tranche_3",
+      "LegacyPaperTrader.calculate_entry_leg_charges",
+      "LegacyPaperTrader.calculate_exit_leg_charges",
+      "LegacyPaperTrader.close_position",
+      "LegacyPaperTrader.execute_trade",
+      "calculate_true_friction",
+      "place_live_order"
+    ],
+    "added_functions": [
+      "__getattr__"
+    ],
+    "removed_functions": [],
+    "class_rename": "PaperTrader \u2192 LegacyPaperTrader; public imports resolve to SafeTrader"
+  },
+  "algo-trading-bot/feed_integrity.py": {
+    "modified_functions": [
+      "ThreadSafeTickIngestionQueue.enqueue"
+    ],
+    "added_functions": [],
+    "removed_functions": [],
+    "class_rename": null
+  },
+  "algo-trading-bot/live_stream.py": {
+    "modified_functions": [
+      "AngelOneLiveStream.__init__",
+      "AngelOneLiveStream._evaluate_watchlist_orchestrator",
+      "AngelOneLiveStream._extract_tick_fields",
+      "AngelOneLiveStream._on_data",
+      "AngelOneLiveStream._on_open",
+      "AngelOneLiveStream._tick_consumer_loop",
+      "AngelOneLiveStream.lifecycle_watchdog",
+      "AngelOneLiveStream.run",
+      "AngelOneLiveStream.trigger_eod_square_off",
+      "_parse_tick_timestamp",
+      "angel_login",
+      "main",
+      "place_live_order"
+    ],
+    "added_functions": [
+      "record_screening_report"
+    ],
+    "removed_functions": [],
+    "class_rename": null
+  },
+  "algo-trading-bot/market_schedule.py": {
+    "modified_functions": [
+      "NSEMarketSchedule.entry_cutoff_time",
+      "NSEMarketSchedule.eod_square_off_time"
+    ],
+    "added_functions": [],
+    "removed_functions": [],
+    "class_rename": null
+  },
+  "algo-trading-bot/premarket_screener.py": {
+    "modified_functions": [
+      "evaluate_candidate",
+      "run_premarket_screener"
+    ],
+    "added_functions": [],
+    "removed_functions": [],
+    "class_rename": null
+  },
+  "algo-trading-bot/symbol_state.py": {
+    "modified_functions": [],
+    "added_functions": [],
+    "removed_functions": [],
+    "class_rename": null
+  },
+  "algo-trading-bot/test_capital_sync.py": {
+    "modified_functions": [
+      "test_scenario_10_position_sizing_integration",
+      "test_scenario_11_tranche_allocation_percentages",
+      "test_scenario_6_broker_cash_extremely_high"
+    ],
+    "added_functions": [],
+    "removed_functions": [],
+    "class_rename": null
+  },
+  "algo-trading-bot/test_disaster_recovery.py": {
+    "modified_functions": [
+      "test_scenario_a_ghost_entry_recovery",
+      "test_scenario_b_unrecoverable_entry_alert",
+      "test_scenario_c_ghost_exit_prevention",
+      "test_scenario_d_stranded_inventory_alert",
+      "test_scenario_f_duplicate_exit_protection",
+      "test_scenario_g_partial_entry_fill",
+      "test_scenario_h_partial_exit_fill",
+      "test_scenario_i_multiple_recovery_matches",
+      "test_scenario_j_recovery_api_failure",
+      "test_scenario_k_explicit_broker_rejection",
+      "test_scenario_l_normal_success_regression"
+    ],
+    "added_functions": [],
+    "removed_functions": [],
+    "class_rename": null
+  },
+  "algo-trading-bot/test_mode_isolation.py": {
+    "modified_functions": [
+      "test_live_mode_banner_and_fill_accounting",
+      "test_paper_mode_banner_and_order_lockout"
+    ],
+    "added_functions": [],
+    "removed_functions": [],
+    "class_rename": null
+  },
+  "algo-trading-bot/test_phase5_multisymbol.py": {
+    "modified_functions": [
+      "test_dynamic_standby_swapping",
+      "test_failure_containment_isolated_error",
+      "test_global_position_limit_enforced",
+      "test_unknown_token_safely_ignored",
+      "test_websocket_reconnect_restores_all_watchlist_tokens"
+    ],
+    "added_functions": [
+      "_verified_test_stream",
+      "isolated_execution_environment"
+    ],
+    "removed_functions": [],
+    "class_rename": null
+  },
+  "algo-trading-bot/test_pipeline.py": {
+    "modified_functions": [
+      "test_capital_allocation_and_tranches",
+      "test_direction_flip_closes_opposite",
+      "test_dynamic_atr_stop_loss_and_failsafe",
+      "test_exit_priorities_sl_tp_eod",
+      "test_live_execution_state_transitions_and_exit",
+      "test_multi_tranche_pyramiding_state_machine",
+      "test_no_time_stop_at_40_or_more_candles",
+      "test_pluggable_market_schedule_providers",
+      "test_post_stop_loss_cooldown_firewall",
+      "test_recalibrated_pyramiding_tranche2_trigger",
+      "test_short_position_lifecycle",
+      "test_smartapi_place_live_order_defensive_parser",
+      "test_theta_decay_breakeven_defense",
+      "test_trades_csv_13_columns_schema",
+      "test_true_net_rr_friction_gate",
+      "test_wick_immunity_and_candle_close_stop_loss"
+    ],
+    "added_functions": [],
+    "removed_functions": [],
+    "class_rename": null
+  },
+  "algo-trading-bot/test_screener.py": {
+    "modified_functions": [
+      "test_ema_trend_filter"
+    ],
+    "added_functions": [],
+    "removed_functions": [],
+    "class_rename": null
+  },
+  "algo-trading-bot/test_suite.py": {
+    "modified_functions": [
+      "test_phase1_order_assignment_state_transition",
+      "test_phase1_smartapi_dict_payload",
+      "test_phase1_smartapi_string_payload",
+      "test_phase2_dynamic_pyramiding_tranche2_trigger",
+      "test_phase2_pnl_tracking_tp_and_sl_cooldown",
+      "test_phase2_wick_immunity_intra_candle_vs_close",
+      "test_recovery_connection_error",
+      "test_recovery_entry_timeout_broker_executed",
+      "test_recovery_entry_timeout_broker_rejected",
+      "test_recovery_entry_timeout_multiple_matches",
+      "test_recovery_entry_timeout_no_order",
+      "test_recovery_exit_timeout_ambiguous",
+      "test_recovery_exit_timeout_broker_executed",
+      "test_recovery_exit_timeout_broker_rejected",
+      "test_recovery_exit_timeout_netqty_nonzero_prevents_false_closure",
+      "test_recovery_exit_timeout_netqty_zero_prevents_second_sell",
+      "test_recovery_http_502",
+      "test_recovery_http_504",
+      "test_recovery_human_alert_fired",
+      "test_recovery_missing_order_id",
+      "test_recovery_partial_entry_fill",
+      "test_recovery_partial_exit_fill"
+    ],
+    "added_functions": [],
+    "removed_functions": [],
+    "class_rename": null
+  },
+  "algo-trading-bot/activation_gate.py": {
+    "modified_functions": [],
+    "added_functions": [
+      "source_fingerprint",
+      "validate_activation"
+    ],
+    "removed_functions": [],
+    "class_rename": null
+  },
+  "algo-trading-bot/execution_adapters.py": {
+    "modified_functions": [],
+    "added_functions": [
+      "BrokerCapabilities.validate",
+      "FillResult.__post_init__",
+      "FillResult.to_dict",
+      "PaperExecutionAdapter.cancel",
+      "PaperExecutionAdapter.execute",
+      "PaperExecutionAdapter.protect",
+      "PaperExecutionAdapter.snapshot",
+      "SmartAPIExecutionAdapter.__init__",
+      "SmartAPIExecutionAdapter._data",
+      "SmartAPIExecutionAdapter._order",
+      "SmartAPIExecutionAdapter._submit",
+      "SmartAPIExecutionAdapter.available_cash",
+      "SmartAPIExecutionAdapter.cancel",
+      "SmartAPIExecutionAdapter.execute",
+      "SmartAPIExecutionAdapter.protect",
+      "SmartAPIExecutionAdapter.read_fill",
+      "SmartAPIExecutionAdapter.snapshot"
+    ],
+    "removed_functions": [],
+    "class_rename": null
+  },
+  "algo-trading-bot/execution_safety.py": {
+    "modified_functions": [],
+    "added_functions": [
+      "ExecutionQualityGate.validate",
+      "FeeModel.leg",
+      "InstrumentIdentity.from_dict",
+      "InstrumentIdentity.price",
+      "InstrumentIdentity.to_dict",
+      "InstrumentIdentity.validate",
+      "MarketQuote.executable",
+      "MarketQuote.spread_pct",
+      "capital_protection_prices",
+      "estimate_trade_economics",
+      "positive",
+      "solve_quantity"
+    ],
+    "removed_functions": [],
+    "class_rename": null
+  },
+  "algo-trading-bot/instrument_registry.py": {
+    "modified_functions": [],
+    "added_functions": [
+      "InstrumentRegistry.__init__",
+      "InstrumentRegistry.candidates",
+      "InstrumentRegistry.load",
+      "InstrumentRegistry.resolve"
+    ],
+    "removed_functions": [],
+    "class_rename": null
+  },
+  "algo-trading-bot/opportunity_engine.py": {
+    "modified_functions": [],
+    "added_functions": [
+      "OpportunityScore.total",
+      "arbitration_key",
+      "build_volume_profile",
+      "same_time_rvol",
+      "score_opportunity"
+    ],
+    "removed_functions": [],
+    "class_rename": null
+  },
+  "algo-trading-bot/refresh_instruments.py": {
+    "modified_functions": [],
+    "added_functions": [
+      "refresh_registry"
+    ],
+    "removed_functions": [],
+    "class_rename": null
+  },
+  "algo-trading-bot/replay_engine.py": {
+    "modified_functions": [],
+    "added_functions": [
+      "ResearchVariant.id",
+      "rejected_opportunity_outcomes",
+      "replay",
+      "research_metrics"
+    ],
+    "removed_functions": [],
+    "class_rename": null
+  },
+  "algo-trading-bot/safe_trader.py": {
+    "modified_functions": [],
+    "added_functions": [
+      "SafeTrader.__init__",
+      "SafeTrader._event",
+      "SafeTrader._execute_tranche_1",
+      "SafeTrader._execute_tranche_2",
+      "SafeTrader._execute_tranche_3",
+      "SafeTrader._export_csv",
+      "SafeTrader._init_csv_log",
+      "SafeTrader._install_capital_protection",
+      "SafeTrader._mark_to_market",
+      "SafeTrader._persist_management",
+      "SafeTrader._persist_position",
+      "SafeTrader._quarantine",
+      "SafeTrader._record_acknowledgement",
+      "SafeTrader._reject",
+      "SafeTrader._storage_failure",
+      "SafeTrader._transition",
+      "SafeTrader.cancel_pending_orders",
+      "SafeTrader.check_day_reset",
+      "SafeTrader.check_exit",
+      "SafeTrader.close_position",
+      "SafeTrader.execute_trade",
+      "SafeTrader.notify_candle_close",
+      "SafeTrader.reconcile_broker",
+      "SafeTrader.session_report",
+      "SafeTrader.set_quote",
+      "SafeTrader.shutdown"
+    ],
+    "removed_functions": [],
+    "class_rename": null
+  },
+  "algo-trading-bot/safety_journal.py": {
+    "modified_functions": [],
+    "added_functions": [
+      "SafetyJournal.__init__",
+      "SafetyJournal.budget",
+      "SafetyJournal.can_reserve",
+      "SafetyJournal.close",
+      "SafetyJournal.event",
+      "SafetyJournal.fills",
+      "SafetyJournal.finish",
+      "SafetyJournal.get_meta",
+      "SafetyJournal.load_position",
+      "SafetyJournal.record_fill",
+      "SafetyJournal.release",
+      "SafetyJournal.remaining",
+      "SafetyJournal.report",
+      "SafetyJournal.reservations",
+      "SafetyJournal.reserve",
+      "SafetyJournal.save_position",
+      "SafetyJournal.set_meta",
+      "SafetyJournal.start_day",
+      "SafetyJournal.trades",
+      "SafetyJournal.update_reservation"
+    ],
+    "removed_functions": [],
+    "class_rename": null
+  },
+  "algo-trading-bot/safety_test_support.py": {
+    "modified_functions": [],
+    "added_functions": [
+      "ScenarioBroker.__init__",
+      "ScenarioBroker.cancelOrder",
+      "ScenarioBroker.orderBook",
+      "ScenarioBroker.placeOrder",
+      "ScenarioBroker.position",
+      "ScenarioBroker.rmsLimit",
+      "assert_unknown_exit",
+      "assert_unknown_submission",
+      "live_trader",
+      "paper_trader"
+    ],
+    "removed_functions": [],
+    "class_rename": null
+  },
+  "algo-trading-bot/security_logging.py": {
+    "modified_functions": [],
+    "added_functions": [
+      "BrokerSecretFilter.filter",
+      "install_broker_secret_filter"
+    ],
+    "removed_functions": [],
+    "class_rename": null
+  },
+  "algo-trading-bot/test_activation_v6.py": {
+    "modified_functions": [],
+    "added_functions": [
+      "test_flags_alone_cannot_enable_live",
+      "test_invalid_activation_evidence_cannot_enable"
+    ],
+    "removed_functions": [],
+    "class_rename": null
+  },
+  "algo-trading-bot/test_audit_v6.py": {
+    "modified_functions": [],
+    "added_functions": [
+      "quote_at",
+      "test_attempt_limit_is_atomic_inside_journal",
+      "test_capital_protection_is_separate_from_strategy_stop",
+      "test_csv_from_another_environment_cannot_be_overwritten",
+      "test_duplicate_entry_fill_cannot_open_a_second_trade",
+      "test_existing_trade_csv_without_journal_blocks_reset",
+      "test_failure_halt_is_durable_after_completed_emergency_exit",
+      "test_fill_persistence_failure_halts_and_protects_known_exposure",
+      "test_fill_rejects_nonfinite_price_and_charges",
+      "test_identity_cannot_embed_different_trading_symbol",
+      "test_known_stale_quote_exit_can_retry_without_duplicate_order",
+      "test_nonfinite_depth_is_not_liquidity",
+      "test_nonfinite_or_boolean_broker_cash_is_blocked",
+      "test_paper_capital_emergency_is_explicit_and_halts",
+      "test_projected_risk_includes_exit_spread_and_tick_rounding",
+      "test_protective_ack_must_match_instrument",
+      "test_replay_rejects_empty_and_nonfinite_prices",
+      "test_report_includes_observed_unrealized_drawdown",
+      "test_restart_cannot_erase_stop_cooldown",
+      "test_restart_preserves_breakeven_candle_count",
+      "test_same_time_rvol_rejects_current_and_future_sessions"
+    ],
+    "removed_functions": [],
+    "class_rename": null
+  },
+  "algo-trading-bot/test_broker_safety_v6.py": {
+    "modified_functions": [],
+    "added_functions": [
+      "Ambiguous.execute",
+      "Broker.__init__",
+      "Broker.cancelOrder",
+      "Broker.orderBook",
+      "Broker.placeOrder",
+      "Broker.position",
+      "FailedProtection.protect",
+      "PartialExit.execute",
+      "PartialPaper.execute",
+      "PartialPaper.protect",
+      "capabilities",
+      "test_adapter_partial_entry_is_terminal_and_real",
+      "test_capabilities_fail_closed",
+      "test_direct_legacy_order_path_cannot_bypass_validation",
+      "test_duplicate_book_report_wrong_identity_blocked",
+      "test_engine_partial_entry_quantity_and_protection",
+      "test_flatten_uses_fill_and_verifies_simulated_flat",
+      "test_flatten_with_fresh_quote_completes",
+      "test_live_default_gate_prevents_activation",
+      "test_partial_exits_preserve_quantity_fees_and_protection",
+      "test_protection_failure_deterministically_unwinds",
+      "test_protection_matches_actual_quantity",
+      "test_protection_rejection_detected",
+      "test_recovered_broker_exposure_blocks_entries",
+      "test_rejected_and_cancelled_orders_never_create_quantity",
+      "test_unknown_order_durable_quarantine_after_restart"
+    ],
+    "removed_functions": [],
+    "class_rename": null
+  },
+  "algo-trading-bot/test_integration_v6.py": {
+    "modified_functions": [],
+    "added_functions": [
+      "test_arbitration_uses_quality_before_rupee_profit",
+      "test_master_resolves_once_and_rejects_guess",
+      "test_master_stale_and_duplicate_fail_closed",
+      "test_no_trade_startup_still_emits_report",
+      "test_original_breakeven_math_preserved",
+      "test_pilot_preserves_stop_target_and_close_based_stop",
+      "test_replay_executes_on_next_observation_with_prior_volume",
+      "test_same_clock_rvol_excludes_later_volume",
+      "test_sensitive_logging_redacted",
+      "test_single_session_replay_is_explicit_and_non_phantom",
+      "test_stream_constructor_rejects_unverified_identity",
+      "test_stream_ticks_carry_identity_depth_and_real_volume",
+      "test_valid_direction_flip_closes_before_opposite_entry"
+    ],
+    "removed_functions": [],
+    "class_rename": null
+  },
+  "algo-trading-bot/test_orchestration_safety_v6.py": {
+    "modified_functions": [],
+    "added_functions": [
+      "orchestration",
+      "test_completed_bar_cannot_submit_twice",
+      "test_flip_after_entry_cutoff_can_exit_without_new_entry",
+      "test_flip_closes_before_replacement_economics_are_rejected",
+      "test_history_requires_authoritative_identity_before_login",
+      "test_missing_exchange_time_cannot_be_replaced_with_now",
+      "test_opposite_signal_reaches_existing_direction_flip",
+      "test_stale_closed_bar_cannot_trade_on_fresh_quote"
+    ],
+    "removed_functions": [],
+    "class_rename": null
+  },
+  "algo-trading-bot/test_safety_v6.py": {
+    "modified_functions": [],
+    "added_functions": [
+      "payload",
+      "quote",
+      "test_cutoff_blocks_entry",
+      "test_daily_40_cannot_reserve_70",
+      "test_duplicate_fill_idempotent",
+      "test_environment_cannot_reuse_ledger",
+      "test_frozen_strategy_bytes",
+      "test_long_short_fees_are_sided_correctly",
+      "test_no_identity_blocks",
+      "test_one_position_and_scale_in_blocked",
+      "test_paper_entry_cannot_fill_old_vwap",
+      "test_quantity_checks_all_integer_candidates",
+      "test_remaining_daily_budget_does_not_reset_after_profit",
+      "test_restart_retains_budget_and_open_position",
+      "test_risk_122_is_reduced_or_rejected",
+      "test_single_tranche_initialization_no_crash",
+      "test_stale_quote_blocks",
+      "test_stop_gap_uses_executable_price",
+      "test_wrong_token_never_routes",
+      "trader"
+    ],
+    "removed_functions": [],
+    "class_rename": null
+  }
+}

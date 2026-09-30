@@ -131,14 +131,14 @@ def test_spread_and_depth_gate():
 
 
 def test_ema_trend_filter():
-    """Test EMA trend filter (bearish structure fails)."""
+    """Pre-selection admits valid bearish structure; core decides trade direction."""
     cand = {"symbol": "TEST", "trading_symbol": "TEST-EQ", "token": "100", "exchange": "NSE"}
     # Downtrend: EMA_9 < EMA_21
     df_down = _generate_synthetic_session_candles(ltp=200.0, atr=1.20, uptrend=False)
     diag_down = evaluate_candidate(cand, df_down)
-    assert not diag_down.ema_ok
-    assert RejectionReason.EMA_TREND_INVALID in diag_down.rejection_reasons
-    assert not diag_down.qualified
+    assert diag_down.ema_ok
+    assert RejectionReason.EMA_TREND_INVALID not in diag_down.rejection_reasons
+    assert diag_down.qualified
 
 
 def test_exclusion_list():

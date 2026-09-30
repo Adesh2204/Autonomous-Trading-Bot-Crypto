@@ -1,37 +1,7 @@
-"""
-backtest_engine.py — Standalone Historical VWAP Pullback Backtester
-=====================================================================
-Vector-friendly, session-aware historical backtest harness that
-simulates the *exact* rules used in the live trading pipeline.
+"""Explicit research replay using the frozen strategy and separate simulated accounting.
 
-How It Works
-────────────
-1. Accepts a DataFrame or CSV of 1-minute OHLCV candles.
-2. For each session (09:15 → 15:29 IST), computes rolling VWAP
-   (reset per session) and Wilder ATR-14 (rolling across candles).
-3. Runs `signal_brain.generate_vwap_signal` for strict 3-condition
-   dynamic-ATR pullback signals with Anti-Spam State Lock.
-4. Simulates `PaperTrader` with:
-     • Scale-in (Pyramiding) up to 3 tranches (33%, 33%, 34%)
-     • Scale-in trigger on +0.50% gain + confirmed continuation
-     • Zero-risk trailing stop locks (Breakeven / Profit Locks)
-     • Priority: Stop Loss → Target → 15:20 IST EOD Auto-Square-Off
-     • Capital partitions: 50% Working, 50% Backup, ₹100 risk limit, ₹200 daily loss limit
-     • Statutory Friction Gate (Brokerage + STT + Stamp + GST + Txn)
-5. On every simulated exit, a structured row is appended to the
-   PaperTrader's internal `trades.csv` AND collected in-memory.
-6. At end of simulation, prints an institutional-grade Performance
-   Summary table:
-       Total Trades / Win Rate % / Profit Factor / Max Drawdown
-       Average Trade Duration / Net Expectancy per Trade
-
-Usage
-─────
->>> from backtest_engine import run_backtest
->>> result = run_backtest(csv_path="historical_ohlcv.csv",
-...                        symbol="M&M",
-...                        total_capital=10017.0)
->>> print(result.summary_table)
+Requires authoritative instrument metadata and dataset provenance. Candle execution
+assumptions are recorded; results do not establish live profitability.
 """
 
 from __future__ import annotations
@@ -42,6 +12,7 @@ import sys
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, time as dtime
 from typing import Optional, Union
+from pathlib import Path
 
 from dotenv import load_dotenv
 import numpy as np
@@ -173,282 +144,35 @@ def _intraday_filter(df: pd.DataFrame) -> pd.DataFrame:
     return df.loc[mask].copy().reset_index(drop=True)
 
 
-def run_backtest(
-    source: Union[str, pd.DataFrame],
-    symbol: str = "UNKNOWN",
-    total_capital: float = 10017.0,
-    working_capital_pct: float = 0.50,
-    daily_loss_limit_pct: float = 0.02,
-    risk_per_trade_pct: float = 0.01,
-    stop_loss_pct: float = 0.005,
-    reward_to_risk: float = 2.0,
-    max_tranches: int = 3,
-    breakeven_trigger_pct: float = 0.0050,
-    csv_log_path: Optional[str] = None,
-) -> BacktestResult:
-    """
-    Run a full vector-friendly backtest over historical 1-min OHLCV.
-
-    Parameters
-    ----------
-    source : DataFrame or str
-        Either a DataFrame (with timestamp/open/high/low/close/volume),
-        or a path to a CSV file with equivalent columns.
-    symbol : str
-        Instrument name used for logging / reporting.
-    total_capital, working_capital_pct, daily_loss_limit_pct,
-    risk_per_trade_pct, stop_loss_pct, reward_to_risk, max_tranches
-        Passed directly to PaperTrader (same parameters as the live bot).
-    breakeven_trigger_pct
-        Passed directly to PaperTrader active-trade management.
-    csv_log_path : str, optional
-        Override persistent `trades.csv` output path.
-
-    Returns
-    -------
-    BacktestResult
-        DataClass with trades list, equity curve DataFrame, and
-        formatted institutional summary table (.summary_table).
-    """
-    raw_df = _load_ohlcv(source)
-    sessions = _split_sessions(raw_df)
-
-    if not sessions:
-        logging.warning("No valid sessions with ≥ 14 candles to backtest.")
-        return BacktestResult(symbol=symbol, total_capital=total_capital)
-
-    if csv_log_path is None:
-        base = os.path.dirname(os.path.abspath(__file__))
-        csv_log_path = os.path.join(base, "trades.csv")
-
-    if os.path.exists(csv_log_path):
-        os.remove(csv_log_path)
-
-    trader = PaperTrader(
-        total_capital=total_capital,
-        working_capital_pct=working_capital_pct,
-        daily_loss_limit_pct=daily_loss_limit_pct,
-        risk_per_trade_pct=risk_per_trade_pct,
-        stop_loss_pct=stop_loss_pct,
-        reward_to_risk=reward_to_risk,
-        max_tranches=max_tranches,
-        csv_log_path=csv_log_path,
-        breakeven_trigger_pct=breakeven_trigger_pct,
-    )
-
-    equity_points = []
-    all_trade_rows = []
-
-    # ── Session Loop ──────────────────────────────────────────────────
-    for sidx, (session_date, sdf) in enumerate(sessions, start=1):
-        sdf = _intraday_filter(sdf)
-        if sdf.empty:
-            continue
-
-        logging.info(
-            f"[SESSION {sidx}/{len(sessions)}]  Date: {session_date}  |  "
-            f"Candles: {len(sdf)}  |  Processing..."
-        )
-
-        sig_df = generate_vwap_signal(sdf)
-
-        # ── Intra-session candle-by-candle simulation ──────────────
-        for _, row in sig_df.iterrows():
-            row_ts = row["Timestamp"]
-            ts = row_ts.to_pydatetime() if hasattr(row_ts, "to_pydatetime") else pd.Timestamp(row_ts).to_pydatetime()
-
-            c_open  = float(row["Open"])
-            c_high  = float(row["High"])
-            c_low   = float(row["Low"])
-            c_close = float(row["Close"])
-            vwap    = float(row["VWAP"]) if not pd.isna(row["VWAP"]) else None
-            atr14   = float(row["ATR_14"]) if not pd.isna(row["ATR_14"]) else None
-            signal  = bool(row["Buy_Signal"])
-
-            trader.check_day_reset(ts)
-
-            # ── A. EOD square-off @ 15:20 IST ────────────────────
-            if ts.time() >= EOD_SQUAREOFF_IST and trader.has_open_position:
-                closed = trader.square_off_all_positions(
-                    reason="15:20 IST EOD Square-Off",
-                    latest_price=c_close,
-                    timestamp=ts,
-                )
-                if closed is not None:
-                    all_trade_rows.append(closed)
-                continue
-
-            # ── B. Price-path simulation (Open → Low/High → Close) ─
-            price_path = [("OPEN", c_open), ("LOW", c_low), ("HIGH", c_high)]
-            for _, px in price_path:
-                closed = trader.check_exit(live_price=px, timestamp=ts)
-                if closed is not None:
-                    all_trade_rows.append(closed)
-                    break
-
-            trader.check_exit(live_price=c_close, timestamp=ts)
-
-            t_closed = trader.notify_candle_close(timestamp=ts)
-            if t_closed is not None:
-                all_trade_rows.append(t_closed)
-
-            # ── D. Signal → entry ─────────────────────────────────
-            if signal and vwap is not None and atr14 is not None and not trader.is_halted:
-                payload = {
-                    "VWAP": vwap,
-                    "Close": c_close,
-                    "symbol": symbol,
-                    "ATR_14": atr14,
-                }
-                trader.execute_trade(signal_data=payload, timestamp=ts, atr_14=atr14)
-
-        # ── Session end — force close any remaining (edge case past 15:20) ──
-        last_ts_raw = sdf["Timestamp"].iloc[-1]
-        last_ts_dt = (
-            last_ts_raw.to_pydatetime()
-            if hasattr(last_ts_raw, "to_pydatetime")
-            else pd.Timestamp(last_ts_raw).to_pydatetime()
-        )
-        if trader.has_open_position:
-            final_px = float(sdf["Close"].iloc[-1])
-            closed = trader.square_off_all_positions(
-                reason=f"Session Close {session_date}",
-                latest_price=final_px,
-                timestamp=last_ts_dt,
-            )
-            if closed is not None:
-                all_trade_rows.append(closed)
-
-        equity_points.append({
-            "Timestamp": last_ts_dt,
-            "Session_Date": session_date,
-            "Working_Capital": trader.working_capital,
-            "Backup_Capital": trader.backup_capital,
-            "Total_Capital": trader.working_capital + trader.backup_capital,
-            "Session_Daily_PnL": trader.daily_pnl,
-        })
-
-    # ── Build Equity Curve DataFrame ───────────────────────────────────
-    eq = pd.DataFrame(equity_points)
-    if not eq.empty:
-        eq.set_index("Timestamp", inplace=True)
-        eq["Net_PnL"] = eq["Total_Capital"] - total_capital
-
-    # ── Compute Performance Metrics ────────────────────────────────────
-    n_trades = len(all_trade_rows)
-    wins = [t for t in all_trade_rows if float(t.get("net_pnl", 0.0)) > 0.0]
-    losses = [t for t in all_trade_rows if float(t.get("net_pnl", 0.0)) <= 0.0]
-    n_wins = len(wins)
-    win_rate = (n_wins / n_trades * 100.0) if n_trades else 0.0
-
-    gross_win = sum(float(t.get("net_pnl", 0.0)) for t in wins)
-    gross_loss_abs = abs(sum(float(t.get("net_pnl", 0.0)) for t in losses))
-    profit_factor = (
-        gross_win / gross_loss_abs if gross_loss_abs > 0
-        else (float("inf") if gross_win > 0 else 0.0)
-    )
-
-    net_pnl_total = sum(float(t.get("net_pnl", 0.0)) for t in all_trade_rows)
-    net_roi_pct = (net_pnl_total / total_capital) * 100.0 if total_capital else 0.0
-    net_expectancy = (net_pnl_total / n_trades) if n_trades else 0.0
-    avg_hold_mins = (
-        float(np.mean([t.get("hold_duration_mins", 0.0) for t in all_trade_rows]))
-        if n_trades else 0.0
-    )
-
-    max_dd_inr = 0.0
-    max_dd_pct = 0.0
-    if not eq.empty and "Total_Capital" in eq.columns:
-        running_peak = eq["Total_Capital"].cummax()
-        dd_inr = running_peak - eq["Total_Capital"]
-        dd_pct = (dd_inr / running_peak) * 100.0
-        max_dd_inr = float(dd_inr.max())
-        max_dd_pct = float(dd_pct.max())
-
-    result = BacktestResult(
-        symbol=symbol,
-        total_capital=total_capital,
-        equity_curve=eq,
-        trades=all_trade_rows,
-        total_trades=n_trades,
-        win_rate_pct=win_rate,
-        profit_factor=profit_factor,
-        max_drawdown_inr=max_dd_inr,
-        max_drawdown_pct=max_dd_pct,
-        avg_hold_duration_mins=avg_hold_mins,
-        net_expectancy_per_trade=net_expectancy,
-        net_pnl_total=net_pnl_total,
-        net_roi_pct=net_roi_pct,
-    )
-
-    logging.info(result.summary_table)
-
+def run_backtest(source,symbol='UNKNOWN',total_capital=20000.,working_capital_pct=.5,
+    daily_loss_limit_pct=.01,risk_per_trade_pct=.01,stop_loss_pct=.005,reward_to_risk=2.,max_tranches=1,
+    breakeven_trigger_pct=.005,csv_log_path=None,*,instrument=None,provenance=None,variant=None):
+    """Research replay with explicit data provenance and immutable instrument metadata."""
+    from replay_engine import replay
+    from execution_safety import SafetyError
+    if instrument is None or not provenance:raise SafetyError('REPLAY_INSTRUMENT_AND_PROVENANCE_REQUIRED')
+    if (working_capital_pct,daily_loss_limit_pct,risk_per_trade_pct,stop_loss_pct,reward_to_risk,max_tranches,breakeven_trigger_pct)!=(.5,.01,.01,.005,2.,1,.005):
+        raise SafetyError('LEGACY_PARAMETER_OVERRIDES_FORBIDDEN')
+    output=Path(csv_log_path).parent if csv_log_path else Path(__file__).parent/'data'/'backtest'
+    trades,equity,metadata=replay(_load_ohlcv(source),instrument,provenance,output,total_capital,variant)
+    result=BacktestResult(symbol=symbol,total_capital=total_capital)
+    result.trades=trades
+    from replay_engine import research_metrics
+    metrics=research_metrics(trades)
+    result.total_trades=len(trades)
+    result.win_rate_pct=(metrics['win_rate'] or 0)*100
+    result.profit_factor=metrics['profit_factor'] if metrics['profit_factor'] is not None else float('inf') if any(t['net_pnl']>0 for t in trades) else 0.
+    result.max_drawdown_inr=metrics['maximum_drawdown']
+    result.max_drawdown_pct=result.max_drawdown_inr/total_capital*100
+    result.avg_hold_duration_mins=sum(t['hold_duration_minutes'] for t in trades)/len(trades) if trades else 0.
+    result.net_expectancy_per_trade=metrics['net_expectancy'] or 0.
+    result.net_pnl_total=sum(t['net_pnl'] for t in trades)
+    result.net_roi_pct=result.net_pnl_total/total_capital*100
+    if not equity.empty:result.equity_curve=equity.set_index('Timestamp')
+    result.research_metadata=metadata
     return result
 
 
-# ────────────────────────────────────────────────────────────────────────
-#  HISTORICAL DATA HARNESS (Angel One API -> yfinance -> Synthetic)
-# ────────────────────────────────────────────────────────────────────────
-
-SYMBOL_TOKEN_MAP = {
-    "M&M": "2031",
-    "TATASTEEL": "3499",
-    "TATAMOTORS": "3456",
-    "ITC": "1660",
-    "COALINDIA": "20374",
-    "RELIANCE": "2885",
-    "SBIN": "3045",
-}
-
-BASE_PRICES = {
-    "M&M": 2500.0,
-    "TATASTEEL": 150.0,
-    "TATAMOTORS": 980.0,
-    "ITC": 490.0,
-    "COALINDIA": 480.0,
-}
-
-
-def _generate_synthetic_historical_data(symbol: str = "M&M", days: int = 5) -> pd.DataFrame:
-    """Generate high-fidelity synthetic 1-minute OHLCV sessions for offline backtesting."""
-    base_price = BASE_PRICES.get(symbol.upper(), 500.0)
-    records = []
-
-    start_date = date.today() - timedelta(days=days * 2)
-    session_count = 0
-    curr_date = start_date
-
-    while session_count < days:
-        if curr_date.weekday() < 5:  # Monday to Friday
-            # Generate 09:15 to 15:29 (375 bars)
-            session_start = datetime.combine(curr_date, MARKET_OPEN_IST)
-            px = base_price * (1.0 + (session_count * 0.005))
-
-            for m in range(375):
-                ts = session_start + timedelta(minutes=m)
-                # Introduce realistic intraday volatility and VWAP pullback setups
-                noise = np.sin(m / 15.0) * (base_price * 0.002) + np.random.normal(0, base_price * 0.001)
-                trend = (m / 375.0) * (base_price * 0.008)
-                bar_close = round(px + trend + noise, 2)
-                bar_open = round(bar_close - np.random.normal(0, base_price * 0.0005), 2)
-                bar_high = round(max(bar_open, bar_close) + abs(np.random.normal(0, base_price * 0.0008)), 2)
-                bar_low = round(min(bar_open, bar_close) - abs(np.random.normal(0, base_price * 0.0008)), 2)
-                bar_volume = int(np.random.uniform(500, 3000))
-
-                records.append({
-                    "Timestamp": ts,
-                    "Open": bar_open,
-                    "High": bar_high,
-                    "Low": bar_low,
-                    "Close": bar_close,
-                    "Volume": bar_volume,
-                })
-            session_count += 1
-        curr_date += timedelta(days=1)
-
-    df = pd.DataFrame(records)
-    df["Timestamp"] = pd.to_datetime(df["Timestamp"])
-    return df
 
 
 def fetch_historical_candles(
@@ -456,13 +180,19 @@ def fetch_historical_candles(
     days: int = 5,
     interval: str = "ONE_MINUTE",
     exchange: str = "NSE",
+    *, instrument=None,
 ) -> pd.DataFrame:
     """
     Fetch 1-minute historical OHLCV data using Angel One SmartAPI,
-    falling back to yfinance, and falling back to high-fidelity synthetic data.
+    with an explicit authoritative mapping and provider provenance. No synthetic fallback.
     """
     symbol_clean = symbol.upper().replace(".NS", "")
-    token = SYMBOL_TOKEN_MAP.get(symbol_clean)
+    from execution_safety import InstrumentIdentity, SafetyError
+    from security_logging import install_broker_secret_filter
+    install_broker_secret_filter()
+    if not isinstance(instrument,InstrumentIdentity):raise SafetyError('HISTORICAL_INSTRUMENT_REQUIRED')
+    instrument.validate(symbol_clean,exchange=exchange)
+    token = instrument.token
 
     # ── Attempt 1: Angel One SmartAPI Historical Data ──────────────
     api_key = os.getenv("BROKER_API_KEY")
@@ -498,6 +228,7 @@ def fetch_historical_candles(
                     df = pd.DataFrame(candles, columns=["Timestamp", "Open", "High", "Low", "Close", "Volume"])
                     df["Timestamp"] = pd.to_datetime(df["Timestamp"])
                     logging.info(f"Successfully fetched {len(df)} historical candles from Angel One SmartAPI for {symbol_clean}.")
+                    df.attrs['provenance']='ANGEL_ONE_SMARTAPI_ONE_MINUTE_OHLCV'
                     return df
         except Exception as exc:
             logging.warning(f"Angel One Historical API fetch failed: {exc}. Trying fallback...")
@@ -530,43 +261,57 @@ def fetch_historical_candles(
             data = data.rename(columns=rename_map)
             data["Timestamp"] = pd.to_datetime(data["Timestamp"])
             logging.info(f"Successfully fetched {len(data)} candles via yfinance for {ticker}.")
-            return data[["Timestamp", "Open", "High", "Low", "Close", "Volume"]]
+            result=data[["Timestamp", "Open", "High", "Low", "Close", "Volume"]]
+            result.attrs['provenance']='YFINANCE_ONE_MINUTE_OHLCV'
+            return result
     except Exception as exc:
         logging.debug(f"yfinance download not available: {exc}.")
 
-    # ── Attempt 3: High-fidelity synthetic session generator ──────
-    logging.info(f"Generating high-fidelity historical benchmark candles for {symbol_clean} ({days} sessions)...")
-    return _generate_synthetic_historical_data(symbol=symbol_clean, days=days)
+    raise RuntimeError('REAL_HISTORICAL_DATA_UNAVAILABLE: synthetic data is never substituted')
 
 
 def run_historical_backtest(
     symbol: str = "M&M",
     days: int = 5,
-    total_capital: float = 10017.0,
+    total_capital: float = 20000.0,
     source: Optional[Union[str, pd.DataFrame]] = None,
+    *, instrument=None, provenance=None,
 ) -> BacktestResult:
     """
     Fetch historical data (or load source) and execute a full historical backtest.
     """
+    from execution_safety import SafetyError
+    if instrument is None or (source is not None and not provenance):
+        raise SafetyError('REPLAY_INSTRUMENT_AND_PROVENANCE_REQUIRED')
     if source is not None:
         df_or_path = source
     else:
-        df_or_path = fetch_historical_candles(symbol=symbol, days=days)
+        df_or_path = fetch_historical_candles(symbol=symbol, days=days,instrument=instrument)
+        provenance=df_or_path.attrs['provenance']
 
-    return run_backtest(source=df_or_path, symbol=symbol, total_capital=total_capital)
+    return run_backtest(source=df_or_path,symbol=symbol,total_capital=total_capital,instrument=instrument,provenance=provenance)
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
-
-    arg1 = sys.argv[1] if len(sys.argv) >= 2 else "M&M"
-    arg2 = float(sys.argv[2]) if len(sys.argv) >= 3 else 10017.0
-    arg3 = int(sys.argv[3]) if len(sys.argv) >= 4 else 5
-
-    if arg1.endswith(".csv") and os.path.exists(arg1):
-        logging.info(f"Running historical backtest from CSV file: {arg1}")
-        run_backtest(source=arg1, symbol="CSV_FEED", total_capital=arg2)
-    else:
-        symbol_target = arg1.upper()
-        logging.info(f"Running historical backtest harness for {symbol_target} (Capital: ₹{arg2:,.2f}, Days: {arg3})")
-        run_historical_backtest(symbol=symbol_target, days=arg3, total_capital=arg2)
+    import argparse
+    from instrument_registry import InstrumentRegistry
+    from market_schedule import to_ist
+    from replay_engine import ResearchVariant
+    parser=argparse.ArgumentParser(description='Offline research replay; no live activation or synthetic fallback.')
+    parser.add_argument('--source',required=True,help='One-minute OHLCV CSV')
+    parser.add_argument('--symbol',required=True)
+    parser.add_argument('--master',required=True,help='Archived broker master/eligibility envelope')
+    parser.add_argument('--provenance',required=True,help='Actual dataset provider; fixtures must use SYNTHETIC_TEST_FIXTURE')
+    parser.add_argument('--output',default='data/replay')
+    parser.add_argument('--research-timeframe',type=int,default=1)
+    args=parser.parse_args()
+    import json
+    envelope=json.loads(Path(args.master).read_text())
+    mapping=InstrumentRegistry(envelope['records'],datetime.fromisoformat(envelope['source_timestamp']),
+        envelope['intraday_symbols'],envelope.get('restricted_symbols',[])).resolve(args.symbol)
+    result=run_backtest(args.source,args.symbol,instrument=mapping,provenance=args.provenance,
+        csv_log_path=str(Path(args.output)/'trades.csv'),variant=ResearchVariant('research',args.research_timeframe))
+    print('RESEARCH ONLY — see recorded execution assumptions and provenance.')
+    print(result.summary_table)
+    print(result.research_metadata['output_dir'])
