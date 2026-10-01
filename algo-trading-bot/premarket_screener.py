@@ -535,7 +535,7 @@ def run_premarket_screener(
                 f"  Rank {rank_idx}: {cand.trading_symbol:<12} (Token: {cand.token}) | "
                 f"LTP: ₹{cand.ltp:.2f} | ATR: ₹{cand.atr:.2f} | ATR%: {cand.atr_pct:.3f}%"
             )
-        logger.info(f"  Primary Winner (Rank 1) : {selected.trading_symbol}")
+        logger.info(f"  Primary Candidate (Rank 1) : {selected.trading_symbol}")
         logger.info(f"  Qualified: {len(qualified)}/{len(_universe)}")
         logger.info("=" * 80)
     else:

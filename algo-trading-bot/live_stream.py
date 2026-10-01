@@ -56,6 +56,8 @@ from atr_firewall import ATRFirewall, FirewallStatus
 from candle_builder import CandleBuilder
 from feed_integrity import FeedHealthMonitor, FeedHealthState, ThreadSafeTickIngestionQueue
 from premarket_screener import PremarketScreenResult, run_premarket_screener
+from premarket_pipeline import load_startup_universe, run_premarket_pipeline
+from discovery_data import DiscoveryDataSource
 from execution_engine import (
     PaperTrader,
     ReadOnlySmartConnectWrapper,
@@ -1173,19 +1175,15 @@ def main() -> None:
         working_tranche=config.WORKING_CAPITAL,
     )
 
-    master_path=config.INSTRUMENT_MASTER_FILE or str(Path(__file__).parent/'data'/'instruments.json')
-    try:
-        try:registry=InstrumentRegistry.load(master_path,to_ist())
-        except (SafetyError,FileNotFoundError):
-            from refresh_instruments import refresh_registry
-            registry=refresh_registry(angel_session,master_path,to_ist())
-    except Exception as exc:
-        logging.error('NO_TRADE: instrument/eligibility source unavailable (%s)',type(exc).__name__)
-        record_screening_report(reason='INSTRUMENT_SOURCE_UNAVAILABLE')
-        return
-    universe=registry.candidates([c['symbol'] for c in CANDIDATE_UNIVERSE])
-
+    startup_time = to_ist()
     override_sym = os.getenv("TRADING_SYMBOL")
+    if override_sym or not RUN_PREMARKET_SCREENER:
+        try:
+            registry = load_startup_universe(angel_session, DiscoveryDataSource(), startup_time).registry
+        except (OSError, ValueError, TypeError, KeyError) as exc:
+            logging.error('NO_TRADE: instrument/eligibility source unavailable (%s)', type(exc).__name__)
+            record_screening_report(reason='INSTRUMENT_SOURCE_UNAVAILABLE', now=startup_time)
+            return
     if override_sym:
         logging.warning("=" * 70)
         logging.warning(f"⚠️  [MANUAL OVERRIDE] Manual TRADING_SYMBOL override specified: {override_sym}")
@@ -1196,10 +1194,13 @@ def main() -> None:
         return
 
     if RUN_PREMARKET_SCREENER:
-        # Run the Pre-Market Screener
-        logging.info("Executing Pre-Market Screener across candidate universe...")
-        screen_result = run_premarket_screener(smart_api=angel_session,universe=universe)
-        record_screening_report(screen_result)
+        # Discovery supplies only the input universe; the existing screener chooses Top 3.
+        output_base = Path(__file__).parent / 'data' / config.EXECUTION_ENVIRONMENT.lower()
+        pipeline = run_premarket_pipeline(smart_api=angel_session,
+            report_path=output_base / f'discovery_{startup_time.date()}.json')
+        registry = pipeline.registry
+        screen_result = pipeline.screen
+        record_screening_report(screen_result, reason=pipeline.discovery.failure_reason, now=startup_time)
 
         if screen_result.trading_day_status == "NO_TRADE" or screen_result.selected_candidate is None:
             logging.warning("=" * 70)
@@ -1212,7 +1213,7 @@ def main() -> None:
         winner = screen_result.selected_candidate
         watchlist = screen_result.watchlist if WATCHLIST_MODE else ([winner] if winner else [])
         logging.info(
-            f"🎯 Premarket screening winner: {winner.symbol} (Token: {winner.token}) "
+            f"🎯 Primary premarket candidate: {winner.symbol} (Token: {winner.token}) "
             f"| ATR%: {winner.atr_pct:.2f}% | Spread: {winner.spread_pct:.2f}%"
         )
         if WATCHLIST_MODE and len(watchlist) > 1:

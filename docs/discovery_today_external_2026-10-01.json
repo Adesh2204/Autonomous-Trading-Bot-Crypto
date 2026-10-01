@@ -1,0 +1,454 @@
+{
+  "date": "2026-10-01",
+  "mode": "READ_ONLY_PAPER_STARTUP",
+  "provenance": "EXTERNAL_SOURCE_ATTEMPT",
+  "broker_orders_placed": 0,
+  "websocket_started": false,
+  "phase5_initialized": false,
+  "broker_authentication": "READ_ONLY_SUCCESS",
+  "master_metadata": {
+    "record_count": 141994,
+    "nse_eq_count": 2692,
+    "nse_row_keys": [
+      "exch_seg",
+      "expiry",
+      "freeze_qty",
+      "instrumenttype",
+      "is_cas_enabled",
+      "lotsize",
+      "name",
+      "strike",
+      "symbol",
+      "tick_size",
+      "token"
+    ],
+    "sample_cash_types": [
+      ""
+    ]
+  },
+  "eligibility_metadata": {
+    "status": true,
+    "record_count": 1866,
+    "row_keys": [
+      "Exchange",
+      "Multiplier",
+      "SymbolName"
+    ],
+    "symbol_examples": [
+      "CHEMPLASTS",
+      "EICHERMOT",
+      "PSUBNKIETF"
+    ],
+    "legacy_lowercase_exchange_lookup_values": [
+      "None"
+    ],
+    "diagnostic_note": "The legacy lowercase lookup returned None. Actual returned field casing is Exchange, shown in row_keys and handled by the corrected parser."
+  },
+  "pipeline": {
+    "discovery": {
+      "session_date": "2026-09-30",
+      "raw_instrument_count": 141994,
+      "eligible_equity_count": null,
+      "snapshot_record_count": 0,
+      "coarse_qualified_count": 0,
+      "ranked_candidates": [],
+      "selected_candidates": [],
+      "rejected_candidates": [],
+      "universe_source": "CONFIG_FALLBACK",
+      "success": false,
+      "failure_reason": "DATA_SOURCE_ERROR: bounded HTTP failure",
+      "data_source": "",
+      "data_checksum": "",
+      "available_at": "",
+      "cache_hit": false,
+      "elapsed_seconds": 0.0,
+      "request_counts": {
+        "instrument_source_calls": 2,
+        "bulk_market_data_calls": 3,
+        "quote_calls": 0,
+        "historical_calls": 0,
+        "retries": 2,
+        "failures": 3,
+        "cache_hits": 0
+      },
+      "instrument_source": "",
+      "resolved_intraday_eq_count": 1857,
+      "equity_classification_verified": false,
+      "classification_note": "The 1857 count was broker-eligible NSE EQ instruments; NSE stock-reference classification was unavailable. It includes possible ETFs."
+    },
+    "readiness": "CONFIG_FALLBACK_READY",
+    "deep_screen": {
+      "session_date": "2026-09-30",
+      "analysed": 15,
+      "qualified": 0,
+      "rejected": 15,
+      "watchlist_count": 0,
+      "status": "NO_TRADE",
+      "historical_requests": 15,
+      "rejections": [
+        {
+          "symbol": "ENGINERSIN",
+          "reasons": [
+            "ATR_BELOW_MIN",
+            "VOLUME_INSUFFICIENT"
+          ]
+        },
+        {
+          "symbol": "JIOFIN",
+          "reasons": [
+            "ATR_BELOW_MIN"
+          ]
+        },
+        {
+          "symbol": "POWERGRID",
+          "reasons": [
+            "ATR_BELOW_MIN"
+          ]
+        },
+        {
+          "symbol": "GAIL",
+          "reasons": [
+            "ATR_BELOW_MIN"
+          ]
+        },
+        {
+          "symbol": "NTPC",
+          "reasons": [
+            "ATR_BELOW_MIN"
+          ]
+        },
+        {
+          "symbol": "ITC",
+          "reasons": [
+            "ATR_BELOW_MIN"
+          ]
+        },
+        {
+          "symbol": "WIPRO",
+          "reasons": [
+            "ATR_BELOW_MIN"
+          ]
+        },
+        {
+          "symbol": "MRPL",
+          "reasons": [
+            "ATR_BELOW_MIN"
+          ]
+        },
+        {
+          "symbol": "PETRONET",
+          "reasons": [
+            "ATR_BELOW_MIN",
+            "VOLUME_INSUFFICIENT"
+          ]
+        },
+        {
+          "symbol": "RECLTD",
+          "reasons": [
+            "ATR_BELOW_MIN"
+          ]
+        },
+        {
+          "symbol": "RVNL",
+          "reasons": [
+            "ATR_BELOW_MIN"
+          ]
+        },
+        {
+          "symbol": "ETERNAL",
+          "reasons": [
+            "ATR_BELOW_MIN"
+          ]
+        },
+        {
+          "symbol": "SWIGGY",
+          "reasons": [
+            "ATR_BELOW_MIN"
+          ]
+        },
+        {
+          "symbol": "MEESHO",
+          "reasons": [
+            "ATR_BELOW_MIN"
+          ]
+        },
+        {
+          "symbol": "PINELABS",
+          "reasons": [
+            "ATR_BELOW_MIN"
+          ]
+        }
+      ]
+    },
+    "lineage": [
+      {
+        "symbol": "ENGINERSIN",
+        "trading_symbol": "ENGINERSIN-EQ",
+        "token": "4907",
+        "exchange": "NSE",
+        "instrument_source": "BROKER_MASTER_CONFIG_FALLBACK",
+        "universe_source": "CONFIG_FALLBACK",
+        "session_date": "2026-09-30",
+        "deep_screen_rank": null,
+        "opportunity_score": 2.195173242211462,
+        "qualified": false,
+        "qualification_result": "REJECTED",
+        "rejection_reasons": [
+          "ATR_BELOW_MIN",
+          "VOLUME_INSUFFICIENT"
+        ],
+        "final_rank": null
+      },
+      {
+        "symbol": "JIOFIN",
+        "trading_symbol": "JIOFIN-EQ",
+        "token": "18143",
+        "exchange": "NSE",
+        "instrument_source": "BROKER_MASTER_CONFIG_FALLBACK",
+        "universe_source": "CONFIG_FALLBACK",
+        "session_date": "2026-09-30",
+        "deep_screen_rank": null,
+        "opportunity_score": 2.7796323619820478,
+        "qualified": false,
+        "qualification_result": "REJECTED",
+        "rejection_reasons": [
+          "ATR_BELOW_MIN"
+        ],
+        "final_rank": null
+      },
+      {
+        "symbol": "POWERGRID",
+        "trading_symbol": "POWERGRID-EQ",
+        "token": "14977",
+        "exchange": "NSE",
+        "instrument_source": "BROKER_MASTER_CONFIG_FALLBACK",
+        "universe_source": "CONFIG_FALLBACK",
+        "session_date": "2026-09-30",
+        "deep_screen_rank": null,
+        "opportunity_score": 2.6459622724248204,
+        "qualified": false,
+        "qualification_result": "REJECTED",
+        "rejection_reasons": [
+          "ATR_BELOW_MIN"
+        ],
+        "final_rank": null
+      },
+      {
+        "symbol": "GAIL",
+        "trading_symbol": "GAIL-EQ",
+        "token": "4717",
+        "exchange": "NSE",
+        "instrument_source": "BROKER_MASTER_CONFIG_FALLBACK",
+        "universe_source": "CONFIG_FALLBACK",
+        "session_date": "2026-09-30",
+        "deep_screen_rank": null,
+        "opportunity_score": 2.8630900029316915,
+        "qualified": false,
+        "qualification_result": "REJECTED",
+        "rejection_reasons": [
+          "ATR_BELOW_MIN"
+        ],
+        "final_rank": null
+      },
+      {
+        "symbol": "NTPC",
+        "trading_symbol": "NTPC-EQ",
+        "token": "11630",
+        "exchange": "NSE",
+        "instrument_source": "BROKER_MASTER_CONFIG_FALLBACK",
+        "universe_source": "CONFIG_FALLBACK",
+        "session_date": "2026-09-30",
+        "deep_screen_rank": null,
+        "opportunity_score": 2.456039815554575,
+        "qualified": false,
+        "qualification_result": "REJECTED",
+        "rejection_reasons": [
+          "ATR_BELOW_MIN"
+        ],
+        "final_rank": null
+      },
+      {
+        "symbol": "ITC",
+        "trading_symbol": "ITC-EQ",
+        "token": "1660",
+        "exchange": "NSE",
+        "instrument_source": "BROKER_MASTER_CONFIG_FALLBACK",
+        "universe_source": "CONFIG_FALLBACK",
+        "session_date": "2026-09-30",
+        "deep_screen_rank": null,
+        "opportunity_score": 2.787639889447693,
+        "qualified": false,
+        "qualification_result": "REJECTED",
+        "rejection_reasons": [
+          "ATR_BELOW_MIN"
+        ],
+        "final_rank": null
+      },
+      {
+        "symbol": "WIPRO",
+        "trading_symbol": "WIPRO-EQ",
+        "token": "3787",
+        "exchange": "NSE",
+        "instrument_source": "BROKER_MASTER_CONFIG_FALLBACK",
+        "universe_source": "CONFIG_FALLBACK",
+        "session_date": "2026-09-30",
+        "deep_screen_rank": null,
+        "opportunity_score": 2.76130389064143,
+        "qualified": false,
+        "qualification_result": "REJECTED",
+        "rejection_reasons": [
+          "ATR_BELOW_MIN"
+        ],
+        "final_rank": null
+      },
+      {
+        "symbol": "MRPL",
+        "trading_symbol": "MRPL-EQ",
+        "token": "2283",
+        "exchange": "NSE",
+        "instrument_source": "BROKER_MASTER_CONFIG_FALLBACK",
+        "universe_source": "CONFIG_FALLBACK",
+        "session_date": "2026-09-30",
+        "deep_screen_rank": null,
+        "opportunity_score": 3.0611800011324397,
+        "qualified": false,
+        "qualification_result": "REJECTED",
+        "rejection_reasons": [
+          "ATR_BELOW_MIN"
+        ],
+        "final_rank": null
+      },
+      {
+        "symbol": "PETRONET",
+        "trading_symbol": "PETRONET-EQ",
+        "token": "11351",
+        "exchange": "NSE",
+        "instrument_source": "BROKER_MASTER_CONFIG_FALLBACK",
+        "universe_source": "CONFIG_FALLBACK",
+        "session_date": "2026-09-30",
+        "deep_screen_rank": null,
+        "opportunity_score": 2.0740892890618436,
+        "qualified": false,
+        "qualification_result": "REJECTED",
+        "rejection_reasons": [
+          "ATR_BELOW_MIN",
+          "VOLUME_INSUFFICIENT"
+        ],
+        "final_rank": null
+      },
+      {
+        "symbol": "RECLTD",
+        "trading_symbol": "RECLTD-EQ",
+        "token": "15355",
+        "exchange": "NSE",
+        "instrument_source": "BROKER_MASTER_CONFIG_FALLBACK",
+        "universe_source": "CONFIG_FALLBACK",
+        "session_date": "2026-09-30",
+        "deep_screen_rank": null,
+        "opportunity_score": 2.42577818859691,
+        "qualified": false,
+        "qualification_result": "REJECTED",
+        "rejection_reasons": [
+          "ATR_BELOW_MIN"
+        ],
+        "final_rank": null
+      },
+      {
+        "symbol": "RVNL",
+        "trading_symbol": "RVNL-EQ",
+        "token": "9552",
+        "exchange": "NSE",
+        "instrument_source": "BROKER_MASTER_CONFIG_FALLBACK",
+        "universe_source": "CONFIG_FALLBACK",
+        "session_date": "2026-09-30",
+        "deep_screen_rank": null,
+        "opportunity_score": 2.907759336883047,
+        "qualified": false,
+        "qualification_result": "REJECTED",
+        "rejection_reasons": [
+          "ATR_BELOW_MIN"
+        ],
+        "final_rank": null
+      },
+      {
+        "symbol": "ETERNAL",
+        "trading_symbol": "ETERNAL-EQ",
+        "token": "5097",
+        "exchange": "NSE",
+        "instrument_source": "BROKER_MASTER_CONFIG_FALLBACK",
+        "universe_source": "CONFIG_FALLBACK",
+        "session_date": "2026-09-30",
+        "deep_screen_rank": null,
+        "opportunity_score": 2.8195684523809517,
+        "qualified": false,
+        "qualification_result": "REJECTED",
+        "rejection_reasons": [
+          "ATR_BELOW_MIN"
+        ],
+        "final_rank": null
+      },
+      {
+        "symbol": "SWIGGY",
+        "trading_symbol": "SWIGGY-EQ",
+        "token": "27066",
+        "exchange": "NSE",
+        "instrument_source": "BROKER_MASTER_CONFIG_FALLBACK",
+        "universe_source": "CONFIG_FALLBACK",
+        "session_date": "2026-09-30",
+        "deep_screen_rank": null,
+        "opportunity_score": 2.74505759499819,
+        "qualified": false,
+        "qualification_result": "REJECTED",
+        "rejection_reasons": [
+          "ATR_BELOW_MIN"
+        ],
+        "final_rank": null
+      },
+      {
+        "symbol": "MEESHO",
+        "trading_symbol": "MEESHO-EQ",
+        "token": "760229",
+        "exchange": "NSE",
+        "instrument_source": "BROKER_MASTER_CONFIG_FALLBACK",
+        "universe_source": "CONFIG_FALLBACK",
+        "session_date": "2026-09-30",
+        "deep_screen_rank": null,
+        "opportunity_score": 2.8621885840428893,
+        "qualified": false,
+        "qualification_result": "REJECTED",
+        "rejection_reasons": [
+          "ATR_BELOW_MIN"
+        ],
+        "final_rank": null
+      },
+      {
+        "symbol": "PINELABS",
+        "trading_symbol": "PINELABS-EQ",
+        "token": "759820",
+        "exchange": "NSE",
+        "instrument_source": "BROKER_MASTER_CONFIG_FALLBACK",
+        "universe_source": "CONFIG_FALLBACK",
+        "session_date": "2026-09-30",
+        "deep_screen_rank": null,
+        "opportunity_score": 2.8449777111194434,
+        "qualified": false,
+        "qualification_result": "REJECTED",
+        "rejection_reasons": [
+          "ATR_BELOW_MIN"
+        ],
+        "final_rank": null
+      }
+    ],
+    "fallback_rejections": [],
+    "universe_rejection_counts": {
+      "INVALID_SERIES": 7300,
+      "NOT_INTRADAY_ELIGIBLE": 835,
+      "NOT_NSE": 132002
+    },
+    "record_level_report": "algo-trading-bot/data/paper/discovery_2026-10-01.json"
+  },
+  "startup_exit_code": 0,
+  "observed_at": "2026-10-01T08:27:27.746852+05:30",
+  "readiness": "CONFIG_FALLBACK_READY",
+  "evidence_note": "Real startup result captured before final observability audit; no source data or market outcomes were simulated."
+}

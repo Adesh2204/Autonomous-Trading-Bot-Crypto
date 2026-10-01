@@ -211,6 +211,16 @@ LIVE_ACTIVATION_EVIDENCE_FILE = None
 BROKER_CAPABILITY_FILE = None   # Dated account-specific verification; never inferred
 INSTRUMENT_MASTER_FILE = None # JSON envelope: source_timestamp, records, intraday_symbols
 MAX_DISCOVERY_CANDIDATES = 60
+AUTO_DISCOVER_UNIVERSE = True
+DISCOVERY_ALLOW_CONFIG_FALLBACK = True
+DISCOVERY_CACHE_DIR = None     # Default: data/cache/discovery/<completed session>/
+DISCOVERY_HTTP_TIMEOUT_SECONDS = 15.0
+DISCOVERY_MAX_DOWNLOAD_BYTES = 20_000_000
+DISCOVERY_MIN_MASTER_RECORDS = 100
+DISCOVERY_MIN_REFERENCE_RECORDS = 100
+DISCOVERY_MIN_SNAPSHOT_RECORDS = 100
+DISCOVERY_EQUITY_REFERENCE_URL = "https://nsearchives.nseindia.com/content/equities/EQUITY_L.csv"
+DISCOVERY_BHAVCOPY_URL = "https://nsearchives.nseindia.com/content/cm/BhavCopy_NSE_CM_0_0_0_{session}_F_0000.csv.zip"
 OPPORTUNITY_RVOL_SESSIONS = 10
 REPLAY_HALF_SPREAD_PCT = 0.00025 # Explicit candle-only research approximation
 

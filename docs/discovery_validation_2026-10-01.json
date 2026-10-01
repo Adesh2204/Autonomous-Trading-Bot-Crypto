@@ -1,0 +1,67 @@
+{
+  "generated_at": "2026-10-01T08:32:22.154883+05:30",
+  "baseline_commit": "f9f1cf4a940293545acc035afca0cf861449556a",
+  "source_fingerprint": "dd9b36668dc8070dfd2c520279b59df056ba3518e401a4d38200bf022a79caf7",
+  "recommendation": "CONFIG_FALLBACK_READY",
+  "execution_mode": "PAPER",
+  "actual_trading_day_status": "NO_TRADE",
+  "dynamic_external_discovery": "UNAVAILABLE",
+  "tests": {
+    "passed": 303,
+    "failed": 0,
+    "skipped": 0,
+    "baseline": 244,
+    "added": 59,
+    "artifact": "docs/discovery_tests_2026-10-01.xml"
+  },
+  "core_integrity": {
+    "signal_brain_sha256": "bff940ac5ed35f71ed3dfb537ba15d20dcec35a4e62a938d2f0619c6e9309d83",
+    "signal_diff_empty": true,
+    "lines_added": 0,
+    "lines_removed": 0,
+    "lines_modified": 0,
+    "original_config_values_preserved": true,
+    "premarket_only_change": "Primary Winner -> Primary Candidate log label",
+    "phase5_class_ast_unchanged": true,
+    "protected_unchanged_files": [
+      "signal_brain.py",
+      "execution_engine.py",
+      "execution_safety.py",
+      "safe_trader.py",
+      "execution_adapters.py",
+      "safety_journal.py",
+      "candle_builder.py",
+      "symbol_state.py",
+      "atr_firewall.py",
+      "feed_integrity.py",
+      "opportunity_engine.py",
+      "market_schedule.py",
+      "instrument_registry.py",
+      "activation_gate.py"
+    ]
+  },
+  "fixture_counts": {
+    "raw": 1000,
+    "eligible_stocks": 600,
+    "coarse": 180,
+    "deep": 60,
+    "qualified": 12,
+    "watchlist": 3
+  },
+  "fixture_performance": {
+    "universe_construction_seconds": 0.0067787079606205225,
+    "coarse_filter_ranking_seconds": 0.001386541873216629,
+    "stage1_external_requests": 0,
+    "stage1_historical_requests": 0,
+    "stage2_synthetic_fetches": 60
+  },
+  "external_evidence": "docs/discovery_today_external_2026-10-01.json",
+  "calendar_existing_defect": {
+    "market_schedule_unchanged": true,
+    "2026-10-02_reported_open_by_installed_provider": true,
+    "correct_nse_holiday": true,
+    "source": "https://nsearchives.nseindia.com/content/circulars/CMTR71775.pdf",
+    "impact": "Future holiday/session readiness must not be inferred from today\u2019s successful session alignment."
+  },
+  "git_diff_stat_tracked": ".gitignore                              |  4 ++++\n algo-trading-bot/config.py              | 10 ++++++++++\n algo-trading-bot/live_stream.py         | 35 +++++++++++++++++----------------\n algo-trading-bot/premarket_screener.py  |  2 +-\n algo-trading-bot/refresh_instruments.py | 25 ++++++++++++++---------\n 5 files changed, 49 insertions(+), 27 deletions(-)"
+}
