@@ -224,3 +224,35 @@ def test_historical_budget_failure_preserves_completed_diagnostics(monkeypatch):
     assert len(result.screen.diagnostics) == 1
     assert result.screen.diagnostics[0].qualified
     assert result.report()['lineage'][0]['final_rank'] is None
+
+
+def test_optional_history_timeout_keeps_verified_ranking_and_marks_unknown_profiles(monkeypatch):
+    import premarket_screener
+    from premarket_screener import HistoricalDataUnavailable
+    base, symbols, snap = full_market_fixture()
+    def fetched(*args, **kwargs):
+        if args:
+            kwargs = {'symbol': args[1], 'session_date': args[4]}
+        if kwargs['session_date'] != SESSION:
+            raise HistoricalDataUnavailable('HISTORY_TIME_BUDGET_EXHAUSTED')
+        return deep_fixture({'symbol': kwargs['symbol']}, SESSION)
+    monkeypatch.setattr(premarket_screener, 'fetch_historical_session_candles', fetched)
+    result = run_premarket_pipeline(object(), now=NOW, market_universe=base,
+        data_source=FixtureDataSource(symbols, snap), pacing_interval=0.)
+    assert result.readiness == 'DYNAMIC_DISCOVERY_READY'
+    assert result.screen.trading_day_status == 'ACTIVE'
+    assert len(result.screen.watchlist) == 3
+    assert result.screen.history_warning == 'HISTORY_TIME_BUDGET_EXHAUSTED'
+    assert result.screen_failure_reason is None
+    assert all(len(c.volume_profiles) == 1 for c in result.screen.watchlist)
+    assert result.report()['deep_screen']['history_warning'] == result.screen.history_warning
+    assert all(c.discovery_lineage['final_rank'] in (1, 2, 3) for c in result.screen.watchlist)
+
+
+def test_optional_history_has_its_own_shorter_budget():
+    from premarket_pipeline import _HistoricalRequestCounter
+    clock = [100.]
+    counter = _HistoricalRequestCounter(object(), clock=lambda: clock[0])
+    original_deadline = counter.deadline
+    counter.begin_optional_history()
+    assert counter.deadline == min(original_deadline, 100. + config.DISCOVERY_RVOL_MAX_RUNTIME_SECONDS)

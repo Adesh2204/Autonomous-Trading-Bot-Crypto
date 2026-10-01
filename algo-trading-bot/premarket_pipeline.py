@@ -51,6 +51,7 @@ class PremarketPipelineResult:
                 'status': self.screen.trading_day_status, 'historical_requests': self.deep_historical_requests,
                 'rate_limit_responses': self.deep_rate_limit_responses,
                 'candidates_with_valid_data': sum(c.data_ok for c in self.screen.diagnostics),
+                'history_warning': self.screen.history_warning,
                 'rejections': [{'symbol': c.symbol, 'reasons': c.rejection_reasons}
                                for c in self.screen.rejected_candidates]},
             'lineage': self.lineage, 'universe_rejections': [asdict(r) for r in self.universe_rejections],
@@ -110,6 +111,9 @@ class _HistoricalRequestCounter:
         if not self._rate_limited(response):
             self.consecutive_rate_limits = 0
         return response
+
+    def begin_optional_history(self):
+        self.deadline = min(self.deadline, self.clock() + config.DISCOVERY_RVOL_MAX_RUNTIME_SECONDS)
 
 
 def run_premarket_pipeline(smart_api=None, *, now=None, schedule=None, data_source=None,

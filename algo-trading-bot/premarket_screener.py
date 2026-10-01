@@ -113,6 +113,7 @@ class PremarketScreenResult:
     trading_day_status: str  # "ACTIVE" or "NO_TRADE"
     diagnostics: List[CandidateDiagnostic]
     watchlist: List[CandidateDiagnostic] = field(default_factory=list)
+    history_warning: Optional[str] = None
 
 
 def find_previous_completed_market_session(
@@ -520,9 +521,13 @@ def run_premarket_screener(
 
     # Only selected symbols need the extra read-only history calls. Missing sessions
     # leave RVOL unknown; there is no replacement with a full-day volume estimate.
+    history_warning = None
     if smart_api is not None:
         from opportunity_engine import build_volume_profile
         import config
+        begin_optional_history = getattr(smart_api, 'begin_optional_history', None)
+        if callable(begin_optional_history):
+            begin_optional_history()
         for selected_candidate in watchlist:
             historical_day=target_session
             for _ in range(config.OPPORTUNITY_RVOL_SESSIONS-1):
@@ -531,11 +536,15 @@ def run_premarket_screener(
                     history=fetch_historical_session_candles(smart_api,selected_candidate.symbol,
                         selected_candidate.token,selected_candidate.exchange,historical_day)
                 except HistoricalDataUnavailable as exc:
-                    exc.diagnostics = list(diagnostics)
-                    raise
+                    history_warning = str(exc)
+                    logger.warning('[RVOL HISTORY INCOMPLETE] %s | completed stock ranking retained; '
+                                   'missing volume profiles remain unknown', history_warning)
+                    break
                 if history is not None and validate_candle_data(history)[0]:
                     selected_candidate.volume_profiles.append(build_volume_profile(history,historical_day))
                 if pacing_interval>0:time.sleep(pacing_interval)
+            if history_warning:
+                break
 
     if watchlist:
         selected = watchlist[0]
@@ -574,4 +583,5 @@ def run_premarket_screener(
         trading_day_status=status,
         diagnostics=diagnostics,
         watchlist=watchlist,
+        history_warning=history_warning,
     )

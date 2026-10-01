@@ -60,6 +60,7 @@ def run_check(broker, report_path, *, fresh=False):
         'coarse_candidates': result.discovery.coarse_qualified_count,
         'deep_screened': result.screen.total_candidates,
         'qualified': len(result.screen.qualified_candidates),
+        'history_warning': result.screen.history_warning,
         'watchlist': [c.trading_symbol for c in result.screen.watchlist],
         'configured_stock_list_used': False, 'orders_submitted': 0,
         'report': str(Path(report_path).resolve())}

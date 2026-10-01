@@ -1204,7 +1204,7 @@ def main() -> None:
         record_screening_report(screen_result, reason=failure_reason, now=startup_time)
 
         if pipeline.readiness == 'BLOCKED':
-            logging.error('[PREMARKET BLOCKED] Market-wide discovery unavailable: %s. '
+            logging.error('[PREMARKET BLOCKED] Required premarket data unavailable: %s. '
                           'No configured stock list will be substituted. See discovery report.',
                           failure_reason)
             sys.exit(2)
