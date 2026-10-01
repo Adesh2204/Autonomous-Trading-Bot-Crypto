@@ -89,7 +89,7 @@ MAX_OPEN_POSITIONS = 1            # STRICT GLOBAL PORTFOLIO LIMIT: At most 1 ope
 
 # ── INTRADAY ATR FIREWALL ─────────────────────────────────────
 INTRADAY_ATR_MIN_PCT = 0.0040     # 0.40% minimum intraday ATR floor
-ATR_RECHECK_INTERVAL_SECONDS = 1800 # 30-minute rolling recheck interval
+ATR_RECHECK_INTERVAL_SECONDS = 60 # Informational cadence: one evaluation per distinct completed 1-minute bar
 ATR_LOW_CONFIRMATION_COUNT = 2    # Consecutive low readings required to enter STANDBY
 ATR_RECOVERY_CONFIRMATION_COUNT = 2 # Consecutive healthy readings required to recover
 
@@ -232,6 +232,22 @@ DISCOVERY_HISTORY_MAX_RUNTIME_SECONDS = 600.0
 DISCOVERY_RVOL_MAX_RUNTIME_SECONDS = 60.0  # Optional profiles cannot delay completed stock selection indefinitely
 OPPORTUNITY_RVOL_SESSIONS = 10
 REPLAY_HALF_SPREAD_PCT = 0.00025 # Explicit candle-only research approximation
+
+# PAPER runtime repair: infrastructure settings, not strategy threshold changes.
+HISTORY_CACHE_DIR = None  # data/cache/history; shared by regular and read-only runs
+HISTORY_REQUEST_INTERVAL_SECONDS = 1.5
+HISTORY_REQUESTS_PER_MINUTE = 40
+HISTORY_REQUESTS_PER_HOUR = 1000
+HISTORY_RECOVERY_RETRY_SECONDS = 30.0
+HISTORY_MAX_REPAIR_RANGES = 8  # fragmented history blocks safely, never causes a request storm
+OPPORTUNITY_RVOL_MIN_SESSIONS = 3
+RESERVE_WATCHLIST_SIZE = 3  # at most 3 primary + 3 reserve subscriptions
+RESERVE_CONFIRMATION_CANDLES = 2
+RESERVE_PROMOTION_COOLDOWN_SECONDS = 120.0
+REJECTION_LOG_INTERVAL_SECONDS = 60.0
+PAPER_FILL_SLIPPAGE_PCT = 0.0005  # independent simulated fill assumption, NOT the economic haircut
+ORDER_LIMIT_ALLOWANCE_PCT = 0.0005  # independent price tolerance; limits never derived from economic haircut
+SHADOW_RESEARCH_ENABLED = True  # observations only, no order access or credited P&L
 
 # ── RECONCILIATION ───────────────────────────────────────────
 RECONCILIATION_TOLERANCE_INTRADAY = 0.50   # ₹0.50 tolerance for per-trade gross P&L vs broker realised delta

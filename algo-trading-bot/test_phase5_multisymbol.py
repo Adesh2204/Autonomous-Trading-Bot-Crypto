@@ -62,7 +62,14 @@ def _verified_test_stream(candidates):
     now=to_ist()
     records=[{'exch_seg':'NSE','symbol':c.trading_symbol,'token':c.token,'tick_size':'5','lotsize':'1'} for c in candidates]
     registry=InstrumentRegistry(records,now,[c.symbol for c in candidates])
-    return AngelOneLiveStream(watchlist=candidates,registry=registry)
+    stream=AngelOneLiveStream(watchlist=candidates,registry=registry)
+    # These tests inject an already-restored Sept-23 session to isolate routing;
+    # test_runtime_repair exercises the real bootstrap and readiness barriers.
+    from dataclasses import replace
+    for state in stream.active_symbols.values():
+        state.builder.recovery_required=False
+        state.instrument=replace(state.instrument,source_timestamp=to_ist(datetime(2026,9,23,9,0)))
+    return stream
 
 
 # ─────────────────────────────────────────────────────────────────────────────

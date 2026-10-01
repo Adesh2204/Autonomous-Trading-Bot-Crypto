@@ -19,6 +19,7 @@ Key Architectural Invariants:
 from __future__ import annotations
 
 import logging
+import math
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
@@ -86,7 +87,9 @@ class ATRFirewall:
         """
         Records a periodic or candle-close ATR reading and updates firewall state.
         """
-        self.latest_atr = float(atr) if atr is not None else 0.0
+        if atr is None or not math.isfinite(atr) or not math.isfinite(ltp) or atr < 0 or ltp <= 0:
+            return self.status
+        self.latest_atr = float(atr)
         self.latest_atr_pct = (self.latest_atr / ltp) * 100.0 if ltp and ltp > 0 else 0.0
         self.last_recheck_time = timestamp or datetime.now()
 
@@ -94,7 +97,7 @@ class ATRFirewall:
             self.consecutive_low_readings += 1
             self.consecutive_healthy_readings = 0
 
-            logger.info(
+            logger.debug(
                 f"[ATR FIREWALL EVAL] Reading: {self.latest_atr_pct:.3f}% < {self.min_atr_pct:.3f}% "
                 f"| Low Count: {self.consecutive_low_readings}/{self.low_confirmation_count} "
                 f"| Current State: {self.status.value}"
@@ -154,6 +157,9 @@ class ATRFirewall:
                 spread_pct=actual_spread,
                 status=self.status,
             )
+
+        if not math.isfinite(calc_atr) or not math.isfinite(ltp) or ltp <= 0 or calc_atr < 0:
+            return PreEntryEvaluation(False, "INVALID_ATR_DATA", status=self.status)
 
         # Gate 1: Feed Health must be HEALTHY
         if feed_health != "HEALTHY":
@@ -237,4 +243,3 @@ class ATRFirewall:
             spread_pct=actual_spread,
             status=self.status,
         )
-

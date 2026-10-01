@@ -1,0 +1,101 @@
+FFFF.F                                                                   [100%]
+=================================== FAILURES ===================================
+_________ test_reject_previously_accepted_malformed_history[duplicate] _________
+
+defect = 'duplicate'
+
+    @pytest.mark.parametrize("defect", ["duplicate", "nan_price", "nan_volume", "missing_timestamp", "nat"])
+    def test_reject_previously_accepted_malformed_history(defect):
+        frame = session_frame()
+        if defect == "duplicate":
+            frame.loc[1, "Timestamp"] = frame.loc[0, "Timestamp"]
+        elif defect == "nan_price":
+            frame.loc[1, "Close"] = float("nan")
+        elif defect == "nan_volume":
+            frame.loc[1, "Volume"] = float("nan")
+        elif defect == "missing_timestamp":
+            frame = frame.drop(columns="Timestamp")
+        else:
+            frame.loc[1, "Timestamp"] = pd.NaT
+>       assert not validate_candle_data(frame, min_candles=15)[0]
+E       assert not True
+
+algo-trading-bot/test_runtime_repair.py:29: AssertionError
+_________ test_reject_previously_accepted_malformed_history[nan_price] _________
+
+defect = 'nan_price'
+
+    @pytest.mark.parametrize("defect", ["duplicate", "nan_price", "nan_volume", "missing_timestamp", "nat"])
+    def test_reject_previously_accepted_malformed_history(defect):
+        frame = session_frame()
+        if defect == "duplicate":
+            frame.loc[1, "Timestamp"] = frame.loc[0, "Timestamp"]
+        elif defect == "nan_price":
+            frame.loc[1, "Close"] = float("nan")
+        elif defect == "nan_volume":
+            frame.loc[1, "Volume"] = float("nan")
+        elif defect == "missing_timestamp":
+            frame = frame.drop(columns="Timestamp")
+        else:
+            frame.loc[1, "Timestamp"] = pd.NaT
+>       assert not validate_candle_data(frame, min_candles=15)[0]
+E       assert not True
+
+algo-trading-bot/test_runtime_repair.py:29: AssertionError
+________ test_reject_previously_accepted_malformed_history[nan_volume] _________
+
+defect = 'nan_volume'
+
+    @pytest.mark.parametrize("defect", ["duplicate", "nan_price", "nan_volume", "missing_timestamp", "nat"])
+    def test_reject_previously_accepted_malformed_history(defect):
+        frame = session_frame()
+        if defect == "duplicate":
+            frame.loc[1, "Timestamp"] = frame.loc[0, "Timestamp"]
+        elif defect == "nan_price":
+            frame.loc[1, "Close"] = float("nan")
+        elif defect == "nan_volume":
+            frame.loc[1, "Volume"] = float("nan")
+        elif defect == "missing_timestamp":
+            frame = frame.drop(columns="Timestamp")
+        else:
+            frame.loc[1, "Timestamp"] = pd.NaT
+>       assert not validate_candle_data(frame, min_candles=15)[0]
+E       assert not True
+
+algo-trading-bot/test_runtime_repair.py:29: AssertionError
+_____ test_reject_previously_accepted_malformed_history[missing_timestamp] _____
+
+defect = 'missing_timestamp'
+
+    @pytest.mark.parametrize("defect", ["duplicate", "nan_price", "nan_volume", "missing_timestamp", "nat"])
+    def test_reject_previously_accepted_malformed_history(defect):
+        frame = session_frame()
+        if defect == "duplicate":
+            frame.loc[1, "Timestamp"] = frame.loc[0, "Timestamp"]
+        elif defect == "nan_price":
+            frame.loc[1, "Close"] = float("nan")
+        elif defect == "nan_volume":
+            frame.loc[1, "Volume"] = float("nan")
+        elif defect == "missing_timestamp":
+            frame = frame.drop(columns="Timestamp")
+        else:
+            frame.loc[1, "Timestamp"] = pd.NaT
+>       assert not validate_candle_data(frame, min_candles=15)[0]
+E       assert not True
+
+algo-trading-bot/test_runtime_repair.py:29: AssertionError
+_____________________ test_reject_wrong_requested_session ______________________
+
+    def test_reject_wrong_requested_session():
+>       assert not validate_candle_data(session_frame(), min_candles=15,
+                                        session_date=date(2026, 9, 30))[0]
+E       TypeError: validate_candle_data() got an unexpected keyword argument 'session_date'
+
+algo-trading-bot/test_runtime_repair.py:33: TypeError
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_runtime_repair.py::test_reject_previously_accepted_malformed_history[duplicate]
+FAILED algo-trading-bot/test_runtime_repair.py::test_reject_previously_accepted_malformed_history[nan_price]
+FAILED algo-trading-bot/test_runtime_repair.py::test_reject_previously_accepted_malformed_history[nan_volume]
+FAILED algo-trading-bot/test_runtime_repair.py::test_reject_previously_accepted_malformed_history[missing_timestamp]
+FAILED algo-trading-bot/test_runtime_repair.py::test_reject_wrong_requested_session
+5 failed, 1 passed in 0.43s

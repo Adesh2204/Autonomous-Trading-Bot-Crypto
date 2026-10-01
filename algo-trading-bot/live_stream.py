@@ -90,7 +90,7 @@ from signal_brain import detect_daily_bias, generate_vwap_signal
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[logging.FileHandler("trading_bot.log"), logging.StreamHandler()],
+    handlers=[logging.StreamHandler()],
 )
 install_broker_secret_filter()
 
@@ -173,13 +173,22 @@ class AngelOneLiveStream:
         angel_session: Optional[SmartConnect] = None,
         screener_diagnostic: Optional[Any] = None,
         watchlist: Optional[List[Any]] = None,
+        reserves=None, run_context=None, history_service=None,
         registry: Optional[InstrumentRegistry] = None,
     ) -> None:
         self.schedule: BaseMarketSchedule = (
             schedule if schedule is not None else get_market_schedule(os.getenv("MARKET_SCHEDULE", "NSE"))
         )
         self.screener_diagnostic = screener_diagnostic
-        self._execution_lock = threading.Lock()
+        self.run_context=run_context
+        self.history_service=history_service
+        from runtime_observation import OpportunityTelemetry
+        self.telemetry=OpportunityTelemetry(run_context.run_id if run_context else 'TEST')
+        self.shadow=None
+        if run_context is not None and config.SHADOW_RESEARCH_ENABLED:
+            from shadow_diagnostics import ShadowDiagnostics
+            self.shadow=ShadowDiagnostics(run_context.directory)
+        self._execution_lock = threading.RLock()
 
         self.registry = registry
         if self.registry is None:
@@ -192,12 +201,15 @@ class AngelOneLiveStream:
 
         if watchlist and len(watchlist) > 0:
             self.watchlist = watchlist[:SCREEN_TOP_N]
-            for idx, cand in enumerate(self.watchlist):
+            bounded_reserves=list(reserves or [])[:config.RESERVE_WATCHLIST_SIZE]
+            for idx, cand in enumerate(self.watchlist+bounded_reserves):
                 get = cand.get if isinstance(cand,dict) else lambda key,default=None:getattr(cand,key,default)
                 c_sym = get('symbol')
                 identity = get('instrument') or self.registry.resolve(c_sym,get('token'),to_ist())
                 identity.validate(c_sym,get('token'),now=to_ist())
                 c_tok, c_trd, c_exch = identity.token, identity.trading_symbol, identity.exchange
+                if c_tok in self.active_symbols:
+                    raise ValueError('DUPLICATE_WATCHLIST_TOKEN')
                 c_ex_type = 1
                 state = create_isolated_symbol_state(
                     symbol=c_sym,
@@ -207,8 +219,10 @@ class AngelOneLiveStream:
                     exchange_type=c_ex_type,
                     rank=idx + 1,
                     candle_close_callback=self._on_symbol_candle_close,
+                    strict_session=True,
                 )
                 state.instrument = identity
+                state.watchlist_role='PRIMARY' if idx<len(self.watchlist) else 'RESERVE'
                 state.volume_profiles = get("volume_profiles",[])
                 state.opportunity_score = get("opportunity_score",0.)
                 state.execution_state = SymbolExecutionState.ACTIVE
@@ -231,6 +245,7 @@ class AngelOneLiveStream:
                 exchange_type=self.instrument_info["exchange_type"],
                 rank=1,
                 candle_close_callback=self._on_symbol_candle_close,
+                strict_session=True,
             )
             single_state.instrument = identity
             single_state.execution_state = SymbolExecutionState.ACTIVE
@@ -309,6 +324,23 @@ class AngelOneLiveStream:
             daily_loss_limit=DAILY_LOSS_LIMIT,risk_per_trade=RISK_PER_TRADE,schedule=self.schedule,
             environment='LIVE' if is_live else config.EXECUTION_ENVIRONMENT,adapter=adapter)
         self.paper_trader.angel_session=raw_session
+        self.paper_trader.run_id=run_context.run_id if run_context is not None else self.paper_trader.session_id
+
+        # Restarted exposure must keep receiving quotes even if today's ranking
+        # selects a different stock. Replace one unheld reserve within the cap.
+        held=self.paper_trader.open_position if self.paper_trader.has_open_position else None
+        if held and held['token'] not in self.active_symbols:
+            limit=config.SCREEN_TOP_N+config.RESERVE_WATCHLIST_SIZE
+            if len(self.active_symbols)>=limit:
+                removable=sorted(self.active_symbols.values(),key=lambda s:(s.watchlist_role=='RESERVE',s.rank),reverse=True)[0]
+                self.active_symbols.pop(removable.token)
+            identity=held['instrument']
+            protected=create_isolated_symbol_state(identity.symbol,identity.token,identity.trading_symbol,
+                exchange=identity.exchange,rank=0,candle_close_callback=self._on_symbol_candle_close,strict_session=True)
+            protected.instrument=identity
+            protected.watchlist_role='PROTECTION_ONLY'
+            self.active_symbols[identity.token]=protected
+            logging.info('[RECOVERED POSITION] retaining quote subscription for %s',identity.symbol)
 
         self.builder = primary.builder
 
@@ -353,10 +385,10 @@ class AngelOneLiveStream:
             wait_seconds = self.schedule.seconds_until_market_start(now)
             open_str = self.schedule.market_open_time.strftime("%H:%M:%S")
             logging.info(
-                f"Pre-market startup detected. Waiting until {open_str} "
+                f"Pre-market startup detected. Market opens at {open_str} "
                 f"({wait_seconds:.0f}s)."
             )
-            time_module.sleep(wait_seconds)
+            logging.info("Connecting before the open; entry time and warmup gates remain enforced.")
         elif state in {MarketPhase.SQUARE_OFF, MarketPhase.CLOSED}:
             logging.info("Market is already in shutdown window. Exiting.")
             sys.exit(0)
@@ -367,6 +399,16 @@ class AngelOneLiveStream:
     def login(self) -> None:
         """Authenticate with SmartAPI and cache jwt/feed tokens for the stream.
         Includes retry with exponential backoff for rate-limit / transient errors."""
+        session=getattr(self,'angel_session',None)
+        if session is not None and isinstance(getattr(session,'access_token',None),str):
+            auth=_normalize_bearer_token(session.access_token)
+            feed=getattr(session,'feed_token',None) or session.getfeedToken()
+            if auth and isinstance(feed,str) and feed:
+                self.smart_api=session
+                self.auth_token=auth
+                self.feed_token=feed
+                logging.info('Reusing authenticated market-data session for historical data and websocket.')
+                return
         max_retries = 5
         base_delay = 30  # seconds — Angel One rate-limit window
 
@@ -413,6 +455,31 @@ class AngelOneLiveStream:
         """Login, connect, and keep the live stream running until shutdown with Exponential Backoff + Jitter."""
         self.validate_market_startup()
         self.login()
+        from history_service import HistoryService
+        self.history_service=getattr(self,'history_service',None) or HistoryService(self.smart_api)
+        # In the recovery/login path both consumers must use the fresh token.
+        self.history_service.broker=self.smart_api
+        context=getattr(self,'run_context',None)
+        if context: context.start_stage('HISTORICAL_BASELINE_LOADING')
+        bootstrap_errors=[]
+        # Recovered exposure takes precedence: connect quotes immediately and
+        # restore history on the worker while exits remain operational.
+        restore_states=[] if self.paper_trader.has_open_position else self.active_symbols.values()
+        if not restore_states:
+            logging.info('[BOOTSTRAP] recovered exposure: history recovery runs alongside quote protection')
+        for state in restore_states:
+            try:
+                self._restore_session_history(state,self.schedule.localize())
+            except Exception as exc:
+                bootstrap_errors.append(state.symbol+':'+str(exc))
+                state.history_validation={'valid':False,'reason':str(exc)}
+                logging.warning('[BOOTSTRAP BLOCKED] %s %s',state.symbol,type(exc).__name__)
+        if context:
+            if restore_states:
+                context.end_stage('HISTORICAL_BASELINE_LOADING',not bootstrap_errors,'; '.join(bootstrap_errors) or None)
+            context.start_stage('WATCHLIST_READY'); context.end_stage('WATCHLIST_READY')
+        self._recovery_thread=threading.Thread(target=self._history_recovery_loop,daemon=True,name='HistoryRecovery')
+        self._recovery_thread.start()
 
         # Capital Synchronization & Pre-flight RMS Validation
         is_live = getattr(config, "LIVE_MODE", False)
@@ -478,6 +545,7 @@ class AngelOneLiveStream:
             try:
                 if self._shutdown_requested:
                     return
+                if context: context.start_stage('STREAM_CONNECTING')
                 self.websocket = self._build_websocket()
                 self._start_watchdog_thread()
                 self.websocket.connect()
@@ -524,6 +592,12 @@ class AngelOneLiveStream:
         """Mark the stream for shutdown, disable SDK auto-reconnect, and close active websocket."""
         logging.info("Shutdown requested: %s", reason)
         self._shutdown_requested = True
+        context=getattr(self,'run_context',None)
+        if context is not None:
+            try:
+                context.write_session_summary(self)
+                context.record_shutdown(reason)
+            except Exception: logging.exception('[SESSION SUMMARY FAILED]')
 
         sws = getattr(self, "websocket", None)
         if sws is not None:
@@ -600,7 +674,8 @@ class AngelOneLiveStream:
         close_p = float(latest.get("Close", 0.0))
 
         # Record ATR in symbol's isolated firewall and evaluate STANDBY transitions
-        state.record_periodic_atr(atr=atr_val, ltp=close_p, timestamp=candle_timestamp)
+        state.refresh_maturity()
+        state.record_periodic_atr(atr=atr_val, ltp=close_p, timestamp=latest['Timestamp'], completed_count=len(df))
 
         logging.info(
             f"Candle #{len(df)} closed for {symbol} (Rank {state.rank}) | "
@@ -630,83 +705,127 @@ class AngelOneLiveStream:
         """Legacy entry point routing candle close to primary symbol."""
         self._on_symbol_candle_close(self.symbol, self.token, df)
 
-    def _evaluate_watchlist_orchestrator(self,triggered_by_symbol=None,evaluation_time=None):
+    def _evaluate_watchlist_orchestrator(self, triggered_by_symbol=None, evaluation_time=None):
+        from runtime_observation import OpportunityTelemetry, observe_signal
         with self._execution_lock:
             now=to_ist(evaluation_time) if evaluation_time is not None else to_ist()
             trader=self.paper_trader
-            existing=trader.open_position if trader.has_open_position else None
-            if existing is None and not self.schedule.can_enter_new_positions(now):
-                trader._event('REJECTED',reason='ENTRY_CUTOFF_REACHED'); return
+            if not hasattr(self,'telemetry'):
+                self.telemetry=OpportunityTelemetry()
+            self._promote_reserves(now)
             candidates=[]
             for state in sorted(self.active_symbols.values(),key=lambda x:(x.rank,x.symbol)):
-                side=None; atr=None; ref=None
                 try:
-                    if state.execution_state!=SymbolExecutionState.ACTIVE:raise SafetyError('SYMBOL_NOT_ACTIVE')
-                    if state.feed_monitor.state!=FeedHealthState.HEALTHY:raise SafetyError('NO_MARKET_DATA')
-                    if state.current_candle_df is None or len(state.current_candle_df)<15:raise SafetyError('WARMUP')
-                    result=generate_vwap_signal(state.current_candle_df.copy())
-                    latest=result.iloc[-1]; bias=detect_daily_bias(result)
-                    candle_time=to_ist(pd.Timestamp(latest['Timestamp']).to_pydatetime())
-                    if not 0 <= (now-candle_time).total_seconds() <= config.CLOSED_SIGNAL_MAX_AGE_SECONDS:
-                        raise SafetyError('STALE_SIGNAL_CANDLE')
-                    long=bool(latest.get('Buy_Signal')) or bool(latest.get('Breakout_Signal'))
-                    short=bool(latest.get('Sell_Signal')) or bool(latest.get('Breakdown_Sell_Signal'))
-                    if bias=='LONG_BIAS':short=False
-                    elif bias=='SHORT_BIAS':long=False
-                    if not (long or short):raise SafetyError('NO_CORE_SIGNAL')
-                    side='BUY' if long else 'SELL'; atr=float(latest['ATR_14']); ref=float(latest['VWAP'])
-                    if existing and (state.token!=existing['token'] or side==existing['side']):
-                        raise SafetyError('POSITION_ALREADY_OPEN')
-                    signal_id=f"{state.token}:{latest['Timestamp']}:{side}"
-                    # An already-evaluated completed bar cannot create repeated orders/events.
-                    if state.last_signal and state.last_signal.get('signal_id')==signal_id:continue
-                    state.last_signal={'signal_id':signal_id}
-                    trader._event('SIGNAL',side=side,symbol=state.symbol,signal_id=signal_id)
-                    if existing:
-                        # The frozen direction-flip exit precedes consideration of a
-                        # replacement entry. New entry ATR/economic gates still apply.
-                        if state.instrument!=existing['instrument']:raise SafetyError('INSTRUMENT_IDENTITY_MISMATCH')
+                    observation=observe_signal(state,trader,self.schedule,now,generate_vwap_signal,detect_daily_bias)
+                    existing=trader.open_position if trader.has_open_position else None
+                    # Frozen direction-flip protection can EXIT despite a new-entry
+                    # volatility/cutoff/economic failure. It still needs sound live data.
+                    exit_gates=('session_data','warmup','feed','identity','signal_freshness','signal','bias','indicators')
+                    if (existing and state.token==existing['token'] and observation.side!=existing['side']
+                            and all(observation.gates.get(g)=='PASS' for g in exit_gates)):
+                        if state.instrument!=existing['instrument']:
+                            raise SafetyError('INSTRUMENT_IDENTITY_MISMATCH')
                         trader.set_quote(state.instrument,state.quote)
-                        result=trader.close_position(float(latest['Close']),now,
-                            f"Direction Flip ({existing['side']}→{side})")
-                        if result is None:raise SafetyError('UNKNOWN_BROKER_STATE')
-                        existing=None
-                    if not self.schedule.can_enter_new_positions(now):raise SafetyError('ENTRY_CUTOFF_REACHED')
-                    gate=state.atr_firewall.validate_pre_entry(atr=atr,ltp=float(latest['Close']),
-                        feed_health=state.feed_monitor.state.value,spread_pct=state.last_spread_pct,
-                        depth_available=state.last_depth_available,is_new_entry=True)
-                    if not gate.execution_allowed:raise SafetyError(gate.rejection_reason or 'ATR_FIREWALL')
-                    expected=ExecutionQualityGate().validate(state.quote,side,now)
-                    sign=1 if side=='BUY' else -1; distance=round(config.SL_ATR_MULT*atr,2)
-                    rounded=state.instrument.price(expected*(1+sign*config.SLIPPAGE_HAIRCUT_PCT),side)
-                    expected=rounded/(1+sign*config.SLIPPAGE_HAIRCUT_PCT)
-                    stop=round(ref-sign*distance,2); target=round(ref+sign*2*distance,2)
-                    depth=state.quote.ask_quantity if side=='BUY' else state.quote.bid_quantity
-                    floor=config.MIN_NET_RR_LOW_VOL if atr/ref<config.LOW_VOL_ATR_PCT else config.MIN_NET_RR_NORMAL
-                    economics=solve_quantity(side,expected,stop,target,trader.working_capital,trader.risk_per_trade,
-                        trader.journal.remaining(trader.daily_loss_limit),floor,config.SLIPPAGE_HAIRCUT_PCT,
-                        state.instrument.lot_size,int(depth*config.BEST_LEVEL_MAX_PARTICIPATION),
-                        exit_spread_pct=config.SCREEN_MAX_SPREAD_PCT/2,tick_size=state.instrument.tick_size)
-                    if economics is None:raise SafetyError('NO_ECONOMICALLY_VALID_QUANTITY')
-                    rvol=same_time_rvol(state.cumulative_volume,now.time().replace(tzinfo=None),state.volume_profiles,now.date())
-                    score=score_opportunity(state.cumulative_volume,state.quote.spread_pct*100,depth,atr/ref*100,rvol)
-                    trader._event('WATCHLIST',symbol=state.symbol,components=score.__dict__,rvol=rvol)
+                        result=trader.close_position(observation.close,now,
+                            f"Direction Flip ({existing['side']}→{observation.side})")
+                        if result is None:
+                            raise SafetyError('UNKNOWN_BROKER_STATE')
+                        observation=observe_signal(state,trader,self.schedule,now,generate_vwap_signal,detect_daily_bias)
+                    changed=self.telemetry.record(observation,trader)
+                    if getattr(self,'shadow',None) is not None:
+                        self.shadow.record(observation)
+                    if changed and observation.signal_generated:
+                        trader._event('SIGNAL',side=observation.side,symbol=state.symbol,
+                                      signal_id=observation.signal_id,executable=observation.executable,
+                                      blocking_reasons=observation.blocking_reasons)
+                    if not observation.executable:
+                        continue
+                    if state.last_signal and state.last_signal.get('signal_id')==observation.signal_id:
+                        continue
                     payload={'instrument':state.instrument,'quote':state.quote,'symbol':state.symbol,
-                        'token':state.token,'exchange':state.exchange,'VWAP':ref,'Close':float(latest['Close']),
-                        'ATR_14':atr,'signal_type':latest.get('Signal_Type'),
-                        'signal_timestamp':latest['Timestamp'],'signal_id':signal_id}
-                    candidates.append({'payload':payload,'side':side,'bias':bias,
-                        'execution_quality':1-state.quote.spread_pct,'net_rr':economics.net_rr,
-                        'depth':depth,'opportunity_score':score.total,'timestamp':str(latest['Timestamp']),'symbol':state.symbol})
+                        'token':state.token,'exchange':state.exchange,'VWAP':observation.reference_entry,
+                        'Close':observation.close,'ATR_14':observation.atr,'signal_type':observation.signal_type,
+                        'signal_timestamp':observation.candle_timestamp,'signal_id':observation.signal_id}
+                    depth=state.quote.ask_quantity if observation.side=='BUY' else state.quote.bid_quantity
+                    candidates.append({'payload':payload,'side':observation.side,'bias':observation.bias,
+                        'execution_quality':1-state.quote.spread_pct,'net_rr':observation.economics['net_rr'],
+                        'depth':depth,'opportunity_score':observation.opportunity_score,
+                        'timestamp':observation.candle_timestamp,'symbol':state.symbol,'state':state})
                 except SafetyError as exc:
-                    trader._event('REJECTED',reason=str(exc),symbol=state.symbol,
-                        side=side,atr=atr,reference_price=ref,
-                        candle=state.current_candle_df.iloc[-1].to_dict() if state.current_candle_df is not None and len(state.current_candle_df) else {})
+                    trader._event('REJECTED',reason=str(exc),symbol=state.symbol)
                 except Exception as exc:
-                    state.mark_error(str(exc)); trader._event('EXCEPTION',symbol=state.symbol,reason=type(exc).__name__)
+                    state.mark_error(type(exc).__name__)
+                    trader._event('EXCEPTION',symbol=state.symbol,reason=type(exc).__name__)
+                    logging.exception('[OBSERVATION FAILED] %s',state.symbol)
             for candidate in sorted(candidates,key=arbitration_key):
+                state=candidate['state']
+                state.last_signal={'signal_id':candidate['payload']['signal_id']}
                 trader.update_daily_bias(candidate['bias'])
-                if trader.execute_trade(candidate['payload'],timestamp=now,side=candidate['side'],angel_session=self.angel_session):break
+                if trader.execute_trade(candidate['payload'],timestamp=now,side=candidate['side'],angel_session=self.angel_session):
+                    position=trader.open_position
+                    if position and 'average_entry_price' in position and 'quantity' in position:
+                        self.telemetry.peak_exposure=max(self.telemetry.peak_exposure,position['average_entry_price']*position['quantity'])
+                    break
+            self._write_readiness(now)
+
+    def _promote_reserves(self,now):
+        # Implementation below uses the same observations as entries; no separate order path.
+        from reserve_watchlist import promote_reserves
+        promote_reserves(self,now)
+
+    def _write_readiness(self,now):
+        context=getattr(self,'run_context',None)
+        if context is not None:
+            context.write_readiness(self,now)
+
+    def _restore_session_history(self, state, now):
+        from copy import copy
+        from session_bootstrap import prepare_session_repair, commit_session_repair, missing_ranges
+        from history_service import BOOTSTRAP, PROTECTION
+        with self._execution_lock:
+            state.builder.recovery_required=True
+            state.refresh_maturity()
+            snapshot=copy(state)
+            snapshot.builder=copy(state.builder)
+            snapshot.builder.df=state.builder.df.copy()
+        existing=self.paper_trader.open_position if self.paper_trader.has_open_position else None
+        priority=PROTECTION if existing and existing['token']==state.token else BOOTSTRAP
+        repairs=prepare_session_repair(snapshot,now,
+            lambda context:self.history_service.fetch(context,priority=priority,timeout=60.))
+        with self._execution_lock:
+            report=commit_session_repair(state,now,repairs)
+            if missing_ranges(state.builder,self.schedule.localize()):
+                state.builder.recovery_required=True
+                state.builder.recovery_reason='HISTORY_ADVANCED_DURING_RECOVERY'
+                state.refresh_maturity()
+        logging.info('[SESSION DATA] %s status=%s restored=%s last=%s',state.symbol,state.data_status,
+                     report.get('valid_count'),report.get('last_timestamp'))
+        return report
+
+    def _history_recovery_loop(self):
+        last_attempt={}
+        while not self._shutdown_requested:
+            for state in sorted(self.active_symbols.values(),key=lambda s:(s.watchlist_role!='PROTECTION_ONLY',s.rank)):
+                if self._shutdown_requested:
+                    return
+                if not state.builder.recovery_required:
+                    continue
+                now=self.schedule.localize()
+                if self.schedule.get_market_state(now)==MarketPhase.PRE_MARKET:
+                    continue
+                if time_module.monotonic()-last_attempt.get(state.token,-1e9)<config.HISTORY_RECOVERY_RETRY_SECONDS:
+                    continue
+                last_attempt[state.token]=time_module.monotonic()
+                try:
+                    self._restore_session_history(state,now)
+                except Exception as exc:
+                    state.history_validation={'valid':False,'reason':str(exc)}
+                    logging.warning('[SESSION DATA BLOCKED] %s %s; quote/exit processing continues',state.symbol,type(exc).__name__)
+                self._write_readiness(self.schedule.localize())
+            context=getattr(self,'run_context',None)
+            if context and all(not s.builder.recovery_required for s in self.active_symbols.values()):
+                context.end_stage('HISTORICAL_BASELINE_LOADING')
+            time_module.sleep(1.)
 
     def _extract_tick_fields(self, data: dict) -> tuple[float, int, datetime, Optional[float], Optional[float], bool]:
         """Extract LTP, actual trade volume (without fake fallback), timestamp, best bid, best ask, and depth availability from SmartAPI data."""
@@ -864,6 +983,10 @@ class AngelOneLiveStream:
                 if symbol_state.instrument is not None:
                     self.paper_trader.set_quote(symbol_state.instrument,symbol_state.quote)
 
+                if state == FeedHealthState.HEALTHY and not getattr(symbol_state,'_healthy_reported',False):
+                    symbol_state._healthy_reported=True
+                    self._write_readiness(self.schedule.localize())
+
                 # Backward compatibility for primary symbol attributes
                 if symbol_state.token == self.token:
                     self._last_spread_pct = symbol_state.last_spread_pct
@@ -872,7 +995,8 @@ class AngelOneLiveStream:
                 # Feed genuine trade ticks into candle/VWAP builder (per-symbol isolation)
                 if tick.volume > 0:
                     try:
-                        symbol_state.builder.on_tick(price=tick.price, volume=tick.volume, timestamp=tick.timestamp)
+                        with self._execution_lock:
+                            symbol_state.builder.on_tick(price=tick.price, volume=tick.volume, timestamp=tick.timestamp)
                     except Exception as b_exc:
                         symbol_state.mark_error(str(b_exc))
                         logging.error(f"[BUILDER ERROR] Error in {symbol_state.symbol} builder: {b_exc}", exc_info=True)
@@ -906,7 +1030,15 @@ class AngelOneLiveStream:
         self.paper_trader.reconcile_broker('RECONNECT')
         for state in self.active_symbols.values():
             state.feed_monitor.on_connect()
+            state._healthy_reported=False
+            with self._execution_lock:
+                state.builder.mark_connection_boundary()
+                state.refresh_maturity()
 
+        context=getattr(self,'run_context',None)
+        if context:
+            context.end_stage('STREAM_CONNECTING')
+            context.start_stage('STREAM_HEALTHY')
         by_exchange: Dict[int, List[str]] = {}
         for state in self.active_symbols.values():
             by_exchange.setdefault(state.exchange_type, []).append(state.token)
@@ -934,11 +1066,18 @@ class AngelOneLiveStream:
         logging.error("WebSocket Error: %s", error)
         for state in self.active_symbols.values():
             state.feed_monitor.on_disconnect(reason=f"WebSocket error: {error}")
+            with self._execution_lock:
+                state.builder.mark_connection_boundary()
+                state.refresh_maturity()
 
     def _on_close(self, wsapp, *args, **kwargs) -> None:
         logging.warning("SmartAPI websocket closed.")
         for state in self.active_symbols.values():
             state.feed_monitor.on_disconnect(reason="SmartAPI websocket closed")
+            with self._execution_lock:
+                state.builder.mark_connection_boundary()
+                state.refresh_maturity()
+        if hasattr(self,'telemetry'): self.telemetry.feed_interruptions+=1
         if not self._shutdown_requested:
             logging.info("Connection dropped. Reconnect supervisor will retry.")
 
@@ -1154,10 +1293,11 @@ def record_screening_report(result=None,reason=None,output_dir=None,now=None):
     finally:journal.close()
 
 
-def main() -> None:
+def _main(run_context) -> None:
     # ── LIVE MODE STARTUP ──────────────────────────────
     is_live = getattr(config, "LIVE_MODE", False)
     angel_session = None
+    run_context.start_stage("AUTHENTICATING")
 
     if is_live:
         # Real money mode — login to Angel One
@@ -1168,6 +1308,10 @@ def main() -> None:
         except Exception as e:
             logging.warning(f"Paper mode broker session creation skipped / failed: {e}")
 
+    run_context.end_stage('AUTHENTICATING', angel_session is not None,
+                          None if angel_session is not None else 'BROKER_AUTHENTICATION_FAILED')
+    from history_service import HistoryService
+    history_service=HistoryService(angel_session) if angel_session is not None else None
     log_execution_mode_banner(
         live_mode=is_live,
         client_id=_first_env("ANGEL_CLIENT_ID", "CLIENT_ID") or "UNKNOWN",
@@ -1189,7 +1333,9 @@ def main() -> None:
         logging.warning(f"⚠️  [MANUAL OVERRIDE] Manual TRADING_SYMBOL override specified: {override_sym}")
         logging.warning(f"🔒  Execution Mode remains strictly: {'LIVE' if is_live else 'SIMULATION / PAPER'}")
         logging.warning("=" * 70)
-        stream = AngelOneLiveStream(target_symbol=override_sym, angel_session=angel_session,registry=registry)
+        stream = AngelOneLiveStream(target_symbol=override_sym, angel_session=angel_session,registry=registry,
+            run_context=run_context,history_service=history_service)
+        run_context.stream=stream
         stream.run()
         return
 
@@ -1197,9 +1343,10 @@ def main() -> None:
         # Discovery supplies only the input universe; the existing screener chooses Top 3.
         output_base = Path(__file__).parent / 'data' / config.EXECUTION_ENVIRONMENT.lower()
         pipeline = run_premarket_pipeline(smart_api=angel_session,
-            report_path=output_base / f'discovery_{startup_time.date()}.json')
+            report_path=run_context.directory/'discovery.json',history_service=history_service,run_context=run_context)
         registry = pipeline.registry
         screen_result = pipeline.screen
+        run_context.pipeline_report=pipeline.report()
         failure_reason = pipeline.screen_failure_reason or pipeline.discovery.failure_reason
         record_screening_report(screen_result, reason=failure_reason, now=startup_time)
 
@@ -1233,8 +1380,10 @@ def main() -> None:
             target_token=winner.token,
             angel_session=angel_session,
             screener_diagnostic=winner,
-            watchlist=watchlist,registry=registry,
+            watchlist=watchlist,registry=registry,reserves=screen_result.reserves,
+            run_context=run_context,history_service=history_service,
         )
+        run_context.stream=stream
         stream.run()
     else:
         logging.warning("=" * 70)
@@ -1246,9 +1395,16 @@ def main() -> None:
             target_symbol=DEFAULT_SYMBOL,
             target_token=registry.resolve(DEFAULT_SYMBOL).token,
             registry=registry,
-            angel_session=angel_session,
+            angel_session=angel_session,run_context=run_context,history_service=history_service,
         )
+        run_context.stream=stream
         stream.run()
+
+
+def main() -> None:
+    from run_context import RunContext
+    with RunContext('REGULAR') as context:
+        return _main(context)
 
 
 if __name__ == "__main__":

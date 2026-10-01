@@ -54,7 +54,9 @@ def test_current_main_dry_run_initializes_real_phase5_top_three(monkeypatch, tmp
     assert observed['started']
     stream = observed['stream']
     try:
-        assert len(stream.active_symbols) == 3
+        assert len(stream.active_symbols) == 3 + config.RESERVE_WATCHLIST_SIZE
+        assert sum(s.watchlist_role == 'PRIMARY' for s in stream.active_symbols.values()) == 3
+        assert sum(s.watchlist_role == 'RESERVE' for s in stream.active_symbols.values()) == config.RESERVE_WATCHLIST_SIZE
         for token, state in stream.active_symbols.items():
             identity = observed['pipeline'].registry.resolve(state.symbol, token, NOW)
             assert state.instrument is identity
@@ -119,7 +121,9 @@ def test_stage_two_request_accounting_is_separate(monkeypatch):
     class FailedHistoricalBroker:
         def getCandleData(self, params):
             return {'status': True, 'data': []}
-    result = run_premarket_pipeline(FailedHistoricalBroker(), now=NOW, market_universe=universe(),
+    from premarket_pipeline import _HistoricalRequestCounter
+    broker=FailedHistoricalBroker()
+    result = run_premarket_pipeline(broker, history_service=_HistoricalRequestCounter(broker), now=NOW, market_universe=universe(),
         data_source=FixtureDataSource(['ABC'], snapshot()), pacing_interval=0.)
     assert result.deep_historical_requests == config.SCREEN_API_MAX_RETRIES
     assert result.discovery.request_counts['historical_calls'] == 0

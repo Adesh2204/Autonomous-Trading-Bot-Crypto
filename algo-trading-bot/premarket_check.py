@@ -37,15 +37,18 @@ class ReadOnlyMarketData:
         return self._broker.getCandleData(params)
 
 
-def run_check(broker, report_path, *, fresh=False):
+def run_check(broker, report_path, *, fresh=False, run_context=None):
     schedule = get_market_schedule('NSE')
     started = schedule.localize()
     broker = ReadOnlyMarketData(broker)
+    from history_service import HistoryService
+    history_service=HistoryService(broker)
     context = tempfile.TemporaryDirectory(prefix='premarket-discovery-') if fresh else nullcontext(None)
     with context as directory:
         source = DiscoveryDataSource(directory)
         master_path = Path(directory)/'instruments.json' if fresh else None
-        result = run_premarket_pipeline(broker, data_source=source, master_path=master_path)
+        result = run_premarket_pipeline(broker, data_source=source, master_path=master_path,
+                                        history_service=history_service,run_context=run_context)
         report = result.report()
         report['validation'] = {'mode': 'READ_ONLY_PREMARKET_CHECK', 'fresh_downloads_required': fresh,
             'started_at': started.isoformat(), 'completed_at': schedule.localize().isoformat(),
@@ -75,7 +78,12 @@ def main(argv=None):
     # Reuse credential loading and authentication only; never call live_stream.main().
     from live_stream import angel_login
     try:
-        result, summary = run_check(angel_login(), args.report, fresh=args.fresh)
+        from run_context import RunContext
+        with RunContext('READ_ONLY_CHECK') as context:
+            with context.stage('AUTHENTICATING'):
+                broker=angel_login()
+            result, summary = run_check(broker, args.report, fresh=args.fresh,run_context=context)
+            atomic_json(context.directory/'check_summary.json',summary)
     except Exception as exc:
         logging.error('[PREMARKET CHECK BLOCKED] %s', type(exc).__name__)
         return 2

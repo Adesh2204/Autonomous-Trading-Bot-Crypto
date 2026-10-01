@@ -1,0 +1,150 @@
+{
+  "bootstrap": {
+    "basis": "SYNTHETIC_ENGINEERING_FIXTURE",
+    "started_at": "2026-10-01 13:22:30+05:30",
+    "before": "BOOTSTRAPPING",
+    "after": "READY",
+    "requests": [
+      {
+        "start": "2026-10-01 09:15:00+05:30",
+        "end": "2026-10-01 13:21:00+05:30"
+      }
+    ],
+    "validation": {
+      "valid": true,
+      "reason": null,
+      "expected_count": 247,
+      "received_count": 247,
+      "valid_count": 247,
+      "first_timestamp": "2026-10-01T09:15:00+05:30",
+      "last_timestamp": "2026-10-01T13:21:00+05:30",
+      "completeness_ratio": 1.0,
+      "missing_timestamps": [],
+      "validation_version": 1
+    },
+    "restored_bars": 247,
+    "session_vwap": 200.0,
+    "orders": 0
+  },
+  "cache": {
+    "basis": "SYNTHETIC_TWO_CLIENT_FIXTURE",
+    "unique_token_day_datasets": 9,
+    "cold_requests": 9,
+    "warm_additional_requests": 0,
+    "first_client": {
+      "cache_misses": 9,
+      "requests": 9
+    },
+    "second_client": {
+      "cache_hits": 9
+    }
+  },
+  "opportunity": {
+    "input_candles": "USER_OCT01_LOG",
+    "quote_basis": "HYPOTHETICAL_TEST_QUOTE",
+    "observation": {
+      "symbol": "RSYSTEMS",
+      "token": "13414",
+      "timestamp": "2026-10-01T13:37:00+05:30",
+      "candle_timestamp": "2026-10-01 13:36:00+05:30",
+      "side": "BUY",
+      "signal_generated": true,
+      "bias": "LONG_BIAS",
+      "data_status": "READY",
+      "volatility_status": "UNKNOWN",
+      "reference_entry": 257.8679648738319,
+      "reference_stop": 256.67,
+      "reference_target": 260.27,
+      "economic_model_entry": null,
+      "atr": 0.6000000000000065,
+      "atr_pct": 0.0023215322112594564,
+      "expected_quantity": null,
+      "rvol": null,
+      "rvol_status": "INSUFFICIENT_HISTORY",
+      "gates": {
+        "session_data": "PASS",
+        "warmup": "PASS",
+        "feed": "PASS",
+        "time": "PASS",
+        "watchlist": "PASS",
+        "symbol_state": "BLOCKED",
+        "identity": "PASS",
+        "risk": "PASS",
+        "position_capacity": "PASS",
+        "signal_freshness": "PASS",
+        "bias": "PASS",
+        "indicators": "PASS",
+        "atr_floor": "BLOCKED",
+        "atr_hysteresis": "PASS",
+        "signal": "PASS",
+        "quote_freshness": "PASS",
+        "spread": "PASS",
+        "depth": "PASS",
+        "execution_quality": "PASS",
+        "economics": "BLOCKED"
+      },
+      "blocking_reasons": [
+        "VOLATILITY_STANDBY",
+        "ATR_BELOW_LIVE_MINIMUM",
+        "NO_ECONOMICALLY_VALID_QUANTITY"
+      ],
+      "executable": false,
+      "quote": {
+        "timestamp": "2026-10-01 13:37:00+05:30",
+        "bid": 258.4,
+        "ask": 258.5,
+        "bid_quantity": 1000,
+        "ask_quantity": 1000,
+        "spread": 0.10000000000002274,
+        "spread_pct": 0.0003869969040248558,
+        "ltp": 258.45,
+        "age_seconds": 0.0,
+        "feed_health": "HEALTHY",
+        "expected_quantity": null,
+        "source": "HYPOTHETICAL_TEST_QUOTE; NOT OCT01 OBSERVED DEPTH"
+      },
+      "economics": null,
+      "opportunity_score": 2.9741552851093753,
+      "signal_type": "PULLBACK_LONG",
+      "close": 258.45
+    },
+    "funnel": {
+      "counts": {
+        "completed_bar_observations": 1,
+        "potential_signals": 1,
+        "executable_signals": 0,
+        "live_atr_eligible_symbols": 0,
+        "signals_passing_liquidity": 1,
+        "signals_passing_economics": 0,
+        "signals_passing_risk": 1
+      },
+      "gate_rejections": {
+        "NO_ECONOMICALLY_VALID_QUANTITY": 1,
+        "ATR_BELOW_LIVE_MINIMUM": 1,
+        "VOLATILITY_STANDBY": 1
+      },
+      "reserve_promotions": [],
+      "feed_interruptions": 0,
+      "peak_exposure": 0.0,
+      "denominator_note": "symbol counts and unique completed-bar observations are distinct units; gate counts overlap",
+      "signal_gate_pass_percent": {
+        "signals_passing_liquidity": 100.0,
+        "signals_passing_economics": 0.0,
+        "signals_passing_risk": 100.0
+      }
+    },
+    "ledger_net_pnl": 0,
+    "fills": 0
+  },
+  "accounting": {
+    "basis": "SYNTHETIC_PRICE_SEPARATION_EXAMPLE; regression tests also reconcile the fill ledger",
+    "strategy_reference": 300.0,
+    "strategy_stop": 290.0,
+    "strategy_target": 320.0,
+    "economic_haircut": 0.0015,
+    "economic_model_entry": 300.55,
+    "paper_fill_slippage": 0.0005,
+    "paper_fill_price": 300.25,
+    "production_journal_writes": 0
+  }
+}

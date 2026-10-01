@@ -48,10 +48,12 @@ class PremarketPipelineResult:
                 'planned_candidates': len(self.discovery.selected_candidates),
                 'analysed': self.screen.total_candidates, 'qualified': len(self.screen.qualified_candidates),
                 'rejected': len(self.screen.rejected_candidates), 'watchlist_count': len(self.screen.watchlist),
+                'reserve_symbols': [c.symbol for c in self.screen.reserves],
                 'status': self.screen.trading_day_status, 'historical_requests': self.deep_historical_requests,
                 'rate_limit_responses': self.deep_rate_limit_responses,
                 'candidates_with_valid_data': sum(c.data_ok for c in self.screen.diagnostics),
                 'history_warning': self.screen.history_warning,
+                'history_service': getattr(self, 'history_metrics', {}),
                 'rejections': [{'symbol': c.symbol, 'reasons': c.rejection_reasons}
                                for c in self.screen.rejected_candidates]},
             'lineage': self.lineage, 'universe_rejections': [asdict(r) for r in self.universe_rejections],
@@ -72,7 +74,10 @@ def load_startup_universe(smart_api, source, now, master_path=None):
 
 
 class _HistoricalRequestCounter:
-    """Pace all historical requests, including retries, and respect rate-limit backoff."""
+    """Legacy deterministic pacing adapter retained for injected regression fixtures.
+
+    Production entry points use the shared HistoryService, including standalone pipelines.
+    """
     def __init__(self, broker, *, clock=None, sleep=None):
         self.broker = broker
         self.calls = 0
@@ -118,7 +123,7 @@ class _HistoricalRequestCounter:
 
 def run_premarket_pipeline(smart_api=None, *, now=None, schedule=None, data_source=None,
                            market_universe=None, data_fetcher=None, pacing_interval=None,
-                           report_path=None, master_path=None):
+                           report_path=None, master_path=None, history_service=None, run_context=None):
     schedule = schedule or get_market_schedule('NSE')
     current = schedule.localize(now)
     target_session = find_previous_completed_market_session(current.date(), schedule)
@@ -129,7 +134,11 @@ def run_premarket_pipeline(smart_api=None, *, now=None, schedule=None, data_sour
     screening_universe = []
     discovery = MarketDiscoveryResult(target_session)
     try:
+        if run_context: run_context.start_stage('UNIVERSE_LOADING')
         base = market_universe or load_startup_universe(smart_api, source, current, master_path)
+        if run_context:
+            run_context.end_stage('UNIVERSE_LOADING')
+            run_context.start_stage('DISCOVERY_RUNNING')
         registry = base.registry
         universe_rejections = base.rejected_records
         discovery.raw_instrument_count = base.raw_instrument_count
@@ -161,9 +170,14 @@ def run_premarket_pipeline(smart_api=None, *, now=None, schedule=None, data_sour
         discovery.universe_source = 'UNAVAILABLE'
         logger.error('[DISCOVERY BLOCKED] %s | full market data required; configured stock lists are disabled',
                      discovery.failure_reason)
+    if run_context:
+        if 'UNIVERSE_LOADING' in run_context.active: run_context.end_stage('UNIVERSE_LOADING',False,discovery.failure_reason)
+        run_context.end_stage('DISCOVERY_RUNNING',discovery.success,discovery.failure_reason)
+        run_context.start_stage('CANDIDATES_SCREENED')
     discovery.request_counts = source.accounting.report()
     discovery.datasets = getattr(source, 'datasets', {})
-    counted_broker = _HistoricalRequestCounter(smart_api) if smart_api is not None else None
+    from history_service import HistoryService
+    counted_broker = history_service if history_service is not None else (HistoryService(smart_api) if smart_api is not None else None)
     kwargs = {'smart_api': counted_broker, 'schedule': schedule, 'universe': screening_universe,
               'session_date': target_session, 'top_n': config.SCREEN_TOP_N, 'data_fetcher': data_fetcher}
     if pacing_interval is not None:
@@ -181,6 +195,7 @@ def run_premarket_pipeline(smart_api=None, *, now=None, schedule=None, data_sour
             None, 'NO_TRADE', diagnostics, [])
         logger.error('[PREMARKET BLOCKED] %s | completed=%s planned=%s; no trading watchlist released',
                      screen_failure_reason, len(diagnostics), len(screening_universe))
+    if run_context: run_context.end_stage('CANDIDATES_SCREENED',screen_failure_reason is None,screen_failure_reason)
     selected_ranks = {c.symbol: rank for rank, c in enumerate(screen.watchlist, 1)}
     deep_ranks = {c.symbol: rank for rank, c in enumerate(screen.qualified_candidates, 1)}
     records = {c['symbol']: c for c in screening_universe}
@@ -208,6 +223,7 @@ def run_premarket_pipeline(smart_api=None, *, now=None, schedule=None, data_sour
     result = PremarketPipelineResult(discovery, screen, registry, readiness, lineage,
         universe_rejections, fallback_rejections, counted_broker.calls if counted_broker else 0,
         counted_broker.rate_limit_count if counted_broker else 0, screen_failure_reason)
+    result.history_metrics = dict(getattr(counted_broker, 'metrics', {}))
     logger.info('[DISCOVERY API] %s', discovery.request_counts)
     logger.info('[PREMARKET DEEP SCREEN] analysed=%s qualified=%s rejected=%s',
                 screen.total_candidates, len(screen.qualified_candidates), len(screen.rejected_candidates))

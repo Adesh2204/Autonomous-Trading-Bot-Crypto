@@ -1,5 +1,7 @@
 """Explicit research replay. Synthetic fixtures never become historical profitability evidence."""
 from dataclasses import dataclass
+from collections import Counter
+from research_policy import VolatilityPolicy, ResearchPolicyState
 from datetime import timedelta
 from pathlib import Path
 import hashlib
@@ -18,10 +20,13 @@ from atr_firewall import ATRFirewall
 class ResearchVariant:
     name: str
     timeframe_minutes: int = 1
+    volatility_policy: VolatilityPolicy | None = None
     @property
     def id(self):
         core=hashlib.sha256((Path(__file__).parent/'signal_brain.py').read_bytes()).hexdigest()
-        return f'{self.name}:{self.timeframe_minutes}m:{core}'
+        policy=(self.volatility_policy or VolatilityPolicy()).report()
+        policy_hash=hashlib.sha256(json.dumps(policy,sort_keys=True).encode()).hexdigest()[:12]
+        return f'{self.name}:{self.timeframe_minutes}m:{core}:{policy_hash}'
 
 def replay(source,instrument,provenance,output_dir,total_capital=config.TOTAL_CAPITAL,variant=None):
     if not isinstance(instrument,InstrumentIdentity):raise SafetyError('REPLAY_INSTRUMENT_REQUIRED')
@@ -46,7 +51,9 @@ def replay(source,instrument,provenance,output_dir,total_capital=config.TOTAL_CA
     output=Path(output_dir)/str(uuid.uuid4()); output.mkdir(parents=True)
     clock=[data['Timestamp'].iloc[0].to_pydatetime()]
     trader=PaperTrader(total_capital=total_capital,environment='REPLAY',clock=lambda:clock[0],csv_log_path=str(output/'trades.csv'))
-    trades=[]; equity=[]; pending=None; firewall=ATRFirewall()
+    trades=[]; equity=[]; pending=None
+    gate_counts=Counter(); opportunities=0; attempts=0
+    policy=variant.volatility_policy or VolatilityPolicy()
     try:
         for day,session in data.groupby(data['Timestamp'].dt.date,sort=True):
             clock[0]=session['Timestamp'].iloc[0].to_pydatetime(); trader.check_day_reset(clock[0])
@@ -55,7 +62,9 @@ def replay(source,instrument,provenance,output_dir,total_capital=config.TOTAL_CA
                 instrument.series,instrument.tick_size,instrument.lot_size,instrument.instrument_type,clock[0],instrument.intraday_eligible)
             enriched=generate_vwap_signal(session)
             pending=None
+            policy_state=ResearchPolicyState(policy)
             observed_volume=0
+            completed_count=0
             for index,row in enriched.iterrows():
                 ts=row['Timestamp'].to_pydatetime(); clock[0]=ts
                 def observation(price,when):
@@ -67,6 +76,7 @@ def replay(source,instrument,provenance,output_dir,total_capital=config.TOTAL_CA
                 trader.set_quote(identity,open_quote)
                 if pending and trader.schedule.can_enter_new_positions(ts):
                     pending['instrument']=identity; pending['quote']=open_quote
+                    attempts+=1
                     trader.execute_trade(pending,timestamp=ts,side=pending['side'])
                 pending=None
                 # Deterministic bar path, not an assertion that OHLC reveals the tick sequence.
@@ -81,20 +91,25 @@ def replay(source,instrument,provenance,output_dir,total_capital=config.TOTAL_CA
                 # depth proxy for the NEXT bar, never an observed order-book claim.
                 observed_volume=float(row['Volume'])
                 atr=float(row['ATR_14']); close=float(row['Close'])
-                gate=firewall.validate_pre_entry(atr,close,feed_health='HEALTHY',spread_pct=2*config.REPLAY_HALF_SPREAD_PCT*100,
-                    depth_available=True,is_new_entry=True)
+                completed_count+=1
+                blockers=policy_state.step(atr,close,completed_count)
+                decision_time=ts+timedelta(minutes=variant.timeframe_minutes)
+                if not trader.schedule.can_enter_new_positions(decision_time):blockers.append('ENTRY_CUTOFF_REACHED')
                 long=bool(row.get('Buy_Signal')) or bool(row.get('Breakout_Signal'))
                 short=bool(row.get('Sell_Signal')) or bool(row.get('Breakdown_Sell_Signal'))
                 bias=detect_daily_bias(enriched.loc[:index])
                 if bias=='LONG_BIAS':short=False
                 elif bias=='SHORT_BIAS':long=False
-                if (long or short) and gate.execution_allowed:
+                if long or short:
+                    opportunities+=1
+                    gate_counts.update(blockers)
+                if (long or short) and not blockers:
                     pending={'symbol':identity.symbol,'VWAP':float(row['VWAP']),'Close':close,'ATR_14':atr,
                         'side':'BUY' if long else 'SELL','signal_timestamp':str(ts),'signal_type':row.get('Signal_Type'),
                         'signal_id':f'{identity.token}:{ts}'}
                     trader._event('SIGNAL',side=pending['side'],symbol=identity.symbol,
                         signal_id=pending['signal_id'],reference_price=pending['VWAP'])
-                elif long or short:trader._event('REJECTED',reason=gate.rejection_reason,signal_timestamp=ts)
+                elif long or short:trader._event('REJECTED',reason=blockers[0],blocking_reasons=blockers,signal_timestamp=ts)
             pending=None
             if trader.has_open_position:
                 result=trader.square_off_all_positions(timestamp=clock[0],latest_price=float(session.iloc[-1]['Close']))
@@ -105,9 +120,13 @@ def replay(source,instrument,provenance,output_dir,total_capital=config.TOTAL_CA
             'assumptions':['Signals execute on next bar observation','Bid/ask/depth approximated from OHLCV; not observed',
                 'Entry depth proxy uses only the previously completed bar volume',
                 'Fixed open-low-high-close path; tick sequencing unknown','Single supplied symbol; does not validate dynamic universe selection'],
-            'trades':len(trades),'output_dir':str(output)}
+            'trades':len(trades),'output_dir':str(output),'policy':policy.report(),
+            'opportunities_observed':opportunities,'entries_attempted':attempts,'blocked_by_gate':dict(gate_counts),
+            'data_context':'CANDLE_ONLY_RESEARCH; check whether each supplied session starts at 09:15',
+            'fill_events':len(trader.journal.fills())}
         (output/'research_metadata.json').write_text(json.dumps(metadata,indent=2))
-        (output/'research_metrics.json').write_text(json.dumps(research_metrics(trades),indent=2,default=str))
+        (output/'research_metrics.json').write_text(json.dumps(research_metrics(trades)|{'opportunities_observed':opportunities,
+            'entries_attempted':attempts,'fills':len(trader.journal.fills()),'blocked_by_gate':dict(gate_counts)},indent=2,default=str))
         return trades,pd.DataFrame(equity),metadata
     finally:trader.shutdown()
 
@@ -149,7 +168,23 @@ def research_metrics(trades):
         equity+=p; peak=max(peak,equity); drawdown=max(drawdown,peak-equity)
     slippage=pd.Series([t['entry_slippage'] for t in trades if 'entry_slippage' in t],dtype=float)
     gross=sum(abs(t.get('gross_pnl',0)) for t in trades)
-    return {'count':len(pnls),'net_expectancy':sum(pnls)/len(pnls) if pnls else None,
+    costs=sum(t.get('entry_fees',0)+t.get('exit_fees',0) for t in trades)
+    turnover=sum(t.get('entry_notional',t.get('actual_entry_price',t.get('average_entry_price',0))*t.get('quantity',0))+
+                 t.get('exit_notional',t.get('exit_price',0)*t.get('quantity',0)) for t in trades)
+    holding=[]
+    for t in trades:
+        if 'hold_duration_minutes' in t:
+            holding.append(t['hold_duration_minutes']*60)
+            continue
+        try:
+            holding.append((pd.Timestamp(t.get('exit_timestamp',t.get('timestamp')))-pd.Timestamp(t.get('entry_timestamp',t.get('signal_timestamp')))).total_seconds())
+        except (TypeError,ValueError):pass
+    return {'wins':len(wins),'losses':len(losses),'gross_pnl':sum(t.get('gross_pnl',0) for t in trades),
+        'transaction_costs':costs,'net_pnl':sum(pnls),'turnover':turnover,
+        'average_holding_seconds':sum(holding)/len(holding) if holding else None,
+        'slippage_sensitivity':{'basis':'POST_HOC_ADDITIONAL_ADVERSE_COST; not new simulated fills',
+            'net_pnl_by_additional_bps':{str(bps):sum(pnls)-turnover*bps/10000 for bps in (0,2,5,10)}},
+        'count':len(pnls),'net_expectancy':sum(pnls)/len(pnls) if pnls else None,
         'win_rate':len(wins)/len(pnls) if pnls else None,'average_winner':sum(wins)/len(wins) if wins else None,
         'average_loser':sum(losses)/len(losses) if losses else None,
         'profit_factor':sum(wins)/-sum(losses) if losses else None,'maximum_drawdown':drawdown,'consecutive_losses':maximum,

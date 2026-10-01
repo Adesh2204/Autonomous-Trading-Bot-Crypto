@@ -83,6 +83,7 @@ class SafeTrader(LegacyPaperTrader):
         if self.adapter.is_live:self.reconcile_broker('STARTUP')
 
     def _event(self,kind,**payload):
+        payload.setdefault('run_id',getattr(self,'run_id',self.session_id))
         self.journal.event(str(uuid.uuid4()),kind,payload)
         LOGGER.info('[%s] %s',kind,json.dumps(payload,default=str,sort_keys=True))
 
@@ -228,8 +229,7 @@ class SafeTrader(LegacyPaperTrader):
                 stop=round(ref-sign*distance,2); target=round(ref+sign*2.*distance,2)
                 quote=signal_data.get('quote') or self.quotes.get(identity.token)
                 expected=ExecutionQualityGate().validate(quote,side,ts)
-                rounded=identity.price(expected*(1+sign*config.SLIPPAGE_HAIRCUT_PCT),side)
-                sizing_reference=rounded/(1+sign*config.SLIPPAGE_HAIRCUT_PCT)
+                sizing_reference=expected
                 self.set_quote(identity,quote)
                 self._event('EXECUTION_CHECK',bid=quote.bid,ask=quote.ask,spread=quote.spread_pct,expected_entry=expected)
                 # Preserve the existing normal/low-vol economic floors, without weakening either.
@@ -244,7 +244,7 @@ class SafeTrader(LegacyPaperTrader):
                 risk_budget=min(self.risk_per_trade,remaining)
                 trade_id=str(uuid.uuid4()); self.journal.reserve(trade_id,risk_budget,self.daily_loss_limit)
                 self._transition('RISK_APPROVED',trade_id=trade_id,remaining=remaining,risk=risk_budget,projected_strategy_stop_risk=e.net_stop_loss)
-                limit=identity.price(e.estimated_entry,side)
+                limit=identity.price(expected*(1+sign*config.ORDER_LIMIT_ALLOWANCE_PCT),side)
                 self._transition('ORDER_SUBMITTED',requested_quantity=e.quantity,limit=limit)
                 self.journal.set_meta('pending_operation',{'kind':'ENTRY','trade_id':trade_id,
                     'instrument':identity.to_dict(),'side':side,'requested_quantity':e.quantity,'limit':limit})
@@ -254,8 +254,9 @@ class SafeTrader(LegacyPaperTrader):
                 if not self.journal.record_fill(fill.to_dict()):raise SafetyError('DUPLICATE_ENTRY_FILL')
                 self._event('FILL',**fill.to_dict())
                 self._trade_count=self.journal.budget()[1]
-                actual=estimate_trade_economics(side,fill.quantity,fill.price/(1+sign*config.SLIPPAGE_HAIRCUT_PCT),stop,target,
-                    config.SLIPPAGE_HAIRCUT_PCT,exit_spread_pct=config.SCREEN_MAX_SPREAD_PCT/2,tick_size=identity.tick_size)
+                actual=estimate_trade_economics(side,fill.quantity,fill.price,stop,target,
+                    config.SLIPPAGE_HAIRCUT_PCT,exit_spread_pct=config.SCREEN_MAX_SPREAD_PCT/2,
+                    tick_size=identity.tick_size,entry_slippage_allowance=0.)
                 self._open_position={
                     'position_id':trade_id,'trade_id':trade_id,'session_id':self.session_id,'instrument':identity,
                     'symbol':identity.symbol,'trading_symbol':identity.trading_symbol,'token':identity.token,'exchange':identity.exchange,

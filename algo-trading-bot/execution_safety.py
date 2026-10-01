@@ -118,18 +118,24 @@ class TradeEconomics:
     estimated_slippage: float
     estimated_spread_cost: float = 0.
 
-def estimate_trade_economics(side,quantity,estimated_entry,stop,target,slippage_allowance=None,*,exit_spread_pct=0.,tick_size=None):
+def estimate_trade_economics(side,quantity,estimated_entry,stop,target,slippage_allowance=None,*,exit_spread_pct=0.,tick_size=None,entry_slippage_allowance=None):
     if side not in {'BUY','SELL'} or quantity<1 or not all(positive(x) for x in (estimated_entry,stop,target)):
         raise SafetyError('INVALID_ECONOMICS')
     slip=config.SLIPPAGE_HAIRCUT_PCT if slippage_allowance is None else slippage_allowance
     if not math.isfinite(slip) or slip<0 or slip>=1 or not math.isfinite(exit_spread_pct) or exit_spread_pct<0 or slip+exit_spread_pct>=1:
         raise SafetyError('INVALID_SLIPPAGE')
     sign=1 if side=='BUY' else -1
+    entry_slip=slip if entry_slippage_allowance is None else entry_slippage_allowance
+    if not math.isfinite(entry_slip) or not 0<=entry_slip<1:raise SafetyError('INVALID_SLIPPAGE')
     # bid/ask has already incorporated spread; adding spread again would double count it.
-    entry=estimated_entry*(1+sign*slip)
+    entry=estimated_entry*(1+sign*entry_slip)
     stop_fill=stop*(1-sign*(slip+exit_spread_pct)); target_fill=target*(1-sign*(slip+exit_spread_pct))
     if tick_size is not None:
         if not positive(tick_size):raise SafetyError('INVALID_TICK_SIZE')
+        # Entry modelling has its own adverse rounding; it never mutates quote/fill/reference prices.
+        entry_rounding=ROUND_CEILING if side=='BUY' else ROUND_FLOOR
+        if entry_slippage_allowance != 0:
+            entry=float((Decimal(str(entry))/Decimal(str(tick_size))).to_integral_value(rounding=entry_rounding)*Decimal(str(tick_size)))
         rounding=ROUND_FLOOR if side=='BUY' else ROUND_CEILING
         def rounded(price):return float((Decimal(str(price))/Decimal(str(tick_size))).to_integral_value(rounding=rounding)*Decimal(str(tick_size)))
         stop_fill=rounded(stop_fill); target_fill=rounded(target_fill)

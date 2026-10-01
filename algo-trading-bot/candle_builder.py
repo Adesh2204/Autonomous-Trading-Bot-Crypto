@@ -67,18 +67,55 @@ class CandleBuilder:
         self,
         interval_seconds: int = 60,
         on_candle_close: Optional[Callable[[pd.DataFrame], None]] = None,
+        strict_session: bool = False,
     ):
         self.interval_seconds = interval_seconds
         self.on_candle_close = on_candle_close
+        self.strict_session = strict_session
+        self.historical_last_timestamp = None
+        self.first_live_completed_timestamp = None
+        self.recovery_required = strict_session
+        self.recovery_reason = "BOOTSTRAPPING" if strict_session else None
+        self._new_connection = True
+        self._partial_bucket = False
 
         # ── Master DataFrame — stores all finalized candles ─────────
-        self._columns = ["Timestamp", "Open", "High", "Low", "Close", "Volume", "VWAP", "ATR_14"]
+        self._columns = ["Timestamp", "Open", "High", "Low", "Close", "Volume", "VWAP", "ATR_14",
+                         "candle_source", "is_complete", "is_session_valid"]
         self.df = self._empty_dataframe()
 
         # ── Current (in-progress) candle buffer ─────────────────────
         self._reset_buffer()
 
     # ────────────────────────────────────────────────────────────────
+
+    def seed_history(self, frame, context, source="HISTORICAL"):
+        """Validate and merge authoritative bars by identity/date; never sum overlaps."""
+        from historical_data import normalized_history, validate_history, ist_timestamp
+        validation = validate_history(frame, context)
+        if not validation.valid:
+            raise ValueError(validation.reason)
+        history = normalized_history(frame, source)
+        existing = self.df
+        if not existing.empty:
+            existing = existing.loc[pd.to_datetime(existing.Timestamp).dt.date == context.session_date]
+        merged = pd.concat([existing, history], ignore_index=True)
+        merged = merged.drop_duplicates("Timestamp", keep="last").sort_values("Timestamp").reset_index(drop=True)
+        self.df = merged
+        self._compute_indicators()
+        self.historical_last_timestamp = ist_timestamp(history.Timestamp.iloc[-1])
+        # An authoritative completed bar replaces, rather than adds, an old partial buffer.
+        if self._bucket_start is not None and ist_timestamp(self._bucket_start) <= self.historical_last_timestamp:
+            self._reset_buffer()
+        return validation
+
+    def mark_connection_boundary(self):
+        """Disconnects invalidate the in-progress bar. Quotes/exits can still continue."""
+        self._reset_buffer()
+        self._new_connection = True
+        if self.strict_session:
+            self.recovery_required = True
+            self.recovery_reason = "CONNECTION_BOUNDARY"
     #  PUBLIC API
     # ────────────────────────────────────────────────────────────────
 
@@ -103,6 +140,22 @@ class CandleBuilder:
         if timestamp is None:
             timestamp = datetime.now()
 
+        if self.strict_session:
+            from historical_data import ist_timestamp
+            from datetime import time
+            timestamp = ist_timestamp(timestamp).to_pydatetime()
+            if not time(9, 15) <= timestamp.time() < time(15, 30):
+                return
+            if not self.df.empty:
+                last = ist_timestamp(self.df.Timestamp.iloc[-1])
+                if timestamp.date() < last.date():
+                    return
+                if timestamp.date() > last.date():
+                    self.df = self._empty_dataframe()
+                    self.mark_connection_boundary()
+                    self.historical_last_timestamp = None
+                    self.first_live_completed_timestamp = None
+
         price, volume = self._validate_tick(price, volume)
 
         # Reset the in-memory session buffer when a new calendar date arrives.
@@ -114,11 +167,18 @@ class CandleBuilder:
 
         # ── Determine which 1-minute bucket this tick belongs to ────
         bucket_start = self._floor_timestamp(timestamp)
+        if self.strict_session and not self.df.empty and bucket_start <= self.df.Timestamp.iloc[-1]:
+            return
 
         # ── First tick ever — initialize the bucket ─────────────────
         if self._bucket_start is None:
             self._bucket_start = bucket_start
+            self._partial_bucket = self.strict_session and self._new_connection
+            self._new_connection = False
             self._init_candle(price, volume)
+            return
+
+        if bucket_start < self._bucket_start:
             return
 
         # ── Same bucket — update the running candle in O(1) ────────
@@ -129,8 +189,17 @@ class CandleBuilder:
         # ── New bucket — the previous candle just closed ────────────
         #    1. Finalize and persist the old candle.
         #    2. Reset the buffer and start tracking the new one.
-        self._finalize_candle()
+        if self.strict_session and bucket_start > self._bucket_start + timedelta(seconds=self.interval_seconds):
+            self.recovery_required = True
+            self.recovery_reason = "LIVE_MINUTE_GAP"
+        if self._partial_bucket:
+            self.recovery_required = True
+            self.recovery_reason = "FIRST_PARTIAL_MINUTE"
+            self._reset_buffer()
+        else:
+            self._finalize_candle()
         self._bucket_start = bucket_start
+        self._partial_bucket = False
         self._init_candle(price, volume)
 
     @property
@@ -241,6 +310,9 @@ class CandleBuilder:
                 "Volume": pd.Series(dtype="float64"),
                 "VWAP": pd.Series(dtype="float64"),
                 "ATR_14": pd.Series(dtype="float64"),
+                "candle_source": pd.Series(dtype="object"),
+                "is_complete": pd.Series(dtype="bool"),
+                "is_session_valid": pd.Series(dtype="bool"),
             },
             columns=self._columns,
         )
@@ -282,7 +354,7 @@ class CandleBuilder:
         self._volume += volume          # accumulate volume
 
     def _compute_indicators(self) -> None:
-        """Compute cumulative session VWAP and rolling 14-period Wilder ATR."""
+        """Compute session VWAP and the certified arithmetic rolling ATR."""
         if self.df.empty:
             return
 
@@ -337,12 +409,17 @@ class CandleBuilder:
                 "Volume":    self._volume,
                 "VWAP":      np.nan,
                 "ATR_14":    np.nan,
+                "candle_source": "LIVE",
+                "is_complete": True,
+                "is_session_valid": True,
             }],
             columns=self._columns,
         )
 
         # Grow the master DataFrame by one row and calculate indicators
         self.df = pd.concat([self.df, new_candle], ignore_index=True)
+        if self.first_live_completed_timestamp is None:
+            self.first_live_completed_timestamp = self._bucket_start
         self._compute_indicators()
 
         # ── Fire callback so signal_brain can react immediately ─────

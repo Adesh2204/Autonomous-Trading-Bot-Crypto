@@ -114,6 +114,7 @@ class PremarketScreenResult:
     diagnostics: List[CandidateDiagnostic]
     watchlist: List[CandidateDiagnostic] = field(default_factory=list)
     history_warning: Optional[str] = None
+    reserves: List[CandidateDiagnostic] = field(default_factory=list)
 
 
 def find_previous_completed_market_session(
@@ -133,49 +134,18 @@ def find_previous_completed_market_session(
     return check_day
 
 
-def validate_candle_data(
-    df: pd.DataFrame,
-    min_candles: int = SCREEN_MIN_CANDLE_COUNT,
-) -> Tuple[bool, Optional[str]]:
-    """
-    Validates OHLCV completeness, chronology, price integrity, and candle count.
-    """
-    if df is None or df.empty:
+def validate_candle_data(df: pd.DataFrame, min_candles: int = SCREEN_MIN_CANDLE_COUNT,
+                         *, session_date=None, exchange="NSE", token="VALIDATION", now=None):
+    """Compatibility tuple interface; production fetches always pass explicit identity/date."""
+    from historical_data import HistoryContext, ist_timestamp, validate_history
+    if df is None or df.empty or "Timestamp" not in df:
         return False, RejectionReason.INSUFFICIENT_DATA
-
-    required_cols = {"Open", "High", "Low", "Close", "Volume"}
-    if not required_cols.issubset(df.columns):
-        return False, RejectionReason.INSUFFICIENT_DATA
-
-    if len(df) < min_candles:
-        return False, RejectionReason.INSUFFICIENT_DATA
-
-    # Price integrity
-    highs = df["High"].astype(float)
-    lows = df["Low"].astype(float)
-    opens = df["Open"].astype(float)
-    closes = df["Close"].astype(float)
-    vols = df["Volume"].astype(float)
-
-    if (highs <= 0).any() or (lows <= 0).any() or (opens <= 0).any() or (closes <= 0).any():
-        return False, RejectionReason.INVALID_QUOTE
-
-    if (highs < lows).any() or (highs < opens).any() or (highs < closes).any():
-        return False, RejectionReason.INVALID_QUOTE
-
-    if (lows > opens).any() or (lows > closes).any():
-        return False, RejectionReason.INVALID_QUOTE
-
-    if (vols < 0).any() or vols.sum() <= 0:
-        return False, RejectionReason.INVALID_QUOTE
-
-    # Timestamp monotonicity
-    if "Timestamp" in df.columns:
-        ts = pd.to_datetime(df["Timestamp"])
-        if not ts.is_monotonic_increasing:
-            return False, RejectionReason.STALE_DATA
-
-    return True, None
+    try:
+        day = session_date or ist_timestamp(df.Timestamp.iloc[0]).date()
+        result = validate_history(df, HistoryContext(exchange, str(token), day, now=now), min_candles)
+    except (ValueError, TypeError, OverflowError):
+        return False, "INVALID_TIMESTAMP"
+    return result.valid, result.reason
 
 
 def fetch_historical_session_candles(
@@ -192,6 +162,10 @@ def fetch_historical_session_candles(
     Fetches 1-minute historical data for the completed session using SmartAPI.
     Implements rate-limiting backoff, jitter, and error isolation.
     """
+    from history_service import HistoryService
+    if isinstance(smart_api, HistoryService):
+        from historical_data import HistoryContext
+        return smart_api.fetch(HistoryContext(exchange, str(token), session_date, symbol, interval))
     if smart_api is None:
         logger.warning(f"[SCREENER API] No active smart_api session to fetch candles for {symbol}.")
         return None
@@ -216,7 +190,13 @@ def fetch_historical_session_candles(
                     candles,
                     columns=["Timestamp", "Open", "High", "Low", "Close", "Volume"],
                 )
-                df["Timestamp"] = pd.to_datetime(df["Timestamp"])
+                from historical_data import HistoryContext, validate_history, normalized_history
+                validation = validate_history(df, HistoryContext(exchange, str(token), session_date, symbol, interval))
+                if not validation.valid:
+                    logger.warning("[HISTORY VALIDATION] %s %s", symbol, validation.report())
+                    return None
+                df = normalized_history(df)
+                df.attrs["validation"] = validation.report()
                 logger.info(
                     f"[SCREENER API ✅] Fetched {len(df)} candles for {symbol} ({session_date})."
                 )
@@ -498,7 +478,8 @@ def run_premarket_screener(
         diag.volume_profiles = list(candidate.get('volume_profiles', []))
         if df is not None and diag.data_ok:
             from opportunity_engine import build_volume_profile
-            diag.volume_profiles.append(build_volume_profile(df,target_session))
+            profile=build_volume_profile(df,target_session)
+            if profile is not None:diag.volume_profiles.append(profile)
 
         diagnostics.append(diag)
 
@@ -518,6 +499,9 @@ def run_premarket_screener(
     # Explicit deterministic ranking: sort by ATR% descending
     qualified.sort(key=lambda x: (-x.opportunity_score, -x.atr_pct, x.symbol))
     watchlist = qualified[:top_n]
+    import config
+    reserves = qualified[top_n:top_n + config.RESERVE_WATCHLIST_SIZE]
+    profile_candidates = watchlist + reserves
 
     # Only selected symbols need the extra read-only history calls. Missing sessions
     # leave RVOL unknown; there is no replacement with a full-day volume estimate.
@@ -528,23 +512,43 @@ def run_premarket_screener(
         begin_optional_history = getattr(smart_api, 'begin_optional_history', None)
         if callable(begin_optional_history):
             begin_optional_history()
-        for selected_candidate in watchlist:
-            historical_day=target_session
-            for _ in range(config.OPPORTUNITY_RVOL_SESSIONS-1):
-                historical_day=find_previous_completed_market_session(historical_day,_sched)
-                try:
-                    history=fetch_historical_session_candles(smart_api,selected_candidate.symbol,
-                        selected_candidate.token,selected_candidate.exchange,historical_day)
-                except HistoricalDataUnavailable as exc:
-                    history_warning = str(exc)
-                    logger.warning('[RVOL HISTORY INCOMPLETE] %s | completed stock ranking retained; '
-                                   'missing volume profiles remain unknown', history_warning)
+        # Round-robin to a minimum baseline for EVERY symbol before enrichment.
+        # Each symbol may examine at most the configured number of prior sessions.
+        cursors = {c.token: target_session for c in profile_candidates}
+        examined = {c.token: 1 for c in profile_candidates}
+        for goal in (config.OPPORTUNITY_RVOL_MIN_SESSIONS, config.OPPORTUNITY_RVOL_SESSIONS):
+            from history_service import HistoryService, MINIMUM_RVOL, OPTIONAL_RVOL
+            if isinstance(smart_api, HistoryService):
+                smart_api.priority = MINIMUM_RVOL if goal == config.OPPORTUNITY_RVOL_MIN_SESSIONS else OPTIONAL_RVOL
+            while any(len(c.volume_profiles) < goal and examined[c.token] < config.OPPORTUNITY_RVOL_SESSIONS for c in profile_candidates):
+                for selected_candidate in profile_candidates:
+                    if len(selected_candidate.volume_profiles) >= goal or examined[selected_candidate.token] >= config.OPPORTUNITY_RVOL_SESSIONS:
+                        continue
+                    historical_day = find_previous_completed_market_session(cursors[selected_candidate.token], _sched)
+                    cursors[selected_candidate.token] = historical_day
+                    examined[selected_candidate.token] += 1
+                    try:
+                        history = fetch_historical_session_candles(smart_api, selected_candidate.symbol,
+                            selected_candidate.token, selected_candidate.exchange, historical_day)
+                    except HistoricalDataUnavailable as exc:
+                        history_warning = str(exc)
+                        logger.warning('[RVOL HISTORY INCOMPLETE] %s | ranking retained; insufficient baselines stay UNKNOWN', history_warning)
+                        break
+                    if history is not None and validate_candle_data(history, session_date=historical_day,
+                                                                   token=selected_candidate.token)[0]:
+                        profile=build_volume_profile(history,historical_day)
+                        if profile is not None:selected_candidate.volume_profiles.append(profile)
+                    if pacing_interval > 0:
+                        time.sleep(pacing_interval)
+                if history_warning:
                     break
-                if history is not None and validate_candle_data(history)[0]:
-                    selected_candidate.volume_profiles.append(build_volume_profile(history,historical_day))
-                if pacing_interval>0:time.sleep(pacing_interval)
+                logger.info('[RVOL BASELINES] goal=%s profiles=%s',goal,
+                            {c.symbol:len(c.volume_profiles) for c in profile_candidates})
             if history_warning:
                 break
+            if goal == config.OPPORTUNITY_RVOL_MIN_SESSIONS and any(len(c.volume_profiles) < goal for c in profile_candidates):
+                history_warning='INSUFFICIENT_RVOL_HISTORY'
+                break  # no optional extras until EVERY selected stock has the minimum
 
     if watchlist:
         selected = watchlist[0]
@@ -584,4 +588,5 @@ def run_premarket_screener(
         diagnostics=diagnostics,
         watchlist=watchlist,
         history_warning=history_warning,
+        reserves=reserves,
     )

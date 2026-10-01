@@ -115,7 +115,9 @@ def _load_ohlcv(source: Union[str, pd.DataFrame]) -> pd.DataFrame:
         raise ValueError(f"Input missing required columns: {missing}")
 
     df["Timestamp"] = pd.to_datetime(df["Timestamp"])
-    df = df.sort_values("Timestamp").reset_index(drop=True)
+    if df.Timestamp.isna().any() or df.Timestamp.duplicated().any() or not df.Timestamp.is_monotonic_increasing:
+        raise ValueError('NON_CAUSAL_REPLAY_DATA')
+    df = df.reset_index(drop=True)
     return df
 
 
@@ -210,25 +212,24 @@ def fetch_historical_candles(
             totp = pyotp.TOTP(totp_secret).now()
             login_data = smart_api.generateSession(client_code, client_pin, totp)
             if isinstance(login_data, dict) and login_data.get("status"):
-                now = datetime.now()
-                from_dt = now - timedelta(days=days)
-                from_str = from_dt.strftime("%Y-%m-%d 09:15")
-                to_str = now.strftime("%Y-%m-%d 15:30")
-
-                param = {
-                    "exchange": exchange,
-                    "symboltoken": token,
-                    "interval": interval,
-                    "fromdate": from_str,
-                    "todate": to_str,
-                }
-                res = smart_api.getCandleData(param)
-                if isinstance(res, dict) and res.get("status") and res.get("data"):
-                    candles = res["data"]
-                    df = pd.DataFrame(candles, columns=["Timestamp", "Open", "High", "Low", "Close", "Volume"])
-                    df["Timestamp"] = pd.to_datetime(df["Timestamp"])
-                    logging.info(f"Successfully fetched {len(df)} historical candles from Angel One SmartAPI for {symbol_clean}.")
-                    df.attrs['provenance']='ANGEL_ONE_SMARTAPI_ONE_MINUTE_OHLCV'
+                from history_service import HistoryService, OPTIONAL_RVOL
+                from historical_data import HistoryContext
+                from market_schedule import get_market_schedule
+                from premarket_screener import find_previous_completed_market_session
+                schedule=get_market_schedule('NSE')
+                reference=schedule.localize().date()
+                service=HistoryService(smart_api)
+                frames=[]
+                for _ in range(days):
+                    day=find_previous_completed_market_session(reference,schedule)
+                    frame=service.fetch(HistoryContext(exchange,token,day,symbol_clean,interval),priority=OPTIONAL_RVOL)
+                    if frame is None:
+                        raise ValueError('INCOMPLETE_RESEARCH_HISTORY')
+                    frames.append(frame)
+                    reference=day
+                if frames:
+                    df=pd.concat(list(reversed(frames)),ignore_index=True)
+                    df.attrs['provenance']='ANGEL_ONE_SMARTAPI_ONE_MINUTE_OHLCV_VALIDATED_SESSION_CACHE'
                     return df
         except Exception as exc:
             logging.warning(f"Angel One Historical API fetch failed: {exc}. Trying fallback...")

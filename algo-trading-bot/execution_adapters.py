@@ -44,10 +44,15 @@ class BrokerCapabilities:
 
 class PaperExecutionAdapter:
     is_live=False
+    def __init__(self,fill_slippage_pct=None):
+        self.fill_slippage_pct=config.PAPER_FILL_SLIPPAGE_PCT if fill_slippage_pct is None else fill_slippage_pct
+        if not math.isfinite(self.fill_slippage_pct) or not 0 <= self.fill_slippage_pct < 1:
+            raise SafetyError('INVALID_PAPER_FILL_ASSUMPTION')
+
     def execute(self,instrument,side,quantity,quote,now,limit=None):
         instrument.validate(instrument.symbol,now=now)
         price=ExecutionQualityGate().validate(quote,side,now,quantity)
-        price=instrument.price(price*(1+(1 if side=='BUY' else -1)*config.SLIPPAGE_HAIRCUT_PCT),side)
+        price=instrument.price(price*(1+(1 if side=='BUY' else -1)*self.fill_slippage_pct),side)
         if limit is not None and ((side=='BUY' and price>limit) or (side=='SELL' and price<limit)):
             raise SafetyError('ORDER_PRICE_OUTSIDE_LIMIT')
         return FillResult('paper-'+str(uuid.uuid4()),str(uuid.uuid4()),quantity,price,FeeModel().leg(side,price,quantity)['total_charges'])

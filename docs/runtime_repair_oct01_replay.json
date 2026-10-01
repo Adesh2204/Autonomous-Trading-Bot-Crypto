@@ -1,0 +1,167 @@
+{
+  "source": "OCT-01 USER LOG, rounded OHLCV, 97 observed minutes per symbol; missing morning and real historical quotes",
+  "strategy_sha256": "bff940ac5ed35f71ed3dfb537ba15d20dcec35a4e62a938d2f0619c6e9309d83",
+  "policy": {
+    "name": "BASELINE_CURRENT_POLICY",
+    "live_atr_floor": 0.004,
+    "standby_threshold": 0.0035,
+    "recovery_threshold": 0.004,
+    "standby_confirmations": 2,
+    "recovery_confirmations": 2,
+    "firewall_low_confirmations": 2,
+    "firewall_recovery_confirmations": 2
+  },
+  "symbols": {
+    "RSYSTEMS": {
+      "observed_candles": 97,
+      "all_core_flags": 9,
+      "potential_patterns_before_cutoff_after_bias": 4,
+      "maximum_observed_atr_pct": 0.38985823336968406,
+      "eligible_production_entries": 0,
+      "opportunities": [
+        {
+          "candle_timestamp": "2026-10-01 13:36:00+05:30",
+          "decision_timestamp": "2026-10-01 13:37:00+05:30",
+          "side": "BUY",
+          "atr_pct": 0.23215322112594564,
+          "blocking_reasons": [
+            "ATR_BELOW_LIVE_MINIMUM"
+          ]
+        },
+        {
+          "candle_timestamp": "2026-10-01 14:20:00+05:30",
+          "decision_timestamp": "2026-10-01 14:21:00+05:30",
+          "side": "BUY",
+          "atr_pct": 0.35442694187941215,
+          "blocking_reasons": [
+            "ATR_BELOW_LIVE_MINIMUM",
+            "VOLATILITY_STANDBY",
+            "ATR_PERSISTENT_LOW_STANDBY"
+          ]
+        },
+        {
+          "candle_timestamp": "2026-10-01 14:24:00+05:30",
+          "decision_timestamp": "2026-10-01 14:25:00+05:30",
+          "side": "BUY",
+          "atr_pct": 0.3273809523809515,
+          "blocking_reasons": [
+            "ATR_BELOW_LIVE_MINIMUM",
+            "VOLATILITY_STANDBY",
+            "ATR_PERSISTENT_LOW_STANDBY"
+          ]
+        },
+        {
+          "candle_timestamp": "2026-10-01 14:28:00+05:30",
+          "decision_timestamp": "2026-10-01 14:29:00+05:30",
+          "side": "BUY",
+          "atr_pct": 0.3774459039625028,
+          "blocking_reasons": [
+            "ATR_BELOW_LIVE_MINIMUM",
+            "VOLATILITY_STANDBY",
+            "ATR_PERSISTENT_LOW_STANDBY"
+          ]
+        }
+      ],
+      "gate_rejections": {
+        "ATR_BELOW_LIVE_MINIMUM": 4,
+        "VOLATILITY_STANDBY": 3,
+        "ATR_PERSISTENT_LOW_STANDBY": 3
+      }
+    },
+    "RITES": {
+      "observed_candles": 97,
+      "all_core_flags": 7,
+      "potential_patterns_before_cutoff_after_bias": 3,
+      "maximum_observed_atr_pct": 0.33617088629372494,
+      "eligible_production_entries": 0,
+      "opportunities": [
+        {
+          "candle_timestamp": "2026-10-01 13:44:00+05:30",
+          "decision_timestamp": "2026-10-01 13:45:00+05:30",
+          "side": "SELL",
+          "atr_pct": 0.15617575537356798,
+          "blocking_reasons": [
+            "ATR_BELOW_LIVE_MINIMUM",
+            "VOLATILITY_STANDBY",
+            "ATR_PERSISTENT_LOW_STANDBY"
+          ]
+        },
+        {
+          "candle_timestamp": "2026-10-01 14:14:00+05:30",
+          "decision_timestamp": "2026-10-01 14:15:00+05:30",
+          "side": "BUY",
+          "atr_pct": 0.18363974672295216,
+          "blocking_reasons": [
+            "ATR_BELOW_LIVE_MINIMUM",
+            "VOLATILITY_STANDBY",
+            "ATR_PERSISTENT_LOW_STANDBY"
+          ]
+        },
+        {
+          "candle_timestamp": "2026-10-01 14:27:00+05:30",
+          "decision_timestamp": "2026-10-01 14:28:00+05:30",
+          "side": "BUY",
+          "atr_pct": 0.21704623878536794,
+          "blocking_reasons": [
+            "ATR_BELOW_LIVE_MINIMUM",
+            "VOLATILITY_STANDBY",
+            "ATR_PERSISTENT_LOW_STANDBY"
+          ]
+        }
+      ],
+      "gate_rejections": {
+        "ATR_BELOW_LIVE_MINIMUM": 3,
+        "VOLATILITY_STANDBY": 3,
+        "ATR_PERSISTENT_LOW_STANDBY": 3
+      }
+    },
+    "ELEVATE": {
+      "observed_candles": 97,
+      "all_core_flags": 6,
+      "potential_patterns_before_cutoff_after_bias": 3,
+      "maximum_observed_atr_pct": 0.36793062475245175,
+      "eligible_production_entries": 0,
+      "opportunities": [
+        {
+          "candle_timestamp": "2026-10-01 13:36:00+05:30",
+          "decision_timestamp": "2026-10-01 13:37:00+05:30",
+          "side": "SELL",
+          "atr_pct": 0.24815761768686925,
+          "blocking_reasons": [
+            "ATR_BELOW_LIVE_MINIMUM"
+          ]
+        },
+        {
+          "candle_timestamp": "2026-10-01 14:15:00+05:30",
+          "decision_timestamp": "2026-10-01 14:16:00+05:30",
+          "side": "BUY",
+          "atr_pct": 0.2520385470719058,
+          "blocking_reasons": [
+            "ATR_BELOW_LIVE_MINIMUM",
+            "VOLATILITY_STANDBY",
+            "ATR_PERSISTENT_LOW_STANDBY"
+          ]
+        },
+        {
+          "candle_timestamp": "2026-10-01 14:26:00+05:30",
+          "decision_timestamp": "2026-10-01 14:27:00+05:30",
+          "side": "BUY",
+          "atr_pct": 0.2768385460693146,
+          "blocking_reasons": [
+            "ATR_BELOW_LIVE_MINIMUM",
+            "VOLATILITY_STANDBY",
+            "ATR_PERSISTENT_LOW_STANDBY"
+          ]
+        }
+      ],
+      "gate_rejections": {
+        "ATR_BELOW_LIVE_MINIMUM": 3,
+        "VOLATILITY_STANDBY": 2,
+        "ATR_PERSISTENT_LOW_STANDBY": 2
+      }
+    }
+  },
+  "eligible_production_entries": 0,
+  "profitability_proven": false,
+  "orders_submitted": 0
+}

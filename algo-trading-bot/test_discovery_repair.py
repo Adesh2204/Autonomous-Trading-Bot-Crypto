@@ -182,7 +182,9 @@ def test_persistent_broker_throttling_blocks_without_releasing_partial_watchlist
     class ThrottledBroker:
         def getCandleData(self, params):
             raise RuntimeError('Access denied because of exceeding access rate')
-    result = run_premarket_pipeline(ThrottledBroker(), now=NOW, market_universe=universe(),
+    from premarket_pipeline import _HistoricalRequestCounter
+    broker=ThrottledBroker()
+    result = run_premarket_pipeline(broker, history_service=_HistoricalRequestCounter(broker), now=NOW, market_universe=universe(),
         data_source=FixtureDataSource(['ABC'], snapshot()), pacing_interval=0.)
     assert result.discovery.success  # NSE discovery worked; the broker history did not.
     assert result.readiness == 'BLOCKED'
