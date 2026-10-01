@@ -1200,7 +1200,14 @@ def main() -> None:
             report_path=output_base / f'discovery_{startup_time.date()}.json')
         registry = pipeline.registry
         screen_result = pipeline.screen
-        record_screening_report(screen_result, reason=pipeline.discovery.failure_reason, now=startup_time)
+        failure_reason = pipeline.screen_failure_reason or pipeline.discovery.failure_reason
+        record_screening_report(screen_result, reason=failure_reason, now=startup_time)
+
+        if pipeline.readiness == 'BLOCKED':
+            logging.error('[PREMARKET BLOCKED] Market-wide discovery unavailable: %s. '
+                          'No configured stock list will be substituted. See discovery report.',
+                          failure_reason)
+            sys.exit(2)
 
         if screen_result.trading_day_status == "NO_TRADE" or screen_result.selected_candidate is None:
             logging.warning("=" * 70)

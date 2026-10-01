@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import csv
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from datetime import date, datetime
 import hashlib
 import io
@@ -31,6 +31,7 @@ class RequestAccounting:
     retries: int = 0
     failures: int = 0
     cache_hits: int = 0
+    endpoint_attempts: list[dict] = field(default_factory=list)
 
     def report(self):
         return asdict(self)
@@ -130,12 +131,16 @@ class DiscoveryDataSource:
         self.accounting = RequestAccounting()
         self._last_request = None
         self.clock = clock
+        self.datasets = {}
+        self._last_success_url = None
 
-    def request(self, url, *, category='bulk_market_data_calls', **kwargs):
-        """Sequential only. Counts every attempt, including refresh source calls."""
+    def request(self, url, *, category='bulk_market_data_calls', alternatives=(), _consume=None, **kwargs):
+        """One shared retry budget across official endpoints, including body reads."""
         attempts = config.SCREEN_API_MAX_RETRIES
+        endpoints = list(dict.fromkeys((url, *alternatives)))
         last_error = None
         for attempt in range(attempts):
+            target = endpoints[0]
             response = None
             if self._last_request is not None:
                 elapsed = time.monotonic() - self._last_request
@@ -147,48 +152,60 @@ class DiscoveryDataSource:
             try:
                 self._last_request = time.monotonic()
                 kwargs['timeout'] = config.DISCOVERY_HTTP_TIMEOUT_SECONDS
-                response = self.get(url, **kwargs)
+                response = self.get(target, **kwargs)
                 response.raise_for_status()
-                return response
+                result = _consume(response) if _consume is not None else response
+                self._last_success_url = target
+                self.accounting.endpoint_attempts.append({'url': target, 'category': category,
+                    'status': response.status_code, 'error': None})
+                logger.info('[DISCOVERY DATA] downloaded url=%s attempt=%s status=%s',
+                            target, attempt + 1, response.status_code)
+                return result
             except requests.RequestException as exc:
                 last_error = exc
                 self.accounting.failures += 1
                 status = getattr(getattr(exc, 'response', None), 'status_code', None)
-                logger.warning('[DISCOVERY DATA] request failed attempt=%s status=%s error=%s',
-                               attempt + 1, status, type(exc).__name__)
+                self.accounting.endpoint_attempts.append({'url': target, 'category': category,
+                    'status': status, 'error': type(exc).__name__})
+                logger.warning('[DISCOVERY DATA] request failed url=%s attempt=%s/%s status=%s error=%s',
+                               target, attempt + 1, attempts, status, type(exc).__name__)
                 if response is not None:
                     response.close()
                 if status is not None and status < 500 and status != 429:
-                    break
+                    endpoints.pop(0)  # Do not retry a permanent error on this endpoint.
+                    if not endpoints:
+                        break
+                else:
+                    endpoints.append(endpoints.pop(0))
+            finally:
+                if _consume is not None and response is not None:
+                    response.close()
         raise SafetyError('DATA_SOURCE_ERROR: bounded HTTP failure') from last_error
 
     def instrument_get(self, url, **kwargs):
         return self.request(url, category='instrument_source_calls', **kwargs)
 
-    def download(self, url):
-        response = self.request(url, stream=True, headers={'User-Agent': 'AutonomousTradingBot/1.0'})
-        chunks = []
-        total = 0
-        try:
+    def download(self, url, *, alternatives=()):
+        def read_body(response):
+            chunks = []
+            total = 0
             for chunk in response.iter_content(chunk_size=65536):
                 total += len(chunk)
                 if total > config.DISCOVERY_MAX_DOWNLOAD_BYTES:
                     raise SafetyError('SCHEMA_VALIDATION_FAILED: download too large')
                 chunks.append(chunk)
-        except requests.RequestException as exc:
-            self.accounting.failures += 1
-            raise SafetyError('DATA_SOURCE_ERROR: incomplete download') from exc
-        finally:
-            response.close()
-        if not total:
-            raise SafetyError('SCHEMA_VALIDATION_FAILED: empty download')
-        return b''.join(chunks)
+            if not total:
+                raise SafetyError('SCHEMA_VALIDATION_FAILED: empty download')
+            return b''.join(chunks)
+        return self.request(url, alternatives=alternatives, _consume=read_body, stream=True,
+                            headers={'User-Agent': 'AutonomousTradingBot/1.0'})
 
     def _load_cache(self, path, session, source, schema, now, *, reference=False):
         data = json.loads(path.read_text())
         if data.get('session_date') != session.isoformat():
             raise SafetyError('CACHE_SESSION_MISMATCH')
-        if data.get('source') != source or data.get('schema_version') != schema:
+        sources = (source,) if isinstance(source, str) else source
+        if data.get('source') not in sources or data.get('schema_version') != schema:
             raise SafetyError('SCHEMA_VALIDATION_FAILED: cache source/schema')
         records = data.get('records')
         if (not isinstance(records, list) or data.get('record_count') != len(records) or
@@ -226,20 +243,28 @@ class DiscoveryDataSource:
             raise SafetyError('LOOKAHEAD_OR_INVALID_AVAILABILITY')
         source = (config.DISCOVERY_EQUITY_REFERENCE_URL if reference else
                   config.DISCOVERY_BHAVCOPY_URL.format(session=session.strftime('%Y%m%d')))
+        alternatives = (config.DISCOVERY_EQUITY_REFERENCE_ALTERNATES if reference else
+            tuple(url.format(session=session.strftime('%Y%m%d')) for url in config.DISCOVERY_BHAVCOPY_ALTERNATES))
+        sources = tuple(dict.fromkeys((source, *alternatives)))
         schema = 'NSE_EQUITY_REFERENCE_V1' if reference else 'NSE_CM_UDIFF_V1'
         path = self.cache_dir / session.isoformat() / ('equities.json' if reference else 'snapshot.json')
         try:
-            data = self._load_cache(path, session, source, schema, now, reference=reference)
+            data = self._load_cache(path, session, sources, schema, now, reference=reference)
+            self.datasets['equity_reference' if reference else 'snapshot'] = {k: v for k, v in data.items() if k != 'records'}
+            logger.info('[DISCOVERY CACHE] verified session=%s source=%s records=%s',
+                        session, data['source'], data['record_count'])
             return data, True
         except (OSError, ValueError, KeyError, TypeError) as exc:
             if path.exists():
                 logger.warning('[DISCOVERY CACHE] cache rejected; reloading | %s', exc)
-        content = self.download(source)
+        content = self.download(source, alternatives=alternatives)
+        source = self._last_success_url
         records = parse_equity_reference(content) if reference else parse_bhavcopy(content, session)
         acquired = self.clock() if self.clock else datetime.now(tz=now.tzinfo)
         data = {'source': source, 'session_date': session.isoformat(), 'source_timestamp': acquired.isoformat(),
             'available_at': acquired.isoformat(), 'download_timestamp': acquired.isoformat(), 'schema_version': schema,
             'record_count': len(records), 'checksum': checksum(records), 'records': records}
+        self.datasets['equity_reference' if reference else 'snapshot'] = {k: v for k, v in data.items() if k != 'records'}
         try:
             atomic_json(path, data)
         except OSError as exc:

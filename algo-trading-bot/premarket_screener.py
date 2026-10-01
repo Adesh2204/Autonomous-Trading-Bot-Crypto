@@ -49,6 +49,11 @@ from signal_brain import compute_atr
 logger = logging.getLogger(__name__)
 
 
+class HistoricalDataUnavailable(RuntimeError):
+    """Abort screening when the historical provider's bounded budget is exhausted."""
+    diagnostics = ()
+
+
 # ── REJECTION REASONS ─────────────────────────────────────────
 class RejectionReason:
     PRICE_BELOW_MIN = "PRICE_BELOW_MIN"
@@ -220,6 +225,8 @@ def fetch_historical_session_candles(
                 logger.warning(
                     f"[SCREENER API RETRY] {symbol} fetch attempt {attempt + 1}/{max_retries} failed: {msg}"
                 )
+        except HistoricalDataUnavailable:
+            raise
         except Exception as exc:
             logger.warning(
                 f"[SCREENER API RETRY] {symbol} fetch attempt {attempt + 1}/{max_retries} exception: {exc}"
@@ -440,13 +447,17 @@ def run_premarket_screener(
         if data_fetcher is not None:
             df = data_fetcher(candidate, target_session)
         elif smart_api is not None:
-            df = fetch_historical_session_candles(
-                smart_api=smart_api,
-                symbol=sym,
-                token=tok,
-                exchange=exch,
-                session_date=target_session,
-            )
+            try:
+                df = fetch_historical_session_candles(
+                    smart_api=smart_api,
+                    symbol=sym,
+                    token=tok,
+                    exchange=exch,
+                    session_date=target_session,
+                )
+            except HistoricalDataUnavailable as exc:
+                exc.diagnostics = list(diagnostics)
+                raise
 
         if df is None:
             diag = CandidateDiagnostic(
@@ -516,8 +527,12 @@ def run_premarket_screener(
             historical_day=target_session
             for _ in range(config.OPPORTUNITY_RVOL_SESSIONS-1):
                 historical_day=find_previous_completed_market_session(historical_day,_sched)
-                history=fetch_historical_session_candles(smart_api,selected_candidate.symbol,
-                    selected_candidate.token,selected_candidate.exchange,historical_day)
+                try:
+                    history=fetch_historical_session_candles(smart_api,selected_candidate.symbol,
+                        selected_candidate.token,selected_candidate.exchange,historical_day)
+                except HistoricalDataUnavailable as exc:
+                    exc.diagnostics = list(diagnostics)
+                    raise
                 if history is not None and validate_candle_data(history)[0]:
                     selected_candidate.volume_profiles.append(build_volume_profile(history,historical_day))
                 if pacing_interval>0:time.sleep(pacing_interval)

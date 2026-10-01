@@ -215,16 +215,20 @@ def test_full_pipeline_counts_direction_neutrality_lineage_and_core_freeze():
 
 
 @pytest.mark.parametrize('auto,failure', [(False, None), (True, 'DATA_SOURCE_ERROR: reference unavailable')])
-def test_config_fallback_is_explicit_and_validated(monkeypatch, caplog, auto, failure):
+def test_configured_list_never_substitutes_for_market_discovery(monkeypatch, caplog, auto, failure):
     monkeypatch.setattr(config, 'AUTO_DISCOVER_UNIVERSE', auto)
+    # Even a stale configuration enabling the retired fallback cannot re-enable it.
+    monkeypatch.setattr(config, 'DISCOVERY_ALLOW_CONFIG_FALLBACK', True)
     monkeypatch.setattr(config, 'CANDIDATE_UNIVERSE', [{'symbol': 'ABC', 'trading_symbol': 'ABC-EQ',
                                                      'token': '123', 'exchange': 'NSE'}])
     result = run_premarket_pipeline(now=NOW, market_universe=universe(),
-        data_source=FixtureDataSource(['ABC'], snapshot(), failure), data_fetcher=lambda c, d: None, pacing_interval=0.)
-    assert result.readiness == 'CONFIG_FALLBACK_READY'
-    assert result.discovery.universe_source == 'CONFIG_FALLBACK'
-    assert result.screen.total_candidates == 1
-    assert 'Using configured fallback universe' in caplog.text
+        data_source=FixtureDataSource(['ABC'], snapshot(), failure),
+        data_fetcher=lambda c, d: pytest.fail('Blocked discovery cannot screen configured stocks'), pacing_interval=0.)
+    assert result.readiness == 'BLOCKED'
+    assert result.discovery.universe_source == 'UNAVAILABLE'
+    assert result.screen.total_candidates == 0
+    assert 'Using configured fallback universe' not in caplog.text
+    assert result.report()['universe_audit']['configured_stock_list_used'] is False
 
 
 def test_fallback_cannot_invent_or_refresh_a_configured_token(monkeypatch):
@@ -375,7 +379,7 @@ def test_404_is_not_retried_and_oversized_download_fails(tmp_path, monkeypatch):
     source = DiscoveryDataSource(tmp_path, get=lambda *a, **k: FakeResponse(b'error', 404), sleep=lambda _: None)
     with pytest.raises(SafetyError):
         source.snapshot(SESSION, NOW)
-    assert source.accounting.bulk_market_data_calls == 1
+    assert source.accounting.bulk_market_data_calls == 2  # Each official endpoint checked once.
     monkeypatch.setattr(config, 'DISCOVERY_MAX_DOWNLOAD_BYTES', 4)
     response = FakeResponse(b'12345')
     source = DiscoveryDataSource(tmp_path, get=lambda *a, **k: response, sleep=lambda _: None)

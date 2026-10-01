@@ -28,6 +28,29 @@ except ImportError:  # Optional fallback when exchange calendar package is missi
 
 ClockValue = Union[datetime, time]
 
+# Explicit exchange closures override stale third-party calendar packages.
+# NSE capital-market circulars (annual calendar and election-day amendment):
+# https://nsearchives.nseindia.com/content/circulars/CMTR71775.pdf
+# https://nsearchives.nseindia.com/content/circulars/CMTR72260.pdf
+NSE_CONFIRMED_CLOSURES = {date.fromisoformat(day): label for day, label in {
+    '2026-01-15': 'Municipal Corporation Election in Maharashtra',
+    '2026-01-26': 'Republic Day',
+    '2026-03-03': 'Holi',
+    '2026-03-26': 'Shri Ram Navami',
+    '2026-03-31': 'Shri Mahavir Jayanti',
+    '2026-04-03': 'Good Friday',
+    '2026-04-14': 'Dr. Baba Saheb Ambedkar Jayanti',
+    '2026-05-01': 'Maharashtra Day',
+    '2026-05-28': 'Bakri Id',
+    '2026-06-26': 'Muharram',
+    '2026-09-14': 'Ganesh Chaturthi',
+    '2026-10-02': 'Mahatma Gandhi Jayanti',
+    '2026-10-20': 'Dussehra',
+    '2026-11-10': 'Diwali-Balipratipada',
+    '2026-11-24': 'Prakash Gurpurb Sri Guru Nanak Dev',
+    '2026-12-25': 'Christmas',
+}.items()}
+
 
 class MarketPhase(str, Enum):
     PRE_MARKET = "PRE_MARKET"
@@ -203,6 +226,8 @@ class NSEMarketSchedule(BaseMarketSchedule):
         return time(15, 30, 0)
 
     def is_trading_day(self, current_date: date) -> bool:
+        if current_date in NSE_CONFIRMED_CLOSURES:
+            return False
         if self._calendar is not None:
             schedule = self._calendar.schedule(
                 start_date=current_date,
@@ -220,6 +245,8 @@ class NSEMarketSchedule(BaseMarketSchedule):
         return current_date.weekday() < 5
 
     def holiday_name(self, current_date: date) -> Optional[str]:
+        if current_date in NSE_CONFIRMED_CLOSURES:
+            return NSE_CONFIRMED_CLOSURES[current_date]
         if self.is_trading_day(current_date):
             return None
         if current_date.weekday() >= 5:

@@ -81,6 +81,7 @@ class MarketDiscoveryResult:
     equity_classification_verified: bool = False
     missing_snapshot_count: int = 0
     snapshot_coverage_pct: float = 0.
+    datasets: dict = field(default_factory=dict)
 
     def screening_universe(self):
         return [c.screening_record(self.session_date, self.instrument_source)

@@ -212,15 +212,23 @@ BROKER_CAPABILITY_FILE = None   # Dated account-specific verification; never inf
 INSTRUMENT_MASTER_FILE = None # JSON envelope: source_timestamp, records, intraday_symbols
 MAX_DISCOVERY_CANDIDATES = 60
 AUTO_DISCOVER_UNIVERSE = True
-DISCOVERY_ALLOW_CONFIG_FALLBACK = True
+DISCOVERY_ALLOW_CONFIG_FALLBACK = False  # Retired: startup never uses a configured stock list
 DISCOVERY_CACHE_DIR = None     # Default: data/cache/discovery/<completed session>/
 DISCOVERY_HTTP_TIMEOUT_SECONDS = 15.0
 DISCOVERY_MAX_DOWNLOAD_BYTES = 20_000_000
 DISCOVERY_MIN_MASTER_RECORDS = 100
 DISCOVERY_MIN_REFERENCE_RECORDS = 100
 DISCOVERY_MIN_SNAPSHOT_RECORDS = 100
-DISCOVERY_EQUITY_REFERENCE_URL = "https://nsearchives.nseindia.com/content/equities/EQUITY_L.csv"
-DISCOVERY_BHAVCOPY_URL = "https://nsearchives.nseindia.com/content/cm/BhavCopy_NSE_CM_0_0_0_{session}_F_0000.csv.zip"
+DISCOVERY_EQUITY_REFERENCE_URL = "https://archives.nseindia.com/content/equities/EQUITY_L.csv"
+DISCOVERY_BHAVCOPY_URL = "https://archives.nseindia.com/content/cm/BhavCopy_NSE_CM_0_0_0_{session}_F_0000.csv.zip"
+# Alternate official endpoints serve the same datasets; they never change stock membership.
+DISCOVERY_EQUITY_REFERENCE_ALTERNATES = ("https://nsearchives.nseindia.com/content/equities/EQUITY_L.csv",)
+DISCOVERY_BHAVCOPY_ALTERNATES = ("https://nsearchives.nseindia.com/content/cm/BhavCopy_NSE_CM_0_0_0_{session}_F_0000.csv.zip",)
+DISCOVERY_HISTORY_INTERVAL_SECONDS = 1.1  # Shared across deep screening, retries and RVOL calls
+DISCOVERY_HISTORY_RATE_BACKOFF_SECONDS = 5.0
+DISCOVERY_HISTORY_RATE_BACKOFF_MAX_SECONDS = 30.0
+DISCOVERY_HISTORY_MAX_CONSECUTIVE_RATE_LIMITS = 6
+DISCOVERY_HISTORY_MAX_RUNTIME_SECONDS = 600.0
 OPPORTUNITY_RVOL_SESSIONS = 10
 REPLAY_HALF_SPREAD_PCT = 0.00025 # Explicit candle-only research approximation
 

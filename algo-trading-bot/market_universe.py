@@ -91,8 +91,7 @@ def build_market_universe(envelope, now, equity_symbols=None, *, min_records=Non
     """No candidate cap here. EQ alone cannot distinguish stocks from ETFs.
 
     Dynamic discovery supplies NSE's equity-share reference membership. Without
-    it this builder may only support explicitly configured, registry-validated
-    fallback; it cannot certify a whole-market stock universe.
+    it this intermediate universe cannot certify a whole-market stock universe.
     """
     if not isinstance(envelope, dict):
         raise SafetyError('SCHEMA_VALIDATION_FAILED: instrument envelope')
