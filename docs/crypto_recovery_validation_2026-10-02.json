@@ -1,0 +1,158 @@
+{
+  "verified_at_utc": "2026-10-02T09:34:43.272739+00:00",
+  "execution_mode": "PAPER",
+  "allow_live_orders": false,
+  "exchange_orders_submitted": 0,
+  "branch": "perpetual-alpha-migration",
+  "baseline_commit": "ed0dba5b0577da38a500d9dc208fe9938d3f3a14",
+  "strategy_freeze": {
+    "baseline": "nse-working-baseline",
+    "file_count": 1,
+    "method_count": 8,
+    "parameter_count": 32,
+    "passed": true
+  },
+  "phase0": {
+    "project": "anchorium-perpetual-alpha",
+    "checks": {
+      "project_is_perpetual_alpha": true,
+      "independent_git_directory": true,
+      "migration_branch": true,
+      "testnet_venue": true,
+      "paper_execution_mode": true,
+      "migration_policy_valid": true,
+      "orders_disabled": true,
+      "angel_one_client_disabled": true,
+      "angel_one_order_boundary_disabled": true,
+      "testnet_order_boundary_disabled": true,
+      "signal_logic_present": true,
+      "signal_source_unchanged": true
+    },
+    "passed": true
+  },
+  "full_suite": {
+    "tests": 645,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 645,
+    "new_recovery_safety_tests": 50,
+    "junit_path": "docs/crypto_recovery_tests_2026-10-02.xml",
+    "junit_sha256": "c69641f0bbf88e58f482a0d00ba2cf46828662cae0560d965e0d12c896028d69"
+  },
+  "session_audit": {
+    "passed": true,
+    "occurrences": 116,
+    "active_core_session_occurrences": 0,
+    "report": "docs/session_dependency_inventory.json",
+    "csv": "docs/session_dependency_inventory.csv"
+  },
+  "tracked_diff_whitespace_check_passed": true,
+  "signal_brain_diff_from_baseline_empty": true,
+  "current_implementation_sha256": {
+    "algo-trading-bot/candle_normalizer.py": "7281140c325a661290560c6aecb49c347d933c18e70438a38c67325e1d6c585d",
+    "algo-trading-bot/crypto_paper_bot.py": "125d3ac43bd1a7781edf5b77d4b7e1b5e0b0be65bc23411c047a6472b16c59a1",
+    "algo-trading-bot/crypto_strategy_state.py": "8dd7db0daf282e23c07a778ef86842e94539c3893d6f229996c63f3abf01775c",
+    "algo-trading-bot/exchange/__init__.py": "ecbd9472b56feff3e87c643ada9b0d799d6ff2fe9f2de87b2bdbac36fd07717d",
+    "algo-trading-bot/exchange/account_events.py": "2353208f537ed1260d8af456c576922ecc2cdde200f1a59b7f675e98d3de4d06",
+    "algo-trading-bot/exchange/base_exchange.py": "a959fc3311c3d035daecbe1a24692ee2a13538267cfb061221ba9ab302c397c9",
+    "algo-trading-bot/exchange/hyperliquid_account.py": "f1ba247d57eacc8724628dee28246def486e81ac7696e1cbf1cbd46e14e56d3b",
+    "algo-trading-bot/exchange/hyperliquid_client.py": "d5805b71d835b547d3f0f86b462cac0fd9b3c7687d346c857577648cbe371682",
+    "algo-trading-bot/exchange/hyperliquid_execution.py": "9b2b9f0167a932bac8e0ad275548c5bb723e08e7dfd846d04a29dff0443b1a97",
+    "algo-trading-bot/exchange/hyperliquid_market_data.py": "6c9aac326eb9f9baf195b445a3d6480162b909c8c4d933d1994566119b47ac5b",
+    "algo-trading-bot/exchange/hyperliquid_reconciliation.py": "cb8dbb1d736cf640af71961b0172e261fcf7869bf0932c434b94667482b5f17f",
+    "algo-trading-bot/exchange/market_snapshot.py": "244473d97fcea6a5d7690ba8b61b48bc94ad5414b0d1f72ae5bdce197cf8e1f5",
+    "algo-trading-bot/exchange/order_lifecycle.py": "a6e4711041a4e1f7494cbcedd56b42872bf30ed05b0272e75b7812ddc102b76b",
+    "algo-trading-bot/exchange/paper_account.py": "90e2b2f3006301296e445d51fd921903a2a612350603f3e5b2e8a8f3f69e52e3",
+    "algo-trading-bot/exchange/paper_execution.py": "ef0fd65947a2a717ce94db33e50471f3a462ec49a180a48c4cbcd9eb54fb8ae3",
+    "algo-trading-bot/exchange/paper_portfolio.py": "a05062a60509e54e3319662ad7bd607ea5f4816e86139ad3b1315bee51c50103",
+    "algo-trading-bot/exchange/paper_reconciliation.py": "0cecb2548dfefcc2490dced61428b75e3723bffd428d89968ba6d6f54d88c1ef",
+    "algo-trading-bot/exchange/perpetual_economics.py": "7c0bc020a9f91e952f5187ee2a71c5f70af0ef2ac24bb52c45e26768ca66a079",
+    "algo-trading-bot/frozen_strategy.py": "867f8b40822444fdde41f1aa1c251670b6fcca1dc3a0fb8cf20bea126c9581e9",
+    "algo-trading-bot/market_regime_scanner.py": "59fb5d329bc5951d1397a59d813590bef372ba9d15cd8928c1c51ed0ed20ef00",
+    "algo-trading-bot/market_stream.py": "d56b44594959ea1c8ad4a4372e8de1f10ec1e91e79957c998f4bd46ea1728e54",
+    "algo-trading-bot/risk/__init__.py": "eb1f18ac5303b4f054059f685eb771710a2e5fa11c27bc66a5de0e2dd2ac3031",
+    "algo-trading-bot/risk/circuit_breakers.py": "00b63bb0a40ae8907e75075226affb8a867757baf4abb04112531fe8f8178bd5",
+    "algo-trading-bot/risk/exposure_manager.py": "56e86d5f5332d0a796bad3e791ed76e4ff683e58300d7f2f95d831c844688d46",
+    "algo-trading-bot/risk/funding_guard.py": "8690261d98c5971538513931e141d3c0d09107e19cbfc30d3e0a967d8c872f61",
+    "algo-trading-bot/risk/leverage_manager.py": "f929709e5f0940b5fe51d96ef39f25476097e25511c5dfdcc262c947f4568d22",
+    "algo-trading-bot/risk/liquidation_guard.py": "699a7994f4210e9081d917a6619e519a3db17432854d84fc5b42bf186b574565",
+    "algo-trading-bot/risk/models.py": "122b86afb1184c7453c3528885741490e7fbb91587922f85aa05341c31e87003",
+    "algo-trading-bot/risk/portfolio_risk.py": "75627147a37a49c1bfbea134ea335d1364241478d6da22a01d8e184a1f2b8e63",
+    "algo-trading-bot/risk/position_sizer.py": "a56380ce6b81d269933de03dd1e7fbb7c828a15a5a2e6cdb0f9a057ec116fbf3",
+    "algo-trading-bot/session_manager.py": "49fb3ae074d0922ad30722d169254e2a81508544c5b654affbe9c9da7b855e00",
+    "algo-trading-bot/strategy_contract.py": "dc6b724b130f3f91c8c26d7dd6f2a0e0b768e3752b3be0099474e2ff29a8d859",
+    "algo-trading-bot/test_crypto_paper_infrastructure.py": "7b482ca3d67c1bfc4b6f7be734eb7c546ea0babe2a15b424ae1c55cb5e92313f",
+    "algo-trading-bot/test_crypto_recovery_safety.py": "42469bee8c2fe29515d0816a0e482a28f4d4cbdc0ef918bc54451309cbcb567e",
+    "docs/paper_policy.example.json": "6fa0db757c4061995305a93909c0a5b5a9fa317dd7740848ede6e0fcc103a58c",
+    "scripts/inventory_session_dependencies.py": "65765ac9dda3089930c9b24260c6836e718cb2f3b2b24592b32f2307370e2664",
+    "scripts/run_crypto_paper.py": "583ffeec72c4356339017d248eb651c380d911bc0d2d58d0a86bf24ce997c40c"
+  },
+  "public_probe": {
+    "observed_at_utc": "2026-10-02T09:18:45.964740+00:00",
+    "scans_completed": 2,
+    "markets_per_scan": 10,
+    "websocket_data_messages": 180,
+    "reconnections": 0,
+    "accepted_recovery_generation": 1,
+    "recovery_source": "LOCAL_PAPER_FILL_REPLAY",
+    "exchange_account_verified": false,
+    "risk_state": "CAUTION",
+    "paused_symbols": [
+      "par:BRENT",
+      "par:BTC",
+      "par:ETH",
+      "par:EWJ",
+      "par:EWY",
+      "par:GOLD",
+      "par:HYPE",
+      "par:USDEUR",
+      "par:USDJPY"
+    ],
+    "qualified_watchlist": [],
+    "scan_status": "NO_TRADE",
+    "local_orders": 0,
+    "local_fills": 0,
+    "exchange_orders_submitted": 0,
+    "balance_origin": "HYPOTHETICAL_LOCAL_USDPR",
+    "ending_equity": "20000",
+    "rejection_reason_counts": {
+      "COMPLETED_CANDLE_STALE": 9,
+      "ATR_BELOW_BASELINE_SCANNER_FLOOR": 1,
+      "SPREAD_TOO_WIDE": 1
+    },
+    "tracked_report": "docs/crypto_public_recovery_probe_2026-10-02.json",
+    "tracked_report_sha256": "75624c659c73b85d13e34bb0d34af95adc2f6fd13f3a38cc5fc03dae6ea411e0",
+    "byte_identical_to_runtime_report": true,
+    "source_artifacts": {
+      "report.json": {
+        "path": "algo-trading-bot/data/crypto-paper/public-recovery-probe-2026-10-02/report.json",
+        "sha256": "75624c659c73b85d13e34bb0d34af95adc2f6fd13f3a38cc5fc03dae6ea411e0",
+        "bytes": 22766
+      },
+      "events.jsonl": {
+        "path": "algo-trading-bot/data/crypto-paper/public-recovery-probe-2026-10-02/events.jsonl",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "equity.jsonl": {
+        "path": "algo-trading-bot/data/crypto-paper/public-recovery-probe-2026-10-02/equity.jsonl",
+        "sha256": "800a68d45201787faa33bfa956bbe1eca575bcb1154672c8318ece0807e2c477",
+        "bytes": 632
+      },
+      "candles.jsonl": {
+        "path": "algo-trading-bot/data/crypto-paper/public-recovery-probe-2026-10-02/candles.jsonl",
+        "sha256": "cab5280c62017bc876be86753aa3ed647e7f1d6fc6cb0032647df33bd54dbc12",
+        "bytes": 2172246
+      }
+    },
+    "source_timing_note": "This probe preceded the subsequent empty-book isolation and incremental account-window refinements. Those branches passed offline tests; ordinary public recovery behavior was unchanged."
+  },
+  "limitations": [
+    "Actual team-address positions, fills, fees, funding and account recovery are fixture-tested only; no address was supplied.",
+    "Paper fills are simulated; paper fees are declared assumptions and paper hourly funding is estimated.",
+    "A short flat-portfolio public probe is connectivity/control evidence, not profitable trading or prolonged exposed operation.",
+    "Truncated/oversized account history and unresolved event gaps keep entries paused pending bounded backfill/review.",
+    "No automatic process restart/resume, maker queue model, exact venue liquidation model or signed exchange transport is enabled."
+  ]
+}

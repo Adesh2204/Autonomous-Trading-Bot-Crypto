@@ -3,6 +3,8 @@
 # DO NOT hardcode these values anywhere else in the codebase.
 # ─────────────────────────────────────────────────────────────
 
+from venue_config import PROJECT_NAME, TRADING_VENUE, EXECUTION_MODE, ALLOW_LIVE_ORDERS
+
 # ── UNIVERSE & CANDIDATE POOL ─────────────────────────────────
 # Legacy default fallback (kept for offline tests & backward compatibility)
 SYMBOL = "ENGINERSIN"          # Engineers India Ltd (Default fallback)
@@ -183,8 +185,9 @@ MARKET_OPEN_TIME = "09:15"        # HH:MM IST
 
 # ── TRADING MODE ─────────────────────────────────────────────
 # LIVE_MODE = False → Paper trading (default, safe)
-# LIVE_MODE = True  → Real Angel One API orders (real money)
-# Enable only after a dated code-matched activation report and broker verification.
+# LIVE_MODE is retained for legacy offline research fixtures only.
+# It cannot enable Angel One execution in this repository. All exchange writes
+# pass order_guard, which blocks every venue until its migration is implemented.
 LIVE_MODE = False
 
 # Execution infrastructure only; no signal/indicator parameters overridden.

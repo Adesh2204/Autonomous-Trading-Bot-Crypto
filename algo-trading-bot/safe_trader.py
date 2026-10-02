@@ -12,6 +12,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import config
+import order_guard
 from execution_engine import LegacyPaperTrader, PyramidingState
 from execution_safety import InstrumentIdentity, MarketQuote, ExecutionQualityGate, SafetyError, FeeModel, solve_quantity, estimate_trade_economics, capital_protection_prices
 from execution_adapters import PaperExecutionAdapter
@@ -32,6 +33,9 @@ class SafeTrader(LegacyPaperTrader):
         if self.environment=='LIVE':
             if not config.LIVE_MODE or not config.LIVE_VALIDATION_APPROVED or not self.adapter.is_live:
                 raise SafetyError('LIVE_EXECUTION_BLOCKED')
+            order_guard.require_exchange_orders(
+                getattr(self.adapter, 'venue', 'ANGEL_ONE'),
+                client=getattr(self.adapter, 'broker', None))
             from activation_gate import validate_activation
             validate_activation(config.LIVE_ACTIVATION_EVIDENCE_FILE,self.clock())
             self.adapter.capabilities.validate(self.clock())

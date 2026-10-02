@@ -8,8 +8,7 @@ from decimal import Decimal, ROUND_CEILING, ROUND_FLOOR
 import math
 import config
 
-class SafetyError(ValueError):
-    pass
+from safety_errors import SafetyError
 
 def positive(value):
     return not isinstance(value,bool) and math.isfinite(float(value)) and float(value)>0

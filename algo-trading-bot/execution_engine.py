@@ -121,9 +121,14 @@ if (not isinstance(SLIPPAGE_HAIRCUT_PCT, (int, float))
 class ReadOnlySmartConnectWrapper:
     """
     Defensive proxy wrapping an Angel One SmartConnect instance in Paper Mode.
-    Permits market data streaming / reads, but mechanically blocks placing,
-    modifying, or cancelling orders with an immediate AssertionError.
+    Only explicitly listed reads are exposed. Alternate order methods and raw
+    transport helpers cannot escape through attribute forwarding.
     """
+    READ_METHODS = frozenset({
+        'ltpData', 'getCandleData', 'getMarketData', 'searchScrip', 'getfeedToken',
+        'orderBook', 'tradeBook', 'position', 'rmsLimit',
+        'access_token', 'feed_token',
+    })
     def __init__(self, target: Any):
         self._target = target
 
@@ -137,6 +142,9 @@ class ReadOnlySmartConnectWrapper:
         raise AssertionError("FATAL: cancelOrder invoked while LIVE_MODE is False!")
 
     def __getattr__(self, name: str):
+        if name not in self.READ_METHODS:
+            from order_guard import OrderRoutingBlocked
+            raise OrderRoutingBlocked('READ_ONLY_BROKER_METHOD_BLOCKED')
         return getattr(self._target, name)
 
 

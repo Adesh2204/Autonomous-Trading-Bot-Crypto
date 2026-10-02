@@ -25,6 +25,11 @@ def capabilities(**kwargs):
            stop_limit_verified=True,cancellation_verified=True,evidence='mock broker protocol')
     d.update(kwargs); return BrokerCapabilities(**d)
 
+@pytest.fixture(autouse=True)
+def offline_protocol_only(monkeypatch):
+    from safety_test_support import allow_offline_broker_protocol
+    allow_offline_broker_protocol(monkeypatch)
+
 def test_adapter_partial_entry_is_terminal_and_real():
     b=Broker(); a=SmartAPIExecutionAdapter(b,capabilities(),lambda:NOW)
     fill=a.execute(IDENTITY,'BUY',20,quote(),NOW)

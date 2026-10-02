@@ -1,0 +1,103 @@
+{
+  "date": "2026-10-02",
+  "authorization": "Latest pasted request explicitly authorizes exchange/market infrastructure migration; no strategy rewrite or live trading.",
+  "baseline": "nse-working-baseline",
+  "baseline_manifest": "docs/strategy_freeze.json",
+  "signal_brain_modified": false,
+  "frozen_methods_modified": false,
+  "frozen_parameters_modified": false,
+  "adaptations": [
+    {
+      "id": "CANDLE_PROVIDER",
+      "necessity": "Replace Angel token/candle infrastructure with prefixed par markets and fractional OHLCV.",
+      "implementation": [
+        "algo-trading-bot/candle_normalizer.py",
+        "algo-trading-bot/frozen_strategy.py"
+      ],
+      "preserved": "Completed UTC one-minute bars; existing title-case frame; per-bar base volume; exact brain output parity. No synthetic gap fill.",
+      "verification": "FrozenStrategy direct-brain DataFrame parity; fractional-volume normalization; open/misaligned/gapped candle rejection."
+    },
+    {
+      "id": "CONTINUOUS_SESSION",
+      "necessity": "NSE open/close, cash EOD flattening and overnight quarantine do not apply to continuous par markets.",
+      "implementation": [
+        "algo-trading-bot/session_manager.py",
+        "algo-trading-bot/crypto_strategy_state.py"
+      ],
+      "preserved": "UTC daily VWAP convention; held position/candle counters survive date boundary; baseline daily bias, target, completed-close stop, breakeven and stop cooldown methods.",
+      "adapted": "No stock EOD exit or overnight halt. Idle gaps count only known candles; held gaps halt entries. Alternative anchors remain disabled.",
+      "verification": "Golden long/short management parity; weekend/UTC-anchor checks; duplicate and gap cases; feed bars between scans."
+    },
+    {
+      "id": "ALL_PAR_SELECTION",
+      "necessity": "An INR price band and absolute share-volume minimum cannot rank the competition's diverse perpetual contracts.",
+      "implementation": [
+        "algo-trading-bot/market_regime_scanner.py",
+        "docs/paper_policy.example.json"
+      ],
+      "preserved": "Baseline scanner ATR fraction 0.004, spread 0.0015 converted to 15 bps, minimum 300 completed bars, Top 3 count; brain's 0.0006 ATR fraction unchanged.",
+      "adapted": "All active runtime meta(dex=par) markets; retire INR price and 5,000,000-share floors; quote-notional/depth gates; equal percentile ranking of ATR, spread, window notional and BBO depth.",
+      "verification": "Eleven-market fixture including a new market; stable Top 3; unchanged-gate NO_TRADE on genuine public data."
+    },
+    {
+      "id": "FRACTIONAL_PRECISION",
+      "necessity": "Integer shares and stock-specific two-decimal stops/targets can invalidate low-price or small-ATR perpetual markets.",
+      "implementation": [
+        "algo-trading-bot/exchange/base_exchange.py",
+        "algo-trading-bot/risk/portfolio_risk.py"
+      ],
+      "preserved": "VWAP reference plus/minus SL_ATR_MULT=2 and TP_ATR_MULT=4; baseline net-RR and low-volatility threshold.",
+      "adapted": "Remove two-decimal rounding only in new risk body. Keep virtual geometry precise; normalize submitted limits/sizes from runtime specifications; never upsize to minimum notional.",
+      "verification": "Sub-cent ATR example yields stop 0.992 and target 1.016; fractional size, minimum notional and runtime tier/precision tests."
+    },
+    {
+      "id": "PERPETUAL_ECONOMICS",
+      "necessity": "Indian cash-equity taxes and purchase-cost accounting do not describe shared-collateral perpetual contracts.",
+      "implementation": [
+        "algo-trading-bot/exchange/perpetual_economics.py",
+        "algo-trading-bot/exchange/paper_portfolio.py",
+        "algo-trading-bot/risk/"
+      ],
+      "preserved": "Positive net edge and baseline net-RR concepts; one global position, one tranche, at most two daily setups; baseline long/short management.",
+      "adapted": "USDPR collateral, fractional P&L, maker/taker fee assumptions, spread/slippage/expected funding, mark margin, oracle funding, runtime maintenance tiers and explicit exposure/basis/funding guards.",
+      "paper_assumptions": "Hypothetical collateral 20000, risk fraction 0.005, daily loss fraction 0.01, leverage 1, explicit fee/slippage/horizon/buffer limits. Not optimizer-selected or wallet-verified.",
+      "verification": "Long/short reductions and flips; shared-margin reservations; idempotent fees/funding; stale marks; missing hourly funding pauses; separate gate rejection tests."
+    },
+    {
+      "id": "EXECUTION_LIFECYCLE",
+      "necessity": "Replace stock SDK mutation paths with generic request/state/account contracts while keeping real writes closed.",
+      "implementation": [
+        "algo-trading-bot/exchange/order_lifecycle.py",
+        "algo-trading-bot/exchange/paper_execution.py",
+        "algo-trading-bot/crypto_paper_bot.py"
+      ],
+      "preserved": "Bias/cooldown precede direction flip; reconcile exit before replacement entry; targets on executable ticks, stops on completed candle; no stock EOD exit.",
+      "adapted": "Fresh BBO taker fills with displayed-depth consumption, IOC partial cancellation, persistent partial-exit intent, reduce-only and idempotent client IDs. Continuous feed/scanner share one ledger owner.",
+      "verification": "Partial fill/reservation/cancel tests; request-level ok plus individual rejection; forbidden opposite-bias signal cannot close; continuous offline orchestration; signed adapters blocked."
+    }
+  ],
+  "validation": "docs/crypto_paper_validation_2026-10-02.json",
+  "limitations": [
+    "Actual wallet fee tiers/balance and signed execution are not verified or enabled.",
+    "Hourly public funding snapshots are PAPER_SNAPSHOT_ESTIMATE; no invented missing settlement history.",
+    "No maker queue-fill, exchange latency or exact liquidation simulation.",
+    "No automatic resume/replay after an interrupted paper process.",
+    "Genuine bounded public probe returned NO_TRADE; no profitable return or competition score claimed."
+  ],
+  "subsequent_recovery_checkpoint": {
+    "authorization": "Latest user-pasted request for actual-fill truth, REST account recovery, symbol freshness, exposure and circuit breakers.",
+    "strategy_changes": false,
+    "live_execution_enabled": false,
+    "components": [
+      "exchange.hyperliquid_reconciliation.ExchangeTruthState",
+      "exchange.account_events.AccountFunding",
+      "exchange.paper_reconciliation.PaperReconciliation",
+      "market_stream.MarketStream",
+      "exchange.market_snapshot.MarketSnapshot",
+      "risk.circuit_breakers.CircuitBreakers",
+      "risk.exposure_manager.ExposureManager"
+    ],
+    "paper_assumptions": "Explicit drawdown/exposure/age/order-error/reconnect caps; no brain/ranking optimization.",
+    "validation": "docs/crypto_recovery_validation_2026-10-02.json"
+  }
+}
