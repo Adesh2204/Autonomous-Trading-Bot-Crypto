@@ -1,4 +1,5 @@
 """Compare local ledger state with public account reads; never submits repairs."""
+from .event_timing import timing
 from dataclasses import dataclass,field,asdict
 from decimal import Decimal
 
@@ -109,7 +110,8 @@ class HyperliquidReconciliation:
             state.reasons=tuple(reasons)
             state.entries_paused=bool(reasons)
             state.events.append(dict(kind='EXCHANGE_TRUTH_ADOPTED',timestamp_ms=self.account.client.clock_ms(),
-                                     differences=differences,new_fill_count=len(new_fills),reasons=state.reasons))
+                                     differences=differences,new_fill_count=len(new_fills),reasons=state.reasons,
+                                     **timing(self.account.client.clock_ms())))
             return state.report()
         except Exception as exc:
             state.reasons=(str(exc),)

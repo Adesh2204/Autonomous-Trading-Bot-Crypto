@@ -84,3 +84,16 @@ reported fill prices/fees and `userFunding` cashflows only, in a separate read-o
 mirror. Reconnects require account recovery; per-market clocks isolate stale data,
 and risk states never activate exchange execution. See
 `crypto_recovery_migration_2026-10-02.md` and its validation/report artifacts.
+
+
+## Audit/replay checkpoint, 2026-10-02
+
+The explicitly requested session timing, ten results files, full candidate trace,
+source/configuration manifests, offline replay and wallet readiness checks are
+implemented. The source/strategy freeze and PAPER/false policy remain enforced.
+REPLAY is a recorded-data local run context, never an environment override that
+grants exchange access. The LIVE interface remains an unconditionally blocked
+skeleton, including cancel/modify/close/leverage methods. No account approval,
+unified-mode mutation or signed test was attempted. See
+[the run guide](crypto_audit_replay_2026-10-02.md) and
+[678-test validation](crypto_audit_validation_2026-10-02.json).

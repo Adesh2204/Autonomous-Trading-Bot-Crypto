@@ -1,5 +1,5 @@
 """Strategy-facing contracts. No exchange SDK or legacy broker imports."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation, ROUND_DOWN, ROUND_FLOOR, ROUND_CEILING
 from typing import Protocol
 
@@ -142,6 +142,8 @@ class OrderBook:
     timestamp_ms: int
     bids: tuple[BookLevel, ...]
     asks: tuple[BookLevel, ...]
+    received_timestamp_ms: int | None = field(default=None,compare=False)
+    processed_timestamp_ms: int | None = field(default=None,compare=False)
 
 
 @dataclass(frozen=True)
@@ -159,6 +161,8 @@ class Quote:
     open_interest: Decimal | None = None
     daily_notional_volume: Decimal | None = None
     mark_timestamp_ms: int | None = None
+    received_timestamp_ms: int | None = field(default=None,compare=False)
+    processed_timestamp_ms: int | None = field(default=None,compare=False)
 
     def __post_init__(self):
         if type(self.timestamp_ms) is not int or self.timestamp_ms<0:
@@ -188,6 +192,8 @@ class Candle:
     low: Decimal
     close: Decimal
     volume: Decimal
+    received_timestamp_ms: int | None = field(default=None,compare=False)
+    processed_timestamp_ms: int | None = field(default=None,compare=False)
 
 
 @dataclass(frozen=True)
@@ -214,6 +220,9 @@ class Fill:
     closed_pnl: Decimal | None = None
     start_position: Decimal | None = None
     source: str = 'UNSPECIFIED_FILL'
+    exchange_ts: str | None = field(default=None,compare=False)
+    received_ts: str | None = field(default=None,compare=False)
+    processed_ts: str | None = field(default=None,compare=False)
 
     @property
     def identity(self):

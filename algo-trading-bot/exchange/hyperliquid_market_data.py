@@ -1,4 +1,6 @@
 """Read-only REST and public WebSocket data for the verified par universe."""
+from dataclasses import replace
+from .event_timing import timing
 from collections import defaultdict
 from decimal import Decimal
 import json
@@ -66,7 +68,7 @@ def make_quote(book, context, now_ms, max_age_ms=5_000, *, mark_timestamp_ms=Non
                      decimal(context['oraclePx'], positive=True), decimal(context['funding']),
                      decimal(context['openInterest'],nonnegative=True) if 'openInterest' in context else None,
                      decimal(context['dayNtlVlm'],nonnegative=True) if 'dayNtlVlm' in context else None,
-                     mark_timestamp_ms)
+                     mark_timestamp_ms, book.received_timestamp_ms, now_ms)
     except (KeyError, TypeError) as exc:
         raise ExchangeError('INVALID_ASSET_CONTEXT') from exc
 
@@ -77,7 +79,9 @@ class HyperliquidMarketData:
 
     def get_orderbook(self, symbol):
         self.client.market(symbol)
-        return parse_book(self.client.post_info('l2Book', coin=symbol), symbol)
+        result=self.client.post_info('l2Book', coin=symbol)
+        return replace(parse_book(result,symbol),received_timestamp_ms=self.client.last_received_ms,
+                       processed_timestamp_ms=self.client.clock_ms())
 
     def get_asset_contexts(self):
         if not self.client.ready:
@@ -112,7 +116,8 @@ class HyperliquidMarketData:
         as_of = self.client.clock_ms() if now_ms is None else timestamp(now_ms)
         candles = {}
         for row in result:
-            candle = parse_candle(row, symbol, interval)
+            candle = replace(parse_candle(row,symbol,interval),received_timestamp_ms=self.client.last_received_ms,
+                             processed_timestamp_ms=self.client.clock_ms())
             if not start_ms <= candle.timestamp_ms <= end_ms:
                 raise ExchangeError('CANDLE_OUTSIDE_REQUESTED_RANGE')
             if candle.timestamp_ms + INTERVAL_MS[interval] > as_of:
@@ -165,7 +170,7 @@ class ParMarketDataEngine:
     def _lifecycle(self,phase,**details):
         if self.on_lifecycle:
             self.on_lifecycle(dict(phase=phase,timestamp_ms=self.client.clock_ms(),
-                                  generation=self.recovery_generation,**details))
+                                  generation=self.recovery_generation,**timing(self.client.clock_ms()),**details))
 
     @staticmethod
     def _connect():
@@ -233,13 +238,15 @@ class ParMarketDataEngine:
             return
         if channel not in {'l2Book', 'candle', 'activeAssetCtx'} and not (channel=='trades' and self.include_trades):
             raise ExchangeError('UNEXPECTED_PUBLIC_STREAM_CHANNEL')
+        received_ms=self.client.clock_ms()
         with self._lock:
             if channel == 'l2Book':
                 symbol = data.get('coin') if isinstance(data, dict) else None
                 if symbol not in self.symbols:
                     raise VenueMismatch('STREAM_MARKET_IDENTITY_MISMATCH')
                 try:
-                    book = parse_book(data, symbol)
+                    book = replace(parse_book(data,symbol),received_timestamp_ms=received_ms,
+                                   processed_timestamp_ms=self.client.clock_ms())
                 except ExchangeError as exc:
                     if str(exc) not in {'NO_EXECUTABLE_TWO_SIDED_BOOK','INVALID_ORDERBOOK_PRICES'}:
                         raise
@@ -281,14 +288,16 @@ class ParMarketDataEngine:
                         raise ExchangeError('INVALID_PUBLIC_TRADES') from exc
                     prior=self.last_trades.get(symbol)
                     if prior is None or when>=prior['time']:
-                        self.last_trades[symbol]=dict(trade)
+                        self.last_trades[symbol]=dict(trade,**timing(self.client.clock_ms(),exchange_ms=when,
+                            received_ms=received_ms,source="EXCHANGE_PUBLIC_TRADE"))
                     self.tick_times[symbol]=max(when,self.tick_times.get(symbol,0))
             else:
                 for row in data if isinstance(data, list) else [data]:
                     symbol = row.get('s') if isinstance(row, dict) else None
                     if symbol not in self.symbols:
                         raise VenueMismatch('STREAM_MARKET_IDENTITY_MISMATCH')
-                    candle = parse_candle(row, symbol, '1m')
+                    candle = replace(parse_candle(row,symbol,'1m'),received_timestamp_ms=received_ms,
+                                     processed_timestamp_ms=self.client.clock_ms())
                     if candle.timestamp_ms > self.client.clock_ms():
                         raise ExchangeError('FUTURE_STREAM_CANDLE')
                     self.candles[symbol][candle.timestamp_ms] = candle

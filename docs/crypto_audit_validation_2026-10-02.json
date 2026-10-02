@@ -1,0 +1,139 @@
+{
+  "date": "2026-10-02",
+  "authorization": "User attachment f046eb9a explicitly authorizes session timing/results/provenance, offline replay, wallet readiness and blocked LIVE structure.",
+  "strategy_modified": false,
+  "signal_brain_byte_identical": true,
+  "freeze": {
+    "passed": true,
+    "file_count": 1,
+    "method_count": 8,
+    "parameter_count": 32
+  },
+  "migration_policy": {
+    "execution_mode": "PAPER",
+    "allow_live_orders": false,
+    "no_signer_or_secrets": true,
+    "phase0_checks_passed": 12
+  },
+  "tests": {
+    "total": 678,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "new_focused_audit_replay_checks": 33,
+    "junit": "docs/crypto_audit_tests_2026-10-02.xml"
+  },
+  "public_probe": {
+    "provenance": "LIVE_PUBLIC_PAR_DATA_LOCAL_PAPER_SIMULATION",
+    "observed_at_utc": "2026-10-02T12:10:12.199445+00:00",
+    "report": "docs/crypto_public_audit_probe_2026-10-02.json",
+    "scanned_markets": 10,
+    "scan_status": "NO_TRADE",
+    "all_completed_candles_stale": true,
+    "local_orders": 0,
+    "local_fills": 0,
+    "exchange_orders_submitted": 0,
+    "readiness": {
+      "account_status": "NOT_CONFIGURED",
+      "wallet_ready": false,
+      "public_address_configured": false,
+      "market_data_ready": true,
+      "paper_trading_ready": true,
+      "live_execution_ready": false,
+      "signed_actions": "DISABLED",
+      "reason": "Manual funded-wallet verification and explicit future authorization required"
+    },
+    "starting_collateral_origin": "HYPOTHETICAL_LOCAL_USDPR",
+    "equity": "20000",
+    "results_files": {
+      "algo-trading-bot/data/crypto-paper/public-audit-probe-2026-10-02/results/candidate_traces.jsonl": {
+        "sha256": "accee327d24b51ce8a7791daf728bbe922da3f3518738da709b9206138f708fa",
+        "bytes": 17042
+      },
+      "algo-trading-bot/data/crypto-paper/public-audit-probe-2026-10-02/results/daily_metrics.csv": {
+        "sha256": "765faf63d419508bb0ceaa307071b674f4fe72c11d30b99799c667721c7dc661",
+        "bytes": 415
+      },
+      "algo-trading-bot/data/crypto-paper/public-audit-probe-2026-10-02/results/equity.csv": {
+        "sha256": "f541b0ccb06ab0d92782dd88c276ac989bac5bdb64630d74f68cf1ac836c5087",
+        "bytes": 364
+      },
+      "algo-trading-bot/data/crypto-paper/public-audit-probe-2026-10-02/results/fees.csv": {
+        "sha256": "3afbe942295b62148242d918b44732e6c219e26273e46f309bdb33353a130a3f",
+        "bytes": 109
+      },
+      "algo-trading-bot/data/crypto-paper/public-audit-probe-2026-10-02/results/fills.jsonl": {
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "algo-trading-bot/data/crypto-paper/public-audit-probe-2026-10-02/results/funding.csv": {
+        "sha256": "f4eba0f5d4d4e400326038e198751847affb17dc5af03a4218d2a8b2e8c911d0",
+        "bytes": 99
+      },
+      "algo-trading-bot/data/crypto-paper/public-audit-probe-2026-10-02/results/health_events.jsonl": {
+        "sha256": "c9ff09f034fca9884ae628e2b1112c7646eb0c7285f3ded84b48cf0cf28cc021",
+        "bytes": 346
+      },
+      "algo-trading-bot/data/crypto-paper/public-audit-probe-2026-10-02/results/orders.jsonl": {
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "algo-trading-bot/data/crypto-paper/public-audit-probe-2026-10-02/results/positions.csv": {
+        "sha256": "e2b23d600543206c3af85788c11c844069bd63af9f8d322a1d24b53aef39237c",
+        "bytes": 214
+      },
+      "algo-trading-bot/data/crypto-paper/public-audit-probe-2026-10-02/results/rejected_signals.jsonl": {
+        "sha256": "7eda5e448a1f6ed9b98f67de85e4fdd366a1a4067407effbd3315b3f07b681c8",
+        "bytes": 4594
+      },
+      "algo-trading-bot/data/crypto-paper/public-audit-probe-2026-10-02/results/session_manifest.json": {
+        "sha256": "cfc84d1f853b14a73f59a5397a3e35dcd40cc7deedfb975380a140fd8e1c4094",
+        "bytes": 4199
+      },
+      "algo-trading-bot/data/crypto-paper/public-audit-probe-2026-10-02/results/signals.jsonl": {
+        "sha256": "e946dcba508c76d501cb8c150ff32b0b96fa41e403c7d1d9fd647553b0259289",
+        "bytes": 7274
+      },
+      "algo-trading-bot/data/crypto-paper/public-audit-probe-2026-10-02/replay_tape.json": {
+        "sha256": "eb1a11cedf22e1acc695f65ae45afa256feb46375703dfc0dae0972e562e6590",
+        "bytes": 3147814
+      }
+    }
+  },
+  "offline_public_replay": {
+    "execution_mode": "REPLAY",
+    "diagnostics_equal": true,
+    "decisions_equal": true,
+    "portfolio_equal": true,
+    "validation": {
+      "consumed_operations": 6969,
+      "source": "LIVE_PUBLIC_PAR_DATA",
+      "exchange_orders_submitted": 0,
+      "source_tape_sha256": "7b73ca547549a5ade3bbc3533524a8152dee405e04bda689a10b1864d0248947",
+      "source_tape": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/data/crypto-paper/public-audit-probe-2026-10-02/replay_tape.json",
+      "historical_candles_and_observed_quotes_only": true,
+      "signal_brain_frozen": true
+    },
+    "network_or_signer_constructed": false,
+    "source_versions_equal": {
+      "git_commit": true,
+      "exchange_adapter_version": true,
+      "risk_version": true,
+      "strategy_version": true
+    }
+  },
+  "limitations": [
+    "No team-wallet address/funding/fee tier or signed integration verified.",
+    "Paper funding/fees explicitly assumed or estimated; not actual account settlements.",
+    "Replay runner supports complete bounded one-scan REST tapes; no continuous-feed replay or automatic resume.",
+    "Observed daily metrics and oracle-valued local equity estimates are not official competition scores.",
+    "Public data was stale and produced no trades; no profitable performance claim."
+  ],
+  "dependency_inventory": {
+    "legacy_occurrences": 2005,
+    "legacy_files": 98,
+    "session_occurrences": 116,
+    "active_core_session_occurrences": 0,
+    "session_inventory_passed": true
+  }
+}

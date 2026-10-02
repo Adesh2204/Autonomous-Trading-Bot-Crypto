@@ -1,5 +1,6 @@
 """Feed supervision and a main-thread account barrier after every reconnect."""
 import queue
+from exchange.event_timing import timing
 
 from exchange.base_exchange import ExchangeError
 
@@ -69,7 +70,7 @@ class MarketStream:
                 bot.breakers.clear('account')
                 bot.breakers.clear('stream')
                 self.events.append(dict(phase='PAPER_ACCOUNT_RECONCILED',generation=generation,
-                                        timestamp_ms=bot.clock_ms(),source=self.recovery['source']))
+                                        timestamp_ms=bot.clock_ms(),source=self.recovery['source'],**timing(bot.clock_ms())))
             except ExchangeError as exc:
                 bot.breakers.pause('account',str(exc))
                 self.next_recovery_ms=bot.clock_ms()+5000

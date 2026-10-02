@@ -1,5 +1,7 @@
 """Public-address account reads; never accepts a private key or signs actions."""
 import re
+from dataclasses import replace
+from .event_timing import timing
 
 from .base_exchange import AccountEquity, ExchangeError, Fill, Position, VenueMismatch, decimal
 from .hyperliquid_market_data import timestamp
@@ -19,6 +21,8 @@ class HyperliquidAccount:
     def __init__(self, client, team_address):
         if not isinstance(team_address, str) or not re.fullmatch(r'0x[0-9a-fA-F]{40}', team_address):
             raise ExchangeError('PUBLIC_TEAM_ADDRESS_REQUIRED')
+        if int(team_address[2:],16)==0:
+            raise ExchangeError('ACCOUNT_NOT_CONFIGURED')
         self.client = client
         self.team_address = team_address
 
@@ -106,6 +110,8 @@ class HyperliquidAccount:
                             decimal(row['closedPnl']) if 'closedPnl' in row else None,
                             decimal(row['startPosition']) if 'startPosition' in row else None,
                             'EXCHANGE_REPORTED_FILL')
+                clocks=timing(self.client.clock_ms(),exchange_ms=fill.timestamp_ms,received_ms=self.client.last_received_ms,source='EXCHANGE_REPORTED_FILL')
+                fill=replace(fill,**{k:clocks[k] for k in ('exchange_ts','received_ts','processed_ts')})
                 if fill.timestamp_ms>self.client.clock_ms() or start_ms is not None and not start_ms<=fill.timestamp_ms<=end_ms:
                     raise ExchangeError('FILL_OUTSIDE_REQUESTED_WINDOW')
                 prior = fills.get(fill.identity)
@@ -141,6 +147,8 @@ class HyperliquidAccount:
                 # The protocol calls the collateral amount "usdc" even for
                 # HIP-3 collateral. Use the reported signed amount verbatim.
                 event=AccountFunding(symbol,row['time'],row['hash'],delta['usdc'],delta['szi'],delta['fundingRate'])
+                clocks=timing(self.client.clock_ms(),exchange_ms=event.timestamp_ms,received_ms=self.client.last_received_ms,source='EXCHANGE_REPORTED_USER_FUNDING')
+                event=replace(event,**{k:clocks[k] for k in ('exchange_ts','received_ts','processed_ts')})
                 prior=events.get(event.identity)
                 if prior is not None and prior!=event:
                     raise ExchangeError('CONFLICTING_ACCOUNT_FUNDING')
@@ -167,3 +175,10 @@ class HyperliquidAccount:
                                  decimal(state['withdrawable'], nonnegative=True))
         except (KeyError, TypeError) as exc:
             raise ExchangeError('ACCOUNT_EQUITY_UNAVAILABLE') from exc
+
+    def get_balance(self):
+        """Reported USDPR collateral; never inferred free margin."""
+        return self.get_equity().collateral_balance
+
+    def get_funding_history(self, start_ms, end_ms=None):
+        return self.get_funding(start_ms,end_ms)

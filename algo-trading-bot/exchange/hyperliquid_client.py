@@ -53,6 +53,7 @@ class HyperliquidClient:
         self.dex_index = None
         self.collateral_token_id = None
         self.metadata_timestamp_ms = None
+        self.last_received_ms = None
 
     def post_info(self, query, **parameters):
         if {'type', 'action', 'signature', 'nonce'} & parameters.keys():
@@ -72,7 +73,9 @@ class HyperliquidClient:
             if not isinstance(payload.get('req'), dict):
                 raise ExchangeError('INVALID_CANDLE_REQUEST')
             self._validate_coin(payload['req'].get('coin'))
-        return self.transport(payload)
+        result = self.transport(payload)
+        self.last_received_ms = self.clock_ms()
+        return result
 
     def _validate_coin(self, symbol):
         if not isinstance(symbol, str) or not symbol.startswith('par:'):
@@ -85,6 +88,7 @@ class HyperliquidClient:
         self.dex_index = None
         self.collateral_token_id = None
         self.metadata_timestamp_ms = None
+        self.last_received_ms = None
 
     def _parse_specs(self, metadata, dex_index):
         if not isinstance(metadata, dict) or not isinstance(metadata.get('universe'), list):

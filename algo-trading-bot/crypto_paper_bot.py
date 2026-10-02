@@ -5,6 +5,8 @@ from decimal import Decimal
 
 from crypto_strategy_state import CryptoStrategyState
 from exchange.base_exchange import ExchangeError
+from exchange.event_timing import timing
+from exchange.readiness import readiness
 from exchange.order_lifecycle import OrderRequest
 from exchange.paper_portfolio import FundingSettlement
 from exchange.paper_reconciliation import PaperReconciliation
@@ -46,6 +48,10 @@ class CryptoPaperBot:
         self.stream_report=None
         self.exchange_account_report=None
         self.market_snapshots={}
+        self.team_address=None
+        self.candidate_ids={}
+        self.position_candidates={}
+        self._audited_scan=None
 
     def _performance(self,snapshot):
         self.peak_equity=max(self.peak_equity,snapshot.equity)
@@ -69,7 +75,37 @@ class CryptoPaperBot:
         return self.managers[symbol]
 
     def _record(self,kind,**details):
-        self.decisions.append(dict(kind=kind,timestamp_ms=self.clock_ms(),**details))
+        symbol=details.get('symbol')
+        details.setdefault('candidate_id',self.candidate_ids.get(symbol))
+        clocks=details.pop('_timing',None) or timing(self.clock_ms())
+        self.decisions.append(dict(kind=kind,timestamp_ms=self.clock_ms(),**clocks,**details))
+
+    def audit_scan(self,scan):
+        """Record every candidate, including unavailable data and no-signal bars."""
+        if self._audited_scan==scan.observed_at_ms:
+            return
+        self._audited_scan=scan.observed_at_ms
+        for d in scan.diagnostics:
+            cid=f'{d.symbol}:{scan.observed_at_ms}'
+            self.candidate_ids[d.symbol]=cid
+            signal=d.signal or {}
+            selected=d.symbol in scan.watchlist
+            has_signal=bool(signal.get('long') or signal.get('short'))
+            self._record('MARKET_DATA',symbol=d.symbol,candidate_id=cid,metrics=d.metrics,
+                _timing={k:getattr(d.snapshot,k) for k in ('exchange_ts','received_ts','processed_ts')} if d.snapshot else None,
+                market_snapshot=asdict(d.snapshot) if d.snapshot else None,
+                candle_timestamp_ms=signal.get('timestamp_ms'),data_status='PASS' if d.signal else 'UNAVAILABLE',
+                reasons=d.reasons)
+            # Indicator values are copied from the frozen brain, never recalculated here.
+            self._record('SIGNAL',symbol=d.symbol,candidate_id=cid,signal=signal,metrics=d.metrics,_timing=d.timing or None,
+                scan_selected=selected,signal_status='PASS' if has_signal else 'NO_SIGNAL',
+                scanner_status='PASS' if d.qualified else 'REJECTED',
+                input_timing=d.timing,input_candle_close_ms=d.candles[-1].close_timestamp_ms if d.candles else None)
+            if not selected or not has_signal:
+                self._record('ENTRY_REJECTED',symbol=d.symbol,candidate_id=cid,
+                    reason=d.reasons[0] if d.reasons else 'NOT_SELECTED' if not selected else 'NO_SIGNAL',
+                    stage='SCANNER' if not selected else 'SIGNAL',risk_status='NOT_REACHED',
+                    execution_status='NOT_REACHED')
 
     def _fresh_marks(self):
         for symbol in self.execution.portfolio.positions:
@@ -86,6 +122,9 @@ class CryptoPaperBot:
             return None
         self.pending_exit_reasons[symbol]=reason
         quote=self.quotes[symbol]
+        cid=self.position_candidates.get(symbol)
+        self.execution.candidate_id=cid
+        self._record('EXECUTION_DECISION',symbol=symbol,candidate_id=cid,intent='REDUCE_ONLY_EXIT',reason=reason)
         side='SELL' if held>0 else 'BUY'
         price=quote.bid if side=='SELL' else quote.ask
         try:
@@ -96,18 +135,21 @@ class CryptoPaperBot:
             self.breakers.order_result(True)
             if fill:
                 manager.confirm_exit(fill,reason)
-                self._record('EXIT_FILL',symbol=symbol,reason=reason,fill=asdict(fill))
+                self._record('EXIT_FILL',symbol=symbol,candidate_id=cid,reason=reason,fill=asdict(fill))
                 if not manager.has_open_position:
-                    self.closed_trades.append(dict(symbol=symbol,reason=reason,
+                    self.closed_trades.append(dict(symbol=symbol,reason=reason,candidate_id=cid,
                         completed_at_ms=self.clock_ms(),net_pnl=self.execution.portfolio.cash-
-                        self.setup_baseline_cash.pop(symbol),collateral='USDPR',simulated=True))
+                        self.setup_baseline_cash.pop(symbol),collateral='USDPR',simulated=True,
+                        **timing(self.clock_ms())))
+                    self._record('TRADE_PNL',symbol=symbol,candidate_id=cid,trade=self.closed_trades[-1])
+                    self.position_candidates.pop(symbol,None)
                     self.reserved_setup_risk.pop(symbol,None)
                     self.pending_exit_reasons.pop(symbol,None)
                 return dict(reason=reason,quantity=fill.quantity,partial=manager.has_open_position)
-            self._record('EXIT_UNFILLED',symbol=symbol,reason=reason)
+            self._record('EXIT_UNFILLED',symbol=symbol,candidate_id=cid,reason=reason)
         except ExchangeError as exc:
             self.breakers.order_result(False)
-            self._record('EXIT_REJECTED',symbol=symbol,reason=str(exc),trigger=reason)
+            self._record('EXIT_REJECTED',symbol=symbol,candidate_id=cid,reason=str(exc),trigger=reason)
         return None
 
     def _funding(self,quotes,now):
@@ -177,6 +219,7 @@ class CryptoPaperBot:
         self.market.client.startup()
         self.execution.refresh_specs(self.market.client.markets)
         self.latest_scan=scan
+        self.audit_scan(scan)
         held=list(self.execution.portfolio.positions)
         self.observe({s:self.market.get_quote(s) for s in held})
         for d in scan.diagnostics:
@@ -191,6 +234,7 @@ class CryptoPaperBot:
                 continue
             signal_key=(symbol,signal['timestamp_ms'])
             if signal_key in self.last_signals:
+                self._record('ENTRY_REJECTED',symbol=symbol,reason='DUPLICATE_SIGNAL_ALREADY_PROCESSED')
                 continue
             self.last_signals[signal_key]=True
             now=self.clock_ms()
@@ -236,6 +280,9 @@ class CryptoPaperBot:
             self._record('RISK_DECISION',symbol=symbol,side=side,decision=asdict(decision))
             if not decision.allowed:
                 continue
+            self.execution.candidate_id=self.candidate_ids.get(symbol)
+            self._record('EXECUTION_DECISION',symbol=symbol,execution_status='LOCAL_PAPER_SUBMIT',
+                exchange_submission=False,quote=asdict(quote),quantity=decision.quantity)
             request=OrderRequest(symbol,side,decision.quantity,quote.ask if side=='BUY' else quote.bid,
                 tif='Ioc',strategy_id=str(signal.get('signal_type') or 'VWAP_BASELINE'),
                 client_order_id=symbol+':'+str(signal['timestamp_ms']))
@@ -246,11 +293,14 @@ class CryptoPaperBot:
                 fill=self.execution.simulate_fill(order.order_id,quote)
                 self.breakers.order_result(True)
                 if fill:
+                    self.position_candidates[symbol]=self.candidate_ids.get(symbol)
                     manager.confirm_entry(fill,decision)
                     self.reserved_setup_risk[symbol]=decision.economics.stop_risk*fill.quantity/decision.quantity
                     self.setup_baseline_cash[symbol]=setup_cash
                     self._daily_setups+=1
                     self._record('ENTRY_FILL',symbol=symbol,fill=asdict(fill))
+                else:
+                    self._record('ENTRY_UNFILLED',symbol=symbol,order_id=order.order_id,status=self.execution.orders[order.order_id].status)
             except ExchangeError as exc:
                 self.breakers.order_result(False)
                 if order is not None:
@@ -293,7 +343,7 @@ class CryptoPaperBot:
         snapshot=self.execution.portfolio.snapshot(self.quotes,self.clock_ms())
         self._performance(snapshot)
         scan=self.latest_scan
-        return dict(execution_mode='PAPER',allow_live_orders=False,exchange_orders_submitted=0,
+        return dict(execution_mode=self.execution.execution_mode,readiness=readiness(self.team_address,market_ready=self.market.client.ready),allow_live_orders=False,exchange_orders_submitted=0,
             balance_origin='HYPOTHETICAL_LOCAL_USDPR',starting_collateral=self.execution.portfolio.starting_collateral,
             portfolio=asdict(snapshot),positions=[asdict(p) for p in self.execution.portfolio.positions.values()],
             scan_status=scan.status if scan else 'NOT_SCANNED',watchlist=scan.watchlist if scan else [],

@@ -4,6 +4,7 @@ from decimal import Decimal
 import time
 
 from .base_exchange import ExchangeError, decimal
+from .event_timing import timing
 
 
 @dataclass(frozen=True)
@@ -49,7 +50,8 @@ class FundingSettlement:
 
 
 class PaperPortfolio:
-    def __init__(self, specifications, starting_collateral):
+    def __init__(self, specifications, starting_collateral, *, clock_ms=None):
+        self.clock_ms=clock_ms or (lambda:time.time_ns()//1_000_000)
         self.specs=dict(specifications)
         self.starting_collateral=decimal(starting_collateral,positive=True)
         self.cash=self.starting_collateral
@@ -107,6 +109,9 @@ class PaperPortfolio:
         self.last_event_ms=fill.timestamp_ms
         self.events.append(dict(kind='FILL_ACCOUNTED',fill_id=fill.fill_id,symbol=fill.symbol,
                                 realized_pnl=pnl,fee=fee,cash=self.cash,leverage=leverage,timestamp_ms=fill.timestamp_ms,
+                                quantity_after=remaining,entry_price_after=self.positions[fill.symbol].entry_price if remaining else None,
+                                candidate_id=fill.candidate_id,order_id=fill.order_id,
+                                **timing(self.clock_ms()),
                                 observed_ns=time.monotonic_ns()))
         return True
 
@@ -128,7 +133,8 @@ class PaperPortfolio:
         self.last_event_ms=event.timestamp_ms
         self.events.append(dict(kind='FUNDING',symbol=event.symbol,timestamp_ms=event.timestamp_ms,
                                 cashflow=flow,source=event.source,oracle_price=event.oracle_price,
-                                hourly_rate=event.hourly_rate,observed_ns=time.monotonic_ns()))
+                                hourly_rate=event.hourly_rate,**timing(self.clock_ms(),source=event.source),
+                                observed_ns=time.monotonic_ns()))
         return flow
 
     def snapshot(self, quotes, now_ms):

@@ -1,5 +1,5 @@
 """Exchange-reported USDPR payments. Public funding rates are different data."""
-from dataclasses import dataclass
+from dataclasses import dataclass,field
 
 from .base_exchange import ExchangeError, decimal
 
@@ -14,6 +14,9 @@ class AccountFunding:
     funding_rate: object
     collateral: str='USDPR'
     source: str='EXCHANGE_REPORTED_USER_FUNDING'
+    exchange_ts: str | None=field(default=None,compare=False)
+    received_ts: str | None=field(default=None,compare=False)
+    processed_ts: str | None=field(default=None,compare=False)
 
     def __post_init__(self):
         if (not isinstance(self.symbol,str) or not self.symbol.startswith('par:') or

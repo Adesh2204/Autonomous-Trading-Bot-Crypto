@@ -28,6 +28,10 @@ from risk.models import RiskPolicy
 from risk.portfolio_risk import PortfolioRisk
 from strategy_freeze import verify_strategy_freeze
 from venue_config import require_paper_migration
+from session_results import SessionResults
+from exchange.event_timing import timing
+from exchange.replay import PublicReplayRecorder
+from exchange.hyperliquid_client import RequestsInfoTransport
 
 
 def encode(value):
@@ -48,11 +52,14 @@ class ReportWriter:
         path.mkdir(parents=True,exist_ok=True)
         self.path=path
         self.provenance=provenance
+        self.results=SessionResults(path,provenance)
         self.order_cursor=0
         self.ledger_cursor=0
         self.scan_cursor=None
 
     def save(self,bot,snapshot):
+        if bot.latest_scan:
+            bot.audit_scan(bot.latest_scan)
         report=bot.report()
         report.update(provenance=self.provenance,observed_at_utc=datetime.now(timezone.utc).isoformat(),
             assumptions=['Hypothetical USDPR starting collateral; no wallet balance used.',
@@ -79,15 +86,17 @@ class ReportWriter:
             with (self.path/'candles.jsonl').open('a') as stream:
                 for diagnostic in scan.diagnostics:
                     stream.write(json.dumps(dict(scan_observed_at_ms=scan.observed_at_ms,
-                        symbol=diagnostic.symbol,candles=[asdict(c) for c in diagnostic.candles]),
+                        symbol=diagnostic.symbol,**timing(scan.observed_at_ms),candles=[dict(asdict(c),**timing(c.processed_timestamp_ms,exchange_ms=c.close_timestamp_ms,received_ms=c.received_timestamp_ms,source='EXCHANGE_COMPLETED_CANDLE')) for c in diagnostic.candles]),
                         default=str,allow_nan=False)+'\n')
             self.scan_cursor=scan.observed_at_ms
+        self.results.save(bot,snapshot)
         return report
 
     def save_halt(self,bot,reason,*,name='halt.json'):
         # Persist known ledger facts without inventing equity from stale marks.
+        self.results.flush_events(bot)
         ledger=bot.execution.portfolio
-        (self.path/name).write_text(encode(dict(execution_mode='PAPER',
+        (self.path/name).write_text(encode(dict(execution_mode=bot.execution.execution_mode,
             exchange_orders_submitted=0,reason=str(reason),
             last_good_report=str(self.path/'report.json') if (self.path/'report.json').exists() else None,
             known_positions=[asdict(p) for p in ledger.positions.values()],
@@ -122,7 +131,8 @@ def main():
     output=args.output or ROOT/'algo-trading-bot/data/crypto-paper'/(
         datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')+'-'+uuid.uuid4().hex[:8])
     writer=ReportWriter(output,'LIVE_PUBLIC_PAR_DATA_LOCAL_PAPER_SIMULATION')
-    client=HyperliquidClient()
+    recorder=PublicReplayRecorder(RequestsInfoTransport()) if args.cycles==1 and not args.account_address else None
+    client=HyperliquidClient(recorder,clock_ms=recorder.clock_ms) if recorder else HyperliquidClient()
     feed_client=None
     scan_client=None
     stop=threading.Event()
@@ -135,6 +145,8 @@ def main():
         execution=PaperExecution(client.markets,fees=fees,clock_ms=client.clock_ms,
             starting_collateral=config['starting_collateral'],leverage=risk_policy.leverage)
         bot=CryptoPaperBot(market,scanner,execution,PortfolioRisk(risk_policy,fees))
+        writer.results.bind(bot)
+        bot.team_address=args.account_address
         account_recovery=None
         if args.account_address:
             account=HyperliquidAccount(client,args.account_address)
@@ -155,6 +167,8 @@ def main():
                     bot.breakers.pause('account',str(exc))
             snapshot=bot.cycle()
             report=writer.save(bot,snapshot)
+            if recorder:
+                recorder.save(output/"replay_tape.json",config,"LIVE_PUBLIC_PAR_DATA")
         else:
             # Separate public clients: metadata refresh never invalidates a
             # streaming client's cache, and the ledger has a single owner thread.
@@ -253,6 +267,9 @@ def main():
                 writer.save_halt(bot,'INTERRUPTED_WITH_UNVALUED_STATE: '+str(exc),name='shutdown.json')
         return 0
     except Exception as exc:
+        writer.results.jsonl('health_events',dict(kind='SESSION_FAILED',reason=str(exc),**timing()))
+        if bot:
+            writer.save_halt(bot,exc,name='failure_state.json')
         (output/'failure.json').write_text(encode(dict(error=type(exc).__name__,reason=str(exc),
             execution_mode='PAPER',exchange_orders_submitted=0,
             risk_state=bot.breakers.report(bot.clock_ms()) if bot else None,

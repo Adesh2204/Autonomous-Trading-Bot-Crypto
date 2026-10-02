@@ -81,7 +81,7 @@
     "Actual wallet fee tiers/balance and signed execution are not verified or enabled.",
     "Hourly public funding snapshots are PAPER_SNAPSHOT_ESTIMATE; no invented missing settlement history.",
     "No maker queue-fill, exchange latency or exact liquidation simulation.",
-    "No automatic resume/replay after an interrupted paper process.",
+    "No automatic resume; offline replay requires a complete bounded recorded tape, never fabricated gap history.",
     "Genuine bounded public probe returned NO_TRADE; no profitable return or competition score claimed."
   ],
   "subsequent_recovery_checkpoint": {
@@ -99,5 +99,19 @@
     ],
     "paper_assumptions": "Explicit drawdown/exposure/age/order-error/reconnect caps; no brain/ranking optimization.",
     "validation": "docs/crypto_recovery_validation_2026-10-02.json"
+  },
+  "subsequent_audit_replay_checkpoint": {
+    "strategy_changes": false,
+    "live_execution_enabled": false,
+    "components": [
+      "exchange.event_timing",
+      "session_results.SessionResults",
+      "exchange.replay.ReplayTape",
+      "exchange.replay.ReplayExecution",
+      "exchange.readiness",
+      "scripts/run_crypto_replay.py"
+    ],
+    "adaptations": "Timestamp/provenance metadata and event tracing only; same brain, precision, BBO fill, risk and accounting kernel. REPLAY is offline run context under PAPER safety configuration; LIVE interface stays blocked.",
+    "validation": "docs/crypto_audit_validation_2026-10-02.json"
   }
 }
