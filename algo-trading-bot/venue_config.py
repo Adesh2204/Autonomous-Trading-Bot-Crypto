@@ -28,6 +28,10 @@ def require_paper_migration():
     execution. Manual wallet verification and explicit user authorization remain
     future prerequisites; this module implements no activation path.
     """
+    if os.environ.get('HL_NETWORK', _defaults.get('HL_NETWORK') or 'testnet').strip().lower()!='testnet':
+        raise MigrationPolicyError('MIGRATION_TESTNET_REQUIRED')
+    if os.environ.get('HL_DEX', _defaults.get('HL_DEX') or 'par').strip()!='par':
+        raise MigrationPolicyError('MIGRATION_PAR_DEX_REQUIRED')
     if (TRADING_VENUE != 'HYPERLIQUID_TESTNET' or
             os.environ.get('TRADING_VENUE', TRADING_VENUE).strip().upper()
             != 'HYPERLIQUID_TESTNET'):

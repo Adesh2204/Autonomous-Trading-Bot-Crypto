@@ -6,6 +6,7 @@ import math
 import time
 
 from exchange.base_exchange import ExchangeError, decimal
+from exchange.event_timing import timing
 from exchange.hyperliquid_market_data import make_quote
 from exchange.market_snapshot import MarketSnapshot
 from frozen_strategy import FrozenStrategy
@@ -42,6 +43,7 @@ class MarketDiagnostic:
     signal: dict | None=None
     candles: list=field(default_factory=list,repr=False)
     snapshot: object=None
+    timing: dict=field(default_factory=dict)
 
 
 @dataclass
@@ -99,7 +101,7 @@ class MarketRegimeScanner:
                 returns=[math.log(float(b.close/a.close)) for a,b in zip(window,window[1:])]
                 mean=sum(returns)/len(returns)
                 volatility=Decimal(str(math.sqrt(sum((r-mean)**2 for r in returns)/len(returns))))
-                d.metrics=dict(atr_fraction=atr/close,atr_percent=atr/close*100,
+                d.metrics=dict(vwap=vwap,ema9=ema9,ema21=ema21,atr=atr,close=close,atr_fraction=atr/close,atr_percent=atr/close*100,
                     spread_bps=spread,window_notional_approx=notional,bbo_notional=depth,
                     best_bid=quote.bid,best_ask=quote.ask,spread=quote.ask-quote.bid,
                     bid_depth_notional=d.snapshot.bid_depth_notional,ask_depth_notional=d.snapshot.ask_depth_notional,
@@ -128,9 +130,12 @@ class MarketRegimeScanner:
                     long=bool(last.get('Buy_Signal',False) or last.get('Breakout_Signal',False)),
                     short=bool(last.get('Sell_Signal',False) or last.get('Breakdown_Sell_Signal',False)),
                     signal_type=signal_type)
+                d.timing=timing(self.client.clock_ms(),received_ms=candles[-1].received_timestamp_ms,
+                                source="LOCAL_FROZEN_STRATEGY")
                 d.qualified=not d.reasons
             except (ExchangeError,ValueError) as exc:
                 d.reasons.append(str(exc))
+                d.timing=timing(self.client.clock_ms())
         qualified=[d for d in diagnostics if d.qualified]
         # Equal percentile ranks remove the old share/rupee score denominators.
         # Four transparent selection factors; EMA/VWAP still produce no signal here.

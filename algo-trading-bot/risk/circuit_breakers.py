@@ -1,4 +1,5 @@
 """Scoped entry controls. Changing a state never submits or flattens an order."""
+from exchange.event_timing import timing
 from enum import Enum
 from decimal import Decimal
 
@@ -84,7 +85,7 @@ class CircuitBreakers:
     def report(self,now_ms):
         signature=(self.state,tuple(sorted(self.global_blocks.items())),repr(self.symbol_blocks),self.financial_reasons)
         if signature!=self._signature:
-            self.transitions.append(dict(timestamp_ms=now_ms,state=self.state.value,
+            self.transitions.append(dict(timestamp_ms=now_ms,state=self.state.value,**timing(now_ms),
                 global_reasons=tuple(self.global_blocks.values())+self.financial_reasons,
                 paused_symbols=dict(self.symbol_blocks)))
             self._signature=signature

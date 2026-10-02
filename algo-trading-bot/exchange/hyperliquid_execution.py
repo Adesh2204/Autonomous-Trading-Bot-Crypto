@@ -32,3 +32,15 @@ class HyperliquidExecution:
     def modify_order(self, symbol, order_id, **parameters):
         order_guard.require_exchange_orders(self.venue)
         raise AssertionError('Signed transport is not implemented')
+
+    def close_position(self, symbol, **parameters):
+        order_guard.require_exchange_orders(self.venue)
+        raise AssertionError('Signed transport is not implemented')
+
+    def set_leverage(self, symbol, leverage, **parameters):
+        order_guard.require_exchange_orders(self.venue)
+        raise AssertionError('Signed transport is not implemented')
+
+
+HyperliquidExecutor = HyperliquidExecution
+LiveTradingDisabled = order_guard.OrderRoutingBlocked

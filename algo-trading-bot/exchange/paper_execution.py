@@ -7,6 +7,7 @@ import time
 from venue_config import require_paper_migration
 from .base_exchange import ExchangeError, NormalizedOrder, Quote, decimal
 from .order_lifecycle import OrderRequest
+from .event_timing import timing
 from .paper_portfolio import PaperPortfolio
 from .perpetual_economics import FeeSchedule
 
@@ -39,14 +40,22 @@ class PaperFill:
     fill_id: str=field(default_factory=lambda: 'paper-fill-'+uuid.uuid4().hex)
     liquidity: str='TAKER'
     fee_token: str='USDPR'
+    exchange_ts: str | None=None
+    received_ts: str | None=None
+    processed_ts: str | None=None
+    candidate_id: str | None=None
 
 
 class PaperExecution:
     is_live=False
+    execution_mode="PAPER"
 
     def __init__(self, market_specs, *, clock_ms, fee_rate=None, fees=None,
-                 starting_collateral=None, leverage=1):
+                 starting_collateral=None, leverage=1, id_factory=None):
         require_paper_migration()
+        self.id_factory=id_factory or (lambda prefix: prefix+uuid.uuid4().hex)
+        self.candidate_id=None
+        self.order_candidates={}
         self.specs=dict(market_specs)
         if fees is None:
             if fee_rate is None:
@@ -65,7 +74,7 @@ class PaperExecution:
         self.fills=[]
         self.positions={}
         self.events=[]
-        self.portfolio=PaperPortfolio(self.specs,starting_collateral) if starting_collateral is not None else None
+        self.portfolio=PaperPortfolio(self.specs,starting_collateral,clock_ms=self.clock_ms) if starting_collateral is not None else None
         self.quotes={}
         self._client_ids={}
         self._liquidity_used={}
@@ -73,7 +82,9 @@ class PaperExecution:
 
     def _event(self, oid, state, **details):
         self.events.append(dict(order_id=oid,state=state,timestamp_ms=self.clock_ms(),
-                                observed_ns=time.monotonic_ns(),**details))
+                                observed_ns=time.monotonic_ns(),
+                                candidate_id=self.order_candidates.get(oid,self.candidate_id),
+                                **timing(self.clock_ms()),**details))
 
     def refresh_specs(self, specifications):
         incoming=dict(specifications)
@@ -108,7 +119,7 @@ class PaperExecution:
         held=self.positions.get(order.symbol,Decimal(0))
         if order.reduce_only and (not held or (order.side=='BUY')==(held>0) or order.quantity>abs(held)):
             raise ExchangeError('REDUCE_ONLY_WOULD_INCREASE_POSITION')
-        oid='paper-'+uuid.uuid4().hex
+        oid=self.id_factory('paper-')
         if self.portfolio and not order.reduce_only:
             if self.leverage>self.specs[order.symbol].maximum_leverage_at(order.quantity*order.price):
                 raise ExchangeError('LEVERAGE_EXCEEDS_RUNTIME_MARGIN_TIER')
@@ -117,6 +128,7 @@ class PaperExecution:
             if reserve>available:
                 raise ExchangeError('PAPER_MARGIN_INSUFFICIENT')
             self.portfolio.reservations[oid]=reserve
+        self.order_candidates[oid]=self.candidate_id
         for state in ('CREATED','SUBMITTED','ACKNOWLEDGED','OPEN'):
             self._event(oid,state,strategy_id=request.strategy_id,request=order.to_dict())
         result=PaperOrder(oid,order,strategy_id=request.strategy_id)
@@ -126,6 +138,7 @@ class PaperExecution:
         return result
 
     def cancel_order(self, symbol, order_id):
+        # Local cleanup remains available after policy revocation; no transport.
         existing=self.orders.get(order_id)
         if existing is None or existing.order.symbol!=symbol:
             raise ExchangeError('UNKNOWN_PAPER_ORDER')
@@ -191,7 +204,9 @@ class PaperExecution:
                 self.cancel_order(order.symbol,order_id)
             return None
         fill=PaperFill(order_id,order.symbol,order.side,quantity,price,
-                       self.fees.fee(quantity,price),now)
+                       self.fees.fee(quantity,price),now,fill_id=self.id_factory("paper-fill-"),
+                       received_ts=timing(now)["received_ts"],processed_ts=timing(now)["processed_ts"],
+                       candidate_id=self.order_candidates.get(order_id))
         self.quotes[quote.symbol]=quote
         if self.portfolio:
             old_reserve=self.portfolio.reservations.get(order_id,Decimal(0))

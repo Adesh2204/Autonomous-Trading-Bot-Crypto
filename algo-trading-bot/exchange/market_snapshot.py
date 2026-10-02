@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 from decimal import Decimal
 
+from .event_timing import timing
 from .base_exchange import ExchangeError, decimal
 from .hyperliquid_market_data import make_quote
 
@@ -27,6 +28,9 @@ class MarketSnapshot:
     mark_observed_at_ms: int
     last_trade_price: Decimal | None = None
     last_trade_timestamp_ms: int | None = None
+    exchange_ts: str | None = None
+    received_ts: str | None = None
+    processed_ts: str | None = None
 
     @classmethod
     def from_book(cls,book,context,now_ms,*,mark_observed_at_ms,last_trade=None,max_book_age_ms=5000):
@@ -47,4 +51,5 @@ class MarketSnapshot:
             quote.hourly_funding,quote.open_interest,quote.bid_quantity,quote.ask_quantity,
             quote.ask-quote.bid,(quote.ask-quote.bid)/quote.mid*10000,
             bid_depth,ask_depth,(bid_depth-ask_depth)/(bid_depth+ask_depth),
-            book.timestamp_ms,mark_observed_at_ms,trade_price,trade_time)
+            book.timestamp_ms,mark_observed_at_ms,trade_price,trade_time,
+            **{k:v for k,v in timing(now_ms,exchange_ms=book.timestamp_ms,received_ms=book.received_timestamp_ms,source="EXCHANGE_ORDERBOOK").items() if k in {"exchange_ts","received_ts","processed_ts"}})

@@ -50,3 +50,13 @@
   occurrence inventory with `scripts/inventory_legacy_dependencies.py`.
 - Run production-policy lockout tests, strategy-freeze verification and applicable
   exchange tests. Offline legacy protocol fixtures cannot authorize real clients.
+
+- The latest pasted request authorizes timing/results/session provenance, offline
+  replay, explicit wallet readiness and blocked LIVE interface structure. REPLAY
+  is a local run context using complete recorded public market responses; retain
+  PAPER/false safety configuration and every signed-action lock. Never infer
+  quotes/fills from candle OHLC or change strategy parameters for replay.
+- Keep unavailable exchange clocks null, paper/account truth distinct and dirty
+  source hashes alongside Git commits. Observed daily/oracle estimates are not
+  official competition scores. Blank/zero wallets are NOT_CONFIGURED; even a
+  supplied valid address remains unverified until the human verifies it.

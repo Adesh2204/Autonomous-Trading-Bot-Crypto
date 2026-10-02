@@ -161,13 +161,43 @@ automatically flatten positions. Correlation modelling remains outside version 1
 .venv/bin/python scripts/run_crypto_paper.py --cycles 2 --scan-interval-seconds 10
 ```
 
-The full suite now passes **645 tests**, including 50 new recovery/safety checks.
+At the recovery checkpoint, the full suite passed **645 tests**, including 50 new recovery/safety checks.
 The [public recovery probe](docs/crypto_public_recovery_probe_2026-10-02.json)
 scanned ten markets, observed 180 WebSocket data messages, completed the paper
 account barrier, and returned `NO_TRADE` with zero orders. See
 [current validation](docs/crypto_recovery_validation_2026-10-02.json). Actual
 team-wallet reconciliation is fixture-tested and awaits the public address;
 paper fees/funding remain explicitly simulated/estimated.
+
+## Session evidence and offline replay
+
+The [audit and replay guide](docs/crypto_audit_replay_2026-10-02.md) gives the
+step-by-step run and wallet/practice sequence. Every session now writes the ten
+requested files under its `results/` directory, plus candidate traces and a
+manifest with Git/source/configuration/strategy/adapter/risk hashes. Events
+carry exchange, receive and processing clocks; unavailable exchange timestamps
+stay null. Mark-valued paper equity and oracle-valued estimates remain separate,
+and sparse daily metrics are labelled as observed local samples.
+
+A bounded public paper scan without an account observer records a complete
+REST/clock tape. Replay uses historical completed bars and their observed quotes
+through the same frozen strategy and local execution kernel without HTTP or
+sockets. Keep `EXECUTION_MODE=PAPER` and `ALLOW_LIVE_ORDERS=false` for both runners;
+REPLAY is the offline run context. LIVE exposes guarded interfaces only.
+
+```sh
+.venv/bin/python scripts/run_crypto_paper.py --cycles 1
+.venv/bin/python scripts/run_crypto_replay.py --tape '<session>/replay_tape.json' --output '<new-replay-session>'
+```
+
+Blank/zero team addresses report NOT_CONFIGURED; a valid public address remains
+unverified. All signed actions, including close/cancel/leverage, stay blocked.
+The current suite passes **678 tests**. A [genuine public audit scan](docs/crypto_public_audit_probe_2026-10-02.json)
+found ten markets with stale completed candles and returned NO_TRADE with zero
+orders/fills; its offline replay matched diagnostics, decisions and portfolio.
+See [validation and limitations](docs/crypto_audit_validation_2026-10-02.json).
+The replay runner supports complete single-scan tapes; continuous-feed replay,
+funded-wallet testing and signed execution remain future work.
 
 ## Baseline and validation
 
