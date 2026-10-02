@@ -9,6 +9,22 @@ from test_safety_v6 import NOW, IDENTITY, payload, quote
 from test_broker_safety_v6 import capabilities
 
 
+def allow_offline_broker_protocol(monkeypatch):
+    """Exercise legacy accounting with local fakes, never a real SDK client.
+
+    This test-only patch preserves protocol coverage while production refuses
+    Angel One. No runtime bypass exists.
+    """
+    import order_guard
+    from test_broker_safety_v6 import Broker
+
+    def mock_permission(venue, *, client=None):
+        if venue != 'ANGEL_ONE' or not isinstance(client, (Broker, ScenarioBroker)):
+            raise order_guard.OrderRoutingBlocked('NON_FIXTURE_TRANSPORT_FORBIDDEN')
+
+    monkeypatch.setattr(order_guard, 'require_exchange_orders', mock_permission)
+
+
 class ScenarioBroker:
     def __init__(self, response='string', partial_entry=None, partial_exit=None):
         self.response=response
@@ -65,6 +81,7 @@ def paper_trader(tmp_path, **kwargs):
 
 def live_trader(tmp_path, monkeypatch, broker=None):
     """LIVE exercises only the deterministic broker above, with explicit mock capabilities."""
+    allow_offline_broker_protocol(monkeypatch)
     broker=broker or ScenarioBroker()
     monkeypatch.setattr(config,'LIVE_MODE',True)
     monkeypatch.setattr(config,'LIVE_VALIDATION_APPROVED',True)

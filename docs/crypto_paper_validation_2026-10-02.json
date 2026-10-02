@@ -1,0 +1,180 @@
+{
+  "verified_at_utc": "2026-10-02T08:25:39.404164+00:00",
+  "execution_mode": "PAPER",
+  "allow_live_orders": false,
+  "exchange_orders_submitted": 0,
+  "branch": "perpetual-alpha-migration",
+  "baseline_commit": "ed0dba5b0577da38a500d9dc208fe9938d3f3a14",
+  "strategy_freeze": {
+    "baseline": "nse-working-baseline",
+    "file_count": 1,
+    "method_count": 8,
+    "parameter_count": 32,
+    "passed": true
+  },
+  "phase0": {
+    "project": "anchorium-perpetual-alpha",
+    "checks": {
+      "project_is_perpetual_alpha": true,
+      "independent_git_directory": true,
+      "migration_branch": true,
+      "testnet_venue": true,
+      "paper_execution_mode": true,
+      "migration_policy_valid": true,
+      "orders_disabled": true,
+      "angel_one_client_disabled": true,
+      "angel_one_order_boundary_disabled": true,
+      "testnet_order_boundary_disabled": true,
+      "signal_logic_present": true,
+      "signal_source_unchanged": true
+    },
+    "passed": true
+  },
+  "full_suite": {
+    "tests": 595,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 595,
+    "focused_infrastructure_tests": 68,
+    "junit_path": "docs/crypto_paper_tests_2026-10-02.xml",
+    "junit_sha256": "5927ab3ffc7109d240ff4346c2acb6938fa01f414bb4afb18a7961776fd8631e"
+  },
+  "tracked_diff_whitespace_check_passed": true,
+  "signal_brain_diff_from_baseline_empty": true,
+  "public_paper_probe": {
+    "observed_at_utc": "2026-10-02T07:52:08.789877+00:00",
+    "provenance": "LIVE_PUBLIC_PAR_DATA_LOCAL_PAPER_SIMULATION",
+    "scanned_markets": 10,
+    "scan_status": "NO_TRADE",
+    "watchlist": [],
+    "local_orders": 0,
+    "local_fills": 0,
+    "exchange_orders_submitted": 0,
+    "balance_origin": "HYPOTHETICAL_LOCAL_USDPR",
+    "starting_collateral": "20000",
+    "ending_equity": "20000",
+    "rejection_reason_counts": {
+      "ATR_BELOW_BASELINE_SCANNER_FLOOR": 3,
+      "SPREAD_TOO_WIDE": 3,
+      "COMPLETED_CANDLE_STALE": 6,
+      "INSUFFICIENT_COMPLETED_HISTORY": 1
+    },
+    "tracked_report": "docs/crypto_public_paper_probe_2026-10-02.json",
+    "tracked_report_sha256": "3d123a9306b0cdb739693579b187773309cb2ace992bd97267a4064f200d7e6b",
+    "byte_identical_to_runtime_report": true,
+    "runtime_source_artifacts": {
+      "report.json": {
+        "path": "algo-trading-bot/data/crypto-paper/public-probe-2026-10-02-complete/report.json",
+        "sha256": "3d123a9306b0cdb739693579b187773309cb2ace992bd97267a4064f200d7e6b",
+        "bytes": 11398
+      },
+      "candles.jsonl": {
+        "path": "algo-trading-bot/data/crypto-paper/public-probe-2026-10-02-complete/candles.jsonl",
+        "sha256": "38527e3cd7ad817fc1d5a25814d8c063db48417fe408cd0b1dca19dce7ad54e7",
+        "bytes": 856281
+      },
+      "events.jsonl": {
+        "path": "algo-trading-bot/data/crypto-paper/public-probe-2026-10-02-complete/events.jsonl",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "equity.jsonl": {
+        "path": "algo-trading-bot/data/crypto-paper/public-probe-2026-10-02-complete/equity.jsonl",
+        "sha256": "2033b5087a052021c00e018c380d9d5d4ace3530508c95a48b33a04ef6a63d19",
+        "bytes": 316
+      }
+    },
+    "performance_conclusion": "No trades occurred. This is discovery/filter/report evidence, not profitable trading performance.",
+    "code_timing_note": "The saved bounded public probe preceded subsequent continuous candle-management and shutdown changes. Those changes were verified offline; no multi-hour continuous public run is claimed."
+  },
+  "current_implementation_sha256": {
+    "algo-trading-bot/candle_normalizer.py": "7281140c325a661290560c6aecb49c347d933c18e70438a38c67325e1d6c585d",
+    "algo-trading-bot/crypto_paper_bot.py": "da00aa58c045d6725dfa75db2f0f0ff218eca2ebc5c49f8e3bef2b1559c8c9c1",
+    "algo-trading-bot/crypto_strategy_state.py": "8dd7db0daf282e23c07a778ef86842e94539c3893d6f229996c63f3abf01775c",
+    "algo-trading-bot/exchange/__init__.py": "ecbd9472b56feff3e87c643ada9b0d799d6ff2fe9f2de87b2bdbac36fd07717d",
+    "algo-trading-bot/exchange/base_exchange.py": "2122ff3a1eb7ef08dcecedbdaadf2d6b672399e14c8dd91cec93dcde5765c08a",
+    "algo-trading-bot/exchange/hyperliquid_account.py": "bf0b5a55483d622e3f8a85b50384d15626c5d76b7ae75caba05202e0c80c20cc",
+    "algo-trading-bot/exchange/hyperliquid_client.py": "d5805b71d835b547d3f0f86b462cac0fd9b3c7687d346c857577648cbe371682",
+    "algo-trading-bot/exchange/hyperliquid_execution.py": "9b2b9f0167a932bac8e0ad275548c5bb723e08e7dfd846d04a29dff0443b1a97",
+    "algo-trading-bot/exchange/hyperliquid_market_data.py": "daef5170514db423ca7aacc29210c05ec914f07fd2e8f029d16e9a4dfeba1ccb",
+    "algo-trading-bot/exchange/hyperliquid_reconciliation.py": "bc2ff8ad19e1264a15842856af176551c53fc447acf8398bc6b42ee0b220b07a",
+    "algo-trading-bot/exchange/order_lifecycle.py": "a6e4711041a4e1f7494cbcedd56b42872bf30ed05b0272e75b7812ddc102b76b",
+    "algo-trading-bot/exchange/paper_account.py": "774dd497061a0a1026310cc9de062dba3e9840fc5a17bcaa0f5456b1a3c87f67",
+    "algo-trading-bot/exchange/paper_execution.py": "ca7437329ce0e1b63dc8448dd31ff909a33c5ce4383a06301c8efa19843ebb7f",
+    "algo-trading-bot/exchange/paper_portfolio.py": "1bcf2d43266c02f2caa327b7fd48d47b764f2c9f0b5593e918f9627c9a182529",
+    "algo-trading-bot/exchange/perpetual_economics.py": "7c0bc020a9f91e952f5187ee2a71c5f70af0ef2ac24bb52c45e26768ca66a079",
+    "algo-trading-bot/frozen_strategy.py": "867f8b40822444fdde41f1aa1c251670b6fcca1dc3a0fb8cf20bea126c9581e9",
+    "algo-trading-bot/market_regime_scanner.py": "bfda5f475b0d4b17a299f8e7cd05975fd4fc5fcefd83b504bb3c3208ba935c69",
+    "algo-trading-bot/risk/__init__.py": "eb1f18ac5303b4f054059f685eb771710a2e5fa11c27bc66a5de0e2dd2ac3031",
+    "algo-trading-bot/risk/exposure_manager.py": "f7fd6befb0120fd82c460d3e9c36aa3e6a9830154aa008ea0b3cf20cfd3c7181",
+    "algo-trading-bot/risk/funding_guard.py": "8690261d98c5971538513931e141d3c0d09107e19cbfc30d3e0a967d8c872f61",
+    "algo-trading-bot/risk/leverage_manager.py": "f929709e5f0940b5fe51d96ef39f25476097e25511c5dfdcc262c947f4568d22",
+    "algo-trading-bot/risk/liquidation_guard.py": "699a7994f4210e9081d917a6619e519a3db17432854d84fc5b42bf186b574565",
+    "algo-trading-bot/risk/models.py": "21be2f2c7b49699023129deed14973f31665e7dfd751f8d49c5fa765a9f3cc40",
+    "algo-trading-bot/risk/portfolio_risk.py": "2645143a38bf0619d9f0cdadd861defde30504a16b65f8477f506f4a4dfed689",
+    "algo-trading-bot/risk/position_sizer.py": "a56380ce6b81d269933de03dd1e7fbb7c828a15a5a2e6cdb0f9a057ec116fbf3",
+    "algo-trading-bot/session_manager.py": "49fb3ae074d0922ad30722d169254e2a81508544c5b654affbe9c9da7b855e00",
+    "algo-trading-bot/strategy_contract.py": "dc6b724b130f3f91c8c26d7dd6f2a0e0b768e3752b3be0099474e2ff29a8d859",
+    "docs/paper_policy.example.json": "4b1253572eaba95aff610982a7897f91e6b28d229415ebf7991d9e7b1859283e",
+    "scripts/run_crypto_paper.py": "aba997ed942ec663ae3b93526e4d0785bb0cb922b572648db9053644a7b48959"
+  },
+  "remaining_verification": [
+    "Team public-address balances, fee tier, funding and organizer whitelisting/funding are not verified.",
+    "Hourly funding in the paper runner is explicitly estimated from public boundary snapshots.",
+    "Automatic process resume or historical funding replay is not implemented.",
+    "No signing SDK, private key or signed exchange transport is enabled.",
+    "Two-scan public continuous integration passed; a multi-hour public paper run with exposure remains unobserved."
+  ],
+  "public_continuous_probe": {
+    "observed_at_utc": "2026-10-02T08:23:34.887422+00:00",
+    "provenance": "LIVE_PUBLIC_PAR_DATA_LOCAL_PAPER_SIMULATION",
+    "arguments": {
+      "cycles": 2,
+      "scan_interval_seconds": 10
+    },
+    "scans_completed": 2,
+    "markets_per_scan": 10,
+    "equity_snapshots": 2,
+    "per_market_history_records": 20,
+    "scan_status": "NO_TRADE",
+    "local_orders": 0,
+    "local_fills": 0,
+    "exchange_orders_submitted": 0,
+    "ending_equity": "20000",
+    "balance_origin": "HYPOTHETICAL_LOCAL_USDPR",
+    "accounting_halt": null,
+    "failure_or_halt_artifact_present": false,
+    "rejection_reason_counts": {
+      "COMPLETED_CANDLE_STALE": 8,
+      "ATR_BELOW_BASELINE_SCANNER_FLOOR": 2,
+      "SPREAD_TOO_WIDE": 2
+    },
+    "tracked_report": "docs/crypto_public_continuous_probe_2026-10-02.json",
+    "tracked_report_sha256": "02fc7550ebe87f5ce92dc915194b9d4c99f2f060789cd22438bf5a10a209aad3",
+    "byte_identical_to_runtime_report": true,
+    "runtime_source_artifacts": {
+      "report.json": {
+        "path": "algo-trading-bot/data/crypto-paper/public-continuous-probe-2026-10-02/report.json",
+        "sha256": "02fc7550ebe87f5ce92dc915194b9d4c99f2f060789cd22438bf5a10a209aad3",
+        "bytes": 10460
+      },
+      "candles.jsonl": {
+        "path": "algo-trading-bot/data/crypto-paper/public-continuous-probe-2026-10-02/candles.jsonl",
+        "sha256": "2bec7f4d6befb75ed163b02817774cb6b34c3ad5cf191fc70e3aec982ab7c62d",
+        "bytes": 2014236
+      },
+      "events.jsonl": {
+        "path": "algo-trading-bot/data/crypto-paper/public-continuous-probe-2026-10-02/events.jsonl",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "equity.jsonl": {
+        "path": "algo-trading-bot/data/crypto-paper/public-continuous-probe-2026-10-02/equity.jsonl",
+        "sha256": "1697c5112044f1eeef5ecfa954020d83b79e91a6587a7d68057a20317a521148",
+        "bytes": 632
+      }
+    },
+    "limitations": "Short flat-portfolio integration run; WebSocket message counts were not recorded by the paper CLI. No multi-hour exposed operation or profitable performance is claimed."
+  }
+}

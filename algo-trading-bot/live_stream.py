@@ -22,7 +22,7 @@ from typing import Any, Optional
 import pyotp
 import pandas as pd
 from dotenv import load_dotenv
-from SmartApi import SmartConnect
+from disabled_angel_client import DisabledAngelOneClient as SmartConnect
 from SmartApi.smartWebSocketV2 import SmartWebSocketV2
 import config
 from config import LIVE_MODE

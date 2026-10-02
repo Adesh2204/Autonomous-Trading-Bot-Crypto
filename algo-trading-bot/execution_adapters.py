@@ -8,6 +8,7 @@ import time
 import uuid
 import math
 import config
+import order_guard
 from execution_safety import FeeModel, SafetyError, ExecutionQualityGate
 
 @dataclass(frozen=True)
@@ -108,6 +109,7 @@ class SmartAPIExecutionAdapter:
             'FILLED' if q==maximum_quantity else 'PARTIALLY_FILLED','BROKER' if fee is not None else 'ESTIMATED_STANDARD')
 
     def _submit(self,params):
+        order_guard.require_exchange_orders('ANGEL_ONE', client=self.broker)
         self.capabilities.validate(self.clock())
         try:r=self.broker.placeOrder(params)
         except Exception as exc:raise SafetyError('UNKNOWN_BROKER_STATE') from exc
@@ -122,6 +124,7 @@ class SmartAPIExecutionAdapter:
         raise SafetyError('UNKNOWN_BROKER_STATE')
 
     def cancel(self,id):
+        order_guard.require_exchange_orders('ANGEL_ONE', client=self.broker)
         row=self._order(id)
         if str(row.get('status',row.get('orderstatus',''))).lower() in self.TERMINAL:return True
         try:self.broker.cancelOrder(id,row.get('variety','NORMAL'))
@@ -133,6 +136,7 @@ class SmartAPIExecutionAdapter:
         raise SafetyError('PARTIAL_FILL_STALLED')
 
     def execute(self,instrument,side,quantity,quote,now,limit=None,is_exit=False):
+        order_guard.require_exchange_orders('ANGEL_ONE', client=self.broker)
         instrument.validate(instrument.symbol,now=None if is_exit else now)
         reference=ExecutionQualityGate().validate(quote,side,now,quantity)
         if limit is None:limit=instrument.price(reference*(1+(1 if side=='BUY' else -1)*config.SLIPPAGE_HAIRCUT_PCT),side)
@@ -154,6 +158,7 @@ class SmartAPIExecutionAdapter:
         return self.read_fill(id,instrument,side,quantity)
 
     def protect(self,instrument,side,quantity,stop,now,limit=None):
+        order_guard.require_exchange_orders('ANGEL_ONE', client=self.broker)
         # Separate emergency protection; original close-based strategy stop remains unchanged.
         sign=1 if side=='SELL' else -1
         if limit is None:

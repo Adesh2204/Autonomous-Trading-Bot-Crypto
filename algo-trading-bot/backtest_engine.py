@@ -205,7 +205,7 @@ def fetch_historical_candles(
     if api_key and client_code and client_pin and totp_secret and token:
         try:
             import pyotp
-            from SmartApi.smartConnect import SmartConnect
+            from disabled_angel_client import DisabledAngelOneClient as SmartConnect
 
             logging.info(f"Authenticating with Angel One SmartAPI to fetch historical {symbol_clean} ({interval})...")
             smart_api = SmartConnect(api_key=api_key)

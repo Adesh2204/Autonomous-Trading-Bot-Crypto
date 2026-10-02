@@ -1,0 +1,64 @@
+{
+  "date": "2026-10-02",
+  "phases": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "baseline_commit": "ed0dba5b0577da38a500d9dc208fe9938d3f3a14",
+  "branch": "perpetual-alpha-migration",
+  "strategy_freeze": {
+    "baseline": "nse-working-baseline",
+    "file_count": 1,
+    "method_count": 8,
+    "parameter_count": 32,
+    "passed": true
+  },
+  "phase0": {
+    "project": "anchorium-perpetual-alpha",
+    "checks": {
+      "project_is_perpetual_alpha": true,
+      "independent_git_directory": true,
+      "migration_branch": true,
+      "testnet_venue": true,
+      "orders_disabled": true,
+      "angel_one_client_disabled": true,
+      "angel_one_order_boundary_disabled": true,
+      "testnet_order_boundary_disabled": true,
+      "signal_logic_present": true,
+      "signal_source_unchanged": true
+    },
+    "passed": true
+  },
+  "offline_tests": {
+    "passed": 499,
+    "failures": 0,
+    "errors": 0,
+    "junit_artifact": "docs/phase1_5_tests_2026-10-02.xml"
+  },
+  "public_data": {
+    "artifact": "docs/par_market_data_live_check_2026-10-02.json",
+    "passed": true,
+    "markets": 10,
+    "requested_window_minutes": 60,
+    "completed_candles": 58,
+    "stream_messages": 10,
+    "orders_submitted": 0
+  },
+  "inventory": "docs/legacy_dependency_inventory.csv",
+  "inventory_identifier_smoke_check": "passed",
+  "git_diff_check": "passed",
+  "strategy_source_diff": "empty",
+  "signed_execution_enabled": false,
+  "wallet_secret_required": false,
+  "live_account_validation": "pending_team_public_address",
+  "performance_results_generated": false,
+  "limits": [
+    "Public feed observation only; not trading P&L or a competition score.",
+    "Local paper fills require explicit fee assumptions; full portfolio funding remains future work.",
+    "Frozen management methods are preserved; integration with the new execution body remains future work."
+  ]
+}

@@ -1,0 +1,431 @@
+{
+  "execution_mode": "PAPER",
+  "allow_live_orders": false,
+  "exchange_orders_submitted": 0,
+  "balance_origin": "HYPOTHETICAL_LOCAL_USDPR",
+  "starting_collateral": "20000",
+  "portfolio": {
+    "timestamp_ms": 1790929414844,
+    "cash": "20000",
+    "unrealized_pnl": "0",
+    "equity": "20000",
+    "initial_margin": "0",
+    "maintenance_margin_estimate": "0",
+    "order_reservations": "0",
+    "available_margin": "20000",
+    "gross_notional": "0",
+    "realized_pnl": "0",
+    "fees_paid": "0",
+    "funding_cashflow": "0",
+    "collateral": "USDPR"
+  },
+  "positions": [],
+  "scan_status": "NO_TRADE",
+  "watchlist": [],
+  "scanned_markets": 10,
+  "diagnostics": [
+    {
+      "symbol": "par:BRENT",
+      "qualified": false,
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "metrics": {},
+      "score": "0",
+      "signal": null
+    },
+    {
+      "symbol": "par:BTC",
+      "qualified": false,
+      "reasons": [
+        "ATR_BELOW_BASELINE_SCANNER_FLOOR",
+        "SPREAD_TOO_WIDE"
+      ],
+      "metrics": {
+        "atr_fraction": "0.0002001680750117453911714298949",
+        "atr_percent": "0.02001680750117453911714298949",
+        "spread_bps": "19.90003702332469455757126990",
+        "window_notional_approx": "7495.88690",
+        "bbo_notional": "4992.08860",
+        "ema_strength_fraction": "0.001048417503442493862615220714",
+        "trend": "BULLISH",
+        "vwap_distance_fraction": "0.007501094819992544497354898531",
+        "realized_volatility": "0.0006820470471425821",
+        "hourly_funding": "0.0000032462",
+        "open_interest": "0.0346",
+        "daily_notional_volume": "32614.992",
+        "candle_count": 516
+      },
+      "score": "0",
+      "signal": {
+        "symbol": "par:BTC",
+        "timestamp_ms": 1790929260000,
+        "reference": "85713.05822295805",
+        "atr": "17.285714285714285",
+        "bias": "LONG_BIAS",
+        "long": false,
+        "short": false,
+        "signal_type": null
+      }
+    },
+    {
+      "symbol": "par:ETH",
+      "qualified": false,
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "metrics": {},
+      "score": "0",
+      "signal": null
+    },
+    {
+      "symbol": "par:EWJ",
+      "qualified": false,
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "metrics": {},
+      "score": "0",
+      "signal": null
+    },
+    {
+      "symbol": "par:EWY",
+      "qualified": false,
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "metrics": {},
+      "score": "0",
+      "signal": null
+    },
+    {
+      "symbol": "par:GOLD",
+      "qualified": false,
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "metrics": {},
+      "score": "0",
+      "signal": null
+    },
+    {
+      "symbol": "par:HYPE",
+      "qualified": false,
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "metrics": {},
+      "score": "0",
+      "signal": null
+    },
+    {
+      "symbol": "par:SP500",
+      "qualified": false,
+      "reasons": [
+        "ATR_BELOW_BASELINE_SCANNER_FLOOR",
+        "SPREAD_TOO_WIDE"
+      ],
+      "metrics": {
+        "atr_fraction": "0.00009000950203402746310538349615",
+        "atr_percent": "0.009000950203402746310538349615",
+        "spread_bps": "19.98624323517578809390938705",
+        "window_notional_approx": "8020.9094",
+        "bbo_notional": "3694.848",
+        "ema_strength_fraction": "0.0001418829833646850966535023904",
+        "trend": "BEARISH",
+        "vwap_distance_fraction": "0.001672366297683476372628780338",
+        "realized_volatility": "0.0004074051749997912",
+        "hourly_funding": "0.00000625",
+        "open_interest": "0.328",
+        "daily_notional_volume": "51827.6555",
+        "candle_count": 516
+      },
+      "score": "0",
+      "signal": {
+        "symbol": "par:SP500",
+        "timestamp_ms": 1790929260000,
+        "reference": "7684.748285960379",
+        "atr": "0.6928571428571298",
+        "bias": "LONG_BIAS",
+        "long": false,
+        "short": false,
+        "signal_type": null
+      }
+    },
+    {
+      "symbol": "par:USDEUR",
+      "qualified": false,
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "metrics": {},
+      "score": "0",
+      "signal": null
+    },
+    {
+      "symbol": "par:USDJPY",
+      "qualified": false,
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "metrics": {},
+      "score": "0",
+      "signal": null
+    }
+  ],
+  "local_orders": 0,
+  "local_fills": 0,
+  "decisions": [],
+  "accounting_halt": null,
+  "pending_exits": {},
+  "closed_trades": [],
+  "performance": {
+    "return_fraction": "0",
+    "max_drawdown_fraction": "0",
+    "closed_trade_count": 0,
+    "win_rate": null
+  },
+  "strategy_freeze": {
+    "baseline": "nse-working-baseline",
+    "file_count": 1,
+    "method_count": 8,
+    "parameter_count": 32,
+    "passed": true
+  },
+  "fees": {
+    "maker": "0.0003",
+    "taker": "0.0009",
+    "source": "PAR_UNDISCOUNTED_BASE_TIER_CHECKED_2026-10-02_PAPER_ASSUMPTION"
+  },
+  "risk_policy": {
+    "risk_fraction": "0.005",
+    "max_daily_loss_fraction": "0.01",
+    "max_gross_equity_multiple": "1",
+    "max_margin_utilization": "0.5",
+    "maintenance_buffer_multiple": "2",
+    "max_funding_cost_fraction": "0.001",
+    "max_mark_oracle_bps": "50",
+    "max_spread_bps": "15",
+    "depth_participation": "0.1",
+    "slippage_bps": "5",
+    "holding_hours": "1",
+    "leverage": 1,
+    "max_positions": 1,
+    "max_daily_setups": 2
+  },
+  "scanner_policy": {
+    "min_atr_fraction": "0.004",
+    "max_spread_bps": "15",
+    "min_window_notional": "0",
+    "min_bbo_notional": "10",
+    "history_bars": 300,
+    "top_n": 3,
+    "max_candle_age_ms": 120000
+  },
+  "market_specs": [
+    {
+      "symbol": "par:BRENT",
+      "size_decimals": 2,
+      "max_leverage": 20,
+      "asset_id": 2670006,
+      "margin_tiers": [
+        [
+          "0",
+          20
+        ]
+      ]
+    },
+    {
+      "symbol": "par:BTC",
+      "size_decimals": 4,
+      "max_leverage": 40,
+      "asset_id": 2670000,
+      "margin_tiers": [
+        [
+          "0",
+          40
+        ]
+      ]
+    },
+    {
+      "symbol": "par:ETH",
+      "size_decimals": 4,
+      "max_leverage": 25,
+      "asset_id": 2670001,
+      "margin_tiers": [
+        [
+          "0",
+          25
+        ]
+      ]
+    },
+    {
+      "symbol": "par:EWJ",
+      "size_decimals": 3,
+      "max_leverage": 20,
+      "asset_id": 2670005,
+      "margin_tiers": [
+        [
+          "0",
+          20
+        ]
+      ]
+    },
+    {
+      "symbol": "par:EWY",
+      "size_decimals": 3,
+      "max_leverage": 20,
+      "asset_id": 2670004,
+      "margin_tiers": [
+        [
+          "0",
+          20
+        ]
+      ]
+    },
+    {
+      "symbol": "par:GOLD",
+      "size_decimals": 4,
+      "max_leverage": 25,
+      "asset_id": 2670007,
+      "margin_tiers": [
+        [
+          "0",
+          25
+        ]
+      ]
+    },
+    {
+      "symbol": "par:HYPE",
+      "size_decimals": 2,
+      "max_leverage": 10,
+      "asset_id": 2670002,
+      "margin_tiers": [
+        [
+          "0",
+          10
+        ]
+      ]
+    },
+    {
+      "symbol": "par:SP500",
+      "size_decimals": 3,
+      "max_leverage": 50,
+      "asset_id": 2670003,
+      "margin_tiers": [
+        [
+          "0.0",
+          50
+        ]
+      ]
+    },
+    {
+      "symbol": "par:USDEUR",
+      "size_decimals": 1,
+      "max_leverage": 50,
+      "asset_id": 2670008,
+      "margin_tiers": [
+        [
+          "0.0",
+          50
+        ]
+      ]
+    },
+    {
+      "symbol": "par:USDJPY",
+      "size_decimals": 2,
+      "max_leverage": 50,
+      "asset_id": 2670009,
+      "margin_tiers": [
+        [
+          "0.0",
+          50
+        ]
+      ]
+    }
+  ],
+  "strategy_state": {
+    "par:BRENT": {
+      "position": null,
+      "daily_bias": "NEUTRAL",
+      "candles_held": 0,
+      "candles_since_last_sl": 10001,
+      "last_completed_candle_ms": 1790929020000
+    },
+    "par:BTC": {
+      "position": null,
+      "daily_bias": "LONG_BIAS",
+      "candles_held": 0,
+      "candles_since_last_sl": 10001,
+      "last_completed_candle_ms": 1790929260000
+    },
+    "par:ETH": {
+      "position": null,
+      "daily_bias": "NEUTRAL",
+      "candles_held": 0,
+      "candles_since_last_sl": 10001,
+      "last_completed_candle_ms": 1790929080000
+    },
+    "par:EWJ": {
+      "position": null,
+      "daily_bias": "NEUTRAL",
+      "candles_held": 0,
+      "candles_since_last_sl": 10001,
+      "last_completed_candle_ms": 1790928720000
+    },
+    "par:EWY": {
+      "position": null,
+      "daily_bias": "NEUTRAL",
+      "candles_held": 0,
+      "candles_since_last_sl": 10001,
+      "last_completed_candle_ms": 1790928060000
+    },
+    "par:GOLD": {
+      "position": null,
+      "daily_bias": "NEUTRAL",
+      "candles_held": 0,
+      "candles_since_last_sl": 10001,
+      "last_completed_candle_ms": 1790927760000
+    },
+    "par:HYPE": {
+      "position": null,
+      "daily_bias": "NEUTRAL",
+      "candles_held": 0,
+      "candles_since_last_sl": 10001,
+      "last_completed_candle_ms": 1790928360000
+    },
+    "par:SP500": {
+      "position": null,
+      "daily_bias": "LONG_BIAS",
+      "candles_held": 0,
+      "candles_since_last_sl": 10001,
+      "last_completed_candle_ms": 1790929260000
+    },
+    "par:USDEUR": {
+      "position": null,
+      "daily_bias": "NEUTRAL",
+      "candles_held": 0,
+      "candles_since_last_sl": 10001,
+      "last_completed_candle_ms": 1790928120000
+    },
+    "par:USDJPY": {
+      "position": null,
+      "daily_bias": "NEUTRAL",
+      "candles_held": 0,
+      "candles_since_last_sl": 10001,
+      "last_completed_candle_ms": 1790928180000
+    }
+  },
+  "provenance": "LIVE_PUBLIC_PAR_DATA_LOCAL_PAPER_SIMULATION",
+  "observed_at_utc": "2026-10-02T08:23:34.887422+00:00",
+  "assumptions": [
+    "Hypothetical USDPR starting collateral; no wallet balance used.",
+    "Taker fills only from fresh displayed BBO, bounded by displayed size.",
+    "Displayed liquidity consumed once per observation; no invented queue or maker fill.",
+    "Fee rates are explicit paper assumptions; actual wallet tiers not verified.",
+    "Hourly funding uses observed boundary snapshots and is labelled estimated.",
+    "Missed funding boundary pauses entries; no fabricated historical oracle.",
+    "Maintenance uses runtime tiers; no exchange liquidation-price claim.",
+    "Current open positions remain unrealized; no stock EOD liquidation."
+  ]
+}

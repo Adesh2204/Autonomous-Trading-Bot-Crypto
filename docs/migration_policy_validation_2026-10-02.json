@@ -1,0 +1,53 @@
+{
+  "date": "2026-10-02",
+  "migration_policy": {
+    "TRADING_VENUE": "HYPERLIQUID_TESTNET",
+    "EXECUTION_MODE": "PAPER",
+    "ALLOW_LIVE_ORDERS": false
+  },
+  "strategy_freeze": {
+    "baseline": "nse-working-baseline",
+    "file_count": 1,
+    "method_count": 8,
+    "parameter_count": 32,
+    "passed": true
+  },
+  "phase0": {
+    "project": "anchorium-perpetual-alpha",
+    "checks": {
+      "project_is_perpetual_alpha": true,
+      "independent_git_directory": true,
+      "migration_branch": true,
+      "testnet_venue": true,
+      "paper_execution_mode": true,
+      "migration_policy_valid": true,
+      "orders_disabled": true,
+      "angel_one_client_disabled": true,
+      "angel_one_order_boundary_disabled": true,
+      "testnet_order_boundary_disabled": true,
+      "signal_logic_present": true,
+      "signal_source_unchanged": true
+    },
+    "passed": true
+  },
+  "offline_tests": {
+    "passed": 527,
+    "failures_and_errors": 0,
+    "additional_policy_tests": 28,
+    "junit_artifact": "docs/migration_policy_tests_2026-10-02.xml"
+  },
+  "signed_execution_enabled": false,
+  "automatic_activation_path": false,
+  "activation_prerequisites": [
+    "Explicit human instruction after wallet is funded, configured and manually verified."
+  ],
+  "reference_proposals_do_not_override_strategy_freeze": true,
+  "strategy_changes": [],
+  "git_diff_check": "passed",
+  "live_network_requests_during_policy_change": 0,
+  "pending_infrastructure": [
+    "Shared-collateral portfolio/funding accounting.",
+    "Margin/leverage/liquidation gates and execution-state integration.",
+    "Validation against Team Anchorium public wallet and subsequent performance reporting."
+  ]
+}

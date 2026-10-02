@@ -11,6 +11,12 @@ from execution_safety import SafetyError
 from opportunity_engine import same_time_rvol
 
 
+@pytest.fixture(autouse=True)
+def offline_protocol_only(monkeypatch):
+    from safety_test_support import allow_offline_broker_protocol
+    allow_offline_broker_protocol(monkeypatch)
+
+
 @pytest.mark.parametrize('cash', ['nan', 'inf', True, '-1'])
 def test_nonfinite_or_boolean_broker_cash_is_blocked(cash):
     broker = Broker()
