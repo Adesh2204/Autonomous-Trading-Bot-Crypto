@@ -3,6 +3,7 @@
 No private keys, signing SDK, or /exchange HTTP transport exists in this module.
 """
 from types import MappingProxyType
+from copy import deepcopy
 import time
 
 from .base_exchange import ExchangeError, MarketSpec, VenueMismatch
@@ -13,10 +14,11 @@ DEX = 'par'
 EXPECTED_MARKETS = frozenset('par:' + name for name in (
     'BTC', 'ETH', 'HYPE', 'SP500', 'EWY', 'EWJ', 'BRENT', 'GOLD', 'USDEUR', 'USDJPY'))
 DEX_QUERIES = frozenset({'meta', 'metaAndAssetCtxs', 'allMids', 'clearinghouseState',
-                         'openOrders', 'perpDexLimits'})
+                         'openOrders', 'frontendOpenOrders', 'perpDexLimits'})
 COIN_QUERIES = frozenset({'l2Book', 'recentTrades', 'fundingHistory', 'activeAssetData'})
 ACCOUNT_QUERIES = frozenset({'spotClearinghouseState', 'userFills', 'userFillsByTime',
-                            'userFunding', 'userAbstraction', 'extraAgents', 'userFees', 'userRateLimit'})
+                            'userFunding', 'userAbstraction', 'extraAgents', 'userFees', 'userRateLimit',
+                            'orderStatus'})
 
 
 class RequestsInfoTransport:
@@ -31,7 +33,13 @@ class RequestsInfoTransport:
             response = self.session.post(TESTNET_API_URL + '/info', json=payload,
                                          timeout=self.timeout, allow_redirects=False)
             if response.status_code != 200:
-                raise ExchangeError('INFO_HTTP_' + str(response.status_code))
+                error=ExchangeError('INFO_HTTP_' + str(response.status_code))
+                error.status_code=response.status_code
+                try:
+                    error.retry_after_ms=max(0,int(float(response.headers.get('Retry-After','0'))*1000))
+                except (TypeError,ValueError,OverflowError):
+                    error.retry_after_ms=None
+                raise error
             return response.json()
         except ExchangeError:
             raise
@@ -43,7 +51,7 @@ class RequestsInfoTransport:
 
 
 class HyperliquidClient:
-    def __init__(self, transport=None, *, base_url=TESTNET_API_URL, clock_ms=None):
+    def __init__(self, transport=None, *, base_url=TESTNET_API_URL, clock_ms=None, rate_limits=None):
         if base_url != TESTNET_API_URL:
             raise VenueMismatch('TESTNET_ENDPOINT_REQUIRED')
         self.transport = transport if transport is not None else RequestsInfoTransport()
@@ -54,8 +62,10 @@ class HyperliquidClient:
         self.collateral_token_id = None
         self.metadata_timestamp_ms = None
         self.last_received_ms = None
+        self.metadata = None
+        self.rate_limits = rate_limits
 
-    def post_info(self, query, **parameters):
+    def post_info(self, query, *, priority=None, **parameters):
         if {'type', 'action', 'signature', 'nonce'} & parameters.keys():
             raise ExchangeError('INVALID_PUBLIC_INFO_PARAMETERS')
         if query not in DEX_QUERIES | COIN_QUERIES | ACCOUNT_QUERIES | {'perpDexs', 'candleSnapshot'}:
@@ -73,7 +83,10 @@ class HyperliquidClient:
             if not isinstance(payload.get('req'), dict):
                 raise ExchangeError('INVALID_CANDLE_REQUEST')
             self._validate_coin(payload['req'].get('coin'))
-        result = self.transport(payload)
+        if self.rate_limits is not None:
+            result=self.rate_limits.read(query,lambda:self.transport(payload),priority=priority)
+        else:
+            result = self.transport(payload)
         self.last_received_ms = self.clock_ms()
         return result
 
@@ -89,6 +102,7 @@ class HyperliquidClient:
         self.collateral_token_id = None
         self.metadata_timestamp_ms = None
         self.last_received_ms = None
+        self.metadata = None
 
     def _parse_specs(self, metadata, dex_index):
         if not isinstance(metadata, dict) or not isinstance(metadata.get('universe'), list):
@@ -140,6 +154,7 @@ class HyperliquidClient:
         self.dex_index = matches[0]
         self.collateral_token_id = metadata.get('collateralToken')
         self.markets = MappingProxyType(specifications)
+        self.metadata = deepcopy(metadata)
         self.metadata_timestamp_ms = self.clock_ms()
         self.ready = True
         return self.markets

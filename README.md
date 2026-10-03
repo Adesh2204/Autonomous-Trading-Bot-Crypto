@@ -22,13 +22,14 @@ All production exchange-write paths fail closed. Angel One execution is
 permanently disabled, including protective/exit orders and alternate SDK paths.
 Legacy login entry points use a disabled client. `LIVE_MODE=True`, old activation
 evidence, credentials, or `ALLOW_LIVE_ORDERS=true` cannot enable Angel One.
-Signed Hyperliquid execution is not implemented, so it also remains blocked even
-if the permission flag is accidentally enabled. Paper fills remain local ledger
+Signed Hyperliquid execution is implemented through SDK 0.24.0, with a separate
+manual approval and verified account gate. It remains blocked under PAPER/false;
+an environment flag alone cannot activate it. Paper fills remain local ledger
 simulations and never reach an exchange.
 
 The migration probe and crypto paper executor reject contradictory execution
 settings. Runtime mode/permission changes stop new local orders and fills before
-ledger mutation. Exchange writes remain blocked in every mode. Activation requires
+ledger mutation. Default exchange writes remain blocked. Activation requires
 an explicit future instruction after the Team Anchorium wallet is funded,
 configured and manually verified; credentials or environment flags do not meet
 that requirement. See the [migration policy](docs/migration_policy.md).
@@ -132,7 +133,7 @@ A subsequent [two-scan continuous public probe](docs/crypto_public_continuous_pr
 also passed, with ten markets per scan, two equity snapshots, `NO_TRADE`, and zero
 orders. This is short integration evidence; a multi-hour exposed paper run remains
 unobserved. Actual wallet fee tiers/account balances, exchange funding settlements
-and signed execution remain unverified and disabled.
+and funded-wallet execution remain unverified. Actual exchange submissions are disabled.
 
 ## Recovery, fill truth and risk controls
 
@@ -183,7 +184,8 @@ A bounded public paper scan without an account observer records a complete
 REST/clock tape. Replay uses historical completed bars and their observed quotes
 through the same frozen strategy and local execution kernel without HTTP or
 sockets. Keep `EXECUTION_MODE=PAPER` and `ALLOW_LIVE_ORDERS=false` for both runners;
-REPLAY is the offline run context. LIVE exposes guarded interfaces only.
+REPLAY is the offline run context. The future testnet executor has an additional
+manual authorization, funded-account, agent-approval and reconciliation gate.
 
 ```sh
 .venv/bin/python scripts/run_crypto_paper.py --cycles 1
@@ -192,12 +194,71 @@ REPLAY is the offline run context. LIVE exposes guarded interfaces only.
 
 Blank/zero team addresses report NOT_CONFIGURED; a valid public address remains
 unverified. All signed actions, including close/cancel/leverage, stay blocked.
-The current suite passes **678 tests**. A [genuine public audit scan](docs/crypto_public_audit_probe_2026-10-02.json)
+The audit/replay checkpoint passed **678 tests**. A [genuine public audit scan](docs/crypto_public_audit_probe_2026-10-02.json)
 found ten markets with stale completed candles and returned NO_TRADE with zero
 orders/fills; its offline replay matched diagnostics, decisions and portfolio.
 See [validation and limitations](docs/crypto_audit_validation_2026-10-02.json).
-The replay runner supports complete single-scan tapes; continuous-feed replay,
-funded-wallet testing and signed execution remain future work.
+The replay runner supports complete single-scan tapes. Continuous-feed replay and
+funded-wallet trade verification remain future work. Signed transport is now
+implemented and exercised with isolated offline fixtures.
+
+## Signed execution infrastructure: implemented, activation locked
+
+The [production execution engineering report](docs/live_execution_engineering_report_2026-10-02.md)
+contains the architecture, exact changed paths, validator, actual-account
+accounting, restart/reconnect recovery, tests and future activation procedure.
+The earlier complete-project report is a historical snapshot from before this
+execution phase.
+
+The executor uses the official Hyperliquid SDK 0.24.0. Account reads use the
+team public address; only an approved API wallet signs. Durable CLOIDs prevent
+blind resubmission after a timeout. Actual results use reported fills, fees and
+funding, with separate mode/source fields from PAPER and REPLAY.
+
+The normal development configuration remains PAPER/false. No exchange order was
+submitted during this implementation. The original execution checkpoint passed
+**761 tests**, including **83 focused cases**. The reliability upgrade below adds
+a full independent catastrophic protection lifecycle; it remains disabled until
+an explicit distance policy and separate human activation approval are supplied.
+Normal frozen stop/target management is unchanged.
+
+Run the read-only readiness probe:
+
+```sh
+.venv/bin/python scripts/check_live_readiness.py --output docs/live_execution_readiness_2026-10-02.json
+```
+
+This command cannot load a signer or send `/exchange` actions. To check account
+setup, add `--team-wallet PUBLIC_ADDRESS --api-wallet-address PUBLIC_ADDRESS`.
+Keep both private keys out of command arguments and shared output. This probe
+does not restore strategy management state and cannot authorize activation.
+
+## Production reliability and catastrophic protection
+
+The [reliability engineering report](</Users/adesh/Autonomous Trading Bot - Crypto /docs/production_reliability_report_2026-10-03.md>)
+explains the audit, all changed files, API priorities/reserves, durable nonce
+faults, clock recovery, process ownership, trigger lifecycle, tests and remaining
+account verification. The [public policy file](</Users/adesh/Autonomous Trading Bot - Crypto /configs/reliability_policy.json>)
+sets the operational limits. Protection defaults to disabled with no distance or
+slippage value. Loading a policy grants no exchange-write permission.
+
+The shared API manager throttles optional work first, reserves capacity for
+position safety, tracks WebSocket budgets and retries only safe reads. Signed
+orders, cancels and leverage actions retain durable uncertainty barriers. The
+protection manager uses verified positions and official SDK reduce-only triggers;
+it verifies, resizes, cancels, and recovers them without changing strategy stops.
+Results now include protection events and readable/JSON production safety reports.
+
+```sh
+.venv/bin/python scripts/check_live_readiness.py --output docs/production_safety_readiness_2026-10-03.json
+.venv/bin/python scripts/verify_reliability_strategy_parity.py --output docs/reliability_strategy_parity_2026-10-03.json
+.venv/bin/python -m pytest -q
+```
+
+The public readiness command never creates a signer. Blank wallets remain
+unconfigured, with unknown account/protection state and LIVE readiness false.
+The strategy comparison covers 2,050 identical candles from the pre-upgrade source.
+See the engineering report for final regression counts and failure-injection evidence.
 
 ## Baseline and validation
 

@@ -1,0 +1,244 @@
+{
+  "phase": "PRODUCTION_HYPERLIQUID_EXECUTION_INFRASTRUCTURE",
+  "verified_at": "2026-10-03T00:09:51.912904+05:30",
+  "repository": "/Users/adesh/Autonomous Trading Bot - Crypto ",
+  "branch": "perpetual-alpha-migration",
+  "head": "d6d6090c1d2066b3828105bdf0412e9f1d548d32",
+  "git_dirty": true,
+  "strategy_freeze": {
+    "baseline": "nse-working-baseline",
+    "file_count": 1,
+    "method_count": 8,
+    "parameter_count": 32,
+    "passed": true
+  },
+  "signal_brain_sha256": "bff940ac5ed35f71ed3dfb537ba15d20dcec35a4e62a938d2f0619c6e9309d83",
+  "phase0": {
+    "project": "anchorium-perpetual-alpha",
+    "checks": {
+      "project_is_perpetual_alpha": true,
+      "independent_git_directory": true,
+      "migration_branch": true,
+      "testnet_venue": true,
+      "paper_execution_mode": true,
+      "migration_policy_valid": true,
+      "orders_disabled": true,
+      "angel_one_client_disabled": true,
+      "angel_one_order_boundary_disabled": true,
+      "testnet_order_boundary_disabled": true,
+      "signal_logic_present": true,
+      "signal_source_unchanged": true
+    },
+    "passed": true
+  },
+  "sdk_version": "0.24.0",
+  "suite": {
+    "tests": 761,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 761,
+    "new_focused_cases": 83,
+    "duration_seconds": 57.817
+  },
+  "public_probe": {
+    "network": "testnet",
+    "dex": "par",
+    "market_data_ready": true,
+    "paper_ready": true,
+    "signed_transport_implemented": true,
+    "sdk_version": "0.24.0",
+    "account_ready": false,
+    "live_ready": false,
+    "live_orders_permitted": false,
+    "execution_mode": "PAPER",
+    "allow_live_orders": false,
+    "team_wallet_configured": false,
+    "api_wallet_configured": false,
+    "strategy_freeze": {
+      "baseline": "nse-working-baseline",
+      "file_count": 1,
+      "method_count": 8,
+      "parameter_count": 32,
+      "passed": true
+    },
+    "final_status": "ACCOUNT_SETUP_REQUIRED",
+    "market_rules_loaded": true,
+    "metadata": [
+      {
+        "symbol": "par:BRENT",
+        "size_decimals": 2,
+        "max_leverage": 20,
+        "asset_id": 2670006,
+        "margin_tiers": [
+          [
+            "0",
+            20
+          ]
+        ]
+      },
+      {
+        "symbol": "par:BTC",
+        "size_decimals": 4,
+        "max_leverage": 40,
+        "asset_id": 2670000,
+        "margin_tiers": [
+          [
+            "0",
+            40
+          ]
+        ]
+      },
+      {
+        "symbol": "par:ETH",
+        "size_decimals": 4,
+        "max_leverage": 25,
+        "asset_id": 2670001,
+        "margin_tiers": [
+          [
+            "0",
+            25
+          ]
+        ]
+      },
+      {
+        "symbol": "par:EWJ",
+        "size_decimals": 3,
+        "max_leverage": 20,
+        "asset_id": 2670005,
+        "margin_tiers": [
+          [
+            "0",
+            20
+          ]
+        ]
+      },
+      {
+        "symbol": "par:EWY",
+        "size_decimals": 3,
+        "max_leverage": 20,
+        "asset_id": 2670004,
+        "margin_tiers": [
+          [
+            "0",
+            20
+          ]
+        ]
+      },
+      {
+        "symbol": "par:GOLD",
+        "size_decimals": 4,
+        "max_leverage": 25,
+        "asset_id": 2670007,
+        "margin_tiers": [
+          [
+            "0",
+            25
+          ]
+        ]
+      },
+      {
+        "symbol": "par:HYPE",
+        "size_decimals": 2,
+        "max_leverage": 10,
+        "asset_id": 2670002,
+        "margin_tiers": [
+          [
+            "0",
+            10
+          ]
+        ]
+      },
+      {
+        "symbol": "par:SP500",
+        "size_decimals": 3,
+        "max_leverage": 50,
+        "asset_id": 2670003,
+        "margin_tiers": [
+          [
+            "0.0",
+            50
+          ]
+        ]
+      },
+      {
+        "symbol": "par:USDEUR",
+        "size_decimals": 1,
+        "max_leverage": 50,
+        "asset_id": 2670008,
+        "margin_tiers": [
+          [
+            "0.0",
+            50
+          ]
+        ]
+      },
+      {
+        "symbol": "par:USDJPY",
+        "size_decimals": 2,
+        "max_leverage": 50,
+        "asset_id": 2670009,
+        "margin_tiers": [
+          [
+            "0.0",
+            50
+          ]
+        ]
+      }
+    ],
+    "dex_index": 257,
+    "observed_ms": 1790965302313,
+    "clock_healthy": true,
+    "account_reconciliation_ready": false,
+    "reasons": [
+      "TEAM_AND_APPROVED_API_WALLET_CONFIGURATION_REQUIRED"
+    ]
+  },
+  "exchange_actions_submitted": 0,
+  "account_administration_actions": 0,
+  "execution_mode": "PAPER",
+  "allow_live_orders": false,
+  "remaining_blockers": [
+    "ORGANIZER_FUNDING",
+    "TEAM_WALLET_CONFIGURATION",
+    "APPROVED_API_WALLET",
+    "UNIFIED_ACCOUNT_VERIFICATION",
+    "ACCOUNT_RECONCILIATION",
+    "SEPARATE_HUMAN_ACTIVATION",
+    "ACTUAL_CONTROLLED_TESTNET_TRADE_VERIFICATION"
+  ],
+  "implementation_file_sha256": {
+    "algo-trading-bot/exchange/execution_journal.py": "20b2db41f593b2b40210d13deccfdfeba327f7b391560815c5a5956d715cc2d3",
+    "algo-trading-bot/exchange/account_events.py": "f795d377116188b15346141d758faddf4618b732da144f1691c94bda2d522e1f",
+    "algo-trading-bot/exchange/perpetual_economics.py": "7c0bc020a9f91e952f5187ee2a71c5f70af0ef2ac24bb52c45e26768ca66a079",
+    "algo-trading-bot/exchange/market_snapshot.py": "c67ec337dc4825f7ffbfbf7859e14235949778285b22b5c7e88bd508fe09fb51",
+    "algo-trading-bot/exchange/hyperliquid_execution.py": "fbb68307920659856f8ffaf6c4a9c1b21fbae9aeec4a285f3527ee43b8301572",
+    "algo-trading-bot/exchange/protective_orders.py": "c041a1cdc5cf030b8a089d3b67468da2eed0854aa83edf6213bbab08c4e91455",
+    "algo-trading-bot/exchange/hyperliquid_reconciliation.py": "57d42471c9690cff16401462a1c2c4db7ad06270d6978531510367807a29b21b",
+    "algo-trading-bot/exchange/live_runtime.py": "3f2018c4c41379d514e08face48a242221f33ff48d25cd3c94966a62f67e8408",
+    "algo-trading-bot/exchange/hyperliquid_account.py": "f982407bd0c3fe991241ca57d4a374b70eaa118ea52efbdaabacf54f43aa5aa9",
+    "algo-trading-bot/exchange/paper_portfolio.py": "778f2a049ba1c26921fd2e281351295c2c8eed71edbbd89aef0d1d422066e870",
+    "algo-trading-bot/exchange/base_exchange.py": "ef4bdced6c6ac0cc0a2738a1af2e126a84bfbf5d0e31c3432ba46d17d0f7265f",
+    "algo-trading-bot/exchange/live_recovery.py": "e2daf6046dcdab1f91bfa0a449aab8c3a184888b9353a8016c82d880ff4be686",
+    "algo-trading-bot/exchange/exchange_rules.py": "d8127e40fc164c0e0645eae721cbb3e10700d480672592c50c0a29b1d46387f2",
+    "algo-trading-bot/exchange/__init__.py": "ecbd9472b56feff3e87c643ada9b0d799d6ff2fe9f2de87b2bdbac36fd07717d",
+    "algo-trading-bot/exchange/execution_safety.py": "e9eee04977932654e0807311e2d869fce056ab404e5069ce536378c5229fe4fa",
+    "algo-trading-bot/exchange/hyperliquid_client.py": "ba978fdc453168ec5a5e6465cc415415d76e912abe32df7d8fefa22508553073",
+    "algo-trading-bot/exchange/event_timing.py": "6d605929d87d9adcbee9d9ebcd6acb128d08b8a85bbb98934d5a093bcc2d6e11",
+    "algo-trading-bot/exchange/paper_execution.py": "ba6f3975fcd2be4d71c7d28abda0e55a0e85aa7d13ed3ed4b2e46f5fbac0c699",
+    "algo-trading-bot/exchange/hyperliquid_market_data.py": "4bd8efe51f8a57055ef422af724f39eca9ba1a46ff303cb39645c6405126d4dc",
+    "algo-trading-bot/exchange/replay.py": "505318a82b006a41e1fd80b9b744f6e2f56192e612922bb7ef730e8c8b8c504d",
+    "algo-trading-bot/exchange/live_account_stream.py": "0aef283e6cfdf76d6a6a2ff1a5b94680399f6e60172870588fcdc830d3722b9d",
+    "algo-trading-bot/exchange/live_portfolio.py": "9d1481c5f560f5e3fa3a04899034e437b260178e86370e97d9cc7cab7c8c3015",
+    "algo-trading-bot/exchange/paper_account.py": "90e2b2f3006301296e445d51fd921903a2a612350603f3e5b2e8a8f3f69e52e3",
+    "algo-trading-bot/exchange/live_readiness.py": "82e38b5c145e0d244fd755027b6b2e88b182a6c68f285b5cc72445a0a751c369",
+    "algo-trading-bot/exchange/order_lifecycle.py": "8d7e0cfadfa4b56d432f2aee834f0eee18ef2326300f7a6b97060fdbf77e7d4f",
+    "algo-trading-bot/exchange/readiness.py": "bf8d25a27dc2f7276d2d54a95f98b3b29a8f8d9b20c4bbab22c7dd68e2f7eb81",
+    "algo-trading-bot/exchange/sdk_transport.py": "9844e5727ff63e935837ebaed7109e456e458c1fdf7a80f3c482d9e9c32956df",
+    "algo-trading-bot/exchange/paper_reconciliation.py": "0cecb2548dfefcc2490dced61428b75e3723bffd428d89968ba6d6f54d88c1ef",
+    "algo-trading-bot/live_execution_session.py": "fc1d002c69b65a1331c2e68f878347201158b03890e1e43dc82c8bf67ef04794",
+    "algo-trading-bot/live_session_results.py": "ff4496e106c2bd3aa35039801e1931cf490100d954ce376b3df0c0b8b92eec79",
+    "algo-trading-bot/test_live_exchange_execution.py": "fdacb39b802a25515ed76a47f90e6b09b6b074949964b5cc2715e44cba8aa37e",
+    "scripts/check_live_readiness.py": "99c01cdff4f41e5e34070890019d62b3444c1529fee943f9268325ee12c3e517"
+  }
+}

@@ -1,0 +1,217 @@
+{
+  "network": "testnet",
+  "dex": "par",
+  "market_data_ready": true,
+  "paper_ready": true,
+  "signed_transport_implemented": true,
+  "sdk_version": "0.24.0",
+  "account_ready": false,
+  "live_ready": false,
+  "live_orders_permitted": false,
+  "execution_mode": "PAPER",
+  "allow_live_orders": false,
+  "team_wallet_configured": false,
+  "api_wallet_configured": false,
+  "strategy_freeze": {
+    "baseline": "nse-working-baseline",
+    "file_count": 1,
+    "method_count": 8,
+    "parameter_count": 32,
+    "passed": true
+  },
+  "final_status": "ACCOUNT_SETUP_REQUIRED",
+  "production_safety": {
+    "network": "testnet",
+    "dex": "par",
+    "api_budget": "UNKNOWN",
+    "account_request_budget": null,
+    "daily_actions": null,
+    "nonce_manager": "NOT_CONFIGURED",
+    "api_wallet_ownership": "NOT_CONFIGURED",
+    "clock": {
+      "state": "HEALTHY",
+      "reason": null,
+      "offset_ms": -661,
+      "last_reference_ms": 1791022972490,
+      "fresh_confirmations": 1
+    },
+    "position_state": "UNKNOWN",
+    "positions": {},
+    "catastrophic_protection": "NOT_VERIFIED",
+    "websocket": "DEGRADED",
+    "reconciliation": "REQUIRED",
+    "new_entries": "PAUSED",
+    "live_orders_permitted": false,
+    "infrastructure_implemented": {
+      "rate_limits": true,
+      "nonces": true,
+      "clock": true,
+      "protection": true
+    },
+    "source": "READ_ONLY_SAFETY_SNAPSHOT"
+  },
+  "configured_reliability_policy": {
+    "rate_limits": {
+      "ip_weight_per_minute": 1200,
+      "ip_safety_reserve": 120,
+      "daily_actions": 50000,
+      "daily_safety_reserve": 500,
+      "account_action_reserve": 10,
+      "max_open_orders": 1000,
+      "max_ws_connections": 10,
+      "max_ws_subscriptions": 1000,
+      "max_ws_unique_users": 10,
+      "venue_ws_connections_per_minute": 30,
+      "max_ws_messages_per_minute": 2000,
+      "ws_reconnects_per_minute": 5,
+      "budget_max_age_ms": 60000,
+      "optional_poll_interval_ms": 5000,
+      "read_retry_attempts": 3,
+      "backoff_base_ms": 1000,
+      "backoff_max_ms": 30000,
+      "exhausted_safety_action_interval_ms": 10000,
+      "caution_fraction": 0.75,
+      "throttle_fraction": 0.9
+    },
+    "clock": {
+      "max_skew_ms": 2000,
+      "max_age_ms": 30000
+    },
+    "protection": {
+      "enabled": false,
+      "approval_reference": null,
+      "atr_distance_multiple": null,
+      "execution_slippage_fraction": null
+    }
+  },
+  "market_rules_loaded": true,
+  "metadata": [
+    {
+      "symbol": "par:BRENT",
+      "size_decimals": 2,
+      "max_leverage": 20,
+      "asset_id": 2670006,
+      "margin_tiers": [
+        [
+          "0",
+          20
+        ]
+      ]
+    },
+    {
+      "symbol": "par:BTC",
+      "size_decimals": 4,
+      "max_leverage": 40,
+      "asset_id": 2670000,
+      "margin_tiers": [
+        [
+          "0",
+          40
+        ]
+      ]
+    },
+    {
+      "symbol": "par:ETH",
+      "size_decimals": 4,
+      "max_leverage": 25,
+      "asset_id": 2670001,
+      "margin_tiers": [
+        [
+          "0",
+          25
+        ]
+      ]
+    },
+    {
+      "symbol": "par:EWJ",
+      "size_decimals": 3,
+      "max_leverage": 20,
+      "asset_id": 2670005,
+      "margin_tiers": [
+        [
+          "0",
+          20
+        ]
+      ]
+    },
+    {
+      "symbol": "par:EWY",
+      "size_decimals": 3,
+      "max_leverage": 20,
+      "asset_id": 2670004,
+      "margin_tiers": [
+        [
+          "0",
+          20
+        ]
+      ]
+    },
+    {
+      "symbol": "par:GOLD",
+      "size_decimals": 4,
+      "max_leverage": 25,
+      "asset_id": 2670007,
+      "margin_tiers": [
+        [
+          "0",
+          25
+        ]
+      ]
+    },
+    {
+      "symbol": "par:HYPE",
+      "size_decimals": 2,
+      "max_leverage": 10,
+      "asset_id": 2670002,
+      "margin_tiers": [
+        [
+          "0",
+          10
+        ]
+      ]
+    },
+    {
+      "symbol": "par:SP500",
+      "size_decimals": 3,
+      "max_leverage": 50,
+      "asset_id": 2670003,
+      "margin_tiers": [
+        [
+          "0.0",
+          50
+        ]
+      ]
+    },
+    {
+      "symbol": "par:USDEUR",
+      "size_decimals": 1,
+      "max_leverage": 50,
+      "asset_id": 2670008,
+      "margin_tiers": [
+        [
+          "0.0",
+          50
+        ]
+      ]
+    },
+    {
+      "symbol": "par:USDJPY",
+      "size_decimals": 2,
+      "max_leverage": 50,
+      "asset_id": 2670009,
+      "margin_tiers": [
+        [
+          "0.0",
+          50
+        ]
+      ]
+    }
+  ],
+  "dex_index": 257,
+  "observed_ms": 1791022972688,
+  "clock_healthy": true,
+  "account_reconciliation_ready": false,
+  "reasons": [
+    "TEAM_AND_APPROVED_API_WALLET_CONFIGURATION_REQUIRED"
+  ]
+}

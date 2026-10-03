@@ -3,8 +3,9 @@
 - Work only in this cloned repository. Keep the original NSE repository untouched.
 - This is an exchange/market infrastructure migration, never a strategy rewrite.
 - Enforce `EXECUTION_MODE=PAPER` and `ALLOW_LIVE_ORDERS=false` throughout migration.
-  Angel One execution is permanently prohibited. No signed exchange actions or
-  wallet secrets are part of migration work. An environment flag, wallet address,
+  Angel One execution is permanently prohibited. No actual exchange submissions or
+  team-wallet secrets are part of migration work. The latest directive permits
+  isolated offline SDK signing with ephemeral API-wallet fixtures. An environment flag, wallet address,
   funding observation or successful connection test does not authorize activation.
   Any later activation requires the human user's explicit change after the Team
   Anchorium wallet is funded, configured and manually verified. Until then all
@@ -60,3 +61,20 @@
   source hashes alongside Git commits. Observed daily/oracle estimates are not
   official competition scores. Blank/zero wallets are NOT_CONFIGURED; even a
   supplied valid address remains unverified until the human verifies it.
+
+- The subsequent production-execution directive authorizes the official SDK
+  0.24.0 signed transport, central exchange validation, durable order recovery,
+  account readiness, nonce/rate/clock controls and offline signed fixtures.
+  It does not authorize any actual exchange order or account administration.
+  Preserve PAPER/false defaults and the frozen strategy. Future testnet writes
+  additionally require explicit human approval and verified funded account,
+  agent approval, unified mode, metadata, account reconciliation and health.
+  An offline signed fixture must have no HTTP exchange transport and must never
+  grant permission to the production transport.
+
+- The production reliability directive authorizes centralized priority/reserve
+  budgets, adaptive read backoff, nonce/clock health, WebSocket budgets and a full
+  independent reduce-only catastrophic protection lifecycle. It supersedes the
+  earlier planner-only limitation. Keep actual exchange actions unauthorized,
+  PAPER/false and catastrophic protection disabled by default. Production stop
+  distance requires explicit documented approval; no strategy geometry changes.

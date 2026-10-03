@@ -89,7 +89,7 @@ def main():
                     status='reference_retained; excluded from new exchange core'))
     csv_path = ROOT/'docs/legacy_dependency_inventory.csv'
     with csv_path.open('w', newline='') as stream:
-        writer = csv.DictWriter(stream, fieldnames=['path', 'line', 'column', 'term',
+        writer = csv.DictWriter(stream, lineterminator='\n', fieldnames=['path', 'line', 'column', 'term',
             'disposition', 'replacement', 'status'])
         writer.writeheader()
         writer.writerows(occurrences)

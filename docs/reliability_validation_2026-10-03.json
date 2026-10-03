@@ -1,0 +1,367 @@
+{
+  "project": "anchorium-perpetual-alpha",
+  "phase": "PRODUCTION_RELIABILITY_HARDENING",
+  "generated_utc": "2026-10-03T11:06:49.417599+00:00",
+  "branch": "perpetual-alpha-migration",
+  "before_head": "519d6763d277a66c80cac26ba4b114c4dbb98ad5",
+  "current_head": "519d6763d277a66c80cac26ba4b114c4dbb98ad5",
+  "git_working_tree": "UNCOMMITTED_IMPLEMENTATION",
+  "execution_mode": "PAPER",
+  "allow_live_orders": false,
+  "actual_exchange_orders_submitted": 0,
+  "production_protection_policy_enabled": false,
+  "test_results": {
+    "full_suite": {
+      "tests": 844,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 844,
+      "duration_seconds": 54.16,
+      "artifact": "docs/reliability_regression_2026-10-03.xml"
+    },
+    "new_reliability_cases": 83,
+    "retained_existing_cases": 761,
+    "focused_existing_execution_and_reliability": {
+      "passed": 166,
+      "failed": 0,
+      "source": "direct pytest console result"
+    },
+    "replay_migration_paper_group": {
+      "tests": 169,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 169,
+      "duration_seconds": 33.694,
+      "artifact": "docs/reliability_replay_parity_2026-10-03.xml"
+    },
+    "subset_counts_overlap_full_suite": true,
+    "fixture_scope": "Ephemeral API wallets, official SDK serialization, in-memory exchange transport with HTTP disabled. Synthetic positions/fills, no real performance claim."
+  },
+  "strategy_integrity": {
+    "freeze": {
+      "baseline": "nse-working-baseline",
+      "file_count": 1,
+      "method_count": 8,
+      "parameter_count": 32,
+      "passed": true
+    },
+    "protected_manifest_unchanged": true,
+    "protected_file_sha256": {
+      "algo-trading-bot/signal_brain.py": "bff940ac5ed35f71ed3dfb537ba15d20dcec35a4e62a938d2f0619c6e9309d83"
+    },
+    "protected_methods": {
+      "algo-trading-bot/execution_engine.py": {
+        "LegacyPaperTrader.check_exit": "221ab6134685303ed9ebaa53b2b203ad5ca309d7e0849c92a4203d5c97609345",
+        "LegacyPaperTrader.notify_candle_close": "d44d8715e7eff3c391ef1adc274b974ce88944e43dace156404c8fb4bb8d086c",
+        "LegacyPaperTrader.update_daily_bias": "0a49d1344953a7823b697d363883d61e31302b29eea51b97f614a3f3071a3e1b"
+      },
+      "algo-trading-bot/live_stream.py": {
+        "AngelOneLiveStream._evaluate_watchlist_orchestrator": "1219f1493e1c24f990467a8a5d3e4bde0e86afc99839f234a497bcba2c6f3b8a"
+      },
+      "algo-trading-bot/runtime_observation.py": {
+        "observe_signal": "91c5b7d4822fb623cb56c6dd63181c036c4c70e06782598fb3b50e2b5fe657c1"
+      },
+      "algo-trading-bot/safe_trader.py": {
+        "SafeTrader.check_exit": "82111d256dd1e6e3f9be8e9cd3accec3bc51a44bb2594bad78e0bbad016c5f8a",
+        "SafeTrader.execute_trade": "a343d6f64f7a4873e63291beb66aa0f0ec2d196e57c0d5fe1bc4a543f8b24884",
+        "SafeTrader.notify_candle_close": "f7d71dc830ad279a18d996a248cd3ffc331cfb0c7c3b1bce4f9f7eb6a7258c19"
+      }
+    },
+    "before_current_output_comparison": {
+      "before_ref": "519d6763d277a66c80cac26ba4b114c4dbb98ad5",
+      "strategy_freeze": {
+        "baseline": "nse-working-baseline",
+        "file_count": 1,
+        "method_count": 8,
+        "parameter_count": 32,
+        "passed": true
+      },
+      "protected_source_identical": true,
+      "signal_brain_sha256": "bff940ac5ed35f71ed3dfb537ba15d20dcec35a4e62a938d2f0619c6e9309d83",
+      "fixtures": [
+        {
+          "fixture": "warmup",
+          "input_rows": 10,
+          "output_rows": 10,
+          "output_columns": 17,
+          "outputs_identical": true,
+          "output_sha256": "74b40ab4766695dd032f09bc575f5c9995e33aaabec60128b5c7472ea4605243",
+          "signals": {
+            "Buy_Signal": 0,
+            "Breakout_Signal": 0,
+            "Sell_Signal": 0,
+            "Breakdown_Sell_Signal": 0
+          }
+        },
+        {
+          "fixture": "flat",
+          "input_rows": 120,
+          "output_rows": 120,
+          "output_columns": 17,
+          "outputs_identical": true,
+          "output_sha256": "48f5cc3e4bb8252b90c82c0c4b69c15a74ffec74ba452384365b85d5bd0705a2",
+          "signals": {
+            "Buy_Signal": 1,
+            "Breakout_Signal": 0,
+            "Sell_Signal": 0,
+            "Breakdown_Sell_Signal": 0
+          }
+        },
+        {
+          "fixture": "uptrend",
+          "input_rows": 360,
+          "output_rows": 360,
+          "output_columns": 17,
+          "outputs_identical": true,
+          "output_sha256": "38be5b46f251ee91dd901950b0c6aac301dda2c505074da5c3c1f5bce3f972e6",
+          "signals": {
+            "Buy_Signal": 1,
+            "Breakout_Signal": 20,
+            "Sell_Signal": 1,
+            "Breakdown_Sell_Signal": 0
+          }
+        },
+        {
+          "fixture": "downtrend",
+          "input_rows": 360,
+          "output_rows": 360,
+          "output_columns": 17,
+          "outputs_identical": true,
+          "output_sha256": "a6eb684a20eb818e15fc03f40093cccfc702da276923ee63f1668359136a8115",
+          "signals": {
+            "Buy_Signal": 1,
+            "Breakout_Signal": 0,
+            "Sell_Signal": 1,
+            "Breakdown_Sell_Signal": 24
+          }
+        },
+        {
+          "fixture": "volatile",
+          "input_rows": 720,
+          "output_rows": 720,
+          "output_columns": 17,
+          "outputs_identical": true,
+          "output_sha256": "b41dd3b5dee9215eb72cf3b8ffffbbe9392bc6d693ace27fe338913f408b1c65",
+          "signals": {
+            "Buy_Signal": 5,
+            "Breakout_Signal": 8,
+            "Sell_Signal": 7,
+            "Breakdown_Sell_Signal": 27
+          }
+        },
+        {
+          "fixture": "UTC_day_boundary",
+          "input_rows": 480,
+          "output_rows": 480,
+          "output_columns": 17,
+          "outputs_identical": true,
+          "output_sha256": "ed9e2e75a9261158434120b6aca8926ef920b318cf043d425f307ba759ec24b4",
+          "signals": {
+            "Buy_Signal": 4,
+            "Breakout_Signal": 8,
+            "Sell_Signal": 5,
+            "Breakdown_Sell_Signal": 7
+          }
+        }
+      ],
+      "total_input_rows": 2050,
+      "passed": true,
+      "exchange_orders_submitted": 0,
+      "scope": "Synthetic indicator/signal parity; separate regression tests verify frozen stop/target/cooldown behavior."
+    },
+    "manifest_sha256": "aeda15740802c1082f38f4e69f415f16a77d749a1aa050061026a99120fb9f8b"
+  },
+  "phase0": {
+    "project": "anchorium-perpetual-alpha",
+    "checks": {
+      "project_is_perpetual_alpha": true,
+      "independent_git_directory": true,
+      "migration_branch": true,
+      "testnet_venue": true,
+      "paper_execution_mode": true,
+      "migration_policy_valid": true,
+      "orders_disabled": true,
+      "angel_one_client_disabled": true,
+      "angel_one_order_boundary_disabled": true,
+      "testnet_order_boundary_disabled": true,
+      "signal_logic_present": true,
+      "signal_source_unchanged": true
+    },
+    "passed": true
+  },
+  "whitespace_diff_check_passed": true,
+  "failure_injection": [
+    {
+      "scenario": "internet immediately after entry fill",
+      "test": "test_internet_lost_after_entry_fill_recovers_once_then_protects",
+      "passed": true
+    },
+    {
+      "scenario": "crash before lifecycle record",
+      "test": "test_restart_discovers_trigger_without_lifecycle_record",
+      "passed": true
+    },
+    {
+      "scenario": "protection timeout",
+      "test": "test_uncertain_protection_never_duplicates_after_restart",
+      "passed": true
+    },
+    {
+      "scenario": "exhausted budget with exposure",
+      "test": "test_safety_action_survives_exhausted_account_budget",
+      "passed": true
+    },
+    {
+      "scenario": "unsafe clock with exposure",
+      "test": "test_clock_forward_jump_blocks_signing_with_position",
+      "passed": true
+    },
+    {
+      "scenario": "second process same API wallet",
+      "test": "test_second_process_same_api_wallet_rejected_without_killing",
+      "passed": true
+    },
+    {
+      "scenario": "partial entry followed by crash",
+      "test": "test_partial_entry_crash_before_protection_restart_exact_quantity",
+      "passed": true
+    }
+  ],
+  "security_evidence": {
+    "secret_free_export_test": "test_safety_logs_contain_no_ephemeral_secret_or_signature",
+    "signer_isolation_test": "test_signer_ownership_cannot_be_bypassed_by_another_tmpdir",
+    "actual_team_private_key_used": false,
+    "real_signer_created": false,
+    "raw_environment_exported": false
+  },
+  "public_probe": {
+    "artifact": "docs/production_safety_readiness_2026-10-03.json",
+    "observed_ms": 1791022972688,
+    "markets_discovered": 10,
+    "dex_index": 257,
+    "market_data_ready": true,
+    "clock_healthy_at_probe": true,
+    "scope": "Public read-only /info requests; no signer or /exchange action. Account UNKNOWN; no real wallet configured."
+  },
+  "readiness": {
+    "MARKET_DATA_READY": {
+      "value": true,
+      "scope": "Public par discovery/runtime metadata and one fresh BTC book at the recorded probe; not continuous or all-symbol feed health."
+    },
+    "PAPER_READY": {
+      "value": true,
+      "scope": "PAPER/false defaults and offline regression."
+    },
+    "RATE_LIMIT_SAFETY_READY": {
+      "value": true,
+      "scope": "Implemented and offline validated; real TEAM budget UNKNOWN."
+    },
+    "NONCE_SAFETY_READY": {
+      "value": true,
+      "scope": "Implemented and offline validated; real signer NOT_CONFIGURED."
+    },
+    "CLOCK_SAFETY_READY": {
+      "value": true,
+      "scope": "Detection/recovery tests and point-in-time public clock reference; not perpetual runtime readiness."
+    },
+    "PROTECTION_INFRASTRUCTURE_READY": {
+      "value": true,
+      "scope": "Implemented and offline validated; production policy disabled, distance and slippage unset."
+    },
+    "ACCOUNT_READY": {
+      "value": false,
+      "scope": "Real funded team account, agent and unified mode not verified."
+    },
+    "LIVE_READY": {
+      "value": false,
+      "scope": "No activation authorization, funded-account verification or actual execution/trigger verification."
+    }
+  },
+  "remaining_blockers": [
+    "Team public-wallet registration, whitelisting and funding",
+    "Approved API wallet and expiry/ownership verification",
+    "Actual USDPR balance and unifiedAccount mode",
+    "Explicit approved catastrophic distance/slippage and reviewed reserves",
+    "Actual fees, leverage, margin and buying power",
+    "Actual account/fill/management/protection reconciliation",
+    "Separate explicit activation authorization and manual verification",
+    "Authorized actual testnet actions and real trigger/child/restart behavior"
+  ],
+  "scope_limits": [
+    "Local signer lease covers one OS user/host, not remote key copies.",
+    "Local IP/daily counters do not observe unrelated programs; exchange state remains authoritative.",
+    "Unsupported actual trigger/child schemas remain a review barrier.",
+    "Subminimum remaining positions are never rounded up to manufacture protection quantity.",
+    "Exchange book timestamps are event evidence, not a certified time service."
+  ],
+  "modified_files": [
+    "AGENTS.md",
+    "README.md",
+    "algo-trading-bot/exchange/exchange_rules.py",
+    "algo-trading-bot/exchange/execution_journal.py",
+    "algo-trading-bot/exchange/execution_safety.py",
+    "algo-trading-bot/exchange/hyperliquid_account.py",
+    "algo-trading-bot/exchange/hyperliquid_client.py",
+    "algo-trading-bot/exchange/hyperliquid_execution.py",
+    "algo-trading-bot/exchange/hyperliquid_market_data.py",
+    "algo-trading-bot/exchange/live_account_stream.py",
+    "algo-trading-bot/exchange/live_readiness.py",
+    "algo-trading-bot/exchange/live_recovery.py",
+    "algo-trading-bot/exchange/live_runtime.py",
+    "algo-trading-bot/exchange/protective_orders.py",
+    "algo-trading-bot/exchange/sdk_transport.py",
+    "algo-trading-bot/live_execution_session.py",
+    "algo-trading-bot/live_session_results.py",
+    "algo-trading-bot/risk/circuit_breakers.py",
+    "docs/legacy_dependency_inventory.csv",
+    "docs/legacy_dependency_inventory.json",
+    "scripts/check_live_readiness.py"
+  ],
+  "created_files": [
+    "algo-trading-bot/exchange/position_protection.py",
+    "algo-trading-bot/exchange/rate_limits.py",
+    "algo-trading-bot/exchange/reliability_policy.py",
+    "algo-trading-bot/exchange/safety_report.py",
+    "algo-trading-bot/exchange/stream_first.py",
+    "algo-trading-bot/test_production_reliability.py",
+    "configs/reliability_policy.json",
+    "docs/production_reliability_report_2026-10-03.md",
+    "docs/production_safety_readiness_2026-10-03.json",
+    "docs/reliability_initial_audit_2026-10-03.json",
+    "docs/reliability_regression_2026-10-03.xml",
+    "docs/reliability_replay_parity_2026-10-03.xml",
+    "docs/reliability_strategy_parity_2026-10-03.json",
+    "docs/reliability_validation_2026-10-03.json",
+    "scripts/verify_reliability_strategy_parity.py"
+  ],
+  "changed_source_sha256": {
+    "algo-trading-bot/exchange/exchange_rules.py": "99724662dd574db3774542658bf5d0172d1113114d4fee17b006ce6824de64a1",
+    "algo-trading-bot/exchange/execution_journal.py": "05eeb58657fbaec5d74283824770cf61aaca1dd5fa32f990e012af403ca28448",
+    "algo-trading-bot/exchange/execution_safety.py": "d5291a746c8c41cd8e3c816c552b5588308b2eaf792ed14cc63f01a0b6969c0e",
+    "algo-trading-bot/exchange/hyperliquid_account.py": "b90d5c7d0380cab9d541ae3938eec67b84e547ee0f0367e112d6f79cd5d80d0b",
+    "algo-trading-bot/exchange/hyperliquid_client.py": "ad4449b04e43d202f7564034e386cf5f3e8aa61e9ce5b816568e511395bf788e",
+    "algo-trading-bot/exchange/hyperliquid_execution.py": "8c7483aa3d7d899ee50a6470237b98857ff02f0bbf2f7b8819160ce09737a0cb",
+    "algo-trading-bot/exchange/hyperliquid_market_data.py": "879120b6c3371882fcabf6d6c8d64ff5d1330f026059a1bd5b57fdbb79d6f646",
+    "algo-trading-bot/exchange/live_account_stream.py": "8600458e6af4bc87e7ec49d7e1b8a72e09ef567cd860d09276102e9ef6639728",
+    "algo-trading-bot/exchange/live_readiness.py": "1fb416117d4018e8316aa33bd7f72eaacbda97bfdc4a9a11df975edaa193a9f2",
+    "algo-trading-bot/exchange/live_recovery.py": "369a28b44d7c8b1b0e168443779bebc3700ec7361428e2e7e24a70487e8c70a0",
+    "algo-trading-bot/exchange/live_runtime.py": "88fc2be6e67e8588b6d7981720b202322963908471296b5fb9c48aca9b705737",
+    "algo-trading-bot/exchange/protective_orders.py": "23e8adeebe1444a8f1889b280435454fb295fe60fe5c9335f673d14030b14086",
+    "algo-trading-bot/exchange/sdk_transport.py": "93c1af94bc23e5ef2b58cd593e47f232ec6a287e5014daeda6c5b0bf966e988f",
+    "algo-trading-bot/live_execution_session.py": "0a958d9092c827eb613d29698ec91ea16e1b1cccd8a0f041a0d7caaa3570da15",
+    "algo-trading-bot/live_session_results.py": "3ac1479aebf2be661ebcbd1d65026beff2cea3f9ee056dce9ce9b5be5d4764e3",
+    "algo-trading-bot/risk/circuit_breakers.py": "a05fac96b64e5f67e60a3c46ad9b388947a590181977ee6af7f6fdd0d82976c9",
+    "scripts/check_live_readiness.py": "804cc4681f86f522ea20212a33b34415771ce6004b39dc4e4c28a186d2b793df",
+    "algo-trading-bot/exchange/position_protection.py": "761945b2dad23a5434c50a1bdfc489ef184aeb1534eaf66b0a58fd8044f34e94",
+    "algo-trading-bot/exchange/rate_limits.py": "7679ce5e01561e4a88a1637a9c600a2a3fd94b5f398f02854546e00db2f508fb",
+    "algo-trading-bot/exchange/reliability_policy.py": "5347dc6d7f5f1b5d59fcd582bba79be21eea1133f2fb25603026e615f2ccdde6",
+    "algo-trading-bot/exchange/safety_report.py": "a89e565cd5cb64584a67eeb2b0d09e7067d5cf3a347dfaac29539ad5ab4ba076",
+    "algo-trading-bot/exchange/stream_first.py": "e547c8bfbf3f4bdc3b242eaa3d59b3d52e939950ce1007b311c78b7bd8a01043",
+    "algo-trading-bot/test_production_reliability.py": "1b5fa6e3d270ac48095d7a0f489d81ed6b4302afc8bd20404b94eb8eba53262c",
+    "configs/reliability_policy.json": "1adbded72bb6f0df855d9f885434dd6e63c7b164b7b296e9428f5569e46c0297",
+    "scripts/verify_reliability_strategy_parity.py": "796a2a33efd8ec72c78210687b14bd99b00103c0245763d2fb974d80222ae756"
+  },
+  "handover_report": "docs/production_reliability_report_2026-10-03.md"
+}
