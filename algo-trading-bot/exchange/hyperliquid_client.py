@@ -3,6 +3,7 @@
 No private keys, signing SDK, or /exchange HTTP transport exists in this module.
 """
 from types import MappingProxyType
+from copy import deepcopy
 import time
 
 from .base_exchange import ExchangeError, MarketSpec, VenueMismatch
@@ -16,7 +17,8 @@ DEX_QUERIES = frozenset({'meta', 'metaAndAssetCtxs', 'allMids', 'clearinghouseSt
                          'openOrders', 'perpDexLimits'})
 COIN_QUERIES = frozenset({'l2Book', 'recentTrades', 'fundingHistory', 'activeAssetData'})
 ACCOUNT_QUERIES = frozenset({'spotClearinghouseState', 'userFills', 'userFillsByTime',
-                            'userFunding', 'userAbstraction', 'extraAgents', 'userFees', 'userRateLimit'})
+                            'userFunding', 'userAbstraction', 'extraAgents', 'userFees', 'userRateLimit',
+                            'orderStatus'})
 
 
 class RequestsInfoTransport:
@@ -43,7 +45,7 @@ class RequestsInfoTransport:
 
 
 class HyperliquidClient:
-    def __init__(self, transport=None, *, base_url=TESTNET_API_URL, clock_ms=None):
+    def __init__(self, transport=None, *, base_url=TESTNET_API_URL, clock_ms=None, rate_limits=None):
         if base_url != TESTNET_API_URL:
             raise VenueMismatch('TESTNET_ENDPOINT_REQUIRED')
         self.transport = transport if transport is not None else RequestsInfoTransport()
@@ -54,6 +56,8 @@ class HyperliquidClient:
         self.collateral_token_id = None
         self.metadata_timestamp_ms = None
         self.last_received_ms = None
+        self.metadata = None
+        self.rate_limits = rate_limits
 
     def post_info(self, query, **parameters):
         if {'type', 'action', 'signature', 'nonce'} & parameters.keys():
@@ -73,8 +77,12 @@ class HyperliquidClient:
             if not isinstance(payload.get('req'), dict):
                 raise ExchangeError('INVALID_CANDLE_REQUEST')
             self._validate_coin(payload['req'].get('coin'))
+        if self.rate_limits is not None:
+            self.rate_limits.reserve_info(query)
         result = self.transport(payload)
         self.last_received_ms = self.clock_ms()
+        if self.rate_limits is not None:
+            self.rate_limits.observe_info(query, result)
         return result
 
     def _validate_coin(self, symbol):
@@ -89,6 +97,7 @@ class HyperliquidClient:
         self.collateral_token_id = None
         self.metadata_timestamp_ms = None
         self.last_received_ms = None
+        self.metadata = None
 
     def _parse_specs(self, metadata, dex_index):
         if not isinstance(metadata, dict) or not isinstance(metadata.get('universe'), list):
@@ -140,6 +149,7 @@ class HyperliquidClient:
         self.dex_index = matches[0]
         self.collateral_token_id = metadata.get('collateralToken')
         self.markets = MappingProxyType(specifications)
+        self.metadata = deepcopy(metadata)
         self.metadata_timestamp_ms = self.clock_ms()
         self.ready = True
         return self.markets

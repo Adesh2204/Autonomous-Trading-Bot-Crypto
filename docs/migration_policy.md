@@ -18,7 +18,9 @@ and runtime environment overrides. The public migration probe validates it
 before requesting data. The crypto paper executor validates it at construction,
 order creation and simulated fill; a runtime change cannot mutate its positions
 or fills. Local cancellation remains available for cleanup. `order_guard`
-continues to block every real exchange mutation in all modes.
+continues to block legacy/default exchange mutation paths in all modes. The later
+signed executor uses a separate explicit human authorization and verified-account
+gate; PAPER/false still blocks its production transport.
 
 No private key, funded wallet or exchange login is required for the current
 public-data and local-paper work. No automatic activation path exists. Any later
@@ -97,3 +99,19 @@ skeleton, including cancel/modify/close/leverage methods. No account approval,
 unified-mode mutation or signed test was attempted. See
 [the run guide](crypto_audit_replay_2026-10-02.md) and
 [678-test validation](crypto_audit_validation_2026-10-02.json).
+
+## Subsequent signed-execution checkpoint, 2026-10-02
+
+The user's production-execution directive supersedes the earlier ban on building
+signing infrastructure. Official SDK signing is now implemented and tested in
+offline fixtures. No actual exchange submission, approval, transfer or account-mode
+change is authorized by that directive. PAPER/false defaults are unchanged.
+
+Future activation additionally requires explicit human approval, a separately
+approved API wallet, verified positive USDPR, unified account mode, fresh metadata,
+healthy clocks and rate limits, reconciled positions/orders/fills/funding, and a
+reconciled account stream. The team private key is never accepted by the bot.
+An approval object or environment flag alone cannot satisfy these checks.
+
+Read [the execution engineering report](live_execution_engineering_report_2026-10-02.md)
+for exact implementation paths, verification, limits and future activation steps.
