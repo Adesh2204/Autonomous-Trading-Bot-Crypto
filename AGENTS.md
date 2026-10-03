@@ -71,3 +71,10 @@
   agent approval, unified mode, metadata, account reconciliation and health.
   An offline signed fixture must have no HTTP exchange transport and must never
   grant permission to the production transport.
+
+- The production reliability directive authorizes centralized priority/reserve
+  budgets, adaptive read backoff, nonce/clock health, WebSocket budgets and a full
+  independent reduce-only catastrophic protection lifecycle. It supersedes the
+  earlier planner-only limitation. Keep actual exchange actions unauthorized,
+  PAPER/false and catastrophic protection disabled by default. Production stop
+  distance requires explicit documented approval; no strategy geometry changes.

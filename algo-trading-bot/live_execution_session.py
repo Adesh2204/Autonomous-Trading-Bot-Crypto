@@ -86,6 +86,9 @@ class LiveExecutionSession:
 
     def _consume_actual_fills(self, state):
         intents={str(row['oid']):row for row in self.journal.intents() if row['oid'] is not None}
+        import json
+        intents.update((str(oid),row) for row in self.journal.intents()
+                       for oid in json.loads(row['outcome'] or '{}').get('child_order_ids',[]))
         for fill in sorted(state.fills.values(),key=lambda f:f.identity):
             if fill.identity in self.processed_fill_ids:
                 continue
@@ -100,7 +103,8 @@ class LiveExecutionSession:
                 raise ExchangeError('STRATEGY_FILL_LINK_CONFLICT')
             manager=self._manager(fill.symbol)
             if request.reduce_only:
-                reason=self.exit_reasons.get(fill.symbol)
+                reason=('Catastrophic Protection' if request.strategy_id=='CATASTROPHIC_STOP'
+                        else self.exit_reasons.get(fill.symbol))
                 if not reason or not manager.has_open_position:
                     raise ExchangeError('EXIT_MANAGEMENT_EVIDENCE_MISSING')
                 manager.confirm_exit(fill,reason)
@@ -135,6 +139,9 @@ class LiveExecutionSession:
 
     def startup(self):
         self.execution.entries_paused=True
+        if self.execution.protection is not None:
+            self.execution.protection.managers=self.managers
+            self.execution.protection.ensure_all(allow_actions=False)
         report=self.recovery.recover()
         eq=self.recovery.state.equity
         if eq is not None:
@@ -148,7 +155,30 @@ class LiveExecutionSession:
             self._save_controls()
         # Stream acknowledgment + reconciliation is also required before entry.
         self.execution.entries_paused=not (report.ready and self.account_stream is not None and self.account_stream.healthy)
+        self._protection_barrier(allow_actions=report.ready)
         return report
+
+    def _protection_barrier(self,*,allow_actions=True):
+        if allow_actions and (not self.execution.clock_health.healthy or not self.execution.rate_limits.healthy):
+            from exchange.live_readiness import verify_live_account_readiness
+            sent=self.clock_ms()
+            # A fresh REST book supplies an exchange timestamp; cached market
+            # timestamps are never presented as a new clock observation.
+            from exchange.hyperliquid_market_data import HyperliquidMarketData
+            book=HyperliquidMarketData(self.market.client).get_orderbook('par:BTC')
+            self.execution.clock_health.observe(book.timestamp_ms,sent,self.clock_ms())
+            readiness=verify_live_account_readiness(self.recovery.account,self.execution.transport.signer_address,
+                clock_health=self.execution.clock_health,rate_limits=self.execution.rate_limits,
+                reconciliation_ready=self.recovery.last_report.ready)
+            if not readiness.account_ready:
+                self.execution.entries_paused=True
+        protection=self.execution.protection
+        if protection is not None:
+            protection.managers=self.managers
+            if not protection.healthy:
+                protection.ensure_all(allow_actions=allow_actions)
+            self.execution.entries_paused |= not protection.entries_allowed
+        self.breakers.update_reliability(self.execution)
 
     def attach_account_stream(self, stream):
         if stream.executor is not self.execution:
@@ -159,8 +189,14 @@ class LiveExecutionSession:
         if self.account_stream is None or not self.account_stream.healthy:
             self.execution.entries_paused=True
             raise ExchangeError('ACCOUNT_STREAM_NOT_READY')
-        report=self.recovery.recover()
+        now=self.clock_ms()
+        window=self.recovery.state.last_window
+        # Trusted acknowledged account stream with a recent stable checkpoint
+        # avoids downloading the same fills/history for every scanned symbol.
+        report=(self.recovery.last_report if self.recovery.last_report.ready and window is not None and
+                0<=now-window[1]<=self.execution.rate_limits.policy.budget_max_age_ms else self.recovery.recover())
         self.execution.entries_paused=not report.ready
+        self._protection_barrier(allow_actions=report.ready)
         if not report.ready:
             raise ExchangeError('ACCOUNT_RECONCILIATION_NOT_READY')
 
@@ -196,13 +232,15 @@ class LiveExecutionSession:
         # A fresh close attempt is permitted only after the prior attempt is
         # terminal and remaining exposure has been authoritatively reconciled.
         prior=[r for r in self.journal.intents() if r['candidate']==candidate and
-               OrderRequest(**__import__('json').loads(r['request'])).reduce_only]
+               OrderRequest(**__import__('json').loads(r['request'])).reduce_only and
+               OrderRequest(**__import__('json').loads(r['request'])).strategy_id!='CATASTROPHIC_STOP']
         if prior and prior[-1]['state'] in {'UNKNOWN','SUBMITTED','PREPARED','OPEN'}:
             self.execution.entries_paused=True
             raise ExchangeError('EXIT_ORDER_RECOVERY_REQUIRED')
         key=candidate+':exit:'+str(len(prior))
         result=self.execution.close_position(symbol,permission=permission,price=price,client_order_id=key)
         self._persist(symbol)
+        self._protection_barrier(allow_actions=self.recovery.last_report.ready)
         return result
 
     def observe(self, quotes):
@@ -276,6 +314,8 @@ class LiveExecutionSession:
             if manager.has_open_position and manager._open_position['side']!=side:
                 self._close(symbol,'Direction Flip')
                 if manager.has_open_position:
+                    continue
+                if self.execution.protection is not None and not self.execution.protection.flat_clear(symbol):
                     continue
             if self.exit_reasons or self.breakers.entry_reasons(symbol):
                 continue

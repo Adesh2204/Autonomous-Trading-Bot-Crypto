@@ -68,6 +68,10 @@ class ExecutionJournal:
         CREATE TABLE IF NOT EXISTS management (symbol TEXT PRIMARY KEY, data TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS account_checkpoint (id INTEGER PRIMARY KEY CHECK(id=1), data TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS controls (name TEXT PRIMARY KEY, value TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS signed_management (
+          id INTEGER PRIMARY KEY AUTOINCREMENT, fingerprint TEXT NOT NULL,
+          action TEXT NOT NULL, state TEXT NOT NULL, created_ms INTEGER NOT NULL,
+          updated_ms INTEGER NOT NULL);
         ''')
         with self.transaction():
             identity = dict(self.db.execute('SELECT name,value FROM identity'))
@@ -144,3 +148,25 @@ class ExecutionJournal:
 
     def close(self):
         self.db.close()
+
+    def reserve_management(self,action,now_ms):
+        fp=fingerprint(action)
+        with self.transaction():
+            if self.db.execute("SELECT id FROM signed_management WHERE fingerprint=? AND state='UNKNOWN'",(fp,)).fetchone():
+                raise ExchangeError('MANAGEMENT_UNCERTAINTY_RECOVERY_REQUIRED')
+            cursor=self.db.execute('INSERT INTO signed_management(fingerprint,action,state,created_ms,updated_ms) '
+                'VALUES (?,?,?,?,?)',(fp,canonical(safe_data(action)),'UNKNOWN',now_ms,now_ms))
+            return cursor.lastrowid
+
+    def pending_management(self,action):
+        return self.db.execute("SELECT id FROM signed_management WHERE fingerprint=? AND state='UNKNOWN'",
+                               (fingerprint(action),)).fetchone() is not None
+
+    def update_management(self,action_id,state,now_ms):
+        with self.transaction():
+            if self.db.execute('UPDATE signed_management SET state=?,updated_ms=? WHERE id=?',
+                               (state,now_ms,action_id)).rowcount!=1:
+                raise ExchangeError('UNKNOWN_MANAGEMENT_ACTION')
+
+    def management_actions(self):
+        return [dict(r) for r in self.db.execute('SELECT * FROM signed_management ORDER BY id')]

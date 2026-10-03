@@ -216,9 +216,11 @@ blind resubmission after a timeout. Actual results use reported fills, fees and
 funding, with separate mode/source fields from PAPER and REPLAY.
 
 The normal development configuration remains PAPER/false. No exchange order was
-submitted during this implementation. Catastrophic protective stops have a
-disabled planning interface; normal frozen stop/target management is unchanged.
-The final execution checkpoint passes **761 tests**, including **83 focused cases**.
+submitted during this implementation. The original execution checkpoint passed
+**761 tests**, including **83 focused cases**. The reliability upgrade below adds
+a full independent catastrophic protection lifecycle; it remains disabled until
+an explicit distance policy and separate human activation approval are supplied.
+Normal frozen stop/target management is unchanged.
 
 Run the read-only readiness probe:
 
@@ -230,6 +232,33 @@ This command cannot load a signer or send `/exchange` actions. To check account
 setup, add `--team-wallet PUBLIC_ADDRESS --api-wallet-address PUBLIC_ADDRESS`.
 Keep both private keys out of command arguments and shared output. This probe
 does not restore strategy management state and cannot authorize activation.
+
+## Production reliability and catastrophic protection
+
+The [reliability engineering report](</Users/adesh/Autonomous Trading Bot - Crypto /docs/production_reliability_report_2026-10-03.md>)
+explains the audit, all changed files, API priorities/reserves, durable nonce
+faults, clock recovery, process ownership, trigger lifecycle, tests and remaining
+account verification. The [public policy file](</Users/adesh/Autonomous Trading Bot - Crypto /configs/reliability_policy.json>)
+sets the operational limits. Protection defaults to disabled with no distance or
+slippage value. Loading a policy grants no exchange-write permission.
+
+The shared API manager throttles optional work first, reserves capacity for
+position safety, tracks WebSocket budgets and retries only safe reads. Signed
+orders, cancels and leverage actions retain durable uncertainty barriers. The
+protection manager uses verified positions and official SDK reduce-only triggers;
+it verifies, resizes, cancels, and recovers them without changing strategy stops.
+Results now include protection events and readable/JSON production safety reports.
+
+```sh
+.venv/bin/python scripts/check_live_readiness.py --output docs/production_safety_readiness_2026-10-03.json
+.venv/bin/python scripts/verify_reliability_strategy_parity.py --output docs/reliability_strategy_parity_2026-10-03.json
+.venv/bin/python -m pytest -q
+```
+
+The public readiness command never creates a signer. Blank wallets remain
+unconfigured, with unknown account/protection state and LIVE readiness false.
+The strategy comparison covers 2,050 identical candles from the pre-upgrade source.
+See the engineering report for final regression counts and failure-injection evidence.
 
 ## Baseline and validation
 

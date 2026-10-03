@@ -159,6 +159,8 @@ class HyperliquidOrderValidator:
             for own in context.open_orders:
                 if own['coin']!=request.symbol:
                     continue
+                if own.get('isTrigger') is True:
+                    continue  # dormant conditional orders cannot cross the current book
                 opposite = own.get('side') == ('A' if request.side=='BUY' else 'B')
                 if opposite:
                     own_price=decimal(own['limitPx'],positive=True)
@@ -189,13 +191,19 @@ class LiveContextProvider:
         self.policy_leverage=policy_leverage
         self.metadata_hash=fingerprint(self.client.metadata)
 
-    def load(self, request):
+    def load(self, request, *, critical=False):
         from .live_readiness import verify_live_account_readiness
         from .hyperliquid_market_data import make_quote
         sent=self.client.clock_ms()
         book=self.market.get_orderbook(request.symbol)
         received=self.client.clock_ms()
-        self.clock_health.observe(book.timestamp_ms,sent,received)
+        if not hasattr(self.market,'engine'):
+            self.clock_health.observe(book.timestamp_ms,sent,received)
+        elif not self.clock_health.healthy:
+            from .hyperliquid_market_data import HyperliquidMarketData
+            sent=self.client.clock_ms()
+            reference=HyperliquidMarketData(self.client).get_orderbook(request.symbol)
+            self.clock_health.observe(reference.timestamp_ms,sent,self.client.clock_ms())
         metadata,values=self.client.post_info('metaAndAssetCtxs')
         self.client.validate_metadata(metadata)
         current_hash=fingerprint(metadata)
@@ -210,12 +218,13 @@ class LiveContextProvider:
                          mark_timestamp_ms=self.client.clock_ms())
         readiness=verify_live_account_readiness(self.account,self.signer_address,
             clock_health=self.clock_health,rate_limits=self.rate_limits,
-            reconciliation_ready=self.reconciliation_ready())
+            reconciliation_ready=self.reconciliation_ready(),critical=critical)
         positions=self.account.get_positions()
-        orders=tuple(self.account.get_open_orders())
+        orders=tuple(self.account.get_frontend_open_orders() if getattr(self,'trigger_aware',False)
+                     else self.account.get_open_orders())
         active=self.account._query('activeAssetData',coin=request.symbol)
         account_ms=self.client.clock_ms()
         limits={} if request.reduce_only else self.client.post_info('perpDexLimits')
         return ValidationContext(self.client.market(request.symbol),current_hash,self.metadata_hash,
             self.client.metadata_timestamp_ms,quote,readiness,positions,orders,active,account_ms,
-            limits,contexts,bool(self.feed_ready()),self.policy_leverage)
+            limits,contexts,bool(self.feed_ready()) or critical,self.policy_leverage)

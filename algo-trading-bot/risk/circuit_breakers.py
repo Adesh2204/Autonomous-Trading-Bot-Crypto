@@ -22,6 +22,29 @@ class CircuitBreakers:
         self.reconnect_failures=0
         self.transitions=[]
         self._signature=None
+        self.operational_state=RiskState.NORMAL
+
+    def update_reliability(self,execution):
+        """Infrastructure gates are account-wide; existing market gates stay scoped."""
+        for key in ('api_budget','clock','nonce','protection'):
+            self.clear(key)
+        self.operational_state=RiskState.NORMAL
+        rates=execution.rate_limits
+        if not rates.entries_allowed:
+            self.pause('api_budget','API_BUDGET_'+rates.state.value)
+        elif rates.state.value=='CAUTION':
+            self.operational_state=RiskState.CAUTION
+        if not execution.clock_health.healthy:
+            self.pause('clock','CLOCK_'+execution.clock_health.state.value)
+        if not execution.transport.nonces.healthy:
+            self.pause('nonce','NONCE_SIGNING_DEGRADED')
+        protection=execution.protection
+        if protection is not None and not protection.entries_allowed:
+            self.pause('protection','CATASTROPHIC_PROTECTION_NOT_READY')
+            if any(r['status'] in {'ERROR','MISSING','PARTIAL'} for r in protection.states.values()):
+                self.operational_state=RiskState.EMERGENCY
+        if self.entry_reasons('__account__'):
+            execution.entries_paused=True
 
     def pause(self,key,reason):
         self.global_blocks[key]=str(reason)
@@ -71,11 +94,11 @@ class CircuitBreakers:
 
     @property
     def state(self):
-        if self.financial_state==RiskState.EMERGENCY:
+        if self.financial_state==RiskState.EMERGENCY or self.operational_state==RiskState.EMERGENCY:
             return RiskState.EMERGENCY
         if self.global_blocks or self.financial_state==RiskState.ENTRY_PAUSED:
             return RiskState.ENTRY_PAUSED
-        if self.symbol_blocks or self.financial_state==RiskState.CAUTION:
+        if self.symbol_blocks or self.financial_state==RiskState.CAUTION or self.operational_state==RiskState.CAUTION:
             return RiskState.CAUTION
         return RiskState.NORMAL
 

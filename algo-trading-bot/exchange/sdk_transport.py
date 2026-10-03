@@ -121,7 +121,9 @@ class OfficialSDKTransport:
         # No SDK debug logger and no automatic HTTP retries or redirects.
         response=self._sdk.session.post(TESTNET_API_URL+'/exchange',json=payload,timeout=10,allow_redirects=False)
         if response.status_code!=200:
-            raise ExchangeError('EXCHANGE_HTTP_RESPONSE_UNCERTAIN')
+            error=ExchangeError('EXCHANGE_HTTP_RESPONSE_UNCERTAIN')
+            error.status_code=response.status_code
+            raise error
         return response.json()
 
     def perform(self, method, args, kwargs, expected_action, guard):
@@ -133,11 +135,11 @@ class OfficialSDKTransport:
             finally:
                 self._expected=self._guard=None
 
-    def order_action(self,request,cloid):
+    def order_action(self,request,cloid,*,order_type=None):
         from hyperliquid.utils.types import Cloid
         from hyperliquid.utils.signing import order_request_to_order_wire,order_wires_to_order_action
         row=dict(coin=request.symbol,is_buy=request.side=='BUY',sz=sdk_number(request.quantity),
-                 limit_px=sdk_number(request.price),order_type={'limit':{'tif':request.tif}},
+                 limit_px=sdk_number(request.price),order_type=order_type or {'limit':{'tif':request.tif}},
                  reduce_only=request.reduce_only,cloid=Cloid.from_str(cloid))
         wire=order_request_to_order_wire(row,self.client.market(request.symbol).asset_id)
         return row,order_wires_to_order_action([wire])

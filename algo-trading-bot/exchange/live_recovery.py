@@ -2,6 +2,7 @@
 from dataclasses import asdict, dataclass
 from datetime import date
 from decimal import Decimal
+import json
 
 from .account_events import AccountFunding
 from .base_exchange import ExchangeError, Fill, decimal
@@ -26,6 +27,7 @@ class LiveAccountRecovery:
         self.state=ExchangeTruthState()
         self.reconciler=HyperliquidReconciliation(account)
         self.on_truth=None
+        self.protection=None
         self.saved_management=journal.management()
         checkpoint=journal.checkpoint()
         if checkpoint:
@@ -87,17 +89,26 @@ class LiveAccountRecovery:
 
     def recover(self):
         verify_strategy_freeze()
-        was_ready=self.last_report.ready
         self.revoke('REST_ACCOUNT_RECONCILIATION_REQUIRED')
+        protection_reasons=[]
+        if self.protection is not None:
+            try:
+                self.protection.recover_order_identities()
+            except Exception as exc:
+                protection_reasons.append('PROTECTION_IDENTITY_RECOVERY_REQUIRED')
+                self.journal.event('PROTECTION_IDENTITY_RECOVERY_FAILED',self.account.client.clock_ms(),
+                                   error_type=type(exc).__name__)
         self.state.tracked_order_ids={str(row['oid']) for row in self.journal.intents() if row['oid'] is not None}
+        self.state.tracked_order_ids.update(str(oid) for row in self.journal.intents()
+            for oid in json.loads(row['outcome'] or '{}').get('child_order_ids',[]))
         try:
             start=self.initial_start_ms
-            if was_ready and self.state.last_window is not None:
+            if self.state.initialized and self.state.last_window is not None:
                 start=max(start,self.state.last_window[1]-60000)
             report=self.reconciler.recover(self.state,start_ms=start)
             if self.on_truth is not None:
                 self.on_truth(self.state)
-            reasons=list(report['reasons'])
+            reasons=list(report['reasons'])+protection_reasons
             for symbol,position in self.state.positions.items():
                 manager=self.managers.get(symbol)
                 managed=manager._open_position if manager else None
@@ -113,6 +124,8 @@ class LiveAccountRecovery:
                     reasons.append('MANUAL_REVIEW_REQUIRED:'+symbol+':UNEXPLAINED_FLAT_POSITION')
             if any(row['state'] in {'UNKNOWN','SUBMITTED','PREPARED'} for row in self.journal.intents()):
                 reasons.append('AMBIGUOUS_DURABLE_ORDER_REQUIRES_CLOID_RECOVERY')
+            if any(row['state']=='UNKNOWN' for row in self.journal.management_actions()):
+                reasons.append('AMBIGUOUS_MANAGEMENT_ACTION_REQUIRES_ACCOUNT_RECOVERY')
             self.state.reasons=tuple(dict.fromkeys(reasons))
             self.state.entries_paused=bool(reasons)
             self.journal.checkpoint(dict(initial_start_ms=self.initial_start_ms,

@@ -45,10 +45,12 @@ class LiveReadiness:
                     transport.team_address.lower()==self.team_address.lower() and
                     transport.signer_address.lower()==self.signer_address.lower() and
                     transport._sdk.wallet.address.lower()==self.signer_address.lower() and
-                    not transport.nonces.closed and execution.client.ready and
+                    transport.nonces.healthy and execution.client.ready and
                     not execution.entries_paused and execution.recovery.last_report.ready and
                     execution.context_provider.feed_ready() and execution.clock_health.healthy and
-                    execution.rate_limits.healthy and 0<=now-self.observed_ms<=5000 and
+                    execution.rate_limits.entries_allowed and
+                    execution.protection is not None and execution.protection.entries_allowed and
+                    0<=now-self.observed_ms<=5000 and
                     self.agent_expiry_ms is not None and self.agent_expiry_ms>now)
             except Exception:
                 pass
@@ -63,7 +65,7 @@ class LiveReadiness:
 
 
 def verify_live_account_readiness(account, signer_address, *, clock_health, rate_limits,
-                                  reconciliation_ready=False):
+                                  reconciliation_ready=False,critical=False):
     client = account.client
     now = client.clock_ms()
     reasons = []
@@ -124,11 +126,11 @@ def verify_live_account_readiness(account, signer_address, *, clock_health, rate
             reasons.append('ACCOUNT_RECONCILIATION_REQUIRED')
         if not clock_health.healthy:
             reasons.append('CLOCK_HEALTH_REQUIRED')
-        if not rate_limits.healthy:
+        if not (rate_limits.safety_ready if critical else rate_limits.healthy):
             reasons.append('RATE_LIMIT_STATE_UNHEALTHY')
     except Exception as exc:
         reasons.append('ACCOUNT_QUERY_FAILED:' + safe_reason(type(exc).__name__))
     return LiveReadiness('NOT_READY' if reasons else 'READY', tuple(reasons),
                          account.team_address, signer_address, client.clock_ms(), expiry,
                          collateral, mode, fees, budget, bool(reconciliation_ready),
-                         clock_health.healthy, rate_limits.healthy)
+                         clock_health.healthy, rate_limits.safety_ready if critical else rate_limits.healthy)

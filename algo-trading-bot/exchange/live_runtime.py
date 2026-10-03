@@ -15,16 +15,35 @@ from .hyperliquid_execution import HyperliquidExecution
 from .sdk_transport import OfficialSDKTransport
 from .live_account_stream import LiveAccountStream
 from .perpetual_economics import FeeSchedule
+from .position_protection import ExchangeProtectionManager,ProtectionPolicy
+from .hyperliquid_market_data import ParMarketDataEngine
+from .stream_first import StreamFirstMarketData
+import threading
 
 
 class LiveRuntime:
-    def __init__(self,session,authorization,transport,nonces,journal,public_transport):
+    def __init__(self,session,authorization,transport,nonces,journal,public_transport,market_stream=None):
         self.session=session
         self.authorization=authorization
         self.transport=transport
         self.nonces=nonces
         self.journal=journal
         self.public_transport=public_transport
+        self.market_stream=market_stream
+        self.market_stop=threading.Event()
+        self.market_thread=None
+
+    def start_market_stream(self):
+        if self.market_thread is not None:
+            raise ExchangeError('MARKET_STREAM_ALREADY_STARTED')
+        def run():
+            try:
+                self.market_stream.run(self.market_stop)
+            except Exception as exc:
+                self.session.execution.entries_paused=True
+                self.journal.event('MARKET_STREAM_FAILED',self.session.clock_ms(),error_type=type(exc).__name__)
+        self.market_thread=threading.Thread(target=run,name='par-public-stream',daemon=True)
+        self.market_thread.start()
 
     def deactivate(self):
         self.authorization.revoke()
@@ -35,6 +54,11 @@ class LiveRuntime:
 
     def close(self):
         self.deactivate()
+        self.market_stop.set()
+        if self.market_thread is not None:
+            self.market_thread.join(timeout=12)
+            if self.market_thread.is_alive():
+                raise ExchangeError('MARKET_STREAM_SHUTDOWN_PENDING')
         self.transport.close()
         self.nonces.close()
         self.journal.close()
@@ -42,7 +66,8 @@ class LiveRuntime:
 
 
 def build_live_runtime(*,team_address,approval,session_id,initial_start_ms,risk_policy,
-                       scanner_policy,state_directory,fee_scale_verified=None):
+                       scanner_policy,state_directory,fee_scale_verified=None,rate_policy=None,
+                       protection_policy=None,clock_policy=None):
     """Called only in a separately authorized future testnet activation.
 
     PAPER/false stops before reading a key or opening an exchange client.
@@ -60,6 +85,8 @@ def build_live_runtime(*,team_address,approval,session_id,initial_start_ms,risk_
         raise ExchangeError('EXPLICIT_FUTURE_MANUAL_APPROVAL_REQUIRED')
     authorization=LiveAuthorization(approval)
     authorization.require(team_address,approval.signer_address)
+    protection_policy=protection_policy or ProtectionPolicy()
+    protection_policy.require()
     if fee_scale_verified!=1:
         raise ExchangeError('VENUE_FEE_SCALE_REVERIFICATION_REQUIRED')
     key=os.environ.get('API_WALLET_PRIVATE_KEY')
@@ -80,13 +107,15 @@ def build_live_runtime(*,team_address,approval,session_id,initial_start_ms,risk_
     transport=None
     client=None
     try:
-        nonces=NonceManager(root/'nonces.sqlite',signer.address)
-        rates=HyperliquidRateLimitManager(journal)
+        nonces=NonceManager(root/'nonces.sqlite',signer.address,journal=journal)
+        rates=HyperliquidRateLimitManager(journal,policy=rate_policy,signer_address=signer.address)
         client=HyperliquidClient(rate_limits=rates)
         client.startup()
         account=HyperliquidAccount(client,team_address)
-        market=HyperliquidMarketData(client)
-        clock=ClockHealthMonitor()
+        public_market=HyperliquidMarketData(client)
+        market_stream=ParMarketDataEngine(public_market,include_trades=True)
+        market=StreamFirstMarketData(client,market_stream)
+        clock=ClockHealthMonitor(journal=journal,**(clock_policy or {}))
         recovery=LiveAccountRecovery(account,journal,initial_start_ms=initial_start_ms)
         holder={}
         provider=LiveContextProvider(market,account,signer.address,clock,rates,
@@ -97,6 +126,7 @@ def build_live_runtime(*,team_address,approval,session_id,initial_start_ms,risk_
         executor=HyperliquidExecution(client,transport=transport,account=account,journal=journal,
             context_provider=provider,validator=HyperliquidOrderValidator(client,policy_leverage=risk_policy.leverage),
             recovery=recovery,clock_health=clock,rate_limits=rates)
+        ExchangeProtectionManager(executor,policy=protection_policy,managers=recovery.managers)
         base_fees=account._query('userFees')
         multiplier=1+fee_scale_verified
         from .base_exchange import decimal
@@ -109,7 +139,9 @@ def build_live_runtime(*,team_address,approval,session_id,initial_start_ms,risk_
         holder['stream']=stream
         session.attach_account_stream(stream)
         session.startup()
-        return LiveRuntime(session,authorization,transport,nonces,journal,client.transport)
+        runtime=LiveRuntime(session,authorization,transport,nonces,journal,client.transport,market_stream)
+        runtime.start_market_stream()
+        return runtime
     except Exception as exc:
         if transport is not None:
             transport.close()

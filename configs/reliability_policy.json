@@ -1,0 +1,31 @@
+{
+  "rate_limits": {
+    "ip_weight_per_minute": 1200,
+    "ip_safety_reserve": 120,
+    "daily_actions": 50000,
+    "daily_safety_reserve": 500,
+    "account_action_reserve": 10,
+    "max_open_orders": 1000,
+    "max_ws_connections": 10,
+    "max_ws_subscriptions": 1000,
+    "max_ws_unique_users": 10,
+    "venue_ws_connections_per_minute": 30,
+    "max_ws_messages_per_minute": 2000,
+    "ws_reconnects_per_minute": 5,
+    "budget_max_age_ms": 60000,
+    "optional_poll_interval_ms": 5000,
+    "read_retry_attempts": 3,
+    "backoff_base_ms": 1000,
+    "backoff_max_ms": 30000,
+    "exhausted_safety_action_interval_ms": 10000,
+    "caution_fraction": 0.75,
+    "throttle_fraction": 0.9
+  },
+  "clock": {"max_skew_ms": 2000, "max_age_ms": 30000},
+  "protection": {
+    "enabled": false,
+    "approval_reference": null,
+    "atr_distance_multiple": null,
+    "execution_slippage_fraction": null
+  }
+}

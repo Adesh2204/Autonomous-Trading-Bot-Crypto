@@ -1,0 +1,102 @@
+{
+  "before_ref": "519d6763d277a66c80cac26ba4b114c4dbb98ad5",
+  "strategy_freeze": {
+    "baseline": "nse-working-baseline",
+    "file_count": 1,
+    "method_count": 8,
+    "parameter_count": 32,
+    "passed": true
+  },
+  "protected_source_identical": true,
+  "signal_brain_sha256": "bff940ac5ed35f71ed3dfb537ba15d20dcec35a4e62a938d2f0619c6e9309d83",
+  "fixtures": [
+    {
+      "fixture": "warmup",
+      "input_rows": 10,
+      "output_rows": 10,
+      "output_columns": 17,
+      "outputs_identical": true,
+      "output_sha256": "74b40ab4766695dd032f09bc575f5c9995e33aaabec60128b5c7472ea4605243",
+      "signals": {
+        "Buy_Signal": 0,
+        "Breakout_Signal": 0,
+        "Sell_Signal": 0,
+        "Breakdown_Sell_Signal": 0
+      }
+    },
+    {
+      "fixture": "flat",
+      "input_rows": 120,
+      "output_rows": 120,
+      "output_columns": 17,
+      "outputs_identical": true,
+      "output_sha256": "48f5cc3e4bb8252b90c82c0c4b69c15a74ffec74ba452384365b85d5bd0705a2",
+      "signals": {
+        "Buy_Signal": 1,
+        "Breakout_Signal": 0,
+        "Sell_Signal": 0,
+        "Breakdown_Sell_Signal": 0
+      }
+    },
+    {
+      "fixture": "uptrend",
+      "input_rows": 360,
+      "output_rows": 360,
+      "output_columns": 17,
+      "outputs_identical": true,
+      "output_sha256": "38be5b46f251ee91dd901950b0c6aac301dda2c505074da5c3c1f5bce3f972e6",
+      "signals": {
+        "Buy_Signal": 1,
+        "Breakout_Signal": 20,
+        "Sell_Signal": 1,
+        "Breakdown_Sell_Signal": 0
+      }
+    },
+    {
+      "fixture": "downtrend",
+      "input_rows": 360,
+      "output_rows": 360,
+      "output_columns": 17,
+      "outputs_identical": true,
+      "output_sha256": "a6eb684a20eb818e15fc03f40093cccfc702da276923ee63f1668359136a8115",
+      "signals": {
+        "Buy_Signal": 1,
+        "Breakout_Signal": 0,
+        "Sell_Signal": 1,
+        "Breakdown_Sell_Signal": 24
+      }
+    },
+    {
+      "fixture": "volatile",
+      "input_rows": 720,
+      "output_rows": 720,
+      "output_columns": 17,
+      "outputs_identical": true,
+      "output_sha256": "b41dd3b5dee9215eb72cf3b8ffffbbe9392bc6d693ace27fe338913f408b1c65",
+      "signals": {
+        "Buy_Signal": 5,
+        "Breakout_Signal": 8,
+        "Sell_Signal": 7,
+        "Breakdown_Sell_Signal": 27
+      }
+    },
+    {
+      "fixture": "UTC_day_boundary",
+      "input_rows": 480,
+      "output_rows": 480,
+      "output_columns": 17,
+      "outputs_identical": true,
+      "output_sha256": "ed9e2e75a9261158434120b6aca8926ef920b318cf043d425f307ba759ec24b4",
+      "signals": {
+        "Buy_Signal": 4,
+        "Breakout_Signal": 8,
+        "Sell_Signal": 5,
+        "Breakdown_Sell_Signal": 7
+      }
+    }
+  ],
+  "total_input_rows": 2050,
+  "passed": true,
+  "exchange_orders_submitted": 0,
+  "scope": "Synthetic indicator/signal parity; separate regression tests verify frozen stop/target/cooldown behavior."
+}

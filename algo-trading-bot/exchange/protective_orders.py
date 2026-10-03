@@ -1,4 +1,8 @@
-"""Disabled catastrophic-stop planning, separate from frozen candle-close exits."""
+"""Legacy planner compatibility; the full lifecycle lives in position_protection.
+
+This old planner's activate method stays locked. Future authorized sessions use
+ExchangeProtectionManager and the central executor's approved trigger path.
+"""
 from dataclasses import dataclass
 from .base_exchange import ExchangeError, decimal
 from .order_lifecycle import OrderRequest

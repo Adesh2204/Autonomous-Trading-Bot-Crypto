@@ -166,6 +166,8 @@ class ParMarketDataEngine:
         self.recovery_generation=0
         self.consecutive_failures=0
         self.unavailable_books={}
+        self.rates=self.client.rate_limits
+        self.budget_identity='market:'+str(id(self))
 
     def _lifecycle(self,phase,**details):
         if self.on_lifecycle:
@@ -357,8 +359,12 @@ class ParMarketDataEngine:
                 self.reconciled = False
                 self._lifecycle('CONNECTING')
                 self.client.startup()
+                if self.rates is not None:
+                    self.rates.ws_open(self.budget_identity)
                 connection = self.connect()
                 for subscription in self.subscriptions():
+                    if self.rates is not None and not self.rates.ws_send(self.budget_identity,subscription['subscription']):
+                        continue
                     connection.send(json.dumps(subscription))
                 self.connected = True
                 self._lifecycle('SUBSCRIBED')
@@ -371,6 +377,8 @@ class ParMarketDataEngine:
                     if now-last_receive>=45 or pending_ping is not None and now-pending_ping>=10:
                         raise ExchangeError('STREAM_HEARTBEAT_STALE')
                     if now - last_ping >= 30:
+                        if self.rates is not None:
+                            self.rates.ws_send(self.budget_identity,heartbeat=True)
                         connection.send(json.dumps({'method': 'ping'}))
                         last_ping = pending_ping = now
                     try:
@@ -399,5 +407,7 @@ class ParMarketDataEngine:
             finally:
                 self.connected = False
                 self.reconciled = False
+                if self.rates is not None:
+                    self.rates.ws_close(self.budget_identity)
                 if connection is not None:
                     connection.close()

@@ -18,6 +18,8 @@ from exchange.execution_safety import ClockHealthMonitor,HyperliquidRateLimitMan
 from exchange.sdk_transport import verify_sdk
 from strategy_freeze import verify_strategy_freeze
 from venue_config import require_paper_migration
+from exchange.safety_report import production_safety_report
+from exchange.reliability_policy import load_reliability_policy
 
 
 def main(argv=None):
@@ -25,8 +27,10 @@ def main(argv=None):
     parser.add_argument('--team-wallet',default=os.environ.get('TEAM_WALLET_ADDRESS'))
     parser.add_argument('--api-wallet-address',default=os.environ.get('API_WALLET_ADDRESS'))
     parser.add_argument('--output',type=Path)
+    parser.add_argument('--safety-policy',type=Path,default=ROOT/'configs/reliability_policy.json')
     args=parser.parse_args(argv)
     require_paper_migration()
+    rate_policy,clock_policy,protection_policy=load_reliability_policy(args.safety_policy)
     freeze=verify_strategy_freeze()
     sdk=verify_sdk()
     result=dict(network='testnet',dex='par',market_data_ready=False,paper_ready=False,
@@ -34,11 +38,14 @@ def main(argv=None):
         live_orders_permitted=False,execution_mode='PAPER',allow_live_orders=False,
         team_wallet_configured=valid_address(args.team_wallet),api_wallet_configured=valid_address(args.api_wallet_address),
         strategy_freeze=freeze,final_status='ACCOUNT_SETUP_REQUIRED')
+    result['production_safety']=production_safety_report()
+    result['configured_reliability_policy']=dict(rate_limits=asdict(rate_policy),clock=clock_policy,
+                                               protection=asdict(protection_policy))
     client=HyperliquidClient()
     try:
         client.startup()
         market=HyperliquidMarketData(client)
-        clock=ClockHealthMonitor(clock_ms=client.clock_ms)
+        clock=ClockHealthMonitor(clock_ms=client.clock_ms,**clock_policy)
         sent=client.clock_ms()
         book=market.get_orderbook('par:BTC')
         clock.observe(book.timestamp_ms,sent,client.clock_ms())
@@ -46,12 +53,13 @@ def main(argv=None):
         result.update(market_data_ready=True,paper_ready=True,market_rules_loaded=True,
             metadata=[asdict(s) for s in client.markets.values()],dex_index=client.dex_index,
             observed_ms=client.clock_ms(),clock_healthy=clock.healthy,account_reconciliation_ready=False)
+        result['production_safety']=production_safety_report(clock=clock)
         if valid_address(args.team_wallet) and valid_address(args.api_wallet_address):
             with tempfile.TemporaryDirectory(prefix='anchorium-readiness-') as temporary:
                 journal=ExecutionJournal(Path(temporary)/'read-only.sqlite',session_id='read-only:readiness',
                                          team_address=args.team_wallet)
                 try:
-                    rates=HyperliquidRateLimitManager(journal,clock_ms=client.clock_ms)
+                    rates=HyperliquidRateLimitManager(journal,clock_ms=client.clock_ms,policy=rate_policy)
                     client.rate_limits=rates
                     account=HyperliquidAccount(client,args.team_wallet)
                     # This read-only CLI never claims to restore strategy management
@@ -59,6 +67,7 @@ def main(argv=None):
                     readiness=verify_live_account_readiness(account,args.api_wallet_address,
                         clock_health=clock,rate_limits=rates,reconciliation_ready=False)
                     result['account_verification']=readiness.report(market_ready=True)
+                    result['production_safety']=production_safety_report(rates=rates,clock=clock)
                 finally:
                     journal.close()
         else:

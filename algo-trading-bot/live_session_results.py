@@ -29,7 +29,7 @@ class LiveSessionResults:
         self.fill_ids=set()
         self.fee_ids=set()
         self.funding_ids=set()
-        for name in ('orders','fills','signals','rejected_signals','health_events','candidate_traces'):
+        for name in ('orders','fills','signals','rejected_signals','health_events','candidate_traces','protection_events'):
             file=self.path/(name+'.jsonl')
             if file.exists():
                 for line in file.read_text().splitlines():
@@ -86,6 +86,8 @@ class LiveSessionResults:
         for row in self.journal.db.execute('SELECT * FROM events WHERE seq>? ORDER BY seq',(self.event_seq,)):
             record=dict(json.loads(row['data']),kind=row['kind'],timestamp_ms=row['timestamp_ms'],journal_seq=row['seq'])
             self._jsonl('candidate_traces',record)
+            if row['kind'].startswith('PROTECTION_'):
+                self._jsonl('protection_events',record)
             if row['kind']=='LIVE_SIGNAL':
                 self._jsonl('signals',record)
             elif row['kind']=='ENTRY_REJECTED':
@@ -123,3 +125,7 @@ class LiveSessionResults:
             confirmed_order_count=len(intents),
             signed_attempt_count=self.journal.db.execute("SELECT COUNT(*) FROM events WHERE kind='SIGNED_ATTEMPT'").fetchone()[0])),
             indent=2,default=str)+'\n')
+        from exchange.safety_report import production_safety_report,format_safety_report
+        safety=production_safety_report(self.session.execution)
+        (self.path/'production_safety.json').write_text(json.dumps(safety,indent=2,default=str)+'\n')
+        (self.path/'production_safety.txt').write_text(format_safety_report(safety))

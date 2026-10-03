@@ -122,6 +122,29 @@ class HyperliquidAccount:
             raise ExchangeError('INVALID_ACCOUNT_FILLS') from exc
         return sorted(fills.values(), key=lambda fill: fill.identity)
 
+    def get_frontend_open_orders(self):
+        """Trigger-aware team/DEX snapshot; ordinary openOrders omits trigger fields."""
+        rows=self._query('frontendOpenOrders')
+        if not isinstance(rows,list):
+            raise ExchangeError('INVALID_FRONTEND_OPEN_ORDERS')
+        seen=set()
+        for row in rows:
+            try:
+                self.client.market(row['coin'])
+                oid=event_id(row['oid'])
+                if oid in seen or row['side'] not in {'B','A'}:
+                    raise ExchangeError('INVALID_FRONTEND_OPEN_ORDERS')
+                seen.add(oid)
+                decimal(row['sz'],positive=True)
+                decimal(row['limitPx'],positive=True)
+                if type(row['isTrigger']) is not bool or type(row['reduceOnly']) is not bool:
+                    raise ExchangeError('INVALID_FRONTEND_OPEN_ORDERS')
+                if row['isTrigger']:
+                    decimal(row['triggerPx'],positive=True)
+            except (KeyError,TypeError):
+                raise ExchangeError('INVALID_FRONTEND_OPEN_ORDERS') from None
+        return rows
+
     def get_funding(self, start_ms, end_ms=None):
         start_ms=timestamp(start_ms)
         end_ms=self.client.clock_ms() if end_ms is None else timestamp(end_ms)

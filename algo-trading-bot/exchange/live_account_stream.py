@@ -29,6 +29,8 @@ class LiveAccountStream:
         self.lock=threading.RLock()
         self.reconnect_failures=0
         self.retry_after_ms=0
+        self.rates=getattr(executor,'rate_limits',None)
+        self.budget_identity='account:'+str(id(self))
 
     def _pause(self, reason):
         self.ready=False
@@ -47,6 +49,8 @@ class LiveAccountStream:
                 except Exception:
                     pass
             self.socket=None
+            if self.rates is not None:
+                self.rates.ws_close(self.budget_identity)
 
     def connect(self):
         with self.lock:
@@ -58,6 +62,8 @@ class LiveAccountStream:
                 from websocket import create_connection
                 connector=create_connection
             try:
+                if self.rates is not None:
+                    self.rates.ws_open(self.budget_identity)
                 self.socket=connector(TESTNET_WS_URL,timeout=1)
                 self.generation+=1
                 self.connected=True
@@ -65,8 +71,11 @@ class LiveAccountStream:
                 self.last_ping_ms=self.clock_ms()
                 self.pong_pending_ms=None
                 for channel in self.CHANNELS:
+                    subscription=dict(type=channel,user=self.team_address)
+                    if self.rates is not None and not self.rates.ws_send(self.budget_identity,subscription):
+                        continue
                     self.socket.send(json.dumps(dict(method='subscribe',
-                        subscription=dict(type=channel,user=self.team_address))))
+                        subscription=subscription)))
                 self.reconnect_failures=0
             except Exception:
                 self.reconnect_failures+=1
@@ -112,6 +121,8 @@ class LiveAccountStream:
             self.disconnect('ACCOUNT_STREAM_HEARTBEAT_EXPIRED')
             raise ExchangeError('ACCOUNT_STREAM_HEARTBEAT_EXPIRED')
         if now-self.last_ping_ms>=30000:
+            if self.rates is not None:
+                self.rates.ws_send(self.budget_identity,heartbeat=True)
             self.socket.send(json.dumps(dict(method='ping')))
             self.last_ping_ms=now
             self.pong_pending_ms=now
@@ -144,6 +155,10 @@ class LiveAccountStream:
             self.ready=True
             self.reconciled_generation=generation
             self.executor.entries_paused=False
+            protection=getattr(self.executor,'protection',None)
+            if protection is not None:
+                protection.ensure_all()
+                self.executor.entries_paused=not protection.entries_allowed
             return True
 
     @property
