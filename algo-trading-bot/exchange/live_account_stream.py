@@ -36,6 +36,12 @@ class LiveAccountStream:
         self.ready=False
         self.executor.entries_paused=True
         self.recovery.revoke(reason)
+        coordinator=getattr(self.recovery,'startup_coordinator',None)
+        if coordinator is not None:
+            coordinator.post_stream_verified=False
+            if 'DISCONNECT' in reason or 'RECONNECT' in reason:
+                coordinator.before_stream_verified=False
+            coordinator.transition('ENTRY_PAUSED',reason)
 
     def disconnect(self, reason='ACCOUNT_WEBSOCKET_DISCONNECTED'):
         with self.lock:
@@ -147,8 +153,9 @@ class LiveAccountStream:
             if not self.connected or self.subscribed!=set(self.CHANNELS):
                 self._pause('ACCOUNT_SUBSCRIPTIONS_NOT_ACKNOWLEDGED')
                 return False
-            report=self.recovery.recover()
-            if not self.connected or generation!=self.generation or not report.ready:
+            coordinator=getattr(self.recovery,'startup_coordinator',None)
+            recovered=coordinator.after_stream(generation) if coordinator is not None else self.recovery.recover().ready
+            if not self.connected or generation!=self.generation or not recovered:
                 self._pause('ACCOUNT_RECONCILIATION_NOT_READY')
                 return False
             self.pending=False

@@ -1,0 +1,537 @@
+{
+  "date": "2026-10-03",
+  "scope": "CRASH_SAFE_RESTART_RECOVERY_AND_OPPORTUNITY_DIAGNOSTICS",
+  "head_before": "f79dd77c1a2ff5c2acc58c21d1196a24e2713136",
+  "head_after": "f79dd77c1a2ff5c2acc58c21d1196a24e2713136",
+  "branch": "perpetual-alpha-migration",
+  "preexisting_git_status": [],
+  "baseline_tests": {
+    "path": "/tmp/anchorium_restart_baseline.xml",
+    "tests": 844,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "duration_seconds": 56.264,
+    "new_task_cases": 0,
+    "process_kill_cases": []
+  },
+  "focused_tests": {
+    "path": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/restart_diagnostics_focused_2026-10-03.xml",
+    "tests": 244,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "duration_seconds": 51.912,
+    "new_task_cases": 78,
+    "process_kill_cases": [
+      "test_killed_process_transaction_preserves_previous_truth_and_no_duplicate_accounting[entry_fill]",
+      "test_killed_process_transaction_preserves_previous_truth_and_no_duplicate_accounting[ledger_before_checkpoint]",
+      "test_killed_process_transaction_preserves_previous_truth_and_no_duplicate_accounting[checkpoint_before_manager]",
+      "test_killed_process_transaction_preserves_previous_truth_and_no_duplicate_accounting[exit_before_response]",
+      "test_killed_process_transaction_preserves_previous_truth_and_no_duplicate_accounting[partial_exit]",
+      "test_killed_process_transaction_preserves_previous_truth_and_no_duplicate_accounting[funding_boundary]",
+      "test_killed_process_transaction_preserves_previous_truth_and_no_duplicate_accounting[ws_reconnection]",
+      "test_killed_process_transaction_preserves_previous_truth_and_no_duplicate_accounting[protection_creation]",
+      "test_sigkill_actual_owner_lifecycle_recovers_external_exchange_truth[entry_fill]",
+      "test_sigkill_actual_owner_lifecycle_recovers_external_exchange_truth[ledger_before_checkpoint]",
+      "test_sigkill_actual_owner_lifecycle_recovers_external_exchange_truth[checkpoint_before_manager]",
+      "test_sigkill_actual_owner_lifecycle_recovers_external_exchange_truth[exit_before_response]",
+      "test_sigkill_actual_owner_lifecycle_recovers_external_exchange_truth[partial_exit]",
+      "test_sigkill_actual_owner_lifecycle_recovers_external_exchange_truth[funding_boundary]",
+      "test_sigkill_actual_owner_lifecycle_recovers_external_exchange_truth[ws_reconnection]",
+      "test_sigkill_actual_owner_lifecycle_recovers_external_exchange_truth[protection_creation]"
+    ]
+  },
+  "final_tests": {
+    "path": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/restart_diagnostics_regression_2026-10-03.xml",
+    "tests": 923,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "duration_seconds": 117.084,
+    "new_task_cases": 79,
+    "process_kill_cases": [
+      "test_killed_process_transaction_preserves_previous_truth_and_no_duplicate_accounting[entry_fill]",
+      "test_killed_process_transaction_preserves_previous_truth_and_no_duplicate_accounting[ledger_before_checkpoint]",
+      "test_killed_process_transaction_preserves_previous_truth_and_no_duplicate_accounting[checkpoint_before_manager]",
+      "test_killed_process_transaction_preserves_previous_truth_and_no_duplicate_accounting[exit_before_response]",
+      "test_killed_process_transaction_preserves_previous_truth_and_no_duplicate_accounting[partial_exit]",
+      "test_killed_process_transaction_preserves_previous_truth_and_no_duplicate_accounting[funding_boundary]",
+      "test_killed_process_transaction_preserves_previous_truth_and_no_duplicate_accounting[ws_reconnection]",
+      "test_killed_process_transaction_preserves_previous_truth_and_no_duplicate_accounting[protection_creation]",
+      "test_sigkill_actual_owner_lifecycle_recovers_external_exchange_truth[entry_fill]",
+      "test_sigkill_actual_owner_lifecycle_recovers_external_exchange_truth[ledger_before_checkpoint]",
+      "test_sigkill_actual_owner_lifecycle_recovers_external_exchange_truth[checkpoint_before_manager]",
+      "test_sigkill_actual_owner_lifecycle_recovers_external_exchange_truth[exit_before_response]",
+      "test_sigkill_actual_owner_lifecycle_recovers_external_exchange_truth[partial_exit]",
+      "test_sigkill_actual_owner_lifecycle_recovers_external_exchange_truth[funding_boundary]",
+      "test_sigkill_actual_owner_lifecycle_recovers_external_exchange_truth[ws_reconnection]",
+      "test_sigkill_actual_owner_lifecycle_recovers_external_exchange_truth[protection_creation]"
+    ]
+  },
+  "new_tests": 79,
+  "crash_injection": {
+    "actual_owner_sigkill_cases": 8,
+    "sqlite_transaction_sigkill_cases": 8,
+    "all_passed": true,
+    "scope": "Offline synthetic exchange truth, ephemeral SDK signing, HTTP submissions disabled"
+  },
+  "strategy_freeze": {
+    "baseline": "nse-working-baseline",
+    "file_count": 1,
+    "method_count": 8,
+    "parameter_count": 32,
+    "passed": true
+  },
+  "phase0": {
+    "project": "anchorium-perpetual-alpha",
+    "checks": {
+      "project_is_perpetual_alpha": true,
+      "independent_git_directory": true,
+      "migration_branch": true,
+      "testnet_venue": true,
+      "paper_execution_mode": true,
+      "migration_policy_valid": true,
+      "orders_disabled": true,
+      "angel_one_client_disabled": true,
+      "angel_one_order_boundary_disabled": true,
+      "testnet_order_boundary_disabled": true,
+      "signal_logic_present": true,
+      "signal_source_unchanged": true
+    },
+    "passed": true
+  },
+  "protected_file_sha256": {
+    "algo-trading-bot/signal_brain.py": "bff940ac5ed35f71ed3dfb537ba15d20dcec35a4e62a938d2f0619c6e9309d83"
+  },
+  "protected_method_sha256": {
+    "algo-trading-bot/execution_engine.py": {
+      "LegacyPaperTrader.check_exit": "221ab6134685303ed9ebaa53b2b203ad5ca309d7e0849c92a4203d5c97609345",
+      "LegacyPaperTrader.notify_candle_close": "d44d8715e7eff3c391ef1adc274b974ce88944e43dace156404c8fb4bb8d086c",
+      "LegacyPaperTrader.update_daily_bias": "0a49d1344953a7823b697d363883d61e31302b29eea51b97f614a3f3071a3e1b"
+    },
+    "algo-trading-bot/live_stream.py": {
+      "AngelOneLiveStream._evaluate_watchlist_orchestrator": "1219f1493e1c24f990467a8a5d3e4bde0e86afc99839f234a497bcba2c6f3b8a"
+    },
+    "algo-trading-bot/runtime_observation.py": {
+      "observe_signal": "91c5b7d4822fb623cb56c6dd63181c036c4c70e06782598fb3b50e2b5fe657c1"
+    },
+    "algo-trading-bot/safe_trader.py": {
+      "SafeTrader.check_exit": "82111d256dd1e6e3f9be8e9cd3accec3bc51a44bb2594bad78e0bbad016c5f8a",
+      "SafeTrader.execute_trade": "a343d6f64f7a4873e63291beb66aa0f0ec2d196e57c0d5fe1bc4a543f8b24884",
+      "SafeTrader.notify_candle_close": "f7d71dc830ad279a18d996a248cd3ffc331cfb0c7c3b1bce4f9f7eb6a7258c19"
+    }
+  },
+  "protected_parameters": {
+    "algo-trading-bot/config.py": {
+      "ATR_BAND_MULT": 1.5,
+      "ATR_PERIOD": 14,
+      "BE_ATR_MULT": 1.0,
+      "BIAS_VOTES_NEEDED": 2,
+      "BIAS_VWAP_GAP_PCT": 0.0005,
+      "BREAKOUT_CLOSE_MULT": 0.5,
+      "EMA_FAST": 9,
+      "EMA_SLOW": 21,
+      "KNIFE_UP_MULT": 1.0,
+      "LOW_VOL_ATR_PCT": 0.001,
+      "MAX_TRANCHES": 3,
+      "MIN_ATR_PCT": 0.0006,
+      "MIN_CANDLES_BEFORE_TRADE": 15,
+      "MIN_NET_RR": 1.2,
+      "MIN_NET_RR_LOW_VOL": 0.8,
+      "MIN_NET_RR_NORMAL": 1.2,
+      "PYRAMID_TRIGGER_ATR_MULT": 2.0,
+      "REENTRY_ATR_MULT": 1.5,
+      "REENTRY_COOLDOWN_CANDLES": 10,
+      "SHORT_BAND_MULT": 1.5,
+      "SHORT_CLOSE_MULT": 0.5,
+      "SL_ATR_MULT": 2.0,
+      "TP_ATR_MULT": 4.0,
+      "TRAIL_ATR_MULT": 2.0,
+      "TRANCHE_FRACTIONS": [
+        0.33,
+        0.33,
+        0.34
+      ],
+      "VOL_MA_PERIOD": 10,
+      "VOL_SURGE_MULT": 1.5,
+      "VWAP_SLOPE_LOOKBACK": 10
+    },
+    "algo-trading-bot/execution_engine.py": {
+      "DEFAULT_PROFIT_TARGET_PCT": 0.01,
+      "DEFAULT_STOP_LOSS_PCT": 0.005,
+      "SCALE_IN_GAIN_TRIGGER_PCT": 0.003,
+      "TRANCHE2_TRIGGER_PCT": 0.003
+    }
+  },
+  "freeze_manifest_unchanged": true,
+  "freeze_manifest_sha256": "aeda15740802c1082f38f4e69f415f16a77d749a1aa050061026a99120fb9f8b",
+  "strategy_parity": {
+    "before_ref": "f79dd77c1a2ff5c2acc58c21d1196a24e2713136",
+    "strategy_freeze": {
+      "baseline": "nse-working-baseline",
+      "file_count": 1,
+      "method_count": 8,
+      "parameter_count": 32,
+      "passed": true
+    },
+    "protected_source_identical": true,
+    "signal_brain_sha256": "bff940ac5ed35f71ed3dfb537ba15d20dcec35a4e62a938d2f0619c6e9309d83",
+    "fixtures": [
+      {
+        "fixture": "warmup",
+        "input_rows": 10,
+        "output_rows": 10,
+        "output_columns": 17,
+        "outputs_identical": true,
+        "output_sha256": "74b40ab4766695dd032f09bc575f5c9995e33aaabec60128b5c7472ea4605243",
+        "signals": {
+          "Buy_Signal": 0,
+          "Breakout_Signal": 0,
+          "Sell_Signal": 0,
+          "Breakdown_Sell_Signal": 0
+        }
+      },
+      {
+        "fixture": "flat",
+        "input_rows": 120,
+        "output_rows": 120,
+        "output_columns": 17,
+        "outputs_identical": true,
+        "output_sha256": "48f5cc3e4bb8252b90c82c0c4b69c15a74ffec74ba452384365b85d5bd0705a2",
+        "signals": {
+          "Buy_Signal": 1,
+          "Breakout_Signal": 0,
+          "Sell_Signal": 0,
+          "Breakdown_Sell_Signal": 0
+        }
+      },
+      {
+        "fixture": "uptrend",
+        "input_rows": 360,
+        "output_rows": 360,
+        "output_columns": 17,
+        "outputs_identical": true,
+        "output_sha256": "38be5b46f251ee91dd901950b0c6aac301dda2c505074da5c3c1f5bce3f972e6",
+        "signals": {
+          "Buy_Signal": 1,
+          "Breakout_Signal": 20,
+          "Sell_Signal": 1,
+          "Breakdown_Sell_Signal": 0
+        }
+      },
+      {
+        "fixture": "downtrend",
+        "input_rows": 360,
+        "output_rows": 360,
+        "output_columns": 17,
+        "outputs_identical": true,
+        "output_sha256": "a6eb684a20eb818e15fc03f40093cccfc702da276923ee63f1668359136a8115",
+        "signals": {
+          "Buy_Signal": 1,
+          "Breakout_Signal": 0,
+          "Sell_Signal": 1,
+          "Breakdown_Sell_Signal": 24
+        }
+      },
+      {
+        "fixture": "volatile",
+        "input_rows": 720,
+        "output_rows": 720,
+        "output_columns": 17,
+        "outputs_identical": true,
+        "output_sha256": "b41dd3b5dee9215eb72cf3b8ffffbbe9392bc6d693ace27fe338913f408b1c65",
+        "signals": {
+          "Buy_Signal": 5,
+          "Breakout_Signal": 8,
+          "Sell_Signal": 7,
+          "Breakdown_Sell_Signal": 27
+        }
+      },
+      {
+        "fixture": "UTC_day_boundary",
+        "input_rows": 480,
+        "output_rows": 480,
+        "output_columns": 17,
+        "outputs_identical": true,
+        "output_sha256": "ed9e2e75a9261158434120b6aca8926ef920b318cf043d425f307ba759ec24b4",
+        "signals": {
+          "Buy_Signal": 4,
+          "Breakout_Signal": 8,
+          "Sell_Signal": 5,
+          "Breakdown_Sell_Signal": 7
+        }
+      }
+    ],
+    "total_input_rows": 2050,
+    "passed": true,
+    "exchange_orders_submitted": 0,
+    "scope": "Synthetic indicator/signal parity; separate regression tests verify frozen stop/target/cooldown behavior."
+  },
+  "production_policy": {
+    "scanner_atr_floor": "0.004",
+    "max_spread_bps": "15",
+    "history_bars": 300,
+    "top_n": 3,
+    "execution_mode": "PAPER",
+    "allow_live_orders": false,
+    "catastrophic_protection_enabled": false,
+    "catastrophic_production_distance": null,
+    "catastrophic_production_slippage": null
+  },
+  "replay_validation": {
+    "consumed_operations": 6969,
+    "source": "LIVE_PUBLIC_PAR_DATA",
+    "exchange_orders_submitted": 0,
+    "source_tape_sha256": "7b73ca547549a5ade3bbc3533524a8152dee405e04bda689a10b1864d0248947",
+    "source_tape": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/data/crypto-paper/public-audit-probe-2026-10-02/replay_tape.json",
+    "historical_candles_and_observed_quotes_only": true,
+    "signal_brain_frozen": true
+  },
+  "source_tape_raw_file_sha256": "eb1a11cedf22e1acc695f65ae45afa256feb46375703dfc0dae0972e562e6590",
+  "source_tape_embedded_body_checksum_verified": true,
+  "replay_original_result_equality": {
+    "scan_status": true,
+    "watchlist": true,
+    "scanned_markets": true,
+    "diagnostics": true,
+    "local_orders": true,
+    "local_fills": true,
+    "portfolio": true,
+    "decisions": true,
+    "strategy_state": true,
+    "scanner_policy": true,
+    "risk_policy": true,
+    "fees": true,
+    "positions": true
+  },
+  "observations": {
+    "count": 10,
+    "utc_dates": 1,
+    "stale_candle_observations": 10,
+    "bottleneck_status": "INSUFFICIENT OBSERVATIONS",
+    "evidence_kind": "Genuine saved public tape from 2026-10-02; not continuous runtime or current feed verification",
+    "local_fills": 0
+  },
+  "counterfactual_research": {
+    "label": "COUNTERFACTUAL \u2014 NOT LIVE POLICY",
+    "order_capability": false,
+    "production_policy_changed": false,
+    "research_status": "INSUFFICIENT OBSERVATIONS",
+    "variants": [
+      {
+        "policy": {
+          "name": "BASELINE_POLICY",
+          "atr_floor": "0.004",
+          "spread_bps": "15",
+          "top_n": 3
+        },
+        "admitted_candidates": 0,
+        "selected_candidates": 0,
+        "net_result": null,
+        "max_drawdown_amount": null,
+        "net_result_sample_volatility": null
+      },
+      {
+        "policy": {
+          "name": "ATR_035",
+          "atr_floor": "0.0035",
+          "spread_bps": "15",
+          "top_n": 3
+        },
+        "admitted_candidates": 0,
+        "selected_candidates": 0,
+        "net_result": null,
+        "max_drawdown_amount": null,
+        "net_result_sample_volatility": null
+      },
+      {
+        "policy": {
+          "name": "ATR_030",
+          "atr_floor": "0.003",
+          "spread_bps": "15",
+          "top_n": 3
+        },
+        "admitted_candidates": 0,
+        "selected_candidates": 0,
+        "net_result": null,
+        "max_drawdown_amount": null,
+        "net_result_sample_volatility": null
+      },
+      {
+        "policy": {
+          "name": "TOP5",
+          "atr_floor": "0.004",
+          "spread_bps": "15",
+          "top_n": 5
+        },
+        "admitted_candidates": 0,
+        "selected_candidates": 0,
+        "net_result": null,
+        "max_drawdown_amount": null,
+        "net_result_sample_volatility": null
+      },
+      {
+        "policy": {
+          "name": "SPREAD20",
+          "atr_floor": "0.004",
+          "spread_bps": "20",
+          "top_n": 3
+        },
+        "admitted_candidates": 0,
+        "selected_candidates": 0,
+        "net_result": null,
+        "max_drawdown_amount": null,
+        "net_result_sample_volatility": null
+      }
+    ],
+    "scope": "Causal saved admission and conditional recorded outcomes with holdout/embargo support; not an alternate portfolio execution simulation"
+  },
+  "changed_from_initial_working_source": {
+    "algo-trading-bot/live_session_results.py": {
+      "before_sha256": "3ac1479aebf2be661ebcbd1d65026beff2cea3f9ee056dce9ce9b5be5d4764e3",
+      "after_sha256": "cddb1ee411c4e86dce2fbe6fbf61b31d5a0963cb52a8c898429c3681710fbac3"
+    },
+    "algo-trading-bot/crypto_paper_bot.py": {
+      "before_sha256": "a2f028da9cc97917d429ff94bb3927559eefbffc7fc2d6275c93ace44a742938",
+      "after_sha256": "aa839ed6f87ff33b2144fac2dac38337e5e89a83bedc9a996b409b77587d772c"
+    },
+    "algo-trading-bot/session_results.py": {
+      "before_sha256": "2e9400197ad8c2830185ffdcaf9e1179236bfca186bbff705104451734697aa1",
+      "after_sha256": "e98fdeacf026cd95be1cbd54f4cb0cd5ab97a5d0ba10e60e1393bbf90f5bf8c7"
+    },
+    "algo-trading-bot/live_execution_session.py": {
+      "before_sha256": "0a958d9092c827eb613d29698ec91ea16e1b1cccd8a0f041a0d7caaa3570da15",
+      "after_sha256": "539d163e816d296875a6ddba1f01f56b3243b29b263b46e4ab7f6c4de608cfc4"
+    },
+    "algo-trading-bot/market_regime_scanner.py": {
+      "before_sha256": "52828bf003c145ab8fbf288652b1c184449ead065f4a7f7fe2ad3e713df96f6c",
+      "after_sha256": "a15e3c6765fe7713c63df0f8d83e0e56bd4d640873eccfd1559f349cf2159562"
+    },
+    "algo-trading-bot/exchange/execution_journal.py": {
+      "before_sha256": "05eeb58657fbaec5d74283824770cf61aaca1dd5fa32f990e012af403ca28448",
+      "after_sha256": "8f205b1c0d934b070946363b9ec87d940831b348e4f4d32f358780adbeb4c734"
+    },
+    "algo-trading-bot/exchange/hyperliquid_execution.py": {
+      "before_sha256": "8c7483aa3d7d899ee50a6470237b98857ff02f0bbf2f7b8819160ce09737a0cb",
+      "after_sha256": "2ad0b7437d0f0897a06e8db2dd117039b923e8271114dab9ff8117247436e1dc"
+    },
+    "algo-trading-bot/exchange/hyperliquid_reconciliation.py": {
+      "before_sha256": "57d42471c9690cff16401462a1c2c4db7ad06270d6978531510367807a29b21b",
+      "after_sha256": "a000c1670ebb21789205b69562773ac23562925327a2a572fb8853f0800c501b"
+    },
+    "algo-trading-bot/exchange/live_runtime.py": {
+      "before_sha256": "88fc2be6e67e8588b6d7981720b202322963908471296b5fb9c48aca9b705737",
+      "after_sha256": "b1c8bd6d2df93cb6a980f071d1773b3c6b2621d8ca43855270e897722f9962d5"
+    },
+    "algo-trading-bot/exchange/hyperliquid_account.py": {
+      "before_sha256": "b90d5c7d0380cab9d541ae3938eec67b84e547ee0f0367e112d6f79cd5d80d0b",
+      "after_sha256": "2c69c794735196f62dfd4550751bc85869e76b045f2832f87580b9ddc0fae464"
+    },
+    "algo-trading-bot/exchange/base_exchange.py": {
+      "before_sha256": "ef4bdced6c6ac0cc0a2738a1af2e126a84bfbf5d0e31c3432ba46d17d0f7265f",
+      "after_sha256": "de1b1904fb97c04bcac7d9d27c407d285101a6c8e450b0583a0523867d143348"
+    },
+    "algo-trading-bot/exchange/live_recovery.py": {
+      "before_sha256": "369a28b44d7c8b1b0e168443779bebc3700ec7361428e2e7e24a70487e8c70a0",
+      "after_sha256": "dde0abe7d2e9c6fc5683bf18c89278c001479a64fcae9d7c81e92454cc4306ee"
+    },
+    "algo-trading-bot/exchange/live_account_stream.py": {
+      "before_sha256": "8600458e6af4bc87e7ec49d7e1b8a72e09ef567cd860d09276102e9ef6639728",
+      "after_sha256": "cfa32a70ccde13e2c7c877ab1836f142bc84dff9ded2172eb81de05bdfe2eb91"
+    },
+    "algo-trading-bot/risk/portfolio_risk.py": {
+      "before_sha256": "75627147a37a49c1bfbea134ea335d1364241478d6da22a01d8e184a1f2b8e63",
+      "after_sha256": "95bc2daea8c4f2497ed74132687487867368ec038a2679d8ee753a84498336f7"
+    },
+    "scripts/check_live_readiness.py": {
+      "before_sha256": "804cc4681f86f522ea20212a33b34415771ce6004b39dc4e4c28a186d2b793df",
+      "after_sha256": "66b37cb4279730f4a29e7c604905b4bc603e9de729e756131a7daad8088f1c38"
+    },
+    "AGENTS.md": {
+      "before_sha256": "515cf8f56ffa7dd6a555ab6ea481800f3a6119d6b1c73b750810223de93e4ac6",
+      "after_sha256": "e7b385978a7ca158b0cc978f1d7da6fccd4f5f04fab1126239639aa06410492a"
+    },
+    "README.md": {
+      "before_sha256": "c143ad4cd22763d9c68d1867482bd61c15b23763a9ea775f4c2f68cec2cde6be",
+      "after_sha256": "a4dcff2b78c0b407378b3b6de66a0fe789ebe7731e70f2eb08cfbe336984673e"
+    }
+  },
+  "generated_inventory_paths": [
+    "docs/legacy_dependency_inventory.csv",
+    "docs/legacy_dependency_inventory.json"
+  ],
+  "created_paths": [
+    "algo-trading-bot/brain_observation.py",
+    "algo-trading-bot/counterfactual_research.py",
+    "algo-trading-bot/exchange/startup_recovery.py",
+    "algo-trading-bot/opportunity_funnel.py",
+    "algo-trading-bot/test_fixtures/restart_crash_worker.py",
+    "algo-trading-bot/test_restart_opportunity_diagnostics.py",
+    "docs/restart_diagnostics_focused_2026-10-03.xml",
+    "docs/restart_diagnostics_initial_audit_2026-10-03.json",
+    "docs/restart_diagnostics_observations_2026-10-03/atr_spread_distributions.json",
+    "docs/restart_diagnostics_observations_2026-10-03/counterfactual_research.json",
+    "docs/restart_diagnostics_observations_2026-10-03/counterfactual_research.txt",
+    "docs/restart_diagnostics_observations_2026-10-03/daily_funnel.json",
+    "docs/restart_diagnostics_observations_2026-10-03/funnel_summary.csv",
+    "docs/restart_diagnostics_observations_2026-10-03/funnel_summary.json",
+    "docs/restart_diagnostics_observations_2026-10-03/hourly_funnel.json",
+    "docs/restart_diagnostics_observations_2026-10-03/market_funnel.json",
+    "docs/restart_diagnostics_observations_2026-10-03/opportunity_report.txt",
+    "docs/restart_diagnostics_observations_2026-10-03/opportunity_traces.jsonl",
+    "docs/restart_diagnostics_observations_2026-10-03/replay_validation.json",
+    "docs/restart_diagnostics_observations_2026-10-03/staleness_diagnostics.json",
+    "docs/restart_diagnostics_observations_2026-10-03/startup_recovery.json",
+    "docs/restart_diagnostics_observations_2026-10-03/startup_recovery.txt",
+    "docs/restart_diagnostics_observations_2026-10-03/top3_exclusions.json",
+    "docs/restart_diagnostics_observations_2026-10-03/weekday_funnel.json",
+    "docs/restart_diagnostics_regression_2026-10-03.xml",
+    "docs/restart_diagnostics_strategy_parity_2026-10-03.json",
+    "docs/restart_diagnostics_validation_2026-10-03.json",
+    "docs/restart_opportunity_report_2026-10-03.md",
+    "scripts/research_crypto_opportunities.py"
+  ],
+  "readiness": {
+    "STRATEGY_INTEGRITY": true,
+    "PAPER_READY": true,
+    "REPLAY_READY": true,
+    "RESTART_RECOVERY_READY": true,
+    "EXPOSED_POSITION_RECOVERY_READY": true,
+    "FUNNEL_DIAGNOSTICS_READY": true,
+    "COUNTERFACTUAL_RESEARCH_READY": true,
+    "ACCOUNT_READY": false,
+    "LIVE_READY": false
+  },
+  "readiness_scope": "TRUE recovery/research flags indicate implementation and offline fixtures only. Actual account, funding, real triggers, signed execution and competition fills remain unverified.",
+  "exchange_orders_submitted": 0,
+  "real_secret_loaded": false,
+  "account_administration_performed": false,
+  "git_commit_or_push_performed": false,
+  "remaining_limits": [
+    "Longer multi-date, multi-regime PAPER observations required",
+    "No funded Team Anchorium account verification or real signed execution",
+    "No actual competition fills/performance",
+    "Unsupported management, missing candles, unknown orders or indivisible saturated history requires POSITION_REVIEW",
+    "Corrupt SQLite storage requires manual recovery",
+    "Local leases do not coordinate remote hosts or copied keys",
+    "Research outcomes are conditional; alternate portfolio path and out-of-sample performance remain unvalidated",
+    "PAPER ledger remains a separate hypothetical simulation"
+  ],
+  "report_artifact": {
+    "path": "docs/restart_opportunity_report_2026-10-03.md",
+    "sha256": "a78598965867a02c809d53e4343a169361fcc8b7d99a6782a9c8b16002cea208",
+    "words": 3999,
+    "sections": 12
+  },
+  "inventory_artifacts": {
+    "docs/legacy_dependency_inventory.csv": "03c9e7b0b35b3169b147636d715ce186448b4f64e1930360037ec9cb663375c2",
+    "docs/legacy_dependency_inventory.json": "568baab3ed52240923b27bbae8d01b908b593cc641bfe5b33e1742131783ca5d"
+  },
+  "verification": {
+    "local_report_links_checked": 58,
+    "missing_report_links": 0,
+    "final_source_hashes_match": true,
+    "git_diff_check_passed": true
+  }
+}

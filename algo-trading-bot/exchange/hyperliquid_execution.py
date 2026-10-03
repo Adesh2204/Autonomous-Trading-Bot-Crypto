@@ -75,6 +75,9 @@ class HyperliquidExecution:
         if entry and (self.entries_paused or not self.rate_limits.entries_allowed or
                 self.protection is not None and not self.protection.entries_allowed):
             raise ExchangeError('ENTRY_RELIABILITY_GATE_REQUIRED')
+        startup=getattr(self.recovery,'startup_coordinator',None)
+        if entry and startup is not None and not startup.entry_ready:
+            raise ExchangeError('STARTUP_ENTRY_LOCK_REQUIRED')
         now = self.client.clock_ms()
         if (not self.client.ready or not 0 <= now-checked_ms <= 5000 or
                 not context.readiness.account_ready or
@@ -112,6 +115,8 @@ class HyperliquidExecution:
             self.entries_paused = not report.ready or not self.context_provider.feed_ready()
             self.entries_paused |= (not self.transport.nonces.healthy or not self.rate_limits.entries_allowed or
                 any(r['state']=='UNKNOWN' for r in self.journal.management_actions()))
+            startup=getattr(self.recovery,'startup_coordinator',None)
+            self.entries_paused |= startup is not None and startup.state.value!='READY'
             if self.protection is not None and not self.protection.running:
                 self.protection.ensure_all(allow_actions=report.ready)
                 self.entries_paused |= not self.protection.entries_allowed
@@ -177,6 +182,10 @@ class HyperliquidExecution:
                 return self._restore_order(prior)
             if self.entries_paused and not request.reduce_only:
                 raise ExchangeError('ENTRY_PAUSED')
+            startup=getattr(self.recovery,'startup_coordinator',None)
+            if not request.reduce_only and startup is not None and not startup.entry_ready:
+                self.entries_paused=True
+                raise ExchangeError('STARTUP_ENTRY_LOCK_REQUIRED')
             request, context, result = self._validated(request, permission,critical=request.reduce_only)
             if not request.reduce_only and (not self.rate_limits.entries_allowed or
                     self.protection is not None and not self.protection.entries_allowed):

@@ -136,12 +136,16 @@ class SessionResults:
         self._trace_buffer.clear()
         self.cursors=dict(orders=len(e.events),ledger=len(e.portfolio.events),fills=len(e.fills),
             decisions=len(bot.decisions),transitions=len(transitions),stream=len(events))
+        bot.funnel.export(self.path)
 
     def bind(self,bot):
         if not self.initialized:
             data=manifest(bot,self.provenance,self.start_timestamp)
             (self.path/'session_manifest.json').write_text(json.dumps(data,indent=2,default=str,allow_nan=False)+'\n')
             self.initialized=True
+            from exchange.startup_recovery import read_only_startup_report,write_startup_report
+            write_startup_report(self.path,read_only_startup_report(account_configured=bool(bot.team_address),
+                                 market_ready=bot.market.client.ready))
 
     def save(self,bot,snapshot):
         self.bind(bot)

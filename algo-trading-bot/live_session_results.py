@@ -129,3 +129,6 @@ class LiveSessionResults:
         safety=production_safety_report(self.session.execution)
         (self.path/'production_safety.json').write_text(json.dumps(safety,indent=2,default=str)+'\n')
         (self.path/'production_safety.txt').write_text(format_safety_report(safety))
+        from exchange.startup_recovery import write_startup_report
+        write_startup_report(self.path,self.session.startup_recovery.report())
+        self.session.funnel.export(self.path)

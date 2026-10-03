@@ -31,6 +31,7 @@ class LiveExecutionSession:
         self.pending_entries={}
         self.exit_reasons={}
         self.position_candidates={}
+        self.direction_flip_intents={}
         self.processed_fill_ids=set()
         self.latest_scan=None
         self.portfolio=None
@@ -41,29 +42,51 @@ class LiveExecutionSession:
         self.peak_equity=None
         self.max_drawdown=Decimal(0)
         self._restore_controls()
+        from opportunity_funnel import OpportunityFunnel
+        from exchange.sdk_transport import OfflineSDKTransport
+        self.funnel=OpportunityFunnel(journal=self.journal,source='OFFLINE_SIGNED_FIXTURE' if type(execution.transport) is OfflineSDKTransport else 'EXCHANGE_REPORTED_RUNTIME')
+        self.scanner.diagnostic_sink=self.funnel
+        self.recovery.owner=self
         for symbol,record in self.recovery.saved_management.items():
             manager=self._manager(symbol)
-            self.recovery.restore_manager(manager)
+            try:
+                self.recovery.restore_manager(manager)
+            except Exception:
+                self.recovery.checkpoint_error='INVALID_MANAGEMENT_HISTORY'
+                self.managers.pop(symbol,None)
+                continue
             if record.get('pending_entry'):
                 self.pending_entries[symbol]=record['pending_entry']
             if record.get('exit_reason'):
                 self.exit_reasons[symbol]=record['exit_reason']
             if record.get('candidate_id'):
                 self.position_candidates[symbol]=record['candidate_id']
+            if record.get('direction_flip_intent'):
+                self.direction_flip_intents[symbol]=record['direction_flip_intent']
             self.processed_fill_ids.update(tuple(x) for x in record.get('processed_fill_ids',[]))
         self.recovery.on_truth=self._consume_actual_fills
+        from exchange.startup_recovery import StartupRecovery
+        self.startup_recovery=StartupRecovery(self)
 
     def _restore_controls(self):
         import json
-        row=self.journal.db.execute("SELECT value FROM controls WHERE name='live_risk_state'").fetchone()
-        if row:
-            data=json.loads(row[0])
+        snapshot=self.recovery.saved_snapshot
+        data=snapshot.get('risk_state') if snapshot else None
+        data=data or self.journal.control('live_risk_state')
+        if data:
             self.daily_setups=data['daily_setups']
             self.day=data['day']
             self.day_start_equity=Decimal(data['day_start_equity'])
             self.peak_equity=Decimal(data['peak_equity'])
             self.max_drawdown=Decimal(data['max_drawdown'])
             self.starting_equity=Decimal(data.get('starting_equity',data['day_start_equity']))
+
+    def risk_checkpoint_data(self):
+        if self.day is None or self.day_start_equity is None:
+            return None
+        return dict(day=self.day,daily_setups=self.daily_setups,
+            day_start_equity=self.day_start_equity,peak_equity=self.peak_equity,
+            max_drawdown=self.max_drawdown,starting_equity=self.starting_equity)
 
     def _save_controls(self):
         from exchange.execution_journal import canonical
@@ -82,6 +105,7 @@ class LiveExecutionSession:
     def _persist(self, symbol):
         self.recovery.persist_manager(self._manager(symbol),pending_entry=self.pending_entries.get(symbol),
             exit_reason=self.exit_reasons.get(symbol),candidate_id=self.position_candidates.get(symbol),
+            direction_flip_intent=self.direction_flip_intents.get(symbol),
             processed_fill_ids=[list(x) for x in self.processed_fill_ids if x[0]==symbol])
 
     def _consume_actual_fills(self, state):
@@ -131,7 +155,10 @@ class LiveExecutionSession:
                     position['average_entry_price']=float(average)
                     position['tranches']=[dict(entry_price=float(average))]
                 self.position_candidates[fill.symbol]=intent['candidate']
+                self.direction_flip_intents.pop(fill.symbol,None)
             self.processed_fill_ids.add(fill.identity)
+            self.funnel.event('TRADE_PNL' if request.reduce_only and not manager.has_open_position else
+                'ENTRY_FILL' if not request.reduce_only else 'PARTIAL_EXIT',intent['candidate'],{},self.clock_ms())
             self.journal.event('STRATEGY_ACTUAL_FILL',self.clock_ms(),candidate_id=intent['candidate'],
                                fill=asdict(fill),execution_mode='LIVE_TESTNET',source='EXCHANGE_REPORTED')
             self._persist(fill.symbol)
@@ -142,7 +169,7 @@ class LiveExecutionSession:
         if self.execution.protection is not None:
             self.execution.protection.managers=self.managers
             self.execution.protection.ensure_all(allow_actions=False)
-        report=self.recovery.recover()
+        report=self.startup_recovery.reconcile()
         eq=self.recovery.state.equity
         if eq is not None:
             if self.starting_equity is None:
@@ -154,7 +181,11 @@ class LiveExecutionSession:
             self.portfolio=ExchangePortfolioView(self.recovery,self.market.client.markets,self.starting_equity)
             self._save_controls()
         # Stream acknowledgment + reconciliation is also required before entry.
-        self.execution.entries_paused=not (report.ready and self.account_stream is not None and self.account_stream.healthy)
+        # Fixture streams have no subscribe protocol. Production streams must
+        # use after_stream only after real acknowledgements.
+        if self.account_stream is not None and self.account_stream.healthy and not hasattr(self.account_stream,'generation'):
+            self.startup_recovery.after_stream(0)
+        self.execution.entries_paused=self.startup_recovery.state.value!='READY'
         self._protection_barrier(allow_actions=report.ready)
         return report
 
@@ -186,6 +217,8 @@ class LiveExecutionSession:
         self.account_stream=stream
 
     def _account_barrier(self):
+        if self.startup_recovery.state.value=='RECOVERY_REQUIRED':
+            self.startup()
         if self.account_stream is None or not self.account_stream.healthy:
             self.execution.entries_paused=True
             raise ExchangeError('ACCOUNT_STREAM_NOT_READY')
@@ -196,9 +229,12 @@ class LiveExecutionSession:
         report=(self.recovery.last_report if self.recovery.last_report.ready and window is not None and
                 0<=now-window[1]<=self.execution.rate_limits.policy.budget_max_age_ms else self.recovery.recover())
         self.execution.entries_paused=not report.ready
+        self.execution.entries_paused |= self.startup_recovery.state.value!='READY'
         self._protection_barrier(allow_actions=report.ready)
         if not report.ready:
             raise ExchangeError('ACCOUNT_RECONCILIATION_NOT_READY')
+        if self.startup_recovery.state.value!='READY':
+            raise ExchangeError('STARTUP_ENTRY_LOCK_REQUIRED')
 
     def _performance(self, snapshot):
         day=datetime.fromtimestamp(self.clock_ms()/1000,timezone.utc).date().isoformat()
@@ -286,7 +322,13 @@ class LiveExecutionSession:
     def consume_scan(self, scan):
         verify_strategy_freeze()
         self.latest_scan=scan
-        self._account_barrier()
+        self.funnel.observe_scan(scan,getattr(self.scanner,'policy',None))
+        try:
+            self._account_barrier()
+        except ExchangeError as exc:
+            for d in scan.diagnostics:
+                self.funnel.event('ENTRY_REJECTED',f'{d.symbol}:{scan.observed_at_ms}',dict(reason=str(exc)),self.clock_ms())
+            raise
         self.observe({s:self.market.get_quote(s) for s in self.recovery.state.positions})
         for diagnostic in scan.diagnostics:
             self.journal.event('LIVE_SIGNAL',self.clock_ms(),candidate_id=f'{diagnostic.symbol}:{scan.observed_at_ms}',
@@ -303,21 +345,29 @@ class LiveExecutionSession:
             candidate=f'{symbol}:{scan.observed_at_ms}'
             key=symbol+':'+str(signal['timestamp_ms'])
             if self.journal.intent(key):
+                self.funnel.event('ENTRY_REJECTED',candidate,dict(reason='DUPLICATE_SIGNAL_ALREADY_PROCESSED'),self.clock_ms())
                 continue
             if signal['long'] and signal['short'] or not 60000<=self.clock_ms()-signal['timestamp_ms']<=60000+self.risk.policy.max_candle_age_ms:
                 self.journal.event('ENTRY_REJECTED',self.clock_ms(),candidate_id=candidate,reason='AMBIGUOUS_OR_STALE_SIGNAL')
+                self.funnel.event('ENTRY_REJECTED',candidate,dict(reason='AMBIGUOUS_OR_STALE_SIGNAL'),self.clock_ms())
                 continue
             side='BUY' if signal['long'] else 'SELL'
             manager=self._manager(symbol)
+            self.funnel.permission_observation(candidate,manager,side)
             if not manager.permits(side):
                 continue
             if manager.has_open_position and manager._open_position['side']!=side:
+                self.direction_flip_intents[symbol]=dict(candidate_id=candidate,from_side=manager._open_position['side'],
+                    to_side=side,actual_flat_required=True)
+                self._persist(symbol)
                 self._close(symbol,'Direction Flip')
                 if manager.has_open_position:
                     continue
                 if self.execution.protection is not None and not self.execution.protection.flat_clear(symbol):
                     continue
             if self.exit_reasons or self.breakers.entry_reasons(symbol):
+                reasons=self.breakers.entry_reasons(symbol)
+                self.funnel.event('ENTRY_REJECTED',candidate,dict(reason=reasons[0] if reasons else 'EXIT_RECONCILIATION_PENDING'),self.clock_ms())
                 continue
             self._account_barrier()
             quote=self.market.get_quote(symbol)
@@ -332,19 +382,25 @@ class LiveExecutionSession:
                 quote,self.portfolio,self.quotes,self.clock_ms(),
                 daily_loss=max(Decimal(0),self.day_start_equity-snapshot.equity),daily_setups=self.daily_setups)
             self.journal.event('LIVE_RISK_DECISION',self.clock_ms(),candidate_id=candidate,decision=asdict(decision))
+            self.funnel.event('LIVE_RISK_DECISION',candidate,dict(decision=asdict(decision),audit=getattr(self.risk,'last_audit',{})),self.clock_ms())
             if not decision.allowed:
                 continue
             request=OrderRequest(symbol,side,decision.quantity,quote.ask if side=='BUY' else quote.bid,
                 tif='Ioc',strategy_id=str(signal.get('signal_type') or 'VWAP_BASELINE'),client_order_id=key)
             permission=RiskPermission.from_decision(decision,request,candidate,self.clock_ms())
-            self.pending_entries[symbol]=dict(candidate_id=candidate,stop=str(decision.stop),target=str(decision.target))
+            self.pending_entries[symbol]=dict(candidate_id=candidate,stop=str(decision.stop),target=str(decision.target),
+                setup_type=str(signal.get('signal_type') or 'VWAP_BASELINE'),reference_vwap=str(signal['reference']),
+                atr=str(signal['atr']),signal_timestamp_ms=signal['timestamp_ms'])
             self._persist(symbol)
             try:
+                self.funnel.event('EXECUTION_DECISION',candidate,{},self.clock_ms())
+                self.funnel.event('ENTRY_ORDER_ATTEMPTED',candidate,{},self.clock_ms())
                 result=self.execution.submit(request,permission=permission)
                 self.breakers.order_result(result.state not in {OrderState.UNKNOWN,OrderState.REJECTED})
             except ExchangeError as exc:
                 self.breakers.order_result(False)
                 self.journal.event('ENTRY_REJECTED',self.clock_ms(),candidate_id=candidate,reason=str(exc))
+                self.funnel.event('ENTRY_REJECTED',candidate,dict(reason=str(exc)),self.clock_ms())
             self._persist(symbol)
 
     def cycle(self):

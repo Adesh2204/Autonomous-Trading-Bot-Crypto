@@ -44,6 +44,7 @@ class MarketDiagnostic:
     candles: list=field(default_factory=list,repr=False)
     snapshot: object=None
     timing: dict=field(default_factory=dict)
+    evidence: dict=field(default_factory=dict)
 
 
 @dataclass
@@ -61,6 +62,7 @@ class MarketRegimeScanner:
         self.policy=policy
         self.session=session or SessionManager()
         self.brain=FrozenStrategy(market,self.session)
+        self.diagnostic_sink=None
 
     def scan(self):
         require_paper_migration()
@@ -70,15 +72,32 @@ class MarketRegimeScanner:
         end=now//60000*60000-1
         anchor=int(self.session.get_vwap_anchor(datetime.fromtimestamp(now/1000,timezone.utc)).timestamp()*1000)
         start=min(end+1-p.history_bars*60000,anchor-14*60000)
-        contexts=self.market.get_asset_contexts()
+        try:
+            contexts=self.market.get_asset_contexts()
+        except Exception:
+            failed=ScanResult(now,[MarketDiagnostic(s,reasons=['MARKET_DATA_UNAVAILABLE'],
+                evidence=dict(root_cause='ASSET_CONTEXT_READ_FAILED',request_time_ms=None))
+                for s in sorted(self.client.markets)],[],'FAILED_SAFE')
+            if self.diagnostic_sink is not None:self.diagnostic_sink.observe_scan(failed,p)
+            raise
         context_observed=self.client.clock_ms()
         diagnostics=[]
         for symbol in sorted(self.client.markets):
             d=MarketDiagnostic(symbol)
             diagnostics.append(d)
+            d.evidence=dict(request_time_ms=None,request_cycle_observed_ms=context_observed,
+                            request_time_basis='EXACT_SEND_TIME_UNAVAILABLE_NO_ADDITIONAL_CLOCK_READ',
+                            expected_last_completed_candle_ms=end//60000*60000,
+                            actual_last_completed_candle_ms=None,lag_seconds=None,root_cause='UNDETERMINED',
+                            source=type(self.market).__name__)
             try:
                 candles=self.market.get_candles(symbol,start,end,now_ms=now)
                 d.candles=candles
+                if candles:
+                    d.evidence.update(actual_last_completed_candle_ms=candles[-1].timestamp_ms,
+                        source_timestamp_ms=candles[-1].timestamp_ms,
+                        lag_seconds=(end//60000*60000-candles[-1].timestamp_ms)/1000,
+                        received_timestamp_ms=candles[-1].received_timestamp_ms)
                 if len(candles)<p.history_bars:
                     raise ExchangeError('INSUFFICIENT_COMPLETED_HISTORY')
                 if not 0<=now-(candles[-1].timestamp_ms+60000)<=p.max_candle_age_ms:
@@ -89,7 +108,9 @@ class MarketRegimeScanner:
                 d.snapshot=MarketSnapshot.from_book(book,contexts[symbol],self.client.clock_ms(),
                     mark_observed_at_ms=context_observed)
                 quote=make_quote(book,contexts[symbol],self.client.clock_ms(),mark_timestamp_ms=context_observed)
-                enriched=self.brain.evaluate_candles(candles)
+                from brain_observation import observe_frozen_call
+                enriched,brain_evidence=observe_frozen_call(lambda:self.brain.evaluate_candles(candles))
+                d.evidence['brain']=brain_evidence
                 last=enriched.iloc[-1]
                 close=decimal(last['Close'],positive=True)
                 atr=decimal(last['ATR_14'],positive=True)
@@ -149,6 +170,8 @@ class MarketRegimeScanner:
                 ranks.append((Decimal(below)+Decimal(ties)/2)/len(qualified))
             d.score=sum(ranks)/len(ranks)
         qualified.sort(key=lambda d:(-d.score,-d.metrics['atr_fraction'],d.symbol))
+        for rank,d in enumerate(qualified,1):
+            d.evidence['scanner_rank']=rank
         return ScanResult(self.client.clock_ms(),diagnostics,[d.symbol for d in qualified[:p.top_n]],
                           'ACTIVE' if qualified else 'NO_TRADE')
 

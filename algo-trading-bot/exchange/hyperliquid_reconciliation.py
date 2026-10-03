@@ -50,8 +50,10 @@ class HyperliquidReconciliation:
             before=self.account.get_positions()
             orders=self.account.get_open_orders()
             end_ms=self.account.client.clock_ms() if end_ms is None else end_ms
-            fills=self.account.get_fills(start_ms=start_ms,end_ms=end_ms)
-            funding=self.account.get_funding(start_ms,end_ms)
+            fills=(self.account.get_complete_fills(start_ms,end_ms) if hasattr(self.account,'get_complete_fills') else
+                   self.account.get_fills(start_ms=start_ms,end_ms=end_ms))
+            funding=(self.account.get_complete_funding(start_ms,end_ms) if hasattr(self.account,'get_complete_funding') else
+                     self.account.get_funding(start_ms,end_ms))
             equity=self.account.get_equity()
             after=self.account.get_positions()
             later_orders=self.account.get_open_orders()

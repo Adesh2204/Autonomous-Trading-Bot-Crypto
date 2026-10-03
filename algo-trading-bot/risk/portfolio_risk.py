@@ -20,6 +20,7 @@ class PortfolioRisk:
     def assess(self, spec, side, reference, atr, quote, portfolio, quotes, now_ms,
                *, daily_loss=Decimal(0), daily_setups=0):
         p=self.policy
+        self.last_audit={}
         try:
             if side not in {'BUY','SELL'} or quote.symbol!=spec.symbol:
                 raise ExchangeError('SIGNAL_IDENTITY_MISMATCH')
@@ -72,10 +73,13 @@ class PortfolioRisk:
                 raise ExchangeError('LEVERAGE_EXCEEDS_RUNTIME_MARGIN_TIER')
             economics=estimate_trade(side,quantity,ref,stop,target,quote,self.fees,
                                     slippage_bps=p.slippage_bps,holding_hours=p.holding_hours)
+            from dataclasses import asdict
+            self.last_audit['economics']=asdict(economics)
             threshold=decimal(self.parameters['MIN_NET_RR_LOW_VOL'] if atr/ref<
                 decimal(self.parameters['LOW_VOL_ATR_PCT']) else self.parameters['MIN_NET_RR_NORMAL'])
             if economics.net_profit<=0 or economics.net_rr<threshold:
                 raise ExchangeError('NET_EDGE_OR_RR_INSUFFICIENT')
+            self.last_audit['friction_passed']=True
             ExposureManager.check(snapshot,portfolio,spec.symbol,quantity*quote.mark,p,side=side,quotes=quotes)
             FundingGuard.check(economics.funding_cost,quantity*quote.oracle,p.max_funding_cost_fraction)
             LiquidationGuard.check(snapshot,spec,quantity,quote.mark,economics.stop_risk,
