@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "label": "RESEARCH CONFIGURATION — NOT OFFICIAL PAR TRADING SESSIONS",
+  "calendar_note": "Daily wall-clock references on every calendar date, including weekends/holidays. These are information-anchor hypotheses, not a market-open calendar or an entry/exit rule. No commodity/FX hours are invented.",
+  "policies": [
+    {"policy_id": "SESSION_US_CASH_REFERENCE", "symbol": "par:SP500", "anchor_type": "ASSET_SESSION_ANCHOR", "timezone": "America/New_York", "anchor_time": "09:30", "source": "https://www.nyse.com/markets/hours-calendars", "rationale": "Test a daily US cash core-open reference; NYSE time does not certify par index session hours.", "enabled_for_research": true},
+    {"policy_id": "SESSION_KOREAN_EQUITY_REFERENCE", "symbol": "par:EWY", "anchor_type": "ASSET_SESSION_ANCHOR", "timezone": "Asia/Seoul", "anchor_time": "09:00", "source": "https://global.krx.co.kr/contents/GLB/06/0604/0604010100/GLB0604010100T2.jsp", "rationale": "Test the underlying Korean equity opening reference, not US ETF listing hours or official par hours.", "enabled_for_research": true},
+    {"policy_id": "SESSION_JAPANESE_EQUITY_REFERENCE", "symbol": "par:EWJ", "anchor_type": "ASSET_SESSION_ANCHOR", "timezone": "Asia/Tokyo", "anchor_time": "09:00", "source": "https://www.jpx.co.jp/english/equities/trading/domestic/01.html", "rationale": "Underlying Japanese equity reference. This equals 00:00 UTC and is an intentional identical-boundary control.", "enabled_for_research": true}
+  ],
+  "unconfigured_markets": ["par:BTC", "par:ETH", "par:HYPE", "par:BRENT", "par:GOLD", "par:USDEUR", "par:USDJPY"],
+  "unconfigured_behavior": "Explicitly retain UTC baseline as control; report SESSION_POLICY_NOT_CONFIGURED and do not claim a session experiment for that asset.",
+  "source_checked_on": "2026-10-04"
+}

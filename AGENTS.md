@@ -85,3 +85,12 @@
   reconciliation and the journal. Keep scanner ATR 0.40%, spread 15 bps, 300-bar
   history and Top-3 unchanged. Counterfactual variants are isolated observation
   research, cannot execute, and never promote themselves to production policy.
+
+- The VWAP/ML directive authorizes isolated anchor research and a numerical,
+  explainable candidate-quality meta-controller. Keep production UTC VWAP,
+  strategy/state/risk/execution byte-identical. Research may replace only the
+  VWAP and its slope assignments in a separately compiled, hash-verified brain;
+  EMA, ATR, volume, warmup and management remain baseline controls. Record this
+  narrow experimental adaptation. No production imports of research, no exchange
+  transport, no invented fills/labels, chronological purged splits, training-only
+  transforms, immutable artifacts and no automatic promotion.
