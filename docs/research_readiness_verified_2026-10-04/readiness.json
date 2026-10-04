@@ -1,0 +1,248 @@
+{
+  "schema_version": 1,
+  "status": {
+    "BASELINE_PRESERVED": true,
+    "VWAP_RESEARCH_READY": true,
+    "SESSION_ANCHOR_VALIDATED": false,
+    "ML_DATA_READY": false,
+    "ML_MODEL_VALIDATED": false,
+    "HOLDOUT_COMPLETE": false,
+    "PROMOTION_RECOMMENDED": false,
+    "PRODUCTION_CHANGED": false
+  },
+  "quality": {
+    "input_observations": 0,
+    "candidate_rows": 0,
+    "usable_labeled_rows": 0,
+    "positive_outcomes": 0,
+    "negative_outcomes": 0,
+    "zero_outcomes": 0,
+    "non_positive_class": 0,
+    "positive_fraction": null,
+    "markets": [],
+    "dates": [],
+    "labeled_markets": [],
+    "labeled_dates": [],
+    "directions": {},
+    "missing_features": {
+      "atr_fraction": 0,
+      "vwap_distance_fraction": 0,
+      "vwap_slope_fraction": 0,
+      "ema9": 0,
+      "ema21": 0,
+      "ema_separation_fraction": 0,
+      "candles_since_anchor": 0,
+      "realized_volatility": 0,
+      "spread_bps": 0,
+      "bid_depth_notional": 0,
+      "ask_depth_notional": 0,
+      "total_depth_notional": 0,
+      "book_imbalance": 0,
+      "estimated_slippage_bps": 0,
+      "available_liquidity": 0,
+      "funding_rate": 0,
+      "open_interest": 0,
+      "mark_oracle_bps": 0,
+      "utc_hour": 0,
+      "weekday": 0,
+      "symbol": 0,
+      "asset_class": 0,
+      "setup_type": 0,
+      "direction": 0,
+      "daily_bias": 0,
+      "anchor_policy_id": 0
+    },
+    "stale_features": 0,
+    "duplicate_candidates": 0,
+    "rejected_observations": [],
+    "assumptions_hash": "810e4aaa23f69cf136e11c7fc47bf4cfcd14101fa48286a7eb7caab2851405b9",
+    "feature_manifest_hash": "e671d62faefe8d161ee74d50c456496a0b0148797aee73bc483e676c2ccc3bf0"
+  },
+  "data_readiness_by_policy": {
+    "VWAP_BASELINE_UTC": {
+      "status": "INSUFFICIENT_DATA",
+      "checks": {
+        "candidate_rows": false,
+        "dates": false,
+        "markets": false,
+        "positives": false,
+        "negatives": false,
+        "both_directions": false
+      },
+      "note": "Eligibility floor is not performance validation or production approval.",
+      "counts": {
+        "usable_labeled_rows": 0,
+        "labeled_dates": [],
+        "labeled_markets": [],
+        "positive_outcomes": 0,
+        "negative_outcomes": 0,
+        "directions": {
+          "LONG": 0,
+          "SHORT": 0
+        }
+      },
+      "remaining": {
+        "labeled_candidates": 500,
+        "labeled_days": 20,
+        "positive": 100,
+        "negative": 100
+      },
+      "market_floor_scope": "UTC cross-asset domain: three markets; each declared single-asset session domain: its one asset"
+    },
+    "SESSION_JAPANESE_EQUITY_REFERENCE": {
+      "status": "INSUFFICIENT_DATA",
+      "checks": {
+        "candidate_rows": false,
+        "dates": false,
+        "markets": false,
+        "positives": false,
+        "negatives": false,
+        "both_directions": false
+      },
+      "note": "Eligibility floor is not performance validation or production approval.",
+      "counts": {
+        "usable_labeled_rows": 0,
+        "labeled_dates": [],
+        "labeled_markets": [],
+        "positive_outcomes": 0,
+        "negative_outcomes": 0,
+        "directions": {
+          "LONG": 0,
+          "SHORT": 0
+        }
+      },
+      "remaining": {
+        "labeled_candidates": 500,
+        "labeled_days": 20,
+        "positive": 100,
+        "negative": 100
+      },
+      "market_floor_scope": "UTC cross-asset domain: three markets; each declared single-asset session domain: its one asset"
+    },
+    "SESSION_KOREAN_EQUITY_REFERENCE": {
+      "status": "INSUFFICIENT_DATA",
+      "checks": {
+        "candidate_rows": false,
+        "dates": false,
+        "markets": false,
+        "positives": false,
+        "negatives": false,
+        "both_directions": false
+      },
+      "note": "Eligibility floor is not performance validation or production approval.",
+      "counts": {
+        "usable_labeled_rows": 0,
+        "labeled_dates": [],
+        "labeled_markets": [],
+        "positive_outcomes": 0,
+        "negative_outcomes": 0,
+        "directions": {
+          "LONG": 0,
+          "SHORT": 0
+        }
+      },
+      "remaining": {
+        "labeled_candidates": 500,
+        "labeled_days": 20,
+        "positive": 100,
+        "negative": 100
+      },
+      "market_floor_scope": "UTC cross-asset domain: three markets; each declared single-asset session domain: its one asset"
+    },
+    "SESSION_US_CASH_REFERENCE": {
+      "status": "INSUFFICIENT_DATA",
+      "checks": {
+        "candidate_rows": false,
+        "dates": false,
+        "markets": false,
+        "positives": false,
+        "negatives": false,
+        "both_directions": false
+      },
+      "note": "Eligibility floor is not performance validation or production approval.",
+      "counts": {
+        "usable_labeled_rows": 0,
+        "labeled_dates": [],
+        "labeled_markets": [],
+        "positive_outcomes": 0,
+        "negative_outcomes": 0,
+        "directions": {
+          "LONG": 0,
+          "SHORT": 0
+        }
+      },
+      "remaining": {
+        "labeled_candidates": 500,
+        "labeled_days": 20,
+        "positive": 100,
+        "negative": 100
+      },
+      "market_floor_scope": "UTC cross-asset domain: three markets; each declared single-asset session domain: its one asset"
+    }
+  },
+  "source_labs": [
+    {
+      "lab": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/research_forward_lab_verified_2026-10-04",
+      "sha256": "5dfe5b832758a2ccbc4bc08226327d92b6ef2d078e6ed2be3caae436790aab3c"
+    }
+  ],
+  "holdout": {
+    "status": "NOT_SEALED",
+    "reasons": [
+      "Fit and seal models before a future evaluation window."
+    ]
+  },
+  "classification_validation": {},
+  "portfolio_comparisons": {},
+  "current_baseline_diagnostics": {
+    "COMPLETED_CANDLE_STALE": 9,
+    "INVALID_DECIMAL": 1
+  },
+  "recommendation": "MORE_EVIDENCE_REQUIRED",
+  "collection_capacity": {
+    "baseline_max_new_setups_per_day": 2,
+    "optimistic_days_for_500_completed_trades": 250,
+    "note": "The 2-setups/day reference portfolio cannot yield 500 completed unique trades in a few weeks. Multiple arms/replays must not inflate the UTC sample. Historical candles alone cannot supply executable outcomes."
+  },
+  "next_steps": [
+    {
+      "step": 1,
+      "action": "Collect continuous public par receipts with fresh candles, BBO and mark/context clocks; investigate stale-market diagnostics."
+    },
+    {
+      "step": 2,
+      "action": "Run the four independent paper portfolios; preserve scanner/risk/cooldown limits and audit every completed trade."
+    },
+    {
+      "step": 3,
+      "action": "Accumulate adequate labeled evidence in each declared anchor domain. Never combine repeated replays into new data."
+    },
+    {
+      "step": 4,
+      "action": "Choose explicit earlier train/calibration/validation dates and a future holdout, then seal model artifacts before it begins."
+    },
+    {
+      "step": 5,
+      "action": "Record the complete future holdout; replay all four arms with the sealed models and inspect costs, drawdown and paired days."
+    },
+    {
+      "step": 6,
+      "action": "Accept only evidence-supported improvements; retain the UTC deterministic baseline if alternatives do not beat it."
+    },
+    {
+      "step": 7,
+      "action": "A promotion recommendation is a review proposal. Production activation still requires the existing explicit human verification process."
+    }
+  ],
+  "exchange_orders_submitted": 0,
+  "production_changed": false,
+  "meaning": {
+    "SESSION_ANCHOR_VALIDATED": "Documented session hypothesis has adequate prospective, paired after-cost portfolio evidence.",
+    "ML_DATA_READY": "Each model domain has enough genuine audited candidate labels and diversity.",
+    "ML_MODEL_VALIDATED": "Sealed numerical models improve held-out calibration/classification and their independent portfolios pass risk/cost comparisons.",
+    "HOLDOUT_COMPLETE": "The prespecified future window has ended, is fully observed, and has adequate audited labels.",
+    "PROMOTION_RECOMMENDED": "A proposal for human review; it grants no exchange-write permission.",
+    "PRODUCTION_CHANGED": "Must remain FALSE in this research task."
+  },
+  "sha256": "51fcd34fead8281850da0ef5272a5cc32cf0ba6676a1642bd0803cf71d2c28e3"
+}

@@ -337,3 +337,43 @@ valid candidates or labeled outcomes, so it cannot validate ML or a new anchor.
 Conditional candidate outcomes do not establish a changed portfolio's fills,
 mark drawdown or daily equity volatility. No experiment promotes itself.
 PAPER/false and disabled catastrophic-policy defaults remain enforced.
+
+
+### Collecting evidence for the six readiness flags
+
+The next workflow records public receipts, replays four independent paper
+portfolios, audits completed-trade labels, and fits/seals models before a future
+holdout. It derives readiness from evidence and has no production activation
+operation. The original scanner window and all existing strategy/risk/state
+sources remain unchanged. Longer session history supplies only the isolated
+VWAP and slope assignments.
+
+Read [the structured readiness guide](docs/research_readiness_work_report_2026-10-04.md)
+for commands, observed blockers, label lineage, thresholds, and current results.
+
+```sh
+.venv/bin/python scripts/collect_research_evidence.py \
+  --duration-seconds 3600 \
+  --output algo-trading-bot/data/crypto-research/my-hour-01
+
+.venv/bin/python scripts/run_research_readiness.py replay \
+  --capture algo-trading-bot/data/crypto-research/my-hour-01 \
+  --output algo-trading-bot/data/crypto-research/my-hour-01-lab
+
+.venv/bin/python scripts/run_research_readiness.py status \
+  --lab algo-trading-bot/data/crypto-research/my-hour-01-lab \
+  --output algo-trading-bot/data/crypto-research/my-hour-01-status
+```
+
+Every output directory must be new. The recorder uses a bounded duration,
+one-second observations, the unchanged 300-second scan schedule, and a separate
+3,000-bar receipt cache. After the initial history, it saves incremental candle
+updates. Once each minute it reads completed candles through public REST, so a
+pre-close WebSocket update is never relabelled as a final bar.
+
+The preserved maximum of two new setups per day means at least 250 days would
+be needed for 500 unique completed reference trades, even before other data
+quality requirements. Replaying the same sample or pooling identical UTC
+controls does not create additional labels. Keep the deterministic baseline
+available while ML remains gated by adequate evidence. These tools do not
+change production or permit any exchange submission.
