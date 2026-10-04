@@ -1,0 +1,585 @@
+{
+  "date": "2026-10-04",
+  "head_before": "58e8c4fb53315386b1034f36e75754c40bf20f98",
+  "head_after": "58e8c4fb53315386b1034f36e75754c40bf20f98",
+  "baseline": {
+    "path": "docs/research_readiness_baseline_2026-10-04.xml",
+    "tests": 1006,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "duration_seconds": 119.943
+  },
+  "final": {
+    "path": "docs/research_readiness_regression_2026-10-04.xml",
+    "tests": 1054,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "duration_seconds": 226.623
+  },
+  "new_test_cases": 48,
+  "focused_final": {
+    "path": "docs/research_readiness_focused_final_2026-10-04.xml",
+    "tests": 48,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "duration_seconds": 100.315,
+    "provenance": "Extracted cases from the same final full regression, not an independent rerun."
+  },
+  "all_preexisting_python_sources_unchanged": true,
+  "preexisting_python_source_count": 152,
+  "changed_preexisting_python_sources": [],
+  "protected_manifest_unchanged": true,
+  "strategy_freeze": {
+    "baseline": "nse-working-baseline",
+    "file_count": 1,
+    "method_count": 8,
+    "parameter_count": 32,
+    "passed": true
+  },
+  "phase0": {
+    "project": "anchorium-perpetual-alpha",
+    "checks": {
+      "project_is_perpetual_alpha": true,
+      "independent_git_directory": true,
+      "migration_branch": true,
+      "testnet_venue": true,
+      "paper_execution_mode": true,
+      "migration_policy_valid": true,
+      "orders_disabled": true,
+      "angel_one_client_disabled": true,
+      "angel_one_order_boundary_disabled": true,
+      "testnet_order_boundary_disabled": true,
+      "signal_logic_present": true,
+      "signal_source_unchanged": true
+    },
+    "passed": true
+  },
+  "production_imports_of_research": [],
+  "created_python_paths": [
+    "algo-trading-bot/research_intelligence/evidence.py",
+    "algo-trading-bot/research_intelligence/campaign.py",
+    "algo-trading-bot/research_intelligence/readiness.py",
+    "algo-trading-bot/research_lab/__init__.py",
+    "algo-trading-bot/research_lab/forward_lab.py",
+    "algo-trading-bot/test_research_readiness.py",
+    "scripts/collect_research_evidence.py",
+    "scripts/run_research_readiness.py"
+  ],
+  "created_python_sha256": {
+    "algo-trading-bot/research_intelligence/evidence.py": "1f9a4ff46bde14f2345fde05190cdac37cf945184e712af8d55e916f725c5e4a",
+    "algo-trading-bot/research_intelligence/campaign.py": "9ab7ab380f112aaa327cbe411ade6127b265701fd793453cd335aca2333f67f9",
+    "algo-trading-bot/research_intelligence/readiness.py": "6ec9bf41fe5e0149986f9e2f9c85734a6f8ba7ca47a53ad9e5e7a57ae8c251d3",
+    "algo-trading-bot/research_lab/__init__.py": "455a5c191c732614b5c3a236266465579222e5ed3823c66d2ef3d3756505af94",
+    "algo-trading-bot/research_lab/forward_lab.py": "12407ad99783f3dde0e427b3736158ce4bdc3633c04ec9feb2aeb5947e265acb",
+    "algo-trading-bot/test_research_readiness.py": "1cf4fad93814e9e32cc8bc88723ed95df0edb8c29c499ac2eacdc600e25f83d9",
+    "scripts/collect_research_evidence.py": "906961bb1df0481500286efedfef1bff90a3c5132af89ba787964887cd1655f1",
+    "scripts/run_research_readiness.py": "54cbe9e0fa76404c22bf138c40765e9aa0320ce47eb4313eefb230bb7d25ee00"
+  },
+  "source_hash": "f4ee466679d83f480afa6e031917285a8585894c322a16ca51f60a74e53bbde0",
+  "source_capture": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/data/crypto-research/2026-10-04-forward-budget-verified",
+  "capture_completion": {
+    "records": 1018,
+    "root_hash": "6b4792f6d250891efc86b5f7a8ed7a26fac56fddf0113c53bb8631279b72dffe",
+    "status": "COMPLETE",
+    "details": {
+      "frames": 64,
+      "rate_state": {
+        "state": "UNKNOWN",
+        "policy": {
+          "ip_weight_per_minute": 1200,
+          "ip_safety_reserve": 120,
+          "daily_actions": 50000,
+          "daily_safety_reserve": 500,
+          "account_action_reserve": 10,
+          "max_open_orders": 1000,
+          "max_ws_connections": 10,
+          "max_ws_subscriptions": 1000,
+          "max_ws_unique_users": 10,
+          "venue_ws_connections_per_minute": 30,
+          "max_ws_messages_per_minute": 2000,
+          "ws_reconnects_per_minute": 5,
+          "budget_max_age_ms": 60000,
+          "optional_poll_interval_ms": 5000,
+          "read_retry_attempts": 3,
+          "backoff_base_ms": 1000,
+          "backoff_max_ms": 30000,
+          "exhausted_safety_action_interval_ms": 10000,
+          "caution_fraction": 0.75,
+          "throttle_fraction": 0.9
+        },
+        "ip_weight": 200,
+        "account_requests_used": null,
+        "account_requests_cap": null,
+        "remaining_budget": null,
+        "budget_observed_ms": null,
+        "daily_actions": 0,
+        "daily_limit": 50000,
+        "entries_allowed": false,
+        "open_orders": null,
+        "backoff_until_ms": 0,
+        "websocket": {
+          "connections": 1,
+          "subscriptions": 30,
+          "outgoing_messages": 2,
+          "heartbeats": 2,
+          "reconnects_last_minute": 0
+        }
+      },
+      "elapsed_seconds": 75.45328933303244
+    },
+    "exchange_orders_submitted": 0
+  },
+  "capture_record_counts": {
+    "INFO": 45,
+    "HEALTH": 3,
+    "STREAM": 906,
+    "FRAME": 64
+  },
+  "captured_history_rows": [
+    29624,
+    0
+  ],
+  "capture_health_phases": [
+    "CONNECTING",
+    "SUBSCRIBED",
+    "REST_MARKET_RECONCILED"
+  ],
+  "capture_bytes": 20688875,
+  "source_integrity_and_raw_receipts_revalidated": true,
+  "lab_manifest_path": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/research_forward_lab_release_2026-10-04/lab_manifest.json",
+  "lab_manifest_sha256": "6d7c078a3c90b0d9f73722a51f5ea235f393825134049ce07f383ed756ee2c00",
+  "lab_frames": 64,
+  "portfolios": {
+    "UTC_NO_ML": {
+      "status": "LOCAL_PAPER_OBSERVED_PATH",
+      "samples": 64,
+      "days": 1,
+      "closed_trades": 0,
+      "local_fills": 0,
+      "net_pnl": 0.0,
+      "net_return": 0.0,
+      "max_drawdown": 0,
+      "daily_equity_volatility": null,
+      "daily_volatility_note": "Observed UTC daily endpoints; first/final partial days must be excluded for promotion.",
+      "time_in_market": 0.0,
+      "duration_ms": 64105,
+      "fees": 0.0,
+      "funding_cost": -0.0,
+      "open_positions": [],
+      "faults": 0,
+      "cost_sensitivity": [
+        {
+          "fee_multiplier": 1,
+          "additional_impact_bps": 0,
+          "stressed_net_pnl": 0.0,
+          "scope": "ANALYTICAL_STRESS_ON_OBSERVED_FILLS_NOT_NEW_EXECUTION_PATH"
+        },
+        {
+          "fee_multiplier": 1.5,
+          "additional_impact_bps": 5,
+          "stressed_net_pnl": 0.0,
+          "scope": "ANALYTICAL_STRESS_ON_OBSERVED_FILLS_NOT_NEW_EXECUTION_PATH"
+        },
+        {
+          "fee_multiplier": 2,
+          "additional_impact_bps": 10,
+          "stressed_net_pnl": 0.0,
+          "scope": "ANALYTICAL_STRESS_ON_OBSERVED_FILLS_NOT_NEW_EXECUTION_PATH"
+        }
+      ],
+      "valuation_scope": "Sampled mark-equity drawdown, not intratick or official competition scoring",
+      "comparison_eligible": true
+    },
+    "SESSION_NO_ML": {
+      "status": "LOCAL_PAPER_OBSERVED_PATH",
+      "samples": 64,
+      "days": 1,
+      "closed_trades": 0,
+      "local_fills": 0,
+      "net_pnl": 0.0,
+      "net_return": 0.0,
+      "max_drawdown": 0,
+      "daily_equity_volatility": null,
+      "daily_volatility_note": "Observed UTC daily endpoints; first/final partial days must be excluded for promotion.",
+      "time_in_market": 0.0,
+      "duration_ms": 64105,
+      "fees": 0.0,
+      "funding_cost": -0.0,
+      "open_positions": [],
+      "faults": 0,
+      "cost_sensitivity": [
+        {
+          "fee_multiplier": 1,
+          "additional_impact_bps": 0,
+          "stressed_net_pnl": 0.0,
+          "scope": "ANALYTICAL_STRESS_ON_OBSERVED_FILLS_NOT_NEW_EXECUTION_PATH"
+        },
+        {
+          "fee_multiplier": 1.5,
+          "additional_impact_bps": 5,
+          "stressed_net_pnl": 0.0,
+          "scope": "ANALYTICAL_STRESS_ON_OBSERVED_FILLS_NOT_NEW_EXECUTION_PATH"
+        },
+        {
+          "fee_multiplier": 2,
+          "additional_impact_bps": 10,
+          "stressed_net_pnl": 0.0,
+          "scope": "ANALYTICAL_STRESS_ON_OBSERVED_FILLS_NOT_NEW_EXECUTION_PATH"
+        }
+      ],
+      "valuation_scope": "Sampled mark-equity drawdown, not intratick or official competition scoring",
+      "comparison_eligible": true
+    },
+    "UTC_ML": {
+      "status": "ML_UNAVAILABLE",
+      "samples": 64,
+      "days": 1,
+      "closed_trades": 0,
+      "local_fills": 0,
+      "net_pnl": 0.0,
+      "net_return": 0.0,
+      "max_drawdown": 0,
+      "daily_equity_volatility": null,
+      "daily_volatility_note": "Observed UTC daily endpoints; first/final partial days must be excluded for promotion.",
+      "time_in_market": 0.0,
+      "duration_ms": 64105,
+      "fees": 0.0,
+      "funding_cost": -0.0,
+      "open_positions": [],
+      "faults": 0,
+      "cost_sensitivity": [
+        {
+          "fee_multiplier": 1,
+          "additional_impact_bps": 0,
+          "stressed_net_pnl": 0.0,
+          "scope": "ANALYTICAL_STRESS_ON_OBSERVED_FILLS_NOT_NEW_EXECUTION_PATH"
+        },
+        {
+          "fee_multiplier": 1.5,
+          "additional_impact_bps": 5,
+          "stressed_net_pnl": 0.0,
+          "scope": "ANALYTICAL_STRESS_ON_OBSERVED_FILLS_NOT_NEW_EXECUTION_PATH"
+        },
+        {
+          "fee_multiplier": 2,
+          "additional_impact_bps": 10,
+          "stressed_net_pnl": 0.0,
+          "scope": "ANALYTICAL_STRESS_ON_OBSERVED_FILLS_NOT_NEW_EXECUTION_PATH"
+        }
+      ],
+      "valuation_scope": "Sampled mark-equity drawdown, not intratick or official competition scoring",
+      "comparison_eligible": false,
+      "reason": "No sealed model; ML arms refuse entries and their flat results are not evidence of benefit."
+    },
+    "SESSION_ML": {
+      "status": "ML_UNAVAILABLE",
+      "samples": 64,
+      "days": 1,
+      "closed_trades": 0,
+      "local_fills": 0,
+      "net_pnl": 0.0,
+      "net_return": 0.0,
+      "max_drawdown": 0,
+      "daily_equity_volatility": null,
+      "daily_volatility_note": "Observed UTC daily endpoints; first/final partial days must be excluded for promotion.",
+      "time_in_market": 0.0,
+      "duration_ms": 64105,
+      "fees": 0.0,
+      "funding_cost": -0.0,
+      "open_positions": [],
+      "faults": 0,
+      "cost_sensitivity": [
+        {
+          "fee_multiplier": 1,
+          "additional_impact_bps": 0,
+          "stressed_net_pnl": 0.0,
+          "scope": "ANALYTICAL_STRESS_ON_OBSERVED_FILLS_NOT_NEW_EXECUTION_PATH"
+        },
+        {
+          "fee_multiplier": 1.5,
+          "additional_impact_bps": 5,
+          "stressed_net_pnl": 0.0,
+          "scope": "ANALYTICAL_STRESS_ON_OBSERVED_FILLS_NOT_NEW_EXECUTION_PATH"
+        },
+        {
+          "fee_multiplier": 2,
+          "additional_impact_bps": 10,
+          "stressed_net_pnl": 0.0,
+          "scope": "ANALYTICAL_STRESS_ON_OBSERVED_FILLS_NOT_NEW_EXECUTION_PATH"
+        }
+      ],
+      "valuation_scope": "Sampled mark-equity drawdown, not intratick or official competition scoring",
+      "comparison_eligible": false,
+      "reason": "No sealed model; ML arms refuse entries and their flat results are not evidence of benefit."
+    }
+  },
+  "quality": {
+    "input_observations": 0,
+    "candidate_rows": 0,
+    "usable_labeled_rows": 0,
+    "positive_outcomes": 0,
+    "negative_outcomes": 0,
+    "zero_outcomes": 0,
+    "non_positive_class": 0,
+    "positive_fraction": null,
+    "markets": [],
+    "dates": [],
+    "labeled_markets": [],
+    "labeled_dates": [],
+    "directions": {},
+    "missing_features": {
+      "atr_fraction": 0,
+      "vwap_distance_fraction": 0,
+      "vwap_slope_fraction": 0,
+      "ema9": 0,
+      "ema21": 0,
+      "ema_separation_fraction": 0,
+      "candles_since_anchor": 0,
+      "realized_volatility": 0,
+      "spread_bps": 0,
+      "bid_depth_notional": 0,
+      "ask_depth_notional": 0,
+      "total_depth_notional": 0,
+      "book_imbalance": 0,
+      "estimated_slippage_bps": 0,
+      "available_liquidity": 0,
+      "funding_rate": 0,
+      "open_interest": 0,
+      "mark_oracle_bps": 0,
+      "utc_hour": 0,
+      "weekday": 0,
+      "symbol": 0,
+      "asset_class": 0,
+      "setup_type": 0,
+      "direction": 0,
+      "daily_bias": 0,
+      "anchor_policy_id": 0
+    },
+    "stale_features": 0,
+    "duplicate_candidates": 0,
+    "rejected_observations": [],
+    "assumptions_hash": "810e4aaa23f69cf136e11c7fc47bf4cfcd14101fa48286a7eb7caab2851405b9",
+    "feature_manifest_hash": "e671d62faefe8d161ee74d50c456496a0b0148797aee73bc483e676c2ccc3bf0"
+  },
+  "status": {
+    "BASELINE_PRESERVED": true,
+    "VWAP_RESEARCH_READY": true,
+    "SESSION_ANCHOR_VALIDATED": false,
+    "ML_DATA_READY": false,
+    "ML_MODEL_VALIDATED": false,
+    "HOLDOUT_COMPLETE": false,
+    "PROMOTION_RECOMMENDED": false,
+    "PRODUCTION_CHANGED": false
+  },
+  "training_admission": {
+    "quality": {
+      "input_observations": 0,
+      "candidate_rows": 0,
+      "usable_labeled_rows": 0,
+      "positive_outcomes": 0,
+      "negative_outcomes": 0,
+      "zero_outcomes": 0,
+      "non_positive_class": 0,
+      "positive_fraction": null,
+      "markets": [],
+      "dates": [],
+      "labeled_markets": [],
+      "labeled_dates": [],
+      "directions": {},
+      "missing_features": {
+        "atr_fraction": 0,
+        "vwap_distance_fraction": 0,
+        "vwap_slope_fraction": 0,
+        "ema9": 0,
+        "ema21": 0,
+        "ema_separation_fraction": 0,
+        "candles_since_anchor": 0,
+        "realized_volatility": 0,
+        "spread_bps": 0,
+        "bid_depth_notional": 0,
+        "ask_depth_notional": 0,
+        "total_depth_notional": 0,
+        "book_imbalance": 0,
+        "estimated_slippage_bps": 0,
+        "available_liquidity": 0,
+        "funding_rate": 0,
+        "open_interest": 0,
+        "mark_oracle_bps": 0,
+        "utc_hour": 0,
+        "weekday": 0,
+        "symbol": 0,
+        "asset_class": 0,
+        "setup_type": 0,
+        "direction": 0,
+        "daily_bias": 0,
+        "anchor_policy_id": 0
+      },
+      "stale_features": 0,
+      "duplicate_candidates": 0,
+      "rejected_observations": [],
+      "assumptions_hash": "810e4aaa23f69cf136e11c7fc47bf4cfcd14101fa48286a7eb7caab2851405b9",
+      "feature_manifest_hash": "e671d62faefe8d161ee74d50c456496a0b0148797aee73bc483e676c2ccc3bf0"
+    },
+    "per_policy": {
+      "VWAP_BASELINE_UTC": {
+        "status": "INSUFFICIENT_DATA",
+        "checks": {
+          "candidate_rows": false,
+          "dates": false,
+          "markets": false,
+          "positives": false,
+          "negatives": false,
+          "both_directions": false
+        },
+        "note": "Eligibility floor is not performance validation or production approval.",
+        "counts": {
+          "usable_labeled_rows": 0,
+          "labeled_dates": [],
+          "labeled_markets": [],
+          "positive_outcomes": 0,
+          "negative_outcomes": 0,
+          "directions": {
+            "LONG": 0,
+            "SHORT": 0
+          }
+        },
+        "fit_partitions_ready": false,
+        "partition_counts": {
+          "train": 0,
+          "calibration": 0,
+          "validation": 0,
+          "holdout": 0,
+          "purged": 0
+        },
+        "market_domain_floor": 3
+      },
+      "SESSION_JAPANESE_EQUITY_REFERENCE": {
+        "status": "INSUFFICIENT_DATA",
+        "checks": {
+          "candidate_rows": false,
+          "dates": false,
+          "markets": false,
+          "positives": false,
+          "negatives": false,
+          "both_directions": false
+        },
+        "note": "Eligibility floor is not performance validation or production approval.",
+        "counts": {
+          "usable_labeled_rows": 0,
+          "labeled_dates": [],
+          "labeled_markets": [],
+          "positive_outcomes": 0,
+          "negative_outcomes": 0,
+          "directions": {
+            "LONG": 0,
+            "SHORT": 0
+          }
+        },
+        "fit_partitions_ready": false,
+        "partition_counts": {
+          "train": 0,
+          "calibration": 0,
+          "validation": 0,
+          "holdout": 0,
+          "purged": 0
+        },
+        "market_domain_floor": 1
+      },
+      "SESSION_KOREAN_EQUITY_REFERENCE": {
+        "status": "INSUFFICIENT_DATA",
+        "checks": {
+          "candidate_rows": false,
+          "dates": false,
+          "markets": false,
+          "positives": false,
+          "negatives": false,
+          "both_directions": false
+        },
+        "note": "Eligibility floor is not performance validation or production approval.",
+        "counts": {
+          "usable_labeled_rows": 0,
+          "labeled_dates": [],
+          "labeled_markets": [],
+          "positive_outcomes": 0,
+          "negative_outcomes": 0,
+          "directions": {
+            "LONG": 0,
+            "SHORT": 0
+          }
+        },
+        "fit_partitions_ready": false,
+        "partition_counts": {
+          "train": 0,
+          "calibration": 0,
+          "validation": 0,
+          "holdout": 0,
+          "purged": 0
+        },
+        "market_domain_floor": 1
+      },
+      "SESSION_US_CASH_REFERENCE": {
+        "status": "INSUFFICIENT_DATA",
+        "checks": {
+          "candidate_rows": false,
+          "dates": false,
+          "markets": false,
+          "positives": false,
+          "negatives": false,
+          "both_directions": false
+        },
+        "note": "Eligibility floor is not performance validation or production approval.",
+        "counts": {
+          "usable_labeled_rows": 0,
+          "labeled_dates": [],
+          "labeled_markets": [],
+          "positive_outcomes": 0,
+          "negative_outcomes": 0,
+          "directions": {
+            "LONG": 0,
+            "SHORT": 0
+          }
+        },
+        "fit_partitions_ready": false,
+        "partition_counts": {
+          "train": 0,
+          "calibration": 0,
+          "validation": 0,
+          "holdout": 0,
+          "purged": 0
+        },
+        "market_domain_floor": 1
+      }
+    },
+    "ready": false,
+    "prospective_holdout_not_read": true,
+    "source_labs": [
+      {
+        "lab": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/research_forward_lab_release_2026-10-04",
+        "sha256": "6d7c078a3c90b0d9f73722a51f5ea235f393825134049ce07f383ed756ee2c00"
+      }
+    ]
+  },
+  "real_data_models_trained": 0,
+  "real_holdout_completed": false,
+  "real_exchange_orders_submitted": 0,
+  "account_administration_actions": 0,
+  "wallet_secrets_required": false,
+  "production_changed": false,
+  "report_path": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/research_readiness_work_report_2026-10-04.md",
+  "report_word_count": 3221,
+  "report_sections": 14,
+  "report_sha256": "3108e2bfd636b9af4272787523f2a94247f767738b0c859298e1fb39df8ba729",
+  "git_diff_check_passed": true,
+  "limits": [
+    "No real labeled candidates or completed holdout.",
+    "Two-setup/day reference cap makes 500 executed labels require at least 250 days.",
+    "A local checksum is not exchange-signed authenticity.",
+    "Sampled mark equity and analytical friction stress are explicitly scoped.",
+    "Long captures and offline memory/continuity still need scale verification.",
+    "No recurring task or unattended collector remains running."
+  ],
+  "retained_earlier_runs": "Superseded engineering observations, not additional independent training evidence."
+}
