@@ -1,0 +1,47 @@
+{
+  "parameters": {
+    "starting_collateral": "20000",
+    "fees": {
+      "maker": "0.0003",
+      "taker": "0.0009",
+      "source": "PAR_UNDISCOUNTED_BASE_TIER_CHECKED_2026-10-02_PAPER_ASSUMPTION"
+    },
+    "scanner": {
+      "min_atr_fraction": "0.004",
+      "max_spread_bps": "15",
+      "min_window_notional": "0",
+      "min_bbo_notional": "10",
+      "history_bars": 300,
+      "top_n": 3
+    },
+    "risk": {
+      "risk_fraction": "0.005",
+      "max_daily_loss_fraction": "0.01",
+      "max_gross_equity_multiple": "1",
+      "max_margin_utilization": "0.5",
+      "maintenance_buffer_multiple": "2",
+      "max_funding_cost_fraction": "0.001",
+      "max_mark_oracle_bps": "50",
+      "max_spread_bps": "15",
+      "depth_participation": "0.1",
+      "slippage_bps": "5",
+      "holding_hours": "1",
+      "leverage": 1,
+      "max_positions": 1,
+      "max_daily_setups": 2,
+      "max_drawdown_fraction": "0.05",
+      "max_symbol_equity_multiple": "1",
+      "max_net_equity_multiple": "1",
+      "max_directional_equity_multiple": "1",
+      "max_data_age_ms": 5000,
+      "max_mark_age_ms": 60000,
+      "max_candle_age_ms": 120000,
+      "max_consecutive_order_errors": 3,
+      "max_reconnect_failures": 5
+    }
+  },
+  "source": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/data/crypto-paper/public-audit-probe-2026-10-02/replay_tape.json",
+  "source_tape_checksum": "7b73ca547549a5ade3bbc3533524a8152dee405e04bda689a10b1864d0248947",
+  "provenance": "SAVED_PUBLIC_TAPE_PARAMETERS_UNCHANGED",
+  "note": "Historical recorded controls, not current account or fee verification"
+}

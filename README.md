@@ -302,4 +302,38 @@ comparisons using explicit recorded outcome evidence. Missing outcomes stay
 unknown; research cannot submit orders or promote a policy. See
 [the restart/diagnostics handover](docs/restart_opportunity_report_2026-10-03.md)
 and [validation evidence](docs/restart_diagnostics_validation_2026-10-03.json).
+
+### Isolated VWAP anchor and candidate-quality ML research
+
+Production keeps `VWAP_BASELINE_UTC`, the frozen strategy, existing state/risk
+rules, `EXECUTION_MODE=PAPER` and `ALLOW_LIVE_ORDERS=false`. The research package
+is never imported into trading permissions and has no exchange transport.
+
+The research brain changes only VWAP and its slope in a separate compiled copy.
+EMA, ATR, volume and warmup retain their UTC controls. Configured reference times
+are documented in `research/configurations/anchor_policies.json`; they are daily
+information-anchor hypotheses, not official `par` trading sessions or calendars.
+
+Candidate models use explicit feature clocks, after-cost outcome lineage,
+chronological purged splits, train-only transforms, separate calibration and
+threshold windows, immutable JSON versions and a sealed holdout. They recommend
+permission only and retain the strategy's direction. Missing required evidence
+means `ML_UNAVAILABLE`; inadequate data means `INSUFFICIENT_DATA`.
+
+Read [the fourteen-section engineering report](docs/vwap_ml_engineering_report_2026-10-04.md)
+and [saved evidence outputs](docs/strategy_intelligence_research_2026-10-04-final/reports/competition_research_summary.md).
+
+```sh
+.venv/bin/python scripts/run_strategy_intelligence_research.py \
+  --traces docs/restart_diagnostics_observations_2026-10-03/opportunity_traces.jsonl \
+  --candles algo-trading-bot/data/crypto-paper/public-audit-probe-2026-10-02/candles.jsonl \
+  --candidate-events algo-trading-bot/data/crypto-paper/restart-diagnostics-final-public-replay-2026-10-03/results/candidate_traces.jsonl \
+  --assumptions research/configurations/recorded_public_assumptions_2026-10-02.json \
+  --output /tmp/anchorium-new-research-run
+```
+
+Use a new output directory for each attempt. The available saved sample has no
+valid candidates or labeled outcomes, so it cannot validate ML or a new anchor.
+Conditional candidate outcomes do not establish a changed portfolio's fills,
+mark drawdown or daily equity volatility. No experiment promotes itself.
 PAPER/false and disabled catastrophic-policy defaults remain enforced.
