@@ -274,3 +274,32 @@ classes, and cannot authorize a real broker session. Phase 0 guard tests run
 with the actual production policy.
 
 Secrets, credentials, and runtime artifacts must remain excluded from Git.
+
+### Crash-safe restart and opportunity diagnostics
+
+The restart phase adds one startup state machine over the existing account
+reconciler, atomic combined checkpoints in the same SQLite journal, clean/unclean
+shutdown markers and exposed-downtime candle review. New entries remain locked
+until a second reconciliation after account-stream acknowledgements. Unknown
+positions, unexplained orders, incomplete history and missing strategy state
+require review.
+
+Opportunity traces now cover all verified markets and each admission gate.
+Session, daily, market, UTC-hour, distribution and Top-3 exclusion reports are
+written beside existing results. Diagnostic observations do not change scanner
+ATR 0.40%, spread 15 bps, 300-bar history, Top-3 or any frozen strategy parameter.
+
+The isolated research command accepts saved observations only:
+
+```sh
+.venv/bin/python scripts/research_crypto_opportunities.py \
+  --traces '<session>/results/opportunity_traces.jsonl' \
+  --output '<new-research-directory>'
+```
+
+Optional `--holdout-start-ms` and `--outcomes` support chronological, cost-aware
+comparisons using explicit recorded outcome evidence. Missing outcomes stay
+unknown; research cannot submit orders or promote a policy. See
+[the restart/diagnostics handover](docs/restart_opportunity_report_2026-10-03.md)
+and [validation evidence](docs/restart_diagnostics_validation_2026-10-03.json).
+PAPER/false and disabled catastrophic-policy defaults remain enforced.

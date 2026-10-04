@@ -76,6 +76,9 @@ def main(argv=None):
         result['reasons']=['READ_ONLY_VERIFICATION_FAILED:'+type(exc).__name__]
     finally:
         client.transport.close()
+    from exchange.startup_recovery import read_only_startup_report
+    result['startup_recovery']=read_only_startup_report(account_configured=result['team_wallet_configured'],
+                                                       market_ready=result['market_data_ready'])
     encoded=json.dumps(result,indent=2,default=str)+'\n'
     if args.output:
         args.output.parent.mkdir(parents=True,exist_ok=True)

@@ -72,6 +72,9 @@ class ExecutionJournal:
           id INTEGER PRIMARY KEY AUTOINCREMENT, fingerprint TEXT NOT NULL,
           action TEXT NOT NULL, state TEXT NOT NULL, created_ms INTEGER NOT NULL,
           updated_ms INTEGER NOT NULL);
+        CREATE TABLE IF NOT EXISTS recovery_snapshots (
+          seq INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT NOT NULL, checksum TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS opportunity_traces (candidate TEXT PRIMARY KEY,data TEXT NOT NULL);
         ''')
         with self.transaction():
             identity = dict(self.db.execute('SELECT name,value FROM identity'))
@@ -144,6 +147,46 @@ class ExecutionJournal:
             with self.transaction():
                 self.db.execute('INSERT OR REPLACE INTO account_checkpoint VALUES (1,?)', (canonical(safe_data(data)),))
         row = self.db.execute('SELECT data FROM account_checkpoint WHERE id=1').fetchone()
+        return json.loads(row[0]) if row else None
+
+    def recovery_snapshot(self):
+        with self.lock:
+            row=self.db.execute('SELECT * FROM recovery_snapshots ORDER BY seq DESC LIMIT 1').fetchone()
+            if row is None:
+                return None
+            try:
+                value=json.loads(row['data'])
+                if fingerprint(value)!=row['checksum'] or value['schema_version']!=1:
+                    raise ValueError()
+                if value['team_address']!=self.team_address or value['venue']!='testnet:par':
+                    raise ValueError()
+                return value
+            except (ValueError,KeyError,TypeError):
+                raise ExchangeError('RECOVERY_CHECKPOINT_CORRUPT') from None
+
+    def save_recovery_snapshot(self, account_data, management, evidence):
+        value=safe_data(dict(schema_version=1,team_address=self.team_address,venue='testnet:par',
+            session_id=self.session_id,account=account_data,management=management,
+            orders=self.intents(),signed_management=self.management_actions(),**evidence))
+        with self.transaction():
+            self.db.execute('INSERT OR REPLACE INTO account_checkpoint VALUES (1,?)',(canonical(safe_data(account_data)),))
+            self.db.executemany('INSERT OR REPLACE INTO management VALUES (?,?)',
+                               [(s,canonical(safe_data(m))) for s,m in management.items()])
+            self.db.execute('INSERT INTO recovery_snapshots(data,checksum) VALUES (?,?)',(canonical(value),fingerprint(value)))
+            if value.get('lifecycle') is not None:
+                self.db.execute('INSERT OR REPLACE INTO controls VALUES (?,?)',
+                                ('recovery_lifecycle',canonical(value['lifecycle'])))
+            # Retain the previous complete checkpoint; never silently adopt a
+            # corrupt latest record as healthy, even when a previous one exists.
+            self.db.execute('DELETE FROM recovery_snapshots WHERE seq NOT IN '
+                            '(SELECT seq FROM recovery_snapshots ORDER BY seq DESC LIMIT 2)')
+        return value
+
+    def control(self, name, value=None):
+        if value is not None:
+            with self.transaction():
+                self.db.execute('INSERT OR REPLACE INTO controls VALUES (?,?)',(name,canonical(safe_data(value))))
+        row=self.db.execute('SELECT value FROM controls WHERE name=?',(name,)).fetchone()
         return json.loads(row[0]) if row else None
 
     def close(self):

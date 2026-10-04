@@ -52,7 +52,39 @@ class LiveRuntime:
         if self.session.account_stream is not None:
             self.session.account_stream.disconnect('HUMAN_LIVE_AUTHORIZATION_REVOKED')
 
-    def close(self):
+    def run(self,stop_event=None):
+        """Graceful Ctrl-C/SIGTERM is distinct from an unexpected failure.
+        This is available only on an already separately authorized runtime."""
+        import signal
+        stop=stop_event or threading.Event()
+        previous=None
+        if threading.current_thread() is threading.main_thread():
+            previous=signal.getsignal(signal.SIGTERM)
+            signal.signal(signal.SIGTERM,lambda *_:stop.set())
+        clean=False
+        try:
+            while not stop.is_set():
+                try:
+                    self.session.cycle()
+                except ExchangeError as exc:
+                    self.session.execution.entries_paused=True
+                    self.journal.event('RUNTIME_ENTRY_PAUSED',self.session.clock_ms(),error_type=type(exc).__name__)
+                    # The same authorization and signing gates apply to existing
+                    # management. A temporary stream fault does not erase it.
+                    try:
+                        quotes={s:self.session.market.get_quote(s) for s in self.session.recovery.state.positions}
+                        self.session.observe(quotes)
+                    except ExchangeError:
+                        pass
+                    stop.wait(1)
+            clean=True
+        except KeyboardInterrupt:
+            clean=True
+        finally:
+            if previous is not None:signal.signal(signal.SIGTERM,previous)
+            self.close(clean=clean)
+
+    def close(self,*,clean=True):
         self.deactivate()
         self.market_stop.set()
         if self.market_thread is not None:
@@ -61,8 +93,10 @@ class LiveRuntime:
                 raise ExchangeError('MARKET_STREAM_SHUTDOWN_PENDING')
         self.transport.close()
         self.nonces.close()
-        self.journal.close()
         self.public_transport.close()
+        if clean:
+            self.session.startup_recovery.clean_shutdown()
+        self.journal.close()
 
 
 def build_live_runtime(*,team_address,approval,session_id,initial_start_ms,risk_policy,

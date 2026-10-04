@@ -78,3 +78,10 @@
   earlier planner-only limitation. Keep actual exchange actions unauthorized,
   PAPER/false and catastrophic protection disabled by default. Production stop
   distance requires explicit documented approval; no strategy geometry changes.
+
+- The restart/diagnostics directive authorizes one crash-safe startup coordinator,
+  transactional recovery checkpoints, clean/unclean shutdown evidence, exposed
+  downtime review and complete opportunity traces/reports. Reuse account truth
+  reconciliation and the journal. Keep scanner ATR 0.40%, spread 15 bps, 300-bar
+  history and Top-3 unchanged. Counterfactual variants are isolated observation
+  research, cannot execute, and never promote themselves to production policy.

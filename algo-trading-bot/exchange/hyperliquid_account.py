@@ -48,10 +48,14 @@ class HyperliquidAccount:
                     continue
                 entry = position.get('entryPx')
                 liquidation = position.get('liquidationPx')
+                leverage=position.get('leverage')
+                if leverage is not None and (not isinstance(leverage,dict) or leverage.get('type') not in {'cross','isolated'} or
+                    type(leverage.get('value')) is not int or leverage['value']<1):
+                    raise ExchangeError('INVALID_POSITION_LEVERAGE')
                 positions[symbol] = Position(
                     symbol, quantity, decimal(entry, positive=True) if entry is not None else None,
                     decimal(position['unrealizedPnl']), decimal(position['marginUsed'], nonnegative=True),
-                    decimal(liquidation, positive=True) if liquidation is not None else None)
+                    decimal(liquidation, positive=True) if liquidation is not None else None,leverage)
         except (KeyError, TypeError) as exc:
             raise ExchangeError('INVALID_ACCOUNT_POSITIONS') from exc
         return positions
@@ -179,6 +183,39 @@ class HyperliquidAccount:
         except (KeyError,TypeError) as exc:
             raise ExchangeError('INVALID_ACCOUNT_FUNDING') from exc
         return sorted(events.values(),key=lambda event:event.identity)
+
+    def _complete_history(self,reader,start_ms,end_ms,limit_code,*,max_requests=64):
+        """Split saturated time windows. An indivisible full millisecond is
+        incomplete evidence, never a complete history page by assumption."""
+        end_ms=self.client.clock_ms() if end_ms is None else end_ms
+        windows=[(start_ms,end_ms)]
+        events={};requests=0
+        while windows:
+            a,b=windows.pop()
+            requests+=1
+            if requests>max_requests:
+                raise ExchangeError('ACCOUNT_HISTORY_BACKFILL_BUDGET_EXCEEDED')
+            try:
+                rows=reader(a,b)
+            except ExchangeError as exc:
+                if str(exc)!=limit_code:raise
+                if a>=b:raise ExchangeError('ACCOUNT_HISTORY_SATURATED_TIMESTAMP_REQUIRES_REVIEW') from None
+                midpoint=(a+b)//2
+                windows.extend([(midpoint+1,b),(a,midpoint)])
+                continue
+            for event in rows:
+                prior=events.get(event.identity)
+                if prior is not None and prior!=event:raise ExchangeError('CONFLICTING_BACKFILLED_EVENT')
+                events[event.identity]=event
+        return sorted(events.values(),key=lambda e:e.identity)
+
+    def get_complete_fills(self,start_ms,end_ms=None):
+        return self._complete_history(lambda a,b:self.get_fills(start_ms=a,end_ms=b),start_ms,end_ms,
+                                      'FILL_HISTORY_PAGE_LIMIT_REQUIRES_PAGINATION')
+
+    def get_complete_funding(self,start_ms,end_ms=None):
+        return self._complete_history(self.get_funding,start_ms,end_ms,
+                                      'FUNDING_HISTORY_PAGE_LIMIT_REQUIRES_PAGINATION')
 
     def get_equity(self):
         if self._query('userAbstraction') != 'unifiedAccount':

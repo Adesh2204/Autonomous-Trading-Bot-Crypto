@@ -204,6 +204,7 @@ class Position:
     unrealized_pnl: Decimal
     margin_used: Decimal
     liquidation_price: Decimal | None
+    leverage: dict | None = None
 
 
 @dataclass(frozen=True)

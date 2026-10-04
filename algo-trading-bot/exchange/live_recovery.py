@@ -6,6 +6,7 @@ import json
 
 from .account_events import AccountFunding
 from .base_exchange import ExchangeError, Fill, decimal
+from .execution_journal import fingerprint
 from .hyperliquid_reconciliation import ExchangeTruthState, HyperliquidReconciliation
 from strategy_contract import ManagementState
 from strategy_freeze import verify_strategy_freeze
@@ -28,25 +29,44 @@ class LiveAccountRecovery:
         self.reconciler=HyperliquidReconciliation(account)
         self.on_truth=None
         self.protection=None
+        self.startup_coordinator=None
+        self.owner=None
+        self.checkpoint_error=None
+        self.source=self.source_identity()
         self.saved_management=journal.management()
-        checkpoint=journal.checkpoint()
+        try:
+            self.saved_snapshot=journal.recovery_snapshot()
+            checkpoint=self.saved_snapshot['account'] if self.saved_snapshot else journal.checkpoint()
+            if self.saved_snapshot:
+                self.saved_management=self.saved_snapshot['management']
+                self.checkpoint_error=self.saved_snapshot.get('checkpoint_error')
+        except Exception:
+            self.saved_snapshot=None
+            checkpoint=None
+            self.saved_management={}
+            self.checkpoint_error='RECOVERY_CHECKPOINT_CORRUPT'
         if checkpoint:
             if checkpoint.get('initial_start_ms')!=initial_start_ms:
                 raise ExchangeError('ACCOUNTING_ORIGIN_MISMATCH')
-            self.state.initialized=True
-            self.state.quantities={s:decimal(q) for s,q in checkpoint['quantities'].items()}
-            self.state.quantity_evidence={s:decimal(q) for s,q in checkpoint['quantity_evidence'].items()}
-            self.state.last_window=tuple(checkpoint['last_window'])
-            self.state.accounting_origin_ms=initial_start_ms
-            restored=[]
-            for row in checkpoint['fills']:
-                values=dict(row)
-                for name in ('quantity','price','fee','closed_pnl','start_position'):
-                    if values.get(name) is not None:
-                        values[name]=decimal(values[name])
-                restored.append(Fill(**values))
-            self.state.fills={f.identity:f for f in restored}
-            self.state.funding={f.identity:f for f in (AccountFunding(**row) for row in checkpoint['funding'])}
+            try:
+                self.state.initialized=True
+                self.state.quantities={s:decimal(q) for s,q in checkpoint['quantities'].items()}
+                self.state.quantity_evidence={s:decimal(q) for s,q in checkpoint['quantity_evidence'].items()}
+                self.state.last_window=tuple(checkpoint['last_window'])
+                self.state.accounting_origin_ms=initial_start_ms
+                restored=[]
+                for row in checkpoint['fills']:
+                    values=dict(row)
+                    for name in ('quantity','price','fee','closed_pnl','start_position'):
+                        if values.get(name) is not None:
+                            values[name]=decimal(values[name])
+                    restored.append(Fill(**values))
+                self.state.fills={f.identity:f for f in restored}
+                self.state.funding={f.identity:f for f in (AccountFunding(**row) for row in checkpoint['funding'])}
+            except Exception:
+                self.state=ExchangeTruthState()
+                self.saved_management={}
+                self.checkpoint_error="RECOVERY_CHECKPOINT_CORRUPT"
         self.last_report=LiveRecoveryReport(False,('STARTUP_RECONCILIATION_REQUIRED',),{})
 
     def restore_manager(self, manager):
@@ -56,6 +76,9 @@ class LiveAccountRecovery:
         verify_strategy_freeze()
         if value.get('version')!=1:
             raise ExchangeError('UNKNOWN_MANAGEMENT_SCHEMA')
+        if (any(type(value[k]) is not int or value[k]<0 for k in ('candles_held','candles_since_last_sl')) or
+            value['last_candle_ms'] is not None and (type(value['last_candle_ms']) is not int or value['last_candle_ms']<0 or value['last_candle_ms']%60000)):
+            raise ExchangeError('INVALID_MANAGEMENT_CANDLE_EVIDENCE')
         position=value.get('position')
         if position is not None:
             if position['side'] not in {'BUY','SELL'}:
@@ -74,12 +97,47 @@ class LiveAccountRecovery:
         manager._day=date.fromisoformat(value['utc_day']) if value.get('utc_day') else None
         return True
 
-    def persist_manager(self, manager, **links):
-        self.journal.save_management(manager.symbol,dict(version=1,position=manager._open_position,
+    def manager_data(self, manager, **links):
+        return dict(version=1,position=manager._open_position,
             state=manager._state.value,daily_bias=manager.daily_bias,candles_held=manager.candles_held,
             candles_since_last_sl=manager.candles_since_last_sl,entry_atr=manager.entry_atr,
             last_candle_ms=manager.last_candle_ms,utc_day=manager._day.isoformat() if manager._day else None,
-            **links))
+            **links)
+
+    def persist_manager(self, manager, **links):
+        data=self.manager_data(manager,**links)
+        if self.state.initialized and self.state.last_window is not None:
+            self.checkpoint(management=dict(self.journal.management(),**{manager.symbol:data}))
+        else:
+            self.journal.save_management(manager.symbol,data)
+
+    def checkpoint(self, management=None, *, lifecycle=None, clean=False):
+        account=dict(initial_start_ms=self.initial_start_ms,quantities=self.state.quantities,
+            quantity_evidence=self.state.quantity_evidence,last_window=self.state.last_window,
+            fills=[asdict(f) for f in self.state.fills.values()],funding=[asdict(f) for f in self.state.funding.values()])
+        from .sdk_transport import OfflineSDKTransport
+        mode=('OFFLINE_SIGNED_FIXTURE' if self.owner and type(self.owner.execution.transport) is OfflineSDKTransport else
+              'LIVE_TESTNET' if self.owner else 'READ_ONLY_ACCOUNT_RECOVERY')
+        evidence=dict(last_checkpoint_ts=self.account.client.clock_ms(),execution_mode=mode,
+            last_clean_shutdown=clean,source_identity=self.source,
+            metadata_hash=fingerprint(self.account.client.metadata),
+            checkpoint_error=self.checkpoint_error,
+            fill_identities=[list(f.identity) for f in self.state.fills.values()],
+            funding_identities=[list(f.identity) for f in self.state.funding.values()],
+            risk_state=self.owner.risk_checkpoint_data() if self.owner else self.journal.control('live_risk_state'),
+            lifecycle=lifecycle if lifecycle is not None else self.journal.control('recovery_lifecycle'))
+        return self.journal.save_recovery_snapshot(account,management if management is not None else self.journal.management(),evidence)
+
+    @staticmethod
+    def source_identity():
+        from pathlib import Path
+        import hashlib,subprocess
+        root=Path(__file__).resolve().parents[2]
+        brain=root/'algo-trading-bot/signal_brain.py'
+        from session_results import source_version
+        return dict(git_commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip(),
+                    working_source_hash=source_version(list((root/'algo-trading-bot').rglob('*.py'))),
+                    strategy_source_hash=hashlib.sha256(brain.read_bytes()).hexdigest())
 
     def revoke(self, reason):
         self.state.entries_paused=True
@@ -106,9 +164,14 @@ class LiveAccountRecovery:
             if self.state.initialized and self.state.last_window is not None:
                 start=max(start,self.state.last_window[1]-60000)
             report=self.reconciler.recover(self.state,start_ms=start)
+            if start>self.initial_start_ms and 'POSITION_DELTA_NOT_EXPLAINED_BY_OBSERVED_FILLS' in report['reasons']:
+                report=self.reconciler.recover(self.state,start_ms=self.initial_start_ms)
+                self.journal.event('ACCOUNT_HISTORY_EXPANDED',self.account.client.clock_ms(),start_ms=self.initial_start_ms)
             if self.on_truth is not None:
                 self.on_truth(self.state)
             reasons=list(report['reasons'])+protection_reasons
+            if self.checkpoint_error:
+                reasons.append(self.checkpoint_error)
             for symbol,position in self.state.positions.items():
                 manager=self.managers.get(symbol)
                 managed=manager._open_position if manager else None
@@ -128,14 +191,11 @@ class LiveAccountRecovery:
                 reasons.append('AMBIGUOUS_MANAGEMENT_ACTION_REQUIRES_ACCOUNT_RECOVERY')
             self.state.reasons=tuple(dict.fromkeys(reasons))
             self.state.entries_paused=bool(reasons)
-            self.journal.checkpoint(dict(initial_start_ms=self.initial_start_ms,
-                quantities=self.state.quantities,quantity_evidence=self.state.quantity_evidence,
-                last_window=self.state.last_window,fills=[asdict(f) for f in self.state.fills.values()],
-                funding=[asdict(f) for f in self.state.funding.values()]))
             for manager in self.managers.values():
                 prior=self.journal.management().get(manager.symbol,{})
-                links={k:v for k,v in prior.items() if k in {'pending_entry','exit_reason','candidate_id','processed_fill_ids'}}
+                links={k:v for k,v in prior.items() if k in {'pending_entry','exit_reason','candidate_id','processed_fill_ids','direction_flip_intent'}}
                 self.persist_manager(manager,**links)
+            self.checkpoint()
             self.last_report=LiveRecoveryReport(not reasons,self.state.reasons,self.state.report())
             self.journal.event('LIVE_ACCOUNT_RECONCILED',self.account.client.clock_ms(),
                                ready=not reasons,reasons=self.state.reasons,
@@ -145,3 +205,8 @@ class LiveAccountRecovery:
         except Exception as exc:
             self.revoke('ACCOUNT_RECOVERY_FAILED:'+type(exc).__name__)
             raise ExchangeError('ACCOUNT_RECOVERY_FAILED:'+type(exc).__name__) from None
+
+
+# All restart, reconnect, ambiguous-action and verification callers reuse this
+# service; there is no separate reconnect accounting implementation.
+AccountReconciler=LiveAccountRecovery

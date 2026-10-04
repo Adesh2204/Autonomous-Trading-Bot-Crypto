@@ -52,6 +52,9 @@ class CryptoPaperBot:
         self.candidate_ids={}
         self.position_candidates={}
         self._audited_scan=None
+        from opportunity_funnel import OpportunityFunnel
+        self.funnel=OpportunityFunnel(source='LOCAL_'+execution.execution_mode+'_OBSERVATION')
+        self.scanner.diagnostic_sink=self.funnel
 
     def _performance(self,snapshot):
         self.peak_equity=max(self.peak_equity,snapshot.equity)
@@ -79,12 +82,14 @@ class CryptoPaperBot:
         details.setdefault('candidate_id',self.candidate_ids.get(symbol))
         clocks=details.pop('_timing',None) or timing(self.clock_ms())
         self.decisions.append(dict(kind=kind,timestamp_ms=self.clock_ms(),**clocks,**details))
+        self.funnel.event(kind,details.get('candidate_id'),details,self.decisions[-1]['timestamp_ms'])
 
     def audit_scan(self,scan):
         """Record every candidate, including unavailable data and no-signal bars."""
         if self._audited_scan==scan.observed_at_ms:
             return
         self._audited_scan=scan.observed_at_ms
+        self.funnel.observe_scan(scan,getattr(self.scanner,'policy',None))
         for d in scan.diagnostics:
             cid=f'{d.symbol}:{scan.observed_at_ms}'
             self.candidate_ids[d.symbol]=cid
@@ -246,6 +251,7 @@ class CryptoPaperBot:
                 continue
             side='BUY' if signal['long'] else 'SELL'
             manager=self._manager(symbol)
+            self.funnel.permission_observation(self.candidate_ids.get(symbol),manager,side)
             if not manager.permits(side):
                 self._record('ENTRY_REJECTED',symbol=symbol,reason='BASELINE_BIAS_OR_COOLDOWN')
                 continue
@@ -277,7 +283,7 @@ class CryptoPaperBot:
                 signal['atr'],quote,self.execution.portfolio,self.quotes,self.clock_ms(),
                 daily_loss=max(Decimal(0),self._day_start_equity-snapshot.equity),
                 daily_setups=self._daily_setups)
-            self._record('RISK_DECISION',symbol=symbol,side=side,decision=asdict(decision))
+            self._record('RISK_DECISION',symbol=symbol,side=side,decision=asdict(decision),audit=getattr(self.risk,'last_audit',{}))
             if not decision.allowed:
                 continue
             self.execution.candidate_id=self.candidate_ids.get(symbol)
@@ -289,6 +295,7 @@ class CryptoPaperBot:
             order=None
             setup_cash=self.execution.portfolio.cash
             try:
+                self.funnel.event('ENTRY_ORDER_ATTEMPTED',self.candidate_ids.get(symbol),{},now)
                 order=self.execution.submit(request)
                 fill=self.execution.simulate_fill(order.order_id,quote)
                 self.breakers.order_result(True)
