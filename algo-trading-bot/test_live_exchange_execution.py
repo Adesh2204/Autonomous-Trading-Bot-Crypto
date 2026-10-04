@@ -51,6 +51,10 @@ class LiveInfoFixture(PublicInfoFixture):
 
     def __call__(self,payload):
         query=payload['type']
+        if query=='frontendOpenOrders':
+            self.calls.append(deepcopy(payload))
+            return [dict(deepcopy(o),isTrigger=o.get('isTrigger',False),reduceOnly=o.get('reduceOnly',False))
+                    for o in self.orders]
         extra={'extraAgents':self.agents,'userFees':self.fees,'userRateLimit':self.budget,
                'activeAssetData':dict(self.active,coin=payload.get('coin',self.active['coin'])),
                'perpDexLimits':self.limits,'orderStatus':self.status}
@@ -77,8 +81,16 @@ def response(row,kind='order'):
 
 
 def permission(request,candidate='candidate:1',reason=None):
+    from exchange.compliance_guard import OrderProvenance
+    provenance=OrderProvenance(candidate,request.strategy_id,
+        'POSITION_MANAGEMENT' if request.reduce_only else 'PULLBACK_LONG' if request.side=='BUY' else 'PULLBACK_SHORT',
+        NOW-60000,request.symbol,request.side,reason or 'SYNTHETIC_BASELINE_SIGNAL',
+        dict(allowed=True,source='SYNTHETIC_RISK_FIXTURE'),
+        dict(allowed=True,source='SYNTHETIC_EXECUTION_FIXTURE'),
+        classification='STRATEGY_EXIT' if request.reduce_only else 'STRATEGY_ENTRY',
+        source_position_id='SYNTHETIC_POSITION:'+candidate if request.reduce_only else None)
     return RiskPermission(candidate,request.symbol,request.side,request.quantity,NOW,
-                          request.reduce_only,reason,request.price)
+                          request.reduce_only,reason,request.price,provenance)
 
 
 @pytest.fixture
@@ -495,7 +507,7 @@ def test_websocket_disconnect_reconnect_team_subscriptions_rest_barrier(live):
 
 def test_close_partial_fill_rechecks_authoritative_position_retains_exit_intent(live,monkeypatch):
     live.fixture.position('.2')
-    request=OrderRequest('par:BTC','SELL','.2','100',reduce_only=True,tif='Ioc')
+    request=OrderRequest('par:BTC','SELL','.2','100',reduce_only=True,tif='Ioc',strategy_id='VWAP_BASELINE_EXIT')
     live.transport.responses=[response({'filled':{'oid':11,'totalSz':'.15','avgPx':'100.02'}})]
     original=live.transport.transmit
     def transmit(payload):
@@ -510,17 +522,17 @@ def test_close_partial_fill_rechecks_authoritative_position_retains_exit_intent(
     assert live.transport.signed_payloads[0]['action']['orders'][0]['r'] is True
 
 
-def test_cancel_modify_and_policy_leverage_use_official_sdk(live):
+def test_cancel_and_policy_leverage_use_sdk_but_entry_replacement_requires_flat(live):
     live.fixture.orders=[dict(coin='par:BTC',oid=11,side='B',sz='.2',limitPx='99')]
     live.transport.responses=[response('success','cancel')]
     assert live.executor.cancel_order('par:BTC',11).state==OrderState.CANCELLED
     action=live.transport.signed_payloads[-1]['action']
     assert action==dict(type='cancel',cancels=[dict(a=live.client.market('par:BTC').asset_id,o=11)])
-    request=OrderRequest('par:BTC','BUY','.2','98')
+    request=OrderRequest('par:BTC','BUY','.2','99.98')
     live.transport.responses=[response({'resting':{'oid':12}})]
-    result=live.executor.modify_order('par:BTC',11,request=request,permission=permission(request))
-    assert result.state==OrderState.OPEN
-    assert live.transport.signed_payloads[-1]['action']['type']=='batchModify'
+    with pytest.raises(ExchangeError,match='POSITION_LIMIT'):
+        live.executor.modify_order('par:BTC',11,request=request,permission=permission(request))
+    assert live.transport.signed_payloads[-1]['action']['type']=='cancel'
     live.transport.responses=[dict(status='ok',response={'type':'default'})]
     assert live.executor.set_leverage('par:BTC',1).state==OrderState.ACKNOWLEDGED
     with pytest.raises(ExchangeError,match='INVALID_LEVERAGE'):

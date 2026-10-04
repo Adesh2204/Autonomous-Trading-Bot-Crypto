@@ -1035,7 +1035,7 @@ def test_cached_protection_cannot_authorize_entry_with_changed_actual_position(p
     p.live.fixture.position('.4')  # position change arrives before its stream notification
     p.live.executor.entries_paused=False
     request=OrderRequest('par:BTC','BUY','.2','100',client_order_id='missed-event-entry')
-    with pytest.raises(ExchangeError,match='ACTUAL_POSITION_PROTECTION_REQUIRED'):
+    with pytest.raises(ExchangeError,match='POSITION_LIMIT'):
         p.live.executor.submit(request,permission=permission(request,candidate='missed-event'))
     assert p.live.executor.entries_paused and len(p.live.transport.signed_payloads)==1
 

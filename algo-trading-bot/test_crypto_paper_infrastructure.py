@@ -334,7 +334,8 @@ def make_bot(universe):
 
 def signal_scan(now,side='BUY'):
     diagnostic=MarketDiagnostic('par:BTC',True,signal=dict(symbol='par:BTC',timestamp_ms=now-60000,
-        reference=D(100),atr=D(2),bias='NEUTRAL',long=side=='BUY',short=side=='SELL',signal_type='FIXTURE'),
+        reference=D(100),atr=D(2),bias='NEUTRAL',long=side=='BUY',short=side=='SELL',
+        signal_type='PULLBACK_LONG' if side=='BUY' else 'PULLBACK_SHORT'),
         candles=[bar(now-60000)])
     return ScanResult(now,[diagnostic],['par:BTC'],'ACTIVE')
 

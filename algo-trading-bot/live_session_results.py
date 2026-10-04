@@ -132,3 +132,25 @@ class LiveSessionResults:
         from exchange.startup_recovery import write_startup_report
         write_startup_report(self.path,self.session.startup_recovery.report())
         self.session.funnel.export(self.path)
+        from exchange.compliance_report import export_compliance
+        export_compliance(self.path,self.journal,mode=self.mode,
+                          position_guard=self.session.execution.position_guard)
+        # Account totals include every actual reported event. Strategy statistics
+        # explicitly exclude controlled tests and unattributed manual fills.
+        classes={json.loads(r['data']).get('cloid'):json.loads(r['data']).get('order_classification')
+            for r in self.journal.db.execute("SELECT data FROM events WHERE kind='COMPLIANCE_ACTION_AUTHORIZED'")}
+        classified={str(r['oid']):classes.get(r['cloid']) for r in self.journal.intents() if r['oid'] is not None}
+        classified.update((str(oid),classes.get(r['cloid'])) for r in self.journal.intents()
+                          for oid in json.loads(r['outcome'] or '{}').get('child_order_ids',[]))
+        allowed={'STRATEGY_ENTRY','STRATEGY_EXIT','CATASTROPHIC_STOP','PROTECTIVE_EXIT'}
+        strategy_fills=[f for f in state.fills.values() if classified.get(str(f.order_id)) in allowed]
+        controlled=[f for f in state.fills.values() if classified.get(str(f.order_id))=='CONTROLLED_TEST_ORDER']
+        from decimal import Decimal
+        statistics=dict(execution_mode=self.mode,scope='CLASSIFIED_ACTUAL_FILLS_ONLY',
+            strategy_fill_count=len(strategy_fills),controlled_test_fill_count=len(controlled),
+            excluded_fill_count=len(state.fills)-len(strategy_fills),
+            strategy_reported_closed_pnl=sum((f.closed_pnl for f in strategy_fills),Decimal(0))
+                if all(f.closed_pnl is not None for f in strategy_fills) else None,
+            strategy_actual_fees=sum((f.fee for f in strategy_fills),Decimal(0)),
+            strategy_net_pnl=None,note='Funding attribution across manual/test exposure is not certified; no net strategy P&L is inferred.')
+        (self.path/'strategy_performance.json').write_text(json.dumps(safe_data(statistics),indent=2,default=str)+'\n')

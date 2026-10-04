@@ -140,6 +140,9 @@ class LiveAccountRecovery:
                     strategy_source_hash=hashlib.sha256(brain.read_bytes()).hexdigest())
 
     def revoke(self, reason):
+        guard=getattr(self,'position_guard',None)
+        if guard is not None:
+            guard.revoke(reason)
         self.state.entries_paused=True
         self.state.reasons=(reason,)
         self.last_report=LiveRecoveryReport(False,(reason,),self.state.report())
@@ -170,6 +173,8 @@ class LiveAccountRecovery:
             if self.on_truth is not None:
                 self.on_truth(self.state)
             reasons=list(report['reasons'])+protection_reasons
+            if len(self.state.positions)>1:
+                reasons.append('UNEXPECTED_CONCURRENT_EXPOSURE')
             if self.checkpoint_error:
                 reasons.append(self.checkpoint_error)
             for symbol,position in self.state.positions.items():
@@ -197,6 +202,8 @@ class LiveAccountRecovery:
                 self.persist_manager(manager,**links)
             self.checkpoint()
             self.last_report=LiveRecoveryReport(not reasons,self.state.reasons,self.state.report())
+            if self.owner is not None:
+                self.owner.execution._sync_position_truth()
             self.journal.event('LIVE_ACCOUNT_RECONCILED',self.account.client.clock_ms(),
                                ready=not reasons,reasons=self.state.reasons,
                                actual_fees=self.state.report()['realized']['actual_fill_fees'],

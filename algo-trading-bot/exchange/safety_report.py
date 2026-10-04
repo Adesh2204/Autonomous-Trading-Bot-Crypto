@@ -45,6 +45,15 @@ def production_safety_report(execution=None,*,rates=None,clock=None):
             except Exception:
                 pass
         report.update(new_entries='ALLOWED' if allowed else 'PAUSED',live_orders_permitted=allowed)
+        if execution.position_guard is not None:
+            report['single_position_guard']=execution.position_guard.report()
+            report['max_global_positions']=1
+            if execution.position_guard.state.value!='FLAT':
+                report.update(new_entries='PAUSED',live_orders_permitted=False)
+        from .compliance_report import compliance_summary
+        report['compliance']=compliance_summary(execution.journal,
+            mode='OFFLINE_SIGNED_FIXTURE' if type(execution.transport).__name__=='OfflineSDKTransport' else 'LIVE_TESTNET',
+            position_guard=execution.position_guard)
     if rates is not None:
         usage=rates.report()
         report.update(api_budget=usage['state'],account_request_budget=dict(

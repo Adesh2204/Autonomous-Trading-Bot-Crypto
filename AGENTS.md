@@ -94,3 +94,13 @@
   narrow experimental adaptation. No production imports of research, no exchange
   transport, no invented fills/labels, chronological purged splits, training-only
   transforms, immutable artifacts and no automatic promotion.
+
+- The single-position/compliance directive requires exactly one global par
+  position, including partially filled exposure and unresolved entry/exit orders.
+  Keep the durable account lock, fresh exchange-state checks, central provenance,
+  self-cross/duplicate/price/liquidity guard and exact-action SDK permits on every
+  signed submission path. Restart/disconnect begins UNKNOWN; only authoritative
+  flat reconciliation clears the lock. Account administration/transfers and
+  multi-position activation remain prohibited. Synthetic tests never certify a
+  funded account, committee compliance or LIVE readiness. Complete controlled
+  account certification and explicit user activation remain future work.

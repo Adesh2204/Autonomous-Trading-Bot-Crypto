@@ -104,6 +104,13 @@ class OfficialSDKTransport:
         rate_limits.reserve_info('perpDexs')
         rate_limits.reserve_info('meta')
         self._sdk=build_exchange(signer,client,nonce_manager,self)
+        from .single_position_guard import AccountExecutionLease
+        try:
+            self.account_lease=AccountExecutionLease(team_address)
+        except Exception:
+            self._sdk.session.close()
+            self._sdk.info.session.close()
+            raise
 
     def __repr__(self):
         return '<OfficialSDKTransport testnet:par signer=[PRIVATE]>'
@@ -114,7 +121,11 @@ class OfficialSDKTransport:
         if action.get('type') not in {'order','cancel','cancelByCloid','batchModify','updateLeverage'}:
             raise ExchangeError('ACCOUNT_ADMINISTRATION_PROHIBITED')
         self.authorization.require(self.team_address,self.signer_address)
-        self._guard()
+        self.account_lease.require()
+        from .compliance_guard import ActionPermit
+        if type(self._guard) is not ActionPermit:
+            raise ExchangeError('COMPLIANCE_ACTION_PERMIT_REQUIRED')
+        self._guard.require(self, action)
 
     def transmit(self, payload):
         self.check(payload['action'])
@@ -128,12 +139,24 @@ class OfficialSDKTransport:
 
     def perform(self, method, args, kwargs, expected_action, guard):
         with self._lock:
+            if type(self) is not OfflineSDKTransport:
+                self.authorization.require(self.team_address,self.signer_address)
+            from .compliance_guard import ActionPermit
+            if type(guard) is not ActionPermit:
+                raise ExchangeError('COMPLIANCE_ACTION_PERMIT_REQUIRED')
+            if method not in {'order','modify_order','cancel','cancel_by_cloid','update_leverage'}:
+                raise ExchangeError('ACCOUNT_ADMINISTRATION_PROHIBITED')
+            guard.require(self, expected_action)
             self._expected=fingerprint(expected_action)
             self._guard=guard
+            self._current_action=expected_action
             try:
                 return getattr(self._sdk,method)(*args,**kwargs)
             finally:
                 self._expected=self._guard=None
+                self._current_action=None
+                guard.active=False
+                guard.guard._permits.pop(id(guard),None)
 
     def order_action(self,request,cloid,*,order_type=None):
         from hyperliquid.utils.types import Cloid
@@ -145,6 +168,9 @@ class OfficialSDKTransport:
         return row,order_wires_to_order_action([wire])
 
     def close(self):
+        lease=getattr(self,'account_lease',None)
+        if lease is not None:
+            lease.close()
         self._sdk.session.close()
         self._sdk.info.session.close()
 
@@ -168,7 +194,10 @@ class OfflineSDKTransport(OfficialSDKTransport):
     def check(self,action):
         if self._expected is None or self._guard is None or fingerprint(action)!=self._expected:
             raise ExchangeError('UNVALIDATED_SIGNED_FIXTURE_ACTION')
-        self._guard()
+        from .compliance_guard import ActionPermit
+        if type(self._guard) is not ActionPermit or action.get('type') not in {'order','cancel','cancelByCloid','batchModify','updateLeverage'}:
+            raise ExchangeError('COMPLIANCE_ACTION_PERMIT_REQUIRED')
+        self._guard.require(self, action)
 
     def transmit(self,payload):
         self.check(payload['action'])

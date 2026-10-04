@@ -22,6 +22,7 @@ class LiveExecutionSession:
         self.execution=execution
         self.risk=risk
         self.recovery=execution.recovery
+        self.recovery.position_guard=execution.position_guard
         self.journal=execution.journal
         self.clock_ms=market.client.clock_ms
         self.managers=self.recovery.managers
@@ -265,6 +266,12 @@ class LiveExecutionSession:
         self._persist(symbol)
         permission=RiskPermission(candidate,symbol,side,abs(held.quantity),self.clock_ms(),
                                   True,reason,price)
+        from exchange.compliance_guard import OrderProvenance
+        permission=replace(permission,provenance=OrderProvenance(candidate,'VWAP_BASELINE_EXIT',
+            'POSITION_MANAGEMENT',self.clock_ms(),symbol,side,reason,
+            dict(allowed=True,reduce_only=True,actual_quantity=str(held.quantity)),
+            dict(allowed=True,price=str(price),quantity=str(abs(held.quantity))),
+            classification='STRATEGY_EXIT',source_position_id=candidate))
         # A fresh close attempt is permitted only after the prior attempt is
         # terminal and remaining exposure has been authoritatively reconciled.
         prior=[r for r in self.journal.intents() if r['candidate']==candidate and
@@ -387,7 +394,8 @@ class LiveExecutionSession:
                 continue
             request=OrderRequest(symbol,side,decision.quantity,quote.ask if side=='BUY' else quote.bid,
                 tif='Ioc',strategy_id=str(signal.get('signal_type') or 'VWAP_BASELINE'),client_order_id=key)
-            permission=RiskPermission.from_decision(decision,request,candidate,self.clock_ms())
+            permission=RiskPermission.from_decision(decision,request,candidate,self.clock_ms(),
+                signal_timestamp_ms=signal['timestamp_ms'],setup_type=signal.get('signal_type'))
             self.pending_entries[symbol]=dict(candidate_id=candidate,stop=str(decision.stop),target=str(decision.target),
                 setup_type=str(signal.get('signal_type') or 'VWAP_BASELINE'),reference_vwap=str(signal['reference']),
                 atr=str(signal['atr']),signal_timestamp_ms=signal['timestamp_ms'])
