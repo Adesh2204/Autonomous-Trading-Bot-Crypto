@@ -377,3 +377,31 @@ quality requirements. Replaying the same sample or pooling identical UTC
 controls does not create additional labels. Keep the deterministic baseline
 available while ML remains gated by adequate evidence. These tools do not
 change production or permit any exchange submission.
+
+## One-position execution safety and compliance
+
+The signed testnet executor now uses a durable `SinglePositionGuard` and central
+`ComplianceGuard` before exchange validation. It reserves one account-wide slot
+in the same transaction as the entry intent, reads actual positions and
+trigger-aware open orders, and rechecks account truth at the SDK boundary.
+Partial entries/exits, unresolved attempts and old protection keep the account
+occupied. Restart or disconnect revokes entry permission until reconciliation.
+
+Every order needs classified provenance, risk/execution decisions, current price
+references and duplicate/self-cross checks. Exposure-increasing entry replacement
+is blocked in this phase. The SDK sink accepts only a guard-issued permit for the
+exact validated action; it exposes no autonomous transfer/admin method. A host
+account lease prevents separate production processes/signers from trading the
+same team account concurrently. A dedicated account and one deployment host
+remain prerequisites; unrelated manual activity or other computers are outside
+the local lock's control.
+
+Live-session exports include `compliance_events.jsonl`, `compliance_summary.json`,
+`compliance_summary.txt` and `strategy_performance.json`. Controlled tests and
+unattributed fills are excluded from strategy statistics while remaining actual
+account truth. Synthetic runs are labelled and cannot establish compliance or
+funded-account readiness. `LIVE_READY` remains false pending real certification.
+
+The [single-position/compliance report](docs/single_position_compliance_report_2026-10-04.md)
+explains the audit, policy, tests, limits and future roadmap. `MAX_GLOBAL_POSITIONS=1`,
+`EXECUTION_MODE=PAPER` and `ALLOW_LIVE_ORDERS=false` remain enforced.

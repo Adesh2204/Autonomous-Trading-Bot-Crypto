@@ -17,13 +17,21 @@ class RiskPermission:
     reduce_only: bool = False
     reason: str | None = None
     limit_price: Decimal | None = None
+    provenance: object | None = None
 
     @classmethod
-    def from_decision(cls, decision, request, candidate_id, now_ms):
+    def from_decision(cls, decision, request, candidate_id, now_ms, *, signal_timestamp_ms=None,
+                      setup_type=None):
         if decision.allowed is not True or request.quantity > decision.quantity:
             raise ExchangeError('RISK_PERMISSION_DENIED')
+        from .compliance_guard import OrderProvenance
+        provenance = (OrderProvenance(candidate_id, request.strategy_id, setup_type,
+            signal_timestamp_ms, request.symbol, request.side, 'FROZEN_VWAP_SIGNAL_AND_BASELINE_RISK',
+            asdict(decision), dict(allowed=True, quantity=str(request.quantity), price=str(request.price),
+                                 order_type=request.order_type, tif=request.tif))
+            if signal_timestamp_ms is not None and setup_type is not None else None)
         return cls(candidate_id, request.symbol, request.side, decision.quantity, now_ms,
-                   limit_price=request.price)
+                   limit_price=request.price, provenance=provenance)
 
 
 @dataclass(frozen=True)
@@ -42,6 +50,9 @@ class ValidationContext:
     contexts: dict
     feed_ready: bool
     leverage: int = 1
+    fills: tuple = ()
+    reconciled: bool = True
+    oracle_ms: int | None = None
 
 
 @dataclass(frozen=True)
@@ -223,8 +234,18 @@ class LiveContextProvider:
         orders=tuple(self.account.get_frontend_open_orders() if getattr(self,'trigger_aware',False)
                      else self.account.get_open_orders())
         active=self.account._query('activeAssetData',coin=request.symbol)
+        fills=tuple(self.account.get_fills(start_ms=max(0,self.client.clock_ms()-300000),
+                                          end_ms=self.client.clock_ms()))
+        after_positions=self.account.get_positions()
+        after_orders=tuple(self.account.get_frontend_open_orders() if getattr(self,'trigger_aware',False)
+                           else self.account.get_open_orders())
+        position_signature=lambda values:{s:(p.quantity,p.entry_price) for s,p in values.items()}
+        order_signature=lambda values:{str(o['oid']):o for o in values}
+        if position_signature(positions)!=position_signature(after_positions) or order_signature(orders)!=order_signature(after_orders):
+            raise ExchangeError('ACCOUNT_CHANGED_DURING_PREFLIGHT')
         account_ms=self.client.clock_ms()
         limits={} if request.reduce_only else self.client.post_info('perpDexLimits')
         return ValidationContext(self.client.market(request.symbol),current_hash,self.metadata_hash,
             self.client.metadata_timestamp_ms,quote,readiness,positions,orders,active,account_ms,
-            limits,contexts,bool(self.feed_ready()) or critical,self.policy_leverage)
+            limits,contexts,bool(self.feed_ready()) or critical,self.policy_leverage,fills,
+            bool(self.reconciliation_ready()),quote.mark_timestamp_ms)

@@ -50,6 +50,20 @@ class HyperliquidExecution:
         self.exit_intents = {}
         self.lock = threading.RLock()
         self.protection=None
+        self.position_guard=None
+        self.compliance_guard=None
+        if self.journal is not None and self.transport is not None:
+            if self.context_provider is not None:
+                self.context_provider.trigger_aware=True
+            from .single_position_guard import SinglePositionGuard
+            from .compliance_guard import ComplianceGuard
+            self.position_guard=SinglePositionGuard(self.journal,clock_ms=client.clock_ms)
+            self.compliance_guard=ComplianceGuard(self.journal,self.position_guard,
+                clock_ms=client.clock_ms,transport=self.transport,execution_owner=self)
+            existing=getattr(self.transport,'_compliance_guard',None)
+            if existing is not None and existing.journal is not self.journal:
+                raise ExchangeError('TRANSPORT_ACCOUNT_GUARD_MISMATCH')
+            self.transport._compliance_guard=self.compliance_guard
 
     def _require(self):
         if self.transport is None:
@@ -63,6 +77,8 @@ class HyperliquidExecution:
                 self.context_provider, self.validator, self.recovery,
                 self.clock_health, self.rate_limits)):
             raise ExchangeError('LIVE_INFRASTRUCTURE_REQUIRED')
+        if self.position_guard is None or self.compliance_guard is None or self.transport._compliance_guard is not self.compliance_guard:
+            raise ExchangeError('CENTRAL_ACCOUNT_GUARDS_REQUIRED')
         if not (self.account.team_address.lower() == self.transport.team_address.lower() ==
                 self.journal.team_address):
             raise ExchangeError('TEAM_ACCOUNT_IDENTITY_MISMATCH')
@@ -85,6 +101,19 @@ class HyperliquidExecution:
                 context.readiness.agent_expiry_ms <= now or
                 (not critical and (not self.context_provider.feed_ready() or now < self.rate_limits.backoff_until))):
             raise ExchangeError('SIGNING_READINESS_REVOKED')
+        if entry:
+            # Re-read account truth at the SDK boundary as well as during the
+            # full preflight. Never substitute a local manager's flat flag.
+            before=self.account.get_positions()
+            orders=self.account.get_frontend_open_orders()
+            after=self.account.get_positions()
+            if before or after or orders:
+                self.entries_paused=True
+                self.position_guard.revoke('ACCOUNT_CHANGED_BEFORE_SIGNING')
+                self.journal.event('COMPLIANCE_SIGNING_BLOCK',now,
+                    code='POSITION_LIMIT',reason='ACCOUNT_CHANGED_BEFORE_SIGNING',
+                    actual_position_count=len(after),open_order_count=len(orders))
+                raise ExchangeError('ACCOUNT_CHANGED_BEFORE_SIGNING')
 
     def preview_order(self, symbol, side, quantity, price, *, reduce_only=False, tif='Gtc'):
         return self.client.market(symbol).normalize_order(side, quantity, price,
@@ -112,6 +141,7 @@ class HyperliquidExecution:
     def _after_action(self):
         try:
             report = self.recovery.recover()
+            self._sync_position_truth()
             self.entries_paused = not report.ready or not self.context_provider.feed_ready()
             self.entries_paused |= (not self.transport.nonces.healthy or not self.rate_limits.entries_allowed or
                 any(r['state']=='UNKNOWN' for r in self.journal.management_actions()))
@@ -124,10 +154,22 @@ class HyperliquidExecution:
                                ready=report.ready, reasons=report.reasons)
         except Exception as exc:
             self.entries_paused = True
+            self.position_guard.revoke('POST_ACTION_RECONCILIATION_FAILED')
             self.journal.event('RECONCILIATION_FAILED', self.client.clock_ms(),
                                error_type=type(exc).__name__)
 
-    def _validated(self, request, permission, *, critical=False):
+    def _sync_position_truth(self):
+        from types import SimpleNamespace
+        state=getattr(self.recovery,'state',None)
+        report=getattr(self.recovery,'last_report',None)
+        if state is not None and state.last_window is not None:
+            self.position_guard.reconcile(SimpleNamespace(positions=state.positions,
+                open_orders=tuple(state.orders.values()),fills=tuple(state.fills.values()),
+                readiness=SimpleNamespace(account_ready=bool(report and report.ready)),
+                account_ms=state.last_window[1],reconciled=bool(report and report.ready)),self.client.clock_ms())
+
+    def _validated(self, request, permission, *, critical=False, trigger=False, modify_oid=None):
+        preflight_generation=(self.journal.control('global_position_lock') or {}).get('generation')
         try:
             context = self.context_provider.load(request,critical=True) if critical else self.context_provider.load(request)
         except Exception as exc:
@@ -135,6 +177,25 @@ class HyperliquidExecution:
             self.journal.event('EXCHANGE_CONTEXT_UNAVAILABLE',self.client.clock_ms(),
                                error_type=type(exc).__name__)
             raise ExchangeError('EXCHANGE_CONTEXT_UNAVAILABLE') from None
+        state=getattr(self.recovery,'state',None)
+        if state is not None:
+            merged={f.identity:f for f in state.fills.values()}
+            merged.update((f.identity,f) for f in context.fills)
+            context=replace(context,fills=tuple(merged.values()),reconciled=context.reconciled and
+                bool(self.recovery.last_report.ready) and
+                {s:p.quantity for s,p in state.positions.items()}=={s:p.quantity for s,p in context.positions.items()} and
+                set(state.orders)=={str(o['oid']) for o in context.open_orders})
+        spec=self.client.market(request.symbol)
+        request=replace(request,quantity=spec.normalize_size(request.quantity),
+                        price=spec.normalize_price(request.price,request.side))
+        position=self.position_guard.evaluate(request,context,self.client.clock_ms(),
+                                               expected_generation=preflight_generation)
+        decision=self.compliance_guard.evaluate(request,context,permission,position,
+                                                trigger=trigger,modify_oid=modify_oid)
+        if not decision.allowed:
+            if not request.reduce_only:
+                self.entries_paused=True
+            raise ExchangeError(decision.code)
         result = self.validator.validate(request, context, permission, self.client.clock_ms())
         if result.allowed and not request.reduce_only and self.protection is not None:
             for symbol,position in context.positions.items():
@@ -161,7 +222,12 @@ class HyperliquidExecution:
                 self.entries_paused = True
             raise ExchangeError(result.code)
         request = replace(request, quantity=result.normalized.quantity, price=result.normalized.price)
-        return request, context, result
+        return request, context, result, decision
+
+    def _permit(self, action, decision, request, context, checked_ms, *, entry_key=None):
+        return self.compliance_guard.authorize(action,decision,request,context,
+            lambda:self._guard(context,checked_ms,critical=request.reduce_only,
+                               entry=not request.reduce_only),entry_key=entry_key)
 
     def submit(self, request, *, permission=None):
         self._require()
@@ -179,6 +245,11 @@ class HyperliquidExecution:
                             quantity=self.client.market(request.symbol).normalize_size(request.quantity),
                             price=self.client.market(request.symbol).normalize_price(request.price,request.side))):
                     raise ExchangeError('CLOID_INTENT_CONFLICT')
+                from .compliance_guard import ComplianceDecision
+                self.compliance_guard.record(ComplianceDecision(False,'DUPLICATE_ORDER_BLOCKED',
+                    'Durable attempt returned without signing or retransmission',permission.candidate_id,
+                    dict(durable_intent=key,blind_retry=False),self.client.clock_ms()),request,
+                    cloid=prior['cloid'],provenance=permission.provenance)
                 return self._restore_order(prior)
             if self.entries_paused and not request.reduce_only:
                 raise ExchangeError('ENTRY_PAUSED')
@@ -186,16 +257,19 @@ class HyperliquidExecution:
             if not request.reduce_only and startup is not None and not startup.entry_ready:
                 self.entries_paused=True
                 raise ExchangeError('STARTUP_ENTRY_LOCK_REQUIRED')
-            request, context, result = self._validated(request, permission,critical=request.reduce_only)
+            request, context, result, compliance = self._validated(request, permission,critical=request.reduce_only)
             if not request.reduce_only and (not self.rate_limits.entries_allowed or
                     self.protection is not None and not self.protection.entries_allowed):
                 self.entries_paused=True
                 raise ExchangeError('ENTRY_RELIABILITY_GATE_REQUIRED')
             row, fresh = self.journal.reserve(key, asdict(request), permission.candidate_id,
-                                              self.client.clock_ms())
+                                              self.client.clock_ms(),position_guard=self.position_guard,
+                                              position_generation=compliance.checks['position_generation'])
             if not fresh:
                 return self._restore_order(row)
             wire, action = self.transport.order_action(request, row['cloid'])
+            permit=self._permit(action,compliance,request,context,result.checked_ms,
+                                entry_key=key if not request.reduce_only else None)
             self._reserve_intent_action(key,creates_order=True,
                 priority=RequestPriority.SAFETY if request.reduce_only else RequestPriority.EXECUTION,
                 kind='strategy_exit' if request.reduce_only else 'entry')
@@ -208,8 +282,7 @@ class HyperliquidExecution:
                 response = self.transport.perform('order',
                     (request.symbol, wire['is_buy'], wire['sz'], wire['limit_px'], wire['order_type']),
                     dict(reduce_only=request.reduce_only, cloid=Cloid.from_str(row['cloid'])),
-                    action, lambda: self._guard(context,result.checked_ms,critical=request.reduce_only,
-                                                entry=not request.reduce_only))
+                    action, permit)
                 outcome = parse_exchange_action_result(response, [request])[0]
                 self.journal.update(key, outcome.state.value, self.client.clock_ms(),
                                     oid=outcome.exchange_order_id, outcome=asdict(outcome))
@@ -317,6 +390,8 @@ class HyperliquidExecution:
             raise ExchangeError('MANAGEMENT_UNCERTAINTY_RECOVERY_REQUIRED')
         if not context.readiness.account_ready:
             raise ExchangeError('ACCOUNT_NOT_READY')
+        permit=self.compliance_guard.authorize_management(action,context,
+            lambda:self._guard(context,checked_ms,critical=critical),critical=critical)
         action_id=self.journal.reserve_management(action,checked_ms)
         try:
             self.rate_limits.reserve_action(priority=RequestPriority.SAFETY if critical else RequestPriority.EXECUTION,
@@ -327,7 +402,7 @@ class HyperliquidExecution:
         self.journal.event('MANAGEMENT_ATTEMPT',checked_ms,action=action,action_id=action_id)
         try:
             response=self.transport.perform(method,args,kwargs or {},action,
-                                             lambda:self._guard(context,checked_ms,critical=critical))
+                                             permit)
             outcome=parse_exchange_action_result(response,[None],action=action['type'])[0]
             if outcome.code=='NONCE_ERROR':
                 self.transport.nonces.degrade()
@@ -410,6 +485,10 @@ class HyperliquidExecution:
             request=OrderRequest(symbol,'BUY' if own['side']=='B' else 'SELL',own['sz'],own['limitPx'])
             context=self.context_provider.load(request)
             action=dict(type='cancelByCloid',cancels=[dict(asset=self.client.market(symbol).asset_id,cloid=cloid)])
+            # openOrders may omit CLOID. The preceding team-scoped orderStatus
+            # and _own_order calls supplied the authoritative OID/CLOID link.
+            context=replace(context,open_orders=tuple(dict(o,cloid=cloid) if str(o['oid'])==str(own['oid'])
+                            else o for o in context.open_orders))
             return self._management_action('cancel_by_cloid',(symbol,parsed),action,context)
 
     def modify_order(self, symbol, order_id, *, request=None, permission=None, **parameters):
@@ -421,13 +500,15 @@ class HyperliquidExecution:
                 raise ExchangeError('REPLACEMENT_REQUEST_REQUIRED')
             if self.entries_paused and not request.reduce_only:
                 raise ExchangeError('ENTRY_PAUSED')
-            normalized,context,result=self._validated(request,permission,critical=request.reduce_only)
+            normalized,context,result,compliance=self._validated(request,permission,critical=request.reduce_only,
+                                                                modify_oid=order_id)
             key='modify:'+str(order_id)+':'+permission.candidate_id
             row,fresh=self.journal.reserve(key,asdict(normalized),permission.candidate_id,self.client.clock_ms())
             if not fresh:
                 return self._restore_order(row)
             wire,action=self.transport.order_action(normalized,row['cloid'])
             action=dict(type='batchModify',modifies=[dict(oid=int(order_id),order=action['orders'][0])])
+            permit=self._permit(action,compliance,normalized,context,result.checked_ms)
             self._reserve_intent_action(key,kind='modify',priority=RequestPriority.SAFETY if normalized.reduce_only
                                         else RequestPriority.EXECUTION)
             self.journal.update(key,'SUBMITTED',self.client.clock_ms())
@@ -436,8 +517,7 @@ class HyperliquidExecution:
                 response=self.transport.perform('modify_order',
                     (int(order_id),symbol,wire['is_buy'],wire['sz'],wire['limit_px'],wire['order_type']),
                     dict(reduce_only=normalized.reduce_only,cloid=Cloid.from_str(row['cloid'])),action,
-                    lambda:self._guard(context,result.checked_ms,critical=normalized.reduce_only,
-                                       entry=not normalized.reduce_only))
+                    permit)
                 outcome=parse_exchange_action_result(response,[normalized],action='batchModify')[0]
                 if outcome.code=='NONCE_ERROR':
                     self.transport.nonces.degrade()
@@ -472,7 +552,14 @@ class HyperliquidExecution:
                 reduce_only=True,strategy_id='CATASTROPHIC_STOP',client_order_id=intent_key)
             permission=RiskPermission(intent_key,plan.symbol,plan.side,plan.quantity,self.client.clock_ms(),
                 True,'CATASTROPHIC_STOP',plan.limit_price)
-            normalized,context,result=self._validated(request,permission,critical=True)
+            from .compliance_guard import OrderProvenance
+            permission=replace(permission,provenance=OrderProvenance(intent_key,'CATASTROPHIC_STOP',
+                'CATASTROPHIC_STOP',plan.position_observed_ms,plan.symbol,plan.side,
+                'INDEPENDENT_APPROVED_CATASTROPHIC_PROTECTION',dict(allowed=True,reason=permission.reason),
+                dict(allowed=True,plan=asdict(plan)),classification='CATASTROPHIC_STOP',
+                action_type='RISK_PROTECTION',source_position_id=plan.symbol))
+            normalized,context,result,compliance=self._validated(request,permission,critical=True,
+                trigger=True,modify_oid=modify_oid)
             position=context.positions.get(plan.symbol)
             if position is None:
                 raise ExchangeError('PROTECTION_FLAT_POSITION')
@@ -492,6 +579,7 @@ class HyperliquidExecution:
                 method='modify_order'
                 args=(int(modify_oid),*args)
                 action=dict(type='batchModify',modifies=[dict(oid=int(modify_oid),order=action['orders'][0])])
+            permit=self._permit(action,compliance,normalized,context,result.checked_ms)
             self._reserve_intent_action(intent_key,creates_order=modify_oid is None,priority=RequestPriority.SAFETY,
                                         kind='protection_modify' if modify_oid is not None else 'protection_create')
             self.journal.update(intent_key,'SUBMITTED',self.client.clock_ms())
@@ -499,7 +587,7 @@ class HyperliquidExecution:
                                cloid=row['cloid'],plan=asdict(plan),modify_oid=modify_oid)
             try:
                 response=self.transport.perform(method,args,dict(reduce_only=True,cloid=Cloid.from_str(row['cloid'])),
-                    action,lambda:self._guard(context,result.checked_ms,critical=True))
+                    action,permit)
                 outcome=parse_exchange_action_result(response,[normalized],action=action['type'])[0]
                 self.journal.update(intent_key,outcome.state.value,self.client.clock_ms(),
                                     oid=outcome.exchange_order_id,outcome=asdict(outcome))

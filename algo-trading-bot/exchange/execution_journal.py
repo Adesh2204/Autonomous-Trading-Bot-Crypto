@@ -94,7 +94,7 @@ class ExecutionJournal:
                 self.db.execute('ROLLBACK')
                 raise
 
-    def reserve(self, intent_key, request, candidate, now_ms):
+    def reserve(self, intent_key, request, candidate, now_ms, *, position_guard=None, position_generation=None):
         if not isinstance(intent_key, str) or not intent_key or not candidate:
             raise ExchangeError('TRACEABLE_INTENT_REQUIRED')
         fp = fingerprint(request)
@@ -106,6 +106,9 @@ class ExecutionJournal:
                 if prior['fingerprint'] != fp or prior['candidate'] != candidate:
                     raise ExchangeError('CLOID_INTENT_CONFLICT')
                 return dict(prior), False
+            if position_guard is not None and not request.get('reduce_only'):
+                position_guard.reserve_in_transaction(intent_key, request, now_ms,
+                                                       expected_generation=position_generation)
             self.db.execute('INSERT INTO intents VALUES (?,?,?,?,?,?,?,?,?,?)',
                 (intent_key, cloid, fp, canonical(request), candidate, 'PREPARED', None,
                  None, now_ms, now_ms))

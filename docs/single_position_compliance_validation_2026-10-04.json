@@ -1,0 +1,180 @@
+{
+  "date": "2026-10-04",
+  "head_before": "2c5172ec3149be16be53371c8896c26b0db070c5",
+  "head_after": "2c5172ec3149be16be53371c8896c26b0db070c5",
+  "branch": "perpetual-alpha-migration",
+  "baseline": {
+    "path": "docs/single_position_compliance_baseline_2026-10-04.xml",
+    "tests": 1054,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 260.361
+  },
+  "final": {
+    "path": "docs/single_position_compliance_regression_2026-10-04.xml",
+    "tests": 1121,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 212.241
+  },
+  "new_cases": {
+    "path": "docs/single_position_compliance_new_tests_2026-10-04.xml",
+    "tests": 67,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 1.737
+  },
+  "focused_final": {
+    "cases": 312,
+    "path": "docs/single_position_compliance_focused_final_2026-10-04.xml",
+    "provenance": "Extracted from the same final full regression; not a separate run."
+  },
+  "preexisting_python_sources": 160,
+  "unchanged_preexisting_python_sources": 148,
+  "modified_preexisting_sources": [
+    "algo-trading-bot/exchange/exchange_rules.py",
+    "algo-trading-bot/exchange/execution_journal.py",
+    "algo-trading-bot/exchange/hyperliquid_execution.py",
+    "algo-trading-bot/exchange/live_readiness.py",
+    "algo-trading-bot/exchange/live_recovery.py",
+    "algo-trading-bot/exchange/safety_report.py",
+    "algo-trading-bot/exchange/sdk_transport.py",
+    "algo-trading-bot/live_execution_session.py",
+    "algo-trading-bot/live_session_results.py",
+    "algo-trading-bot/test_crypto_paper_infrastructure.py",
+    "algo-trading-bot/test_live_exchange_execution.py",
+    "algo-trading-bot/test_production_reliability.py"
+  ],
+  "modified_preexisting_source_sha256": {
+    "algo-trading-bot/exchange/exchange_rules.py": "e06875b98cc99456aff47e20e97dbb0a2d50803b5c1abaaa25e9f1b494a3341b",
+    "algo-trading-bot/exchange/execution_journal.py": "b41248bfa79b158da715c8239202416d0153c5aec9be50192f11199b1ddd33b8",
+    "algo-trading-bot/exchange/hyperliquid_execution.py": "681fee378ca9ea26ce83d6db77f90b22ac26ebf052ce6b5bcd4f488a9e4dd79a",
+    "algo-trading-bot/exchange/live_readiness.py": "94520bd65b1fa77ff0b3668c01ef47c98439fec726a1c59cb3dde545bd2f2d1a",
+    "algo-trading-bot/exchange/live_recovery.py": "99d77ceaace0dea45358b3e57951e69fd7a48550b9ff099d441b1ac870acb66c",
+    "algo-trading-bot/exchange/safety_report.py": "4737439bd5686aa12be3b893d54f387ea3eb4502ffa6abd3ec311cd423931fea",
+    "algo-trading-bot/exchange/sdk_transport.py": "1e6e3651f44620f8559222972308cdc628a342f142f9b05ddad3740711b79686",
+    "algo-trading-bot/live_execution_session.py": "285f3c65e23e6b6b033ab57f791c3e27b244dc9e4b6babcd69fa86d0cf2f314a",
+    "algo-trading-bot/live_session_results.py": "1032efe14b8b4fea204d656d96acfa5573bc3c8ab52596cb988c7aee83935250",
+    "algo-trading-bot/test_crypto_paper_infrastructure.py": "a6384442890c5977d9513a27d45c77926f784bb8c105bab0d9f4afb882d3831f",
+    "algo-trading-bot/test_live_exchange_execution.py": "cee9961dacdec1dd79487bd845992e2554ff7bb0bfbda0dc8f86fab16d0a095f",
+    "algo-trading-bot/test_production_reliability.py": "a632b724b4df45e236ea7c3ccaa79052a4614f9e16536b31f391db69f7b18bf6"
+  },
+  "created_python_paths": [
+    "algo-trading-bot/exchange/single_position_guard.py",
+    "algo-trading-bot/exchange/compliance_guard.py",
+    "algo-trading-bot/exchange/compliance_report.py",
+    "algo-trading-bot/test_single_position_compliance.py"
+  ],
+  "created_python_sha256": {
+    "algo-trading-bot/exchange/single_position_guard.py": "d0cdfcb7c9fcee5542a8b38d520b7712ec9711eb8bccb1cf45f7c6fc05fd44ba",
+    "algo-trading-bot/exchange/compliance_guard.py": "8453b4c5b537fe18709a3e20792a2f9795762d334552723907081f2992f0f077",
+    "algo-trading-bot/exchange/compliance_report.py": "d33e2b74281046d50ae8995c0f078d00866d3bcd7ed55cee866d312150b269dc",
+    "algo-trading-bot/test_single_position_compliance.py": "af43d62987b8a85320791583c5b63744162f90b7a5e6515447293700efbb0f1d"
+  },
+  "strategy_freeze": {
+    "baseline": "nse-working-baseline",
+    "file_count": 1,
+    "method_count": 8,
+    "parameter_count": 32,
+    "passed": true
+  },
+  "phase0": {
+    "project": "anchorium-perpetual-alpha",
+    "checks": {
+      "project_is_perpetual_alpha": true,
+      "independent_git_directory": true,
+      "migration_branch": true,
+      "testnet_venue": true,
+      "paper_execution_mode": true,
+      "migration_policy_valid": true,
+      "orders_disabled": true,
+      "angel_one_client_disabled": true,
+      "angel_one_order_boundary_disabled": true,
+      "testnet_order_boundary_disabled": true,
+      "signal_logic_present": true,
+      "signal_source_unchanged": true
+    },
+    "passed": true
+  },
+  "signal_sha256": "bff940ac5ed35f71ed3dfb537ba15d20dcec35a4e62a938d2f0619c6e9309d83",
+  "freeze_manifest_sha256": "aeda15740802c1082f38f4e69f415f16a77d749a1aa050061026a99120fb9f8b",
+  "protected_manifest_unchanged": true,
+  "source_hash": "1ef68de96aafab8411a4d36b2d8c7a1363f939a527eba69a23b70bb21e007bf8",
+  "production_research_imports": [],
+  "autonomous_transfer_calls": [],
+  "synthetic_demo": {
+    "path": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/single_position_compliance_synthetic_release_2026-10-04/results",
+    "manifest_sha256": "4b92ab3a55eee498768ee0393e5a69e55f0c349c6053bee042c25afd9b2c3c70",
+    "source_hash_matches": true,
+    "summary": {
+      "execution_mode": "OFFLINE_SIGNED_FIXTURE",
+      "source": "LOCAL_DURABLE_COMPLIANCE_EVIDENCE",
+      "orders_evaluated": 8,
+      "strategy_orders_evaluated": 5,
+      "orders_allowed": 6,
+      "orders_blocked": 2,
+      "self_cross_blocks": 0,
+      "duplicate_blocks": 0,
+      "abnormal_price_blocks": 1,
+      "unknown_order_blocks": 0,
+      "position_limit_blocks": 1,
+      "block_codes": {
+        "POSITION_LIMIT": 1,
+        "ABNORMAL_PRICE": 1
+      },
+      "maximum_simultaneous_positions_observed": 1,
+      "max_global_positions_enforced": 1,
+      "autonomous_usdpr_external_transfers": 0,
+      "external_wallet_transfers_observed": null,
+      "unexplained_order_permits": 0,
+      "authorized_order_actions": 5,
+      "compliance_state": "REVIEW_REQUIRED",
+      "committee_verdict": "NOT_ASSESSED",
+      "account_verified": false,
+      "limits": [
+        "This is local bot evidence, not organizer certification.",
+        "Manual activity, other computers/accounts and cross-team intent are not observable here.",
+        "Allowed means preflight permission; it does not establish an exchange fill or trading profit.",
+        "Synthetic fixtures cannot establish funded-account readiness."
+      ]
+    },
+    "actual_exchange_orders_submitted": 0
+  },
+  "readiness": {
+    "STRATEGY_INTEGRITY": "PASS",
+    "SINGLE_POSITION_GUARD": "IMPLEMENTED_AND_OFFLINE_VERIFIED",
+    "COMPLIANCE_GUARD": "IMPLEMENTED_AND_OFFLINE_VERIFIED",
+    "SELF_CROSS_PROTECTION": "IMPLEMENTED_AND_OFFLINE_VERIFIED",
+    "DUPLICATE_PROTECTION": "IMPLEMENTED_AND_OFFLINE_VERIFIED",
+    "OFF_MARKET_PROTECTION": "IMPLEMENTED_AND_OFFLINE_VERIFIED",
+    "PAPER_READY": "TRUE_OFFLINE_REGRESSION",
+    "REPLAY_READY": "TRUE_OFFLINE_REGRESSION",
+    "ACCOUNT_READY": false,
+    "LIVE_READY": false,
+    "MAX_GLOBAL_POSITIONS": 1,
+    "EXECUTION_MODE": "PAPER",
+    "ALLOW_LIVE_ORDERS": false
+  },
+  "report": {
+    "path": "docs/single_position_compliance_report_2026-10-04.md",
+    "sha256": "9ec46ae3f810870c5c6b831049a9f05ffb233b97bf161ea05b052f31d07274ce",
+    "words": 3112,
+    "sections": 13
+  },
+  "git_diff_check": "PASS",
+  "wallet_secrets_loaded": false,
+  "exchange_orders_submitted": 0,
+  "exchange_account_administration": false,
+  "production_activation": false,
+  "multi_position_activation": false,
+  "retained_drafts": "Development XML and earlier synthetic_demo directory are superseded; synthetic_release and final regression establish the delivered result.",
+  "limits": [
+    "Account lease coordinates one host and OS user; dedicated account/one execution owner is required.",
+    "Manual wallets, other hosts, other accounts and cross-team intent are outside local observation.",
+    "No funded-account controlled execution or practice performance was certified.",
+    "Technical permission is separate from full LIVE readiness, which remains false."
+  ]
+}

@@ -57,8 +57,9 @@ class LiveReadiness:
         result = asdict(self)
         result.update(network='testnet', dex='par', market_data_ready=bool(market_ready),
                       paper_ready=bool(market_ready), live_orders_permitted=bool(live_permitted),
-                      live_ready=self.account_ready and bool(live_permitted),
-                      final_status=('LIVE_READY' if self.account_ready and live_permitted else
+                      controlled_execution_certified=False,
+                      live_ready=False,
+                      final_status=('LIVE_TECHNICALLY_READY_CERTIFICATION_REQUIRED' if self.account_ready and live_permitted else
                                     'LIVE_TECHNICALLY_READY_BUT_LOCKED' if self.account_ready else
                                     'ACCOUNT_SETUP_REQUIRED'))
         return result
