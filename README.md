@@ -4,6 +4,32 @@ This is Team Anchorium's isolated Hyperliquid testnet migration repository.
 The existing cloned directory is the project root; the original NSE repository
 is not used or modified by this project.
 
+## Final engineering audit — 4 October 2026
+
+The current verdict is **ACCOUNT_SETUP_REQUIRED**. PAPER/false remains enforced.
+Passing unit tests and public-data probes do not certify a funded account,
+actual exchange execution, prolonged practice, or a competition-ready release.
+
+See the [A–S engineering report](docs/hackathon_final_engineering_report_2026-10-04.md)
+and [readiness matrix](docs/hackathon_certification_2026-10-04/readiness.md).
+Regenerate the read-only evidence index with:
+
+```sh
+.venv/bin/python scripts/run_hackathon_certification.py \
+  --tests-xml docs/hackathon_certification_regression_2026-10-04.xml \
+  --tests-receipt docs/hackathon_certification_test_receipt_2026-10-04.json \
+  --market-evidence docs/hackathon_public_readiness_2026-10-04.json \
+  --session docs/hackathon_public_paper_final_2026-10-04 \
+  --session docs/hackathon_public_replay_certified_2026-10-04 \
+  --research-evidence docs/research_readiness_release_2026-10-04/readiness.json \
+  --output docs/hackathon_certification_2026-10-04
+```
+
+The report cannot activate trading. Historical evidence whose source hash differs
+from current code is explicitly marked incompatible. Newly exported signed
+fixtures use `SYNTHETIC_SIGNED_FIXTURE`; old artifacts retain their historical
+labels and must always be interpreted with their execution mode.
+
 ## Phase 0: exchange execution locked
 
 `algo-trading-bot/.env.example` contains the development configuration:

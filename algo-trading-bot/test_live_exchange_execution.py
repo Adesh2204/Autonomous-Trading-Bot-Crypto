@@ -649,7 +649,7 @@ def test_live_signal_risk_signed_entry_actual_partial_exit_restart_and_results(l
     again.save()
     fills=[json.loads(x) for x in (writer.path/'fills.jsonl').read_text().splitlines()]
     assert len(fills)==3 and all(x['execution_mode']=='OFFLINE_SIGNED_FIXTURE' for x in fills)
-    assert all(x['source']=='EXCHANGE_REPORTED' for x in fills)
+    assert all(x['source']=='SYNTHETIC_SIGNED_FIXTURE' for x in fills)
     report=json.loads((writer.path/'actual_account_report.json').read_text())
     assert D(report['realized']['actual_fill_fees'])==D('.3')
     assert report['exchange_orders_submitted']==0 and report['confirmed_order_count']==3

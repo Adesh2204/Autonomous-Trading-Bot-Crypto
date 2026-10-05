@@ -1,0 +1,1236 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-10-04T17:33:27.244480+00:00",
+  "verdict": "ACCOUNT_SETUP_REQUIRED",
+  "repository": {
+    "root": "/Users/adesh/Autonomous Trading Bot - Crypto ",
+    "branch": "perpetual-alpha-migration",
+    "git_commit": "2add07bad934f2a843f75739b1dfe4c34ee87953",
+    "git_dirty": true,
+    "baseline_tag_present": true,
+    "python": "3.12.5",
+    "sdk": "0.24.0",
+    "working_source_hash": "75e33621870a1681b718a24ede1ab0d59a7a648f22c6b4670dcd09a5ec98989d",
+    "strategy_sha256": "bff940ac5ed35f71ed3dfb537ba15d20dcec35a4e62a938d2f0619c6e9309d83",
+    "freeze": {
+      "baseline": "nse-working-baseline",
+      "file_count": 1,
+      "method_count": 8,
+      "parameter_count": 32,
+      "passed": true
+    }
+  },
+  "configuration": {
+    "migration": {
+      "TRADING_VENUE": "HYPERLIQUID_TESTNET",
+      "EXECUTION_MODE": "PAPER",
+      "ALLOW_LIVE_ORDERS": false
+    },
+    "network": "testnet",
+    "dex": "par",
+    "paper": {
+      "path": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/paper_policy.example.json",
+      "sha256": "6fa0db757c4061995305a93909c0a5b5a9fa317dd7740848ede6e0fcc103a58c"
+    },
+    "reliability": {
+      "path": "/Users/adesh/Autonomous Trading Bot - Crypto /configs/reliability_policy.json",
+      "sha256": "1adbded72bb6f0df855d9f885434dd6e63c7b164b7b296e9428f5569e46c0297"
+    }
+  },
+  "problems": [],
+  "tests": {
+    "status": "UNIT_TESTED",
+    "current_source_bound": true,
+    "path": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/hackathon_certification_regression_2026-10-04.xml",
+    "sha256": "46de57b1bd8d82a9aa473de3fbcc33029463541632e59b9feffb11241328dfe8",
+    "tests": 1155,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "reported_tests": 1155,
+    "receipt": {
+      "path": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/hackathon_certification_test_receipt_2026-10-04.json",
+      "sha256": "74498e28e24f0018eea5a113280a78d7c4134cc57d4aced712c3ab4770dd7972"
+    },
+    "meaning": "Local engineering evidence only; a receipt is reproducibility metadata, not external attestation."
+  },
+  "security": {
+    "status": "VERIFIED",
+    "tracked_files_scanned": 671,
+    "nonignored_working_files_scanned": 718,
+    "findings": [],
+    "ignored": {
+      ".env": true,
+      "algo-trading-bot/.env": true,
+      "example.key": true,
+      "wallets/example": true,
+      "secrets/example": true
+    },
+    "scope": "Current tracked and nonignored untracked text files up to 10 MB; pattern checks cannot prove absence of every possible credential. No ignored credential files, Git-history scan or external secret scanner were read."
+  },
+  "architecture": [
+    {
+      "stage": "configuration",
+      "status": "PARTIAL",
+      "owner": "scripts/run_crypto_paper.py",
+      "code": [
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/venue_config.py",
+          "sha256": "3c888d5829927f4dfa5035b71123121bc4800f8949738ca64c46965c0e104e04"
+        }
+      ],
+      "verification": "CURRENT_SOURCE_INSPECTED_AND_REGRESSION_TESTED"
+    },
+    {
+      "stage": "market discovery",
+      "status": "PARTIAL",
+      "owner": "scripts/run_crypto_paper.py",
+      "code": [
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/hyperliquid_client.py",
+          "sha256": "ad4449b04e43d202f7564034e386cf5f3e8aa61e9ce5b816568e511395bf788e"
+        }
+      ],
+      "verification": "CURRENT_SOURCE_INSPECTED_AND_REGRESSION_TESTED"
+    },
+    {
+      "stage": "public REST / WebSocket",
+      "status": "PARTIAL",
+      "owner": "scripts/run_crypto_paper.py",
+      "code": [
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/hyperliquid_market_data.py",
+          "sha256": "879120b6c3371882fcabf6d6c8d64ff5d1330f026059a1bd5b57fdbb79d6f646"
+        },
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/stream_first.py",
+          "sha256": "e547c8bfbf3f4bdc3b242eaa3d59b3d52e939950ce1007b311c78b7bd8a01043"
+        },
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/market_stream.py",
+          "sha256": "05b3cadaf672b81d26e8b7647a932a0dbf51e215e11bf2e1a6b6687073895fc8"
+        }
+      ],
+      "verification": "CURRENT_SOURCE_INSPECTED_AND_REGRESSION_TESTED"
+    },
+    {
+      "stage": "scanner / ranking",
+      "status": "PARTIAL",
+      "owner": "scripts/run_crypto_paper.py",
+      "code": [
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/market_regime_scanner.py",
+          "sha256": "a15e3c6765fe7713c63df0f8d83e0e56bd4d640873eccfd1559f349cf2159562"
+        }
+      ],
+      "verification": "CURRENT_SOURCE_INSPECTED_AND_REGRESSION_TESTED"
+    },
+    {
+      "stage": "frozen indicators / strategy state",
+      "status": "PARTIAL",
+      "owner": "crypto_paper_bot.py / live_execution_session.py",
+      "code": [
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/signal_brain.py",
+          "sha256": "bff940ac5ed35f71ed3dfb537ba15d20dcec35a4e62a938d2f0619c6e9309d83"
+        },
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/frozen_strategy.py",
+          "sha256": "867f8b40822444fdde41f1aa1c251670b6fcca1dc3a0fb8cf20bea126c9581e9"
+        },
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/crypto_strategy_state.py",
+          "sha256": "8dd7db0daf282e23c07a778ef86842e94539c3893d6f229996c63f3abf01775c"
+        }
+      ],
+      "verification": "CURRENT_SOURCE_INSPECTED_AND_REGRESSION_TESTED"
+    },
+    {
+      "stage": "economics / risk",
+      "status": "PARTIAL",
+      "owner": "crypto_paper_bot.py / live_execution_session.py",
+      "code": [
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/perpetual_economics.py",
+          "sha256": "7c0bc020a9f91e952f5187ee2a71c5f70af0ef2ac24bb52c45e26768ca66a079"
+        },
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/risk/portfolio_risk.py",
+          "sha256": "95bc2daea8c4f2497ed74132687487867368ec038a2679d8ee753a84498336f7"
+        },
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/risk/circuit_breakers.py",
+          "sha256": "a05fac96b64e5f67e60a3c46ad9b388947a590181977ee6af7f6fdd0d82976c9"
+        }
+      ],
+      "verification": "CURRENT_SOURCE_INSPECTED_AND_REGRESSION_TESTED"
+    },
+    {
+      "stage": "paper execution",
+      "status": "PARTIAL",
+      "owner": "scripts/run_crypto_paper.py",
+      "code": [
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/paper_execution.py",
+          "sha256": "ba6f3975fcd2be4d71c7d28abda0e55a0e85aa7d13ed3ed4b2e46f5fbac0c699"
+        },
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/paper_portfolio.py",
+          "sha256": "778f2a049ba1c26921fd2e281351295c2c8eed71edbbd89aef0d1d422066e870"
+        }
+      ],
+      "verification": "CURRENT_SOURCE_INSPECTED_AND_REGRESSION_TESTED"
+    },
+    {
+      "stage": "replay",
+      "status": "PARTIAL",
+      "owner": "scripts/run_crypto_replay.py",
+      "code": [
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/replay.py",
+          "sha256": "505318a82b006a41e1fd80b9b744f6e2f56192e612922bb7ef730e8c8b8c504d"
+        }
+      ],
+      "verification": "CURRENT_SOURCE_INSPECTED_AND_REGRESSION_TESTED"
+    },
+    {
+      "stage": "future signed execution",
+      "status": "PARTIAL",
+      "owner": "exchange/live_runtime.py:build_live_runtime",
+      "code": [
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/hyperliquid_execution.py",
+          "sha256": "681fee378ca9ea26ce83d6db77f90b22ac26ebf052ce6b5bcd4f488a9e4dd79a"
+        },
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/sdk_transport.py",
+          "sha256": "1e6e3651f44620f8559222972308cdc628a342f142f9b05ddad3740711b79686"
+        },
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/exchange_rules.py",
+          "sha256": "e06875b98cc99456aff47e20e97dbb0a2d50803b5c1abaaa25e9f1b494a3341b"
+        }
+      ],
+      "verification": "CURRENT_SOURCE_INSPECTED_AND_REGRESSION_TESTED"
+    },
+    {
+      "stage": "account readiness",
+      "status": "PARTIAL",
+      "owner": "exchange/exchange_rules.py:LiveContextProvider",
+      "code": [
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/live_readiness.py",
+          "sha256": "94520bd65b1fa77ff0b3668c01ef47c98439fec726a1c59cb3dde545bd2f2d1a"
+        },
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/hyperliquid_account.py",
+          "sha256": "2c69c794735196f62dfd4550751bc85869e76b045f2832f87580b9ddc0fae464"
+        }
+      ],
+      "verification": "CURRENT_SOURCE_INSPECTED_AND_REGRESSION_TESTED"
+    },
+    {
+      "stage": "durable intent / actual-fill recovery",
+      "status": "PARTIAL",
+      "owner": "exchange/startup_recovery.py",
+      "code": [
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/execution_journal.py",
+          "sha256": "f9812aefab8d8a2d5937871d77518a6bf88382decc4cb883a7fe712c25503129"
+        },
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/live_recovery.py",
+          "sha256": "99d77ceaace0dea45358b3e57951e69fd7a48550b9ff099d441b1ac870acb66c"
+        },
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/hyperliquid_reconciliation.py",
+          "sha256": "a000c1670ebb21789205b69562773ac23562925327a2a572fb8853f0800c501b"
+        }
+      ],
+      "verification": "CURRENT_SOURCE_INSPECTED_AND_REGRESSION_TESTED"
+    },
+    {
+      "stage": "startup / reconnect",
+      "status": "PARTIAL",
+      "owner": "exchange/live_runtime.py",
+      "code": [
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/startup_recovery.py",
+          "sha256": "db34a7222c2be7725b57ba07944e7c05e1cd6928d90d6e7ff0227909681734b8"
+        },
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/live_account_stream.py",
+          "sha256": "cfa32a70ccde13e2c7c877ab1836f142bc84dff9ded2172eb81de05bdfe2eb91"
+        }
+      ],
+      "verification": "CURRENT_SOURCE_INSPECTED_AND_REGRESSION_TESTED"
+    },
+    {
+      "stage": "rate / nonce / clock",
+      "status": "PARTIAL",
+      "owner": "exchange/live_runtime.py",
+      "code": [
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/rate_limits.py",
+          "sha256": "7679ce5e01561e4a88a1637a9c600a2a3fd94b5f398f02854546e00db2f508fb"
+        },
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/execution_safety.py",
+          "sha256": "d5291a746c8c41cd8e3c816c552b5588308b2eaf792ed14cc63f01a0b6969c0e"
+        },
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/reliability_policy.py",
+          "sha256": "5347dc6d7f5f1b5d59fcd582bba79be21eea1133f2fb25603026e615f2ccdde6"
+        }
+      ],
+      "verification": "CURRENT_SOURCE_INSPECTED_AND_REGRESSION_TESTED"
+    },
+    {
+      "stage": "catastrophic protection",
+      "status": "PARTIAL",
+      "owner": "live_execution_session.py",
+      "code": [
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/position_protection.py",
+          "sha256": "761945b2dad23a5434c50a1bdfc489ef184aeb1534eaf66b0a58fd8044f34e94"
+        }
+      ],
+      "verification": "CURRENT_SOURCE_INSPECTED_AND_REGRESSION_TESTED"
+    },
+    {
+      "stage": "single position / compliance",
+      "status": "PARTIAL",
+      "owner": "exchange/hyperliquid_execution.py / exchange/sdk_transport.py",
+      "code": [
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/single_position_guard.py",
+          "sha256": "40f32e30bac9159693b031d23436678f47bc1f9eb1f1ca93ab4c14c89673e239"
+        },
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/compliance_guard.py",
+          "sha256": "8453b4c5b537fe18709a3e20792a2f9795762d334552723907081f2992f0f077"
+        }
+      ],
+      "verification": "CURRENT_SOURCE_INSPECTED_AND_REGRESSION_TESTED"
+    },
+    {
+      "stage": "actual results",
+      "status": "PARTIAL",
+      "owner": "exchange/live_runtime.py:LiveRuntime.save_results",
+      "code": [
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/live_session_results.py",
+          "sha256": "7a251e9354b934f98e6ee82613fa3b20752a15ac141895925e11313bce6971ef"
+        },
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/compliance_report.py",
+          "sha256": "d33e2b74281046d50ae8995c0f078d00866d3bcd7ed55cee866d312150b269dc"
+        },
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/opportunity_funnel.py",
+          "sha256": "ff30e3a7583fb907b4a20af626c3c1d213c9987a11488a11992a0bc957c594ee"
+        }
+      ],
+      "verification": "CURRENT_SOURCE_INSPECTED_AND_REGRESSION_TESTED"
+    },
+    {
+      "stage": "paper results",
+      "status": "PARTIAL",
+      "owner": "scripts/run_crypto_paper.py:ReportWriter",
+      "code": [
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/session_results.py",
+          "sha256": "e98fdeacf026cd95be1cbd54f4cb0cd5ab97a5d0ba10e60e1393bbf90f5bf8c7"
+        }
+      ],
+      "verification": "CURRENT_SOURCE_INSPECTED_AND_REGRESSION_TESTED"
+    },
+    {
+      "stage": "isolated VWAP / ML research",
+      "status": "PARTIAL",
+      "owner": "scripts/run_research_readiness.py",
+      "code": [
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/research_lab/forward_lab.py",
+          "sha256": "12407ad99783f3dde0e427b3736158ce4bdc3633c04ec9feb2aeb5947e265acb"
+        },
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/research_intelligence/campaign.py",
+          "sha256": "9ab7ab380f112aaa327cbe411ade6127b265701fd793453cd335aca2333f67f9"
+        },
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/research_intelligence/readiness.py",
+          "sha256": "6ec9bf41fe5e0149986f9e2f9c85734a6f8ba7ca47a53ad9e5e7a57ae8c251d3"
+        }
+      ],
+      "verification": "CURRENT_SOURCE_INSPECTED_AND_REGRESSION_TESTED"
+    },
+    {
+      "stage": "read-only certification",
+      "status": "PARTIAL",
+      "owner": "scripts/run_hackathon_certification.py",
+      "code": [
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/certification_audit.py",
+          "sha256": "73990d9a85a94412394e2b56f4caa079e6e7155900a89c5892c70a2d733bdfce"
+        }
+      ],
+      "verification": "CURRENT_SOURCE_INSPECTED_AND_REGRESSION_TESTED"
+    },
+    {
+      "stage": "retired Angel / NSE",
+      "status": "LEGACY",
+      "owner": "LEGACY; guarded against exchange writes",
+      "code": [
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/disabled_angel_client.py",
+          "sha256": "462be7ae4ac43679123da0d16175da39866b0a6e80442675e65c7e3ad273c9f7"
+        },
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/safe_trader.py",
+          "sha256": "13fd69675db4684a1c4cf2596193503ce9ab8c0b6d9193d5376069dfe36a460a"
+        },
+        {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/live_stream.py",
+          "sha256": "2af5dae09936d3dc26f2f5224ac77b4f77e1406733a71d6fb8d2f4b4d2395efb"
+        }
+      ],
+      "verification": "CURRENT_SOURCE_INSPECTED_AND_REGRESSION_TESTED"
+    }
+  ],
+  "readiness": {
+    "REPOSITORY_INTEGRITY": {
+      "status": "VERIFIED",
+      "proof": "CURRENT_SOURCE_CHECK",
+      "missing": "Uncommitted audit changes must be reviewed/versioned before release."
+    },
+    "STRATEGY_FREEZE": {
+      "status": "VERIFIED",
+      "proof": "CURRENT_HASH_CHECK",
+      "missing": "No strategy change is permitted."
+    },
+    "MARKET_DATA": {
+      "status": "PARTIAL",
+      "proof": "RECORDED_PUBLIC",
+      "missing": "Continuous healthy candles/books/context and prolonged observation required."
+    },
+    "PAPER": {
+      "status": "PARTIAL",
+      "proof": "UNIT_TESTED",
+      "missing": "Engineering implementation only; actual account/practice/OOS evidence remains required."
+    },
+    "REPLAY": {
+      "status": "PARTIAL",
+      "proof": "UNIT_TESTED",
+      "missing": "Engineering implementation only; actual account/practice/OOS evidence remains required."
+    },
+    "SIGNED_EXECUTION": {
+      "status": "PARTIAL",
+      "proof": "UNIT_TESTED",
+      "missing": "Engineering implementation only; actual account/practice/OOS evidence remains required."
+    },
+    "WALLET": {
+      "status": "MISSING",
+      "proof": "NOT_CONFIGURED",
+      "missing": "Verify the funded Team wallet, separate approved API address, unified mode and permissions using read-only queries and human review."
+    },
+    "USDPR": {
+      "status": "MISSING",
+      "proof": "NOT_CONFIGURED",
+      "missing": "Verify the funded Team wallet, separate approved API address, unified mode and permissions using read-only queries and human review."
+    },
+    "API_AGENT": {
+      "status": "MISSING",
+      "proof": "NOT_CONFIGURED",
+      "missing": "Verify the funded Team wallet, separate approved API address, unified mode and permissions using read-only queries and human review."
+    },
+    "UNIFIED_ACCOUNT": {
+      "status": "MISSING",
+      "proof": "NOT_CONFIGURED",
+      "missing": "Verify the funded Team wallet, separate approved API address, unified mode and permissions using read-only queries and human review."
+    },
+    "VENUE_RULES": {
+      "status": "PARTIAL",
+      "proof": "UNIT_TESTED",
+      "missing": "Engineering implementation only; actual account/practice/OOS evidence remains required."
+    },
+    "RATE_LIMIT": {
+      "status": "PARTIAL",
+      "proof": "UNIT_TESTED",
+      "missing": "Engineering implementation only; actual account/practice/OOS evidence remains required."
+    },
+    "NONCE": {
+      "status": "PARTIAL",
+      "proof": "UNIT_TESTED",
+      "missing": "Engineering implementation only; actual account/practice/OOS evidence remains required."
+    },
+    "CLOCK": {
+      "status": "PARTIAL",
+      "proof": "RECORDED_PUBLIC_SAMPLE",
+      "missing": "A past sample is not current runtime/NTP health."
+    },
+    "RESTART_RECOVERY": {
+      "status": "PARTIAL",
+      "proof": "UNIT_TESTED",
+      "missing": "Engineering implementation only; actual account/practice/OOS evidence remains required."
+    },
+    "RECONNECT_RECOVERY": {
+      "status": "PARTIAL",
+      "proof": "UNIT_TESTED",
+      "missing": "Engineering implementation only; actual account/practice/OOS evidence remains required."
+    },
+    "PROTECTION": {
+      "status": "PARTIAL",
+      "proof": "UNIT_TESTED",
+      "missing": "Engineering implementation only; actual account/practice/OOS evidence remains required."
+    },
+    "SINGLE_POSITION": {
+      "status": "PARTIAL",
+      "proof": "UNIT_TESTED",
+      "missing": "Engineering implementation only; actual account/practice/OOS evidence remains required."
+    },
+    "COMPLIANCE": {
+      "status": "PARTIAL",
+      "proof": "UNIT_TESTED",
+      "missing": "Engineering implementation only; actual account/practice/OOS evidence remains required."
+    },
+    "ACCOUNTING": {
+      "status": "PARTIAL",
+      "proof": "UNIT_TESTED",
+      "missing": "Engineering implementation only; actual account/practice/OOS evidence remains required."
+    },
+    "PRACTICE": {
+      "status": "MISSING",
+      "proof": "NOT_OBSERVED",
+      "missing": "Requires real account/practice/release evidence."
+    },
+    "PERFORMANCE_EVIDENCE": {
+      "status": "MISSING",
+      "proof": "NOT_OBSERVED",
+      "missing": "Requires real account/practice/release evidence."
+    },
+    "VWAP_RESEARCH": {
+      "status": "PARTIAL",
+      "proof": "UNIT_TESTED",
+      "missing": "Engineering implementation only; actual account/practice/OOS evidence remains required."
+    },
+    "ML_VALIDATION": {
+      "status": "MISSING",
+      "proof": "NOT_OBSERVED",
+      "missing": "Requires real account/practice/release evidence."
+    },
+    "HOLDOUT": {
+      "status": "MISSING",
+      "proof": "NOT_OBSERVED",
+      "missing": "Requires real account/practice/release evidence."
+    },
+    "JURY_EVIDENCE": {
+      "status": "PARTIAL",
+      "proof": "ENGINEERING_INDEX",
+      "missing": "Measured real trade explanations and final 2\u20134 page PDF/code submission are outstanding."
+    },
+    "COMPETITION_RELEASE": {
+      "status": "MISSING",
+      "proof": "NOT_OBSERVED",
+      "missing": "Requires real account/practice/release evidence."
+    },
+    "LIVE_READY": {
+      "status": "MISSING",
+      "proof": "FALSE",
+      "missing": "Funded account, controlled execution, prolonged practice and reviewed competition release remain unverified."
+    },
+    "HACKATHON_READY": {
+      "status": "MISSING",
+      "proof": "FALSE",
+      "missing": "Funded account, controlled execution, prolonged practice and reviewed competition release remain unverified."
+    }
+  },
+  "market_observation": {
+    "status": "RECORDED_PUBLIC",
+    "evidence": {
+      "path": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/hackathon_public_readiness_2026-10-04.json",
+      "sha256": "3249d779ab449990fd6bba10447b96cc8110337f3e5a97410f9809713a3f6189"
+    },
+    "market_discovery": true,
+    "observed_ms": 1791133426772,
+    "clock_sample_healthy": true,
+    "team_wallet_configured": false,
+    "api_wallet_configured": false,
+    "reason": "Public metadata/clock snapshot; current candle/stream health and funded-account certification are not established."
+  },
+  "recorded_sessions": [
+    {
+      "path": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/hackathon_public_paper_final_2026-10-04/results",
+      "status": "RECORDED_SIMULATION",
+      "certifies_practice": false,
+      "mode": "PAPER",
+      "manifest": {
+        "path": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/hackathon_public_paper_final_2026-10-04/results/session_manifest.json",
+        "sha256": "9d0162f17e70627d2764a8e9fb3ab3b727372703ab597dc04a85916f8ff6b8b4"
+      },
+      "source_compatible": false,
+      "source_hash": "47ac51a1eb335fffbf34765bf235912451fe15d7aaa6019f5fb7ff88dc198f73",
+      "git_commit": "2add07bad934f2a843f75739b1dfe4c34ee87953",
+      "recorded_fill_count": 0,
+      "note": "Simulation/recorded records never certify the funded account or sustained practice. A LIVE label alone is unverified.",
+      "funnel": {
+        "evidence": {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/hackathon_public_paper_final_2026-10-04/results/funnel_summary.json",
+          "sha256": "b7f26da7517285b1ec86fa883a8204c96bbe8a26e924ffa136607b40befd85c7"
+        },
+        "source": "LOCAL_PAPER_OBSERVATION",
+        "session": {
+          "observations": 10,
+          "dates": 1,
+          "stages": [
+            {
+              "stage": "TOTAL_MARKETS_SEEN",
+              "passed": 10,
+              "failed": 0,
+              "reached": 10,
+              "admission_survivors": 10,
+              "admission_percent_of_previous": 100.0,
+              "not_reached": 0,
+              "not_observed": 0,
+              "percent_of_observations": 100.0,
+              "pass_percent_of_reached": 100.0,
+              "rejection_reasons": {}
+            },
+            {
+              "stage": "VALID_MARKET_IDENTITY",
+              "passed": 10,
+              "failed": 0,
+              "reached": 10,
+              "admission_survivors": 10,
+              "admission_percent_of_previous": 100.0,
+              "not_reached": 0,
+              "not_observed": 0,
+              "percent_of_observations": 100.0,
+              "pass_percent_of_reached": 100.0,
+              "rejection_reasons": {}
+            },
+            {
+              "stage": "MARKET_DATA_HEALTHY",
+              "passed": 0,
+              "failed": 10,
+              "reached": 10,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": 0.0,
+              "not_reached": 0,
+              "not_observed": 0,
+              "percent_of_observations": 0.0,
+              "pass_percent_of_reached": 0.0,
+              "rejection_reasons": {
+                "STALE_CANDLE": 10
+              }
+            },
+            {
+              "stage": "ENOUGH_HISTORY",
+              "passed": 10,
+              "failed": 0,
+              "reached": 10,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": null,
+              "not_reached": 0,
+              "not_observed": 0,
+              "percent_of_observations": 100.0,
+              "pass_percent_of_reached": 100.0,
+              "rejection_reasons": {}
+            },
+            {
+              "stage": "LIQUIDITY_PASS",
+              "passed": 0,
+              "failed": 0,
+              "reached": 0,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": null,
+              "not_reached": 0,
+              "not_observed": 10,
+              "percent_of_observations": 0.0,
+              "pass_percent_of_reached": null,
+              "rejection_reasons": {}
+            },
+            {
+              "stage": "SPREAD_PASS",
+              "passed": 0,
+              "failed": 0,
+              "reached": 0,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": null,
+              "not_reached": 0,
+              "not_observed": 10,
+              "percent_of_observations": 0.0,
+              "pass_percent_of_reached": null,
+              "rejection_reasons": {}
+            },
+            {
+              "stage": "ATR_PASS",
+              "passed": 0,
+              "failed": 0,
+              "reached": 0,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": null,
+              "not_reached": 0,
+              "not_observed": 10,
+              "percent_of_observations": 0.0,
+              "pass_percent_of_reached": null,
+              "rejection_reasons": {}
+            },
+            {
+              "stage": "SCANNER_QUALIFIED",
+              "passed": 0,
+              "failed": 10,
+              "reached": 10,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": null,
+              "not_reached": 0,
+              "not_observed": 0,
+              "percent_of_observations": 0.0,
+              "pass_percent_of_reached": 0.0,
+              "rejection_reasons": {
+                "STALE_CANDLE": 10
+              }
+            },
+            {
+              "stage": "TOP3_SELECTED",
+              "passed": 0,
+              "failed": 0,
+              "reached": 0,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": null,
+              "not_reached": 10,
+              "not_observed": 0,
+              "percent_of_observations": 0.0,
+              "pass_percent_of_reached": null,
+              "rejection_reasons": {}
+            },
+            {
+              "stage": "STRATEGY_EVALUATED",
+              "passed": 0,
+              "failed": 0,
+              "reached": 0,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": null,
+              "not_reached": 10,
+              "not_observed": 0,
+              "percent_of_observations": 0.0,
+              "pass_percent_of_reached": null,
+              "rejection_reasons": {}
+            },
+            {
+              "stage": "SIGNAL_GENERATED",
+              "passed": 0,
+              "failed": 0,
+              "reached": 0,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": null,
+              "not_reached": 10,
+              "not_observed": 0,
+              "percent_of_observations": 0.0,
+              "pass_percent_of_reached": null,
+              "rejection_reasons": {}
+            },
+            {
+              "stage": "BIAS_PASS",
+              "passed": 0,
+              "failed": 0,
+              "reached": 0,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": null,
+              "not_reached": 10,
+              "not_observed": 0,
+              "percent_of_observations": 0.0,
+              "pass_percent_of_reached": null,
+              "rejection_reasons": {}
+            },
+            {
+              "stage": "ANTI_SPAM_PASS",
+              "passed": 0,
+              "failed": 0,
+              "reached": 0,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": null,
+              "not_reached": 10,
+              "not_observed": 0,
+              "percent_of_observations": 0.0,
+              "pass_percent_of_reached": null,
+              "rejection_reasons": {}
+            },
+            {
+              "stage": "FRICTION_PASS",
+              "passed": 0,
+              "failed": 0,
+              "reached": 0,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": null,
+              "not_reached": 10,
+              "not_observed": 0,
+              "percent_of_observations": 0.0,
+              "pass_percent_of_reached": null,
+              "rejection_reasons": {}
+            },
+            {
+              "stage": "RISK_PASS",
+              "passed": 0,
+              "failed": 0,
+              "reached": 0,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": null,
+              "not_reached": 10,
+              "not_observed": 0,
+              "percent_of_observations": 0.0,
+              "pass_percent_of_reached": null,
+              "rejection_reasons": {}
+            },
+            {
+              "stage": "EXECUTION_PERMISSION",
+              "passed": 0,
+              "failed": 10,
+              "reached": 10,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": null,
+              "not_reached": 0,
+              "not_observed": 0,
+              "percent_of_observations": 0.0,
+              "pass_percent_of_reached": 0.0,
+              "rejection_reasons": {
+                "STALE_CANDLE": 10
+              }
+            },
+            {
+              "stage": "ORDER_ATTEMPTED",
+              "passed": 0,
+              "failed": 0,
+              "reached": 0,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": null,
+              "not_reached": 10,
+              "not_observed": 0,
+              "percent_of_observations": 0.0,
+              "pass_percent_of_reached": null,
+              "rejection_reasons": {}
+            },
+            {
+              "stage": "FILLED",
+              "passed": 0,
+              "failed": 0,
+              "reached": 0,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": null,
+              "not_reached": 10,
+              "not_observed": 0,
+              "percent_of_observations": 0.0,
+              "pass_percent_of_reached": null,
+              "rejection_reasons": {}
+            },
+            {
+              "stage": "TRADE_COMPLETED",
+              "passed": 0,
+              "failed": 0,
+              "reached": 0,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": null,
+              "not_reached": 10,
+              "not_observed": 0,
+              "percent_of_observations": 0.0,
+              "pass_percent_of_reached": null,
+              "rejection_reasons": {}
+            }
+          ],
+          "first_blocking_reasons": {
+            "STALE_CANDLE": 10
+          },
+          "first_blocking_percent_of_observations": {
+            "STALE_CANDLE": 100.0
+          },
+          "all_observed_failures": {
+            "STALE_CANDLE": 10
+          },
+          "bottleneck_status": "INSUFFICIENT OBSERVATIONS",
+          "top_bottlenecks": [],
+          "note": "Counts are unique market-cycle candidates; stages reflect observed production checks. NOT_OBSERVED is not PASS. Existing decision order is retained, including combined friction/risk checks."
+        }
+      }
+    },
+    {
+      "path": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/hackathon_public_replay_certified_2026-10-04/results",
+      "status": "RECORDED_SIMULATION",
+      "certifies_practice": false,
+      "mode": "REPLAY",
+      "manifest": {
+        "path": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/hackathon_public_replay_certified_2026-10-04/results/session_manifest.json",
+        "sha256": "93f6f1c8ecfb9986bc7cdbc719f76ec1b206d71e47407d7ea97e326093dfb743"
+      },
+      "source_compatible": true,
+      "source_hash": "75e33621870a1681b718a24ede1ab0d59a7a648f22c6b4670dcd09a5ec98989d",
+      "git_commit": "2add07bad934f2a843f75739b1dfe4c34ee87953",
+      "recorded_fill_count": 0,
+      "note": "Simulation/recorded records never certify the funded account or sustained practice. A LIVE label alone is unverified.",
+      "funnel": {
+        "evidence": {
+          "path": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/hackathon_public_replay_certified_2026-10-04/results/funnel_summary.json",
+          "sha256": "3261b1f637ea6bd71af2560e7b858d4853c9b941bf09d56cc78f5541de11a525"
+        },
+        "source": "LOCAL_REPLAY_OBSERVATION",
+        "session": {
+          "observations": 10,
+          "dates": 1,
+          "stages": [
+            {
+              "stage": "TOTAL_MARKETS_SEEN",
+              "passed": 10,
+              "failed": 0,
+              "reached": 10,
+              "admission_survivors": 10,
+              "admission_percent_of_previous": 100.0,
+              "not_reached": 0,
+              "not_observed": 0,
+              "percent_of_observations": 100.0,
+              "pass_percent_of_reached": 100.0,
+              "rejection_reasons": {}
+            },
+            {
+              "stage": "VALID_MARKET_IDENTITY",
+              "passed": 10,
+              "failed": 0,
+              "reached": 10,
+              "admission_survivors": 10,
+              "admission_percent_of_previous": 100.0,
+              "not_reached": 0,
+              "not_observed": 0,
+              "percent_of_observations": 100.0,
+              "pass_percent_of_reached": 100.0,
+              "rejection_reasons": {}
+            },
+            {
+              "stage": "MARKET_DATA_HEALTHY",
+              "passed": 0,
+              "failed": 10,
+              "reached": 10,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": 0.0,
+              "not_reached": 0,
+              "not_observed": 0,
+              "percent_of_observations": 0.0,
+              "pass_percent_of_reached": 0.0,
+              "rejection_reasons": {
+                "STALE_CANDLE": 10
+              }
+            },
+            {
+              "stage": "ENOUGH_HISTORY",
+              "passed": 10,
+              "failed": 0,
+              "reached": 10,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": null,
+              "not_reached": 0,
+              "not_observed": 0,
+              "percent_of_observations": 100.0,
+              "pass_percent_of_reached": 100.0,
+              "rejection_reasons": {}
+            },
+            {
+              "stage": "LIQUIDITY_PASS",
+              "passed": 0,
+              "failed": 0,
+              "reached": 0,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": null,
+              "not_reached": 0,
+              "not_observed": 10,
+              "percent_of_observations": 0.0,
+              "pass_percent_of_reached": null,
+              "rejection_reasons": {}
+            },
+            {
+              "stage": "SPREAD_PASS",
+              "passed": 0,
+              "failed": 0,
+              "reached": 0,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": null,
+              "not_reached": 0,
+              "not_observed": 10,
+              "percent_of_observations": 0.0,
+              "pass_percent_of_reached": null,
+              "rejection_reasons": {}
+            },
+            {
+              "stage": "ATR_PASS",
+              "passed": 0,
+              "failed": 0,
+              "reached": 0,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": null,
+              "not_reached": 0,
+              "not_observed": 10,
+              "percent_of_observations": 0.0,
+              "pass_percent_of_reached": null,
+              "rejection_reasons": {}
+            },
+            {
+              "stage": "SCANNER_QUALIFIED",
+              "passed": 0,
+              "failed": 10,
+              "reached": 10,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": null,
+              "not_reached": 0,
+              "not_observed": 0,
+              "percent_of_observations": 0.0,
+              "pass_percent_of_reached": 0.0,
+              "rejection_reasons": {
+                "STALE_CANDLE": 10
+              }
+            },
+            {
+              "stage": "TOP3_SELECTED",
+              "passed": 0,
+              "failed": 0,
+              "reached": 0,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": null,
+              "not_reached": 10,
+              "not_observed": 0,
+              "percent_of_observations": 0.0,
+              "pass_percent_of_reached": null,
+              "rejection_reasons": {}
+            },
+            {
+              "stage": "STRATEGY_EVALUATED",
+              "passed": 0,
+              "failed": 0,
+              "reached": 0,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": null,
+              "not_reached": 10,
+              "not_observed": 0,
+              "percent_of_observations": 0.0,
+              "pass_percent_of_reached": null,
+              "rejection_reasons": {}
+            },
+            {
+              "stage": "SIGNAL_GENERATED",
+              "passed": 0,
+              "failed": 0,
+              "reached": 0,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": null,
+              "not_reached": 10,
+              "not_observed": 0,
+              "percent_of_observations": 0.0,
+              "pass_percent_of_reached": null,
+              "rejection_reasons": {}
+            },
+            {
+              "stage": "BIAS_PASS",
+              "passed": 0,
+              "failed": 0,
+              "reached": 0,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": null,
+              "not_reached": 10,
+              "not_observed": 0,
+              "percent_of_observations": 0.0,
+              "pass_percent_of_reached": null,
+              "rejection_reasons": {}
+            },
+            {
+              "stage": "ANTI_SPAM_PASS",
+              "passed": 0,
+              "failed": 0,
+              "reached": 0,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": null,
+              "not_reached": 10,
+              "not_observed": 0,
+              "percent_of_observations": 0.0,
+              "pass_percent_of_reached": null,
+              "rejection_reasons": {}
+            },
+            {
+              "stage": "FRICTION_PASS",
+              "passed": 0,
+              "failed": 0,
+              "reached": 0,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": null,
+              "not_reached": 10,
+              "not_observed": 0,
+              "percent_of_observations": 0.0,
+              "pass_percent_of_reached": null,
+              "rejection_reasons": {}
+            },
+            {
+              "stage": "RISK_PASS",
+              "passed": 0,
+              "failed": 0,
+              "reached": 0,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": null,
+              "not_reached": 10,
+              "not_observed": 0,
+              "percent_of_observations": 0.0,
+              "pass_percent_of_reached": null,
+              "rejection_reasons": {}
+            },
+            {
+              "stage": "EXECUTION_PERMISSION",
+              "passed": 0,
+              "failed": 10,
+              "reached": 10,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": null,
+              "not_reached": 0,
+              "not_observed": 0,
+              "percent_of_observations": 0.0,
+              "pass_percent_of_reached": 0.0,
+              "rejection_reasons": {
+                "STALE_CANDLE": 10
+              }
+            },
+            {
+              "stage": "ORDER_ATTEMPTED",
+              "passed": 0,
+              "failed": 0,
+              "reached": 0,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": null,
+              "not_reached": 10,
+              "not_observed": 0,
+              "percent_of_observations": 0.0,
+              "pass_percent_of_reached": null,
+              "rejection_reasons": {}
+            },
+            {
+              "stage": "FILLED",
+              "passed": 0,
+              "failed": 0,
+              "reached": 0,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": null,
+              "not_reached": 10,
+              "not_observed": 0,
+              "percent_of_observations": 0.0,
+              "pass_percent_of_reached": null,
+              "rejection_reasons": {}
+            },
+            {
+              "stage": "TRADE_COMPLETED",
+              "passed": 0,
+              "failed": 0,
+              "reached": 0,
+              "admission_survivors": 0,
+              "admission_percent_of_previous": null,
+              "not_reached": 10,
+              "not_observed": 0,
+              "percent_of_observations": 0.0,
+              "pass_percent_of_reached": null,
+              "rejection_reasons": {}
+            }
+          ],
+          "first_blocking_reasons": {
+            "STALE_CANDLE": 10
+          },
+          "first_blocking_percent_of_observations": {
+            "STALE_CANDLE": 100.0
+          },
+          "all_observed_failures": {
+            "STALE_CANDLE": 10
+          },
+          "bottleneck_status": "INSUFFICIENT OBSERVATIONS",
+          "top_bottlenecks": [],
+          "note": "Counts are unique market-cycle candidates; stages reflect observed production checks. NOT_OBSERVED is not PASS. Existing decision order is retained, including combined friction/risk checks."
+        }
+      }
+    }
+  ],
+  "research": {
+    "status": "MORE_DATA_REQUIRED",
+    "flags": {
+      "SESSION_ANCHOR_VALIDATED": false,
+      "ML_DATA_READY": false,
+      "ML_MODEL_VALIDATED": false,
+      "HOLDOUT_COMPLETE": false,
+      "PROMOTION_RECOMMENDED": false
+    },
+    "production_strategy_changed": false,
+    "evidence": {
+      "path": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/research_readiness_release_2026-10-04/readiness.json",
+      "sha256": "ee1747c255c3dc8c06828ff891e5efab41b909a86c0dec1f0015ce47a6ec954d"
+    },
+    "reported_flags": {
+      "BASELINE_PRESERVED": true,
+      "VWAP_RESEARCH_READY": true,
+      "SESSION_ANCHOR_VALIDATED": false,
+      "ML_DATA_READY": false,
+      "ML_MODEL_VALIDATED": false,
+      "HOLDOUT_COMPLETE": false,
+      "PROMOTION_RECOMMENDED": false,
+      "PRODUCTION_CHANGED": false
+    },
+    "counts": {
+      "candidate_rows": 0,
+      "usable_labeled_rows": 0,
+      "positive_outcomes": 0,
+      "negative_outcomes": 0
+    },
+    "holdout": {
+      "status": "NOT_SEALED",
+      "reasons": [
+        "Fit and seal models before a future evaluation window."
+      ]
+    },
+    "note": "Historical research report; no promotion is inferred or performed."
+  },
+  "practice": {
+    "execution_source": "NO_CERTIFIED_LIVE_TESTNET_RUN",
+    "runtime_seconds": null,
+    "trades": null,
+    "realized_pnl": null,
+    "unrealized_pnl": null,
+    "net_pnl": null,
+    "fees": null,
+    "funding": null,
+    "max_drawdown": null,
+    "daily_volatility": null,
+    "errors": null,
+    "reconnects": null,
+    "checks": {
+      "market_discovery": "NOT_OBSERVED",
+      "healthy_candles": "NOT_OBSERVED",
+      "healthy_books": "NOT_OBSERVED",
+      "mark_oracle": "NOT_OBSERVED",
+      "funding_events": "NOT_OBSERVED",
+      "actual_account_reads": "NOT_OBSERVED",
+      "long_entry_exit": "NOT_OBSERVED",
+      "short_entry_exit": "NOT_OBSERVED",
+      "partial_fill": "NOT_OBSERVED",
+      "cancel": "NOT_OBSERVED",
+      "modify": "NOT_OBSERVED",
+      "reduce_only_exit": "NOT_OBSERVED",
+      "actual_fees": "NOT_OBSERVED",
+      "actual_funding": "NOT_OBSERVED",
+      "websocket_reconnect": "NOT_OBSERVED",
+      "process_restart": "NOT_OBSERVED",
+      "existing_position_recovery": "NOT_OBSERVED",
+      "protection_restoration": "NOT_OBSERVED",
+      "duplicate_prevention": "NOT_OBSERVED",
+      "no_phantom_accounting": "NOT_OBSERVED",
+      "multiple_hours": "NOT_OBSERVED",
+      "multiple_conditions": "NOT_OBSERVED",
+      "funding_boundary": "NOT_OBSERVED",
+      "stale_data": "NOT_OBSERVED",
+      "rate_pressure": "NOT_OBSERVED",
+      "crash": "NOT_OBSERVED",
+      "normal_stop": "NOT_OBSERVED",
+      "normal_target": "NOT_OBSERVED"
+    }
+  },
+  "live_ready": false,
+  "hackathon_ready": false,
+  "live_orders_permitted": false,
+  "authority": "READ_ONLY_AUDIT; never consumed by signing/activation gates; imported files are not external attestation.",
+  "next_action": "Provide and manually verify the funded Team Anchorium PUBLIC wallet and approved API PUBLIC address with read-only account checks. Keep PAPER/false."
+}

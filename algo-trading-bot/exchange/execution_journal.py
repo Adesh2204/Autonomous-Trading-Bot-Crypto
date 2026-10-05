@@ -34,7 +34,8 @@ def safe_data(value):
         forbidden = {'signature', 'private_key', 'api_wallet_private_key', 'seed',
                      'seed_phrase', 'signer', 'authorization', 'secret'}
         public_hash_fields={'metadata_hash','expected_metadata_hash','working_source_hash',
-                            'configuration_hash','strategy_source_hash','event_hash'}
+                            'configuration_hash','strategy_source_hash','event_hash',
+                            'scanner_policy_hash','risk_policy_hash','reliability_policy_hash'}
         return {k: v if k in public_hash_fields and isinstance(v,str) and re.fullmatch(r'(0x)?[0-9a-fA-F]{64}',v)
                 else safe_data(v) for k, v in value.items() if k.lower() not in forbidden}
     if isinstance(value, (list, tuple)):
@@ -133,6 +134,12 @@ class ExecutionJournal:
     def event(self, kind, now_ms, **data):
         from .event_timing import timing
         data=dict(timing(now_ms),**data)
+        # Global health events have no candidate or market; preserve those nulls.
+        # Explicit exchange/receive clocks supplied by an observer stay intact.
+        data.setdefault('candidate_id', data.get('candidate'))
+        request=data.get('request')
+        data.setdefault('symbol', request.get('symbol') if isinstance(request,dict) else None)
+        data.update(session_id=self.session_id,event_type=kind)
         with self.transaction():
             self.db.execute('INSERT INTO events(timestamp_ms,kind,data) VALUES (?,?,?)',
                             (now_ms, kind, canonical(safe_data(data))))

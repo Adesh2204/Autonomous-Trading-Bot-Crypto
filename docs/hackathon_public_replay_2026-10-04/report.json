@@ -1,0 +1,1143 @@
+{
+  "execution_mode": "REPLAY",
+  "readiness": {
+    "account_status": "NOT_CONFIGURED",
+    "wallet_ready": false,
+    "public_address_configured": false,
+    "market_data_ready": true,
+    "paper_trading_ready": true,
+    "live_execution_ready": false,
+    "signed_actions": "DISABLED",
+    "reason": "Manual funded-wallet verification and explicit future authorization required"
+  },
+  "allow_live_orders": false,
+  "exchange_orders_submitted": 0,
+  "balance_origin": "HYPOTHETICAL_LOCAL_USDPR",
+  "starting_collateral": "20000",
+  "portfolio": {
+    "timestamp_ms": 1791133940992,
+    "cash": "20000",
+    "unrealized_pnl": "0",
+    "equity": "20000",
+    "initial_margin": "0",
+    "maintenance_margin_estimate": "0",
+    "order_reservations": "0",
+    "available_margin": "20000",
+    "gross_notional": "0",
+    "realized_pnl": "0",
+    "fees_paid": "0",
+    "funding_cashflow": "0",
+    "collateral": "USDPR"
+  },
+  "positions": [],
+  "scan_status": "NO_TRADE",
+  "watchlist": [],
+  "scanned_markets": 10,
+  "diagnostics": [
+    {
+      "symbol": "par:BRENT",
+      "qualified": false,
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "metrics": {},
+      "score": "0",
+      "signal": null,
+      "market_snapshot": null
+    },
+    {
+      "symbol": "par:BTC",
+      "qualified": false,
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "metrics": {},
+      "score": "0",
+      "signal": null,
+      "market_snapshot": null
+    },
+    {
+      "symbol": "par:ETH",
+      "qualified": false,
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "metrics": {},
+      "score": "0",
+      "signal": null,
+      "market_snapshot": null
+    },
+    {
+      "symbol": "par:EWJ",
+      "qualified": false,
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "metrics": {},
+      "score": "0",
+      "signal": null,
+      "market_snapshot": null
+    },
+    {
+      "symbol": "par:EWY",
+      "qualified": false,
+      "reasons": [
+        "INVALID_DECIMAL"
+      ],
+      "metrics": {},
+      "score": "0",
+      "signal": null,
+      "market_snapshot": {
+        "symbol": "par:EWY",
+        "bid": "190.95",
+        "ask": "191.33",
+        "mid": "191.14",
+        "mark_price": "191.19",
+        "oracle_price": "191.11",
+        "funding": "0.0000199469",
+        "open_interest": "20.7",
+        "bid_quantity": "51.564",
+        "ask_quantity": "15.815",
+        "spread": "0.38",
+        "spread_bps": "19.88071570576540755467196819",
+        "bid_depth_notional": "104857.28875",
+        "ask_depth_notional": "98025.30684",
+        "orderbook_imbalance": "0.03367455887545213163052869241",
+        "orderbook_timestamp_ms": 1791133934504,
+        "mark_observed_at_ms": 1791133933038,
+        "last_trade_price": null,
+        "last_trade_timestamp_ms": null,
+        "exchange_ts": "2026-10-04T17:12:14.504+00:00",
+        "received_ts": "2026-10-04T17:12:15.295+00:00",
+        "processed_ts": "2026-10-04T17:12:15.295+00:00"
+      }
+    },
+    {
+      "symbol": "par:GOLD",
+      "qualified": false,
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "metrics": {},
+      "score": "0",
+      "signal": null,
+      "market_snapshot": null
+    },
+    {
+      "symbol": "par:HYPE",
+      "qualified": false,
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "metrics": {},
+      "score": "0",
+      "signal": null,
+      "market_snapshot": null
+    },
+    {
+      "symbol": "par:SP500",
+      "qualified": false,
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "metrics": {},
+      "score": "0",
+      "signal": null,
+      "market_snapshot": null
+    },
+    {
+      "symbol": "par:USDEUR",
+      "qualified": false,
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "metrics": {},
+      "score": "0",
+      "signal": null,
+      "market_snapshot": null
+    },
+    {
+      "symbol": "par:USDJPY",
+      "qualified": false,
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "metrics": {},
+      "score": "0",
+      "signal": null,
+      "market_snapshot": null
+    }
+  ],
+  "local_orders": 0,
+  "local_fills": 0,
+  "decisions": [
+    {
+      "kind": "MARKET_DATA",
+      "timestamp_ms": 1791133940034,
+      "exchange_ts": null,
+      "received_ts": "2026-10-04T17:12:20.033+00:00",
+      "processed_ts": "2026-10-04T17:12:20.033+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:BRENT",
+      "candidate_id": "par:BRENT:1791133939211",
+      "metrics": {},
+      "market_snapshot": null,
+      "candle_timestamp_ms": null,
+      "data_status": "UNAVAILABLE",
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ]
+    },
+    {
+      "kind": "SIGNAL",
+      "timestamp_ms": 1791133940034,
+      "exchange_ts": null,
+      "received_ts": "2026-10-04T17:12:13.389+00:00",
+      "processed_ts": "2026-10-04T17:12:13.389+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:BRENT",
+      "candidate_id": "par:BRENT:1791133939211",
+      "signal": {},
+      "metrics": {},
+      "scan_selected": false,
+      "signal_status": "NO_SIGNAL",
+      "scanner_status": "REJECTED",
+      "input_timing": {
+        "exchange_ts": null,
+        "received_ts": "2026-10-04T17:12:13.389+00:00",
+        "processed_ts": "2026-10-04T17:12:13.389+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      "input_candle_close_ms": 1791133259999
+    },
+    {
+      "kind": "ENTRY_REJECTED",
+      "timestamp_ms": 1791133940034,
+      "exchange_ts": null,
+      "received_ts": "2026-10-04T17:12:20.034+00:00",
+      "processed_ts": "2026-10-04T17:12:20.034+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:BRENT",
+      "candidate_id": "par:BRENT:1791133939211",
+      "reason": "COMPLETED_CANDLE_STALE",
+      "stage": "SCANNER",
+      "risk_status": "NOT_REACHED",
+      "execution_status": "NOT_REACHED"
+    },
+    {
+      "kind": "MARKET_DATA",
+      "timestamp_ms": 1791133940034,
+      "exchange_ts": null,
+      "received_ts": "2026-10-04T17:12:20.034+00:00",
+      "processed_ts": "2026-10-04T17:12:20.034+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:BTC",
+      "candidate_id": "par:BTC:1791133939211",
+      "metrics": {},
+      "market_snapshot": null,
+      "candle_timestamp_ms": null,
+      "data_status": "UNAVAILABLE",
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ]
+    },
+    {
+      "kind": "SIGNAL",
+      "timestamp_ms": 1791133940034,
+      "exchange_ts": null,
+      "received_ts": "2026-10-04T17:12:13.588+00:00",
+      "processed_ts": "2026-10-04T17:12:13.588+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:BTC",
+      "candidate_id": "par:BTC:1791133939211",
+      "signal": {},
+      "metrics": {},
+      "scan_selected": false,
+      "signal_status": "NO_SIGNAL",
+      "scanner_status": "REJECTED",
+      "input_timing": {
+        "exchange_ts": null,
+        "received_ts": "2026-10-04T17:12:13.588+00:00",
+        "processed_ts": "2026-10-04T17:12:13.588+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      "input_candle_close_ms": 1791130019999
+    },
+    {
+      "kind": "ENTRY_REJECTED",
+      "timestamp_ms": 1791133940034,
+      "exchange_ts": null,
+      "received_ts": "2026-10-04T17:12:20.034+00:00",
+      "processed_ts": "2026-10-04T17:12:20.034+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:BTC",
+      "candidate_id": "par:BTC:1791133939211",
+      "reason": "COMPLETED_CANDLE_STALE",
+      "stage": "SCANNER",
+      "risk_status": "NOT_REACHED",
+      "execution_status": "NOT_REACHED"
+    },
+    {
+      "kind": "MARKET_DATA",
+      "timestamp_ms": 1791133940034,
+      "exchange_ts": null,
+      "received_ts": "2026-10-04T17:12:20.034+00:00",
+      "processed_ts": "2026-10-04T17:12:20.034+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:ETH",
+      "candidate_id": "par:ETH:1791133939211",
+      "metrics": {},
+      "market_snapshot": null,
+      "candle_timestamp_ms": null,
+      "data_status": "UNAVAILABLE",
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ]
+    },
+    {
+      "kind": "SIGNAL",
+      "timestamp_ms": 1791133940034,
+      "exchange_ts": null,
+      "received_ts": "2026-10-04T17:12:14.240+00:00",
+      "processed_ts": "2026-10-04T17:12:14.240+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:ETH",
+      "candidate_id": "par:ETH:1791133939211",
+      "signal": {},
+      "metrics": {},
+      "scan_selected": false,
+      "signal_status": "NO_SIGNAL",
+      "scanner_status": "REJECTED",
+      "input_timing": {
+        "exchange_ts": null,
+        "received_ts": "2026-10-04T17:12:14.240+00:00",
+        "processed_ts": "2026-10-04T17:12:14.240+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      "input_candle_close_ms": 1791133319999
+    },
+    {
+      "kind": "ENTRY_REJECTED",
+      "timestamp_ms": 1791133940034,
+      "exchange_ts": null,
+      "received_ts": "2026-10-04T17:12:20.034+00:00",
+      "processed_ts": "2026-10-04T17:12:20.034+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:ETH",
+      "candidate_id": "par:ETH:1791133939211",
+      "reason": "COMPLETED_CANDLE_STALE",
+      "stage": "SCANNER",
+      "risk_status": "NOT_REACHED",
+      "execution_status": "NOT_REACHED"
+    },
+    {
+      "kind": "MARKET_DATA",
+      "timestamp_ms": 1791133940034,
+      "exchange_ts": null,
+      "received_ts": "2026-10-04T17:12:20.034+00:00",
+      "processed_ts": "2026-10-04T17:12:20.034+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:EWJ",
+      "candidate_id": "par:EWJ:1791133939211",
+      "metrics": {},
+      "market_snapshot": null,
+      "candle_timestamp_ms": null,
+      "data_status": "UNAVAILABLE",
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ]
+    },
+    {
+      "kind": "SIGNAL",
+      "timestamp_ms": 1791133940034,
+      "exchange_ts": null,
+      "received_ts": "2026-10-04T17:12:14.733+00:00",
+      "processed_ts": "2026-10-04T17:12:14.733+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:EWJ",
+      "candidate_id": "par:EWJ:1791133939211",
+      "signal": {},
+      "metrics": {},
+      "scan_selected": false,
+      "signal_status": "NO_SIGNAL",
+      "scanner_status": "REJECTED",
+      "input_timing": {
+        "exchange_ts": null,
+        "received_ts": "2026-10-04T17:12:14.733+00:00",
+        "processed_ts": "2026-10-04T17:12:14.733+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      "input_candle_close_ms": 1791116699999
+    },
+    {
+      "kind": "ENTRY_REJECTED",
+      "timestamp_ms": 1791133940034,
+      "exchange_ts": null,
+      "received_ts": "2026-10-04T17:12:20.034+00:00",
+      "processed_ts": "2026-10-04T17:12:20.034+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:EWJ",
+      "candidate_id": "par:EWJ:1791133939211",
+      "reason": "COMPLETED_CANDLE_STALE",
+      "stage": "SCANNER",
+      "risk_status": "NOT_REACHED",
+      "execution_status": "NOT_REACHED"
+    },
+    {
+      "kind": "MARKET_DATA",
+      "timestamp_ms": 1791133940034,
+      "exchange_ts": "2026-10-04T17:12:14.504+00:00",
+      "received_ts": "2026-10-04T17:12:15.295+00:00",
+      "processed_ts": "2026-10-04T17:12:15.295+00:00",
+      "symbol": "par:EWY",
+      "candidate_id": "par:EWY:1791133939211",
+      "metrics": {},
+      "market_snapshot": {
+        "symbol": "par:EWY",
+        "bid": "190.95",
+        "ask": "191.33",
+        "mid": "191.14",
+        "mark_price": "191.19",
+        "oracle_price": "191.11",
+        "funding": "0.0000199469",
+        "open_interest": "20.7",
+        "bid_quantity": "51.564",
+        "ask_quantity": "15.815",
+        "spread": "0.38",
+        "spread_bps": "19.88071570576540755467196819",
+        "bid_depth_notional": "104857.28875",
+        "ask_depth_notional": "98025.30684",
+        "orderbook_imbalance": "0.03367455887545213163052869241",
+        "orderbook_timestamp_ms": 1791133934504,
+        "mark_observed_at_ms": 1791133933038,
+        "last_trade_price": null,
+        "last_trade_timestamp_ms": null,
+        "exchange_ts": "2026-10-04T17:12:14.504+00:00",
+        "received_ts": "2026-10-04T17:12:15.295+00:00",
+        "processed_ts": "2026-10-04T17:12:15.295+00:00"
+      },
+      "candle_timestamp_ms": null,
+      "data_status": "UNAVAILABLE",
+      "reasons": [
+        "INVALID_DECIMAL"
+      ]
+    },
+    {
+      "kind": "SIGNAL",
+      "timestamp_ms": 1791133940034,
+      "exchange_ts": null,
+      "received_ts": "2026-10-04T17:12:15.712+00:00",
+      "processed_ts": "2026-10-04T17:12:15.712+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:EWY",
+      "candidate_id": "par:EWY:1791133939211",
+      "signal": {},
+      "metrics": {},
+      "scan_selected": false,
+      "signal_status": "NO_SIGNAL",
+      "scanner_status": "REJECTED",
+      "input_timing": {
+        "exchange_ts": null,
+        "received_ts": "2026-10-04T17:12:15.712+00:00",
+        "processed_ts": "2026-10-04T17:12:15.712+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      "input_candle_close_ms": 1791133919999
+    },
+    {
+      "kind": "ENTRY_REJECTED",
+      "timestamp_ms": 1791133940034,
+      "exchange_ts": null,
+      "received_ts": "2026-10-04T17:12:20.034+00:00",
+      "processed_ts": "2026-10-04T17:12:20.034+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:EWY",
+      "candidate_id": "par:EWY:1791133939211",
+      "reason": "INVALID_DECIMAL",
+      "stage": "SCANNER",
+      "risk_status": "NOT_REACHED",
+      "execution_status": "NOT_REACHED"
+    },
+    {
+      "kind": "MARKET_DATA",
+      "timestamp_ms": 1791133940034,
+      "exchange_ts": null,
+      "received_ts": "2026-10-04T17:12:20.034+00:00",
+      "processed_ts": "2026-10-04T17:12:20.034+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:GOLD",
+      "candidate_id": "par:GOLD:1791133939211",
+      "metrics": {},
+      "market_snapshot": null,
+      "candle_timestamp_ms": null,
+      "data_status": "UNAVAILABLE",
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ]
+    },
+    {
+      "kind": "SIGNAL",
+      "timestamp_ms": 1791133940034,
+      "exchange_ts": null,
+      "received_ts": "2026-10-04T17:12:16.367+00:00",
+      "processed_ts": "2026-10-04T17:12:16.367+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:GOLD",
+      "candidate_id": "par:GOLD:1791133939211",
+      "signal": {},
+      "metrics": {},
+      "scan_selected": false,
+      "signal_status": "NO_SIGNAL",
+      "scanner_status": "REJECTED",
+      "input_timing": {
+        "exchange_ts": null,
+        "received_ts": "2026-10-04T17:12:16.367+00:00",
+        "processed_ts": "2026-10-04T17:12:16.367+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      "input_candle_close_ms": 1791133379999
+    },
+    {
+      "kind": "ENTRY_REJECTED",
+      "timestamp_ms": 1791133940034,
+      "exchange_ts": null,
+      "received_ts": "2026-10-04T17:12:20.034+00:00",
+      "processed_ts": "2026-10-04T17:12:20.034+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:GOLD",
+      "candidate_id": "par:GOLD:1791133939211",
+      "reason": "COMPLETED_CANDLE_STALE",
+      "stage": "SCANNER",
+      "risk_status": "NOT_REACHED",
+      "execution_status": "NOT_REACHED"
+    },
+    {
+      "kind": "MARKET_DATA",
+      "timestamp_ms": 1791133940034,
+      "exchange_ts": null,
+      "received_ts": "2026-10-04T17:12:20.034+00:00",
+      "processed_ts": "2026-10-04T17:12:20.034+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:HYPE",
+      "candidate_id": "par:HYPE:1791133939211",
+      "metrics": {},
+      "market_snapshot": null,
+      "candle_timestamp_ms": null,
+      "data_status": "UNAVAILABLE",
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ]
+    },
+    {
+      "kind": "SIGNAL",
+      "timestamp_ms": 1791133940034,
+      "exchange_ts": null,
+      "received_ts": "2026-10-04T17:12:17.255+00:00",
+      "processed_ts": "2026-10-04T17:12:17.255+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:HYPE",
+      "candidate_id": "par:HYPE:1791133939211",
+      "signal": {},
+      "metrics": {},
+      "scan_selected": false,
+      "signal_status": "NO_SIGNAL",
+      "scanner_status": "REJECTED",
+      "input_timing": {
+        "exchange_ts": null,
+        "received_ts": "2026-10-04T17:12:17.255+00:00",
+        "processed_ts": "2026-10-04T17:12:17.255+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      "input_candle_close_ms": 1791132419999
+    },
+    {
+      "kind": "ENTRY_REJECTED",
+      "timestamp_ms": 1791133940034,
+      "exchange_ts": null,
+      "received_ts": "2026-10-04T17:12:20.034+00:00",
+      "processed_ts": "2026-10-04T17:12:20.034+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:HYPE",
+      "candidate_id": "par:HYPE:1791133939211",
+      "reason": "COMPLETED_CANDLE_STALE",
+      "stage": "SCANNER",
+      "risk_status": "NOT_REACHED",
+      "execution_status": "NOT_REACHED"
+    },
+    {
+      "kind": "MARKET_DATA",
+      "timestamp_ms": 1791133940034,
+      "exchange_ts": null,
+      "received_ts": "2026-10-04T17:12:20.034+00:00",
+      "processed_ts": "2026-10-04T17:12:20.034+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:SP500",
+      "candidate_id": "par:SP500:1791133939211",
+      "metrics": {},
+      "market_snapshot": null,
+      "candle_timestamp_ms": null,
+      "data_status": "UNAVAILABLE",
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ]
+    },
+    {
+      "kind": "SIGNAL",
+      "timestamp_ms": 1791133940034,
+      "exchange_ts": null,
+      "received_ts": "2026-10-04T17:12:17.903+00:00",
+      "processed_ts": "2026-10-04T17:12:17.903+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:SP500",
+      "candidate_id": "par:SP500:1791133939211",
+      "signal": {},
+      "metrics": {},
+      "scan_selected": false,
+      "signal_status": "NO_SIGNAL",
+      "scanner_status": "REJECTED",
+      "input_timing": {
+        "exchange_ts": null,
+        "received_ts": "2026-10-04T17:12:17.903+00:00",
+        "processed_ts": "2026-10-04T17:12:17.903+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      "input_candle_close_ms": 1791133559999
+    },
+    {
+      "kind": "ENTRY_REJECTED",
+      "timestamp_ms": 1791133940034,
+      "exchange_ts": null,
+      "received_ts": "2026-10-04T17:12:20.034+00:00",
+      "processed_ts": "2026-10-04T17:12:20.034+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:SP500",
+      "candidate_id": "par:SP500:1791133939211",
+      "reason": "COMPLETED_CANDLE_STALE",
+      "stage": "SCANNER",
+      "risk_status": "NOT_REACHED",
+      "execution_status": "NOT_REACHED"
+    },
+    {
+      "kind": "MARKET_DATA",
+      "timestamp_ms": 1791133940034,
+      "exchange_ts": null,
+      "received_ts": "2026-10-04T17:12:20.034+00:00",
+      "processed_ts": "2026-10-04T17:12:20.034+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:USDEUR",
+      "candidate_id": "par:USDEUR:1791133939211",
+      "metrics": {},
+      "market_snapshot": null,
+      "candle_timestamp_ms": null,
+      "data_status": "UNAVAILABLE",
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ]
+    },
+    {
+      "kind": "SIGNAL",
+      "timestamp_ms": 1791133940034,
+      "exchange_ts": null,
+      "received_ts": "2026-10-04T17:12:18.717+00:00",
+      "processed_ts": "2026-10-04T17:12:18.717+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:USDEUR",
+      "candidate_id": "par:USDEUR:1791133939211",
+      "signal": {},
+      "metrics": {},
+      "scan_selected": false,
+      "signal_status": "NO_SIGNAL",
+      "scanner_status": "REJECTED",
+      "input_timing": {
+        "exchange_ts": null,
+        "received_ts": "2026-10-04T17:12:18.717+00:00",
+        "processed_ts": "2026-10-04T17:12:18.717+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      "input_candle_close_ms": 1791126779999
+    },
+    {
+      "kind": "ENTRY_REJECTED",
+      "timestamp_ms": 1791133940034,
+      "exchange_ts": null,
+      "received_ts": "2026-10-04T17:12:20.034+00:00",
+      "processed_ts": "2026-10-04T17:12:20.034+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:USDEUR",
+      "candidate_id": "par:USDEUR:1791133939211",
+      "reason": "COMPLETED_CANDLE_STALE",
+      "stage": "SCANNER",
+      "risk_status": "NOT_REACHED",
+      "execution_status": "NOT_REACHED"
+    },
+    {
+      "kind": "MARKET_DATA",
+      "timestamp_ms": 1791133940034,
+      "exchange_ts": null,
+      "received_ts": "2026-10-04T17:12:20.034+00:00",
+      "processed_ts": "2026-10-04T17:12:20.034+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:USDJPY",
+      "candidate_id": "par:USDJPY:1791133939211",
+      "metrics": {},
+      "market_snapshot": null,
+      "candle_timestamp_ms": null,
+      "data_status": "UNAVAILABLE",
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ]
+    },
+    {
+      "kind": "SIGNAL",
+      "timestamp_ms": 1791133940034,
+      "exchange_ts": null,
+      "received_ts": "2026-10-04T17:12:19.210+00:00",
+      "processed_ts": "2026-10-04T17:12:19.210+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:USDJPY",
+      "candidate_id": "par:USDJPY:1791133939211",
+      "signal": {},
+      "metrics": {},
+      "scan_selected": false,
+      "signal_status": "NO_SIGNAL",
+      "scanner_status": "REJECTED",
+      "input_timing": {
+        "exchange_ts": null,
+        "received_ts": "2026-10-04T17:12:19.210+00:00",
+        "processed_ts": "2026-10-04T17:12:19.210+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      "input_candle_close_ms": 1791122879999
+    },
+    {
+      "kind": "ENTRY_REJECTED",
+      "timestamp_ms": 1791133940034,
+      "exchange_ts": null,
+      "received_ts": "2026-10-04T17:12:20.034+00:00",
+      "processed_ts": "2026-10-04T17:12:20.034+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:USDJPY",
+      "candidate_id": "par:USDJPY:1791133939211",
+      "reason": "COMPLETED_CANDLE_STALE",
+      "stage": "SCANNER",
+      "risk_status": "NOT_REACHED",
+      "execution_status": "NOT_REACHED"
+    }
+  ],
+  "accounting_halt": null,
+  "pending_exits": {},
+  "closed_trades": [],
+  "performance": {
+    "return_fraction": "0",
+    "max_drawdown_fraction": "0",
+    "closed_trade_count": 0,
+    "win_rate": null
+  },
+  "strategy_freeze": {
+    "baseline": "nse-working-baseline",
+    "file_count": 1,
+    "method_count": 8,
+    "parameter_count": 32,
+    "passed": true
+  },
+  "fees": {
+    "maker": "0.0003",
+    "taker": "0.0009",
+    "source": "PAR_UNDISCOUNTED_BASE_TIER_CHECKED_2026-10-02_PAPER_ASSUMPTION"
+  },
+  "risk_policy": {
+    "risk_fraction": "0.005",
+    "max_daily_loss_fraction": "0.01",
+    "max_gross_equity_multiple": "1",
+    "max_margin_utilization": "0.5",
+    "maintenance_buffer_multiple": "2",
+    "max_funding_cost_fraction": "0.001",
+    "max_mark_oracle_bps": "50",
+    "max_spread_bps": "15",
+    "depth_participation": "0.1",
+    "slippage_bps": "5",
+    "holding_hours": "1",
+    "leverage": 1,
+    "max_positions": 1,
+    "max_daily_setups": 2,
+    "max_drawdown_fraction": "0.05",
+    "max_symbol_equity_multiple": "1",
+    "max_net_equity_multiple": "1",
+    "max_directional_equity_multiple": "1",
+    "max_data_age_ms": 5000,
+    "max_mark_age_ms": 60000,
+    "max_candle_age_ms": 120000,
+    "max_consecutive_order_errors": 3,
+    "max_reconnect_failures": 5
+  },
+  "scanner_policy": {
+    "min_atr_fraction": "0.004",
+    "max_spread_bps": "15",
+    "min_window_notional": "0",
+    "min_bbo_notional": "10",
+    "history_bars": 300,
+    "top_n": 3,
+    "max_candle_age_ms": 120000
+  },
+  "market_specs": [
+    {
+      "symbol": "par:BRENT",
+      "size_decimals": 2,
+      "max_leverage": 20,
+      "asset_id": 2670006,
+      "margin_tiers": [
+        [
+          "0",
+          20
+        ]
+      ]
+    },
+    {
+      "symbol": "par:BTC",
+      "size_decimals": 4,
+      "max_leverage": 40,
+      "asset_id": 2670000,
+      "margin_tiers": [
+        [
+          "0",
+          40
+        ]
+      ]
+    },
+    {
+      "symbol": "par:ETH",
+      "size_decimals": 4,
+      "max_leverage": 25,
+      "asset_id": 2670001,
+      "margin_tiers": [
+        [
+          "0",
+          25
+        ]
+      ]
+    },
+    {
+      "symbol": "par:EWJ",
+      "size_decimals": 3,
+      "max_leverage": 20,
+      "asset_id": 2670005,
+      "margin_tiers": [
+        [
+          "0",
+          20
+        ]
+      ]
+    },
+    {
+      "symbol": "par:EWY",
+      "size_decimals": 3,
+      "max_leverage": 20,
+      "asset_id": 2670004,
+      "margin_tiers": [
+        [
+          "0",
+          20
+        ]
+      ]
+    },
+    {
+      "symbol": "par:GOLD",
+      "size_decimals": 4,
+      "max_leverage": 25,
+      "asset_id": 2670007,
+      "margin_tiers": [
+        [
+          "0",
+          25
+        ]
+      ]
+    },
+    {
+      "symbol": "par:HYPE",
+      "size_decimals": 2,
+      "max_leverage": 10,
+      "asset_id": 2670002,
+      "margin_tiers": [
+        [
+          "0",
+          10
+        ]
+      ]
+    },
+    {
+      "symbol": "par:SP500",
+      "size_decimals": 3,
+      "max_leverage": 50,
+      "asset_id": 2670003,
+      "margin_tiers": [
+        [
+          "0.0",
+          50
+        ]
+      ]
+    },
+    {
+      "symbol": "par:USDEUR",
+      "size_decimals": 1,
+      "max_leverage": 50,
+      "asset_id": 2670008,
+      "margin_tiers": [
+        [
+          "0.0",
+          50
+        ]
+      ]
+    },
+    {
+      "symbol": "par:USDJPY",
+      "size_decimals": 2,
+      "max_leverage": 50,
+      "asset_id": 2670009,
+      "margin_tiers": [
+        [
+          "0.0",
+          50
+        ]
+      ]
+    }
+  ],
+  "exposure": {
+    "total_gross_exposure": "0",
+    "total_net_exposure": "0",
+    "long_notional": "0",
+    "short_notional": "0",
+    "directional_concentration": "0",
+    "per_symbol_exposure": {},
+    "margin_utilization": "0",
+    "position_count": 0,
+    "collateral": "USDPR"
+  },
+  "risk_state": {
+    "state": "NORMAL",
+    "global_reasons": [],
+    "paused_symbols": {},
+    "consecutive_order_errors": 0,
+    "reconnect_failures": 0,
+    "transitions": [
+      {
+        "timestamp_ms": 1791133941035,
+        "state": "NORMAL",
+        "exchange_ts": null,
+        "received_ts": "2026-10-04T17:12:21.035+00:00",
+        "processed_ts": "2026-10-04T17:12:21.035+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false,
+        "global_reasons": [],
+        "paused_symbols": {}
+      }
+    ]
+  },
+  "feed_health": {},
+  "public_stream": null,
+  "paper_account_recovery": null,
+  "market_snapshots": {},
+  "exchange_account_observer": null,
+  "strategy_state": {
+    "par:BRENT": {
+      "position": null,
+      "daily_bias": "NEUTRAL",
+      "candles_held": 0,
+      "candles_since_last_sl": 10001,
+      "last_completed_candle_ms": 1791133200000
+    },
+    "par:BTC": {
+      "position": null,
+      "daily_bias": "NEUTRAL",
+      "candles_held": 0,
+      "candles_since_last_sl": 10001,
+      "last_completed_candle_ms": 1791129960000
+    },
+    "par:ETH": {
+      "position": null,
+      "daily_bias": "NEUTRAL",
+      "candles_held": 0,
+      "candles_since_last_sl": 10001,
+      "last_completed_candle_ms": 1791133260000
+    },
+    "par:EWJ": {
+      "position": null,
+      "daily_bias": "NEUTRAL",
+      "candles_held": 0,
+      "candles_since_last_sl": 10001,
+      "last_completed_candle_ms": 1791116640000
+    },
+    "par:EWY": {
+      "position": null,
+      "daily_bias": "NEUTRAL",
+      "candles_held": 0,
+      "candles_since_last_sl": 10001,
+      "last_completed_candle_ms": 1791133860000
+    },
+    "par:GOLD": {
+      "position": null,
+      "daily_bias": "NEUTRAL",
+      "candles_held": 0,
+      "candles_since_last_sl": 10001,
+      "last_completed_candle_ms": 1791133320000
+    },
+    "par:HYPE": {
+      "position": null,
+      "daily_bias": "NEUTRAL",
+      "candles_held": 0,
+      "candles_since_last_sl": 10001,
+      "last_completed_candle_ms": 1791132360000
+    },
+    "par:SP500": {
+      "position": null,
+      "daily_bias": "NEUTRAL",
+      "candles_held": 0,
+      "candles_since_last_sl": 10001,
+      "last_completed_candle_ms": 1791133500000
+    },
+    "par:USDEUR": {
+      "position": null,
+      "daily_bias": "NEUTRAL",
+      "candles_held": 0,
+      "candles_since_last_sl": 10001,
+      "last_completed_candle_ms": 1791126720000
+    },
+    "par:USDJPY": {
+      "position": null,
+      "daily_bias": "NEUTRAL",
+      "candles_held": 0,
+      "candles_since_last_sl": 10001,
+      "last_completed_candle_ms": 1791122820000
+    }
+  },
+  "provenance": "OFFLINE_REPLAY_OF_LIVE_PUBLIC_PAR_DATA",
+  "observed_at_utc": "2026-10-04T17:15:57.059944+00:00",
+  "assumptions": [
+    "Hypothetical USDPR starting collateral; no wallet balance used.",
+    "Taker fills only from fresh displayed BBO, bounded by displayed size.",
+    "Displayed liquidity consumed once per observation; no invented queue or maker fill.",
+    "Fee rates are explicit paper assumptions; actual wallet tiers not verified.",
+    "Hourly funding uses observed boundary snapshots and is labelled estimated.",
+    "Missed funding boundary pauses entries; no fabricated historical oracle.",
+    "Maintenance uses runtime tiers; no exchange liquidation-price claim.",
+    "Current open positions remain unrealized; no stock EOD liquidation."
+  ]
+}

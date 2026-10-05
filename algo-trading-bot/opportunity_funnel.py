@@ -233,7 +233,9 @@ class OpportunityFunnel:
             values=[t for t in traces if t['symbol']==symbol]
             distributions[symbol]=dict(atr_fraction=distribution([t['metrics'].get('atr_fraction') for t in values],.004),
                 spread_bps=distribution([t['metrics'].get('spread_bps') for t in values],15,below=True))
-        return dict(source=self.source,exchange_orders_submitted=0,session=self._summary(traces),
+        return dict(source=self.source,diagnostic_orders_submitted=0,
+            exchange_orders_submitted=None if self.source=='EXCHANGE_REPORTED_RUNTIME' else 0,
+            session=self._summary(traces),
             per_market=by('symbol'),per_utc_day=by('utc_day'),per_utc_hour=by('utc_hour'),per_weekday=by('weekday'),
             distributions=distributions,
             top3_exclusions=[dict(candidate_id=t['candidate_id'],symbol=t['symbol'],rank=t['scanner_rank'],
