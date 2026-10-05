@@ -172,6 +172,7 @@ class SinglePositionGuard:
         from .event_timing import timing
         self.journal.db.execute('INSERT INTO events(timestamp_ms,kind,data) VALUES (?,?,?)',
             (now_ms,'GLOBAL_POSITION_RECONCILED',canonical(safe_data(dict(**timing(now_ms),state=state.value,
+             session_id=self.journal.session_id,event_type='GLOBAL_POSITION_RECONCILED',candidate_id=None,symbol=None,
              reason=reason,actual_position_count=len(positions),open_order_count=len(orders),
              max_global_positions=1)))))
         return self.report()

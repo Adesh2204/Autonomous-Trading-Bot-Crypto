@@ -22,7 +22,7 @@ import threading
 
 
 class LiveRuntime:
-    def __init__(self,session,authorization,transport,nonces,journal,public_transport,market_stream=None):
+    def __init__(self,session,authorization,transport,nonces,journal,public_transport,market_stream=None,results=None):
         self.session=session
         self.authorization=authorization
         self.transport=transport
@@ -32,6 +32,17 @@ class LiveRuntime:
         self.market_stream=market_stream
         self.market_stop=threading.Event()
         self.market_thread=None
+        self.results=results
+
+    def save_results(self):
+        if self.results is None:
+            return
+        try:
+            self.results.save()
+        except Exception as exc:
+            self.session.execution.entries_paused=True
+            self.journal.event('RESULTS_EXPORT_FAILED',self.session.clock_ms(),error_type=type(exc).__name__)
+            raise ExchangeError('RESULTS_EXPORT_FAILED') from None
 
     def start_market_stream(self):
         if self.market_thread is not None:
@@ -66,7 +77,10 @@ class LiveRuntime:
             while not stop.is_set():
                 try:
                     self.session.cycle()
+                    self.save_results()
                 except ExchangeError as exc:
+                    if str(exc)=='RESULTS_EXPORT_FAILED':
+                        raise  # An unrecorded session cannot continue submitting.
                     self.session.execution.entries_paused=True
                     self.journal.event('RUNTIME_ENTRY_PAUSED',self.session.clock_ms(),error_type=type(exc).__name__)
                     # The same authorization and signing gates apply to existing
@@ -76,13 +90,17 @@ class LiveRuntime:
                         self.session.observe(quotes)
                     except ExchangeError:
                         pass
+                    self.save_results()
                     stop.wait(1)
             clean=True
         except KeyboardInterrupt:
             clean=True
         finally:
             if previous is not None:signal.signal(signal.SIGTERM,previous)
-            self.close(clean=clean)
+            try:
+                self.save_results()
+            finally:
+                self.close(clean=clean)
 
     def close(self,*,clean=True):
         self.deactivate()
@@ -173,7 +191,10 @@ def build_live_runtime(*,team_address,approval,session_id,initial_start_ms,risk_
         holder['stream']=stream
         session.attach_account_stream(stream)
         session.startup()
-        runtime=LiveRuntime(session,authorization,transport,nonces,journal,client.transport,market_stream)
+        from live_session_results import LiveSessionResults
+        results=LiveSessionResults(root/'evidence',session)
+        results.save()
+        runtime=LiveRuntime(session,authorization,transport,nonces,journal,client.transport,market_stream,results)
         runtime.start_market_stream()
         return runtime
     except Exception as exc:

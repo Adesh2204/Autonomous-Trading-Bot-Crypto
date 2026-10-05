@@ -160,8 +160,12 @@ class LiveExecutionSession:
             self.processed_fill_ids.add(fill.identity)
             self.funnel.event('TRADE_PNL' if request.reduce_only and not manager.has_open_position else
                 'ENTRY_FILL' if not request.reduce_only else 'PARTIAL_EXIT',intent['candidate'],{},self.clock_ms())
+            from exchange.sdk_transport import OfflineSDKTransport
+            synthetic=type(self.execution.transport) is OfflineSDKTransport
             self.journal.event('STRATEGY_ACTUAL_FILL',self.clock_ms(),candidate_id=intent['candidate'],
-                               fill=asdict(fill),execution_mode='LIVE_TESTNET',source='EXCHANGE_REPORTED')
+                symbol=fill.symbol,fill=asdict(fill),
+                execution_mode='OFFLINE_SIGNED_FIXTURE' if synthetic else 'LIVE_TESTNET',
+                source='SYNTHETIC_SIGNED_FIXTURE' if synthetic else 'EXCHANGE_REPORTED')
             self._persist(fill.symbol)
         self._save_controls()
 
