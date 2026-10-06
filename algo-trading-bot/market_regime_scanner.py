@@ -56,16 +56,31 @@ class ScanResult:
 
 
 class MarketRegimeScanner:
-    def __init__(self, market, policy, *, session=None):
+    def __init__(self, market, policy, *, session=None, live_authorization=None,
+                 team_address=None, signer_address=None):
         self.market=market
         self.client=market.client
         self.policy=policy
         self.session=session or SessionManager()
         self.brain=FrozenStrategy(market,self.session)
         self.diagnostic_sink=None
+        self.live_authorization=live_authorization
+        self.team_address=team_address
+        self.signer_address=signer_address
+
+    def require_runtime(self):
+        # Public scanning cannot grant an exchange-write permit. The default
+        # remains PAPER; the future owner must supply its exact authorization.
+        if self.live_authorization is None:
+            return require_paper_migration()
+        from exchange.execution_safety import LiveAuthorization
+        if (type(self.live_authorization) is not LiveAuthorization or
+                not isinstance(self.team_address,str) or not isinstance(self.signer_address,str)):
+            raise ExchangeError('SCANNER_RUNTIME_AUTHORIZATION_REQUIRED')
+        self.live_authorization.require(self.team_address,self.signer_address)
 
     def scan(self):
-        require_paper_migration()
+        self.require_runtime()
         self.client.startup()
         p=self.policy
         now=self.client.clock_ms()

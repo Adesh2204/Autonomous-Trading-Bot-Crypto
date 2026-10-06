@@ -1,0 +1,10 @@
+[Unit]
+Description=Check Anchorium PAPER health every minute
+
+[Timer]
+OnBootSec=90
+OnUnitActiveSec=60
+Unit=anchorium-paper-health.service
+
+[Install]
+WantedBy=timers.target

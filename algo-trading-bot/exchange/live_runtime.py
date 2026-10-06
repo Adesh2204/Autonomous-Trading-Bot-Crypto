@@ -19,10 +19,12 @@ from .position_protection import ExchangeProtectionManager,ProtectionPolicy
 from .hyperliquid_market_data import ParMarketDataEngine
 from .stream_first import StreamFirstMarketData
 import threading
+import time
+from .runtime_schedule import RuntimeSchedule
 
 
 class LiveRuntime:
-    def __init__(self,session,authorization,transport,nonces,journal,public_transport,market_stream=None,results=None):
+    def __init__(self,session,authorization,transport,nonces,journal,public_transport,market_stream=None,results=None,*,schedule=None,monotonic=None):
         self.session=session
         self.authorization=authorization
         self.transport=transport
@@ -33,6 +35,8 @@ class LiveRuntime:
         self.market_stop=threading.Event()
         self.market_thread=None
         self.results=results
+        self.schedule=schedule or RuntimeSchedule()
+        self.monotonic=monotonic or time.monotonic
 
     def save_results(self):
         if self.results is None:
@@ -73,11 +77,22 @@ class LiveRuntime:
             previous=signal.getsignal(signal.SIGTERM)
             signal.signal(signal.SIGTERM,lambda *_:stop.set())
         clean=False
+        next_scan=next_export=0
         try:
             while not stop.is_set():
                 try:
-                    self.session.cycle()
-                    self.save_results()
+                    now=self.monotonic()
+                    due=now>=next_scan
+                    if due:
+                        # Failed scans also consume their scheduling slot.
+                        next_scan=now+self.schedule.scan_interval_seconds
+                    if due:
+                        self.session.cycle()
+                    else:
+                        self.session.cycle(scan=False)
+                    if now>=next_export:
+                        self.save_results()
+                        next_export=now+self.schedule.export_interval_seconds
                 except ExchangeError as exc:
                     if str(exc)=='RESULTS_EXPORT_FAILED':
                         raise  # An unrecorded session cannot continue submitting.
@@ -91,7 +106,7 @@ class LiveRuntime:
                     except ExchangeError:
                         pass
                     self.save_results()
-                    stop.wait(1)
+                stop.wait(self.schedule.management_interval_seconds)
             clean=True
         except KeyboardInterrupt:
             clean=True
@@ -119,7 +134,7 @@ class LiveRuntime:
 
 def build_live_runtime(*,team_address,approval,session_id,initial_start_ms,risk_policy,
                        scanner_policy,state_directory,fee_scale_verified=None,rate_policy=None,
-                       protection_policy=None,clock_policy=None):
+                       protection_policy=None,clock_policy=None,schedule=None):
     """Called only in a separately authorized future testnet activation.
 
     PAPER/false stops before reading a key or opening an exchange client.
@@ -185,7 +200,9 @@ def build_live_runtime(*,team_address,approval,session_id,initial_start_ms,risk_
         fees=FeeSchedule(decimal(base_fees['userAddRate'],nonnegative=True)*multiplier,
                          decimal(base_fees['userCrossRate'],nonnegative=True)*multiplier,
                          'VERIFIED_PAR_DEPLOYER_SCALE_1_TIMES_REPORTED_USER_BASE_RATES')
-        session=LiveExecutionSession(market,MarketRegimeScanner(market,scanner_policy),executor,
+        scanner=MarketRegimeScanner(market,scanner_policy,live_authorization=authorization,
+                                   team_address=team_address,signer_address=signer.address)
+        session=LiveExecutionSession(market,scanner,executor,
                                      PortfolioRisk(risk_policy,fees))
         stream=LiveAccountStream(team_address,recovery,executor,clock_ms=client.clock_ms)
         holder['stream']=stream
@@ -194,7 +211,7 @@ def build_live_runtime(*,team_address,approval,session_id,initial_start_ms,risk_
         from live_session_results import LiveSessionResults
         results=LiveSessionResults(root/'evidence',session)
         results.save()
-        runtime=LiveRuntime(session,authorization,transport,nonces,journal,client.transport,market_stream,results)
+        runtime=LiveRuntime(session,authorization,transport,nonces,journal,client.transport,market_stream,results,schedule=schedule)
         runtime.start_market_stream()
         return runtime
     except Exception as exc:

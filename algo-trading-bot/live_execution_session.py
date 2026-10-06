@@ -415,11 +415,28 @@ class LiveExecutionSession:
                 self.funnel.event('ENTRY_REJECTED',candidate,dict(reason=str(exc)),self.clock_ms())
             self._persist(symbol)
 
-    def cycle(self):
+    def cycle(self, *, scan=True):
         if self.account_stream is not None:
             if not self.account_stream.connected:
                 self.account_stream.connect()
             self.account_stream.poll()
             if self.account_stream.pending:
                 self.account_stream.reconcile()
-        return self.consume_scan(self.scanner.scan())
+        if scan:
+            return self.consume_scan(self.scanner.scan())
+        self._account_barrier()
+        self.observe({s:self.market.get_quote(s) for s in self.recovery.state.positions})
+        engine=getattr(self.market,'engine',None)
+        if engine is not None and engine.connected and engine.reconciled:
+            histories={s:engine.get_completed_candles(s) for s in self.managers}
+            now=self.clock_ms()
+            self.observe_completed_candles({s:bars for s,bars in histories.items()
+                if bars and 0<=now-(bars[-1].timestamp_ms+60000)<=self.risk.policy.max_candle_age_ms})
+        if self.portfolio is not None:
+            now=self.clock_ms()
+            if self.portfolio.account_observed_ms is None or now-self.portfolio.account_observed_ms>=3000:
+                symbol=next(iter(self.recovery.state.positions),'par:BTC')
+                from exchange.reliability_policy import RequestPriority
+                active=self.recovery.account._query('activeAssetData',coin=symbol,priority=RequestPriority.SAFETY)
+                self.portfolio.observe_buying_power(active,self.clock_ms())
+            self._performance(self.portfolio.snapshot(self.quotes,self.clock_ms()))

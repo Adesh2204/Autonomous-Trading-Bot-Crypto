@@ -1,0 +1,35 @@
+[Unit]
+Description=Anchorium public-data PAPER practice
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=anchorium
+Group=anchorium
+WorkingDirectory=/opt/anchorium
+Environment=EXECUTION_MODE=PAPER
+Environment=ALLOW_LIVE_ORDERS=false
+Environment=HL_NETWORK=testnet
+Environment=HL_DEX=par
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/anchorium/.venv/bin/python /opt/anchorium/scripts/run_practice.py --state-directory /var/lib/anchorium/paper --output-root /var/lib/anchorium/evidence
+StateDirectory=anchorium
+UMask=0077
+Restart=on-failure
+RestartSec=30
+KillSignal=SIGINT
+TimeoutStopSec=45
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/anchorium
+MemoryMax=3G
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

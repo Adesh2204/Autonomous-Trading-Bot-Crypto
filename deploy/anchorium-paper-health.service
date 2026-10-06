@@ -1,0 +1,13 @@
+[Unit]
+Description=Check Anchorium PAPER heartbeat and data health
+
+[Service]
+Type=oneshot
+User=anchorium
+Group=anchorium
+ExecStart=/opt/anchorium/.venv/bin/python /opt/anchorium/scripts/check_practice_health.py --state-directory /var/lib/anchorium/paper
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+StandardOutput=journal
+StandardError=journal
