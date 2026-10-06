@@ -1,0 +1,1765 @@
+{
+  "execution_mode": "PAPER",
+  "readiness": {
+    "account_status": "NOT_CONFIGURED",
+    "wallet_ready": false,
+    "public_address_configured": false,
+    "market_data_ready": true,
+    "paper_trading_ready": true,
+    "live_execution_ready": false,
+    "signed_actions": "DISABLED",
+    "reason": "Manual funded-wallet verification and explicit future authorization required"
+  },
+  "allow_live_orders": false,
+  "exchange_orders_submitted": 0,
+  "balance_origin": "HYPOTHETICAL_LOCAL_USDPR",
+  "starting_collateral": "20000",
+  "portfolio": {
+    "timestamp_ms": 1791198841313,
+    "cash": "20000",
+    "unrealized_pnl": "0",
+    "equity": "20000",
+    "initial_margin": "0",
+    "maintenance_margin_estimate": "0",
+    "order_reservations": "0",
+    "available_margin": "20000",
+    "gross_notional": "0",
+    "realized_pnl": "0",
+    "fees_paid": "0",
+    "funding_cashflow": "0",
+    "collateral": "USDPR"
+  },
+  "positions": [],
+  "scan_status": "NO_TRADE",
+  "watchlist": [],
+  "scanned_markets": 10,
+  "diagnostics": [
+    {
+      "symbol": "par:BRENT",
+      "qualified": false,
+      "reasons": [
+        "ATR_BELOW_BASELINE_SCANNER_FLOOR",
+        "SPREAD_TOO_WIDE"
+      ],
+      "metrics": {
+        "vwap": "101.78414384118891",
+        "ema9": "102.52591627681544",
+        "ema21": "102.46150312712537",
+        "atr": "0.04142857142857131",
+        "close": "102.54",
+        "atr_fraction": "0.0004040235169550547103569338795",
+        "atr_percent": "0.04040235169550547103569338795",
+        "spread_bps": "19.48178453146308201831287746",
+        "window_notional_approx": "8665.2961",
+        "bbo_notional": "4999.2740",
+        "best_bid": "102.56",
+        "best_ask": "102.76",
+        "spread": "0.20",
+        "bid_depth_notional": "100009.18456",
+        "ask_depth_notional": "99997.4057",
+        "orderbook_imbalance": "0.00005889235942019703726136608955",
+        "ema_strength_fraction": "0.0006281758307984201287302516091",
+        "trend": "BULLISH",
+        "vwap_distance_fraction": "0.007426069820761397203981222457",
+        "realized_volatility": "0.00115124781658237",
+        "hourly_funding": "-0.0000016882",
+        "open_interest": "64.86",
+        "daily_notional_volume": "34451.4615",
+        "candle_count": 687
+      },
+      "score": "0",
+      "signal": {
+        "symbol": "par:BRENT",
+        "timestamp_ms": 1791198720000,
+        "reference": "101.78414384118891",
+        "atr": "0.04142857142857131",
+        "bias": "LONG_BIAS",
+        "long": false,
+        "short": false,
+        "signal_type": null
+      },
+      "market_snapshot": {
+        "symbol": "par:BRENT",
+        "bid": "102.56",
+        "ask": "102.76",
+        "mid": "102.66",
+        "mark_price": "102.61",
+        "oracle_price": "102.61",
+        "funding": "-0.0000016882",
+        "open_interest": "64.86",
+        "bid_quantity": "48.75",
+        "ask_quantity": "48.65",
+        "spread": "0.20",
+        "spread_bps": "19.48178453146308201831287746",
+        "bid_depth_notional": "100009.18456",
+        "ask_depth_notional": "99997.4057",
+        "orderbook_imbalance": "0.00005889235942019703726136608955",
+        "orderbook_timestamp_ms": 1791198832901,
+        "mark_observed_at_ms": 1791198832995,
+        "last_trade_price": null,
+        "last_trade_timestamp_ms": null,
+        "exchange_ts": "2026-10-05T11:13:52.901+00:00",
+        "received_ts": "2026-10-05T11:13:53.649+00:00",
+        "processed_ts": "2026-10-05T11:13:53.649+00:00"
+      }
+    },
+    {
+      "symbol": "par:BTC",
+      "qualified": false,
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "metrics": {},
+      "score": "0",
+      "signal": null,
+      "market_snapshot": null
+    },
+    {
+      "symbol": "par:ETH",
+      "qualified": false,
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "metrics": {},
+      "score": "0",
+      "signal": null,
+      "market_snapshot": null
+    },
+    {
+      "symbol": "par:EWJ",
+      "qualified": false,
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "metrics": {},
+      "score": "0",
+      "signal": null,
+      "market_snapshot": null
+    },
+    {
+      "symbol": "par:EWY",
+      "qualified": false,
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "metrics": {},
+      "score": "0",
+      "signal": null,
+      "market_snapshot": null
+    },
+    {
+      "symbol": "par:GOLD",
+      "qualified": false,
+      "reasons": [
+        "ATR_BELOW_BASELINE_SCANNER_FLOOR",
+        "SPREAD_TOO_WIDE"
+      ],
+      "metrics": {
+        "vwap": "4160.377777777779",
+        "ema9": "4160.861619061659",
+        "ema21": "4161.24199615386",
+        "atr": "0.599999999999974",
+        "close": "4160.8",
+        "atr_fraction": "0.0001442030378773250336473755047",
+        "atr_percent": "0.01442030378773250336473755047",
+        "spread_bps": "20.16806722689075630252100840",
+        "window_notional_approx": "6462.16539",
+        "bbo_notional": "4639.70808",
+        "best_bid": "4160.8",
+        "best_ask": "4169.2",
+        "spread": "8.4",
+        "bid_depth_notional": "99650.80231",
+        "ask_depth_notional": "99788.17860",
+        "orderbook_imbalance": "-0.0006888136380018569560389356685",
+        "ema_strength_fraction": "0.00009141922039054989425110555662",
+        "trend": "BEARISH",
+        "vwap_distance_fraction": "0.0001014865103059283848060909702",
+        "realized_volatility": "0.0005167551158169745",
+        "hourly_funding": "0.00000625",
+        "open_interest": "0.9412",
+        "daily_notional_volume": "14537.35962",
+        "candle_count": 687
+      },
+      "score": "0",
+      "signal": {
+        "symbol": "par:GOLD",
+        "timestamp_ms": 1791198720000,
+        "reference": "4160.377777777779",
+        "atr": "0.599999999999974",
+        "bias": "NEUTRAL",
+        "long": false,
+        "short": false,
+        "signal_type": null
+      },
+      "market_snapshot": {
+        "symbol": "par:GOLD",
+        "bid": "4160.8",
+        "ask": "4169.2",
+        "mid": "4165.0",
+        "mark_price": "4164.3",
+        "oracle_price": "4164.3",
+        "funding": "0.00000625",
+        "open_interest": "0.9412",
+        "bid_quantity": "1.1151",
+        "ask_quantity": "1.1487",
+        "spread": "8.4",
+        "spread_bps": "20.16806722689075630252100840",
+        "bid_depth_notional": "99650.80231",
+        "ask_depth_notional": "99788.17860",
+        "orderbook_imbalance": "-0.0006888136380018569560389356685",
+        "orderbook_timestamp_ms": 1791198836073,
+        "mark_observed_at_ms": 1791198832995,
+        "last_trade_price": null,
+        "last_trade_timestamp_ms": null,
+        "exchange_ts": "2026-10-05T11:13:56.073+00:00",
+        "received_ts": "2026-10-05T11:13:56.539+00:00",
+        "processed_ts": "2026-10-05T11:13:56.539+00:00"
+      }
+    },
+    {
+      "symbol": "par:HYPE",
+      "qualified": false,
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "metrics": {},
+      "score": "0",
+      "signal": null,
+      "market_snapshot": null
+    },
+    {
+      "symbol": "par:SP500",
+      "qualified": false,
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "metrics": {},
+      "score": "0",
+      "signal": null,
+      "market_snapshot": null
+    },
+    {
+      "symbol": "par:USDEUR",
+      "qualified": false,
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "metrics": {},
+      "score": "0",
+      "signal": null,
+      "market_snapshot": null
+    },
+    {
+      "symbol": "par:USDJPY",
+      "qualified": false,
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "metrics": {},
+      "score": "0",
+      "signal": null,
+      "market_snapshot": null
+    }
+  ],
+  "local_orders": 0,
+  "local_fills": 0,
+  "decisions": [
+    {
+      "kind": "PAPER_ACCOUNT_RECONCILED",
+      "timestamp_ms": 1791198839392,
+      "exchange_ts": null,
+      "received_ts": "2026-10-05T11:13:59.392+00:00",
+      "processed_ts": "2026-10-05T11:13:59.392+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "report": {
+        "source": "LOCAL_PAPER_FILL_REPLAY",
+        "exchange_account_verified": false,
+        "entries_paused": false,
+        "reasons": [],
+        "position_corrections": {},
+        "position_count": 0,
+        "open_order_count": 0,
+        "fill_count": 0,
+        "funding_event_count": 0,
+        "reported_equity": "20000",
+        "exchange_orders_submitted": 0,
+        "recovered_at_ms": 1791198839392
+      },
+      "candidate_id": null
+    },
+    {
+      "kind": "MARKET_DATA",
+      "timestamp_ms": 1791198840466,
+      "exchange_ts": "2026-10-05T11:13:52.901+00:00",
+      "received_ts": "2026-10-05T11:13:53.649+00:00",
+      "processed_ts": "2026-10-05T11:13:53.649+00:00",
+      "symbol": "par:BRENT",
+      "candidate_id": "par:BRENT:1791198838516",
+      "metrics": {
+        "vwap": "101.78414384118891",
+        "ema9": "102.52591627681544",
+        "ema21": "102.46150312712537",
+        "atr": "0.04142857142857131",
+        "close": "102.54",
+        "atr_fraction": "0.0004040235169550547103569338795",
+        "atr_percent": "0.04040235169550547103569338795",
+        "spread_bps": "19.48178453146308201831287746",
+        "window_notional_approx": "8665.2961",
+        "bbo_notional": "4999.2740",
+        "best_bid": "102.56",
+        "best_ask": "102.76",
+        "spread": "0.20",
+        "bid_depth_notional": "100009.18456",
+        "ask_depth_notional": "99997.4057",
+        "orderbook_imbalance": "0.00005889235942019703726136608955",
+        "ema_strength_fraction": "0.0006281758307984201287302516091",
+        "trend": "BULLISH",
+        "vwap_distance_fraction": "0.007426069820761397203981222457",
+        "realized_volatility": "0.00115124781658237",
+        "hourly_funding": "-0.0000016882",
+        "open_interest": "64.86",
+        "daily_notional_volume": "34451.4615",
+        "candle_count": 687
+      },
+      "market_snapshot": {
+        "symbol": "par:BRENT",
+        "bid": "102.56",
+        "ask": "102.76",
+        "mid": "102.66",
+        "mark_price": "102.61",
+        "oracle_price": "102.61",
+        "funding": "-0.0000016882",
+        "open_interest": "64.86",
+        "bid_quantity": "48.75",
+        "ask_quantity": "48.65",
+        "spread": "0.20",
+        "spread_bps": "19.48178453146308201831287746",
+        "bid_depth_notional": "100009.18456",
+        "ask_depth_notional": "99997.4057",
+        "orderbook_imbalance": "0.00005889235942019703726136608955",
+        "orderbook_timestamp_ms": 1791198832901,
+        "mark_observed_at_ms": 1791198832995,
+        "last_trade_price": null,
+        "last_trade_timestamp_ms": null,
+        "exchange_ts": "2026-10-05T11:13:52.901+00:00",
+        "received_ts": "2026-10-05T11:13:53.649+00:00",
+        "processed_ts": "2026-10-05T11:13:53.649+00:00"
+      },
+      "candle_timestamp_ms": 1791198720000,
+      "data_status": "PASS",
+      "reasons": [
+        "ATR_BELOW_BASELINE_SCANNER_FLOOR",
+        "SPREAD_TOO_WIDE"
+      ]
+    },
+    {
+      "kind": "SIGNAL",
+      "timestamp_ms": 1791198840466,
+      "exchange_ts": null,
+      "received_ts": "2026-10-05T11:13:53.475+00:00",
+      "processed_ts": "2026-10-05T11:13:54.081+00:00",
+      "timestamp_source": "LOCAL_FROZEN_STRATEGY",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 606,
+      "clock_skew_detected": false,
+      "symbol": "par:BRENT",
+      "candidate_id": "par:BRENT:1791198838516",
+      "signal": {
+        "symbol": "par:BRENT",
+        "timestamp_ms": 1791198720000,
+        "reference": "101.78414384118891",
+        "atr": "0.04142857142857131",
+        "bias": "LONG_BIAS",
+        "long": false,
+        "short": false,
+        "signal_type": null
+      },
+      "metrics": {
+        "vwap": "101.78414384118891",
+        "ema9": "102.52591627681544",
+        "ema21": "102.46150312712537",
+        "atr": "0.04142857142857131",
+        "close": "102.54",
+        "atr_fraction": "0.0004040235169550547103569338795",
+        "atr_percent": "0.04040235169550547103569338795",
+        "spread_bps": "19.48178453146308201831287746",
+        "window_notional_approx": "8665.2961",
+        "bbo_notional": "4999.2740",
+        "best_bid": "102.56",
+        "best_ask": "102.76",
+        "spread": "0.20",
+        "bid_depth_notional": "100009.18456",
+        "ask_depth_notional": "99997.4057",
+        "orderbook_imbalance": "0.00005889235942019703726136608955",
+        "ema_strength_fraction": "0.0006281758307984201287302516091",
+        "trend": "BULLISH",
+        "vwap_distance_fraction": "0.007426069820761397203981222457",
+        "realized_volatility": "0.00115124781658237",
+        "hourly_funding": "-0.0000016882",
+        "open_interest": "64.86",
+        "daily_notional_volume": "34451.4615",
+        "candle_count": 687
+      },
+      "scan_selected": false,
+      "signal_status": "NO_SIGNAL",
+      "scanner_status": "REJECTED",
+      "input_timing": {
+        "exchange_ts": null,
+        "received_ts": "2026-10-05T11:13:53.475+00:00",
+        "processed_ts": "2026-10-05T11:13:54.081+00:00",
+        "timestamp_source": "LOCAL_FROZEN_STRATEGY",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 606,
+        "clock_skew_detected": false
+      },
+      "input_candle_close_ms": 1791198779999
+    },
+    {
+      "kind": "ENTRY_REJECTED",
+      "timestamp_ms": 1791198840466,
+      "exchange_ts": null,
+      "received_ts": "2026-10-05T11:14:00.466+00:00",
+      "processed_ts": "2026-10-05T11:14:00.466+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:BRENT",
+      "candidate_id": "par:BRENT:1791198838516",
+      "reason": "ATR_BELOW_BASELINE_SCANNER_FLOOR",
+      "stage": "SCANNER",
+      "risk_status": "NOT_REACHED",
+      "execution_status": "NOT_REACHED"
+    },
+    {
+      "kind": "MARKET_DATA",
+      "timestamp_ms": 1791198840466,
+      "exchange_ts": null,
+      "received_ts": "2026-10-05T11:14:00.466+00:00",
+      "processed_ts": "2026-10-05T11:14:00.466+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:BTC",
+      "candidate_id": "par:BTC:1791198838516",
+      "metrics": {},
+      "market_snapshot": null,
+      "candle_timestamp_ms": null,
+      "data_status": "UNAVAILABLE",
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ]
+    },
+    {
+      "kind": "SIGNAL",
+      "timestamp_ms": 1791198840466,
+      "exchange_ts": null,
+      "received_ts": "2026-10-05T11:13:54.565+00:00",
+      "processed_ts": "2026-10-05T11:13:54.565+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:BTC",
+      "candidate_id": "par:BTC:1791198838516",
+      "signal": {},
+      "metrics": {},
+      "scan_selected": false,
+      "signal_status": "NO_SIGNAL",
+      "scanner_status": "REJECTED",
+      "input_timing": {
+        "exchange_ts": null,
+        "received_ts": "2026-10-05T11:13:54.565+00:00",
+        "processed_ts": "2026-10-05T11:13:54.565+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      "input_candle_close_ms": 1791197699999
+    },
+    {
+      "kind": "ENTRY_REJECTED",
+      "timestamp_ms": 1791198840466,
+      "exchange_ts": null,
+      "received_ts": "2026-10-05T11:14:00.466+00:00",
+      "processed_ts": "2026-10-05T11:14:00.466+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:BTC",
+      "candidate_id": "par:BTC:1791198838516",
+      "reason": "COMPLETED_CANDLE_STALE",
+      "stage": "SCANNER",
+      "risk_status": "NOT_REACHED",
+      "execution_status": "NOT_REACHED"
+    },
+    {
+      "kind": "MARKET_DATA",
+      "timestamp_ms": 1791198840466,
+      "exchange_ts": null,
+      "received_ts": "2026-10-05T11:14:00.466+00:00",
+      "processed_ts": "2026-10-05T11:14:00.466+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:ETH",
+      "candidate_id": "par:ETH:1791198838516",
+      "metrics": {},
+      "market_snapshot": null,
+      "candle_timestamp_ms": null,
+      "data_status": "UNAVAILABLE",
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ]
+    },
+    {
+      "kind": "SIGNAL",
+      "timestamp_ms": 1791198840466,
+      "exchange_ts": null,
+      "received_ts": "2026-10-05T11:13:55.054+00:00",
+      "processed_ts": "2026-10-05T11:13:55.054+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:ETH",
+      "candidate_id": "par:ETH:1791198838516",
+      "signal": {},
+      "metrics": {},
+      "scan_selected": false,
+      "signal_status": "NO_SIGNAL",
+      "scanner_status": "REJECTED",
+      "input_timing": {
+        "exchange_ts": null,
+        "received_ts": "2026-10-05T11:13:55.054+00:00",
+        "processed_ts": "2026-10-05T11:13:55.054+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      "input_candle_close_ms": 1791198359999
+    },
+    {
+      "kind": "ENTRY_REJECTED",
+      "timestamp_ms": 1791198840466,
+      "exchange_ts": null,
+      "received_ts": "2026-10-05T11:14:00.466+00:00",
+      "processed_ts": "2026-10-05T11:14:00.466+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:ETH",
+      "candidate_id": "par:ETH:1791198838516",
+      "reason": "COMPLETED_CANDLE_STALE",
+      "stage": "SCANNER",
+      "risk_status": "NOT_REACHED",
+      "execution_status": "NOT_REACHED"
+    },
+    {
+      "kind": "MARKET_DATA",
+      "timestamp_ms": 1791198840466,
+      "exchange_ts": null,
+      "received_ts": "2026-10-05T11:14:00.466+00:00",
+      "processed_ts": "2026-10-05T11:14:00.466+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:EWJ",
+      "candidate_id": "par:EWJ:1791198838516",
+      "metrics": {},
+      "market_snapshot": null,
+      "candle_timestamp_ms": null,
+      "data_status": "UNAVAILABLE",
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ]
+    },
+    {
+      "kind": "SIGNAL",
+      "timestamp_ms": 1791198840466,
+      "exchange_ts": null,
+      "received_ts": "2026-10-05T11:13:55.529+00:00",
+      "processed_ts": "2026-10-05T11:13:55.529+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:EWJ",
+      "candidate_id": "par:EWJ:1791198838516",
+      "signal": {},
+      "metrics": {},
+      "scan_selected": false,
+      "signal_status": "NO_SIGNAL",
+      "scanner_status": "REJECTED",
+      "input_timing": {
+        "exchange_ts": null,
+        "received_ts": "2026-10-05T11:13:55.529+00:00",
+        "processed_ts": "2026-10-05T11:13:55.529+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      "input_candle_close_ms": 1791193439999
+    },
+    {
+      "kind": "ENTRY_REJECTED",
+      "timestamp_ms": 1791198840466,
+      "exchange_ts": null,
+      "received_ts": "2026-10-05T11:14:00.466+00:00",
+      "processed_ts": "2026-10-05T11:14:00.466+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:EWJ",
+      "candidate_id": "par:EWJ:1791198838516",
+      "reason": "COMPLETED_CANDLE_STALE",
+      "stage": "SCANNER",
+      "risk_status": "NOT_REACHED",
+      "execution_status": "NOT_REACHED"
+    },
+    {
+      "kind": "MARKET_DATA",
+      "timestamp_ms": 1791198840466,
+      "exchange_ts": null,
+      "received_ts": "2026-10-05T11:14:00.466+00:00",
+      "processed_ts": "2026-10-05T11:14:00.466+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:EWY",
+      "candidate_id": "par:EWY:1791198838516",
+      "metrics": {},
+      "market_snapshot": null,
+      "candle_timestamp_ms": null,
+      "data_status": "UNAVAILABLE",
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ]
+    },
+    {
+      "kind": "SIGNAL",
+      "timestamp_ms": 1791198840466,
+      "exchange_ts": null,
+      "received_ts": "2026-10-05T11:13:55.875+00:00",
+      "processed_ts": "2026-10-05T11:13:55.875+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:EWY",
+      "candidate_id": "par:EWY:1791198838516",
+      "signal": {},
+      "metrics": {},
+      "scan_selected": false,
+      "signal_status": "NO_SIGNAL",
+      "scanner_status": "REJECTED",
+      "input_timing": {
+        "exchange_ts": null,
+        "received_ts": "2026-10-05T11:13:55.875+00:00",
+        "processed_ts": "2026-10-05T11:13:55.875+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      "input_candle_close_ms": 1791187319999
+    },
+    {
+      "kind": "ENTRY_REJECTED",
+      "timestamp_ms": 1791198840466,
+      "exchange_ts": null,
+      "received_ts": "2026-10-05T11:14:00.466+00:00",
+      "processed_ts": "2026-10-05T11:14:00.466+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:EWY",
+      "candidate_id": "par:EWY:1791198838516",
+      "reason": "COMPLETED_CANDLE_STALE",
+      "stage": "SCANNER",
+      "risk_status": "NOT_REACHED",
+      "execution_status": "NOT_REACHED"
+    },
+    {
+      "kind": "MARKET_DATA",
+      "timestamp_ms": 1791198840466,
+      "exchange_ts": "2026-10-05T11:13:56.073+00:00",
+      "received_ts": "2026-10-05T11:13:56.539+00:00",
+      "processed_ts": "2026-10-05T11:13:56.539+00:00",
+      "symbol": "par:GOLD",
+      "candidate_id": "par:GOLD:1791198838516",
+      "metrics": {
+        "vwap": "4160.377777777779",
+        "ema9": "4160.861619061659",
+        "ema21": "4161.24199615386",
+        "atr": "0.599999999999974",
+        "close": "4160.8",
+        "atr_fraction": "0.0001442030378773250336473755047",
+        "atr_percent": "0.01442030378773250336473755047",
+        "spread_bps": "20.16806722689075630252100840",
+        "window_notional_approx": "6462.16539",
+        "bbo_notional": "4639.70808",
+        "best_bid": "4160.8",
+        "best_ask": "4169.2",
+        "spread": "8.4",
+        "bid_depth_notional": "99650.80231",
+        "ask_depth_notional": "99788.17860",
+        "orderbook_imbalance": "-0.0006888136380018569560389356685",
+        "ema_strength_fraction": "0.00009141922039054989425110555662",
+        "trend": "BEARISH",
+        "vwap_distance_fraction": "0.0001014865103059283848060909702",
+        "realized_volatility": "0.0005167551158169745",
+        "hourly_funding": "0.00000625",
+        "open_interest": "0.9412",
+        "daily_notional_volume": "14537.35962",
+        "candle_count": 687
+      },
+      "market_snapshot": {
+        "symbol": "par:GOLD",
+        "bid": "4160.8",
+        "ask": "4169.2",
+        "mid": "4165.0",
+        "mark_price": "4164.3",
+        "oracle_price": "4164.3",
+        "funding": "0.00000625",
+        "open_interest": "0.9412",
+        "bid_quantity": "1.1151",
+        "ask_quantity": "1.1487",
+        "spread": "8.4",
+        "spread_bps": "20.16806722689075630252100840",
+        "bid_depth_notional": "99650.80231",
+        "ask_depth_notional": "99788.17860",
+        "orderbook_imbalance": "-0.0006888136380018569560389356685",
+        "orderbook_timestamp_ms": 1791198836073,
+        "mark_observed_at_ms": 1791198832995,
+        "last_trade_price": null,
+        "last_trade_timestamp_ms": null,
+        "exchange_ts": "2026-10-05T11:13:56.073+00:00",
+        "received_ts": "2026-10-05T11:13:56.539+00:00",
+        "processed_ts": "2026-10-05T11:13:56.539+00:00"
+      },
+      "candle_timestamp_ms": 1791198720000,
+      "data_status": "PASS",
+      "reasons": [
+        "ATR_BELOW_BASELINE_SCANNER_FLOOR",
+        "SPREAD_TOO_WIDE"
+      ]
+    },
+    {
+      "kind": "SIGNAL",
+      "timestamp_ms": 1791198840466,
+      "exchange_ts": null,
+      "received_ts": "2026-10-05T11:13:56.372+00:00",
+      "processed_ts": "2026-10-05T11:13:56.719+00:00",
+      "timestamp_source": "LOCAL_FROZEN_STRATEGY",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 347,
+      "clock_skew_detected": false,
+      "symbol": "par:GOLD",
+      "candidate_id": "par:GOLD:1791198838516",
+      "signal": {
+        "symbol": "par:GOLD",
+        "timestamp_ms": 1791198720000,
+        "reference": "4160.377777777779",
+        "atr": "0.599999999999974",
+        "bias": "NEUTRAL",
+        "long": false,
+        "short": false,
+        "signal_type": null
+      },
+      "metrics": {
+        "vwap": "4160.377777777779",
+        "ema9": "4160.861619061659",
+        "ema21": "4161.24199615386",
+        "atr": "0.599999999999974",
+        "close": "4160.8",
+        "atr_fraction": "0.0001442030378773250336473755047",
+        "atr_percent": "0.01442030378773250336473755047",
+        "spread_bps": "20.16806722689075630252100840",
+        "window_notional_approx": "6462.16539",
+        "bbo_notional": "4639.70808",
+        "best_bid": "4160.8",
+        "best_ask": "4169.2",
+        "spread": "8.4",
+        "bid_depth_notional": "99650.80231",
+        "ask_depth_notional": "99788.17860",
+        "orderbook_imbalance": "-0.0006888136380018569560389356685",
+        "ema_strength_fraction": "0.00009141922039054989425110555662",
+        "trend": "BEARISH",
+        "vwap_distance_fraction": "0.0001014865103059283848060909702",
+        "realized_volatility": "0.0005167551158169745",
+        "hourly_funding": "0.00000625",
+        "open_interest": "0.9412",
+        "daily_notional_volume": "14537.35962",
+        "candle_count": 687
+      },
+      "scan_selected": false,
+      "signal_status": "NO_SIGNAL",
+      "scanner_status": "REJECTED",
+      "input_timing": {
+        "exchange_ts": null,
+        "received_ts": "2026-10-05T11:13:56.372+00:00",
+        "processed_ts": "2026-10-05T11:13:56.719+00:00",
+        "timestamp_source": "LOCAL_FROZEN_STRATEGY",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 347,
+        "clock_skew_detected": false
+      },
+      "input_candle_close_ms": 1791198779999
+    },
+    {
+      "kind": "ENTRY_REJECTED",
+      "timestamp_ms": 1791198840466,
+      "exchange_ts": null,
+      "received_ts": "2026-10-05T11:14:00.466+00:00",
+      "processed_ts": "2026-10-05T11:14:00.466+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:GOLD",
+      "candidate_id": "par:GOLD:1791198838516",
+      "reason": "ATR_BELOW_BASELINE_SCANNER_FLOOR",
+      "stage": "SCANNER",
+      "risk_status": "NOT_REACHED",
+      "execution_status": "NOT_REACHED"
+    },
+    {
+      "kind": "MARKET_DATA",
+      "timestamp_ms": 1791198840466,
+      "exchange_ts": null,
+      "received_ts": "2026-10-05T11:14:00.466+00:00",
+      "processed_ts": "2026-10-05T11:14:00.466+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:HYPE",
+      "candidate_id": "par:HYPE:1791198838516",
+      "metrics": {},
+      "market_snapshot": null,
+      "candle_timestamp_ms": null,
+      "data_status": "UNAVAILABLE",
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ]
+    },
+    {
+      "kind": "SIGNAL",
+      "timestamp_ms": 1791198840466,
+      "exchange_ts": null,
+      "received_ts": "2026-10-05T11:13:57.360+00:00",
+      "processed_ts": "2026-10-05T11:13:57.360+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:HYPE",
+      "candidate_id": "par:HYPE:1791198838516",
+      "signal": {},
+      "metrics": {},
+      "scan_selected": false,
+      "signal_status": "NO_SIGNAL",
+      "scanner_status": "REJECTED",
+      "input_timing": {
+        "exchange_ts": null,
+        "received_ts": "2026-10-05T11:13:57.360+00:00",
+        "processed_ts": "2026-10-05T11:13:57.360+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      "input_candle_close_ms": 1791198239999
+    },
+    {
+      "kind": "ENTRY_REJECTED",
+      "timestamp_ms": 1791198840466,
+      "exchange_ts": null,
+      "received_ts": "2026-10-05T11:14:00.466+00:00",
+      "processed_ts": "2026-10-05T11:14:00.466+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:HYPE",
+      "candidate_id": "par:HYPE:1791198838516",
+      "reason": "COMPLETED_CANDLE_STALE",
+      "stage": "SCANNER",
+      "risk_status": "NOT_REACHED",
+      "execution_status": "NOT_REACHED"
+    },
+    {
+      "kind": "MARKET_DATA",
+      "timestamp_ms": 1791198840466,
+      "exchange_ts": null,
+      "received_ts": "2026-10-05T11:14:00.466+00:00",
+      "processed_ts": "2026-10-05T11:14:00.466+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:SP500",
+      "candidate_id": "par:SP500:1791198838516",
+      "metrics": {},
+      "market_snapshot": null,
+      "candle_timestamp_ms": null,
+      "data_status": "UNAVAILABLE",
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ]
+    },
+    {
+      "kind": "SIGNAL",
+      "timestamp_ms": 1791198840466,
+      "exchange_ts": null,
+      "received_ts": "2026-10-05T11:13:57.545+00:00",
+      "processed_ts": "2026-10-05T11:13:57.545+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:SP500",
+      "candidate_id": "par:SP500:1791198838516",
+      "signal": {},
+      "metrics": {},
+      "scan_selected": false,
+      "signal_status": "NO_SIGNAL",
+      "scanner_status": "REJECTED",
+      "input_timing": {
+        "exchange_ts": null,
+        "received_ts": "2026-10-05T11:13:57.545+00:00",
+        "processed_ts": "2026-10-05T11:13:57.545+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      "input_candle_close_ms": 1791198599999
+    },
+    {
+      "kind": "ENTRY_REJECTED",
+      "timestamp_ms": 1791198840466,
+      "exchange_ts": null,
+      "received_ts": "2026-10-05T11:14:00.466+00:00",
+      "processed_ts": "2026-10-05T11:14:00.466+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:SP500",
+      "candidate_id": "par:SP500:1791198838516",
+      "reason": "COMPLETED_CANDLE_STALE",
+      "stage": "SCANNER",
+      "risk_status": "NOT_REACHED",
+      "execution_status": "NOT_REACHED"
+    },
+    {
+      "kind": "MARKET_DATA",
+      "timestamp_ms": 1791198840466,
+      "exchange_ts": null,
+      "received_ts": "2026-10-05T11:14:00.466+00:00",
+      "processed_ts": "2026-10-05T11:14:00.466+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:USDEUR",
+      "candidate_id": "par:USDEUR:1791198838516",
+      "metrics": {},
+      "market_snapshot": null,
+      "candle_timestamp_ms": null,
+      "data_status": "UNAVAILABLE",
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ]
+    },
+    {
+      "kind": "SIGNAL",
+      "timestamp_ms": 1791198840466,
+      "exchange_ts": null,
+      "received_ts": "2026-10-05T11:13:58.032+00:00",
+      "processed_ts": "2026-10-05T11:13:58.032+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:USDEUR",
+      "candidate_id": "par:USDEUR:1791198838516",
+      "signal": {},
+      "metrics": {},
+      "scan_selected": false,
+      "signal_status": "NO_SIGNAL",
+      "scanner_status": "REJECTED",
+      "input_timing": {
+        "exchange_ts": null,
+        "received_ts": "2026-10-05T11:13:58.032+00:00",
+        "processed_ts": "2026-10-05T11:13:58.032+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      "input_candle_close_ms": 1791198119999
+    },
+    {
+      "kind": "ENTRY_REJECTED",
+      "timestamp_ms": 1791198840466,
+      "exchange_ts": null,
+      "received_ts": "2026-10-05T11:14:00.466+00:00",
+      "processed_ts": "2026-10-05T11:14:00.466+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:USDEUR",
+      "candidate_id": "par:USDEUR:1791198838516",
+      "reason": "COMPLETED_CANDLE_STALE",
+      "stage": "SCANNER",
+      "risk_status": "NOT_REACHED",
+      "execution_status": "NOT_REACHED"
+    },
+    {
+      "kind": "MARKET_DATA",
+      "timestamp_ms": 1791198840466,
+      "exchange_ts": null,
+      "received_ts": "2026-10-05T11:14:00.466+00:00",
+      "processed_ts": "2026-10-05T11:14:00.466+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:USDJPY",
+      "candidate_id": "par:USDJPY:1791198838516",
+      "metrics": {},
+      "market_snapshot": null,
+      "candle_timestamp_ms": null,
+      "data_status": "UNAVAILABLE",
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ]
+    },
+    {
+      "kind": "SIGNAL",
+      "timestamp_ms": 1791198840466,
+      "exchange_ts": null,
+      "received_ts": "2026-10-05T11:13:58.516+00:00",
+      "processed_ts": "2026-10-05T11:13:58.516+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:USDJPY",
+      "candidate_id": "par:USDJPY:1791198838516",
+      "signal": {},
+      "metrics": {},
+      "scan_selected": false,
+      "signal_status": "NO_SIGNAL",
+      "scanner_status": "REJECTED",
+      "input_timing": {
+        "exchange_ts": null,
+        "received_ts": "2026-10-05T11:13:58.516+00:00",
+        "processed_ts": "2026-10-05T11:13:58.516+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      "input_candle_close_ms": 1791196319999
+    },
+    {
+      "kind": "ENTRY_REJECTED",
+      "timestamp_ms": 1791198840466,
+      "exchange_ts": null,
+      "received_ts": "2026-10-05T11:14:00.466+00:00",
+      "processed_ts": "2026-10-05T11:14:00.466+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "symbol": "par:USDJPY",
+      "candidate_id": "par:USDJPY:1791198838516",
+      "reason": "COMPLETED_CANDLE_STALE",
+      "stage": "SCANNER",
+      "risk_status": "NOT_REACHED",
+      "execution_status": "NOT_REACHED"
+    }
+  ],
+  "accounting_halt": null,
+  "pending_exits": {},
+  "closed_trades": [],
+  "performance": {
+    "return_fraction": "0",
+    "max_drawdown_fraction": "0",
+    "closed_trade_count": 0,
+    "win_rate": null
+  },
+  "strategy_freeze": {
+    "baseline": "nse-working-baseline",
+    "file_count": 1,
+    "method_count": 8,
+    "parameter_count": 32,
+    "passed": true
+  },
+  "fees": {
+    "maker": "0.0003",
+    "taker": "0.0009",
+    "source": "PAR_UNDISCOUNTED_BASE_TIER_CHECKED_2026-10-02_PAPER_ASSUMPTION"
+  },
+  "risk_policy": {
+    "risk_fraction": "0.005",
+    "max_daily_loss_fraction": "0.01",
+    "max_gross_equity_multiple": "1",
+    "max_margin_utilization": "0.5",
+    "maintenance_buffer_multiple": "2",
+    "max_funding_cost_fraction": "0.001",
+    "max_mark_oracle_bps": "50",
+    "max_spread_bps": "15",
+    "depth_participation": "0.1",
+    "slippage_bps": "5",
+    "holding_hours": "1",
+    "leverage": 1,
+    "max_positions": 1,
+    "max_daily_setups": 2,
+    "max_drawdown_fraction": "0.05",
+    "max_symbol_equity_multiple": "1",
+    "max_net_equity_multiple": "1",
+    "max_directional_equity_multiple": "1",
+    "max_data_age_ms": 5000,
+    "max_mark_age_ms": 60000,
+    "max_candle_age_ms": 120000,
+    "max_consecutive_order_errors": 3,
+    "max_reconnect_failures": 5
+  },
+  "scanner_policy": {
+    "min_atr_fraction": "0.004",
+    "max_spread_bps": "15",
+    "min_window_notional": "0",
+    "min_bbo_notional": "10",
+    "history_bars": 300,
+    "top_n": 3,
+    "max_candle_age_ms": 120000
+  },
+  "market_specs": [
+    {
+      "symbol": "par:BRENT",
+      "size_decimals": 2,
+      "max_leverage": 20,
+      "asset_id": 2670006,
+      "margin_tiers": [
+        [
+          "0",
+          20
+        ]
+      ]
+    },
+    {
+      "symbol": "par:BTC",
+      "size_decimals": 4,
+      "max_leverage": 40,
+      "asset_id": 2670000,
+      "margin_tiers": [
+        [
+          "0",
+          40
+        ]
+      ]
+    },
+    {
+      "symbol": "par:ETH",
+      "size_decimals": 4,
+      "max_leverage": 25,
+      "asset_id": 2670001,
+      "margin_tiers": [
+        [
+          "0",
+          25
+        ]
+      ]
+    },
+    {
+      "symbol": "par:EWJ",
+      "size_decimals": 3,
+      "max_leverage": 20,
+      "asset_id": 2670005,
+      "margin_tiers": [
+        [
+          "0",
+          20
+        ]
+      ]
+    },
+    {
+      "symbol": "par:EWY",
+      "size_decimals": 3,
+      "max_leverage": 20,
+      "asset_id": 2670004,
+      "margin_tiers": [
+        [
+          "0",
+          20
+        ]
+      ]
+    },
+    {
+      "symbol": "par:GOLD",
+      "size_decimals": 4,
+      "max_leverage": 25,
+      "asset_id": 2670007,
+      "margin_tiers": [
+        [
+          "0",
+          25
+        ]
+      ]
+    },
+    {
+      "symbol": "par:HYPE",
+      "size_decimals": 2,
+      "max_leverage": 10,
+      "asset_id": 2670002,
+      "margin_tiers": [
+        [
+          "0",
+          10
+        ]
+      ]
+    },
+    {
+      "symbol": "par:SP500",
+      "size_decimals": 3,
+      "max_leverage": 50,
+      "asset_id": 2670003,
+      "margin_tiers": [
+        [
+          "0.0",
+          50
+        ]
+      ]
+    },
+    {
+      "symbol": "par:USDEUR",
+      "size_decimals": 1,
+      "max_leverage": 50,
+      "asset_id": 2670008,
+      "margin_tiers": [
+        [
+          "0.0",
+          50
+        ]
+      ]
+    },
+    {
+      "symbol": "par:USDJPY",
+      "size_decimals": 2,
+      "max_leverage": 50,
+      "asset_id": 2670009,
+      "margin_tiers": [
+        [
+          "0.0",
+          50
+        ]
+      ]
+    }
+  ],
+  "exposure": {
+    "total_gross_exposure": "0",
+    "total_net_exposure": "0",
+    "long_notional": "0",
+    "short_notional": "0",
+    "directional_concentration": "0",
+    "per_symbol_exposure": {},
+    "margin_utilization": "0",
+    "position_count": 0,
+    "collateral": "USDPR"
+  },
+  "risk_state": {
+    "state": "CAUTION",
+    "global_reasons": [],
+    "paused_symbols": {
+      "par:BTC": [
+        "LAST_CANDLE_TIME_STALE"
+      ],
+      "par:ETH": [
+        "LAST_CANDLE_TIME_STALE"
+      ],
+      "par:EWJ": [
+        "LAST_CANDLE_TIME_STALE"
+      ],
+      "par:EWY": [
+        "LAST_CANDLE_TIME_STALE"
+      ],
+      "par:HYPE": [
+        "LAST_CANDLE_TIME_STALE"
+      ],
+      "par:SP500": [
+        "LAST_CANDLE_TIME_STALE"
+      ],
+      "par:USDEUR": [
+        "LAST_CANDLE_TIME_STALE"
+      ],
+      "par:USDJPY": [
+        "LAST_CANDLE_TIME_STALE"
+      ]
+    },
+    "consecutive_order_errors": 0,
+    "reconnect_failures": 0,
+    "transitions": [
+      {
+        "timestamp_ms": 1791198841355,
+        "state": "CAUTION",
+        "exchange_ts": null,
+        "received_ts": "2026-10-05T11:14:01.355+00:00",
+        "processed_ts": "2026-10-05T11:14:01.355+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false,
+        "global_reasons": [],
+        "paused_symbols": {
+          "par:BTC": [
+            "LAST_CANDLE_TIME_STALE"
+          ],
+          "par:ETH": [
+            "LAST_CANDLE_TIME_STALE"
+          ],
+          "par:EWJ": [
+            "LAST_CANDLE_TIME_STALE"
+          ],
+          "par:EWY": [
+            "LAST_CANDLE_TIME_STALE"
+          ],
+          "par:HYPE": [
+            "LAST_CANDLE_TIME_STALE"
+          ],
+          "par:SP500": [
+            "LAST_CANDLE_TIME_STALE"
+          ],
+          "par:USDEUR": [
+            "LAST_CANDLE_TIME_STALE"
+          ],
+          "par:USDJPY": [
+            "LAST_CANDLE_TIME_STALE"
+          ]
+        }
+      }
+    ]
+  },
+  "feed_health": {
+    "par:BRENT": {
+      "healthy": true,
+      "reasons": [],
+      "clocks": {
+        "last_tick_time": 1791198838739,
+        "last_candle_time": 1791198780000,
+        "last_orderbook_time": 1791198838739,
+        "last_mark_time": 1791198838910
+      },
+      "ages_ms": {
+        "last_tick_time": 653,
+        "last_orderbook_time": 653,
+        "last_candle_time": 59392,
+        "last_mark_time": 482
+      }
+    },
+    "par:BTC": {
+      "healthy": false,
+      "reasons": [
+        "LAST_CANDLE_TIME_STALE"
+      ],
+      "clocks": {
+        "last_tick_time": 1791198838739,
+        "last_candle_time": 1791197700000,
+        "last_orderbook_time": 1791198838739,
+        "last_mark_time": 1791198838909
+      },
+      "ages_ms": {
+        "last_tick_time": 653,
+        "last_orderbook_time": 653,
+        "last_candle_time": 1139392,
+        "last_mark_time": 483
+      }
+    },
+    "par:ETH": {
+      "healthy": false,
+      "reasons": [
+        "LAST_CANDLE_TIME_STALE"
+      ],
+      "clocks": {
+        "last_tick_time": 1791198838739,
+        "last_candle_time": 1791198360000,
+        "last_orderbook_time": 1791198838739,
+        "last_mark_time": 1791198838909
+      },
+      "ages_ms": {
+        "last_tick_time": 653,
+        "last_orderbook_time": 653,
+        "last_candle_time": 479392,
+        "last_mark_time": 483
+      }
+    },
+    "par:EWJ": {
+      "healthy": false,
+      "reasons": [
+        "LAST_CANDLE_TIME_STALE"
+      ],
+      "clocks": {
+        "last_tick_time": 1791198838739,
+        "last_candle_time": 1791193440000,
+        "last_orderbook_time": 1791198838739,
+        "last_mark_time": 1791198838909
+      },
+      "ages_ms": {
+        "last_tick_time": 653,
+        "last_orderbook_time": 653,
+        "last_candle_time": 5399392,
+        "last_mark_time": 483
+      }
+    },
+    "par:EWY": {
+      "healthy": false,
+      "reasons": [
+        "LAST_CANDLE_TIME_STALE"
+      ],
+      "clocks": {
+        "last_tick_time": 1791198838739,
+        "last_candle_time": 1791187320000,
+        "last_orderbook_time": 1791198838739,
+        "last_mark_time": 1791198838909
+      },
+      "ages_ms": {
+        "last_tick_time": 653,
+        "last_orderbook_time": 653,
+        "last_candle_time": 11519392,
+        "last_mark_time": 483
+      }
+    },
+    "par:GOLD": {
+      "healthy": true,
+      "reasons": [],
+      "clocks": {
+        "last_tick_time": 1791198838739,
+        "last_candle_time": 1791198780000,
+        "last_orderbook_time": 1791198838739,
+        "last_mark_time": 1791198838910
+      },
+      "ages_ms": {
+        "last_tick_time": 653,
+        "last_orderbook_time": 653,
+        "last_candle_time": 59392,
+        "last_mark_time": 482
+      }
+    },
+    "par:HYPE": {
+      "healthy": false,
+      "reasons": [
+        "LAST_CANDLE_TIME_STALE"
+      ],
+      "clocks": {
+        "last_tick_time": 1791198838739,
+        "last_candle_time": 1791198240000,
+        "last_orderbook_time": 1791198838739,
+        "last_mark_time": 1791198838909
+      },
+      "ages_ms": {
+        "last_tick_time": 653,
+        "last_orderbook_time": 653,
+        "last_candle_time": 599392,
+        "last_mark_time": 483
+      }
+    },
+    "par:SP500": {
+      "healthy": false,
+      "reasons": [
+        "LAST_CANDLE_TIME_STALE"
+      ],
+      "clocks": {
+        "last_tick_time": 1791198838739,
+        "last_candle_time": 1791198600000,
+        "last_orderbook_time": 1791198838739,
+        "last_mark_time": 1791198838909
+      },
+      "ages_ms": {
+        "last_tick_time": 653,
+        "last_orderbook_time": 653,
+        "last_candle_time": 239392,
+        "last_mark_time": 483
+      }
+    },
+    "par:USDEUR": {
+      "healthy": false,
+      "reasons": [
+        "LAST_CANDLE_TIME_STALE"
+      ],
+      "clocks": {
+        "last_tick_time": 1791198838739,
+        "last_candle_time": 1791198120000,
+        "last_orderbook_time": 1791198838739,
+        "last_mark_time": 1791198838910
+      },
+      "ages_ms": {
+        "last_tick_time": 653,
+        "last_orderbook_time": 653,
+        "last_candle_time": 719392,
+        "last_mark_time": 482
+      }
+    },
+    "par:USDJPY": {
+      "healthy": false,
+      "reasons": [
+        "LAST_CANDLE_TIME_STALE"
+      ],
+      "clocks": {
+        "last_tick_time": 1791198838739,
+        "last_candle_time": 1791196320000,
+        "last_orderbook_time": 1791198838739,
+        "last_mark_time": 1791198838910
+      },
+      "ages_ms": {
+        "last_tick_time": 653,
+        "last_orderbook_time": 653,
+        "last_candle_time": 2519392,
+        "last_mark_time": 482
+      }
+    }
+  },
+  "public_stream": {
+    "connected": true,
+    "reconciled": true,
+    "generation": 1,
+    "accepted_generation": 1,
+    "messages": 95,
+    "reconnections": 0,
+    "last_receive_ms": 1791198839205,
+    "last_error": null,
+    "account_recovery": {
+      "source": "LOCAL_PAPER_FILL_REPLAY",
+      "exchange_account_verified": false,
+      "entries_paused": false,
+      "reasons": [],
+      "position_corrections": {},
+      "position_count": 0,
+      "open_order_count": 0,
+      "fill_count": 0,
+      "funding_event_count": 0,
+      "reported_equity": "20000",
+      "exchange_orders_submitted": 0,
+      "recovered_at_ms": 1791198839392
+    },
+    "last_account_recovery_ms": 1791198839392,
+    "events": [
+      {
+        "phase": "CONNECTING",
+        "timestamp_ms": 1791198832330,
+        "generation": 0,
+        "exchange_ts": null,
+        "received_ts": "2026-10-05T11:13:52.330+00:00",
+        "processed_ts": "2026-10-05T11:13:52.330+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      {
+        "phase": "SUBSCRIBED",
+        "timestamp_ms": 1791198833506,
+        "generation": 0,
+        "exchange_ts": null,
+        "received_ts": "2026-10-05T11:13:53.506+00:00",
+        "processed_ts": "2026-10-05T11:13:53.506+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      {
+        "phase": "REST_MARKET_RECONCILED",
+        "timestamp_ms": 1791198838893,
+        "generation": 1,
+        "exchange_ts": null,
+        "received_ts": "2026-10-05T11:13:58.893+00:00",
+        "processed_ts": "2026-10-05T11:13:58.893+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      {
+        "phase": "PAPER_ACCOUNT_RECONCILED",
+        "generation": 1,
+        "timestamp_ms": 1791198839392,
+        "source": "LOCAL_PAPER_FILL_REPLAY",
+        "exchange_ts": null,
+        "received_ts": "2026-10-05T11:13:59.392+00:00",
+        "processed_ts": "2026-10-05T11:13:59.392+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      }
+    ]
+  },
+  "paper_account_recovery": {
+    "source": "LOCAL_PAPER_FILL_REPLAY",
+    "exchange_account_verified": false,
+    "entries_paused": false,
+    "reasons": [],
+    "position_corrections": {},
+    "position_count": 0,
+    "open_order_count": 0,
+    "fill_count": 0,
+    "funding_event_count": 0,
+    "reported_equity": "20000",
+    "exchange_orders_submitted": 0,
+    "recovered_at_ms": 1791198839392
+  },
+  "market_snapshots": {
+    "par:BRENT": {
+      "symbol": "par:BRENT",
+      "bid": "102.56",
+      "ask": "102.76",
+      "mid": "102.66",
+      "mark_price": "102.59",
+      "oracle_price": "102.59",
+      "funding": "-0.0000013855",
+      "open_interest": "64.86",
+      "bid_quantity": "48.75",
+      "ask_quantity": "48.65",
+      "spread": "0.20",
+      "spread_bps": "19.48178453146308201831287746",
+      "bid_depth_notional": "100009.18456",
+      "ask_depth_notional": "99997.4057",
+      "orderbook_imbalance": "0.00005889235942019703726136608955",
+      "orderbook_timestamp_ms": 1791198838739,
+      "mark_observed_at_ms": 1791198838910,
+      "last_trade_price": "102.54",
+      "last_trade_timestamp_ms": 1791198738336,
+      "exchange_ts": "2026-10-05T11:13:58.739+00:00",
+      "received_ts": "2026-10-05T11:13:59.203+00:00",
+      "processed_ts": "2026-10-05T11:13:59.393+00:00"
+    },
+    "par:GOLD": {
+      "symbol": "par:GOLD",
+      "bid": "4160.8",
+      "ask": "4169.2",
+      "mid": "4165.0",
+      "mark_price": "4164.3",
+      "oracle_price": "4164.3",
+      "funding": "0.00000625",
+      "open_interest": "0.9412",
+      "bid_quantity": "1.1151",
+      "ask_quantity": "1.1487",
+      "spread": "8.4",
+      "spread_bps": "20.16806722689075630252100840",
+      "bid_depth_notional": "99650.80231",
+      "ask_depth_notional": "99788.17860",
+      "orderbook_imbalance": "-0.0006888136380018569560389356685",
+      "orderbook_timestamp_ms": 1791198838739,
+      "mark_observed_at_ms": 1791198838910,
+      "last_trade_price": "4160.8",
+      "last_trade_timestamp_ms": 1791198776843,
+      "exchange_ts": "2026-10-05T11:13:58.739+00:00",
+      "received_ts": "2026-10-05T11:13:59.204+00:00",
+      "processed_ts": "2026-10-05T11:13:59.393+00:00"
+    }
+  },
+  "exchange_account_observer": null,
+  "strategy_state": {
+    "par:BRENT": {
+      "position": null,
+      "daily_bias": "LONG_BIAS",
+      "candles_held": 0,
+      "candles_since_last_sl": 10001,
+      "last_completed_candle_ms": 1791198720000
+    },
+    "par:GOLD": {
+      "position": null,
+      "daily_bias": "NEUTRAL",
+      "candles_held": 0,
+      "candles_since_last_sl": 10001,
+      "last_completed_candle_ms": 1791198720000
+    },
+    "par:BTC": {
+      "position": null,
+      "daily_bias": "NEUTRAL",
+      "candles_held": 0,
+      "candles_since_last_sl": 10001,
+      "last_completed_candle_ms": 1791197640000
+    },
+    "par:ETH": {
+      "position": null,
+      "daily_bias": "NEUTRAL",
+      "candles_held": 0,
+      "candles_since_last_sl": 10001,
+      "last_completed_candle_ms": 1791198300000
+    },
+    "par:EWJ": {
+      "position": null,
+      "daily_bias": "NEUTRAL",
+      "candles_held": 0,
+      "candles_since_last_sl": 10001,
+      "last_completed_candle_ms": 1791193380000
+    },
+    "par:EWY": {
+      "position": null,
+      "daily_bias": "NEUTRAL",
+      "candles_held": 0,
+      "candles_since_last_sl": 10001,
+      "last_completed_candle_ms": 1791187260000
+    },
+    "par:HYPE": {
+      "position": null,
+      "daily_bias": "NEUTRAL",
+      "candles_held": 0,
+      "candles_since_last_sl": 10001,
+      "last_completed_candle_ms": 1791198180000
+    },
+    "par:SP500": {
+      "position": null,
+      "daily_bias": "NEUTRAL",
+      "candles_held": 0,
+      "candles_since_last_sl": 10001,
+      "last_completed_candle_ms": 1791198540000
+    },
+    "par:USDEUR": {
+      "position": null,
+      "daily_bias": "NEUTRAL",
+      "candles_held": 0,
+      "candles_since_last_sl": 10001,
+      "last_completed_candle_ms": 1791198060000
+    },
+    "par:USDJPY": {
+      "position": null,
+      "daily_bias": "NEUTRAL",
+      "candles_held": 0,
+      "candles_since_last_sl": 10001,
+      "last_completed_candle_ms": 1791196260000
+    }
+  },
+  "provenance": "LIVE_PUBLIC_PAR_DATA_LOCAL_PAPER_SIMULATION",
+  "observed_at_utc": "2026-10-05T11:14:01.355758+00:00",
+  "assumptions": [
+    "Hypothetical USDPR starting collateral; no wallet balance used.",
+    "Taker fills only from fresh displayed BBO, bounded by displayed size.",
+    "Displayed liquidity consumed once per observation; no invented queue or maker fill.",
+    "Fee rates are explicit paper assumptions; actual wallet tiers not verified.",
+    "Hourly funding uses observed boundary snapshots and is labelled estimated.",
+    "Missed funding boundary pauses entries; no fabricated historical oracle.",
+    "Maintenance uses runtime tiers; no exchange liquidation-price claim.",
+    "Current open positions remain unrealized; no stock EOD liquidation."
+  ]
+}

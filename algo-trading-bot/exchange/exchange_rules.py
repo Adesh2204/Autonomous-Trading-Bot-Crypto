@@ -104,9 +104,13 @@ class HyperliquidOrderValidator:
                 return reject('DATA_NOT_READY')
             if not 0 <= now_ms-q.timestamp_ms <= 5000 or q.mark_timestamp_ms is None or not 0 <= now_ms-q.mark_timestamp_ms <= 60000:
                 return reject('STALE_MARKET_DATA')
-            reference = decimal(q.oracle, positive=True)
+            # Organizer clarification: the 80% order band uses markPx. Oracle
+            # remains the separate reference for open-interest notional below.
+            reference = decimal(q.mark, positive=True)
+            oracle_reference = decimal(q.oracle, positive=True)
             deviation = abs(price-reference)/reference
-            audit.update(relevant_reference_price=str(reference),deviation_percentage=str(deviation*100))
+            audit.update(relevant_reference_price=str(reference),reference_price_source='markPx',
+                         oracle_price=str(oracle_reference),deviation_percentage=str(deviation*100))
             if deviation > Decimal('0.8'):
                 return reject('PRICE_BAND_VIOLATION')
             if request.tif == 'Alo' and (request.side == 'BUY' and price >= q.ask or request.side == 'SELL' and price <= q.bid):
@@ -162,10 +166,10 @@ class HyperliquidOrderValidator:
                 total_cap=decimal(limits['totalOiCap'],positive=True)
                 total=sum((decimal(c['openInterest'],nonnegative=True)*decimal(c['oraclePx'],positive=True)
                            for c in context.contexts.values()),Decimal(0))
-                audit.update(current_open_interest_notional=str(current*reference),
-                             open_interest_cap=str(cap),proposed_exposure_increase=str(increase*reference))
-                if increase and (current+increase>size_cap or (current+increase)*reference>cap or
-                                 total+increase*reference>total_cap):
+                audit.update(current_open_interest_notional=str(current*oracle_reference),
+                             open_interest_cap=str(cap),proposed_exposure_increase=str(increase*oracle_reference))
+                if increase and (current+increase>size_cap or (current+increase)*oracle_reference>cap or
+                                 total+increase*oracle_reference>total_cap):
                     return reject('OPEN_INTEREST_CAPACITY')
             for own in context.open_orders:
                 if own['coin']!=request.symbol:

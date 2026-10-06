@@ -226,6 +226,64 @@ def test_central_preflight_rejections(live,damage,code):
     assert not live.transport.signed_payloads
 
 
+@pytest.mark.parametrize('mark,oracle,price,allowed',[
+    ('100','101','20',True), ('100','101','180',True),
+    ('100','101','19.99',False), ('100','101','180.01',False),
+    ('99','100','180',False), ('101','100','181',True),
+    ('101','100','20.1',False), ('99','100','19.9',True)])
+def test_order_band_uses_mark_with_distinct_oracle_and_inclusive_edges(live,mark,oracle,price,allowed):
+    request=OrderRequest('par:BTC','BUY','1',price)
+    context=live.provider.load(request)
+    context=replace(context,quote=replace(context.quote,mark=D(mark),oracle=D(oracle)))
+    result=live.validator.validate(request,context,permission(request),NOW)
+    assert result.allowed is allowed
+    assert result.code==('ALLOWED' if allowed else 'PRICE_BAND_VIOLATION')
+    assert result.audit['reference_price_source']=='markPx'
+    assert D(result.audit['relevant_reference_price'])==D(mark)
+    assert D(result.audit['oracle_price'])==D(oracle)
+    assert not live.transport.signed_payloads
+
+
+@pytest.mark.parametrize('mark',['0',None])
+def test_order_band_cannot_fall_back_to_oracle_when_mark_is_invalid(live,mark):
+    request=OrderRequest('par:BTC','BUY','.1','100')
+    index=next(i for i,row in enumerate(live.fixture.metadata['universe'])
+               if row['name']==request.symbol)
+    live.fixture.contexts[index]['markPx']=mark
+    # The real provider rejects the invalid mark before making a Quote, even
+    # though the same exchange response still supplies a valid oracle price.
+    with pytest.raises(ExchangeError,match='INVALID_DECIMAL'):
+        live.provider.load(request)
+    assert not live.transport.signed_payloads
+
+
+@pytest.mark.parametrize('mark,cap,allowed',[('99','1005',False),('101','1011',True)])
+def test_mark_band_change_preserves_oracle_open_interest_notional(live,mark,cap,allowed):
+    request,context,_=valid(live)
+    context=replace(context,quote=replace(context.quote,mark=D(mark)),
+        limits=dict(context.limits,coinToOiCap=[['par:BTC',cap]]))
+    result=live.validator.validate(request,context,permission(request),NOW)
+    assert result.allowed is allowed
+    assert result.code==('ALLOWED' if allowed else 'OPEN_INTEREST_CAPACITY')
+    assert D(result.audit['current_open_interest_notional'])==D('1000')
+    assert D(result.audit['proposed_exposure_increase'])==D('10')
+    assert not live.transport.signed_payloads
+
+
+@pytest.mark.parametrize('side,values,allowed',[
+    ('BUY',['0','1000'],False), ('SELL',['0','1000'],True),
+    ('BUY',['1000','0'],True), ('SELL',['1000','0'],False)])
+@pytest.mark.parametrize('field',['availableToTrade','maxTradeSzs'])
+def test_capacity_checks_use_the_requested_side_and_never_sum_both_sides(live,side,values,allowed,field):
+    request=OrderRequest('par:BTC',side,'.1','100')
+    context=live.provider.load(request)
+    context=replace(context,active_asset=dict(context.active_asset,**{field:values}))
+    result=live.validator.validate(request,context,permission(request),NOW)
+    assert result.allowed is allowed
+    assert result.code==('ALLOWED' if allowed else 'INSUFFICIENT_MARGIN')
+    assert not live.transport.signed_payloads
+
+
 @pytest.mark.parametrize('side,size,held,allowed',[('BUY','.1','.2',False),('SELL','.3','.2',False),
     ('SELL','.2','.2',True),('BUY','.2','-.2',True),('SELL','.1','0',False)])
 def test_reduce_only_direction_remaining_size_and_oi_bypass(live,side,size,held,allowed):

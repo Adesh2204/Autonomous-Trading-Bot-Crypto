@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "operating_mode": "PAPER",
+  "allow_live_orders": false,
+  "exchange_orders_submitted": 0,
+  "tests": {
+    "tests": 1178,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_receipt": {
+    "source_hash_before": "21b23562ed75c3b9a72f1db4b2638340286fbad27cff586443fda2cd2c376601",
+    "source_hash_after": "21b23562ed75c3b9a72f1db4b2638340286fbad27cff586443fda2cd2c376601",
+    "source_unchanged": true,
+    "started_unix": 1791198536.988957,
+    "finished_unix": 1791198783.851872,
+    "exit_code": 0,
+    "xml_sha256": "eb80b7d935cdb66bb1c6a971b5f26b100c05dbbf30b57508e7eec69922ed97ba"
+  },
+  "strategy_freeze": {
+    "baseline": "nse-working-baseline",
+    "file_count": 1,
+    "method_count": 8,
+    "parameter_count": 32,
+    "passed": true
+  },
+  "signal_sha256": "bff940ac5ed35f71ed3dfb537ba15d20dcec35a4e62a938d2f0619c6e9309d83",
+  "improvements": {
+    "scanner_mode_conflict": "FIXED_OFFLINE_COMPOSITION_TESTED",
+    "operating_schedule": "IMPLEMENTED",
+    "paper_launcher": "IMPLEMENTED_LOCAL_VERIFIED",
+    "future_testnet_launcher": "GATED_NOT_ACTIVATED",
+    "paper_state": "DURABLE_FLAT_RESTART_VERIFIED_EXPOSURE_DOWNTIME_BLOCKED",
+    "health_and_backups": "LOCAL_VERIFIED",
+    "linux_deployment": "TEMPLATES_ONLY_NO_HOST_SUPPLIED",
+    "emergency_policy": "DOCUMENTED_PROPOSAL_DISABLED"
+  },
+  "paper_runs": [
+    {
+      "path": "docs/practice_improvements_2026-10-05/paper_segments/20261005T110148Z-d5143dbd",
+      "start": "2026-10-05T11:01:48.231872+00:00",
+      "last_health": "2026-10-05T11:04:19.890399+00:00",
+      "status": "STOPPED",
+      "stream_messages": 1726,
+      "healthy_markets": [
+        "par:ETH",
+        "par:HYPE"
+      ],
+      "rss_peak_mb": 120.46875,
+      "local_fills": 0,
+      "exchange_orders": 0,
+      "scan_status": "NO_TRADE",
+      "rejections": {
+        "par:BRENT": [
+          "ATR_BELOW_BASELINE_SCANNER_FLOOR",
+          "SPREAD_TOO_WIDE"
+        ],
+        "par:BTC": [
+          "COMPLETED_CANDLE_STALE"
+        ],
+        "par:ETH": [
+          "COMPLETED_CANDLE_STALE"
+        ],
+        "par:EWJ": [
+          "COMPLETED_CANDLE_STALE"
+        ],
+        "par:EWY": [
+          "COMPLETED_CANDLE_STALE"
+        ],
+        "par:GOLD": [
+          "ATR_BELOW_BASELINE_SCANNER_FLOOR",
+          "SPREAD_TOO_WIDE"
+        ],
+        "par:HYPE": [
+          "ATR_BELOW_BASELINE_SCANNER_FLOOR",
+          "SPREAD_TOO_WIDE"
+        ],
+        "par:SP500": [
+          "COMPLETED_CANDLE_STALE"
+        ],
+        "par:USDEUR": [
+          "INVALID_DECIMAL"
+        ],
+        "par:USDJPY": [
+          "COMPLETED_CANDLE_STALE"
+        ]
+      },
+      "recovery": {
+        "restored": false,
+        "exchange_account_verified": false
+      }
+    },
+    {
+      "path": "docs/practice_improvements_2026-10-05/paper_segments/20261005T110551Z-127c3efe",
+      "start": "2026-10-05T11:05:51.412678+00:00",
+      "last_health": "2026-10-05T11:11:22.864170+00:00",
+      "status": "STOPPED",
+      "stream_messages": 3784,
+      "healthy_markets": [
+        "par:SP500"
+      ],
+      "rss_peak_mb": 142.734375,
+      "local_fills": 0,
+      "exchange_orders": 0,
+      "scan_status": "NO_TRADE",
+      "rejections": {
+        "par:BRENT": [
+          "COMPLETED_CANDLE_STALE"
+        ],
+        "par:BTC": [
+          "COMPLETED_CANDLE_STALE"
+        ],
+        "par:ETH": [
+          "COMPLETED_CANDLE_STALE"
+        ],
+        "par:EWJ": [
+          "COMPLETED_CANDLE_STALE"
+        ],
+        "par:EWY": [
+          "COMPLETED_CANDLE_STALE"
+        ],
+        "par:GOLD": [
+          "COMPLETED_CANDLE_STALE"
+        ],
+        "par:HYPE": [
+          "COMPLETED_CANDLE_STALE"
+        ],
+        "par:SP500": [
+          "ATR_BELOW_BASELINE_SCANNER_FLOOR",
+          "SPREAD_TOO_WIDE"
+        ],
+        "par:USDEUR": [
+          "COMPLETED_CANDLE_STALE"
+        ],
+        "par:USDJPY": [
+          "COMPLETED_CANDLE_STALE"
+        ]
+      },
+      "recovery": {
+        "restored": true,
+        "previous_clean_shutdown": true,
+        "observed_ms": 1791198259887,
+        "paper_reconciliation": {
+          "source": "LOCAL_PAPER_FILL_REPLAY",
+          "exchange_account_verified": false,
+          "entries_paused": false,
+          "reasons": [],
+          "position_corrections": {},
+          "position_count": 0,
+          "open_order_count": 0,
+          "fill_count": 0,
+          "funding_event_count": 0,
+          "reported_equity": "20000",
+          "exchange_orders_submitted": 0,
+          "recovered_at_ms": 1791198352927
+        },
+        "exchange_account_verified": false,
+        "note": "Same cumulative PAPER ledger; new evidence segment. Missing candles/funding never invented."
+      }
+    },
+    {
+      "path": "docs/practice_improvements_2026-10-05/final_source_paper/20261005T111349Z-6912113b",
+      "start": "2026-10-05T11:13:50.029571+00:00",
+      "last_health": "2026-10-05T11:15:20.692865+00:00",
+      "status": "STOPPED",
+      "stream_messages": 1005,
+      "healthy_markets": [],
+      "rss_peak_mb": 146.03125,
+      "local_fills": 0,
+      "exchange_orders": 0,
+      "scan_status": "NO_TRADE",
+      "rejections": {
+        "par:BRENT": [
+          "ATR_BELOW_BASELINE_SCANNER_FLOOR",
+          "SPREAD_TOO_WIDE"
+        ],
+        "par:BTC": [
+          "COMPLETED_CANDLE_STALE"
+        ],
+        "par:ETH": [
+          "COMPLETED_CANDLE_STALE"
+        ],
+        "par:EWJ": [
+          "COMPLETED_CANDLE_STALE"
+        ],
+        "par:EWY": [
+          "COMPLETED_CANDLE_STALE"
+        ],
+        "par:GOLD": [
+          "ATR_BELOW_BASELINE_SCANNER_FLOOR",
+          "SPREAD_TOO_WIDE"
+        ],
+        "par:HYPE": [
+          "COMPLETED_CANDLE_STALE"
+        ],
+        "par:SP500": [
+          "COMPLETED_CANDLE_STALE"
+        ],
+        "par:USDEUR": [
+          "COMPLETED_CANDLE_STALE"
+        ],
+        "par:USDJPY": [
+          "COMPLETED_CANDLE_STALE"
+        ]
+      },
+      "recovery": {
+        "restored": false,
+        "exchange_account_verified": false
+      }
+    }
+  ],
+  "remote_deployed": false,
+  "long_run_validated": false,
+  "profitable_par_edge_validated": false,
+  "ml_model_validated": false,
+  "funded_account_verified": false,
+  "funded_practice_ready": false,
+  "note": "Development segments verified same-ledger restart. Final-source run uses a separately labeled validation ledger; cumulative PAPER results must not be combined as independent returns. Short observations cannot certify multiweek reliability or profitability.",
+  "fx_indicator_diagnostic": {
+    "status": "EXPLAINED_BY_RECORDED_INPUT_REPLAY",
+    "recorded_candles": 675,
+    "atr_14": "0.0",
+    "scanner_reason": "INVALID_DECIMAL_POSITIVE_ATR_REQUIRED",
+    "strategy_formula_changed": false,
+    "exchange_orders_submitted": 0
+  }
+}
