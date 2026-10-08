@@ -1,41 +1,30 @@
-# Byte-compiled / optimized / DLL files
-**/__pycache__/
+# ==========================================
+# Anchorium Secrets
+# ==========================================
+
+.env
+.env.*
+!.env.example
+
+*.key
+*.pem
+
+secrets/
+wallets/
+
+# Runtime / sensitive state
+runtime/
+logs/
+
+# Python
+__pycache__/
 *.py[cod]
 *$py.class
 
-# Pytest & Cache
+# Pytest / caches
 .pytest_cache/
 .cache/
 
-# Environments & Keys
-.env
-.venv
-env/
-venv/
-ENV/
-
-# OS / IDE
-.DS_Store
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.kilo/
-
-# Runtime discovery files and environment-specific journals/reports
-algo-trading-bot/data/
-logs/
-
-.env.*
-!.env.example
-*.key
-wallets/
-secrets/
-results/
-runtime/live/
-runtime/paper/
-*.sqlite
-*.sqlite-wal
-*.sqlite-shm
-*.lease
+# Organizer reference history: raw files stay local; audit metadata lives in docs.
+/algo-trading-bot/data/history/
+/algo-trading-bot/data/organizer-history-research/

@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "start_timestamp": "2026-10-02T12:10:49.981528+00:00",
+  "git_commit": "893a7966e7c68d4ca487368a9f67ac8f2453e706",
+  "git_branch": "perpetual-alpha-migration",
+  "git_dirty": true,
+  "working_source_hash": "f349e21958cc4870cce3afe7b49959995eeb60c62715f445bb37257c548aa68d",
+  "configuration_hash": "275b1565f043d1287901fb785f6fe230c1f1b75cfefce0814a3f9190d5a3a731",
+  "configuration": {
+    "parameters": {
+      "starting_collateral": "20000",
+      "fees": {
+        "maker": "0.0003",
+        "taker": "0.0009",
+        "source": "PAR_UNDISCOUNTED_BASE_TIER_CHECKED_2026-10-02_PAPER_ASSUMPTION"
+      },
+      "scanner": {
+        "min_atr_fraction": "0.004",
+        "max_spread_bps": "15",
+        "min_window_notional": "0",
+        "min_bbo_notional": "10",
+        "history_bars": 300,
+        "top_n": 3,
+        "max_candle_age_ms": 120000
+      },
+      "risk": {
+        "risk_fraction": "0.005",
+        "max_daily_loss_fraction": "0.01",
+        "max_gross_equity_multiple": "1",
+        "max_margin_utilization": "0.5",
+        "maintenance_buffer_multiple": "2",
+        "max_funding_cost_fraction": "0.001",
+        "max_mark_oracle_bps": "50",
+        "max_spread_bps": "15",
+        "depth_participation": "0.1",
+        "slippage_bps": "5",
+        "holding_hours": "1",
+        "leverage": 1,
+        "max_positions": 1,
+        "max_daily_setups": 2,
+        "max_drawdown_fraction": "0.05",
+        "max_symbol_equity_multiple": "1",
+        "max_net_equity_multiple": "1",
+        "max_directional_equity_multiple": "1",
+        "max_data_age_ms": 5000,
+        "max_mark_age_ms": 60000,
+        "max_candle_age_ms": 120000,
+        "max_consecutive_order_errors": 3,
+        "max_reconnect_failures": 5
+      }
+    },
+    "network": "testnet",
+    "dex": "par",
+    "safety_execution_mode": "PAPER",
+    "execution_mode": "REPLAY",
+    "allow_live_orders": false
+  },
+  "parameter_set": {
+    "starting_collateral": "20000",
+    "fees": {
+      "maker": "0.0003",
+      "taker": "0.0009",
+      "source": "PAR_UNDISCOUNTED_BASE_TIER_CHECKED_2026-10-02_PAPER_ASSUMPTION"
+    },
+    "scanner": {
+      "min_atr_fraction": "0.004",
+      "max_spread_bps": "15",
+      "min_window_notional": "0",
+      "min_bbo_notional": "10",
+      "history_bars": 300,
+      "top_n": 3,
+      "max_candle_age_ms": 120000
+    },
+    "risk": {
+      "risk_fraction": "0.005",
+      "max_daily_loss_fraction": "0.01",
+      "max_gross_equity_multiple": "1",
+      "max_margin_utilization": "0.5",
+      "maintenance_buffer_multiple": "2",
+      "max_funding_cost_fraction": "0.001",
+      "max_mark_oracle_bps": "50",
+      "max_spread_bps": "15",
+      "depth_participation": "0.1",
+      "slippage_bps": "5",
+      "holding_hours": "1",
+      "leverage": 1,
+      "max_positions": 1,
+      "max_daily_setups": 2,
+      "max_drawdown_fraction": "0.05",
+      "max_symbol_equity_multiple": "1",
+      "max_net_equity_multiple": "1",
+      "max_directional_equity_multiple": "1",
+      "max_data_age_ms": 5000,
+      "max_mark_age_ms": 60000,
+      "max_candle_age_ms": 120000,
+      "max_consecutive_order_errors": 3,
+      "max_reconnect_failures": 5
+    }
+  },
+  "strategy_version": {
+    "name": "VWAP_FROZEN_NSE_BASELINE",
+    "freeze": {
+      "baseline": "nse-working-baseline",
+      "file_count": 1,
+      "method_count": 8,
+      "parameter_count": 32,
+      "passed": true
+    },
+    "sha256": "5036e09cb04f2151eed38870752c686624508b31e1dff5acb031bce41314cc0b"
+  },
+  "exchange_adapter_version": "6d18302e2714317efbe9c2b501de6e8b9ba003e0eef7035ffa716d1b54ab90af",
+  "risk_version": "e9c8336abe9dc8d06836ce99437363ac6df8e13722ffb9bae69ec365d1355db1",
+  "provenance": "OFFLINE_REPLAY_OF_LIVE_PUBLIC_PAR_DATA",
+  "collateral": "USDPR",
+  "exchange_orders_submitted": 0,
+  "timing_note": "Exchange timestamps are null for local decisions/fills and timestamp-free API contexts. Exchange-to-receive is observation age, not proven network latency.",
+  "metrics_note": "Mark equity is the paper risk valuation. Oracle equity is a local estimate. Daily returns use last observed UTC-day samples; incomplete days and sample volatility are not official scores."
+}
