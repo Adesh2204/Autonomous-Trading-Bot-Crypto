@@ -1,0 +1,4597 @@
+{
+  "status": "NO_CURRENT_QUALIFICATION_PROPOSAL",
+  "qualification_state": "CHECKING_RESIDUAL_EXITS",
+  "execution_mode": "PAPER",
+  "allow_live_orders": false,
+  "protection_verified": false,
+  "exchange_submissions": 0,
+  "actual_wallet_signatures": 0,
+  "actual_fill_verified": false,
+  "organizer_whitelisting_confirmed": false,
+  "maximum_notional": "25",
+  "entry_attempts": 1,
+  "exit_attempts": 2,
+  "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+  "api_signer": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+  "source_hash": "13113188a1351741a0c93aa2c25b9932c4ce90a6cdad8c8efb1434f8d3c051e3",
+  "policy_hash": "1b8573d07a0f12f3653cf7b92f96c2120e8d61c3f210335ec850ba14ea582455",
+  "started_utc": "2026-10-13T11:23:26.031327+00:00",
+  "candidates": [],
+  "attempts": [],
+  "stage_a_observations": 404,
+  "coverage": {
+    "par:BRENT:BUY": {
+      "symbol": "par:BRENT",
+      "entry_side": "BUY",
+      "potential": false,
+      "stage": "PUBLIC_BOOK_ONLY",
+      "asset_id": 2670006,
+      "size_step": "0.01",
+      "observed_ms": 1791890695385,
+      "exchange_ms": 1791890694759,
+      "received_ms": 1791890695384,
+      "execution_scope_permitted": false,
+      "account_checks_performed": false,
+      "normal_minimum": "10",
+      "maximum_notional": "25",
+      "depth_policy": "STRICT_10_PERCENT_OF_EACH_BEST_LEVEL",
+      "protection_verified": false,
+      "bid": "101.98",
+      "ask": "102.47",
+      "spread_bps": "47.93348006847640009782342871",
+      "bid_quantity": "0.48",
+      "ask_quantity": "47.65",
+      "bid_depth_limit": "0.048",
+      "ask_depth_limit": "4.765",
+      "entry_limit": "102.52",
+      "exit_bound": "100.47",
+      "reviewed_immediate_exit_limit": "101.78",
+      "minimum_valid_entry_quantity": "0.10",
+      "minimum_entry_notional": "10.2520",
+      "maximum_book_quantity": "0.04",
+      "maximum_book_notional": "4.1008",
+      "quantity_bounds": {
+        "notional": "0.2438548575887631681623097932",
+        "bid_depth": "0.048",
+        "ask_depth": "4.765"
+      },
+      "binding_capacity_constraints": [
+        "bid_depth"
+      ],
+      "minimum_lot_notional": "1.0252",
+      "residuals": {
+        "ready": false,
+        "blocker": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL",
+        "first_unverified_quantity": "0.02",
+        "close_side": "SELL",
+        "notional": "2.0094"
+      },
+      "l2_research": {
+        "entry": {
+          "available_quantity": "48.58",
+          "requested_quantity": "0.10",
+          "covered_quantity": "0.10",
+          "shortfall": "0.00",
+          "cost": "10.2470",
+          "vwap": "102.47",
+          "limit": "102.52",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "exit": {
+          "available_quantity": "460.07",
+          "requested_quantity": "0.10",
+          "covered_quantity": "0.10",
+          "shortfall": "0.00",
+          "cost": "10.1980",
+          "vwap": "101.98",
+          "limit": "100.47",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "levels": {
+          "bids": 13,
+          "asks": 8
+        },
+        "hypothetical_aggregate_depth_quantity": "0.24",
+        "aggregate_can_meet_minimum": true,
+        "affects_eligibility": false,
+        "separate_policy_approval_required": true
+      },
+      "raw_book": {
+        "symbol": "par:BRENT",
+        "timestamp_ms": 1791890694759,
+        "bids": [
+          {
+            "price": "101.98",
+            "quantity": "0.48"
+          },
+          {
+            "price": "101.93",
+            "quantity": "8.55"
+          },
+          {
+            "price": "101.9",
+            "quantity": "2.94"
+          },
+          {
+            "price": "101.65",
+            "quantity": "49.18"
+          },
+          {
+            "price": "101.59",
+            "quantity": "0.96"
+          },
+          {
+            "price": "101.38",
+            "quantity": "0.96"
+          },
+          {
+            "price": "101.33",
+            "quantity": "98.68"
+          },
+          {
+            "price": "100.56",
+            "quantity": "298.32"
+          },
+          {
+            "price": "100.07",
+            "quantity": "299.79"
+          },
+          {
+            "price": "99.256",
+            "quantity": "402.99"
+          },
+          {
+            "price": "98.036",
+            "quantity": "459.01"
+          },
+          {
+            "price": "96.002",
+            "quantity": "520.82"
+          },
+          {
+            "price": "94.152",
+            "quantity": "0.13"
+          }
+        ],
+        "asks": [
+          {
+            "price": "102.47",
+            "quantity": "47.65"
+          },
+          {
+            "price": "102.48",
+            "quantity": "0.93"
+          },
+          {
+            "price": "102.8",
+            "quantity": "97.27"
+          },
+          {
+            "price": "102.84",
+            "quantity": "194.47"
+          },
+          {
+            "price": "103.32",
+            "quantity": "290.36"
+          },
+          {
+            "price": "104.14",
+            "quantity": "384.09"
+          },
+          {
+            "price": "105.36",
+            "quantity": "427.1"
+          },
+          {
+            "price": "107.39",
+            "quantity": "465.59"
+          }
+        ],
+        "received_timestamp_ms": 1791890695384,
+        "processed_timestamp_ms": 1791890695385
+      },
+      "blocker": "QUALIFICATION_NO_LOT_MEETS_OPENING_MINIMUM_WITHIN_BOUNDS",
+      "transport": "RATE_LIMITED_REST",
+      "age_ms_at_observation_end": 1458,
+      "coverage_scope": "LAST_OBSERVED_BOOK_RESEARCH_NOT_CURRENT_SIGNING_PERMISSION"
+    },
+    "par:BRENT:SELL": {
+      "symbol": "par:BRENT",
+      "entry_side": "SELL",
+      "potential": false,
+      "stage": "PUBLIC_BOOK_ONLY",
+      "asset_id": 2670006,
+      "size_step": "0.01",
+      "observed_ms": 1791890695385,
+      "exchange_ms": 1791890694759,
+      "received_ms": 1791890695384,
+      "execution_scope_permitted": false,
+      "account_checks_performed": false,
+      "normal_minimum": "10",
+      "maximum_notional": "25",
+      "depth_policy": "STRICT_10_PERCENT_OF_EACH_BEST_LEVEL",
+      "protection_verified": false,
+      "bid": "101.98",
+      "ask": "102.47",
+      "spread_bps": "47.93348006847640009782342871",
+      "bid_quantity": "0.48",
+      "ask_quantity": "47.65",
+      "bid_depth_limit": "0.048",
+      "ask_depth_limit": "4.765",
+      "entry_limit": "101.93",
+      "exit_bound": "104.00",
+      "reviewed_immediate_exit_limit": "102.67",
+      "minimum_valid_entry_quantity": "0.10",
+      "minimum_entry_notional": "10.1930",
+      "maximum_book_quantity": "0.04",
+      "maximum_book_notional": "4.0772",
+      "quantity_bounds": {
+        "notional": "0.2452663592661630530756401452",
+        "bid_depth": "0.048",
+        "ask_depth": "4.765"
+      },
+      "binding_capacity_constraints": [
+        "bid_depth"
+      ],
+      "minimum_lot_notional": "1.0193",
+      "residuals": {
+        "ready": false,
+        "blocker": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL",
+        "first_unverified_quantity": "0.01",
+        "close_side": "BUY",
+        "notional": "1.0046"
+      },
+      "l2_research": {
+        "entry": {
+          "available_quantity": "9.03",
+          "requested_quantity": "0.10",
+          "covered_quantity": "0.10",
+          "shortfall": "0.00",
+          "cost": "10.1980",
+          "vwap": "101.98",
+          "limit": "101.93",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "exit": {
+          "available_quantity": "630.68",
+          "requested_quantity": "0.10",
+          "covered_quantity": "0.10",
+          "shortfall": "0.00",
+          "cost": "10.2470",
+          "vwap": "102.47",
+          "limit": "104.00",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "levels": {
+          "bids": 13,
+          "asks": 8
+        },
+        "hypothetical_aggregate_depth_quantity": "0.24",
+        "aggregate_can_meet_minimum": true,
+        "affects_eligibility": false,
+        "separate_policy_approval_required": true
+      },
+      "raw_book": {
+        "symbol": "par:BRENT",
+        "timestamp_ms": 1791890694759,
+        "bids": [
+          {
+            "price": "101.98",
+            "quantity": "0.48"
+          },
+          {
+            "price": "101.93",
+            "quantity": "8.55"
+          },
+          {
+            "price": "101.9",
+            "quantity": "2.94"
+          },
+          {
+            "price": "101.65",
+            "quantity": "49.18"
+          },
+          {
+            "price": "101.59",
+            "quantity": "0.96"
+          },
+          {
+            "price": "101.38",
+            "quantity": "0.96"
+          },
+          {
+            "price": "101.33",
+            "quantity": "98.68"
+          },
+          {
+            "price": "100.56",
+            "quantity": "298.32"
+          },
+          {
+            "price": "100.07",
+            "quantity": "299.79"
+          },
+          {
+            "price": "99.256",
+            "quantity": "402.99"
+          },
+          {
+            "price": "98.036",
+            "quantity": "459.01"
+          },
+          {
+            "price": "96.002",
+            "quantity": "520.82"
+          },
+          {
+            "price": "94.152",
+            "quantity": "0.13"
+          }
+        ],
+        "asks": [
+          {
+            "price": "102.47",
+            "quantity": "47.65"
+          },
+          {
+            "price": "102.48",
+            "quantity": "0.93"
+          },
+          {
+            "price": "102.8",
+            "quantity": "97.27"
+          },
+          {
+            "price": "102.84",
+            "quantity": "194.47"
+          },
+          {
+            "price": "103.32",
+            "quantity": "290.36"
+          },
+          {
+            "price": "104.14",
+            "quantity": "384.09"
+          },
+          {
+            "price": "105.36",
+            "quantity": "427.1"
+          },
+          {
+            "price": "107.39",
+            "quantity": "465.59"
+          }
+        ],
+        "received_timestamp_ms": 1791890695384,
+        "processed_timestamp_ms": 1791890695385
+      },
+      "blocker": "QUALIFICATION_NO_LOT_MEETS_OPENING_MINIMUM_WITHIN_BOUNDS",
+      "transport": "RATE_LIMITED_REST",
+      "age_ms_at_observation_end": 1458,
+      "coverage_scope": "LAST_OBSERVED_BOOK_RESEARCH_NOT_CURRENT_SIGNING_PERMISSION"
+    },
+    "par:BTC:BUY": {
+      "symbol": "par:BTC",
+      "entry_side": "BUY",
+      "potential": false,
+      "stage": "PUBLIC_BOOK_ONLY",
+      "asset_id": 2670000,
+      "size_step": "0.0001",
+      "observed_ms": 1791890695546,
+      "exchange_ms": 1791890695270,
+      "received_ms": 1791890695545,
+      "execution_scope_permitted": true,
+      "account_checks_performed": false,
+      "normal_minimum": "10",
+      "maximum_notional": "25",
+      "depth_policy": "STRICT_10_PERCENT_OF_EACH_BEST_LEVEL",
+      "protection_verified": false,
+      "bid": "83451.0",
+      "ask": "83552.0",
+      "spread_bps": "12.09559109716591917510463884",
+      "bid_quantity": "0.0604",
+      "ask_quantity": "0.0006",
+      "bid_depth_limit": "0.00604",
+      "ask_depth_limit": "0.00006",
+      "entry_limit": "83593",
+      "exit_bound": "82204",
+      "reviewed_immediate_exit_limit": "83285",
+      "minimum_valid_entry_quantity": "0.0002",
+      "minimum_entry_notional": "16.7186",
+      "maximum_book_quantity": "0.0000",
+      "maximum_book_notional": "0.0000",
+      "quantity_bounds": {
+        "notional": "0.0002990681037885947387939181510",
+        "bid_depth": "0.00604",
+        "ask_depth": "0.00006"
+      },
+      "binding_capacity_constraints": [
+        "ask_depth"
+      ],
+      "minimum_lot_notional": "8.3593",
+      "residuals": {
+        "ready": true,
+        "possible_residual_count": 2,
+        "close_side": "SELL",
+        "historical_shapes": [
+          {
+            "scope": "VERIFIED_EXACT_FULL_POSITION_IOC_CLOSE",
+            "historical_oid": 62228843959,
+            "evidence": "V8.5_ORIGINAL_ORDER_AND_FULL_POSITION_FILL_READBACK",
+            "evidence_sha256": "c421e3ffc251cb770c67b44395301e50ec0fbb6903146f18c51aa370a88a2764"
+          }
+        ],
+        "future_acceptance_guaranteed": false,
+        "protective_stop_verified": false
+      },
+      "l2_research": {
+        "entry": {
+          "available_quantity": "0.0006",
+          "requested_quantity": "0.0002",
+          "covered_quantity": "0.0002",
+          "shortfall": "0.0000",
+          "cost": "16.71040",
+          "vwap": "83552.0",
+          "limit": "83593",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "exit": {
+          "available_quantity": "0.7899",
+          "requested_quantity": "0.0002",
+          "covered_quantity": "0.0002",
+          "shortfall": "0.0000",
+          "cost": "16.69020",
+          "vwap": "83451.0",
+          "limit": "82204",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "levels": {
+          "bids": 12,
+          "asks": 12
+        },
+        "hypothetical_aggregate_depth_quantity": "0.0000",
+        "aggregate_can_meet_minimum": false,
+        "affects_eligibility": false,
+        "separate_policy_approval_required": true
+      },
+      "raw_book": {
+        "symbol": "par:BTC",
+        "timestamp_ms": 1791890695270,
+        "bids": [
+          {
+            "price": "83451.0",
+            "quantity": "0.0604"
+          },
+          {
+            "price": "83435.0",
+            "quantity": "0.0011"
+          },
+          {
+            "price": "83403.0",
+            "quantity": "0.0009"
+          },
+          {
+            "price": "83330.0",
+            "quantity": "0.0009"
+          },
+          {
+            "price": "83250.0",
+            "quantity": "0.1201"
+          },
+          {
+            "price": "82673.0",
+            "quantity": "0.2419"
+          },
+          {
+            "price": "82273.0",
+            "quantity": "0.3646"
+          },
+          {
+            "price": "81673.0",
+            "quantity": "0.4897"
+          },
+          {
+            "price": "80673.0",
+            "quantity": "0.5578"
+          },
+          {
+            "price": "79340.0",
+            "quantity": "0.6301"
+          },
+          {
+            "price": "78385.0",
+            "quantity": "0.0025"
+          },
+          {
+            "price": "74730.0",
+            "quantity": "0.0002"
+          }
+        ],
+        "asks": [
+          {
+            "price": "83552.0",
+            "quantity": "0.0006"
+          },
+          {
+            "price": "83618.0",
+            "quantity": "0.0011"
+          },
+          {
+            "price": "83654.0",
+            "quantity": "0.0073"
+          },
+          {
+            "price": "83792.0",
+            "quantity": "0.0012"
+          },
+          {
+            "price": "83852.0",
+            "quantity": "0.0596"
+          },
+          {
+            "price": "83940.0",
+            "quantity": "0.0012"
+          },
+          {
+            "price": "84007.0",
+            "quantity": "0.238"
+          },
+          {
+            "price": "84053.0",
+            "quantity": "0.1189"
+          },
+          {
+            "price": "84407.0",
+            "quantity": "0.3554"
+          },
+          {
+            "price": "85007.0",
+            "quantity": "0.4705"
+          },
+          {
+            "price": "86007.0",
+            "quantity": "0.5232"
+          },
+          {
+            "price": "87341.0",
+            "quantity": "0.5724"
+          }
+        ],
+        "received_timestamp_ms": 1791890695545,
+        "processed_timestamp_ms": 1791890695546
+      },
+      "blocker": "QUALIFICATION_NO_LOT_MEETS_OPENING_MINIMUM_WITHIN_BOUNDS",
+      "transport": "RATE_LIMITED_REST",
+      "age_ms_at_observation_end": 947,
+      "coverage_scope": "LAST_OBSERVED_BOOK_RESEARCH_NOT_CURRENT_SIGNING_PERMISSION"
+    },
+    "par:BTC:SELL": {
+      "symbol": "par:BTC",
+      "entry_side": "SELL",
+      "potential": false,
+      "stage": "PUBLIC_BOOK_ONLY",
+      "asset_id": 2670000,
+      "size_step": "0.0001",
+      "observed_ms": 1791890695546,
+      "exchange_ms": 1791890695270,
+      "received_ms": 1791890695545,
+      "execution_scope_permitted": false,
+      "account_checks_performed": false,
+      "normal_minimum": "10",
+      "maximum_notional": "25",
+      "depth_policy": "STRICT_10_PERCENT_OF_EACH_BEST_LEVEL",
+      "protection_verified": false,
+      "bid": "83451.0",
+      "ask": "83552.0",
+      "spread_bps": "12.09559109716591917510463884",
+      "bid_quantity": "0.0604",
+      "ask_quantity": "0.0006",
+      "bid_depth_limit": "0.00604",
+      "ask_depth_limit": "0.00006",
+      "entry_limit": "83410",
+      "exit_bound": "84808",
+      "reviewed_immediate_exit_limit": "83719",
+      "minimum_valid_entry_quantity": "0.0002",
+      "minimum_entry_notional": "16.6820",
+      "maximum_book_quantity": "0.0000",
+      "maximum_book_notional": "0.0000",
+      "quantity_bounds": {
+        "notional": "0.0002997242536866083203452823402",
+        "bid_depth": "0.00604",
+        "ask_depth": "0.00006"
+      },
+      "binding_capacity_constraints": [
+        "ask_depth"
+      ],
+      "minimum_lot_notional": "8.3410",
+      "residuals": {
+        "ready": true,
+        "possible_residual_count": 2,
+        "close_side": "BUY",
+        "historical_shapes": [
+          {
+            "scope": "VERIFIED_EXACT_FULL_POSITION_IOC_CLOSE",
+            "historical_oid": 62391880965,
+            "evidence": "V8.5_ORIGINAL_ORDER_AND_FULL_POSITION_FILL_READBACK",
+            "evidence_sha256": "c421e3ffc251cb770c67b44395301e50ec0fbb6903146f18c51aa370a88a2764"
+          }
+        ],
+        "future_acceptance_guaranteed": false,
+        "protective_stop_verified": false
+      },
+      "l2_research": {
+        "entry": {
+          "available_quantity": "0.0615",
+          "requested_quantity": "0.0002",
+          "covered_quantity": "0.0002",
+          "shortfall": "0.0000",
+          "cost": "16.69020",
+          "vwap": "83451.0",
+          "limit": "83410",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "exit": {
+          "available_quantity": "0.7833",
+          "requested_quantity": "0.0002",
+          "covered_quantity": "0.0002",
+          "shortfall": "0.0000",
+          "cost": "16.71040",
+          "vwap": "83552.0",
+          "limit": "84808",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "levels": {
+          "bids": 12,
+          "asks": 12
+        },
+        "hypothetical_aggregate_depth_quantity": "0.0002",
+        "aggregate_can_meet_minimum": true,
+        "affects_eligibility": false,
+        "separate_policy_approval_required": true
+      },
+      "raw_book": {
+        "symbol": "par:BTC",
+        "timestamp_ms": 1791890695270,
+        "bids": [
+          {
+            "price": "83451.0",
+            "quantity": "0.0604"
+          },
+          {
+            "price": "83435.0",
+            "quantity": "0.0011"
+          },
+          {
+            "price": "83403.0",
+            "quantity": "0.0009"
+          },
+          {
+            "price": "83330.0",
+            "quantity": "0.0009"
+          },
+          {
+            "price": "83250.0",
+            "quantity": "0.1201"
+          },
+          {
+            "price": "82673.0",
+            "quantity": "0.2419"
+          },
+          {
+            "price": "82273.0",
+            "quantity": "0.3646"
+          },
+          {
+            "price": "81673.0",
+            "quantity": "0.4897"
+          },
+          {
+            "price": "80673.0",
+            "quantity": "0.5578"
+          },
+          {
+            "price": "79340.0",
+            "quantity": "0.6301"
+          },
+          {
+            "price": "78385.0",
+            "quantity": "0.0025"
+          },
+          {
+            "price": "74730.0",
+            "quantity": "0.0002"
+          }
+        ],
+        "asks": [
+          {
+            "price": "83552.0",
+            "quantity": "0.0006"
+          },
+          {
+            "price": "83618.0",
+            "quantity": "0.0011"
+          },
+          {
+            "price": "83654.0",
+            "quantity": "0.0073"
+          },
+          {
+            "price": "83792.0",
+            "quantity": "0.0012"
+          },
+          {
+            "price": "83852.0",
+            "quantity": "0.0596"
+          },
+          {
+            "price": "83940.0",
+            "quantity": "0.0012"
+          },
+          {
+            "price": "84007.0",
+            "quantity": "0.238"
+          },
+          {
+            "price": "84053.0",
+            "quantity": "0.1189"
+          },
+          {
+            "price": "84407.0",
+            "quantity": "0.3554"
+          },
+          {
+            "price": "85007.0",
+            "quantity": "0.4705"
+          },
+          {
+            "price": "86007.0",
+            "quantity": "0.5232"
+          },
+          {
+            "price": "87341.0",
+            "quantity": "0.5724"
+          }
+        ],
+        "received_timestamp_ms": 1791890695545,
+        "processed_timestamp_ms": 1791890695546
+      },
+      "blocker": "QUALIFICATION_NO_LOT_MEETS_OPENING_MINIMUM_WITHIN_BOUNDS",
+      "transport": "RATE_LIMITED_REST",
+      "age_ms_at_observation_end": 947,
+      "coverage_scope": "LAST_OBSERVED_BOOK_RESEARCH_NOT_CURRENT_SIGNING_PERMISSION"
+    },
+    "par:ETH:BUY": {
+      "symbol": "par:ETH",
+      "entry_side": "BUY",
+      "potential": false,
+      "stage": "PUBLIC_BOOK_ONLY",
+      "asset_id": 2670001,
+      "size_step": "0.0001",
+      "observed_ms": 1791890695710,
+      "exchange_ms": 1791890695270,
+      "received_ms": 1791890695709,
+      "execution_scope_permitted": true,
+      "account_checks_performed": false,
+      "normal_minimum": "10",
+      "maximum_notional": "25",
+      "depth_policy": "STRICT_10_PERCENT_OF_EACH_BEST_LEVEL",
+      "protection_verified": false,
+      "bid": "2514.1",
+      "ask": "2514.2",
+      "spread_bps": "0.3977487421196030467553646362",
+      "bid_quantity": "0.014",
+      "ask_quantity": "0.0546",
+      "bid_depth_limit": "0.0014",
+      "ask_depth_limit": "0.00546",
+      "entry_limit": "2515.4",
+      "exit_bound": "2476.6",
+      "reviewed_immediate_exit_limit": "2509.1",
+      "minimum_valid_entry_quantity": "0.0040",
+      "minimum_entry_notional": "10.06160",
+      "maximum_book_quantity": "0.0014",
+      "maximum_book_notional": "3.52156",
+      "quantity_bounds": {
+        "notional": "0.009938777132861572712093504015",
+        "bid_depth": "0.0014",
+        "ask_depth": "0.00546"
+      },
+      "binding_capacity_constraints": [
+        "bid_depth"
+      ],
+      "minimum_lot_notional": "0.25154",
+      "residuals": {
+        "ready": false,
+        "blocker": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL",
+        "first_unverified_quantity": "0.0001",
+        "close_side": "SELL",
+        "notional": "0.24766"
+      },
+      "l2_research": {
+        "entry": {
+          "available_quantity": "2.1326",
+          "requested_quantity": "0.0040",
+          "covered_quantity": "0.0040",
+          "shortfall": "0.0000",
+          "cost": "10.05680",
+          "vwap": "2514.2",
+          "limit": "2515.4",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "exit": {
+          "available_quantity": "26.1904",
+          "requested_quantity": "0.0040",
+          "covered_quantity": "0.0040",
+          "shortfall": "0.0000",
+          "cost": "10.05640",
+          "vwap": "2514.1",
+          "limit": "2476.6",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "levels": {
+          "bids": 9,
+          "asks": 8
+        },
+        "hypothetical_aggregate_depth_quantity": "0.0099",
+        "aggregate_can_meet_minimum": true,
+        "affects_eligibility": false,
+        "separate_policy_approval_required": true
+      },
+      "raw_book": {
+        "symbol": "par:ETH",
+        "timestamp_ms": 1791890695270,
+        "bids": [
+          {
+            "price": "2514.1",
+            "quantity": "0.014"
+          },
+          {
+            "price": "2507.4",
+            "quantity": "0.0398"
+          },
+          {
+            "price": "2502.8",
+            "quantity": "1.9977"
+          },
+          {
+            "price": "2496.7",
+            "quantity": "4.0052"
+          },
+          {
+            "price": "2490.6",
+            "quantity": "8.0301"
+          },
+          {
+            "price": "2478.6",
+            "quantity": "12.1036"
+          },
+          {
+            "price": "2460.5",
+            "quantity": "16.2568"
+          },
+          {
+            "price": "2430.4",
+            "quantity": "18.5154"
+          },
+          {
+            "price": "2390.2",
+            "quantity": "20.9187"
+          }
+        ],
+        "asks": [
+          {
+            "price": "2514.2",
+            "quantity": "0.0546"
+          },
+          {
+            "price": "2514.8",
+            "quantity": "2.078"
+          },
+          {
+            "price": "2520.8",
+            "quantity": "3.9669"
+          },
+          {
+            "price": "2530.8",
+            "quantity": "7.9026"
+          },
+          {
+            "price": "2542.9",
+            "quantity": "11.7975"
+          },
+          {
+            "price": "2560.9",
+            "quantity": "15.6195"
+          },
+          {
+            "price": "2591.1",
+            "quantity": "17.3671"
+          },
+          {
+            "price": "2631.2",
+            "quantity": "19.0027"
+          }
+        ],
+        "received_timestamp_ms": 1791890695709,
+        "processed_timestamp_ms": 1791890695710
+      },
+      "blocker": "QUALIFICATION_NO_LOT_MEETS_OPENING_MINIMUM_WITHIN_BOUNDS",
+      "transport": "RATE_LIMITED_REST",
+      "age_ms_at_observation_end": 947,
+      "coverage_scope": "LAST_OBSERVED_BOOK_RESEARCH_NOT_CURRENT_SIGNING_PERMISSION"
+    },
+    "par:ETH:SELL": {
+      "symbol": "par:ETH",
+      "entry_side": "SELL",
+      "potential": false,
+      "stage": "PUBLIC_BOOK_ONLY",
+      "asset_id": 2670001,
+      "size_step": "0.0001",
+      "observed_ms": 1791890695710,
+      "exchange_ms": 1791890695270,
+      "received_ms": 1791890695709,
+      "execution_scope_permitted": false,
+      "account_checks_performed": false,
+      "normal_minimum": "10",
+      "maximum_notional": "25",
+      "depth_policy": "STRICT_10_PERCENT_OF_EACH_BEST_LEVEL",
+      "protection_verified": false,
+      "bid": "2514.1",
+      "ask": "2514.2",
+      "spread_bps": "0.3977487421196030467553646362",
+      "bid_quantity": "0.014",
+      "ask_quantity": "0.0546",
+      "bid_depth_limit": "0.0014",
+      "ask_depth_limit": "0.00546",
+      "entry_limit": "2512.9",
+      "exit_bound": "2551.9",
+      "reviewed_immediate_exit_limit": "2519.2",
+      "minimum_valid_entry_quantity": "0.0040",
+      "minimum_entry_notional": "10.05160",
+      "maximum_book_quantity": "0.0014",
+      "maximum_book_notional": "3.51806",
+      "quantity_bounds": {
+        "notional": "0.009948664889171873134625333280",
+        "bid_depth": "0.0014",
+        "ask_depth": "0.00546"
+      },
+      "binding_capacity_constraints": [
+        "bid_depth"
+      ],
+      "minimum_lot_notional": "0.25129",
+      "residuals": {
+        "ready": false,
+        "blocker": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL",
+        "first_unverified_quantity": "0.0002",
+        "close_side": "BUY",
+        "notional": "0.49532"
+      },
+      "l2_research": {
+        "entry": {
+          "available_quantity": "0.014",
+          "requested_quantity": "0.0040",
+          "covered_quantity": "0.0040",
+          "shortfall": "0.0000",
+          "cost": "10.05640",
+          "vwap": "2514.1",
+          "limit": "2512.9",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "exit": {
+          "available_quantity": "25.7996",
+          "requested_quantity": "0.0040",
+          "covered_quantity": "0.0040",
+          "shortfall": "0.0000",
+          "cost": "10.05680",
+          "vwap": "2514.2",
+          "limit": "2551.9",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "levels": {
+          "bids": 9,
+          "asks": 8
+        },
+        "hypothetical_aggregate_depth_quantity": "0.0014",
+        "aggregate_can_meet_minimum": false,
+        "affects_eligibility": false,
+        "separate_policy_approval_required": true
+      },
+      "raw_book": {
+        "symbol": "par:ETH",
+        "timestamp_ms": 1791890695270,
+        "bids": [
+          {
+            "price": "2514.1",
+            "quantity": "0.014"
+          },
+          {
+            "price": "2507.4",
+            "quantity": "0.0398"
+          },
+          {
+            "price": "2502.8",
+            "quantity": "1.9977"
+          },
+          {
+            "price": "2496.7",
+            "quantity": "4.0052"
+          },
+          {
+            "price": "2490.6",
+            "quantity": "8.0301"
+          },
+          {
+            "price": "2478.6",
+            "quantity": "12.1036"
+          },
+          {
+            "price": "2460.5",
+            "quantity": "16.2568"
+          },
+          {
+            "price": "2430.4",
+            "quantity": "18.5154"
+          },
+          {
+            "price": "2390.2",
+            "quantity": "20.9187"
+          }
+        ],
+        "asks": [
+          {
+            "price": "2514.2",
+            "quantity": "0.0546"
+          },
+          {
+            "price": "2514.8",
+            "quantity": "2.078"
+          },
+          {
+            "price": "2520.8",
+            "quantity": "3.9669"
+          },
+          {
+            "price": "2530.8",
+            "quantity": "7.9026"
+          },
+          {
+            "price": "2542.9",
+            "quantity": "11.7975"
+          },
+          {
+            "price": "2560.9",
+            "quantity": "15.6195"
+          },
+          {
+            "price": "2591.1",
+            "quantity": "17.3671"
+          },
+          {
+            "price": "2631.2",
+            "quantity": "19.0027"
+          }
+        ],
+        "received_timestamp_ms": 1791890695709,
+        "processed_timestamp_ms": 1791890695710
+      },
+      "blocker": "QUALIFICATION_NO_LOT_MEETS_OPENING_MINIMUM_WITHIN_BOUNDS",
+      "transport": "RATE_LIMITED_REST",
+      "age_ms_at_observation_end": 947,
+      "coverage_scope": "LAST_OBSERVED_BOOK_RESEARCH_NOT_CURRENT_SIGNING_PERMISSION"
+    },
+    "par:EWJ:BUY": {
+      "symbol": "par:EWJ",
+      "entry_side": "BUY",
+      "potential": false,
+      "stage": "PUBLIC_BOOK_ONLY",
+      "asset_id": 2670005,
+      "size_step": "0.001",
+      "observed_ms": 1791890695710,
+      "exchange_ms": 1791890695270,
+      "received_ms": 1791890695596,
+      "execution_scope_permitted": false,
+      "account_checks_performed": false,
+      "normal_minimum": "10",
+      "maximum_notional": "25",
+      "depth_policy": "STRICT_10_PERCENT_OF_EACH_BEST_LEVEL",
+      "protection_verified": false,
+      "bid": "97.185",
+      "ask": "97.209",
+      "spread_bps": "2.469212012716441865489675607",
+      "bid_quantity": "25.952",
+      "ask_quantity": "0.232",
+      "bid_depth_limit": "2.5952",
+      "ask_depth_limit": "0.0232",
+      "entry_limit": "97.257",
+      "exit_bound": "95.733",
+      "reviewed_immediate_exit_limit": "96.991",
+      "minimum_valid_entry_quantity": "0.103",
+      "minimum_entry_notional": "10.017471",
+      "maximum_book_quantity": "0.023",
+      "maximum_book_notional": "2.236911",
+      "quantity_bounds": {
+        "notional": "0.2570509063614958306342988165",
+        "bid_depth": "2.5952",
+        "ask_depth": "0.0232"
+      },
+      "binding_capacity_constraints": [
+        "ask_depth"
+      ],
+      "minimum_lot_notional": "0.097257",
+      "residuals": {
+        "ready": false,
+        "blocker": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL",
+        "first_unverified_quantity": "0.001",
+        "close_side": "SELL",
+        "notional": "0.095733"
+      },
+      "l2_research": {
+        "entry": {
+          "available_quantity": "0.232",
+          "requested_quantity": "0.103",
+          "covered_quantity": "0.103",
+          "shortfall": "0.000",
+          "cost": "10.012527",
+          "vwap": "97.209",
+          "limit": "97.257",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "exit": {
+          "available_quantity": "1628.717",
+          "requested_quantity": "0.103",
+          "covered_quantity": "0.103",
+          "shortfall": "0.000",
+          "cost": "10.010055",
+          "vwap": "97.185",
+          "limit": "95.733",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "levels": {
+          "bids": 14,
+          "asks": 11
+        },
+        "hypothetical_aggregate_depth_quantity": "0.023",
+        "aggregate_can_meet_minimum": false,
+        "affects_eligibility": false,
+        "separate_policy_approval_required": true
+      },
+      "raw_book": {
+        "symbol": "par:EWJ",
+        "timestamp_ms": 1791890695270,
+        "bids": [
+          {
+            "price": "97.185",
+            "quantity": "25.952"
+          },
+          {
+            "price": "97.165",
+            "quantity": "51.417"
+          },
+          {
+            "price": "97.126",
+            "quantity": "359.921"
+          },
+          {
+            "price": "97.088",
+            "quantity": "514.067"
+          },
+          {
+            "price": "97.071",
+            "quantity": "0.492"
+          },
+          {
+            "price": "96.985",
+            "quantity": "0.493"
+          },
+          {
+            "price": "96.865",
+            "quantity": "51.618"
+          },
+          {
+            "price": "96.554",
+            "quantity": "103.568"
+          },
+          {
+            "price": "96.215",
+            "quantity": "207.867"
+          },
+          {
+            "price": "95.748",
+            "quantity": "313.322"
+          },
+          {
+            "price": "94.97",
+            "quantity": "421.185"
+          },
+          {
+            "price": "93.802",
+            "quantity": "479.733"
+          },
+          {
+            "price": "92.493",
+            "quantity": "0.125"
+          },
+          {
+            "price": "91.856",
+            "quantity": "544.33"
+          }
+        ],
+        "asks": [
+          {
+            "price": "97.209",
+            "quantity": "0.232"
+          },
+          {
+            "price": "97.439",
+            "quantity": "514.067"
+          },
+          {
+            "price": "97.48",
+            "quantity": "0.468"
+          },
+          {
+            "price": "97.643",
+            "quantity": "51.206"
+          },
+          {
+            "price": "97.651",
+            "quantity": "0.465"
+          },
+          {
+            "price": "97.954",
+            "quantity": "102.088"
+          },
+          {
+            "price": "98.395",
+            "quantity": "203.262"
+          },
+          {
+            "price": "98.862",
+            "quantity": "303.453"
+          },
+          {
+            "price": "99.64",
+            "quantity": "401.445"
+          },
+          {
+            "price": "100.81",
+            "quantity": "446.384"
+          },
+          {
+            "price": "102.75",
+            "quantity": "486.618"
+          }
+        ],
+        "received_timestamp_ms": 1791890695596,
+        "processed_timestamp_ms": 1791890695596
+      },
+      "blocker": "QUALIFICATION_NO_LOT_MEETS_OPENING_MINIMUM_WITHIN_BOUNDS",
+      "transport": "WS_ACKNOWLEDGED_REPEATED",
+      "age_ms_at_observation_end": 947,
+      "coverage_scope": "LAST_OBSERVED_BOOK_RESEARCH_NOT_CURRENT_SIGNING_PERMISSION"
+    },
+    "par:EWJ:SELL": {
+      "symbol": "par:EWJ",
+      "entry_side": "SELL",
+      "potential": false,
+      "stage": "PUBLIC_BOOK_ONLY",
+      "asset_id": 2670005,
+      "size_step": "0.001",
+      "observed_ms": 1791890695711,
+      "exchange_ms": 1791890695270,
+      "received_ms": 1791890695596,
+      "execution_scope_permitted": false,
+      "account_checks_performed": false,
+      "normal_minimum": "10",
+      "maximum_notional": "25",
+      "depth_policy": "STRICT_10_PERCENT_OF_EACH_BEST_LEVEL",
+      "protection_verified": false,
+      "bid": "97.185",
+      "ask": "97.209",
+      "spread_bps": "2.469212012716441865489675607",
+      "bid_quantity": "25.952",
+      "ask_quantity": "0.232",
+      "bid_depth_limit": "2.5952",
+      "ask_depth_limit": "0.0232",
+      "entry_limit": "97.137",
+      "exit_bound": "98.671",
+      "reviewed_immediate_exit_limit": "97.403",
+      "minimum_valid_entry_quantity": "0.103",
+      "minimum_entry_notional": "10.005111",
+      "maximum_book_quantity": "0.023",
+      "maximum_book_notional": "2.234151",
+      "quantity_bounds": {
+        "notional": "0.2573684589806150076695800776",
+        "bid_depth": "2.5952",
+        "ask_depth": "0.0232"
+      },
+      "binding_capacity_constraints": [
+        "ask_depth"
+      ],
+      "minimum_lot_notional": "0.097137",
+      "residuals": {
+        "ready": false,
+        "blocker": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL",
+        "first_unverified_quantity": "0.002",
+        "close_side": "BUY",
+        "notional": "0.191466"
+      },
+      "l2_research": {
+        "entry": {
+          "available_quantity": "77.369",
+          "requested_quantity": "0.103",
+          "covered_quantity": "0.103",
+          "shortfall": "0.000",
+          "cost": "10.010055",
+          "vwap": "97.185",
+          "limit": "97.137",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "exit": {
+          "available_quantity": "871.788",
+          "requested_quantity": "0.103",
+          "covered_quantity": "0.103",
+          "shortfall": "0.000",
+          "cost": "10.012527",
+          "vwap": "97.209",
+          "limit": "98.671",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "levels": {
+          "bids": 14,
+          "asks": 11
+        },
+        "hypothetical_aggregate_depth_quantity": "0.257",
+        "aggregate_can_meet_minimum": true,
+        "affects_eligibility": false,
+        "separate_policy_approval_required": true
+      },
+      "raw_book": {
+        "symbol": "par:EWJ",
+        "timestamp_ms": 1791890695270,
+        "bids": [
+          {
+            "price": "97.185",
+            "quantity": "25.952"
+          },
+          {
+            "price": "97.165",
+            "quantity": "51.417"
+          },
+          {
+            "price": "97.126",
+            "quantity": "359.921"
+          },
+          {
+            "price": "97.088",
+            "quantity": "514.067"
+          },
+          {
+            "price": "97.071",
+            "quantity": "0.492"
+          },
+          {
+            "price": "96.985",
+            "quantity": "0.493"
+          },
+          {
+            "price": "96.865",
+            "quantity": "51.618"
+          },
+          {
+            "price": "96.554",
+            "quantity": "103.568"
+          },
+          {
+            "price": "96.215",
+            "quantity": "207.867"
+          },
+          {
+            "price": "95.748",
+            "quantity": "313.322"
+          },
+          {
+            "price": "94.97",
+            "quantity": "421.185"
+          },
+          {
+            "price": "93.802",
+            "quantity": "479.733"
+          },
+          {
+            "price": "92.493",
+            "quantity": "0.125"
+          },
+          {
+            "price": "91.856",
+            "quantity": "544.33"
+          }
+        ],
+        "asks": [
+          {
+            "price": "97.209",
+            "quantity": "0.232"
+          },
+          {
+            "price": "97.439",
+            "quantity": "514.067"
+          },
+          {
+            "price": "97.48",
+            "quantity": "0.468"
+          },
+          {
+            "price": "97.643",
+            "quantity": "51.206"
+          },
+          {
+            "price": "97.651",
+            "quantity": "0.465"
+          },
+          {
+            "price": "97.954",
+            "quantity": "102.088"
+          },
+          {
+            "price": "98.395",
+            "quantity": "203.262"
+          },
+          {
+            "price": "98.862",
+            "quantity": "303.453"
+          },
+          {
+            "price": "99.64",
+            "quantity": "401.445"
+          },
+          {
+            "price": "100.81",
+            "quantity": "446.384"
+          },
+          {
+            "price": "102.75",
+            "quantity": "486.618"
+          }
+        ],
+        "received_timestamp_ms": 1791890695596,
+        "processed_timestamp_ms": 1791890695596
+      },
+      "blocker": "QUALIFICATION_NO_LOT_MEETS_OPENING_MINIMUM_WITHIN_BOUNDS",
+      "transport": "WS_ACKNOWLEDGED_REPEATED",
+      "age_ms_at_observation_end": 947,
+      "coverage_scope": "LAST_OBSERVED_BOOK_RESEARCH_NOT_CURRENT_SIGNING_PERMISSION"
+    },
+    "par:EWY:BUY": {
+      "symbol": "par:EWY",
+      "entry_side": "BUY",
+      "potential": false,
+      "stage": "PUBLIC_BOOK_ONLY",
+      "asset_id": 2670004,
+      "size_step": "0.001",
+      "observed_ms": 1791890695711,
+      "exchange_ms": 1791890695270,
+      "received_ms": 1791890695596,
+      "execution_scope_permitted": false,
+      "account_checks_performed": false,
+      "normal_minimum": "10",
+      "maximum_notional": "25",
+      "depth_policy": "STRICT_10_PERCENT_OF_EACH_BEST_LEVEL",
+      "protection_verified": false,
+      "bid": "163.11",
+      "ask": "164.03",
+      "spread_bps": "56.24503270770923763526319007",
+      "bid_quantity": "30.823",
+      "ask_quantity": "0.123",
+      "bid_depth_limit": "3.0823",
+      "ask_depth_limit": "0.0123",
+      "entry_limit": "164.11",
+      "exit_bound": "160.68",
+      "reviewed_immediate_exit_limit": "162.79",
+      "minimum_valid_entry_quantity": "0.061",
+      "minimum_entry_notional": "10.01071",
+      "maximum_book_quantity": "0.012",
+      "maximum_book_notional": "1.96932",
+      "quantity_bounds": {
+        "notional": "0.1523368472366095911279020169",
+        "bid_depth": "3.0823",
+        "ask_depth": "0.0123"
+      },
+      "binding_capacity_constraints": [
+        "ask_depth"
+      ],
+      "minimum_lot_notional": "0.16411",
+      "residuals": {
+        "ready": false,
+        "blocker": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL",
+        "first_unverified_quantity": "0.001",
+        "close_side": "SELL",
+        "notional": "0.16068"
+      },
+      "l2_research": {
+        "entry": {
+          "available_quantity": "0.123",
+          "requested_quantity": "0.061",
+          "covered_quantity": "0.061",
+          "shortfall": "0.000",
+          "cost": "10.00583",
+          "vwap": "164.03",
+          "limit": "164.11",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "exit": {
+          "available_quantity": "401.983",
+          "requested_quantity": "0.061",
+          "covered_quantity": "0.061",
+          "shortfall": "0.000",
+          "cost": "9.94971",
+          "vwap": "163.11",
+          "limit": "160.68",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "levels": {
+          "bids": 9,
+          "asks": 11
+        },
+        "hypothetical_aggregate_depth_quantity": "0.012",
+        "aggregate_can_meet_minimum": false,
+        "affects_eligibility": false,
+        "separate_policy_approval_required": true
+      },
+      "raw_book": {
+        "symbol": "par:EWY",
+        "timestamp_ms": 1791890695270,
+        "bids": [
+          {
+            "price": "163.11",
+            "quantity": "30.823"
+          },
+          {
+            "price": "163.1",
+            "quantity": "0.336"
+          },
+          {
+            "price": "163.04",
+            "quantity": "0.337"
+          },
+          {
+            "price": "162.59",
+            "quantity": "61.504"
+          },
+          {
+            "price": "162.29",
+            "quantity": "123.236"
+          },
+          {
+            "price": "161.51",
+            "quantity": "185.747"
+          },
+          {
+            "price": "160.19",
+            "quantity": "249.703"
+          },
+          {
+            "price": "158.22",
+            "quantity": "284.414"
+          },
+          {
+            "price": "154.94",
+            "quantity": "322.705"
+          }
+        ],
+        "asks": [
+          {
+            "price": "164.03",
+            "quantity": "0.123"
+          },
+          {
+            "price": "164.17",
+            "quantity": "3.658"
+          },
+          {
+            "price": "164.42",
+            "quantity": "30.409"
+          },
+          {
+            "price": "164.87",
+            "quantity": "0.245"
+          },
+          {
+            "price": "164.95",
+            "quantity": "60.624"
+          },
+          {
+            "price": "165.3",
+            "quantity": "0.245"
+          },
+          {
+            "price": "165.97",
+            "quantity": "120.503"
+          },
+          {
+            "price": "166.76",
+            "quantity": "179.899"
+          },
+          {
+            "price": "168.07",
+            "quantity": "237.996"
+          },
+          {
+            "price": "170.04",
+            "quantity": "264.643"
+          },
+          {
+            "price": "173.32",
+            "quantity": "288.483"
+          }
+        ],
+        "received_timestamp_ms": 1791890695596,
+        "processed_timestamp_ms": 1791890695596
+      },
+      "blocker": "QUALIFICATION_NO_LOT_MEETS_OPENING_MINIMUM_WITHIN_BOUNDS",
+      "transport": "WS_ACKNOWLEDGED_REPEATED",
+      "age_ms_at_observation_end": 947,
+      "coverage_scope": "LAST_OBSERVED_BOOK_RESEARCH_NOT_CURRENT_SIGNING_PERMISSION"
+    },
+    "par:EWY:SELL": {
+      "symbol": "par:EWY",
+      "entry_side": "SELL",
+      "potential": false,
+      "stage": "PUBLIC_BOOK_ONLY",
+      "asset_id": 2670004,
+      "size_step": "0.001",
+      "observed_ms": 1791890695711,
+      "exchange_ms": 1791890695270,
+      "received_ms": 1791890695596,
+      "execution_scope_permitted": false,
+      "account_checks_performed": false,
+      "normal_minimum": "10",
+      "maximum_notional": "25",
+      "depth_policy": "STRICT_10_PERCENT_OF_EACH_BEST_LEVEL",
+      "protection_verified": false,
+      "bid": "163.11",
+      "ask": "164.03",
+      "spread_bps": "56.24503270770923763526319007",
+      "bid_quantity": "30.823",
+      "ask_quantity": "0.123",
+      "bid_depth_limit": "3.0823",
+      "ask_depth_limit": "0.0123",
+      "entry_limit": "163.03",
+      "exit_bound": "166.49",
+      "reviewed_immediate_exit_limit": "164.35",
+      "minimum_valid_entry_quantity": "0.062",
+      "minimum_entry_notional": "10.10786",
+      "maximum_book_quantity": "0.012",
+      "maximum_book_notional": "1.95636",
+      "quantity_bounds": {
+        "notional": "0.1533460099368214439060295651",
+        "bid_depth": "3.0823",
+        "ask_depth": "0.0123"
+      },
+      "binding_capacity_constraints": [
+        "ask_depth"
+      ],
+      "minimum_lot_notional": "0.16303",
+      "residuals": {
+        "ready": false,
+        "blocker": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL",
+        "first_unverified_quantity": "0.001",
+        "close_side": "BUY",
+        "notional": "0.16068"
+      },
+      "l2_research": {
+        "entry": {
+          "available_quantity": "31.496",
+          "requested_quantity": "0.062",
+          "covered_quantity": "0.062",
+          "shortfall": "0.000",
+          "cost": "10.11282",
+          "vwap": "163.11",
+          "limit": "163.03",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "exit": {
+          "available_quantity": "215.807",
+          "requested_quantity": "0.062",
+          "covered_quantity": "0.062",
+          "shortfall": "0.000",
+          "cost": "10.16986",
+          "vwap": "164.03",
+          "limit": "166.49",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "levels": {
+          "bids": 9,
+          "asks": 11
+        },
+        "hypothetical_aggregate_depth_quantity": "0.153",
+        "aggregate_can_meet_minimum": true,
+        "affects_eligibility": false,
+        "separate_policy_approval_required": true
+      },
+      "raw_book": {
+        "symbol": "par:EWY",
+        "timestamp_ms": 1791890695270,
+        "bids": [
+          {
+            "price": "163.11",
+            "quantity": "30.823"
+          },
+          {
+            "price": "163.1",
+            "quantity": "0.336"
+          },
+          {
+            "price": "163.04",
+            "quantity": "0.337"
+          },
+          {
+            "price": "162.59",
+            "quantity": "61.504"
+          },
+          {
+            "price": "162.29",
+            "quantity": "123.236"
+          },
+          {
+            "price": "161.51",
+            "quantity": "185.747"
+          },
+          {
+            "price": "160.19",
+            "quantity": "249.703"
+          },
+          {
+            "price": "158.22",
+            "quantity": "284.414"
+          },
+          {
+            "price": "154.94",
+            "quantity": "322.705"
+          }
+        ],
+        "asks": [
+          {
+            "price": "164.03",
+            "quantity": "0.123"
+          },
+          {
+            "price": "164.17",
+            "quantity": "3.658"
+          },
+          {
+            "price": "164.42",
+            "quantity": "30.409"
+          },
+          {
+            "price": "164.87",
+            "quantity": "0.245"
+          },
+          {
+            "price": "164.95",
+            "quantity": "60.624"
+          },
+          {
+            "price": "165.3",
+            "quantity": "0.245"
+          },
+          {
+            "price": "165.97",
+            "quantity": "120.503"
+          },
+          {
+            "price": "166.76",
+            "quantity": "179.899"
+          },
+          {
+            "price": "168.07",
+            "quantity": "237.996"
+          },
+          {
+            "price": "170.04",
+            "quantity": "264.643"
+          },
+          {
+            "price": "173.32",
+            "quantity": "288.483"
+          }
+        ],
+        "received_timestamp_ms": 1791890695596,
+        "processed_timestamp_ms": 1791890695596
+      },
+      "blocker": "QUALIFICATION_NO_LOT_MEETS_OPENING_MINIMUM_WITHIN_BOUNDS",
+      "transport": "WS_ACKNOWLEDGED_REPEATED",
+      "age_ms_at_observation_end": 947,
+      "coverage_scope": "LAST_OBSERVED_BOOK_RESEARCH_NOT_CURRENT_SIGNING_PERMISSION"
+    },
+    "par:GOLD:BUY": {
+      "symbol": "par:GOLD",
+      "entry_side": "BUY",
+      "potential": false,
+      "stage": "PUBLIC_BOOK_ONLY",
+      "asset_id": 2670007,
+      "size_step": "0.0001",
+      "observed_ms": 1791890695711,
+      "exchange_ms": 1791890695270,
+      "received_ms": 1791890695597,
+      "execution_scope_permitted": false,
+      "account_checks_performed": false,
+      "normal_minimum": "10",
+      "maximum_notional": "25",
+      "depth_policy": "STRICT_10_PERCENT_OF_EACH_BEST_LEVEL",
+      "protection_verified": false,
+      "bid": "4183.0",
+      "ask": "4188.0",
+      "spread_bps": "11.94600406164138095806952574",
+      "bid_quantity": "3.5931",
+      "ask_quantity": "0.0097",
+      "bid_depth_limit": "0.35931",
+      "ask_depth_limit": "0.00097",
+      "entry_limit": "4190.0",
+      "exit_bound": "4120.5",
+      "reviewed_immediate_exit_limit": "4174.7",
+      "minimum_valid_entry_quantity": "0.0024",
+      "minimum_entry_notional": "10.05600",
+      "maximum_book_quantity": "0.0009",
+      "maximum_book_notional": "3.77100",
+      "quantity_bounds": {
+        "notional": "0.005966587112171837708830548926",
+        "bid_depth": "0.35931",
+        "ask_depth": "0.00097"
+      },
+      "binding_capacity_constraints": [
+        "ask_depth"
+      ],
+      "minimum_lot_notional": "0.41900",
+      "residuals": {
+        "ready": false,
+        "blocker": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL",
+        "first_unverified_quantity": "0.0001",
+        "close_side": "SELL",
+        "notional": "0.41205"
+      },
+      "l2_research": {
+        "entry": {
+          "available_quantity": "0.1199",
+          "requested_quantity": "0.0024",
+          "covered_quantity": "0.0024",
+          "shortfall": "0.0000",
+          "cost": "10.05120",
+          "vwap": "4188.0",
+          "limit": "4190.0",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "exit": {
+          "available_quantity": "19.2449",
+          "requested_quantity": "0.0024",
+          "covered_quantity": "0.0024",
+          "shortfall": "0.0000",
+          "cost": "10.03920",
+          "vwap": "4183.0",
+          "limit": "4120.5",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "levels": {
+          "bids": 11,
+          "asks": 13
+        },
+        "hypothetical_aggregate_depth_quantity": "0.0059",
+        "aggregate_can_meet_minimum": true,
+        "affects_eligibility": false,
+        "separate_policy_approval_required": true
+      },
+      "raw_book": {
+        "symbol": "par:GOLD",
+        "timestamp_ms": 1791890695270,
+        "bids": [
+          {
+            "price": "4183.0",
+            "quantity": "3.5931"
+          },
+          {
+            "price": "4181.5",
+            "quantity": "0.0215"
+          },
+          {
+            "price": "4180.7",
+            "quantity": "0.0216"
+          },
+          {
+            "price": "4178.8",
+            "quantity": "1.1495"
+          },
+          {
+            "price": "4168.8",
+            "quantity": "2.3987"
+          },
+          {
+            "price": "4157.9",
+            "quantity": "4.8101"
+          },
+          {
+            "price": "4137.7",
+            "quantity": "7.2504"
+          },
+          {
+            "price": "4107.6",
+            "quantity": "9.738"
+          },
+          {
+            "price": "4057.3",
+            "quantity": "11.0911"
+          },
+          {
+            "price": "4053.5",
+            "quantity": "0.0029"
+          },
+          {
+            "price": "3990.2",
+            "quantity": "12.5307"
+          }
+        ],
+        "asks": [
+          {
+            "price": "4188.0",
+            "quantity": "0.0097"
+          },
+          {
+            "price": "4189.4",
+            "quantity": "0.1091"
+          },
+          {
+            "price": "4190.0",
+            "quantity": "0.0011"
+          },
+          {
+            "price": "4193.0",
+            "quantity": "11.9462"
+          },
+          {
+            "price": "4197.1",
+            "quantity": "0.0193"
+          },
+          {
+            "price": "4198.9",
+            "quantity": "1.1907"
+          },
+          {
+            "price": "4201.6",
+            "quantity": "0.0193"
+          },
+          {
+            "price": "4209.0",
+            "quantity": "2.3758"
+          },
+          {
+            "price": "4224.9",
+            "quantity": "4.7338"
+          },
+          {
+            "price": "4245.0",
+            "quantity": "7.0671"
+          },
+          {
+            "price": "4275.2",
+            "quantity": "9.3562"
+          },
+          {
+            "price": "4325.5",
+            "quantity": "10.4034"
+          },
+          {
+            "price": "4392.6",
+            "quantity": "11.3827"
+          }
+        ],
+        "received_timestamp_ms": 1791890695597,
+        "processed_timestamp_ms": 1791890695597
+      },
+      "blocker": "QUALIFICATION_NO_LOT_MEETS_OPENING_MINIMUM_WITHIN_BOUNDS",
+      "transport": "WS_ACKNOWLEDGED_REPEATED",
+      "age_ms_at_observation_end": 947,
+      "coverage_scope": "LAST_OBSERVED_BOOK_RESEARCH_NOT_CURRENT_SIGNING_PERMISSION"
+    },
+    "par:GOLD:SELL": {
+      "symbol": "par:GOLD",
+      "entry_side": "SELL",
+      "potential": false,
+      "stage": "PUBLIC_BOOK_ONLY",
+      "asset_id": 2670007,
+      "size_step": "0.0001",
+      "observed_ms": 1791890695712,
+      "exchange_ms": 1791890695270,
+      "received_ms": 1791890695597,
+      "execution_scope_permitted": false,
+      "account_checks_performed": false,
+      "normal_minimum": "10",
+      "maximum_notional": "25",
+      "depth_policy": "STRICT_10_PERCENT_OF_EACH_BEST_LEVEL",
+      "protection_verified": false,
+      "bid": "4183.0",
+      "ask": "4188.0",
+      "spread_bps": "11.94600406164138095806952574",
+      "bid_quantity": "3.5931",
+      "ask_quantity": "0.0097",
+      "bid_depth_limit": "0.35931",
+      "ask_depth_limit": "0.00097",
+      "entry_limit": "4181.0",
+      "exit_bound": "4250.9",
+      "reviewed_immediate_exit_limit": "4196.3",
+      "minimum_valid_entry_quantity": "0.0024",
+      "minimum_entry_notional": "10.03440",
+      "maximum_book_quantity": "0.0009",
+      "maximum_book_notional": "3.76290",
+      "quantity_bounds": {
+        "notional": "0.005979430758191820138722793590",
+        "bid_depth": "0.35931",
+        "ask_depth": "0.00097"
+      },
+      "binding_capacity_constraints": [
+        "ask_depth"
+      ],
+      "minimum_lot_notional": "0.41810",
+      "residuals": {
+        "ready": false,
+        "blocker": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL",
+        "first_unverified_quantity": "0.0001",
+        "close_side": "BUY",
+        "notional": "0.41205"
+      },
+      "l2_research": {
+        "entry": {
+          "available_quantity": "3.6146",
+          "requested_quantity": "0.0024",
+          "covered_quantity": "0.0024",
+          "shortfall": "0.0000",
+          "cost": "10.03920",
+          "vwap": "4183.0",
+          "limit": "4181.0",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "exit": {
+          "available_quantity": "27.4721",
+          "requested_quantity": "0.0024",
+          "covered_quantity": "0.0024",
+          "shortfall": "0.0000",
+          "cost": "10.05120",
+          "vwap": "4188.0",
+          "limit": "4250.9",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "levels": {
+          "bids": 11,
+          "asks": 13
+        },
+        "hypothetical_aggregate_depth_quantity": "0.0059",
+        "aggregate_can_meet_minimum": true,
+        "affects_eligibility": false,
+        "separate_policy_approval_required": true
+      },
+      "raw_book": {
+        "symbol": "par:GOLD",
+        "timestamp_ms": 1791890695270,
+        "bids": [
+          {
+            "price": "4183.0",
+            "quantity": "3.5931"
+          },
+          {
+            "price": "4181.5",
+            "quantity": "0.0215"
+          },
+          {
+            "price": "4180.7",
+            "quantity": "0.0216"
+          },
+          {
+            "price": "4178.8",
+            "quantity": "1.1495"
+          },
+          {
+            "price": "4168.8",
+            "quantity": "2.3987"
+          },
+          {
+            "price": "4157.9",
+            "quantity": "4.8101"
+          },
+          {
+            "price": "4137.7",
+            "quantity": "7.2504"
+          },
+          {
+            "price": "4107.6",
+            "quantity": "9.738"
+          },
+          {
+            "price": "4057.3",
+            "quantity": "11.0911"
+          },
+          {
+            "price": "4053.5",
+            "quantity": "0.0029"
+          },
+          {
+            "price": "3990.2",
+            "quantity": "12.5307"
+          }
+        ],
+        "asks": [
+          {
+            "price": "4188.0",
+            "quantity": "0.0097"
+          },
+          {
+            "price": "4189.4",
+            "quantity": "0.1091"
+          },
+          {
+            "price": "4190.0",
+            "quantity": "0.0011"
+          },
+          {
+            "price": "4193.0",
+            "quantity": "11.9462"
+          },
+          {
+            "price": "4197.1",
+            "quantity": "0.0193"
+          },
+          {
+            "price": "4198.9",
+            "quantity": "1.1907"
+          },
+          {
+            "price": "4201.6",
+            "quantity": "0.0193"
+          },
+          {
+            "price": "4209.0",
+            "quantity": "2.3758"
+          },
+          {
+            "price": "4224.9",
+            "quantity": "4.7338"
+          },
+          {
+            "price": "4245.0",
+            "quantity": "7.0671"
+          },
+          {
+            "price": "4275.2",
+            "quantity": "9.3562"
+          },
+          {
+            "price": "4325.5",
+            "quantity": "10.4034"
+          },
+          {
+            "price": "4392.6",
+            "quantity": "11.3827"
+          }
+        ],
+        "received_timestamp_ms": 1791890695597,
+        "processed_timestamp_ms": 1791890695597
+      },
+      "blocker": "QUALIFICATION_NO_LOT_MEETS_OPENING_MINIMUM_WITHIN_BOUNDS",
+      "transport": "WS_ACKNOWLEDGED_REPEATED",
+      "age_ms_at_observation_end": 947,
+      "coverage_scope": "LAST_OBSERVED_BOOK_RESEARCH_NOT_CURRENT_SIGNING_PERMISSION"
+    },
+    "par:HYPE:BUY": {
+      "symbol": "par:HYPE",
+      "entry_side": "BUY",
+      "potential": false,
+      "stage": "PUBLIC_BOOK_ONLY",
+      "asset_id": 2670002,
+      "size_step": "0.01",
+      "observed_ms": 1791890695712,
+      "exchange_ms": 1791890695270,
+      "received_ms": 1791890695597,
+      "execution_scope_permitted": true,
+      "account_checks_performed": false,
+      "normal_minimum": "10",
+      "maximum_notional": "25",
+      "depth_policy": "STRICT_10_PERCENT_OF_EACH_BEST_LEVEL",
+      "protection_verified": false,
+      "bid": "82.654",
+      "ask": "82.752",
+      "spread_bps": "11.84963060590305067530802994",
+      "bid_quantity": "1.48",
+      "ask_quantity": "0.42",
+      "bid_depth_limit": "0.148",
+      "ask_depth_limit": "0.042",
+      "entry_limit": "82.793",
+      "exit_bound": "81.419",
+      "reviewed_immediate_exit_limit": "82.489",
+      "minimum_valid_entry_quantity": "0.13",
+      "minimum_entry_notional": "10.76309",
+      "maximum_book_quantity": "0.04",
+      "maximum_book_notional": "3.31172",
+      "quantity_bounds": {
+        "notional": "0.3019578949911224378872610003",
+        "bid_depth": "0.148",
+        "ask_depth": "0.042"
+      },
+      "binding_capacity_constraints": [
+        "ask_depth"
+      ],
+      "minimum_lot_notional": "0.82793",
+      "residuals": {
+        "ready": false,
+        "blocker": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL",
+        "first_unverified_quantity": "0.01",
+        "close_side": "SELL",
+        "notional": "0.81419"
+      },
+      "l2_research": {
+        "entry": {
+          "available_quantity": "0.42",
+          "requested_quantity": "0.13",
+          "covered_quantity": "0.13",
+          "shortfall": "0.00",
+          "cost": "10.75776",
+          "vwap": "82.752",
+          "limit": "82.793",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "exit": {
+          "available_quantity": "428.54",
+          "requested_quantity": "0.13",
+          "covered_quantity": "0.13",
+          "shortfall": "0.00",
+          "cost": "10.74502",
+          "vwap": "82.654",
+          "limit": "81.419",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "levels": {
+          "bids": 9,
+          "asks": 10
+        },
+        "hypothetical_aggregate_depth_quantity": "0.04",
+        "aggregate_can_meet_minimum": false,
+        "affects_eligibility": false,
+        "separate_policy_approval_required": true
+      },
+      "raw_book": {
+        "symbol": "par:HYPE",
+        "timestamp_ms": 1791890695270,
+        "bids": [
+          {
+            "price": "82.654",
+            "quantity": "1.48"
+          },
+          {
+            "price": "82.445",
+            "quantity": "0.17"
+          },
+          {
+            "price": "82.444",
+            "quantity": "60.64"
+          },
+          {
+            "price": "82.179",
+            "quantity": "121.68"
+          },
+          {
+            "price": "81.774",
+            "quantity": "244.57"
+          },
+          {
+            "price": "81.377",
+            "quantity": "368.65"
+          },
+          {
+            "price": "80.716",
+            "quantity": "495.56"
+          },
+          {
+            "price": "79.723",
+            "quantity": "564.45"
+          },
+          {
+            "price": "78.069",
+            "quantity": "640.45"
+          }
+        ],
+        "asks": [
+          {
+            "price": "82.752",
+            "quantity": "0.42"
+          },
+          {
+            "price": "82.882",
+            "quantity": "1.64"
+          },
+          {
+            "price": "82.927",
+            "quantity": "3.45"
+          },
+          {
+            "price": "83.106",
+            "quantity": "60.16"
+          },
+          {
+            "price": "83.371",
+            "quantity": "119.94"
+          },
+          {
+            "price": "83.627",
+            "quantity": "239.15"
+          },
+          {
+            "price": "84.024",
+            "quantity": "357.04"
+          },
+          {
+            "price": "84.685",
+            "quantity": "472.33"
+          },
+          {
+            "price": "85.678",
+            "quantity": "525.22"
+          },
+          {
+            "price": "87.332",
+            "quantity": "572.52"
+          }
+        ],
+        "received_timestamp_ms": 1791890695597,
+        "processed_timestamp_ms": 1791890695597
+      },
+      "blocker": "QUALIFICATION_NO_LOT_MEETS_OPENING_MINIMUM_WITHIN_BOUNDS",
+      "transport": "WS_ACKNOWLEDGED_REPEATED",
+      "age_ms_at_observation_end": 947,
+      "coverage_scope": "LAST_OBSERVED_BOOK_RESEARCH_NOT_CURRENT_SIGNING_PERMISSION"
+    },
+    "par:HYPE:SELL": {
+      "symbol": "par:HYPE",
+      "entry_side": "SELL",
+      "potential": false,
+      "stage": "PUBLIC_BOOK_ONLY",
+      "asset_id": 2670002,
+      "size_step": "0.01",
+      "observed_ms": 1791890695712,
+      "exchange_ms": 1791890695270,
+      "received_ms": 1791890695597,
+      "execution_scope_permitted": false,
+      "account_checks_performed": false,
+      "normal_minimum": "10",
+      "maximum_notional": "25",
+      "depth_policy": "STRICT_10_PERCENT_OF_EACH_BEST_LEVEL",
+      "protection_verified": false,
+      "bid": "82.654",
+      "ask": "82.752",
+      "spread_bps": "11.84963060590305067530802994",
+      "bid_quantity": "1.48",
+      "ask_quantity": "0.42",
+      "bid_depth_limit": "0.148",
+      "ask_depth_limit": "0.042",
+      "entry_limit": "82.613",
+      "exit_bound": "83.996",
+      "reviewed_immediate_exit_limit": "82.917",
+      "minimum_valid_entry_quantity": "0.13",
+      "minimum_entry_notional": "10.73969",
+      "maximum_book_quantity": "0.04",
+      "maximum_book_notional": "3.30452",
+      "quantity_bounds": {
+        "notional": "0.3026158110708968322176897099",
+        "bid_depth": "0.148",
+        "ask_depth": "0.042"
+      },
+      "binding_capacity_constraints": [
+        "ask_depth"
+      ],
+      "minimum_lot_notional": "0.82613",
+      "residuals": {
+        "ready": false,
+        "blocker": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL",
+        "first_unverified_quantity": "0.02",
+        "close_side": "BUY",
+        "notional": "1.62838"
+      },
+      "l2_research": {
+        "entry": {
+          "available_quantity": "1.48",
+          "requested_quantity": "0.13",
+          "covered_quantity": "0.13",
+          "shortfall": "0.00",
+          "cost": "10.74502",
+          "vwap": "82.654",
+          "limit": "82.613",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "exit": {
+          "available_quantity": "424.76",
+          "requested_quantity": "0.13",
+          "covered_quantity": "0.13",
+          "shortfall": "0.00",
+          "cost": "10.75776",
+          "vwap": "82.752",
+          "limit": "83.996",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "levels": {
+          "bids": 9,
+          "asks": 10
+        },
+        "hypothetical_aggregate_depth_quantity": "0.14",
+        "aggregate_can_meet_minimum": true,
+        "affects_eligibility": false,
+        "separate_policy_approval_required": true
+      },
+      "raw_book": {
+        "symbol": "par:HYPE",
+        "timestamp_ms": 1791890695270,
+        "bids": [
+          {
+            "price": "82.654",
+            "quantity": "1.48"
+          },
+          {
+            "price": "82.445",
+            "quantity": "0.17"
+          },
+          {
+            "price": "82.444",
+            "quantity": "60.64"
+          },
+          {
+            "price": "82.179",
+            "quantity": "121.68"
+          },
+          {
+            "price": "81.774",
+            "quantity": "244.57"
+          },
+          {
+            "price": "81.377",
+            "quantity": "368.65"
+          },
+          {
+            "price": "80.716",
+            "quantity": "495.56"
+          },
+          {
+            "price": "79.723",
+            "quantity": "564.45"
+          },
+          {
+            "price": "78.069",
+            "quantity": "640.45"
+          }
+        ],
+        "asks": [
+          {
+            "price": "82.752",
+            "quantity": "0.42"
+          },
+          {
+            "price": "82.882",
+            "quantity": "1.64"
+          },
+          {
+            "price": "82.927",
+            "quantity": "3.45"
+          },
+          {
+            "price": "83.106",
+            "quantity": "60.16"
+          },
+          {
+            "price": "83.371",
+            "quantity": "119.94"
+          },
+          {
+            "price": "83.627",
+            "quantity": "239.15"
+          },
+          {
+            "price": "84.024",
+            "quantity": "357.04"
+          },
+          {
+            "price": "84.685",
+            "quantity": "472.33"
+          },
+          {
+            "price": "85.678",
+            "quantity": "525.22"
+          },
+          {
+            "price": "87.332",
+            "quantity": "572.52"
+          }
+        ],
+        "received_timestamp_ms": 1791890695597,
+        "processed_timestamp_ms": 1791890695597
+      },
+      "blocker": "QUALIFICATION_NO_LOT_MEETS_OPENING_MINIMUM_WITHIN_BOUNDS",
+      "transport": "WS_ACKNOWLEDGED_REPEATED",
+      "age_ms_at_observation_end": 947,
+      "coverage_scope": "LAST_OBSERVED_BOOK_RESEARCH_NOT_CURRENT_SIGNING_PERMISSION"
+    },
+    "par:SP500:BUY": {
+      "symbol": "par:SP500",
+      "entry_side": "BUY",
+      "potential": false,
+      "stage": "PUBLIC_BOOK_ONLY",
+      "asset_id": 2670003,
+      "size_step": "0.001",
+      "observed_ms": 1791890695712,
+      "exchange_ms": 1791890695270,
+      "received_ms": 1791890695597,
+      "execution_scope_permitted": false,
+      "account_checks_performed": false,
+      "normal_minimum": "10",
+      "maximum_notional": "25",
+      "depth_policy": "STRICT_10_PERCENT_OF_EACH_BEST_LEVEL",
+      "protection_verified": false,
+      "bid": "7783.7",
+      "ask": "7786.7",
+      "spread_bps": "3.853465550017982839233417253",
+      "bid_quantity": "0.589",
+      "ask_quantity": "0.579",
+      "bid_depth_limit": "0.0589",
+      "ask_depth_limit": "0.0579",
+      "entry_limit": "7790.5",
+      "exit_bound": "7667.4",
+      "reviewed_immediate_exit_limit": "7768.2",
+      "minimum_valid_entry_quantity": "0.002",
+      "minimum_entry_notional": "15.5810",
+      "maximum_book_quantity": "0.003",
+      "maximum_book_notional": "23.3715",
+      "quantity_bounds": {
+        "notional": "0.003209036647198511006995699891",
+        "bid_depth": "0.0589",
+        "ask_depth": "0.0579"
+      },
+      "binding_capacity_constraints": [
+        "notional"
+      ],
+      "minimum_lot_notional": "7.7905",
+      "residuals": {
+        "ready": false,
+        "blocker": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL",
+        "first_unverified_quantity": "0.001",
+        "close_side": "SELL",
+        "notional": "7.6674"
+      },
+      "l2_research": {
+        "entry": {
+          "available_quantity": "6.879",
+          "requested_quantity": "0.002",
+          "covered_quantity": "0.002",
+          "shortfall": "0.000",
+          "cost": "15.5734",
+          "vwap": "7786.7",
+          "limit": "7790.5",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "exit": {
+          "available_quantity": "19.758",
+          "requested_quantity": "0.002",
+          "covered_quantity": "0.002",
+          "shortfall": "0.000",
+          "cost": "15.5674",
+          "vwap": "7783.7",
+          "limit": "7667.4",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "levels": {
+          "bids": 13,
+          "asks": 14
+        },
+        "hypothetical_aggregate_depth_quantity": "0.003",
+        "aggregate_can_meet_minimum": true,
+        "affects_eligibility": false,
+        "separate_policy_approval_required": true
+      },
+      "raw_book": {
+        "symbol": "par:SP500",
+        "timestamp_ms": 1791890695270,
+        "bids": [
+          {
+            "price": "7783.7",
+            "quantity": "0.589"
+          },
+          {
+            "price": "7776.3",
+            "quantity": "0.004"
+          },
+          {
+            "price": "7773.3",
+            "quantity": "0.6"
+          },
+          {
+            "price": "7770.2",
+            "quantity": "4.4"
+          },
+          {
+            "price": "7768.4",
+            "quantity": "0.004"
+          },
+          {
+            "price": "7765.0",
+            "quantity": "1.287"
+          },
+          {
+            "price": "7762.8",
+            "quantity": "6.4"
+          },
+          {
+            "price": "7744.8",
+            "quantity": "2.582"
+          },
+          {
+            "price": "7707.3",
+            "quantity": "3.892"
+          },
+          {
+            "price": "7651.1",
+            "quantity": "5.228"
+          },
+          {
+            "price": "7557.4",
+            "quantity": "5.954"
+          },
+          {
+            "price": "7432.5",
+            "quantity": "6.727"
+          },
+          {
+            "price": "7315.3",
+            "quantity": "0.002"
+          }
+        ],
+        "asks": [
+          {
+            "price": "7786.7",
+            "quantity": "0.579"
+          },
+          {
+            "price": "7787.4",
+            "quantity": "1.9"
+          },
+          {
+            "price": "7789.4",
+            "quantity": "4.4"
+          },
+          {
+            "price": "7794.5",
+            "quantity": "6.4"
+          },
+          {
+            "price": "7797.5",
+            "quantity": "0.845"
+          },
+          {
+            "price": "7800.1",
+            "quantity": "0.038"
+          },
+          {
+            "price": "7813.3",
+            "quantity": "0.01"
+          },
+          {
+            "price": "7821.2",
+            "quantity": "0.649"
+          },
+          {
+            "price": "7839.9",
+            "quantity": "1.275"
+          },
+          {
+            "price": "7869.7",
+            "quantity": "2.541"
+          },
+          {
+            "price": "7907.2",
+            "quantity": "3.794"
+          },
+          {
+            "price": "7963.4",
+            "quantity": "5.022"
+          },
+          {
+            "price": "8057.1",
+            "quantity": "5.585"
+          },
+          {
+            "price": "8182.0",
+            "quantity": "6.11"
+          }
+        ],
+        "received_timestamp_ms": 1791890695597,
+        "processed_timestamp_ms": 1791890695597
+      },
+      "blocker": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL",
+      "transport": "WS_ACKNOWLEDGED_REPEATED",
+      "age_ms_at_observation_end": 947,
+      "coverage_scope": "LAST_OBSERVED_BOOK_RESEARCH_NOT_CURRENT_SIGNING_PERMISSION"
+    },
+    "par:SP500:SELL": {
+      "symbol": "par:SP500",
+      "entry_side": "SELL",
+      "potential": false,
+      "stage": "PUBLIC_BOOK_ONLY",
+      "asset_id": 2670003,
+      "size_step": "0.001",
+      "observed_ms": 1791890695712,
+      "exchange_ms": 1791890695270,
+      "received_ms": 1791890695597,
+      "execution_scope_permitted": false,
+      "account_checks_performed": false,
+      "normal_minimum": "10",
+      "maximum_notional": "25",
+      "depth_policy": "STRICT_10_PERCENT_OF_EACH_BEST_LEVEL",
+      "protection_verified": false,
+      "bid": "7783.7",
+      "ask": "7786.7",
+      "spread_bps": "3.853465550017982839233417253",
+      "bid_quantity": "0.589",
+      "ask_quantity": "0.579",
+      "bid_depth_limit": "0.0589",
+      "ask_depth_limit": "0.0579",
+      "entry_limit": "7779.9",
+      "exit_bound": "7903.8",
+      "reviewed_immediate_exit_limit": "7802.2",
+      "minimum_valid_entry_quantity": "0.002",
+      "minimum_entry_notional": "15.5598",
+      "maximum_book_quantity": "0.003",
+      "maximum_book_notional": "23.3397",
+      "quantity_bounds": {
+        "notional": "0.003213408912710960295119474543",
+        "bid_depth": "0.0589",
+        "ask_depth": "0.0579"
+      },
+      "binding_capacity_constraints": [
+        "notional"
+      ],
+      "minimum_lot_notional": "7.7799",
+      "residuals": {
+        "ready": false,
+        "blocker": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL",
+        "first_unverified_quantity": "0.001",
+        "close_side": "BUY",
+        "notional": "7.6674"
+      },
+      "l2_research": {
+        "entry": {
+          "available_quantity": "0.589",
+          "requested_quantity": "0.002",
+          "covered_quantity": "0.002",
+          "shortfall": "0.000",
+          "cost": "15.5674",
+          "vwap": "7783.7",
+          "limit": "7779.9",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "exit": {
+          "available_quantity": "18.637",
+          "requested_quantity": "0.002",
+          "covered_quantity": "0.002",
+          "shortfall": "0.000",
+          "cost": "15.5734",
+          "vwap": "7786.7",
+          "limit": "7903.8",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "levels": {
+          "bids": 13,
+          "asks": 14
+        },
+        "hypothetical_aggregate_depth_quantity": "0.003",
+        "aggregate_can_meet_minimum": true,
+        "affects_eligibility": false,
+        "separate_policy_approval_required": true
+      },
+      "raw_book": {
+        "symbol": "par:SP500",
+        "timestamp_ms": 1791890695270,
+        "bids": [
+          {
+            "price": "7783.7",
+            "quantity": "0.589"
+          },
+          {
+            "price": "7776.3",
+            "quantity": "0.004"
+          },
+          {
+            "price": "7773.3",
+            "quantity": "0.6"
+          },
+          {
+            "price": "7770.2",
+            "quantity": "4.4"
+          },
+          {
+            "price": "7768.4",
+            "quantity": "0.004"
+          },
+          {
+            "price": "7765.0",
+            "quantity": "1.287"
+          },
+          {
+            "price": "7762.8",
+            "quantity": "6.4"
+          },
+          {
+            "price": "7744.8",
+            "quantity": "2.582"
+          },
+          {
+            "price": "7707.3",
+            "quantity": "3.892"
+          },
+          {
+            "price": "7651.1",
+            "quantity": "5.228"
+          },
+          {
+            "price": "7557.4",
+            "quantity": "5.954"
+          },
+          {
+            "price": "7432.5",
+            "quantity": "6.727"
+          },
+          {
+            "price": "7315.3",
+            "quantity": "0.002"
+          }
+        ],
+        "asks": [
+          {
+            "price": "7786.7",
+            "quantity": "0.579"
+          },
+          {
+            "price": "7787.4",
+            "quantity": "1.9"
+          },
+          {
+            "price": "7789.4",
+            "quantity": "4.4"
+          },
+          {
+            "price": "7794.5",
+            "quantity": "6.4"
+          },
+          {
+            "price": "7797.5",
+            "quantity": "0.845"
+          },
+          {
+            "price": "7800.1",
+            "quantity": "0.038"
+          },
+          {
+            "price": "7813.3",
+            "quantity": "0.01"
+          },
+          {
+            "price": "7821.2",
+            "quantity": "0.649"
+          },
+          {
+            "price": "7839.9",
+            "quantity": "1.275"
+          },
+          {
+            "price": "7869.7",
+            "quantity": "2.541"
+          },
+          {
+            "price": "7907.2",
+            "quantity": "3.794"
+          },
+          {
+            "price": "7963.4",
+            "quantity": "5.022"
+          },
+          {
+            "price": "8057.1",
+            "quantity": "5.585"
+          },
+          {
+            "price": "8182.0",
+            "quantity": "6.11"
+          }
+        ],
+        "received_timestamp_ms": 1791890695597,
+        "processed_timestamp_ms": 1791890695597
+      },
+      "blocker": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL",
+      "transport": "WS_ACKNOWLEDGED_REPEATED",
+      "age_ms_at_observation_end": 947,
+      "coverage_scope": "LAST_OBSERVED_BOOK_RESEARCH_NOT_CURRENT_SIGNING_PERMISSION"
+    },
+    "par:USDEUR:BUY": {
+      "symbol": "par:USDEUR",
+      "entry_side": "BUY",
+      "potential": false,
+      "stage": "PUBLIC_BOOK_ONLY",
+      "asset_id": 2670008,
+      "size_step": "0.1",
+      "observed_ms": 1791890695713,
+      "exchange_ms": 1791890695270,
+      "received_ms": 1791890695598,
+      "execution_scope_permitted": false,
+      "account_checks_performed": false,
+      "normal_minimum": "10",
+      "maximum_notional": "25",
+      "depth_policy": "STRICT_10_PERCENT_OF_EACH_BEST_LEVEL",
+      "protection_verified": false,
+      "bid": "1.1181",
+      "ask": "1.1192",
+      "spread_bps": "9.833281187145219684441067358",
+      "bid_quantity": "2125.4",
+      "ask_quantity": "33.6",
+      "bid_depth_limit": "212.54",
+      "ask_depth_limit": "3.36",
+      "entry_limit": "1.1197",
+      "exit_bound": "1.1015",
+      "reviewed_immediate_exit_limit": "1.1159",
+      "minimum_valid_entry_quantity": "9.0",
+      "minimum_entry_notional": "10.07730",
+      "maximum_book_quantity": "3.3",
+      "maximum_book_notional": "3.69501",
+      "quantity_bounds": {
+        "notional": "22.32740912744485129945521122",
+        "bid_depth": "212.54",
+        "ask_depth": "3.36"
+      },
+      "binding_capacity_constraints": [
+        "ask_depth"
+      ],
+      "minimum_lot_notional": "0.11197",
+      "residuals": {
+        "ready": false,
+        "blocker": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL",
+        "first_unverified_quantity": "0.1",
+        "close_side": "SELL",
+        "notional": "0.11015"
+      },
+      "l2_research": {
+        "entry": {
+          "available_quantity": "33.6",
+          "requested_quantity": "9.0",
+          "covered_quantity": "9.0",
+          "shortfall": "0.0",
+          "cost": "10.07280",
+          "vwap": "1.1192",
+          "limit": "1.1197",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "exit": {
+          "available_quantity": "110069.1",
+          "requested_quantity": "9.0",
+          "covered_quantity": "9.0",
+          "shortfall": "0.0",
+          "cost": "10.06290",
+          "vwap": "1.1181",
+          "limit": "1.1015",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "levels": {
+          "bids": 13,
+          "asks": 14
+        },
+        "hypothetical_aggregate_depth_quantity": "3.3",
+        "aggregate_can_meet_minimum": false,
+        "affects_eligibility": false,
+        "separate_policy_approval_required": true
+      },
+      "raw_book": {
+        "symbol": "par:USDEUR",
+        "timestamp_ms": 1791890695270,
+        "bids": [
+          {
+            "price": "1.1181",
+            "quantity": "2125.4"
+          },
+          {
+            "price": "1.1179",
+            "quantity": "4468.0"
+          },
+          {
+            "price": "1.1178",
+            "quantity": "70.2"
+          },
+          {
+            "price": "1.1175",
+            "quantity": "71.8"
+          },
+          {
+            "price": "1.1171",
+            "quantity": "4475.8"
+          },
+          {
+            "price": "1.1168",
+            "quantity": "44687.0"
+          },
+          {
+            "price": "1.1144",
+            "quantity": "8973.4"
+          },
+          {
+            "price": "1.1095",
+            "quantity": "18026.1"
+          },
+          {
+            "price": "1.1041",
+            "quantity": "27171.4"
+          },
+          {
+            "price": "1.096",
+            "quantity": "36496.3"
+          },
+          {
+            "price": "1.0835",
+            "quantity": "10.7"
+          },
+          {
+            "price": "1.0826",
+            "quantity": "41566.5"
+          },
+          {
+            "price": "1.0647",
+            "quantity": "46961.5"
+          }
+        ],
+        "asks": [
+          {
+            "price": "1.1192",
+            "quantity": "33.6"
+          },
+          {
+            "price": "1.1198",
+            "quantity": "4468.0"
+          },
+          {
+            "price": "1.1201",
+            "quantity": "267.8"
+          },
+          {
+            "price": "1.1202",
+            "quantity": "31463.5"
+          },
+          {
+            "price": "1.1209",
+            "quantity": "44687.0"
+          },
+          {
+            "price": "1.1223",
+            "quantity": "67.5"
+          },
+          {
+            "price": "1.1225",
+            "quantity": "4454.3"
+          },
+          {
+            "price": "1.1237",
+            "quantity": "67.4"
+          },
+          {
+            "price": "1.1252",
+            "quantity": "8887.3"
+          },
+          {
+            "price": "1.1273",
+            "quantity": "17741.5"
+          },
+          {
+            "price": "1.1327",
+            "quantity": "26485.3"
+          },
+          {
+            "price": "1.1408",
+            "quantity": "35063.1"
+          },
+          {
+            "price": "1.1542",
+            "quantity": "38988.0"
+          },
+          {
+            "price": "1.1721",
+            "quantity": "42658.4"
+          }
+        ],
+        "received_timestamp_ms": 1791890695598,
+        "processed_timestamp_ms": 1791890695598
+      },
+      "blocker": "QUALIFICATION_NO_LOT_MEETS_OPENING_MINIMUM_WITHIN_BOUNDS",
+      "transport": "WS_ACKNOWLEDGED_REPEATED",
+      "age_ms_at_observation_end": 947,
+      "coverage_scope": "LAST_OBSERVED_BOOK_RESEARCH_NOT_CURRENT_SIGNING_PERMISSION"
+    },
+    "par:USDEUR:SELL": {
+      "symbol": "par:USDEUR",
+      "entry_side": "SELL",
+      "potential": false,
+      "stage": "PUBLIC_BOOK_ONLY",
+      "asset_id": 2670008,
+      "size_step": "0.1",
+      "observed_ms": 1791890695713,
+      "exchange_ms": 1791890695270,
+      "received_ms": 1791890695598,
+      "execution_scope_permitted": false,
+      "account_checks_performed": false,
+      "normal_minimum": "10",
+      "maximum_notional": "25",
+      "depth_policy": "STRICT_10_PERCENT_OF_EACH_BEST_LEVEL",
+      "protection_verified": false,
+      "bid": "1.1181",
+      "ask": "1.1192",
+      "spread_bps": "9.833281187145219684441067358",
+      "bid_quantity": "2125.4",
+      "ask_quantity": "33.6",
+      "bid_depth_limit": "212.54",
+      "ask_depth_limit": "3.36",
+      "entry_limit": "1.1176",
+      "exit_bound": "1.1359",
+      "reviewed_immediate_exit_limit": "1.1214",
+      "minimum_valid_entry_quantity": "9.0",
+      "minimum_entry_notional": "10.05840",
+      "maximum_book_quantity": "3.3",
+      "maximum_book_notional": "3.68808",
+      "quantity_bounds": {
+        "notional": "22.36936292054402290622763064",
+        "bid_depth": "212.54",
+        "ask_depth": "3.36"
+      },
+      "binding_capacity_constraints": [
+        "ask_depth"
+      ],
+      "minimum_lot_notional": "0.11176",
+      "residuals": {
+        "ready": false,
+        "blocker": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL",
+        "first_unverified_quantity": "0.1",
+        "close_side": "BUY",
+        "notional": "0.11014"
+      },
+      "l2_research": {
+        "entry": {
+          "available_quantity": "6663.6",
+          "requested_quantity": "9.0",
+          "covered_quantity": "9.0",
+          "shortfall": "0.0",
+          "cost": "10.06290",
+          "vwap": "1.1181",
+          "limit": "1.1176",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "exit": {
+          "available_quantity": "138623.2",
+          "requested_quantity": "9.0",
+          "covered_quantity": "9.0",
+          "shortfall": "0.0",
+          "cost": "10.07280",
+          "vwap": "1.1192",
+          "limit": "1.1359",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "levels": {
+          "bids": 13,
+          "asks": 14
+        },
+        "hypothetical_aggregate_depth_quantity": "22.3",
+        "aggregate_can_meet_minimum": true,
+        "affects_eligibility": false,
+        "separate_policy_approval_required": true
+      },
+      "raw_book": {
+        "symbol": "par:USDEUR",
+        "timestamp_ms": 1791890695270,
+        "bids": [
+          {
+            "price": "1.1181",
+            "quantity": "2125.4"
+          },
+          {
+            "price": "1.1179",
+            "quantity": "4468.0"
+          },
+          {
+            "price": "1.1178",
+            "quantity": "70.2"
+          },
+          {
+            "price": "1.1175",
+            "quantity": "71.8"
+          },
+          {
+            "price": "1.1171",
+            "quantity": "4475.8"
+          },
+          {
+            "price": "1.1168",
+            "quantity": "44687.0"
+          },
+          {
+            "price": "1.1144",
+            "quantity": "8973.4"
+          },
+          {
+            "price": "1.1095",
+            "quantity": "18026.1"
+          },
+          {
+            "price": "1.1041",
+            "quantity": "27171.4"
+          },
+          {
+            "price": "1.096",
+            "quantity": "36496.3"
+          },
+          {
+            "price": "1.0835",
+            "quantity": "10.7"
+          },
+          {
+            "price": "1.0826",
+            "quantity": "41566.5"
+          },
+          {
+            "price": "1.0647",
+            "quantity": "46961.5"
+          }
+        ],
+        "asks": [
+          {
+            "price": "1.1192",
+            "quantity": "33.6"
+          },
+          {
+            "price": "1.1198",
+            "quantity": "4468.0"
+          },
+          {
+            "price": "1.1201",
+            "quantity": "267.8"
+          },
+          {
+            "price": "1.1202",
+            "quantity": "31463.5"
+          },
+          {
+            "price": "1.1209",
+            "quantity": "44687.0"
+          },
+          {
+            "price": "1.1223",
+            "quantity": "67.5"
+          },
+          {
+            "price": "1.1225",
+            "quantity": "4454.3"
+          },
+          {
+            "price": "1.1237",
+            "quantity": "67.4"
+          },
+          {
+            "price": "1.1252",
+            "quantity": "8887.3"
+          },
+          {
+            "price": "1.1273",
+            "quantity": "17741.5"
+          },
+          {
+            "price": "1.1327",
+            "quantity": "26485.3"
+          },
+          {
+            "price": "1.1408",
+            "quantity": "35063.1"
+          },
+          {
+            "price": "1.1542",
+            "quantity": "38988.0"
+          },
+          {
+            "price": "1.1721",
+            "quantity": "42658.4"
+          }
+        ],
+        "received_timestamp_ms": 1791890695598,
+        "processed_timestamp_ms": 1791890695598
+      },
+      "blocker": "QUALIFICATION_NO_LOT_MEETS_OPENING_MINIMUM_WITHIN_BOUNDS",
+      "transport": "WS_ACKNOWLEDGED_REPEATED",
+      "age_ms_at_observation_end": 947,
+      "coverage_scope": "LAST_OBSERVED_BOOK_RESEARCH_NOT_CURRENT_SIGNING_PERMISSION"
+    },
+    "par:USDJPY:BUY": {
+      "symbol": "par:USDJPY",
+      "entry_side": "BUY",
+      "potential": false,
+      "stage": "PUBLIC_BOOK_ONLY",
+      "asset_id": 2670009,
+      "size_step": "0.01",
+      "observed_ms": 1791890695713,
+      "exchange_ms": 1791890695270,
+      "received_ms": 1791890695598,
+      "execution_scope_permitted": false,
+      "account_checks_performed": false,
+      "normal_minimum": "10",
+      "maximum_notional": "25",
+      "depth_policy": "STRICT_10_PERCENT_OF_EACH_BEST_LEVEL",
+      "protection_verified": false,
+      "bid": "158.01",
+      "ask": "158.32",
+      "spread_bps": "19.59978503461574937565200898",
+      "bid_quantity": "0.17",
+      "ask_quantity": "31.86",
+      "bid_depth_limit": "0.017",
+      "ask_depth_limit": "3.186",
+      "entry_limit": "158.39",
+      "exit_bound": "155.65",
+      "reviewed_immediate_exit_limit": "157.70",
+      "minimum_valid_entry_quantity": "0.07",
+      "minimum_entry_notional": "11.0873",
+      "maximum_book_quantity": "0.01",
+      "maximum_book_notional": "1.5839",
+      "quantity_bounds": {
+        "notional": "0.1578382473641012690195088074",
+        "bid_depth": "0.017",
+        "ask_depth": "3.186"
+      },
+      "binding_capacity_constraints": [
+        "bid_depth"
+      ],
+      "minimum_lot_notional": "1.5839",
+      "residuals": {
+        "ready": false,
+        "blocker": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL",
+        "first_unverified_quantity": "0.01",
+        "close_side": "SELL",
+        "notional": "1.5565"
+      },
+      "l2_research": {
+        "entry": {
+          "available_quantity": "349.30",
+          "requested_quantity": "0.07",
+          "covered_quantity": "0.07",
+          "shortfall": "0.00",
+          "cost": "11.0824",
+          "vwap": "158.32",
+          "limit": "158.39",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "exit": {
+          "available_quantity": "806.51",
+          "requested_quantity": "0.07",
+          "covered_quantity": "0.07",
+          "shortfall": "0.00",
+          "cost": "11.0607",
+          "vwap": "158.01",
+          "limit": "155.65",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "levels": {
+          "bids": 14,
+          "asks": 9
+        },
+        "hypothetical_aggregate_depth_quantity": "0.15",
+        "aggregate_can_meet_minimum": true,
+        "affects_eligibility": false,
+        "separate_policy_approval_required": true
+      },
+      "raw_book": {
+        "symbol": "par:USDJPY",
+        "timestamp_ms": 1791890695270,
+        "bids": [
+          {
+            "price": "158.01",
+            "quantity": "0.17"
+          },
+          {
+            "price": "157.9",
+            "quantity": "1.89"
+          },
+          {
+            "price": "157.88",
+            "quantity": "71.68"
+          },
+          {
+            "price": "157.78",
+            "quantity": "316.32"
+          },
+          {
+            "price": "157.57",
+            "quantity": "31.73"
+          },
+          {
+            "price": "157.49",
+            "quantity": "0.33"
+          },
+          {
+            "price": "157.25",
+            "quantity": "0.33"
+          },
+          {
+            "price": "157.19",
+            "quantity": "63.61"
+          },
+          {
+            "price": "156.48",
+            "quantity": "127.81"
+          },
+          {
+            "price": "155.73",
+            "quantity": "192.64"
+          },
+          {
+            "price": "154.59",
+            "quantity": "258.74"
+          },
+          {
+            "price": "152.7",
+            "quantity": "294.69"
+          },
+          {
+            "price": "150.17",
+            "quantity": "332.95"
+          },
+          {
+            "price": "149.25",
+            "quantity": "0.08"
+          }
+        ],
+        "asks": [
+          {
+            "price": "158.32",
+            "quantity": "31.86"
+          },
+          {
+            "price": "158.33",
+            "quantity": "1.12"
+          },
+          {
+            "price": "158.35",
+            "quantity": "316.32"
+          },
+          {
+            "price": "158.7",
+            "quantity": "63.01"
+          },
+          {
+            "price": "159.01",
+            "quantity": "125.77"
+          },
+          {
+            "price": "159.76",
+            "quantity": "187.78"
+          },
+          {
+            "price": "160.9",
+            "quantity": "248.6"
+          },
+          {
+            "price": "162.79",
+            "quantity": "276.42"
+          },
+          {
+            "price": "165.32",
+            "quantity": "302.44"
+          }
+        ],
+        "received_timestamp_ms": 1791890695598,
+        "processed_timestamp_ms": 1791890695598
+      },
+      "blocker": "QUALIFICATION_NO_LOT_MEETS_OPENING_MINIMUM_WITHIN_BOUNDS",
+      "transport": "WS_ACKNOWLEDGED_REPEATED",
+      "age_ms_at_observation_end": 947,
+      "coverage_scope": "LAST_OBSERVED_BOOK_RESEARCH_NOT_CURRENT_SIGNING_PERMISSION"
+    },
+    "par:USDJPY:SELL": {
+      "symbol": "par:USDJPY",
+      "entry_side": "SELL",
+      "potential": false,
+      "stage": "PUBLIC_BOOK_ONLY",
+      "asset_id": 2670009,
+      "size_step": "0.01",
+      "observed_ms": 1791890695713,
+      "exchange_ms": 1791890695270,
+      "received_ms": 1791890695598,
+      "execution_scope_permitted": false,
+      "account_checks_performed": false,
+      "normal_minimum": "10",
+      "maximum_notional": "25",
+      "depth_policy": "STRICT_10_PERCENT_OF_EACH_BEST_LEVEL",
+      "protection_verified": false,
+      "bid": "158.01",
+      "ask": "158.32",
+      "spread_bps": "19.59978503461574937565200898",
+      "bid_quantity": "0.17",
+      "ask_quantity": "31.86",
+      "bid_depth_limit": "0.017",
+      "ask_depth_limit": "3.186",
+      "entry_limit": "157.94",
+      "exit_bound": "160.69",
+      "reviewed_immediate_exit_limit": "158.63",
+      "minimum_valid_entry_quantity": "0.07",
+      "minimum_entry_notional": "11.0558",
+      "maximum_book_quantity": "0.01",
+      "maximum_book_notional": "1.5794",
+      "quantity_bounds": {
+        "notional": "0.1582879574521970368494364949",
+        "bid_depth": "0.017",
+        "ask_depth": "3.186"
+      },
+      "binding_capacity_constraints": [
+        "bid_depth"
+      ],
+      "minimum_lot_notional": "1.5794",
+      "residuals": {
+        "ready": false,
+        "blocker": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL",
+        "first_unverified_quantity": "0.01",
+        "close_side": "BUY",
+        "notional": "1.5565"
+      },
+      "l2_research": {
+        "entry": {
+          "available_quantity": "0.17",
+          "requested_quantity": "0.07",
+          "covered_quantity": "0.07",
+          "shortfall": "0.00",
+          "cost": "11.0607",
+          "vwap": "158.01",
+          "limit": "157.94",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "exit": {
+          "available_quantity": "725.86",
+          "requested_quantity": "0.07",
+          "covered_quantity": "0.07",
+          "shortfall": "0.00",
+          "cost": "11.0824",
+          "vwap": "158.32",
+          "limit": "160.69",
+          "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+        },
+        "levels": {
+          "bids": 14,
+          "asks": 9
+        },
+        "hypothetical_aggregate_depth_quantity": "0.01",
+        "aggregate_can_meet_minimum": false,
+        "affects_eligibility": false,
+        "separate_policy_approval_required": true
+      },
+      "raw_book": {
+        "symbol": "par:USDJPY",
+        "timestamp_ms": 1791890695270,
+        "bids": [
+          {
+            "price": "158.01",
+            "quantity": "0.17"
+          },
+          {
+            "price": "157.9",
+            "quantity": "1.89"
+          },
+          {
+            "price": "157.88",
+            "quantity": "71.68"
+          },
+          {
+            "price": "157.78",
+            "quantity": "316.32"
+          },
+          {
+            "price": "157.57",
+            "quantity": "31.73"
+          },
+          {
+            "price": "157.49",
+            "quantity": "0.33"
+          },
+          {
+            "price": "157.25",
+            "quantity": "0.33"
+          },
+          {
+            "price": "157.19",
+            "quantity": "63.61"
+          },
+          {
+            "price": "156.48",
+            "quantity": "127.81"
+          },
+          {
+            "price": "155.73",
+            "quantity": "192.64"
+          },
+          {
+            "price": "154.59",
+            "quantity": "258.74"
+          },
+          {
+            "price": "152.7",
+            "quantity": "294.69"
+          },
+          {
+            "price": "150.17",
+            "quantity": "332.95"
+          },
+          {
+            "price": "149.25",
+            "quantity": "0.08"
+          }
+        ],
+        "asks": [
+          {
+            "price": "158.32",
+            "quantity": "31.86"
+          },
+          {
+            "price": "158.33",
+            "quantity": "1.12"
+          },
+          {
+            "price": "158.35",
+            "quantity": "316.32"
+          },
+          {
+            "price": "158.7",
+            "quantity": "63.01"
+          },
+          {
+            "price": "159.01",
+            "quantity": "125.77"
+          },
+          {
+            "price": "159.76",
+            "quantity": "187.78"
+          },
+          {
+            "price": "160.9",
+            "quantity": "248.6"
+          },
+          {
+            "price": "162.79",
+            "quantity": "276.42"
+          },
+          {
+            "price": "165.32",
+            "quantity": "302.44"
+          }
+        ],
+        "received_timestamp_ms": 1791890695598,
+        "processed_timestamp_ms": 1791890695598
+      },
+      "blocker": "QUALIFICATION_NO_LOT_MEETS_OPENING_MINIMUM_WITHIN_BOUNDS",
+      "transport": "WS_ACKNOWLEDGED_REPEATED",
+      "age_ms_at_observation_end": 947,
+      "coverage_scope": "LAST_OBSERVED_BOOK_RESEARCH_NOT_CURRENT_SIGNING_PERMISSION"
+    }
+  },
+  "input_transport": "auto",
+  "bounded_observation_seconds": 90,
+  "absolute_deadline_seconds": 270,
+  "normal_protection_certified": false,
+  "practice_ready": false,
+  "live_ready": false,
+  "freeze_before": {
+    "baseline": "nse-working-baseline",
+    "file_count": 1,
+    "method_count": 8,
+    "parameter_count": 32,
+    "passed": true
+  },
+  "test_receipt": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/qualification_watcher_v8_9_2026-10-13/regression_release/test_receipt.json",
+  "runtime_metadata": {
+    "par:BRENT": {
+      "symbol": "par:BRENT",
+      "size_decimals": 2,
+      "max_leverage": 20,
+      "asset_id": 2670006,
+      "margin_tiers": [
+        [
+          "0",
+          20
+        ]
+      ]
+    },
+    "par:BTC": {
+      "symbol": "par:BTC",
+      "size_decimals": 4,
+      "max_leverage": 40,
+      "asset_id": 2670000,
+      "margin_tiers": [
+        [
+          "0",
+          40
+        ]
+      ]
+    },
+    "par:ETH": {
+      "symbol": "par:ETH",
+      "size_decimals": 4,
+      "max_leverage": 25,
+      "asset_id": 2670001,
+      "margin_tiers": [
+        [
+          "0",
+          25
+        ]
+      ]
+    },
+    "par:EWJ": {
+      "symbol": "par:EWJ",
+      "size_decimals": 3,
+      "max_leverage": 20,
+      "asset_id": 2670005,
+      "margin_tiers": [
+        [
+          "0",
+          20
+        ]
+      ]
+    },
+    "par:EWY": {
+      "symbol": "par:EWY",
+      "size_decimals": 3,
+      "max_leverage": 20,
+      "asset_id": 2670004,
+      "margin_tiers": [
+        [
+          "0",
+          20
+        ]
+      ]
+    },
+    "par:GOLD": {
+      "symbol": "par:GOLD",
+      "size_decimals": 4,
+      "max_leverage": 25,
+      "asset_id": 2670007,
+      "margin_tiers": [
+        [
+          "0",
+          25
+        ]
+      ]
+    },
+    "par:HYPE": {
+      "symbol": "par:HYPE",
+      "size_decimals": 2,
+      "max_leverage": 10,
+      "asset_id": 2670002,
+      "margin_tiers": [
+        [
+          "0",
+          10
+        ]
+      ]
+    },
+    "par:SP500": {
+      "symbol": "par:SP500",
+      "size_decimals": 3,
+      "max_leverage": 50,
+      "asset_id": 2670003,
+      "margin_tiers": [
+        [
+          "0.0",
+          50
+        ]
+      ]
+    },
+    "par:USDEUR": {
+      "symbol": "par:USDEUR",
+      "size_decimals": 1,
+      "max_leverage": 50,
+      "asset_id": 2670008,
+      "margin_tiers": [
+        [
+          "0.0",
+          50
+        ]
+      ]
+    },
+    "par:USDJPY": {
+      "symbol": "par:USDJPY",
+      "size_decimals": 2,
+      "max_leverage": 50,
+      "asset_id": 2670009,
+      "margin_tiers": [
+        [
+          "0.0",
+          50
+        ]
+      ]
+    }
+  },
+  "reader_errors": [],
+  "full_opportunity_attempts": 0,
+  "blocker": "NO_SUPPORTED_CURRENT_OPPORTUNITY",
+  "end_account_audit": {
+    "symbol": "par:BTC",
+    "eligible_for_risk_review": false,
+    "audit_only": true,
+    "prior_execution": {
+      "certification.sqlite": {
+        "exists": false
+      },
+      "qualification.sqlite": {
+        "exists": false
+      }
+    },
+    "quote": {
+      "symbol": "par:BTC",
+      "timestamp_ms": 1791890703525,
+      "bid": "83451.0",
+      "ask": "83552.0",
+      "bid_quantity": "0.0604",
+      "ask_quantity": "0.0006",
+      "mid": "83501.5",
+      "mark": "83451.0",
+      "oracle": "83627.0",
+      "hourly_funding": "-0.0000017782",
+      "open_interest": "2.2864",
+      "daily_notional_volume": "256854.7197",
+      "mark_timestamp_ms": 1791890703787,
+      "received_timestamp_ms": 1791890703950,
+      "processed_timestamp_ms": 1791890703950
+    },
+    "active_asset": {
+      "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+      "coin": "par:BTC",
+      "leverage": {
+        "type": "cross",
+        "value": 1
+      },
+      "maxTradeSzs": [
+        "11.983",
+        "11.983"
+      ],
+      "availableToTrade": [
+        "1000000.0",
+        "1000000.0"
+      ],
+      "markPx": "83451.0"
+    },
+    "readiness": {
+      "status": "READY",
+      "reasons": [],
+      "team_address": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+      "signer_address": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+      "observed_ms": 1791890701943,
+      "agent_expiry_ms": 1806859924898,
+      "collateral": "1000000.0",
+      "account_mode": "unifiedAccount",
+      "fees": {
+        "dailyUserVlm": [
+          {
+            "date": "2026-09-29",
+            "userCross": "0.0",
+            "userAdd": "0.0",
+            "exchange": "4035362.29"
+          },
+          {
+            "date": "2026-09-30",
+            "userCross": "0.0",
+            "userAdd": "0.0",
+            "exchange": "5033407.0099999998"
+          },
+          {
+            "date": "2026-10-01",
+            "userCross": "0.0",
+            "userAdd": "0.0",
+            "exchange": "6265670.4400000004"
+          },
+          {
+            "date": "2026-10-02",
+            "userCross": "0.0",
+            "userAdd": "0.0",
+            "exchange": "7303506.9500000002"
+          },
+          {
+            "date": "2026-10-03",
+            "userCross": "0.0",
+            "userAdd": "0.0",
+            "exchange": "2494978.4100000001"
+          },
+          {
+            "date": "2026-10-04",
+            "userCross": "0.0",
+            "userAdd": "0.0",
+            "exchange": "2879836.3700000001"
+          },
+          {
+            "date": "2026-10-05",
+            "userCross": "0.0",
+            "userAdd": "0.0",
+            "exchange": "4295368.6500000004"
+          },
+          {
+            "date": "2026-10-06",
+            "userCross": "0.0",
+            "userAdd": "0.0",
+            "exchange": "5789290.3600000003"
+          },
+          {
+            "date": "2026-10-07",
+            "userCross": "0.0",
+            "userAdd": "0.0",
+            "exchange": "5814031.0899999999"
+          },
+          {
+            "date": "2026-10-08",
+            "userCross": "0.0",
+            "userAdd": "0.0",
+            "exchange": "5803798.0599999996"
+          },
+          {
+            "date": "2026-10-09",
+            "userCross": "0.0",
+            "userAdd": "0.0",
+            "exchange": "16694743.0800000001"
+          },
+          {
+            "date": "2026-10-10",
+            "userCross": "0.0",
+            "userAdd": "0.0",
+            "exchange": "2682872.8100000001"
+          },
+          {
+            "date": "2026-10-11",
+            "userCross": "0.0",
+            "userAdd": "0.0",
+            "exchange": "2604769.8799999999"
+          },
+          {
+            "date": "2026-10-12",
+            "userCross": "0.0",
+            "userAdd": "0.0",
+            "exchange": "3546292.6699999999"
+          },
+          {
+            "date": "2026-10-13",
+            "userCross": "0.0",
+            "userAdd": "0.0",
+            "exchange": "2951715.8599999999"
+          }
+        ],
+        "feeSchedule": {
+          "cross": "0.00045",
+          "add": "0.00015",
+          "spotCross": "0.0007",
+          "spotAdd": "0.0004",
+          "tiers": {
+            "vip": [
+              {
+                "ntlCutoff": "5000000.0",
+                "cross": "0.0004",
+                "add": "0.00012",
+                "spotCross": "0.0006",
+                "spotAdd": "0.0003"
+              },
+              {
+                "ntlCutoff": "25000000.0",
+                "cross": "0.00035",
+                "add": "0.00008",
+                "spotCross": "0.0005",
+                "spotAdd": "0.0002"
+              },
+              {
+                "ntlCutoff": "100000000.0",
+                "cross": "0.0003",
+                "add": "0.00004",
+                "spotCross": "0.0004",
+                "spotAdd": "0.0001"
+              },
+              {
+                "ntlCutoff": "500000000.0",
+                "cross": "0.00028",
+                "add": "0.0",
+                "spotCross": "0.00035",
+                "spotAdd": "0.0"
+              },
+              {
+                "ntlCutoff": "2000000000.0",
+                "cross": "0.00026",
+                "add": "0.0",
+                "spotCross": "0.0003",
+                "spotAdd": "0.0"
+              },
+              {
+                "ntlCutoff": "7000000000.0",
+                "cross": "0.00024",
+                "add": "0.0",
+                "spotCross": "0.00025",
+                "spotAdd": "0.0"
+              }
+            ],
+            "mm": [
+              {
+                "makerFractionCutoff": "0.005",
+                "add": "-0.00001"
+              },
+              {
+                "makerFractionCutoff": "0.015",
+                "add": "-0.00002"
+              },
+              {
+                "makerFractionCutoff": "0.03",
+                "add": "-0.00003"
+              }
+            ]
+          },
+          "referralDiscount": "0.04",
+          "stakingDiscountTiers": [
+            {
+              "bpsOfMaxSupply": "0.0",
+              "discount": "0.0"
+            },
+            {
+              "bpsOfMaxSupply": "0.0001",
+              "discount": "0.05"
+            },
+            {
+              "bpsOfMaxSupply": "0.001",
+              "discount": "0.1"
+            },
+            {
+              "bpsOfMaxSupply": "0.01",
+              "discount": "0.15"
+            },
+            {
+              "bpsOfMaxSupply": "0.1",
+              "discount": "0.2"
+            },
+            {
+              "bpsOfMaxSupply": "1.0",
+              "discount": "0.3"
+            },
+            {
+              "bpsOfMaxSupply": "5.0",
+              "discount": "0.4"
+            }
+          ]
+        },
+        "userCrossRate": "0.00045",
+        "userAddRate": "0.00015",
+        "userSpotCrossRate": "0.0007",
+        "userSpotAddRate": "0.0004",
+        "activeReferralDiscount": "0.0",
+        "trial": null,
+        "feeTrialEscrow": "0.0",
+        "nextTrialAvailableTimestamp": null,
+        "stakingLink": null,
+        "activeStakingDiscount": {
+          "bpsOfMaxSupply": "0.0",
+          "discount": "0.0"
+        }
+      },
+      "account_budget": {
+        "cumVlm": "0.0",
+        "nRequestsUsed": 13,
+        "nRequestsCap": 10000,
+        "nRequestsSurplus": 0
+      },
+      "reconciliation_ready": true,
+      "clock_healthy": true,
+      "rate_limits_healthy": true,
+      "signed_transport_implemented": true
+    },
+    "account_observed_ms": 1791890703068,
+    "final_positions": [],
+    "final_orders": [],
+    "final_reconciliation": {
+      "ready": true,
+      "reasons": [],
+      "accounting": {
+        "source": "EXCHANGE_REPORTED_ACCOUNT_OBSERVER",
+        "exchange_orders_submitted": 0,
+        "entries_paused": false,
+        "reasons": [],
+        "positions": [],
+        "open_orders": [],
+        "fills": [],
+        "funding_events": [],
+        "reported_account_equity": {
+          "reported_account_value": "1000000.0",
+          "collateral_balance": "1000000.0",
+          "margin_used": "0",
+          "withdrawable": null,
+          "valuation_source": "spotClearinghouseState.USDPR.total"
+        },
+        "accounting_window_ms": [
+          0,
+          1791890697296
+        ],
+        "latest_query_window_ms": [
+          0,
+          1791890697296
+        ],
+        "realized": {
+          "gross_closed_pnl": "0",
+          "actual_fill_fees": "0",
+          "actual_funding_cashflow": "0",
+          "net_after_fees_and_funding": "0",
+          "scope": "ONLY_OBSERVED_ACCOUNT_EVENTS; excludes deposits/transfers and unknown historical events"
+        },
+        "corrections": [
+          {
+            "kind": "EXCHANGE_TRUTH_ADOPTED",
+            "timestamp_ms": 1791890699047,
+            "differences": {},
+            "new_fill_count": 0,
+            "reasons": [],
+            "exchange_ts": null,
+            "received_ts": "2026-10-13T11:24:59.047+00:00",
+            "processed_ts": "2026-10-13T11:24:59.047+00:00",
+            "timestamp_source": "LOCAL_PROCESS",
+            "exchange_to_receive_ms": null,
+            "receive_to_process_ms": 0,
+            "clock_skew_detected": false
+          }
+        ]
+      }
+    },
+    "clock": {
+      "state": "HEALTHY",
+      "reason": null,
+      "offset_ms": -343,
+      "last_reference_ms": 1791890703950,
+      "fresh_confirmations": 3
+    },
+    "signer": {
+      "observed_ms": 1791890696507,
+      "identity": {
+        "status": "MATCH",
+        "derived_public_address": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+        "expected_public_address": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+        "team_address": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+        "key_sources": [
+          "algo-trading-bot/.env"
+        ],
+        "signature_created": false,
+        "exchange_actions_submitted": 0
+      },
+      "local_lease": {
+        "status": "HEALTHY_LOCAL",
+        "second_process_rejected": true,
+        "ownership_scope": "CURRENT_HOST_AND_OS_USER_ONLY",
+        "remote_ownership_verified": false,
+        "nonce_database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/testnet/anchorium-bot-1/nonces.sqlite",
+        "nonce_allocated": false,
+        "signature_created": false,
+        "exchange_actions_submitted": 0,
+        "owner_during_check": {
+          "nonce_database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/testnet/anchorium-bot-1/nonces.sqlite",
+          "pid": 97130,
+          "hostname": "Adeshs-MacBook-Air.local",
+          "started_ms": 1791890696454,
+          "api_wallet": "0x46c9bed595770150752e7fa3806449f81e0ec6f9"
+        },
+        "lease_released_after_check": true
+      },
+      "sole_host_evidence": "HUMAN_CONFIRMED_IN_CHAT; LOCAL_LEASE_CANNOT_CHECK_OTHER_MACHINES",
+      "signature_created": false
+    },
+    "checkpoint": {
+      "integrity": "ok",
+      "snapshots_verified": 1,
+      "checksums_verified": true,
+      "source_identity": {
+        "git_commit": "33c7cfe9ec241ccc0241144a8dccfd9a06df553a",
+        "working_source_hash": "61e9bcedda7a2e597e328cdd99e0c64ce4ebc22f53ebe1807130c480f76e184b",
+        "strategy_source_hash": "bff940ac5ed35f71ed3dfb537ba15d20dcec35a4e62a938d2f0619c6e9309d83"
+      },
+      "clean": false,
+      "actions": {
+        "intents": 0,
+        "api_actions": 0,
+        "signed_management": 0
+      }
+    },
+    "sizing": {
+      "ready": false,
+      "symbol": "par:BTC",
+      "maximum_notional": "25",
+      "minimum_opening_notional": "10",
+      "size_step": "0.0001",
+      "selected_quantity": null,
+      "candidates": [],
+      "quantity_bounds": {
+        "notional": "0.0002990681037885947387939181510",
+        "bid_depth": "0.00604",
+        "ask_depth": "0.00006",
+        "account_size": "11.983",
+        "margin": "11.91981282537244873630602435"
+      },
+      "largest_bounded_quantity": "0.0000",
+      "entry_limit": "83593",
+      "exit_floor": "82204",
+      "spread_bps": "12.09559109716591917510463884",
+      "taker_fee_rate": "0.00090",
+      "rejection": "QUALIFICATION_NO_LOT_MEETS_OPENING_MINIMUM_WITHIN_BOUNDS"
+    },
+    "blocker": "QUALIFICATION_NO_LOT_MEETS_OPENING_MINIMUM_WITHIN_BOUNDS",
+    "elapsed_seconds": 7.735,
+    "reconciliation_calls": 1
+  },
+  "signer_check": {
+    "observed_ms": 1791890696507,
+    "identity": {
+      "status": "MATCH",
+      "derived_public_address": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+      "expected_public_address": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+      "team_address": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+      "key_sources": [
+        "algo-trading-bot/.env"
+      ],
+      "signature_created": false,
+      "exchange_actions_submitted": 0
+    },
+    "local_lease": {
+      "status": "HEALTHY_LOCAL",
+      "second_process_rejected": true,
+      "ownership_scope": "CURRENT_HOST_AND_OS_USER_ONLY",
+      "remote_ownership_verified": false,
+      "nonce_database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/testnet/anchorium-bot-1/nonces.sqlite",
+      "nonce_allocated": false,
+      "signature_created": false,
+      "exchange_actions_submitted": 0,
+      "owner_during_check": {
+        "nonce_database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/testnet/anchorium-bot-1/nonces.sqlite",
+        "pid": 97130,
+        "hostname": "Adeshs-MacBook-Air.local",
+        "started_ms": 1791890696454,
+        "api_wallet": "0x46c9bed595770150752e7fa3806449f81e0ec6f9"
+      },
+      "lease_released_after_check": true
+    },
+    "sole_host_evidence": "HUMAN_CONFIRMED_IN_CHAT; LOCAL_LEASE_CANNOT_CHECK_OTHER_MACHINES",
+    "signature_created": false
+  },
+  "reconciliation_calls": 1,
+  "rates": {
+    "state": "HEALTHY",
+    "policy": {
+      "ip_weight_per_minute": 1200,
+      "ip_safety_reserve": 120,
+      "daily_actions": 50000,
+      "daily_safety_reserve": 500,
+      "account_action_reserve": 10,
+      "max_open_orders": 1000,
+      "max_ws_connections": 10,
+      "max_ws_subscriptions": 1000,
+      "max_ws_unique_users": 10,
+      "venue_ws_connections_per_minute": 30,
+      "max_ws_messages_per_minute": 2000,
+      "ws_reconnects_per_minute": 5,
+      "budget_max_age_ms": 60000,
+      "optional_poll_interval_ms": 5000,
+      "read_retry_attempts": 3,
+      "backoff_base_ms": 1000,
+      "backoff_max_ms": 30000,
+      "exhausted_safety_action_interval_ms": 10000,
+      "caution_fraction": 0.75,
+      "throttle_fraction": 0.9
+    },
+    "ip_weight": 476,
+    "public_read_blocked": false,
+    "account_requests_used": 13,
+    "account_requests_cap": 10000,
+    "remaining_budget": 9987,
+    "budget_observed_ms": 1791890701488,
+    "daily_actions": 0,
+    "daily_limit": 50000,
+    "entries_allowed": true,
+    "open_orders": 0,
+    "backoff_until_ms": 0,
+    "websocket": {
+      "connections": 0,
+      "subscriptions": 0,
+      "outgoing_messages": 2,
+      "heartbeats": 2,
+      "reconnects_last_minute": 0
+    },
+    "public_reads": {
+      "upstream_by_operation": {
+        "perpDexs": 1,
+        "meta": 2,
+        "l2Book": 39,
+        "clearinghouseState": 8,
+        "openOrders": 3,
+        "userFillsByTime": 2,
+        "userFunding": 1,
+        "userAbstraction": 2,
+        "spotClearinghouseState": 2,
+        "frontendOpenOrders": 4,
+        "metaAndAssetCtxs": 2,
+        "extraAgents": 1,
+        "userFees": 1,
+        "userRateLimit": 1,
+        "activeAssetData": 1,
+        "perpDexLimits": 1
+      },
+      "failures": {},
+      "pending": 0,
+      "coalesced": 0,
+      "max_seconds": 0.7600882081314921,
+      "failure_details": []
+    }
+  },
+  "stream_before_shutdown": {
+    "current": {
+      "connection_id": "public-1",
+      "generation": 1,
+      "connection_started_at_ms": 1791890607817,
+      "started_monotonic": 2349666.892389208,
+      "last_poll_monotonic": 2349762.254572083,
+      "last_poll_wall_ms": 1791890703180,
+      "last_any_message_at_ms": 1791890701178,
+      "last_trade_message_at_ms": null,
+      "last_book_message_at_ms": 1791890701178,
+      "last_candle_message_at_ms": null,
+      "last_context_message_at_ms": null,
+      "outgoing_ping_at_ms": 1791890699602,
+      "pong_at_ms": 1791890699763,
+      "last_receive_monotonic": 2349760.252427833,
+      "last_ping_monotonic": 2349758.676684041,
+      "pending_ping_monotonic": null,
+      "transport_state": "RECOVERING",
+      "close_code": null,
+      "close_reason": null
+    },
+    "desired_count": 10,
+    "sent_count": 10,
+    "confirmed_count": 10,
+    "missing_acknowledgements": [],
+    "duplicate_subscriptions": 0,
+    "duplicates_prevented": 0,
+    "max_receiver_gap_seconds": 1.001243291888386,
+    "connections": [],
+    "connected": true,
+    "attempts": 1,
+    "verified_public_channel_observations": {
+      "par:BRENT": {
+        "generation": 1,
+        "updates": 19,
+        "last_exchange_ms": 1791890700794
+      },
+      "par:BTC": {
+        "generation": 1,
+        "updates": 19,
+        "last_exchange_ms": 1791890700794
+      },
+      "par:ETH": {
+        "generation": 1,
+        "updates": 19,
+        "last_exchange_ms": 1791890700794
+      },
+      "par:EWJ": {
+        "generation": 1,
+        "updates": 19,
+        "last_exchange_ms": 1791890700794
+      },
+      "par:EWY": {
+        "generation": 1,
+        "updates": 19,
+        "last_exchange_ms": 1791890700794
+      },
+      "par:GOLD": {
+        "generation": 1,
+        "updates": 19,
+        "last_exchange_ms": 1791890700794
+      },
+      "par:HYPE": {
+        "generation": 1,
+        "updates": 19,
+        "last_exchange_ms": 1791890700794
+      },
+      "par:SP500": {
+        "generation": 1,
+        "updates": 19,
+        "last_exchange_ms": 1791890700794
+      },
+      "par:USDEUR": {
+        "generation": 1,
+        "updates": 19,
+        "last_exchange_ms": 1791890700794
+      },
+      "par:USDJPY": {
+        "generation": 1,
+        "updates": 19,
+        "last_exchange_ms": 1791890700794
+      }
+    },
+    "errors": [],
+    "current_market_errors": {},
+    "exchange_actions": 0
+  },
+  "stream_after_shutdown": {
+    "current": {
+      "connection_id": "public-1",
+      "generation": 1,
+      "connection_started_at_ms": 1791890607817,
+      "started_monotonic": 2349666.892389208,
+      "last_poll_monotonic": 2349762.254572083,
+      "last_poll_wall_ms": 1791890703180,
+      "last_any_message_at_ms": 1791890701178,
+      "last_trade_message_at_ms": null,
+      "last_book_message_at_ms": 1791890701178,
+      "last_candle_message_at_ms": null,
+      "last_context_message_at_ms": null,
+      "outgoing_ping_at_ms": 1791890699602,
+      "pong_at_ms": 1791890699763,
+      "last_receive_monotonic": 2349760.252427833,
+      "last_ping_monotonic": 2349758.676684041,
+      "pending_ping_monotonic": null,
+      "transport_state": "DISCONNECTED",
+      "close_code": null,
+      "close_reason": null,
+      "disconnected_at_ms": 1791890704113,
+      "connection_age_seconds": 96.29547683289275,
+      "client_exception": "WebSocketConnectionClosedException",
+      "pending_rest_calls": 0,
+      "rate_budget": null,
+      "backoff_seconds": 0,
+      "subscription_count": 10,
+      "subscription_identities": [
+        "{\"coin\":\"par:BRENT\",\"type\":\"l2Book\"}",
+        "{\"coin\":\"par:BTC\",\"type\":\"l2Book\"}",
+        "{\"coin\":\"par:ETH\",\"type\":\"l2Book\"}",
+        "{\"coin\":\"par:EWJ\",\"type\":\"l2Book\"}",
+        "{\"coin\":\"par:EWY\",\"type\":\"l2Book\"}",
+        "{\"coin\":\"par:GOLD\",\"type\":\"l2Book\"}",
+        "{\"coin\":\"par:HYPE\",\"type\":\"l2Book\"}",
+        "{\"coin\":\"par:SP500\",\"type\":\"l2Book\"}",
+        "{\"coin\":\"par:USDEUR\",\"type\":\"l2Book\"}",
+        "{\"coin\":\"par:USDJPY\",\"type\":\"l2Book\"}"
+      ],
+      "confirmed_subscriptions": 10,
+      "attribution": "UNCERTAIN"
+    },
+    "desired_count": 10,
+    "sent_count": 10,
+    "confirmed_count": 10,
+    "missing_acknowledgements": [],
+    "duplicate_subscriptions": 0,
+    "duplicates_prevented": 0,
+    "max_receiver_gap_seconds": 1.001243291888386,
+    "connections": [
+      {
+        "connection_id": "public-1",
+        "generation": 1,
+        "connection_started_at_ms": 1791890607817,
+        "started_monotonic": 2349666.892389208,
+        "last_poll_monotonic": 2349762.254572083,
+        "last_poll_wall_ms": 1791890703180,
+        "last_any_message_at_ms": 1791890701178,
+        "last_trade_message_at_ms": null,
+        "last_book_message_at_ms": 1791890701178,
+        "last_candle_message_at_ms": null,
+        "last_context_message_at_ms": null,
+        "outgoing_ping_at_ms": 1791890699602,
+        "pong_at_ms": 1791890699763,
+        "last_receive_monotonic": 2349760.252427833,
+        "last_ping_monotonic": 2349758.676684041,
+        "pending_ping_monotonic": null,
+        "transport_state": "DISCONNECTED",
+        "close_code": null,
+        "close_reason": null,
+        "disconnected_at_ms": 1791890704113,
+        "connection_age_seconds": 96.29547683289275,
+        "client_exception": "WebSocketConnectionClosedException",
+        "pending_rest_calls": 0,
+        "rate_budget": null,
+        "backoff_seconds": 0,
+        "subscription_count": 10,
+        "subscription_identities": [
+          "{\"coin\":\"par:BRENT\",\"type\":\"l2Book\"}",
+          "{\"coin\":\"par:BTC\",\"type\":\"l2Book\"}",
+          "{\"coin\":\"par:ETH\",\"type\":\"l2Book\"}",
+          "{\"coin\":\"par:EWJ\",\"type\":\"l2Book\"}",
+          "{\"coin\":\"par:EWY\",\"type\":\"l2Book\"}",
+          "{\"coin\":\"par:GOLD\",\"type\":\"l2Book\"}",
+          "{\"coin\":\"par:HYPE\",\"type\":\"l2Book\"}",
+          "{\"coin\":\"par:SP500\",\"type\":\"l2Book\"}",
+          "{\"coin\":\"par:USDEUR\",\"type\":\"l2Book\"}",
+          "{\"coin\":\"par:USDJPY\",\"type\":\"l2Book\"}"
+        ],
+        "confirmed_subscriptions": 10,
+        "attribution": "UNCERTAIN"
+      }
+    ],
+    "connected": false,
+    "attempts": 1,
+    "verified_public_channel_observations": {
+      "par:BRENT": {
+        "generation": 1,
+        "updates": 19,
+        "last_exchange_ms": 1791890700794
+      },
+      "par:BTC": {
+        "generation": 1,
+        "updates": 19,
+        "last_exchange_ms": 1791890700794
+      },
+      "par:ETH": {
+        "generation": 1,
+        "updates": 19,
+        "last_exchange_ms": 1791890700794
+      },
+      "par:EWJ": {
+        "generation": 1,
+        "updates": 19,
+        "last_exchange_ms": 1791890700794
+      },
+      "par:EWY": {
+        "generation": 1,
+        "updates": 19,
+        "last_exchange_ms": 1791890700794
+      },
+      "par:GOLD": {
+        "generation": 1,
+        "updates": 19,
+        "last_exchange_ms": 1791890700794
+      },
+      "par:HYPE": {
+        "generation": 1,
+        "updates": 19,
+        "last_exchange_ms": 1791890700794
+      },
+      "par:SP500": {
+        "generation": 1,
+        "updates": 19,
+        "last_exchange_ms": 1791890700794
+      },
+      "par:USDEUR": {
+        "generation": 1,
+        "updates": 19,
+        "last_exchange_ms": 1791890700794
+      },
+      "par:USDJPY": {
+        "generation": 1,
+        "updates": 19,
+        "last_exchange_ms": 1791890700794
+      }
+    },
+    "errors": [
+      {
+        "at_ms": 1791890704113,
+        "reason": "WebSocketConnectionClosedException"
+      }
+    ],
+    "current_market_errors": {},
+    "exchange_actions": 0
+  },
+  "durable_cleanup": {
+    "integrity": "ok",
+    "snapshots_verified": 2,
+    "checksums_verified": true,
+    "source_identity": {
+      "git_commit": "33c7cfe9ec241ccc0241144a8dccfd9a06df553a",
+      "working_source_hash": "61e9bcedda7a2e597e328cdd99e0c64ce4ebc22f53ebe1807130c480f76e184b",
+      "strategy_source_hash": "bff940ac5ed35f71ed3dfb537ba15d20dcec35a4e62a938d2f0619c6e9309d83"
+    },
+    "clean": true,
+    "actions": {
+      "intents": 0,
+      "api_actions": 0,
+      "signed_management": 0
+    }
+  },
+  "freeze_after": {
+    "baseline": "nse-working-baseline",
+    "file_count": 1,
+    "method_count": 8,
+    "parameter_count": 32,
+    "passed": true
+  },
+  "finished_utc": "2026-10-13T11:25:04.229856+00:00",
+  "elapsed_seconds": 98.198,
+  "source_hash_after": "13113188a1351741a0c93aa2c25b9932c4ce90a6cdad8c8efb1434f8d3c051e3"
+}

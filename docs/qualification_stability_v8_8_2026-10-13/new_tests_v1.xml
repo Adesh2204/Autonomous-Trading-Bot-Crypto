@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="10" skipped="0" tests="62" time="3.637" timestamp="2026-10-13T10:16:57.659453+05:30" hostname="Adeshs-MacBook-Air.local"><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_read_timeout_is_distinct_from_unknown_http_failure" time="0.000" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_transport_has_separate_timeouts_and_an_absolute_read_deadline" time="0.053" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_server_retry_after_is_not_silently_shortened" time="0.029" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_interrupted_read_is_not_reported_as_success_to_coalesced_waiter" time="0.007" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_interrupt_preparation_saves_diagnostic_json_and_closes_sqlite" time="0.279" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_specific_transport_failures[connect-INFO_CONNECT_TIMEOUT-True]" time="0.000" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_specific_transport_failures[read-INFO_READ_TIMEOUT-True]" time="0.000" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_specific_transport_failures[reset-INFO_CONNECTION_FAILED-True]" time="0.000" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_specific_transport_failures[dns-INFO_DNS_FAILED-True]" time="0.000" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_specific_transport_failures[tls-INFO_TLS_FAILED-False]" time="0.000" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_specific_transport_failures[stream_read-INFO_READ_TIMEOUT-True]" time="0.000" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_http_status_retry_guidance_and_cleanup[429-True]" time="0.001"><failure message="AssertionError: &#10;- INFO_INVALID_JSON&#10;+ INFO_HTTP_429">algo-trading-bot/test_qualification_stability_v8_8.py:112: in test_http_status_retry_guidance_and_cleanup
+    with pytest.raises(ExchangeError,match='^INFO_HTTP_'+str(status)+'$') as e:t({'type':'meta','dex':'par'})
+                                                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_client.py:155: in __call__
+    if record['error'] is not None:raise record['error']
+                                   ^^^^^^^^^^^^^^^^^^^^^
+E   exchange.base_exchange.ExchangeError: INFO_INVALID_JSON
+
+During handling of the above exception, another exception occurred:
+algo-trading-bot/test_qualification_stability_v8_8.py:112: in test_http_status_retry_guidance_and_cleanup
+    with pytest.raises(ExchangeError,match='^INFO_HTTP_'+str(status)+'$') as e:t({'type':'meta','dex':'par'})
+E   AssertionError: 
+E   - INFO_INVALID_JSON
+E   + INFO_HTTP_429</failure></testcase><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_http_status_retry_guidance_and_cleanup[500-True]" time="0.000"><failure message="AssertionError: &#10;- INFO_INVALID_JSON&#10;+ INFO_HTTP_500">algo-trading-bot/test_qualification_stability_v8_8.py:112: in test_http_status_retry_guidance_and_cleanup
+    with pytest.raises(ExchangeError,match='^INFO_HTTP_'+str(status)+'$') as e:t({'type':'meta','dex':'par'})
+                                                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_client.py:155: in __call__
+    if record['error'] is not None:raise record['error']
+                                   ^^^^^^^^^^^^^^^^^^^^^
+E   exchange.base_exchange.ExchangeError: INFO_INVALID_JSON
+
+During handling of the above exception, another exception occurred:
+algo-trading-bot/test_qualification_stability_v8_8.py:112: in test_http_status_retry_guidance_and_cleanup
+    with pytest.raises(ExchangeError,match='^INFO_HTTP_'+str(status)+'$') as e:t({'type':'meta','dex':'par'})
+E   AssertionError: 
+E   - INFO_INVALID_JSON
+E   + INFO_HTTP_500</failure></testcase><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_http_status_retry_guidance_and_cleanup[503-True]" time="0.000"><failure message="AssertionError: &#10;- INFO_INVALID_JSON&#10;+ INFO_HTTP_503">algo-trading-bot/test_qualification_stability_v8_8.py:112: in test_http_status_retry_guidance_and_cleanup
+    with pytest.raises(ExchangeError,match='^INFO_HTTP_'+str(status)+'$') as e:t({'type':'meta','dex':'par'})
+                                                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_client.py:155: in __call__
+    if record['error'] is not None:raise record['error']
+                                   ^^^^^^^^^^^^^^^^^^^^^
+E   exchange.base_exchange.ExchangeError: INFO_INVALID_JSON
+
+During handling of the above exception, another exception occurred:
+algo-trading-bot/test_qualification_stability_v8_8.py:112: in test_http_status_retry_guidance_and_cleanup
+    with pytest.raises(ExchangeError,match='^INFO_HTTP_'+str(status)+'$') as e:t({'type':'meta','dex':'par'})
+E   AssertionError: 
+E   - INFO_INVALID_JSON
+E   + INFO_HTTP_503</failure></testcase><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_http_status_retry_guidance_and_cleanup[400-False]" time="0.000"><failure message="AssertionError: &#10;- INFO_INVALID_JSON&#10;+ INFO_HTTP_400">algo-trading-bot/test_qualification_stability_v8_8.py:112: in test_http_status_retry_guidance_and_cleanup
+    with pytest.raises(ExchangeError,match='^INFO_HTTP_'+str(status)+'$') as e:t({'type':'meta','dex':'par'})
+                                                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_client.py:155: in __call__
+    if record['error'] is not None:raise record['error']
+                                   ^^^^^^^^^^^^^^^^^^^^^
+E   exchange.base_exchange.ExchangeError: INFO_INVALID_JSON
+
+During handling of the above exception, another exception occurred:
+algo-trading-bot/test_qualification_stability_v8_8.py:112: in test_http_status_retry_guidance_and_cleanup
+    with pytest.raises(ExchangeError,match='^INFO_HTTP_'+str(status)+'$') as e:t({'type':'meta','dex':'par'})
+E   AssertionError: 
+E   - INFO_INVALID_JSON
+E   + INFO_HTTP_400</failure></testcase><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_http_status_retry_guidance_and_cleanup[403-False]" time="0.000"><failure message="AssertionError: &#10;- INFO_INVALID_JSON&#10;+ INFO_HTTP_403">algo-trading-bot/test_qualification_stability_v8_8.py:112: in test_http_status_retry_guidance_and_cleanup
+    with pytest.raises(ExchangeError,match='^INFO_HTTP_'+str(status)+'$') as e:t({'type':'meta','dex':'par'})
+                                                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_client.py:155: in __call__
+    if record['error'] is not None:raise record['error']
+                                   ^^^^^^^^^^^^^^^^^^^^^
+E   exchange.base_exchange.ExchangeError: INFO_INVALID_JSON
+
+During handling of the above exception, another exception occurred:
+algo-trading-bot/test_qualification_stability_v8_8.py:112: in test_http_status_retry_guidance_and_cleanup
+    with pytest.raises(ExchangeError,match='^INFO_HTTP_'+str(status)+'$') as e:t({'type':'meta','dex':'par'})
+E   AssertionError: 
+E   - INFO_INVALID_JSON
+E   + INFO_HTTP_403</failure></testcase><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_http_status_retry_guidance_and_cleanup[302-False]" time="0.000"><failure message="AssertionError: &#10;- INFO_INVALID_JSON&#10;+ INFO_HTTP_302">algo-trading-bot/test_qualification_stability_v8_8.py:112: in test_http_status_retry_guidance_and_cleanup
+    with pytest.raises(ExchangeError,match='^INFO_HTTP_'+str(status)+'$') as e:t({'type':'meta','dex':'par'})
+                                                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_client.py:155: in __call__
+    if record['error'] is not None:raise record['error']
+                                   ^^^^^^^^^^^^^^^^^^^^^
+E   exchange.base_exchange.ExchangeError: INFO_INVALID_JSON
+
+During handling of the above exception, another exception occurred:
+algo-trading-bot/test_qualification_stability_v8_8.py:112: in test_http_status_retry_guidance_and_cleanup
+    with pytest.raises(ExchangeError,match='^INFO_HTTP_'+str(status)+'$') as e:t({'type':'meta','dex':'par'})
+E   AssertionError: 
+E   - INFO_INVALID_JSON
+E   + INFO_HTTP_302</failure></testcase><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_bad_response_never_becomes_account_truth[not JSON-100-INFO_INVALID_JSON]" time="0.000" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_bad_response_never_becomes_account_truth[xxxxxxxxx-8-INFO_RESPONSE_TOO_LARGE]" time="0.000"><failure message="AssertionError: Regex pattern did not match.&#10; Regex: 'INFO_RESPONSE_TOO_LARGE'&#10; Input: 'INFO_INVALID_JSON'">algo-trading-bot/test_qualification_stability_v8_8.py:124: in test_bad_response_never_becomes_account_truth
+    with pytest.raises(ExchangeError,match=code) as e:t({'type':'userAbstraction'})
+                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_client.py:155: in __call__
+    if record['error'] is not None:raise record['error']
+                                   ^^^^^^^^^^^^^^^^^^^^^
+E   exchange.base_exchange.ExchangeError: INFO_INVALID_JSON
+
+During handling of the above exception, another exception occurred:
+algo-trading-bot/test_qualification_stability_v8_8.py:124: in test_bad_response_never_becomes_account_truth
+    with pytest.raises(ExchangeError,match=code) as e:t({'type':'userAbstraction'})
+E   AssertionError: Regex pattern did not match.
+E    Regex: 'INFO_RESPONSE_TOO_LARGE'
+E    Input: 'INFO_INVALID_JSON'</failure></testcase><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_public_transport_exact_endpoint_socket_limits_and_no_adapter_retries" time="0.000"><failure message="AssertionError: assert (&lt;requests.se...net.xyz/info') == ('https://api...et.xyz/info',)&#10;  &#10;  At index 0 diff: &lt;requests.sessions.Session object at 0x10b429070&gt; != 'https://api.hyperliquid-testnet.xyz/info'&#10;  Left contains one more item: 'https://api.hyperliquid-testnet.xyz/info'&#10;  Use -v to get more diff">algo-trading-bot/test_qualification_stability_v8_8.py:137: in test_public_transport_exact_endpoint_socket_limits_and_no_adapter_retries
+    assert args==('https://api.hyperliquid-testnet.xyz/info',)
+E   AssertionError: assert (&lt;requests.se...net.xyz/info') == ('https://api...et.xyz/info',)
+E     
+E     At index 0 diff: &lt;requests.sessions.Session object at 0x10b429070&gt; != 'https://api.hyperliquid-testnet.xyz/info'
+E     Left contains one more item: 'https://api.hyperliquid-testnet.xyz/info'
+E     Use -v to get more diff</failure></testcase><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_invalid_timeout_policy_is_rejected_before_http[connect_timeout-0]" time="0.000" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_invalid_timeout_policy_is_rejected_before_http[read_timeout-inf]" time="0.000" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_invalid_timeout_policy_is_rejected_before_http[total_timeout-True]" time="0.000" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_invalid_timeout_policy_is_rejected_before_http[read_timeout--1]" time="0.000" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_hung_worker_cannot_spawn_duplicate_workers_or_block_close" time="0.106" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_slow_stream_deadline_and_cancellation" time="0.056" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_retry_after_http_date_and_invalid_values" time="0.000" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_three_read_attempts_are_charged_with_distinct_failure_details" time="0.006" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_retry_after_beyond_deadline_stops_without_early_retry" time="0.006" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_non_retryable_total_timeout_is_not_repeated" time="0.005" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_cancellable_retry_backoff_never_issues_second_read" time="0.006" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_signed_actions_cannot_enter_public_retry_api[order]" time="0.005" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_signed_actions_cannot_enter_public_retry_api[cancel]" time="0.005" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_signed_actions_cannot_enter_public_retry_api[updateLeverage]" time="0.005" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_signed_actions_cannot_enter_public_retry_api[userSetAbstraction]" time="0.006" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_official_public_weights[l2Book-2]" time="0.006" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_official_public_weights[clearinghouseState-2]" time="0.005" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_official_public_weights[orderStatus-2]" time="0.005" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_official_public_weights[spotClearinghouseState-2]" time="0.005" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_official_public_weights[userRole-60]" time="0.005" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_official_public_weights[userAbstraction-20]" time="0.005" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_official_public_weights[extraAgents-20]" time="0.005" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_official_public_weights[userFees-20]" time="0.006" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_history_response_weights_and_reserved_candles_are_not_double_charged" time="0.006" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_rate_expiry_estimate_and_safety_reserve_are_grounded" time="0.005" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_rate_budget_deadline_exits_cleanly_without_upstream_call" time="0.005" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_cancelling_budget_wait_does_not_reserve_weight" time="0.005" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_scoped_snapshots_preserve_original_time_and_are_copied[userAbstraction]" time="0.000" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_scoped_snapshots_preserve_original_time_and_are_copied[extraAgents]" time="0.000" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_scoped_snapshots_preserve_original_time_and_are_copied[userFees]" time="0.000" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_account_truth_and_histories_are_never_snapshot_cached[clearinghouseState]" time="0.000" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_account_truth_and_histories_are_never_snapshot_cached[openOrders]" time="0.000" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_account_truth_and_histories_are_never_snapshot_cached[frontendOpenOrders]" time="0.000" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_account_truth_and_histories_are_never_snapshot_cached[userFillsByTime]" time="0.000" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_account_truth_and_histories_are_never_snapshot_cached[userFunding]" time="0.000" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_account_truth_and_histories_are_never_snapshot_cached[orderStatus]" time="0.000" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_market_quotes_are_never_reused_as_fresh" time="0.005" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_interrupt_during_account_reconciliation_preserves_checkpoint_and_unknown_truth" time="0.686"><failure message="exchange.base_exchange.ExchangeError: JOURNAL_ACCOUNT_OR_SESSION_MISMATCH">algo-trading-bot/test_qualification_stability_v8_8.py:315: in test_interrupt_during_account_reconciliation_preserves_checkpoint_and_unknown_truth
+    journal=ExecutionJournal(out/'read_only.sqlite',session_id='OFFLINE_RECOVERY',team_address=mod.TEAM)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/execution_journal.py:84: in __init__
+    raise ExchangeError('JOURNAL_ACCOUNT_OR_SESSION_MISMATCH')
+E   exchange.base_exchange.ExchangeError: JOURNAL_ACCOUNT_OR_SESSION_MISMATCH</failure></testcase><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_failed_initial_reconciliation_never_infers_flat[INFO_READ_TIMEOUT]" time="0.412" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_failed_initial_reconciliation_never_infers_flat[INFO_DNS_FAILED]" time="0.389" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_failed_initial_reconciliation_never_infers_flat[INFO_HTTP_429]" time="0.405" /><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_saved_v87_real_thin_books_cannot_be_relabelled_ready" time="0.135"><failure message="FileNotFoundError: [Errno 2] No such file or directory: '/Users/adesh/Autonomous Trading Bot - Crypto /docs/qualification_recovery_v8_7_2026-10-13/final_preflight/readiness.json'">algo-trading-bot/test_qualification_stability_v8_8.py:348: in test_saved_v87_real_thin_books_cannot_be_relabelled_ready
+    saved=json.loads((root/'docs/qualification_recovery_v8_7_2026-10-13/final_preflight/readiness.json').read_text())
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/pathlib.py:1027: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: '/Users/adesh/Autonomous Trading Bot - Crypto /docs/qualification_recovery_v8_7_2026-10-13/final_preflight/readiness.json'</failure></testcase></testsuite></testsuites>

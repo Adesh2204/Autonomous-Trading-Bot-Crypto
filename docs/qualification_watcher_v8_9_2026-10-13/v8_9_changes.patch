@@ -1,0 +1,1476 @@
+--- v8.8/algo-trading-bot/exchange/qualification_watcher.py
++++ v8.9/algo-trading-bot/exchange/qualification_watcher.py
+@@ -0,0 +1,546 @@
++"""Read-only opportunity observation for the existing bounded qualification rule.
++
++No order transport, approval or nonce allocation exists here. L2 aggregation and
++new directions are research only; eligibility retains 10% of BOTH best levels.
++"""
++from dataclasses import asdict, replace
++from decimal import Decimal as D, ROUND_CEILING, ROUND_FLOOR
++import hashlib
++import json
++from pathlib import Path
++import sqlite3
++import threading
++import time
++from types import SimpleNamespace
++
++from .base_exchange import ExchangeError
++from .feed_transport import FeedTransportHealth
++from .full_position_close import observed_scope
++from .hyperliquid_market_data import parse_book, HyperliquidMarketData
++from .hyperliquid_client import TESTNET_WS_URL
++
++EXECUTION_MARKETS = frozenset({'par:BTC', 'par:ETH', 'par:HYPE'})
++MAX_AGE_MS = 5000
++
++
++def sweep(levels, quantity, limit, side):
++    """Snapshot cost, not a prediction or actual fill. Never used for eligibility."""
++    remaining, cost = quantity, D(0)
++    available = D(0)
++    for level in levels:
++        if (side == 'BUY' and level.price > limit) or (side == 'SELL' and level.price < limit):
++            break
++        available += level.quantity
++        taken = min(remaining, level.quantity)
++        cost += taken * level.price
++        remaining -= taken
++    filled = quantity - remaining
++    return dict(available_quantity=str(available), requested_quantity=str(quantity),
++                covered_quantity=str(filled), shortfall=str(remaining), cost=str(cost),
++                vwap=str(cost / filled) if filled else None, limit=str(limit),
++                evidence='OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL')
++
++
++def research_residuals(spec, quantity, close_price, close_side):
++    """Evaluate each shape, not only the one-lot historical example."""
++    count = int(quantity / spec.size_step)
++    if count > 10000:
++        return dict(ready=False, blocker='QUALIFICATION_RESIDUAL_ANALYSIS_BOUND')
++    proofs = []
++    for n in range(1, count + 1):
++        size = spec.size_step * n
++        if size * close_price < 10:
++            try:
++                proof = observed_scope(spec, close_side, size)
++            except ExchangeError:
++                return dict(ready=False, blocker='QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL',
++                            first_unverified_quantity=str(size), close_side=close_side,
++                            notional=str(size * close_price))
++            proofs.append(proof)
++    return dict(ready=count > 0, possible_residual_count=count, close_side=close_side,
++                historical_shapes=proofs, future_acceptance_guaranteed=False,
++                protective_stop_verified=False)
++
++
++def inspect_book(spec, book, now_ms, side='BUY'):
++    """Stage A: no account reads, margin assumptions, signing, or rule expansion."""
++    if side not in {'BUY', 'SELL'}:
++        raise ExchangeError('INVALID_RESEARCH_DIRECTION')
++    row = dict(symbol=spec.symbol, entry_side=side, potential=False, stage='PUBLIC_BOOK_ONLY',
++               asset_id=spec.asset_id, size_step=str(spec.size_step), observed_ms=now_ms,
++               exchange_ms=book.timestamp_ms, received_ms=book.received_timestamp_ms,
++               execution_scope_permitted=spec.symbol in EXECUTION_MARKETS and side == 'BUY',
++               account_checks_performed=False, normal_minimum='10', maximum_notional='25',
++               depth_policy='STRICT_10_PERCENT_OF_EACH_BEST_LEVEL', protection_verified=False)
++    if book.symbol != spec.symbol or not 0 <= now_ms - book.timestamp_ms <= MAX_AGE_MS:
++        return dict(row, blocker='WRONG_OR_STALE_BOOK')
++    if (not book.bids or not book.asks or book.asks[0].price <= book.bids[0].price
++            or any(x.price <= 0 or x.quantity <= 0 for x in (*book.bids, *book.asks))):
++        return dict(row, blocker='QUALIFICATION_TWO_SIDED_BOOK_REQUIRED')
++    if (any(a.price <= b.price for a, b in zip(book.bids, book.bids[1:]))
++            or any(a.price >= b.price for a, b in zip(book.asks, book.asks[1:]))):
++        return dict(row, blocker='DUPLICATE_OR_UNSORTED_BOOK_LEVELS')
++    bid, ask = book.bids[0], book.asks[0]
++    spread = (ask.price - bid.price) / ((ask.price + bid.price) / 2) * 10000
++    if side == 'BUY':
++        entry = spec.normalize_price(ask.price * D('1.0005'), 'BUY')
++        reference = spec.normalize_price(bid.price * D('.99'), 'SELL')
++        bound = spec.normalize_price(reference * D('.995'), 'SELL')
++        immediate = spec.normalize_price(bid.price * D('.998'), 'SELL')
++        entry_levels, exit_levels, close_side = book.asks, book.bids, 'SELL'
++        # For a SHORT research candidate, subminimum BUY evidence is evaluated
++        # at the lower reviewed price, not just the high adverse exit ceiling.
++        residual_price = bound
++    else:
++        entry = spec.normalize_price(bid.price * D('.9995'), 'SELL')
++        reference = spec.normalize_price(ask.price * D('1.01'), 'BUY')
++        bound = spec.normalize_price(reference * D('1.005'), 'BUY')
++        immediate = spec.normalize_price(ask.price * D('1.002'), 'BUY')
++        entry_levels, exit_levels, close_side = book.bids, book.asks, 'BUY'
++        residual_price = spec.normalize_price(bid.price * D('.98505'), 'SELL')
++    lot = spec.size_step
++    minimum = (D(10) / entry / lot).to_integral_value(rounding=ROUND_CEILING) * lot
++    bounds = dict(notional=D(25) / entry, bid_depth=bid.quantity * D('.1'), ask_depth=ask.quantity * D('.1'))
++    capacity = min(bounds.values())
++    maximum = (capacity / lot).to_integral_value(rounding=ROUND_FLOOR) * lot
++    # Evaluate a legal minimum even when strict BBO depth fails, to show why
++    # multi-level research cannot silently substitute for the current policy.
++    residuals = research_residuals(spec, max(minimum, maximum), residual_price, close_side)
++    entry_sweep = sweep(entry_levels, minimum, entry, side)
++    exit_sweep = sweep(exit_levels, minimum, bound, close_side)
++    aggregate_cap = min(D(25) / entry, D(entry_sweep['available_quantity']) * D('.1'),
++                        D(exit_sweep['available_quantity']) * D('.1'))
++    aggregate_qty = (aggregate_cap / lot).to_integral_value(rounding=ROUND_FLOOR) * lot
++    row.update(bid=str(bid.price), ask=str(ask.price), spread_bps=str(spread),
++        bid_quantity=str(bid.quantity), ask_quantity=str(ask.quantity),
++        bid_depth_limit=str(bid.quantity * D('.1')), ask_depth_limit=str(ask.quantity * D('.1')),
++        entry_limit=str(entry), exit_bound=str(bound), reviewed_immediate_exit_limit=str(immediate),
++        minimum_valid_entry_quantity=str(minimum), minimum_entry_notional=str(minimum * entry),
++        maximum_book_quantity=str(maximum), maximum_book_notional=str(maximum * entry),
++        quantity_bounds={k: str(v) for k, v in bounds.items()},
++        binding_capacity_constraints=[k for k, v in bounds.items() if v == capacity],
++        minimum_lot_notional=str(lot * entry), residuals=residuals,
++        l2_research=dict(entry=entry_sweep, exit=exit_sweep,
++            levels=dict(bids=len(book.bids), asks=len(book.asks)),
++            hypothetical_aggregate_depth_quantity=str(aggregate_qty),
++            aggregate_can_meet_minimum=aggregate_qty >= minimum,
++            affects_eligibility=False, separate_policy_approval_required=True),
++        raw_book=asdict(book))
++    if maximum < minimum:
++        row['blocker'] = 'QUALIFICATION_NO_LOT_MEETS_OPENING_MINIMUM_WITHIN_BOUNDS'
++    elif spread > 50:
++        row['blocker'] = 'QUALIFICATION_SPREAD_EXCEEDED'
++    elif not residuals['ready']:
++        row['blocker'] = residuals['blocker']
++    elif not row['execution_scope_permitted']:
++        row['blocker'] = 'SEPARATE_DIRECTION_OR_MARKET_APPROVAL_REQUIRED'
++    else:
++        row.update(potential=True, blocker=None)
++    return row
++
++
++class PublicBookStream:
++    """One receiver; public subscriptions only. SQLite/account reads stay on owner.
++
++    Exactly acknowledged subscriptions plus two distinct exchange timestamps
++    establish actual channel operation. Disconnect clears all candidate caches.
++    Three connections maximum per bounded watcher; REST is the fallback.
++    """
++    def __init__(self, symbols, rates, *, clock_ms, connect=None):
++        self.symbols = tuple(symbols)
++        if not self.symbols or any(not s.startswith('par:') for s in self.symbols):
++            raise ExchangeError('PAR_PUBLIC_SUBSCRIPTIONS_REQUIRED')
++        self.rates, self.clock_ms = rates, clock_ms
++        self.connect = connect or self._connect
++        self.health = FeedTransportHealth(wall_ms=clock_ms)
++        self.lock = threading.RLock()
++        self.stop_event = threading.Event()
++        self.books, self.updates, self.support_seen = {}, {}, {}
++        self.socket = self.thread = None
++        self.connected = False
++        self.failures = []
++        self.market_errors = {}
++        self.attempts = 0
++
++    @staticmethod
++    def _connect():
++        import certifi
++        import websocket
++        return websocket.create_connection(TESTNET_WS_URL, timeout=3,
++                                            sslopt={'ca_certs': certifi.where()})
++
++    def begin(self):
++        with self.lock:
++            self.books.clear(); self.updates.clear()
++            subscriptions = [dict(method='subscribe', subscription=dict(type='l2Book', coin=s))
++                             for s in self.symbols]
++            generation = self.health.begin(subscriptions)
++            self.connected = True
++            return generation, subscriptions
++
++    def ingest(self, message, generation):
++        with self.lock:
++            if not self.health.receive(message, generation):
++                return
++            if message.get('channel') != 'l2Book':
++                return
++            data = message.get('data', {})
++            symbol = data.get('coin')
++            if symbol not in self.symbols:
++                raise ExchangeError('UNEXPECTED_BOOK_SYMBOL')
++            key = self.health.key(dict(type='l2Book', coin=symbol))
++            if key not in self.health.confirmed:
++                return
++            try:
++                book = parse_book(data, symbol)
++            except ExchangeError as exc:
++                self.books.pop(symbol, None)
++                self.updates.pop(symbol, None)
++                self.market_errors[symbol] = dict(at_ms=self.clock_ms(), reason=str(exc))
++                return
++            if not 0 <= self.clock_ms() - book.timestamp_ms <= MAX_AGE_MS:
++                return
++            previous = self.books.get(symbol)
++            if previous and book.timestamp_ms <= previous.timestamp_ms:
++                return
++            book = replace(book, received_timestamp_ms=self.clock_ms(), processed_timestamp_ms=self.clock_ms())
++            self.books[symbol] = book
++            self.market_errors.pop(symbol, None)
++            self.updates[symbol] = self.updates.get(symbol, 0) + 1
++            if self.updates[symbol] >= 2:
++                self.support_seen[symbol] = dict(generation=generation, updates=self.updates[symbol],
++                                               last_exchange_ms=book.timestamp_ms)
++
++    def disconnect(self, reason):
++        with self.lock:
++            self.connected = False
++            self.books.clear(); self.updates.clear()
++            self.health.disconnect(reason)
++
++    def snapshot(self, symbol):
++        with self.lock:
++            book = self.books.get(symbol)
++            if (not self.connected or self.updates.get(symbol, 0) < 2 or book is None
++                    or not 0 <= self.clock_ms() - book.timestamp_ms <= MAX_AGE_MS):
++                return None
++            return book
++
++    def start(self):
++        if self.thread is not None:
++            raise ExchangeError('PUBLIC_WATCHER_ALREADY_STARTED')
++        self.thread = threading.Thread(target=self._run, name='qualification-public-books', daemon=True)
++        self.thread.start()
++
++    def _run(self):
++        import websocket
++        for attempt in range(3):
++            if self.stop_event.is_set():
++                break
++            identity = 'qualification-watch-' + str(attempt)
++            self.attempts += 1
++            try:
++                self.rates.ws_open(identity)
++                socket = self.connect()
++                self.socket = socket
++                socket.settimeout(1)
++                generation, subscriptions = self.begin()
++                for message in subscriptions:
++                    sub = message['subscription']
++                    with self.lock:
++                        allowed = self.health.subscription_sent(sub) and self.rates.ws_send(identity, sub)
++                    if allowed:
++                        socket.send(json.dumps(message))
++                while not self.stop_event.is_set():
++                    with self.lock:
++                        ping = self.health.poll()
++                    if ping and self.rates.ws_send(identity, heartbeat=True):
++                        socket.send(json.dumps(dict(method='ping')))
++                        with self.lock:
++                            self.health.ping_sent()
++                    try:
++                        raw = socket.recv()
++                    except websocket.WebSocketTimeoutException:
++                        continue
++                    if not raw:
++                        raise ExchangeError('PUBLIC_SOCKET_CLOSED_WITHOUT_CODE')
++                    if len(raw) > 2 * 1024 * 1024:
++                        raise ExchangeError('PUBLIC_WS_MESSAGE_TOO_LARGE')
++                    self.ingest(json.loads(raw), generation)
++            except Exception as exc:
++                reason = str(exc) if isinstance(exc, ExchangeError) else type(exc).__name__
++                with self.lock:
++                    self.failures.append(dict(at_ms=self.clock_ms(), reason=reason))
++                self.disconnect(reason)
++            finally:
++                if self.socket:
++                    self.socket.close(); self.socket = None
++                self.rates.ws_close(identity)
++                self.disconnect('OPERATOR_OR_BOUNDED_WATCH_STOP' if self.stop_event.is_set() else 'RECONNECT')
++            if self.stop_event.wait(self.health.backoff(attempt + 1)):
++                break
++
++    def report(self):
++        with self.lock:
++            return dict(self.health.report(), connected=self.connected, attempts=self.attempts,
++                        verified_public_channel_observations=dict(self.support_seen),
++                        errors=list(self.failures), current_market_errors=dict(self.market_errors), exchange_actions=0)
++
++    def close(self):
++        self.stop_event.set()
++        socket = self.socket
++        if socket:
++            socket.close()
++        if self.thread:
++            self.thread.join(4)
++            if self.thread.is_alive():
++                raise ExchangeError('PUBLIC_RECEIVER_SHUTDOWN_UNCONFIRMED')
++
++
++class PublicBookReader:
++    """No account queries. A missing/stale WS book admits at most one REST read
++    per symbol per five seconds, also bounded globally by the shared limiter.
++    """
++    def __init__(self, market, stream=None, *, monotonic=None):
++        self.market, self.stream = market, stream
++        self.monotonic = monotonic or time.monotonic
++        self.started = self.monotonic()
++        self.last_rest, self.rest_books, self.errors = {}, {}, []
++
++    def get(self, symbol):
++        if self.stream:
++            book = self.stream.snapshot(symbol)
++            if book:
++                return book, 'WS_ACKNOWLEDGED_REPEATED'
++            if self.monotonic() - self.started < 10:
++                return None, 'WS_STARTUP_GRACE'
++        now = self.monotonic()
++        if now - self.last_rest.get(symbol, -float('inf')) >= 5:
++            self.last_rest[symbol] = now
++            try:
++                # Admission is immediate here: do not spend the public reserve
++                # or wait 65s for an ordinary monitoring update.
++                self.market.client.rate_limits.read_budget_wait_seconds = 0
++                self.rest_books[symbol] = self.market.get_orderbook(symbol)
++            except ExchangeError as exc:
++                self.rest_books.pop(symbol, None)
++                self.errors.append(dict(symbol=symbol, at_ms=self.market.client.clock_ms(), reason=str(exc)))
++                self.errors[:] = self.errors[-100:]
++        book = self.rest_books.get(symbol)
++        if book and 0 <= self.market.client.clock_ms() - book.timestamp_ms <= MAX_AGE_MS:
++            return book, 'RATE_LIMITED_REST'
++        return None, 'NO_FRESH_BOOK'
++
++
++class OpportunityGate:
++    """Bounded full validations, with no expensive reads on ordinary updates."""
++    def __init__(self, *, cooldown_seconds=60, maximum_attempts=2, monotonic=None):
++        if cooldown_seconds < 60 or not 1 <= maximum_attempts <= 3:
++            raise ExchangeError('INVALID_WATCH_PREFLIGHT_BOUNDS')
++        self.cooldown = cooldown_seconds
++        self.maximum_attempts = maximum_attempts
++        self.monotonic = monotonic or time.monotonic
++        self.attempts = 0
++        self.last = -float('inf')
++        self.consumed_books = set()
++
++    def claim(self, row):
++        identity = (row['symbol'], row['exchange_ms'])
++        if (not row['potential'] or self.attempts >= self.maximum_attempts
++                or self.monotonic() - self.last < self.cooldown or identity in self.consumed_books):
++            return False
++        self.last = self.monotonic(); self.attempts += 1
++        self.consumed_books.add(identity)
++        return True
++
++
++def durable_readback(path, expected_source, *, clean=False):
++    """Verify committed checkpoints through a separate read-only SQLite handle.
++    No journal reopen, account history replay, or network call is necessary.
++    """
++    from .execution_journal import fingerprint
++    with sqlite3.connect(Path(path).resolve().as_uri() + '?mode=ro', uri=True) as db:
++        integrity = db.execute('PRAGMA integrity_check').fetchone()[0]
++        identity = dict(db.execute('SELECT name,value FROM identity'))
++        rows = db.execute('SELECT data,checksum FROM recovery_snapshots ORDER BY seq DESC').fetchall()
++        if integrity != 'ok' or not rows:
++            raise ExchangeError('QUALIFICATION_DURABLE_CHECKPOINT_REQUIRED')
++        values = []
++        for data, checksum in rows:
++            value = json.loads(data)
++            if (fingerprint(value) != checksum or value['source_identity'] != expected_source
++                    or value.get('checkpoint_error') or value['venue'] != 'testnet:par'
++                    or value['schema_version'] != 1 or value['team_address'] != identity.get('team')
++                    or value['session_id'] != identity.get('session') or identity.get('venue') != 'testnet:par'):
++                raise ExchangeError('QUALIFICATION_CHECKPOINT_IDENTITY_OR_CHECKSUM_FAILED')
++            values.append(value)
++        account = db.execute('SELECT data FROM account_checkpoint WHERE id=1').fetchone()
++        if not account or json.loads(account[0]) != values[0]['account']:
++            raise ExchangeError('QUALIFICATION_CHECKPOINT_ACCOUNT_MISMATCH')
++        if clean and not values[0]['last_clean_shutdown']:
++            raise ExchangeError('QUALIFICATION_CLEAN_SHUTDOWN_REQUIRED')
++        actions = {t: db.execute('SELECT COUNT(*) FROM ' + t).fetchone()[0]
++                   for t in ('intents', 'api_actions', 'signed_management')}
++        if any(actions.values()):
++            raise ExchangeError('READ_ONLY_JOURNAL_CONTAINS_ACTIONS')
++        return dict(integrity=integrity, snapshots_verified=len(rows), checksums_verified=True,
++                    source_identity=expected_source, clean=values[0]['last_clean_shutdown'], actions=actions)
++
++
++def prior_execution_check(root):
++    """Mirror the existing activation history blocks without mutating the ledger."""
++    state = Path(root) / 'runtime/testnet/anchorium-bot-1'
++    result = {}
++    for name in ('certification.sqlite', 'qualification.sqlite'):
++        path = state / name
++        if not path.exists():
++            result[name] = dict(exists=False)
++            continue
++        with sqlite3.connect(path.resolve().as_uri() + '?mode=ro', uri=True) as db:
++            if db.execute('PRAGMA integrity_check').fetchone()[0] != 'ok':
++                raise ExchangeError('PRIOR_EXECUTION_JOURNAL_CORRUPT')
++            pending = db.execute("SELECT COUNT(*) FROM intents WHERE state IN "
++                "('PREPARED','SUBMITTED','UNKNOWN','OPEN','PARTIALLY_FILLED')").fetchone()[0]
++            total = db.execute('SELECT COUNT(*) FROM intents').fetchone()[0]
++            consumed = db.execute("SELECT value FROM controls WHERE name='qualification_entry_consumed'").fetchone()
++            result[name] = dict(exists=True, pending=pending, intents=total, entry_consumed=bool(consumed))
++            if name == 'certification.sqlite' and pending:
++                raise ExchangeError('PRIOR_CERTIFICATION_UNRESOLVED_REVIEW_REQUIRED')
++            if name == 'qualification.sqlite' and (total or consumed):
++                raise ExchangeError('QUALIFICATION_PRIOR_ATTEMPT_READ_ONLY_RECOVERY_REQUIRED')
++    return result
++
++
++class ReadOnlyQualificationSession:
++    """One journal, limiter and recovery object for the bounded watcher session.
++    Existing context/central validators remain authoritative. Every full attempt
++    performs reconciliation once (twice only for the existing clock-pair retry).
++    """
++    def __init__(self, root, directory, source_hash, policy_hash, *, progress, cancel_event):
++        from .execution_journal import ExecutionJournal
++        from .execution_safety import HyperliquidRateLimitManager, ClockHealthMonitor
++        from .hyperliquid_client import HyperliquidClient
++        from .hyperliquid_account import HyperliquidAccount
++        from .certification_runtime import CertificationRecovery
++        from .reliability_policy import load_reliability_policy
++        from .testnet_qualification import QualificationContextProvider
++        from .testnet_certification import TEAM, API
++        self.root, self.directory = Path(root), Path(directory)
++        self.source_hash, self.policy_hash, self.progress = source_hash, policy_hash, progress
++        rate_policy, clock_policy, protection = load_reliability_policy(root / 'configs/reliability_policy.json')
++        if protection.enabled:
++            raise ExchangeError('QUALIFICATION_GLOBAL_PROTECTION_MUST_REMAIN_DISABLED')
++        self.journal = ExecutionJournal(directory / 'read_only.sqlite', session_id='qualification-watch', team_address=TEAM)
++        self.rates = HyperliquidRateLimitManager(self.journal, policy=rate_policy, signer_address=API)
++        self.rates.read_progress = progress
++        self.client = HyperliquidClient(rate_limits=self.rates, progress=progress)
++        self.client.read_cancel_event = cancel_event
++        self.recovery = None
++        self.reconciliation_calls = 0
++        self.identity = None
++        self.attempt_reports = []
++        self.closed = False
++        self.clock_policy = clock_policy
++        self._provider_class = QualificationContextProvider
++        self._recovery_class = CertificationRecovery
++        self._account_class = HyperliquidAccount
++        self._clock_class = ClockHealthMonitor
++        self.team, self.api = TEAM, API
++
++    def start(self):
++        self.client.startup()
++        self.account = self._account_class(self.client, self.team)
++        self.market = HyperliquidMarketData(self.client)
++        self.recovery = self._recovery_class(self.account, self.journal, initial_start_ms=0)
++        self.clock = self._clock_class(clock_ms=self.client.clock_ms, journal=self.journal, **self.clock_policy)
++        self.provider = self._provider_class(self.market, self.account, self.api, self.clock, self.rates,
++            reconcile_before_load=self._reconcile, progress=self.progress,
++            reconciliation_ready=lambda: self.recovery.account_truth_ready, feed_ready=lambda: True)
++
++    def _reconcile(self):
++        self.reconciliation_calls += 1
++        return self.recovery.recover()
++
++    def verify_signer(self):
++        from .practice_preflight import verify_private_identity, check_local_nonce_ownership
++        identity = verify_private_identity(self.root, self.api, self.team)
++        lease = check_local_nonce_ownership(self.root / 'runtime/testnet/anchorium-bot-1/nonces.sqlite',
++                                          self.api, self.team, root=self.root)
++        self.identity = dict(observed_ms=self.client.clock_ms(), identity=identity, local_lease=lease,
++            sole_host_evidence='HUMAN_CONFIRMED_IN_CHAT; LOCAL_LEASE_CANNOT_CHECK_OTHER_MACHINES',
++            signature_created=False)
++        return self.identity
++
++    def refresh_metadata(self):
++        metadata = self.client.post_info('meta')
++        self.client.validate_metadata(metadata)
++        self.client.metadata_timestamp_ms = self.client.clock_ms()
++
++    def validate(self, symbol, *, audit_only=False):
++        from .testnet_qualification import find_largest_safe_qualification_quantity
++        if symbol not in EXECUTION_MARKETS:
++            raise ExchangeError('UNAPPROVED_QUALIFICATION_MARKET')
++        started = time.monotonic()
++        before = self.reconciliation_calls
++        report = dict(symbol=symbol, eligible_for_risk_review=False, audit_only=audit_only)
++        self.attempt_reports.append(report)
++        try:
++            self.progress('REFRESHING_ACCOUNT', symbol=symbol)
++            report['prior_execution'] = prior_execution_check(self.root)
++            self.verify_signer()
++            self.rates.read_budget_wait_seconds = 65
++            context = self.provider.load(SimpleNamespace(symbol=symbol, reduce_only=False))
++            report.update(quote=asdict(context.quote), active_asset=context.active_asset,
++                readiness=asdict(context.readiness), account_observed_ms=context.account_ms,
++                final_positions=[asdict(p) for p in context.positions.values()],
++                final_orders=list(context.open_orders), final_reconciliation=asdict(self.recovery.last_report),
++                clock=self.clock.report(), signer=self.identity)
++            if not context.readiness.account_ready or context.positions or context.open_orders or not context.reconciled:
++                raise ExchangeError('QUALIFICATION_FRESH_FLAT_ACCOUNT_BOOK_REQUIRED')
++            # A committed local readback proves durability; keep network truth
++            # fresh without replaying the same account history after reopening.
++            report['checkpoint'] = durable_readback(self.directory / 'read_only.sqlite', self.recovery.source)
++            self.progress('CHECKING_RESIDUAL_EXITS', symbol=symbol)
++            sizing = find_largest_safe_qualification_quantity(context, self.client, self.source_hash, self.policy_hash)
++            report['sizing'] = sizing
++            if not sizing['ready']:
++                raise ExchangeError(sizing['rejection'])
++            from .testnet_qualification import QualificationProposal
++            proposal = QualificationProposal(**sizing['proposal'])
++            now = self.client.clock_ms()
++            if any(not 0 <= now - stamp <= MAX_AGE_MS for stamp in
++                   (context.account_ms, context.readiness.observed_ms, context.quote.timestamp_ms,
++                    context.quote.mark_timestamp_ms)):
++                raise ExchangeError('QUALIFICATION_CLOCK_ACCOUNT_QUOTE_PAIR_NOT_READY')
++            report.update(eligible_for_risk_review=not audit_only, proposal=asdict(proposal),
++                proposal_hash=proposal.identity, central_validation=sizing['central_validation'],
++                residual_close_scope=sizing['residual_close_scope'],
++                spread_bps=str((context.quote.ask - context.quote.bid) / context.quote.mid * 10000))
++            return report
++        except ExchangeError as exc:
++            report['blocker'] = str(exc)
++            return report
++        finally:
++            report.update(elapsed_seconds=round(time.monotonic()-started, 3),
++                          reconciliation_calls=self.reconciliation_calls-before)
++            self.rates.read_budget_wait_seconds = 0
++
++    def close(self):
++        if self.closed:
++            return
++        self.closed = True
++        try:
++            if self.recovery is not None:
++                self.recovery.checkpoint(clean=True)
++                self.cleanup = durable_readback(self.directory / 'read_only.sqlite', self.recovery.source, clean=True)
++        finally:
++            self.client.close()
++            self.journal.close()
++
++
++def source_unchanged(root, source_hash, policy_hash):
++    from .paper_operations import active_source_hash
++    from venue_config import require_paper_migration
++    require_paper_migration()
++    if (active_source_hash(root) != source_hash or
++            hashlib.sha256((root / 'configs/reliability_policy.json').read_bytes()).hexdigest() != policy_hash):
++        raise ExchangeError('SOURCE_OR_POLICY_CHANGED_DURING_WATCH')
+--- v8.8/algo-trading-bot/test_qualification_watcher_v8_9.py
++++ v8.9/algo-trading-bot/test_qualification_watcher_v8_9.py
+@@ -0,0 +1,540 @@
++"""V8.9 public watcher/qualification integration. Synthetic inputs; no real signing."""
++from dataclasses import asdict, replace
++from decimal import Decimal as D
++from pathlib import Path
++from types import SimpleNamespace
++from copy import deepcopy
++import importlib.util
++import json
++import sqlite3
++import threading
++import time
++import pytest
++
++from exchange.base_exchange import BookLevel, OrderBook, MarketSpec, ExchangeError
++from exchange.qualification_watcher import (inspect_book, sweep, research_residuals, PublicBookStream,
++    PublicBookReader, OpportunityGate, ReadOnlyQualificationSession, durable_readback)
++from exchange.testnet_qualification import QualificationContextProvider, QualificationProposal, check_entry
++from exchange.certification_runtime import CertificationRecovery
++from exchange.order_lifecycle import OrderRequest
++from test_testnet_qualification import qualification
++from test_live_exchange_execution import live
++from test_qualification_recovery_v8_7 import launcher
++from test_exchange_migration import NOW
++
++
++SPEC = MarketSpec('par:BTC', 4, 50, 2670000)
++
++
++def book(bid_quantity='.0041', ask_quantity='.0025', *, symbol='par:BTC', stamp=NOW):
++    return OrderBook(symbol, stamp, (BookLevel(D(83314), D(bid_quantity)),),
++                     (BookLevel(D(83431), D(ask_quantity)),), NOW, NOW)
++
++
++@pytest.mark.parametrize('bid,ask,quantity,ready',[
++    ('.0041','.0025','.0002',True),('.0041','.0301','.0002',True),
++    ('.0003','.03','0.0000',False),('.0041','.0002','0.0000',False),
++    ('.0019','.03','.0001',False),('.0041','.0019','.0001',False)])
++def test_strict_bbo_depth_and_opening_minimum(bid,ask,quantity,ready):
++    r=inspect_book(SPEC,book(bid,ask),NOW)
++    assert r['potential'] is ready
++    assert D(r['maximum_book_quantity'])==D(quantity)
++    assert D(r['minimum_valid_entry_quantity'])==D('.0002')
++    assert D(r['minimum_entry_notional'])>=10
++    assert D(r['maximum_book_notional'])<=25
++    assert not r['account_checks_performed'] and not r['protection_verified']
++
++
++@pytest.mark.parametrize('age',[-1,5001,60000])
++def test_stale_or_future_book_never_potential(age):
++    r=inspect_book(SPEC,book(stamp=NOW-age),NOW)
++    assert not r['potential'] and r['blocker']=='WRONG_OR_STALE_BOOK'
++
++
++def test_wrong_symbol_not_accepted():
++    assert not inspect_book(SPEC,book(symbol='par:ETH'),NOW)['potential']
++
++
++@pytest.mark.parametrize('kind',['empty_bid','empty_ask','zero_size','crossed','duplicate','unsorted'])
++def test_malformed_book_has_no_candidate(kind):
++    b=book()
++    if kind=='empty_bid':b=replace(b,bids=())
++    if kind=='empty_ask':b=replace(b,asks=())
++    if kind=='zero_size':b=book('0')
++    if kind=='crossed':b=replace(b,asks=(BookLevel(D(80000),D(1)),))
++    if kind=='duplicate':b=replace(b,bids=b.bids*2)
++    if kind=='unsorted':b=replace(b,bids=b.bids+(BookLevel(D(84000),D(1)),))
++    assert not inspect_book(SPEC,b,NOW)['potential']
++
++
++def test_multilevel_liquidity_is_research_never_silent_eligibility():
++    b=book(ask_quantity='.0002')
++    b=replace(b,asks=b.asks+(BookLevel(D(83440),D('.02')),BookLevel(D(83500),D(100))))
++    r=inspect_book(SPEC,b,NOW)
++    assert not r['potential']
++    research=r['l2_research']
++    assert research['aggregate_can_meet_minimum'] and not research['affects_eligibility']
++    assert D(research['entry']['available_quantity'])==D('.0202')
++    assert research['separate_policy_approval_required']
++    assert r['blocker']=='QUALIFICATION_NO_LOT_MEETS_OPENING_MINIMUM_WITHIN_BOUNDS'
++
++
++@pytest.mark.parametrize('side,prices,limit,cost,shortfall',[
++    ('BUY',[10,11,12],11,'15.75','.5'),('SELL',[12,11,10],11,'17.25','.5')])
++def test_sweep_honors_limit_prices(side,prices,limit,cost,shortfall):
++    levels=tuple(BookLevel(D(p),D('.75')) for p in prices)
++    r=sweep(levels,D(2),D(limit),side)
++    assert D(r['cost'])==D(cost)
++    assert D(r['shortfall'])==D(shortfall)
++
++
++@pytest.mark.parametrize('symbol,dec,asset,price',[
++    ('par:ETH',4,2670001,'2500'),('par:HYPE',2,2670002,'82')])
++def test_eth_hype_liquid_long_still_rejected_for_tiny_sell_residual(symbol,dec,asset,price):
++    price=D(price)
++    b=OrderBook(symbol,NOW,(BookLevel(price,D(100)),),(BookLevel(price*D('1.001'),D(100)),))
++    r=inspect_book(MarketSpec(symbol,dec,50,asset),b,NOW)
++    assert r['blocker']=='QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL'
++    assert r['residuals']['close_side']=='SELL' and not r['potential']
++
++
++def test_btc_short_has_opposite_close_evidence_but_no_execution_permission():
++    r=inspect_book(SPEC,book(),NOW,'SELL')
++    assert r['residuals']['ready'] and r['residuals']['close_side']=='BUY'
++    assert r['blocker']=='SEPARATE_DIRECTION_OR_MARKET_APPROVAL_REQUIRED'
++    assert not r['potential']
++
++
++@pytest.mark.parametrize('side', ['BUY','SELL'])
++def test_all_possible_btc_residuals_checked(side):
++    r=research_residuals(SPEC,D('.0002'),D(82000),side)
++    assert r['ready'] and r['possible_residual_count']==2 and len(r['historical_shapes'])==1
++    assert not r['future_acceptance_guaranteed'] and not r['protective_stop_verified']
++
++
++def test_one_historical_eth_buy_does_not_verify_two_lot_residual():
++    spec=MarketSpec('par:ETH',4,50,2670001)
++    assert research_residuals(spec,D('.0001'),D(2500),'BUY')['ready']
++    r=research_residuals(spec,D('.0002'),D(2500),'BUY')
++    assert not r['ready'] and D(r['first_unverified_quantity'])==D('.0002')
++
++
++@pytest.mark.parametrize('change',[{'asset_id':2670040},{'size_decimals':5}])
++def test_metadata_identity_change_cannot_reuse_historical_close(change):
++    r=inspect_book(replace(SPEC,**change),book(),NOW)
++    assert not r['potential'] and r['blocker']=='QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL'
++
++
++def test_residual_analysis_is_bounded():
++    assert not research_residuals(SPEC,D(2),D(100),'SELL')['ready']
++
++
++def stream_fixture(live):
++    stream=PublicBookStream(['par:BTC','par:ETH'],live.rate,clock_ms=lambda:live.fixture.now)
++    generation,subs=stream.begin()
++    for sub in subs:
++        stream.health.subscription_sent(sub['subscription'])
++        stream.ingest(dict(channel='subscriptionResponse',data=sub),generation)
++    return stream,generation
++
++
++def message(symbol='par:BTC',stamp=NOW):
++    return dict(channel='l2Book',data=dict(coin=symbol,time=stamp,
++        levels=[[dict(px='83314',sz='.0041')],[dict(px='83431',sz='.0025')]]))
++
++
++def test_ws_needs_ack_and_distinct_repeated_actual_updates(live):
++    s=PublicBookStream(['par:BTC'],live.rate,clock_ms=lambda:live.fixture.now)
++    gen,subs=s.begin()
++    s.ingest(message(),gen);assert s.snapshot('par:BTC') is None
++    s.ingest(dict(channel='subscriptionResponse',data=subs[0]),gen)
++    s.ingest(message(),gen);s.ingest(message(),gen)
++    assert s.snapshot('par:BTC') is None
++    live.fixture.now+=1;s.ingest(message(stamp=live.fixture.now),gen)
++    assert s.snapshot('par:BTC') is not None
++    assert s.report()['confirmed_count']==1
++
++
++def test_ws_reconnect_invalidates_books_and_requires_new_acks(live):
++    s,gen=stream_fixture(live);s.ingest(message(),gen)
++    live.fixture.now+=1;s.ingest(message(stamp=live.fixture.now),gen)
++    assert s.snapshot('par:BTC')
++    s.disconnect('OFFLINE_DISCONNECT');assert s.snapshot('par:BTC') is None
++    newgen,subs=s.begin();s.ingest(message(stamp=live.fixture.now),gen)
++    assert s.snapshot('par:BTC') is None
++    assert not s.report()['confirmed_count'] and newgen!=gen
++
++
++def test_stale_symbol_does_not_close_other_public_markets(live):
++    s,gen=stream_fixture(live)
++    s.ingest(message(),gen);live.fixture.now+=1;s.ingest(message(stamp=live.fixture.now),gen)
++    bad=message('par:ETH',live.fixture.now);bad['data']['levels'][1]=[]
++    s.ingest(bad,gen)
++    assert s.snapshot('par:BTC') and s.snapshot('par:ETH') is None
++    assert s.report()['current_market_errors']['par:ETH']['reason']=='NO_EXECUTABLE_TWO_SIDED_BOOK'
++
++
++def test_ws_old_books_expire_even_if_socket_is_connected(live):
++    s,gen=stream_fixture(live);s.ingest(message(),gen)
++    live.fixture.now+=1;s.ingest(message(stamp=live.fixture.now),gen)
++    live.fixture.now+=5001
++    assert s.snapshot('par:BTC') is None
++
++
++def test_unexpected_ws_subscription_is_rejected(live):
++    s,gen=stream_fixture(live)
++    with pytest.raises(ExchangeError,match='UNEXPECTED_SUBSCRIPTION_ACK'):
++        s.ingest(dict(channel='subscriptionResponse',data=dict(method='subscribe',
++            subscription=dict(type='l2Book',coin='BTC'))),gen)
++
++
++def test_no_plain_market_ws_subscription(live):
++    with pytest.raises(ExchangeError,match='PAR_PUBLIC'):
++        PublicBookStream(['BTC'],live.rate,clock_ms=lambda:NOW)
++
++
++def test_rest_fallback_is_paced_and_never_reads_account(live):
++    live.client.rate_limits=live.rate
++    tick=[0];reader=PublicBookReader(live.market,monotonic=lambda:tick[0])
++    before=len(live.fixture.calls)
++    for _ in range(20):reader.get('par:BTC')
++    assert [x['type'] for x in live.fixture.calls[before:]]==['l2Book']
++    tick[0]=5;reader.get('par:BTC')
++    assert [x['type'] for x in live.fixture.calls[before:]]==['l2Book','l2Book']
++
++
++def test_ws_startup_grace_then_rest_fallback(live):
++    live.client.rate_limits=live.rate
++    tick=[0];s,_=stream_fixture(live)
++    reader=PublicBookReader(live.market,s,monotonic=lambda:tick[0]);before=len(live.fixture.calls)
++    assert reader.get('par:BTC')[1]=='WS_STARTUP_GRACE'
++    assert len(live.fixture.calls)==before
++    tick[0]=10;assert reader.get('par:BTC')[1]=='RATE_LIMITED_REST'
++
++
++def test_healthy_ws_avoids_rest(live):
++    s,gen=stream_fixture(live);s.ingest(message(),gen)
++    live.fixture.now+=1;s.ingest(message(stamp=live.fixture.now),gen)
++    before=len(live.fixture.calls)
++    reader=PublicBookReader(live.market,s)
++    assert reader.get('par:BTC')[1]=='WS_ACKNOWLEDGED_REPEATED'
++    assert len(live.fixture.calls)==before
++
++
++@pytest.mark.parametrize('reason',['INFO_HTTP_429','INFO_PUBLIC_RATE_LIMITED','INFO_READ_TIMEOUT'])
++def test_rest_failure_drops_cached_book_and_does_not_spin(live,monkeypatch,reason):
++    live.client.rate_limits=live.rate
++    tick=[0];reader=PublicBookReader(live.market,monotonic=lambda:tick[0]);reader.get('par:BTC')
++    calls=[]
++    def fail(symbol):calls.append(symbol);raise ExchangeError(reason)
++    monkeypatch.setattr(live.market,'get_orderbook',fail)
++    tick[0]=5
++    for _ in range(10):assert reader.get('par:BTC')[0] is None
++    assert calls==['par:BTC'] and reader.errors[-1]['reason']==reason
++
++
++def test_public_budget_preserves_safety_reserve(live):
++    live.client.rate_limits=live.rate
++    live.rate.weights=[(NOW,1080)]
++    reader=PublicBookReader(live.market);before=len(live.fixture.calls)
++    assert reader.get('par:BTC')[0] is None
++    assert len(live.fixture.calls)==before and live.rate._usage()==1080
++
++
++def test_429_guidance_blocks_fallback_until_retry_after(live):
++    live.client.rate_limits=live.rate
++    live.rate.error(status=429,retry_after_ms=90000)
++    reader=PublicBookReader(live.market);before=len(live.fixture.calls)
++    assert reader.get('par:BTC')[0] is None
++    assert len(live.fixture.calls)==before and live.rate.backoff_until>=NOW+90000
++
++
++def test_gate_cooldown_distinct_books_and_attempt_bound():
++    clock=[0];gate=OpportunityGate(monotonic=lambda:clock[0])
++    row=inspect_book(SPEC,book(),NOW)
++    assert gate.claim(row)
++    assert not gate.claim(dict(row,exchange_ms=NOW+1))
++    clock[0]=60;assert not gate.claim(row)
++    assert gate.claim(dict(row,exchange_ms=NOW+1))
++    clock[0]=120;assert not gate.claim(dict(row,exchange_ms=NOW+2))
++
++
++def test_no_opportunity_never_calls_full_validator():
++    gate=OpportunityGate();r=inspect_book(SPEC,book(ask_quantity='.0002'),NOW)
++    assert all(not gate.claim(r) for _ in range(100)) and gate.attempts==0
++
++
++def fast_fixture(c,tmp_path,monkeypatch):
++    import exchange.qualification_watcher as mod
++    live=c.live
++    s=ReadOnlyQualificationSession.__new__(ReadOnlyQualificationSession)
++    s.root=tmp_path;s.directory=tmp_path
++    s.source_hash='fixture-source';s.policy_hash='fixture-policy'
++    s.client,s.market,s.account=live.client,live.market,live.account
++    s.journal,s.rates,s.clock=live.journal,live.rate,live.clock
++    s.recovery=c.live.executor.recovery
++    s.reconciliation_calls=0;s.identity=None;s.attempt_reports=[]
++    s.progress=lambda *a,**k:None
++    s.verify_signer=lambda:None
++    s.provider=QualificationContextProvider(s.market,s.account,live.signer.address,s.clock,s.rates,
++        reconcile_before_load=s._reconcile,reconciliation_ready=lambda:s.recovery.account_truth_ready,
++        feed_ready=lambda:True)
++    monkeypatch.setattr(mod,'durable_readback',lambda *a,**k:dict(integrity='ok'))
++    live.rate.weights=[]
++    return s
++
++
++def test_fast_validation_reconciles_once_not_three_markets(qualification,tmp_path,monkeypatch):
++    c=qualification;s=fast_fixture(c,tmp_path,monkeypatch)
++    before=len(c.live.fixture.calls);r=s.validate('par:BTC')
++    assert r['eligible_for_risk_review'],r
++    assert r['reconciliation_calls']==1
++    calls=c.live.fixture.calls[before:]
++    assert {q.get('coin') for q in calls if q['type']=='l2Book'}=={'par:BTC'}
++    assert len([q for q in calls if q['type']=='userFunding'])==1
++    assert not c.live.transport.signed_payloads and r['final_positions']==[]
++
++
++def test_liquidity_disappearing_after_stage_a_cannot_publish(qualification,tmp_path,monkeypatch):
++    c=qualification;s=fast_fixture(c,tmp_path,monkeypatch)
++    assert inspect_book(SPEC,book(),NOW)['potential']
++    c.live.fixture.book['levels'][1][0]['sz']='.0002'
++    r=s.validate('par:BTC')
++    assert not r['eligible_for_risk_review'] and 'proposal' not in r
++    assert r['blocker']=='QUALIFICATION_NO_LOT_MEETS_OPENING_MINIMUM_WITHIN_BOUNDS'
++    assert not c.live.transport.signed_payloads
++
++
++@pytest.mark.parametrize('kind',['position','order'])
++def test_fast_account_reconciliation_rejects_unexpected_exposure(qualification,tmp_path,monkeypatch,kind):
++    c=qualification;s=fast_fixture(c,tmp_path,monkeypatch)
++    if kind=='position':c.live.fixture.position('.0001','82672')
++    else:c.live.fixture.orders=[dict(coin='par:BTC',oid=444,side='B',limitPx='80000',sz='.0001',timestamp=NOW)]
++    r=s.validate('par:BTC')
++    assert not r['eligible_for_risk_review'] and 'proposal' not in r
++    expected='QUALIFICATION_FRESH_FLAT_ACCOUNT_BOOK_REQUIRED' if kind=='position' else 'QUALIFICATION_DURABLE_RECONCILIATION_REQUIRED'
++    assert r['blocker']==expected
++
++
++def test_durable_readback_does_not_reconcile_or_reopen_writer(qualification):
++    c=qualification;recovery=c.live.executor.recovery;recovery.recover();recovery.checkpoint(clean=True)
++    path=c.live.journal.db.execute('PRAGMA database_list').fetchone()[2]
++    before=len(c.live.fixture.calls)
++    r=durable_readback(path,recovery.source,clean=True)
++    assert r['integrity']=='ok' and r['snapshots_verified']==2 and r['clean']
++    assert not any(r['actions'].values()) and len(c.live.fixture.calls)==before
++
++
++@pytest.mark.parametrize('kind',['checksum','source','unclean'])
++def test_durable_readback_fails_on_corruption(qualification,kind):
++    c=qualification;r=c.live.executor.recovery;r.recover();r.checkpoint(clean=True)
++    path=c.live.journal.db.execute('PRAGMA database_list').fetchone()[2]
++    source=r.source
++    if kind=='checksum':
++        with c.live.journal.db:c.live.journal.db.execute("UPDATE recovery_snapshots SET checksum='bad'")
++    if kind=='source':source={'wrong':'source'}
++    if kind=='unclean':r.checkpoint(clean=False)
++    with pytest.raises(ExchangeError):durable_readback(path,source,clean=True)
++
++
++def test_failed_rereview_clears_current_candidate_but_preserves_history():
++    mod=launcher();row=dict(symbol='par:BTC',eligible_for_risk_review=True,proposal={'old':True},
++        proposal_hash='old',central_validation={'allowed':True},sizing={'ready':True},
++        residual_close_scope={'ready':True},quote={'old':True},initial_review={'historical':True})
++    mod.clear_candidate(row)
++    assert row==dict(symbol='par:BTC',eligible_for_risk_review=False,initial_review={'historical':True})
++
++
++def handoff(c,tmp_path):
++    from exchange.testnet_qualification import find_largest_safe_qualification_quantity
++    from test_qualification_recovery_v8_7 import context
++    mod=launcher();ctx=context(c)
++    sizing=find_largest_safe_qualification_quantity(ctx,c.live.client,'fixture-source','fixture-policy')
++    row=dict(symbol='par:BTC',proposal=sizing['proposal'],sizing=sizing,spread_bps='48',
++             residual_close_scope=sizing['residual_close_scope'])
++    report=dict(candidates=[row],test_receipt=str(tmp_path/'test_receipt.json'))
++    mod.publish_proposal(report,row,c.live.client,tmp_path)
++    return mod,report
++
++
++def test_proposal_artifacts_leave_all_approval_fields_unfilled(qualification,tmp_path):
++    mod,r=handoff(qualification,tmp_path)
++    a=json.loads((tmp_path/'approval_REQUIRED_UNFILLED.json').read_text())
++    assert a['operator_approval']=='' and a['approved_ms'] is None and a['expires_ms'] is None
++    assert all(a[x] is False for x in ['manually_verified_wallets','sole_signer_host_confirmed',
++        'maximum_one_entry','unverified_stop_risk_accepted','qualification_spread_limit_accepted',
++        'possible_manual_residual_recovery_accepted'])
++    summary=mod.preparation_summary(r,tmp_path,now_ms=NOW)
++    assert summary['proposal_file']==str(tmp_path/'proposal.json')
++    assert '--operator-approval-file' in summary['execution_command']
++    assert '--execute' in summary['execution_command'] and not summary['actual_order_authorization_supplied']
++    assert not qualification.live.transport.signed_payloads
++
++
++def test_operator_handoff_expiry_does_not_extend_proposal(qualification,tmp_path):
++    mod,r=handoff(qualification,tmp_path)
++    before=(tmp_path/'proposal.json').read_bytes()
++    summary=mod.preparation_summary(r,tmp_path,now_ms=NOW+300001)
++    assert summary['status']=='PROPOSAL_EXPIRED' and (tmp_path/'proposal.json').read_bytes()==before
++
++
++def test_changed_quote_still_blocks_at_signed_boundary(qualification):
++    c=qualification;c.live.fixture.book['levels'][1][0]['sz']='.0002'
++    r=c.sequence.run()
++    assert r['status']=='EMERGENCY_EXIT_REQUIRED' and not c.venue.calls,r
++    assert not r.get('actual_fill_verified',False)
++    assert not c.live.transport.signed_payloads
++
++
++def test_short_research_cannot_become_execution_proposal(qualification):
++    with pytest.raises(ExchangeError,match='INVALID_QUALIFICATION_PROPOSAL'):
++        replace(qualification.p,entry_side='SELL').require()
++
++
++def test_expired_approval_still_blocks_execution(qualification):
++    c=qualification;c.live.fixture.now=NOW+300001
++    r=c.sequence.run()
++    assert r['status']=='PREFLIGHT_BLOCKED' and not c.venue.calls
++
++
++@pytest.mark.parametrize('partial',['0','.3333333333333333','1'])
++def test_watcher_does_not_change_existing_one_entry_and_partial_exit_contract(qualification,partial):
++    c=qualification;c.venue.partial_entry=D(partial)
++    r=c.sequence.run()
++    entries=[a for a in c.venue.calls if not a['orders'][0]['r']]
++    assert len(entries)==1
++    if D(partial)==0:
++        assert not r.get('actual_fill_verified',False)
++    else:
++        assert r['final_flat'] and not r['protection_accepted']
++    from exchange.testnet_qualification import QualificationSequence
++    calls=len(c.venue.calls);again=QualificationSequence(c.live.executor,c.p,c.auth).run()
++    assert again['status']=='PREFLIGHT_BLOCKED' and len(c.venue.calls)==calls
++
++
++def test_receiver_can_be_stopped_without_account_or_signatures(live):
++    import websocket
++    entered=threading.Event()
++    class Socket:
++        def settimeout(self,x):pass
++        def send(self,x):assert json.loads(x)['method'] in {'subscribe','ping'}
++        def recv(self):entered.set();time.sleep(.005);raise websocket.WebSocketTimeoutException()
++        def close(self):pass
++    s=PublicBookStream(['par:BTC'],live.rate,clock_ms=lambda:live.fixture.now,connect=Socket)
++    before=len(live.fixture.calls);s.start();assert entered.wait(1);s.close()
++    assert not s.thread.is_alive() and not live.rate.ws_connections
++    assert len(live.fixture.calls)==before and not live.transport.signed_payloads
++
++
++def test_real_readonly_session_constructor_and_durable_close(qualification,tmp_path,monkeypatch):
++    import exchange.hyperliquid_client as client_module
++    real_client=client_module.HyperliquidClient
++    c=qualification
++    def client(**kwargs):
++        return real_client(transport=c.live.fixture,clock_ms=lambda:c.live.fixture.now,**kwargs)
++    monkeypatch.setattr(client_module,'HyperliquidClient',client)
++    root=Path(__file__).resolve().parents[1];progress=[]
++    s=ReadOnlyQualificationSession(root,tmp_path,'fixture-source','fixture-policy',
++        progress=lambda event,**kw:progress.append(event),cancel_event=threading.Event())
++    try:
++        s.start();s.root=tmp_path;monkeypatch.setattr(s,'verify_signer',lambda:None)
++        r=s.validate('par:BTC')
++        assert r['eligible_for_risk_review'] and s.reconciliation_calls==1,r
++        assert r['checkpoint']['snapshots_verified']==1
++        assert s.rates.read_counts['userFunding']==1
++    finally:s.close()
++    assert s.cleanup['snapshots_verified']==2 and s.cleanup['clean']
++    assert not any(s.cleanup['actions'].values())
++    assert progress.count('REFRESHING_ACCOUNT')==1 and progress.count('CHECKING_RESIDUAL_EXITS')==1
++
++
++def watch_launcher():
++    import sys
++    root=Path(__file__).resolve().parents[1]
++    if str(root/'scripts') not in sys.path:sys.path.insert(0,str(root/'scripts'))
++    spec=importlib.util.spec_from_file_location('offline_watcher_cli',root/'scripts/watch_testnet_qualification.py')
++    mod=importlib.util.module_from_spec(spec);spec.loader.exec_module(mod)
++    return mod
++
++
++def test_watch_stops_at_unfilled_proposal_with_current_paths(qualification,tmp_path,monkeypatch):
++    from exchange.testnet_qualification import find_largest_safe_qualification_quantity
++    from test_qualification_recovery_v8_7 import context
++    c=qualification;mod=watch_launcher();ctx=context(c)
++    sizing=find_largest_safe_qualification_quantity(ctx,c.live.client,'fixture-source','fixture-policy')
++    row=dict(symbol='par:BTC',eligible_for_risk_review=True,sizing=sizing,proposal=sizing['proposal'],
++        spread_bps='48',residual_close_scope=sizing['residual_close_scope'],final_positions=[],final_orders=[],
++        final_reconciliation={'ready':True},account_observed_ms=NOW)
++    class Session:
++        def __init__(self,*args,**kwargs):
++            self.client=SimpleNamespace(markets={'par:BTC':SPEC},clock_ms=lambda:NOW,market=lambda s:SPEC)
++            self.market=None;self.identity={'offline':True};self.reconciliation_calls=0
++            self.rates=SimpleNamespace(report=lambda:{})
++        def start(self):pass
++        def validate(self,symbol):self.reconciliation_calls+=1;return row
++        def close(self):self.cleanup={'clean':True}
++    class Reader:
++        errors=[]
++        def __init__(self,*args):pass
++        def get(self,symbol):return book(),'SYNTHETIC_TEST_ONLY'
++    monkeypatch.setattr(mod,'ReadOnlyQualificationSession',Session)
++    monkeypatch.setattr(mod,'PublicBookReader',Reader)
++    monkeypatch.setattr(mod,'source_unchanged',lambda *a:None)
++    monkeypatch.setattr(mod,'current_test_receipt',lambda *a:tmp_path/'offline_receipt.json')
++    monkeypatch.setattr(mod,'PaperOwner',lambda *a:SimpleNamespace(close=lambda:None))
++    monkeypatch.setattr(mod.time,'time_ns',lambda:NOW*1000000)
++    out=tmp_path/'watch'
++    r=mod.watch(out,duration_seconds=10,transport='rest')
++    assert r['status']=='EXPLICIT_EXPERIMENTAL_RISK_DECISION_REQUIRED',r
++    assert r['full_opportunity_attempts']==1 and r['reconciliation_calls']==1
++    handoff=json.loads((out/'operator_handoff.json').read_text())
++    assert handoff['qualification_state']=='AWAITING_HUMAN_APPROVAL'
++    assert Path(handoff['proposal_file']).exists() and Path(handoff['approval_template']).exists()
++    assert not handoff['actual_order_authorization_supplied'] and not c.venue.calls
++    assert not (out/'WHITELIST_TRADE_PROOF.json').exists()
++
++
++def test_cli_rejects_unbounded_duration_before_network(tmp_path):
++    mod=watch_launcher()
++    with pytest.raises(ExchangeError,match='INVALID_BOUNDED_WATCH_ARGUMENTS'):
++        mod.watch(tmp_path/'out',duration_seconds=3601)
++    assert not (tmp_path/'out').exists()
++
++
++def test_watcher_restart_requires_fresh_output_directory(tmp_path):
++    mod=watch_launcher();out=tmp_path/'existing';out.mkdir();(out/'prior.json').write_text('proof')
++    with pytest.raises(FileExistsError):mod.watch(out,duration_seconds=10)
++    assert (out/'prior.json').read_text()=='proof'
++
++
++def test_durable_readback_detects_detached_account_checkpoint(qualification):
++    c=qualification;recovery=c.live.executor.recovery;recovery.recover()
++    with c.live.journal.db:c.live.journal.db.execute("UPDATE account_checkpoint SET data='{}'")
++    with pytest.raises(ExchangeError,match='CHECKPOINT_ACCOUNT_MISMATCH'):
++        durable_readback(c.live.journal.path,recovery.source)
++
++
++@pytest.mark.parametrize('name,kind,expected',[
++    ('certification.sqlite','UNKNOWN','PRIOR_CERTIFICATION_UNRESOLVED_REVIEW_REQUIRED'),
++    ('qualification.sqlite','REJECTED','QUALIFICATION_PRIOR_ATTEMPT_READ_ONLY_RECOVERY_REQUIRED'),
++    ('qualification.sqlite','CONSUMED','QUALIFICATION_PRIOR_ATTEMPT_READ_ONLY_RECOVERY_REQUIRED')])
++def test_restart_history_cannot_authorize_new_candidate(tmp_path,name,kind,expected):
++    from exchange.qualification_watcher import prior_execution_check
++    from exchange.execution_journal import ExecutionJournal
++    from test_exchange_migration import TEAM
++    path=tmp_path/'runtime/testnet/anchorium-bot-1'/name
++    journal=ExecutionJournal(path,session_id='offline',team_address=TEAM)
++    try:
++        if kind=='CONSUMED':journal.control('qualification_entry_consumed','old-hash')
++        else:
++            with journal.db:
++                journal.db.execute('INSERT INTO intents VALUES (?,?,?,?,?,?,?,?,?,?)',
++                    ('one','cloid','fingerprint','{}','candidate',kind,None,None,NOW,NOW,))
++        with pytest.raises(ExchangeError,match=expected):prior_execution_check(tmp_path)
++    finally:journal.close()
++
++
++def test_empty_prior_execution_files_are_not_created_by_read_check(tmp_path):
++    from exchange.qualification_watcher import prior_execution_check
++    assert prior_execution_check(tmp_path)=={'certification.sqlite':{'exists':False},'qualification.sqlite':{'exists':False}}
++    assert not (tmp_path/'runtime').exists()
+--- v8.8/scripts/run_testnet_qualification.py
++++ v8.9/scripts/run_testnet_qualification.py
+@@ -1,6 +1,7 @@
+ """Prepare-only by default. Actual qualification requires exact separate risk approval."""
+ import argparse,json,hashlib,sys
+ import time
++import shlex
+ from dataclasses import asdict
+ from decimal import Decimal as D
+ from pathlib import Path
+@@ -43,6 +44,44 @@
+         and 'final_positions' in r and r['final_positions']==[]
+         and 'final_orders' in r and r['final_orders']==[]
+         and type(r.get('account_observed_ms')) is int)
++
++
++
++def publish_proposal(r,selected,client,directory):
++    p=QualificationProposal(**selected['proposal'])
++    qty=D(p.quantity);entry=D(p.entry_limit);bid=D(p.reference_bid)
++    expected_exit=client.market(p.symbol).normalize_price(bid*D('.998'),'SELL')
++    r.update(status='EXPLICIT_EXPERIMENTAL_RISK_DECISION_REQUIRED',selected_proposal=asdict(p),
++        qualification_state='AWAITING_HUMAN_APPROVAL',
++        approval_deadline_ist=datetime.fromtimestamp((p.observed_ms+300000)/1000,
++            timezone(timedelta(hours=5,minutes=30))).isoformat(),
++        selected_proposal_hash=p.identity,notional=str(qty*entry),
++        expected_immediate_exit_limit=str(expected_exit),
++        estimated_round_trip_fee_at_reviewed_limits=str(qty*(entry+expected_exit)*D(p.taker_fee_rate)),
++        estimated_loss_at_reviewed_immediate_exit=str(qty*(entry-expected_exit)+qty*(entry+expected_exit)*D(p.taker_fee_rate)),
++        risk_report=dict(verified=['Funded unified team account, approved agent, durable read-only reconciliation',
++            'Runtime par metadata; central validation; 1x cross, margin, two-sided depth',
++            'Every possible lot residual at the reviewed floor maps to ordinary or historically observed narrow closes'],
++            unverified=['Exchange-side one-lot protection; future exit fills/liquidity',
++                'Manual recovery if connectivity/status/price bounds prevent closure',
++                'Human sole signer host and organizer acceptance of this qualification rule'],
++            no_stop_will_be_submitted=True,possible_unprotected_position=True,
++            principal_at_risk=str(qty*entry),hard_total_loss_cap_guaranteed=False,
++            fees_funding_may_exceed_principal_allowance=True,unknown_order_never_resubmitted=True,
++            entry_attempts=1,exit_attempts=2,maximum_signed_actions=5,automatic_notional_increase=False))
++    atomic_json(directory/'proposal.json',asdict(p))
++    atomic_json(directory/'approval_REQUIRED_UNFILLED.json',dict(proposal_hash=p.identity,
++        operator_approval='',approved_ms=None,expires_ms=None,manually_verified_wallets=False,
++        sole_signer_host_confirmed=False,maximum_one_entry=False,unverified_stop_risk_accepted=False,
++        qualification_spread_limit_accepted=False,possible_manual_residual_recovery_accepted=False))
++
++def clear_candidate(row):
++    """A failed rereview may retain history, never a current executable candidate."""
++    for key in ('proposal','proposal_hash','central_validation','residual_close_scope','sizing',
++                'quote','active_asset','readiness','observed_ms','clock','spread_bps',
++                'one_lot_close_assessment','external_blocker','blocker'):
++        row.pop(key,None)
++    row['eligible_for_risk_review']=False
+ 
+ 
+ def prepare(directory,test_receipt=None):
+@@ -105,7 +144,7 @@
+         policyhash=hashlib.sha256((ROOT/'configs/reliability_policy.json').read_bytes()).hexdigest()
+         def review(row):
+             symbol=row['symbol'];start=len(provider.observations)
+-            row['eligible_for_risk_review']=False
++            clear_candidate(row)
+             try:
+                 progress('CHECKING_'+symbol.split(':')[1]+'_BOOK',symbol=symbol)
+                 progress('CHECKING_RATE_BUDGET',symbol=symbol)
+@@ -145,32 +184,7 @@
+             initial=deepcopy(row);selected_context=review(row);row['initial_review']=initial
+             if row['eligible_for_risk_review']:selected=row;break
+         if selected is not None:
+-            p=QualificationProposal(**selected['proposal'])
+-            qty=D(p.quantity);entry=D(p.entry_limit);bid=D(p.reference_bid)
+-            expected_exit=client.market(p.symbol).normalize_price(bid*D('.998'),'SELL')
+-            r.update(status='EXPLICIT_EXPERIMENTAL_RISK_DECISION_REQUIRED',selected_proposal=asdict(p),
+-                qualification_state='AWAITING_HUMAN_APPROVAL',
+-                approval_deadline_ist=datetime.fromtimestamp((p.observed_ms+300000)/1000,
+-                    timezone(timedelta(hours=5,minutes=30))).isoformat(),
+-                selected_proposal_hash=p.identity,notional=str(qty*entry),
+-                expected_immediate_exit_limit=str(expected_exit),
+-                estimated_round_trip_fee_at_reviewed_limits=str(qty*(entry+expected_exit)*D(p.taker_fee_rate)),
+-                estimated_loss_at_reviewed_immediate_exit=str(qty*(entry-expected_exit)+qty*(entry+expected_exit)*D(p.taker_fee_rate)),
+-                risk_report=dict(verified=['Funded unified team account, approved agent, durable read-only reconciliation',
+-                    'Runtime par metadata; central validation; 1x cross, margin, two-sided depth',
+-                    'Every possible lot residual at the reviewed floor maps to ordinary or historically observed narrow closes'],
+-                    unverified=['Exchange-side one-lot protection; future exit fills/liquidity',
+-                        'Manual recovery if connectivity/status/price bounds prevent closure',
+-                        'Human sole signer host and organizer acceptance of this qualification rule'],
+-                    no_stop_will_be_submitted=True,possible_unprotected_position=True,
+-                    principal_at_risk=str(qty*entry),hard_total_loss_cap_guaranteed=False,
+-                    fees_funding_may_exceed_principal_allowance=True,unknown_order_never_resubmitted=True,
+-                    entry_attempts=1,exit_attempts=2,maximum_signed_actions=5,automatic_notional_increase=False))
+-            atomic_json(directory/'proposal.json',asdict(p))
+-            atomic_json(directory/'approval_REQUIRED_UNFILLED.json',dict(proposal_hash=p.identity,
+-                operator_approval='',approved_ms=None,expires_ms=None,manually_verified_wallets=False,
+-                sole_signer_host_confirmed=False,maximum_one_entry=False,unverified_stop_risk_accepted=False,
+-                qualification_spread_limit_accepted=False,possible_manual_residual_recovery_accepted=False))
++            publish_proposal(r,selected,client,directory)
+         else:r['blocker']='NO_MARKET_PASSES_QUALIFICATION_MARKET_AND_RESIDUAL_RULE'
+         if selected_context is not None and selected is not None:
+             r['final_reconciliation']=asdict(recovery.last_report)
+@@ -217,7 +231,7 @@
+     return r
+ 
+ 
+-def preparation_summary(r,directory):
++def preparation_summary(r,directory,*,now_ms=None):
+     directory=Path(directory).resolve()
+     ready=r['status']=='EXPLICIT_EXPERIMENTAL_RISK_DECISION_REQUIRED'
+     result=dict(status='QUALIFICATION_PROPOSAL_READY' if ready else r['status'],
+@@ -240,6 +254,18 @@
+             entry_attempts=1,exit_attempts=p['max_exit_attempts'],maximum_signed_actions=p['max_signed_actions'],
+             qualification_spread_ceiling_bps=50,production_spread_ceiling_bps=15,
+             risk='No verified stop; no stop submitted. Unprotected residual/manual recovery possible. Not a guaranteed loss cap.')
++        result.update(team_wallet=p['team_wallet'],api_signer=p['api_wallet'],
++            operator_approval_file=str(directory/'operator_approval.json'),
++            approval_copy_command=shlex.join(['cp','-n',str(directory/'approval_REQUIRED_UNFILLED.json'),
++                str(directory/'operator_approval.json')]),
++            execution_command=shlex.join([str(ROOT/'.venv/bin/python'),str(ROOT/'scripts/run_testnet_qualification.py'),
++                '--execute','--output-directory',str(directory/'approved-attempt'),
++                '--proposal-file',str(directory/'proposal.json'),
++                '--operator-approval-file',str(directory/'operator_approval.json'),
++                '--test-receipt',str(Path(r['test_receipt']).resolve())]))
++        if now_ms is not None and now_ms>p['observed_ms']+300000:
++            result.update(status='PROPOSAL_EXPIRED',qualification_state='PROPOSAL_EXPIRED',
++                next_permitted_action='Generate a fresh read-only proposal; never authorize this expired proposal.')
+     return result
+ 
+ 
+@@ -266,7 +292,7 @@
+         finally:
+             if runtime:runtime.close()
+         atomic_json(a.output_directory/'execution_report.json',r)
+-    if not a.execute:print(json.dumps(preparation_summary(r,a.output_directory),indent=2))
++    if not a.execute:print(json.dumps(preparation_summary(r,a.output_directory,now_ms=int(time.time()*1000)),indent=2))
+     else:print(json.dumps(dict(status=r['status'],qualification_stages=r.get('qualification_stages',[]),
+         blocker=r.get('blocker'),output_directory=str(a.output_directory.resolve()),
+         actual_order_authorization_supplied=bool(a.operator_approval_file))))
+--- v8.8/scripts/watch_testnet_qualification.py
++++ v8.9/scripts/watch_testnet_qualification.py
+@@ -0,0 +1,246 @@
++"""Bounded READ-ONLY qualification watcher. Stops before exact human authorization."""
++import argparse
++from dataclasses import asdict
++from datetime import datetime, timezone
++import hashlib
++import json
++from pathlib import Path
++import signal
++import sys
++import threading
++import time
++
++ROOT = Path(__file__).resolve().parents[1]
++sys.path.insert(0, str(ROOT / 'algo-trading-bot'))
++from exchange.base_exchange import ExchangeError
++from exchange.paper_operations import PaperOwner, active_source_hash, atomic_json
++from exchange.qualification_watcher import (inspect_book, PublicBookStream, PublicBookReader,
++    OpportunityGate, ReadOnlyQualificationSession, source_unchanged)
++from exchange.testnet_certification import TEAM, API
++from strategy_freeze import verify_strategy_freeze
++from venue_config import require_paper_migration
++from run_testnet_qualification import current_test_receipt, publish_proposal, preparation_summary
++
++MARKET_REJECTIONS = frozenset({
++    'QUALIFICATION_NO_LOT_MEETS_OPENING_MINIMUM_WITHIN_BOUNDS',
++    'QUALIFICATION_TWO_SIDED_BOOK_REQUIRED', 'QUALIFICATION_SPREAD_EXCEEDED',
++    'QUALIFICATION_REFERENCE_DIVERGENCE', 'QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL',
++    'QUALIFICATION_BOTH_SIDES_DEPTH_EXCEEDED', 'QUALIFICATION_FIXED_PRICE_OR_NOTIONAL_CHANGED',
++    'QUALIFICATION_CLOCK_NOT_HEALTHY', 'QUALIFICATION_CLOCK_ACCOUNT_QUOTE_PAIR_NOT_READY',
++})
++
++
++def watch(directory, receipt=None, *, duration_seconds=300, transport='auto', final_account_audit=False):
++    if not 10 <= duration_seconds <= 3600 or transport not in {'auto', 'rest'}:
++        raise ExchangeError('INVALID_BOUNDED_WATCH_ARGUMENTS')
++    directory = Path(directory).resolve()
++    directory.mkdir(parents=True, exist_ok=False)
++    r = dict(status='MONITORING_LIQUIDITY', qualification_state='MONITORING_LIQUIDITY',
++        execution_mode='PAPER', allow_live_orders=False, protection_verified=False,
++        exchange_submissions=0, actual_wallet_signatures=0, actual_fill_verified=False,
++        organizer_whitelisting_confirmed=False, maximum_notional='25', entry_attempts=1, exit_attempts=2,
++        team_wallet=TEAM, api_signer=API, source_hash=active_source_hash(ROOT),
++        policy_hash=hashlib.sha256((ROOT / 'configs/reliability_policy.json').read_bytes()).hexdigest(),
++        started_utc=datetime.now(timezone.utc).isoformat(), candidates=[], attempts=[],
++        stage_a_observations=0, coverage={}, input_transport=transport,
++        bounded_observation_seconds=duration_seconds, absolute_deadline_seconds=duration_seconds + 180,
++        normal_protection_certified=False, practice_ready=False, live_ready=False)
++    cancel = threading.Event()
++    started = time.monotonic()
++    session = stream = owner = timer = None
++    original_handlers = {}
++
++    def progress(event, **details):
++        record = dict(event=event, at_ms=time.time_ns() // 1000000,
++                      elapsed_seconds=round(time.monotonic() - started, 3), **details)
++        with (directory / 'progress.jsonl').open('a') as f:
++            f.write(json.dumps(record, default=str) + '\n')
++        if event in {'MONITORING_LIQUIDITY', 'POTENTIAL_OPPORTUNITY', 'REFRESHING_ACCOUNT',
++                     'CHECKING_RESIDUAL_EXITS', 'QUALIFICATION_PROPOSAL_READY', 'AWAITING_HUMAN_APPROVAL'}:
++            r['qualification_state'] = event
++            print(json.dumps(record, default=str), flush=True)
++            atomic_json(directory / 'watch_state.json', dict(record, source_hash=r['source_hash'],
++                mode='READ_ONLY', exchange_submissions=0))
++        if cancel.is_set():
++            raise ExchangeError('WATCH_INTERRUPTED_OR_DEADLINE')
++
++    def stop(signum, frame):
++        r['operator_interrupted'] = True
++        cancel.set()
++
++    try:
++        require_paper_migration(); r['freeze_before'] = verify_strategy_freeze()
++        r['test_receipt'] = str(current_test_receipt(receipt, r['source_hash']))
++        owner = PaperOwner(ROOT / 'runtime/paper/qualification-watch.lock')
++        for sig in (signal.SIGINT, signal.SIGTERM):
++            original_handlers[sig] = signal.signal(sig, stop)
++        timer = threading.Timer(duration_seconds + 180, cancel.set)
++        timer.daemon = True; timer.start()
++        session = ReadOnlyQualificationSession(ROOT, directory, r['source_hash'], r['policy_hash'],
++                                               progress=progress, cancel_event=cancel)
++        session.start()
++        r['runtime_metadata'] = {s: asdict(spec) for s, spec in session.client.markets.items()}
++        if transport == 'auto':
++            stream = PublicBookStream(session.client.markets, session.rates, clock_ms=session.client.clock_ms)
++            stream.start()
++        reader = PublicBookReader(session.market, stream)
++        gate = OpportunityGate()
++        last_metadata = last_source = time.monotonic()
++        seen = {}
++        progress('MONITORING_LIQUIDITY', message='Public books only; account validation waits for a potential opportunity.')
++        while time.monotonic() - started < duration_seconds and not cancel.is_set():
++            if time.monotonic() - last_source >= 5:
++                source_unchanged(ROOT, r['source_hash'], r['policy_hash'])
++                last_source = time.monotonic()
++            if time.monotonic() - last_metadata >= 60:
++                session.refresh_metadata(); last_metadata = time.monotonic()
++            rows = []
++            for symbol in session.client.markets:
++                book, origin = reader.get(symbol)
++                if not book or seen.get(symbol) == (book.timestamp_ms, origin):
++                    continue
++                seen[symbol] = (book.timestamp_ms, origin)
++                for side in ('BUY', 'SELL'):
++                    row = inspect_book(session.client.market(symbol), book, session.client.clock_ms(), side)
++                    row['transport'] = origin
++                    rows.append(row)
++                    r['coverage'][symbol + ':' + side] = row
++                    r['stage_a_observations'] += 1
++                    with (directory / 'observations.jsonl').open('a') as f:
++                        f.write(json.dumps(row, default=str) + '\n')
++            potential = sorted((x for x in rows if x['potential']),
++                               key=lambda x: (float(x['spread_bps']), x['symbol']))
++            for row in potential:
++                if not gate.claim(row):
++                    continue
++                source_unchanged(ROOT, r['source_hash'], r['policy_hash'])
++                progress('POTENTIAL_OPPORTUNITY', symbol=row['symbol'],
++                         note='Not an order or authorization; full account and market checks follow.')
++                candidate = session.validate(row['symbol'])
++                r['attempts'].append(candidate)
++                atomic_json(directory / ('attempt_' + str(gate.attempts) + '.json'), candidate)
++                # The public receiver continues while account checks run. Save
++                # its other markets for coverage without further REST calls or
++                # waiting for unrelated markets before publishing this candidate.
++                if stream:
++                    for symbol in session.client.markets:
++                        current = stream.snapshot(symbol)
++                        if current:
++                            for side in ('BUY', 'SELL'):
++                                evidence = inspect_book(session.client.market(symbol), current, session.client.clock_ms(), side)
++                                evidence['transport'] = 'WS_ACKNOWLEDGED_REPEATED'
++                                r['coverage'][symbol + ':' + side] = evidence
++                                r['stage_a_observations'] += 1
++                                with (directory / 'observations.jsonl').open('a') as f:
++                                    f.write(json.dumps(evidence, default=str) + '\n')
++                if candidate['eligible_for_risk_review']:
++                    source_unchanged(ROOT, r['source_hash'], r['policy_hash'])
++                    r['candidates'] = [candidate]
++                    publish_proposal(r, candidate, session.client, directory)
++                    for key in ('final_reconciliation', 'final_positions', 'final_orders', 'account_observed_ms'):
++                        r[key] = candidate[key]
++                    progress('QUALIFICATION_PROPOSAL_READY', proposal_id=r['selected_proposal_hash'])
++                    progress('AWAITING_HUMAN_APPROVAL', no_signatures_created=True)
++                    break
++                reason = candidate.get('blocker')
++                if reason not in MARKET_REJECTIONS:
++                    raise ExchangeError(reason or 'FULL_PREFLIGHT_NOT_READY')
++                progress('MONITORING_LIQUIDITY', previous_rejection=reason, cooldown_seconds=60)
++            if r.get('selected_proposal'):
++                break
++            cancel.wait(.5)
++        r['reader_errors'] = reader.errors
++        r['full_opportunity_attempts'] = gate.attempts
++        for symbol in session.client.markets:
++            for side in ('BUY', 'SELL'):
++                key = symbol + ':' + side
++                if key not in r['coverage']:
++                    r['coverage'][key] = dict(symbol=symbol, entry_side=side, potential=False,
++                        blocker='NO_FRESH_TWO_SIDED_BOOK_OBSERVED', account_checks_performed=False)
++                row = r['coverage'][key]
++                row['age_ms_at_observation_end'] = (session.client.clock_ms()-row['exchange_ms']
++                                                    if 'exchange_ms' in row else None)
++                row['coverage_scope'] = 'LAST_OBSERVED_BOOK_RESEARCH_NOT_CURRENT_SIGNING_PERMISSION'
++        if cancel.is_set():
++            raise ExchangeError('WATCH_INTERRUPTED_OR_DEADLINE')
++        if not r.get('selected_proposal'):
++            r.update(status='NO_CURRENT_QUALIFICATION_PROPOSAL', blocker='NO_SUPPORTED_CURRENT_OPPORTUNITY')
++            # Optional one-time end audit, never one per ordinary market update.
++            # It cannot publish a proposal: a later watcher must observe anew.
++            if final_account_audit and not r['attempts']:
++                r['end_account_audit'] = session.validate('par:BTC', audit_only=True)
++                audit = r['end_account_audit']
++                if audit.get('blocker') and audit['blocker'] not in MARKET_REJECTIONS:
++                    raise ExchangeError(audit['blocker'])
++        r['signer_check'] = session.identity
++        r['reconciliation_calls'] = session.reconciliation_calls
++        r['rates'] = session.rates.report()
++    except KeyboardInterrupt:
++        cancel.set(); r.update(status='WATCH_STOPPED', blocker='OPERATOR_INTERRUPTED')
++    except Exception as exc:
++        r.update(status='WATCH_STOPPED' if r.get('operator_interrupted') else 'QUALIFICATION_LOCKED',
++                 blocker=str(exc) if isinstance(exc, ExchangeError) else type(exc).__name__)
++    finally:
++        if timer:
++            timer.cancel()
++        if stream:
++            try:
++                r['stream_before_shutdown'] = stream.report()
++                stream.close(); r['stream_after_shutdown'] = stream.report()
++            except Exception as exc:
++                r.update(status='QUALIFICATION_LOCKED', cleanup_error=str(exc))
++        if session:
++            try:
++                r['rates'] = session.rates.report()
++                r['reconciliation_calls'] = session.reconciliation_calls
++                session.close(); r['durable_cleanup'] = getattr(session, 'cleanup', None)
++            except Exception as exc:
++                r.update(status='QUALIFICATION_LOCKED', cleanup_error=str(exc))
++        if owner:
++            owner.close()
++        for sig, handler in original_handlers.items():
++            signal.signal(sig, handler)
++        try:
++            source_unchanged(ROOT, r['source_hash'], r['policy_hash'])
++            r['freeze_after'] = verify_strategy_freeze()
++        except Exception as exc:
++            r.update(status='QUALIFICATION_LOCKED', blocker=str(exc))
++        r.update(finished_utc=datetime.now(timezone.utc).isoformat(),
++                 elapsed_seconds=round(time.monotonic() - started, 3), source_hash_after=active_source_hash(ROOT))
++        if r['status'] != 'EXPLICIT_EXPERIMENTAL_RISK_DECISION_REQUIRED' and r.get('selected_proposal'):
++            # Preserve evidence while making a post-publication cleanup failure
++            # visibly unapprovable. Signing independently verifies every gate.
++            r['proposal_invalidated'] = True
++            for name in ('proposal.json', 'approval_REQUIRED_UNFILLED.json'):
++                path = directory / name
++                if path.exists():
++                    path.rename(directory / ('INVALIDATED_' + name))
++        atomic_json(directory / 'readiness.json', r)
++        summary = preparation_summary(r, directory, now_ms=time.time_ns() // 1000000)
++        if not r.get('selected_proposal'):
++            summary['qualification_state'] = r['status']
++            summary['next_permitted_action'] = 'Review readiness.json; restart only by a deliberate new read-only command.'
++        atomic_json(directory / 'operator_handoff.json', summary)
++        atomic_json(directory / 'watch_state.json', summary)
++        print(json.dumps(summary, indent=2), flush=True)
++    return r
++
++
++def main():
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('--output-directory', required=True, type=Path)
++    parser.add_argument('--test-receipt', type=Path)
++    parser.add_argument('--duration-seconds', type=int, default=300)
++    parser.add_argument('--transport', choices=['auto', 'rest'], default='auto')
++    parser.add_argument('--final-account-audit', action='store_true',
++                        help='One end-of-watch read-only account audit if no full opportunity validation occurred.')
++    args = parser.parse_args()
++    if not 10 <= args.duration_seconds <= 3600:
++        parser.error('duration must be between 10 and 3600 seconds')
++    r = watch(args.output_directory, args.test_receipt, duration_seconds=args.duration_seconds,
++              transport=args.transport, final_account_audit=args.final_account_audit)
++    return 130 if r['status'] == 'WATCH_STOPPED' else 1 if r['status'] == 'QUALIFICATION_LOCKED' else 0
++
++
++if __name__ == '__main__':
++    raise SystemExit(main())

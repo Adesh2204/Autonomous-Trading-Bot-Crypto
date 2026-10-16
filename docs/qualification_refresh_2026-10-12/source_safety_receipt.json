@@ -1,0 +1,56 @@
+{
+  "passed": true,
+  "active_source_hash": "7dc796d83416fb1f68cf8c32e5d26db403c361d6470e889527bc67f617665339",
+  "previous_regression": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/qualification_2026-10-12/regression_release/test_receipt.json",
+  "regression_totals": {
+    "tests": 1682,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "regression_xml_sha256": "33c8ef2731cb5d65dc0bdcc42824dfbd120420c68b35b6219072db7ba021da60",
+  "regression_xml_matches": true,
+  "existing_source_or_config_changes": [],
+  "current_checks": {
+    "strategy_freeze": {
+      "exit_code": 0,
+      "result": {
+        "baseline": "nse-working-baseline",
+        "file_count": 1,
+        "method_count": 8,
+        "parameter_count": 32,
+        "passed": true
+      }
+    },
+    "phase0": {
+      "exit_code": 0,
+      "result": {
+        "project": "anchorium-perpetual-alpha",
+        "checks": {
+          "project_is_perpetual_alpha": true,
+          "independent_git_directory": true,
+          "migration_branch": true,
+          "testnet_venue": true,
+          "paper_execution_mode": true,
+          "migration_policy_valid": true,
+          "orders_disabled": true,
+          "angel_one_client_disabled": true,
+          "angel_one_order_boundary_disabled": true,
+          "testnet_order_boundary_disabled": true,
+          "signal_logic_present": true,
+          "signal_source_unchanged": true
+        },
+        "passed": true
+      }
+    }
+  },
+  "journals": {
+    "certification.sqlite": {
+      "exists": false
+    },
+    "qualification.sqlite": {
+      "exists": false
+    }
+  },
+  "no_signed_actions": true
+}

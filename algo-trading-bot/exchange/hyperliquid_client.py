@@ -5,6 +5,9 @@ No private keys, signing SDK, or /exchange HTTP transport exists in this module.
 from types import MappingProxyType
 from copy import deepcopy
 import time
+import json
+import threading
+from contextlib import contextmanager
 
 from .base_exchange import ExchangeError, MarketSpec, VenueMismatch
 
@@ -22,36 +25,152 @@ ACCOUNT_QUERIES = frozenset({'spotClearinghouseState', 'userFills', 'userFillsBy
 
 
 class RequestsInfoTransport:
-    def __init__(self, timeout=10):
-        import requests
-        self.session = requests.Session()
-        self.timeout = timeout
+    """Public reads only, with socket limits and a bounded caller deadline.
 
-    def __call__(self, payload):
-        import requests
+    One daemon worker owns this session at a time. A stalled DNS/SSL/body read
+    cannot strand the caller or create unlimited workers. After timeout/cancel,
+    its slot stays occupied until cleanup; subsequent reads remain bounded.
+    The worker never accesses a journal, signer, nonce or /exchange.
+    """
+    def __init__(self, timeout=None, *, connect_timeout=3.05, read_timeout=5,
+                 total_timeout=12, max_response_bytes=8*1024*1024):
+        import requests, threading, math
+        if timeout is not None:
+            if isinstance(timeout,tuple) and len(timeout)==2:connect_timeout,read_timeout=timeout
+            else:connect_timeout=read_timeout=timeout
+        values=(connect_timeout,read_timeout,total_timeout)
+        if any(isinstance(v,bool) or not isinstance(v,(int,float)) or not math.isfinite(v) or v<=0 for v in values):
+            raise ExchangeError('INFO_TIMEOUT_POLICY_INVALID')
+        if type(max_response_bytes) is not int or max_response_bytes<1:
+            raise ExchangeError('INFO_RESPONSE_LIMIT_INVALID')
+        self.session=requests.Session();self.timeout=(connect_timeout,read_timeout)
+        self.total_timeout=total_timeout;self.max_response_bytes=max_response_bytes
+        self._lock=threading.Lock();self._idle=threading.Event();self._idle.set()
+        self._active=None;self._closed=False;self.last_diagnostic=None
+
+    @staticmethod
+    def _failure(code, *, retryable=False, **attributes):
+        error=ExchangeError(code);error.retryable=retryable
+        for key,value in attributes.items():setattr(error,key,value)
+        return error
+
+    @staticmethod
+    def _caused_by(exc, names=(), classes=()):
+        pending=[exc];seen=set()
+        while pending and len(seen)<40:
+            value=pending.pop()
+            if id(value) in seen:continue
+            seen.add(id(value))
+            if isinstance(value,classes) or type(value).__name__ in names:return True
+            if isinstance(value,BaseException):
+                pending.extend(x for x in (*value.args,value.__cause__,value.__context__) if isinstance(x,BaseException))
+        return False
+
+    @staticmethod
+    def _retry_after(value):
+        import math
+        from datetime import datetime,timezone
+        from email.utils import parsedate_to_datetime
+        if value is None:return None
         try:
-            response = self.session.post(TESTNET_API_URL + '/info', json=payload,
-                                         timeout=self.timeout, allow_redirects=False)
-            if response.status_code != 200:
-                error=ExchangeError('INFO_HTTP_' + str(response.status_code))
-                error.status_code=response.status_code
-                try:
-                    error.retry_after_ms=max(0,int(float(response.headers.get('Retry-After','0'))*1000))
-                except (TypeError,ValueError,OverflowError):
-                    error.retry_after_ms=None
-                raise error
-            return response.json()
-        except ExchangeError:
+            seconds=float(value)
+            if not math.isfinite(seconds):return None
+            return max(0,int(seconds*1000))
+        except (TypeError,ValueError,OverflowError):
+            try:
+                stamp=parsedate_to_datetime(value)
+                if stamp.tzinfo is None:stamp=stamp.replace(tzinfo=timezone.utc)
+                return max(0,int((stamp-datetime.now(timezone.utc)).total_seconds()*1000))
+            except (TypeError,ValueError,OverflowError):return None
+
+    def _worker(self, payload, record):
+        import requests
+        response=None
+        try:
+            response=self.session.post(TESTNET_API_URL+'/info',json=payload,
+                timeout=self.timeout,allow_redirects=False,stream=True)
+            if response.status_code!=200:
+                raise self._failure('INFO_HTTP_'+str(response.status_code),
+                    status_code=response.status_code,retryable=response.status_code==429 or 500<=response.status_code<600,
+                    retry_after_ms=self._retry_after(response.headers.get('Retry-After')))
+            body=bytearray()
+            for chunk in response.iter_content(chunk_size=4096):
+                if record['abort'].is_set():raise self._failure('INFO_READ_CANCELLED')
+                body.extend(chunk)
+                if len(body)>self.max_response_bytes:raise self._failure('INFO_RESPONSE_TOO_LARGE')
+            if record['abort'].is_set():raise self._failure('INFO_READ_CANCELLED')
+            record['value']=json.loads(body)
+        except requests.ConnectTimeout:record['error']=self._failure('INFO_CONNECT_TIMEOUT',retryable=True)
+        except requests.ReadTimeout:record['error']=self._failure('INFO_READ_TIMEOUT',retryable=True)
+        except requests.exceptions.SSLError:record['error']=self._failure('INFO_TLS_FAILED')
+        except requests.ConnectionError as exc:
+            import socket
+            code=('INFO_DNS_FAILED' if self._caused_by(exc,('NameResolutionError',),(socket.gaierror,)) else
+                  'INFO_READ_TIMEOUT' if self._caused_by(exc,('ReadTimeoutError',)) else 'INFO_CONNECTION_FAILED')
+            record['error']=self._failure(code,retryable=True)
+        except requests.Timeout:record['error']=self._failure('INFO_READ_TIMEOUT',retryable=True)
+        except requests.RequestException:record['error']=self._failure('INFO_REQUEST_FAILED')
+        except ExchangeError as exc:record['error']=exc
+        except (ValueError,UnicodeError):record['error']=self._failure('INFO_INVALID_JSON')
+        except BaseException as exc:record['error']=exc
+        finally:
+            try:
+                if response is not None:response.close()
+            finally:
+                with self._lock:
+                    self._active=None;self._idle.set()
+                    if self._closed:self.session.close()
+                record['done'].set()
+
+    def __call__(self,payload,*,cancel_event=None,progress=None):
+        import threading
+        started=time.monotonic();record=None;last_update=0
+        def check():
+            if cancel_event is not None and cancel_event.is_set():raise self._failure('INFO_READ_CANCELLED')
+            if time.monotonic()-started>=self.total_timeout:raise self._failure('INFO_TOTAL_TIMEOUT')
+        try:
+            while record is None:
+                check()
+                with self._lock:
+                    if self._closed:raise self._failure('INFO_TRANSPORT_CLOSED')
+                    if self._active is None:
+                        record=dict(done=threading.Event(),abort=threading.Event(),value=None,error=None)
+                        self._active=record;self._idle.clear()
+                        worker=threading.Thread(target=self._worker,args=(deepcopy(payload),record),
+                            name='anchorium-public-info',daemon=True)
+                        worker.start()
+                if record is None:
+                    self._idle.wait(.05)
+                    if progress and time.monotonic()-last_update>=1:
+                        progress('WAITING_FOR_HTTP_SLOT',query=payload.get('type'),
+                            reason='PREVIOUS_PUBLIC_READ_CLEANUP',request_elapsed_seconds=round(time.monotonic()-started,3))
+                        last_update=time.monotonic()
+            while not record['done'].wait(.05):
+                check()
+                if progress and time.monotonic()-last_update>=1:
+                    progress('WAITING_FOR_HTTP_RESPONSE',query=payload.get('type'),
+                             request_elapsed_seconds=round(time.monotonic()-started,3),
+                             remaining_deadline_seconds=round(max(0,self.total_timeout-(time.monotonic()-started)),3))
+                    last_update=time.monotonic()
+            check()
+            if record['error'] is not None:raise record['error']
+            self.last_diagnostic=dict(query=payload.get('type'),result='OK',elapsed_seconds=round(time.monotonic()-started,3))
+            return record['value']
+        except BaseException as exc:
+            if record is not None:record['abort'].set()
+            self.last_diagnostic=dict(query=payload.get('type'),result=str(exc) if isinstance(exc,ExchangeError)
+                else 'INTERRUPTED' if isinstance(exc,KeyboardInterrupt) else type(exc).__name__,
+                elapsed_seconds=round(time.monotonic()-started,3))
             raise
-        except (requests.RequestException, ValueError) as exc:
-            raise ExchangeError('INFO_REQUEST_FAILED') from exc
 
     def close(self):
-        self.session.close()
-
+        with self._lock:
+            self._closed=True
+            if self._active is not None:self._active['abort'].set()
+            else:self.session.close()
 
 class HyperliquidClient:
-    def __init__(self, transport=None, *, base_url=TESTNET_API_URL, clock_ms=None, rate_limits=None):
+    def __init__(self, transport=None, *, base_url=TESTNET_API_URL, clock_ms=None, rate_limits=None, candle_audit=None, progress=None):
         if base_url != TESTNET_API_URL:
             raise VenueMismatch('TESTNET_ENDPOINT_REQUIRED')
         self.transport = transport if transport is not None else RequestsInfoTransport()
@@ -64,6 +183,26 @@ class HyperliquidClient:
         self.last_received_ms = None
         self.metadata = None
         self.rate_limits = rate_limits
+        self.read_cancel_event=None
+        self.candle_audit=candle_audit
+        self.progress=progress
+        self._snapshots=threading.local()
+        self.snapshot_hits=0
+
+    @contextmanager
+    def read_snapshot_scope(self,max_age_ms=1000):
+        """Qualification read-only bundle reuse, never quotes/history/positions.
+
+        Only account mode, agent list and fees may share their original response
+        within one second. Preserve original receive time; no cache survives the
+        scope or crosses a thread. Independent position/order comparisons remain.
+        """
+        if type(max_age_ms) is not int or not 0<max_age_ms<=1000:
+            raise ExchangeError('INVALID_INFO_SNAPSHOT_AGE')
+        previous=getattr(self._snapshots,'scope',None)
+        self._snapshots.scope=dict(max_age_ms=max_age_ms,values={})
+        try:yield
+        finally:self._snapshots.scope=previous
 
     def post_info(self, query, *, priority=None, **parameters):
         if {'type', 'action', 'signature', 'nonce'} & parameters.keys():
@@ -83,11 +222,32 @@ class HyperliquidClient:
             if not isinstance(payload.get('req'), dict):
                 raise ExchangeError('INVALID_CANDLE_REQUEST')
             self._validate_coin(payload['req'].get('coin'))
+        started=time.monotonic();key=json.dumps(payload,sort_keys=True)
+        if self.progress:self.progress('INFO_READ_STARTED',query=query)
+        scope=getattr(self._snapshots,'scope',None)
+        reusable=scope is not None and query in {'userAbstraction','extraAgents','userFees'}
+        saved=scope['values'].get(key) if reusable else None
+        if saved is not None and 0<=self.clock_ms()-saved[0]<=scope['max_age_ms']:
+            self.snapshot_hits+=1;self.last_received_ms=saved[0]
+            if self.progress:self.progress('INFO_SNAPSHOT_REUSED',query=query,observed_ms=saved[0],age_ms=self.clock_ms()-saved[0])
+            return deepcopy(saved[1])
+        operation=(lambda:self.transport(payload,cancel_event=self.read_cancel_event,progress=self.progress)) \
+            if isinstance(self.transport,RequestsInfoTransport) else (lambda:self.transport(payload))
         if self.rate_limits is not None:
-            result=self.rate_limits.read(query,lambda:self.transport(payload),priority=priority)
+            req=payload.get('req',{})
+            from .hyperliquid_market_data import INTERVAL_MS
+            expected=(max(0,(req.get('endTime',0)-req.get('startTime',0))//INTERVAL_MS.get(req.get('interval'),60000)+1)
+                      if query=='candleSnapshot' else 0)
+            result=self.rate_limits.read(query,operation,priority=priority,
+                request_key=key,expected_items=expected,cancel_event=self.read_cancel_event)
         else:
-            result = self.transport(payload)
+            result = operation()
         self.last_received_ms = self.clock_ms()
+        if reusable:scope['values'][key]=(self.last_received_ms,deepcopy(result))
+        if self.progress:self.progress('INFO_READ_COMPLETED',query=query,request_elapsed_seconds=round(time.monotonic()-started,3))
+        if self.candle_audit is not None and query=='candleSnapshot':
+            self.candle_audit.record('RAW_REST',request=payload,response=result,
+                received_ms=self.last_received_ms,client_id=id(self),network='testnet')
         return result
 
     def _validate_coin(self, symbol):
@@ -172,7 +332,8 @@ class HyperliquidClient:
             raise VenueMismatch('PAR_STARTUP_CHECK_REQUIRED')
         try:
             incoming = self._parse_specs(metadata, self.dex_index)
-            if incoming != dict(self.markets):
+            if (incoming != dict(self.markets) or
+                    metadata.get('collateralToken') != self.collateral_token_id):
                 raise VenueMismatch('PAR_METADATA_CHANGED_RESTART_REQUIRED')
         except ExchangeError:
             self.invalidate()

@@ -1,0 +1,166 @@
+{
+  "status": "AWAITING_EXACT_NEW_BOUNDED_PRICE_APPROVAL",
+  "source_hash": "7476ad9152bb0452fbf24aa3fdeed3822ff0faf3e5bf5c1badf74f55f2eacdf7",
+  "previous_source_hash": "90c913950d7c7f23bfa176612356e0995d9fef5976be54fc449695b8cc1bf882",
+  "regression": {
+    "tests": 2115,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "baseline_tests": 2046,
+  "new_tests": 69,
+  "source_bound_full_regression": true,
+  "strategy_freeze": {
+    "baseline": "nse-working-baseline",
+    "file_count": 1,
+    "method_count": 8,
+    "parameter_count": 32,
+    "passed": true
+  },
+  "protected_files_unchanged": [
+    "algo-trading-bot/signal_brain.py",
+    "docs/strategy_freeze.json",
+    "configs/reliability_policy.json"
+  ],
+  "changes": [
+    {
+      "path": "algo-trading-bot/exchange/emergency_qualification.py",
+      "before_sha256": "03f8e3c8104581e544c0534c6b5077a63d4c1183ada87aba90936311cd4947cc",
+      "after_sha256": "e9a34d836bad39788ab560fcc73f19700181e1e6373c32947c3cd9e87aa80702",
+      "new": false
+    },
+    {
+      "path": "algo-trading-bot/exchange/hyperliquid_execution.py",
+      "before_sha256": "bf135c3f1a573cd8b050aee5567315d017d56a50d072fb8f2b985f4d560344bb",
+      "after_sha256": "3948b65e4c73571d754e28ab6b9b9be7940bf5f6c80f41a2f803876d5f0b2f70",
+      "new": false
+    },
+    {
+      "path": "algo-trading-bot/exchange/compliance_guard.py",
+      "before_sha256": "16673b9d82242157e761e9752a301ad9fcefe1df5f3c85675a2c639df9e9151d",
+      "after_sha256": "a880a11234e98b359e439702045fa7b43d3e50c17a669cdb8552d6fabb9f9889",
+      "new": false
+    },
+    {
+      "path": "scripts/run_emergency_qualification.py",
+      "before_sha256": "6cf4ef8fa1f51b10241c4a4c22b0af0acecb7bae1d080d1e81a53c119b16de2b",
+      "after_sha256": "828fb7e44f5fa8a539c9e19bc2432dbdcd008c7418a048a206771966fbd141a5",
+      "new": false
+    },
+    {
+      "path": "algo-trading-bot/test_qualification_price_guard.py",
+      "before_sha256": null,
+      "after_sha256": "11e721749c0f2027621ff2607681fa73a9cf3e70ebdbc7693c3c21d3734c1130",
+      "new": true
+    }
+  ],
+  "new_policy": {
+    "version": "ANCHORIUM_P0_BOUNDED_IOC_V2",
+    "network": "testnet",
+    "dex": "par",
+    "max_notional": "1000",
+    "minimum_entry_notional": "10",
+    "leverage": 1,
+    "margin_mode": "cross",
+    "one_entry": true,
+    "max_exit_attempts": 2,
+    "max_cancel_attempts": 1,
+    "max_signed_actions": 4,
+    "spread_bps": "50",
+    "entry_slippage_bps": "20",
+    "exit_slippage_bps": "20",
+    "mark_oracle_bps": "50",
+    "mid_oracle_bps": "100",
+    "order_oracle_bps": "150",
+    "l2_participation": "0.5",
+    "exit_floor_factor": "0.98505",
+    "resting_lifetime_seconds": 30,
+    "approval_window_ms": 300000,
+    "entry_minimum_remaining_ms": 90000,
+    "rule": "MINIMUM_VALID_LONG_FRESH_IOC_WITHIN_APPROVED_ENVELOPE_V2",
+    "protection": "UNVERIFIED_NO_STOP_WILL_BE_SUBMITTED",
+    "price_authorization": "BOUNDED_FRESH_IOC_V2",
+    "entry_price_buffer_bps": "10",
+    "quantity_expansion": false,
+    "price_cap_expansion": false
+  },
+  "new_policy_hash": "25c54fbdcda01ed803c2fdff6378358b7c87814cf796cb80aa388dd24c3ff7ca",
+  "actual_wallet_signatures": 0,
+  "exchange_submissions": 0,
+  "qualification_journal_actions": {
+    "intents": 0,
+    "api_actions": 0,
+    "signed_management": 0
+  },
+  "code_ready": true,
+  "protection_verified": false,
+  "controlled_protected_execution_ready": false,
+  "unrestricted_trading_enabled": false,
+  "actual_fill_verified": false,
+  "organizer_whitelist_confirmed": false,
+  "past_failed_quote_available": false,
+  "proposal_id": "4e705570d6fc52d3b161cac40c5d99b7ab4bada1580b77b0de535e3a4e80b6ff",
+  "proposal": {
+    "symbol": "par:BTC",
+    "asset_id": 2670000,
+    "quantity": "0.0002",
+    "entry_side": "BUY",
+    "entry_limit": "83664",
+    "exit_bound": "82246",
+    "stop_trigger": "82660",
+    "stop_limit": "82246",
+    "reference_bid": "83494.0",
+    "reference_ask": "83498.0",
+    "reference_mark": "83496.0",
+    "reference_oracle": "83583.0",
+    "observed_ms": 1791958592817,
+    "source_hash": "7476ad9152bb0452fbf24aa3fdeed3822ff0faf3e5bf5c1badf74f55f2eacdf7",
+    "reliability_policy_hash": "1b8573d07a0f12f3653cf7b92f96c2120e8d61c3f210335ec850ba14ea582455",
+    "max_notional": "1000",
+    "session_loss_budget": "1000",
+    "entry_slippage_bps": "20",
+    "exit_slippage_bps": "20",
+    "taker_fee_rate": "0.00090",
+    "max_exit_attempts": 2,
+    "max_signed_actions": 4,
+    "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+    "api_wallet": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+    "network": "testnet",
+    "dex": "par",
+    "mode": "TESTNET_QUALIFICATION_P0_BOUNDED_IOC_V2",
+    "entry_rule": "MINIMUM_VALID_LONG_FRESH_IOC_WITHIN_APPROVED_ENVELOPE_V2",
+    "qualification_policy_hash": "25c54fbdcda01ed803c2fdff6378358b7c87814cf796cb80aa388dd24c3ff7ca",
+    "entry_tif": "Ioc",
+    "order_lifetime_seconds": 0,
+    "candidate_evidence_hash": "5b5dcf412b2daa4b5a975e2af564c4e9a927d53a2b6d934869f0bea46cc4942f",
+    "maker_fee_rate": "0.00030",
+    "protection_status": "UNVERIFIED_NO_STOP_WILL_BE_SUBMITTED",
+    "price_authorization_mode": "BOUNDED_FRESH_IOC_V2",
+    "max_buy_price": "83664",
+    "quantity_ceiling": "0.0002",
+    "entry_notional_ceiling": "16.7328"
+  },
+  "approval_deadline_ms": 1791958892817,
+  "entry_deadline_ms": 1791958802817,
+  "isolated_experimental_proposal_ready": true,
+  "approval_supplied": false,
+  "account_observed_ms": 1791958591980,
+  "account_flat_observed": true,
+  "read_only_cleanup": {
+    "integrity": "ok",
+    "snapshots_verified": 2,
+    "checksums_verified": true,
+    "source_identity": {
+      "git_commit": "33c7cfe9ec241ccc0241144a8dccfd9a06df553a",
+      "working_source_hash": "7384d0e44fe016e252e03383cc3f469bf6824f2016962033ea0bb2b7ea8e4f63",
+      "strategy_source_hash": "bff940ac5ed35f71ed3dfb537ba15d20dcec35a4e62a938d2f0619c6e9309d83"
+    },
+    "clean": true,
+    "actions": {
+      "intents": 0,
+      "api_actions": 0,
+      "signed_management": 0
+    }
+  }
+}

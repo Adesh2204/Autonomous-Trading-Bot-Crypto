@@ -1,0 +1,71 @@
+{
+  "source_hash_before": "8a02c9daf22cc77a4316d3360bbc8a377c12ba945be68ea3f9eccfa832942b66",
+  "map": [
+    {
+      "file": "exchange/feed_transport.py",
+      "function": "FeedTransportHealth",
+      "current": "Separate ping/pong, close frames and subscription identities",
+      "problem": "Working; preserve"
+    },
+    {
+      "file": "exchange/hyperliquid_market_data.py",
+      "function": "ParMarketDataEngine._run_owned/reconcile_history",
+      "current": "One receiver plus one REST worker; retries exceptions per symbol",
+      "problem": "No periodic recovery for valid-but-stale/incomplete response; narrow overlap cannot fill older internal gaps"
+    },
+    {
+      "file": "exchange/hyperliquid_market_data.py",
+      "function": "ingest/get_observations",
+      "current": "Independent symbol clocks; malformed candle/context raises globally",
+      "problem": "Known-symbol invalid data may disconnect healthy markets"
+    },
+    {
+      "file": "market_stream.py",
+      "function": "health/poll",
+      "current": "Independent freshness clocks and symbol circuit breakers",
+      "problem": "Incomplete integrity validation; no durable runtime quarantine/restoration transitions; stream cache separate from REST scanner"
+    },
+    {
+      "file": "market_regime_scanner.py",
+      "function": "scan",
+      "current": "REST each symbol, existing stale/history checks then frozen brain",
+      "problem": "Existing normalized candle checks occur only inside brain adapter; data health not shared with streaming health"
+    },
+    {
+      "file": "exchange/paper_operations.py",
+      "function": "PaperHealth.write",
+      "current": "No healthy stream market yields global warning",
+      "problem": "Missing explicit transport/account/budget gates, per-market details and partial-health state"
+    },
+    {
+      "file": "scripts/check_practice_health.py",
+      "function": "assess/main",
+      "current": "Only JSON exit/reason",
+      "problem": "No usable-market, subscriptions or quarantine explanation"
+    },
+    {
+      "file": "risk/circuit_breakers.py",
+      "function": "update_symbols/entry_reasons",
+      "current": "Per-symbol entry blocks plus separate global reasons",
+      "problem": "Working; preserve"
+    },
+    {
+      "file": "exchange/rate_limits.py",
+      "function": "read/reserve_info/report",
+      "current": "Single-flight public requests, weighted budgets, reserves/backoff",
+      "problem": "Working; reuse, do not interpret account-action UNKNOWN as public failure"
+    },
+    {
+      "file": "opportunity_funnel.py",
+      "function": "_summary",
+      "current": "Independent evaluated counts and sequential admissions/categories",
+      "problem": "Working; preserve distinct denominators"
+    },
+    {
+      "file": "exchange/paper_checkpoint.py",
+      "function": "save/load/backup",
+      "current": "Checksummed source/config state and backups",
+      "problem": "Working; preserve"
+    }
+  ]
+}

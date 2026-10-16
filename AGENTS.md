@@ -104,3 +104,26 @@
   multi-position activation remain prohibited. Synthetic tests never certify a
   funded account, committee compliance or LIVE readiness. Complete controlled
   account certification and explicit user activation remain future work.
+
+- The 7 October practice-setup request authorizes local derivation of the actual
+  API key's public address, without printing the key, creating an actual-wallet
+  signature or submitting an order. It also authorizes deliberate alignment of
+  all ten runtime `par:` markets to exactly 1x CROSS, through the separate
+  configuration helper. This is the only narrow exception to the earlier
+  account-administration prohibition: preserve PAPER/false and require human
+  verification of both wallet identities, fresh funded/unified/agent/flat-account
+  checks, local account/signer ownership, healthy nonce/clock/rates, fixed-action
+  permits, durable uncertainty handling and exchange readback. No order,
+  cancellation, transfer, account-mode change or general administration is
+  authorized. The human manually verified both wallet identities in the 7 October reply
+  to `call_8vxKplKS9TzNbgFTbEfuoq2P`. This completes identity verification
+  for the separately requested 1x CROSS configuration only; it does not
+  authorize any order or protection activation.
+- The same request approves configuration of independent protection at one entry
+  ATR beyond the normal strategy stop, with a 0.5% execution allowance and
+  reduce-only semantics. The approval reference is
+  `docs/practice_setup_2026-10-07/protection_configuration_approval.md`. Keep
+  protection disabled until separately authorized controlled certification.
+  This configuration approval is not live-order activation. Preserve the
+  original historical ZIP/source proof if supplied; absent provenance evidence
+  does not block genuine public market-data PAPER collection.

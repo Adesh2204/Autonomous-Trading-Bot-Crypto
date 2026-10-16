@@ -1,0 +1,160 @@
+{
+  "status": "COMPLETED_FEED_NOT_READY",
+  "observed_at_ist": "2026-10-07T21:49:59.888570+05:30",
+  "phase": "COMPLETED",
+  "source_hash": "8a02c9daf22cc77a4316d3360bbc8a377c12ba945be68ea3f9eccfa832942b66",
+  "tests": {
+    "tests": 1301,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "safety": {
+    "execution_mode": "PAPER",
+    "allow_live_orders": false,
+    "protection_enabled": false
+  },
+  "subscription_acknowledgements": 40,
+  "desired_subscriptions": 40,
+  "connected": true,
+  "reconciled": true,
+  "current_error": null,
+  "healthy_markets_at_sample": [],
+  "orders_submitted": 0,
+  "paper_fills": 0,
+  "feed_certified": false,
+  "practice_ready": false,
+  "live_ready": false,
+  "first_failed_soak_preserved": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/feed_hardening_2026-10-07/failed_short_soak_summary.json",
+  "monitor_automation": "monitor-anchorium-three-hour-paper-run",
+  "long_run_gated_by_short_engineering_checks": true,
+  "source_matches_full_regression": true,
+  "short_engineering_checks_passed": true,
+  "short_feed_certified": false,
+  "short_feed_blockers": [
+    "sustained_valid_market",
+    "final_valid_market"
+  ],
+  "short_completed_certificate": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/feed_hardening_2026-10-07/short_soak_v2/short_15m_v2_certification.json",
+  "long_expected_finish_ist": "2026-10-08T00:18:50.170617+05:30",
+  "current_state_directory": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/paper/feed-certification-2026-10-07-long",
+  "current_segment": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/feed_hardening_2026-10-07/long_soak/paper_segments/20261007T154850Z-48166623",
+  "health_timestamp_ms": 1791389970777,
+  "health_issues": [
+    "NO_HEALTHY_PUBLIC_MARKET_FEED"
+  ],
+  "short_peer_close": {
+    "code": 1000,
+    "reason": "Expired",
+    "recovered": true
+  },
+  "short_checkpoint_and_backup_verified": true,
+  "this_long_run_observations": 70,
+  "this_long_run_market_progress": {
+    "par:BRENT": {
+      "evaluated": 7,
+      "healthy": 3,
+      "failed": 4,
+      "maximum_consecutive_healthy_windows": 1,
+      "current_consecutive_healthy_windows": 0,
+      "latest_lag_seconds": 600.0
+    },
+    "par:BTC": {
+      "evaluated": 7,
+      "healthy": 1,
+      "failed": 6,
+      "maximum_consecutive_healthy_windows": 1,
+      "current_consecutive_healthy_windows": 0,
+      "latest_lag_seconds": 1440.0
+    },
+    "par:ETH": {
+      "evaluated": 7,
+      "healthy": 0,
+      "failed": 7,
+      "maximum_consecutive_healthy_windows": 0,
+      "current_consecutive_healthy_windows": 0,
+      "latest_lag_seconds": 180.0
+    },
+    "par:EWJ": {
+      "evaluated": 7,
+      "healthy": 0,
+      "failed": 7,
+      "maximum_consecutive_healthy_windows": 0,
+      "current_consecutive_healthy_windows": 0,
+      "latest_lag_seconds": 29340.0
+    },
+    "par:EWY": {
+      "evaluated": 7,
+      "healthy": 0,
+      "failed": 7,
+      "maximum_consecutive_healthy_windows": 0,
+      "current_consecutive_healthy_windows": 0,
+      "latest_lag_seconds": 0.0
+    },
+    "par:GOLD": {
+      "evaluated": 7,
+      "healthy": 0,
+      "failed": 7,
+      "maximum_consecutive_healthy_windows": 0,
+      "current_consecutive_healthy_windows": 0,
+      "latest_lag_seconds": 480.0
+    },
+    "par:HYPE": {
+      "evaluated": 7,
+      "healthy": 0,
+      "failed": 7,
+      "maximum_consecutive_healthy_windows": 0,
+      "current_consecutive_healthy_windows": 0,
+      "latest_lag_seconds": 3480.0
+    },
+    "par:SP500": {
+      "evaluated": 7,
+      "healthy": 2,
+      "failed": 5,
+      "maximum_consecutive_healthy_windows": 2,
+      "current_consecutive_healthy_windows": 0,
+      "latest_lag_seconds": 480.0
+    },
+    "par:USDEUR": {
+      "evaluated": 7,
+      "healthy": 0,
+      "failed": 7,
+      "maximum_consecutive_healthy_windows": 0,
+      "current_consecutive_healthy_windows": 0,
+      "latest_lag_seconds": 1080.0
+    },
+    "par:USDJPY": {
+      "evaluated": 7,
+      "healthy": 1,
+      "failed": 6,
+      "maximum_consecutive_healthy_windows": 1,
+      "current_consecutive_healthy_windows": 0,
+      "latest_lag_seconds": 360.0
+    }
+  },
+  "maximum_receiver_gap_seconds": 1.0223945828620344,
+  "completed_connection_count": 2,
+  "completed_connection_closes": [
+    {
+      "close_code": 1000,
+      "close_reason": "Expired",
+      "connection_age_seconds": 696.7347863330506
+    },
+    {
+      "close_code": 1000,
+      "close_reason": "Expired",
+      "connection_age_seconds": 649.263254459016
+    }
+  ],
+  "public_read_failures": {},
+  "pending_public_reads": 0,
+  "paper_account_reconciled": true,
+  "regression_xml_checksum_matches": true,
+  "this_long_run_first_rejections": {
+    "ATR_BELOW_SCANNER_FLOOR": 7,
+    "STALE_CANDLE": 61,
+    "INVALID_MARKET_DATA": 2
+  },
+  "final_summary": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/feed_hardening_2026-10-07/final_summary.json",
+  "final_report": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/feed_hardening_2026-10-07/report.md"
+}

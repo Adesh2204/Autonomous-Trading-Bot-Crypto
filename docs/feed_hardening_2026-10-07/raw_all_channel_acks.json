@@ -1,0 +1,210 @@
+{
+  "requests": [
+    {
+      "method": "subscribe",
+      "subscription": {
+        "type": "l2Book",
+        "coin": "par:BTC"
+      }
+    },
+    {
+      "method": "subscribe",
+      "subscription": {
+        "type": "candle",
+        "coin": "par:BTC",
+        "interval": "1m"
+      }
+    },
+    {
+      "method": "subscribe",
+      "subscription": {
+        "type": "activeAssetCtx",
+        "coin": "par:BTC"
+      }
+    },
+    {
+      "method": "subscribe",
+      "subscription": {
+        "type": "trades",
+        "coin": "par:BTC"
+      }
+    }
+  ],
+  "responses": [
+    {
+      "channel": "subscriptionResponse",
+      "data": {
+        "method": "subscribe",
+        "subscription": {
+          "type": "l2Book",
+          "coin": "par:BTC",
+          "nSigFigs": null,
+          "mantissa": null,
+          "fast": false
+        }
+      }
+    },
+    {
+      "channel": "l2Book",
+      "data": {
+        "coin": "par:BTC",
+        "time": 1791386686167,
+        "levels": [
+          [
+            {
+              "px": "82917.0",
+              "sz": "0.603",
+              "n": 1
+            },
+            {
+              "px": "82834.0",
+              "sz": "1.2072",
+              "n": 1
+            },
+            {
+              "px": "82710.0",
+              "sz": "2.418",
+              "n": 1
+            },
+            {
+              "px": "82544.0",
+              "sz": "3.6344",
+              "n": 1
+            },
+            {
+              "px": "82336.0",
+              "sz": "4.2508",
+              "n": 1
+            },
+            {
+              "px": "81701.0",
+              "sz": "0.0004",
+              "n": 1
+            },
+            {
+              "px": "80457.0",
+              "sz": "0.0009",
+              "n": 1
+            },
+            {
+              "px": "79212.0",
+              "sz": "0.0009",
+              "n": 1
+            },
+            {
+              "px": "78385.0",
+              "sz": "0.0025",
+              "n": 1
+            },
+            {
+              "px": "74730.0",
+              "sz": "0.0002",
+              "n": 1
+            }
+          ],
+          [
+            {
+              "px": "83066.0",
+              "sz": "0.0074",
+              "n": 1
+            },
+            {
+              "px": "83083.0",
+              "sz": "0.6018",
+              "n": 1
+            },
+            {
+              "px": "83166.0",
+              "sz": "1.2024",
+              "n": 1
+            },
+            {
+              "px": "83291.0",
+              "sz": "2.4012",
+              "n": 1
+            },
+            {
+              "px": "83457.0",
+              "sz": "3.5946",
+              "n": 1
+            },
+            {
+              "px": "83664.0",
+              "sz": "4.1834",
+              "n": 1
+            },
+            {
+              "px": "84190.0",
+              "sz": "0.0004",
+              "n": 1
+            },
+            {
+              "px": "85434.0",
+              "sz": "0.0008",
+              "n": 1
+            },
+            {
+              "px": "86679.0",
+              "sz": "0.0008",
+              "n": 1
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "channel": "subscriptionResponse",
+      "data": {
+        "method": "subscribe",
+        "subscription": {
+          "type": "candle",
+          "interval": "1m",
+          "coin": "par:BTC"
+        }
+      }
+    },
+    {
+      "channel": "subscriptionResponse",
+      "data": {
+        "method": "subscribe",
+        "subscription": {
+          "type": "activeAssetCtx",
+          "coin": "par:BTC"
+        }
+      }
+    },
+    {
+      "channel": "activeAssetCtx",
+      "data": {
+        "coin": "par:BTC",
+        "ctx": {
+          "funding": "0.0000125",
+          "openInterest": "0.0382",
+          "prevDayPx": "86168.0",
+          "dayNtlVlm": "148528.4011",
+          "premium": "0.0000979022",
+          "oraclePx": "82991.0",
+          "markPx": "82985.0",
+          "midPx": "82991.5",
+          "impactPxs": [
+            "82917.0",
+            "83081.25"
+          ],
+          "dayBaseVlm": "1.7357"
+        }
+      }
+    },
+    {
+      "channel": "subscriptionResponse",
+      "data": {
+        "method": "subscribe",
+        "subscription": {
+          "type": "trades",
+          "coin": "par:BTC"
+        }
+      }
+    }
+  ],
+  "captured_unix": 1791386686.898484,
+  "exchange_orders": 0
+}

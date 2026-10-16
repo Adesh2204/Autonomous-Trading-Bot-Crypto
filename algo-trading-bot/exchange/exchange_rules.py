@@ -70,13 +70,16 @@ class HyperliquidOrderValidator:
         self.client = client
         self.policy_leverage = policy_leverage
 
-    def validate(self, request, context, permission, now_ms):
+    def validate(self, request, context, permission, now_ms, *, operation='ORDER'):
         audit = dict(symbol=getattr(request,'symbol',None),requested_size=str(getattr(request,'quantity',None)),
                      requested_price=str(getattr(request,'price',None)),leverage=context.leverage,
                      metadata_hash=context.metadata_hash)
         def reject(code, reason=None):
             return ValidationResult(False, code, reason or code, now_ms, audit=audit)
         try:
+            from .full_position_close import FULL_POSITION_CLOSE, normalize_exact_full_close
+            if operation not in {'ORDER', FULL_POSITION_CLOSE}:
+                return reject('INVALID_EXECUTION_OPERATION')
             if not isinstance(request, OrderRequest) or not request.symbol.startswith('par:'):
                 return reject('INVALID_MARKET')
             if not self.client.ready or request.symbol not in self.client.markets:
@@ -97,7 +100,15 @@ class HyperliquidOrderValidator:
             notional = quantity*price
             audit.update(normalized_size=str(quantity),normalized_price=str(price),notional=str(notional),
                          asset_id=spec.asset_id)
-            if notional < 10:
+            exact_close = None
+            if operation == FULL_POSITION_CLOSE:
+                try:
+                    exact_close, scope = normalize_exact_full_close(spec, request, context, now_ms)
+                except ExchangeError as exc:
+                    return reject(str(exc))
+                audit.update(exact_full_position_close=True, subminimum_close_scope=scope,
+                             closing_exception_applied=scope is not None)
+            if notional < 10 and exact_close is None:
                 return reject('MIN_ORDER_NOTIONAL')
             q = context.quote
             if q.symbol != request.symbol or not context.feed_ready:
@@ -181,7 +192,7 @@ class HyperliquidOrderValidator:
                     own_price=decimal(own['limitPx'],positive=True)
                     if request.side=='BUY' and price>=own_price or request.side=='SELL' and price<=own_price:
                         return reject('SELF_CROSS_PROHIBITED')
-            normalized=spec.normalize_order(request.side,quantity,price,reduce_only=request.reduce_only,tif=request.tif)
+            normalized=exact_close or spec.normalize_order(request.side,quantity,price,reduce_only=request.reduce_only,tif=request.tif)
             return ValidationResult(True,'ALLOWED','All pre-trade checks passed',now_ms,normalized,audit)
         except ExchangeError as exc:
             message=str(exc)

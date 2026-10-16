@@ -1,0 +1,23 @@
+[
+  {
+    "name": "targeted_initial",
+    "totals": {
+      "tests": 117,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    "scope": "Offline; fixtures only; actual wallet signatures and exchange orders prohibited",
+    "failure_explanation": "New test supplied an unprefixed symbol to MarketSpec before testing the review allowlist; MarketSpec correctly rejected it. The test now asserts this earlier rejection and separately checks another DEX. No production validation changed."
+  },
+  {
+    "name": "targeted_final",
+    "totals": {
+      "tests": 117,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "scope": "Offline; fixtures only; actual wallet signatures and exchange orders prohibited"
+  }
+]

@@ -1,0 +1,1417 @@
+{
+  "generated_ms": 1792042257965,
+  "status": "AWAITING_SEPARATE_EXACT_EXIT_APPROVAL",
+  "source_hash": "31efb87290919c495e624dfad41c426f83ec45dc21bf52dc0b4580a1185edd2f",
+  "regression": {
+    "started_unix": 1792041643.934355,
+    "source_hash": "31efb87290919c495e624dfad41c426f83ec45dc21bf52dc0b4580a1185edd2f",
+    "scope": "Full offline regression; prior baseline 2248 plus 64 SELL-only recovery, fee/profit, exact-position, freshness, rate-pacing and authorization regressions; no actual exchange actions",
+    "evidence_classifier_sha256": "6d81a9912e08c37aca6ad83eb7fbefe3341c5e46af403801cb4045b5296c98f1",
+    "checks_before": {
+      "strategy_freeze": {
+        "exit_code": 0,
+        "result": {
+          "baseline": "nse-working-baseline",
+          "file_count": 1,
+          "method_count": 8,
+          "parameter_count": 32,
+          "passed": true
+        }
+      },
+      "phase0": {
+        "exit_code": 0,
+        "result": {
+          "project": "anchorium-perpetual-alpha",
+          "checks": {
+            "project_is_perpetual_alpha": true,
+            "independent_git_directory": true,
+            "migration_branch": true,
+            "testnet_venue": true,
+            "paper_execution_mode": true,
+            "migration_policy_valid": true,
+            "orders_disabled": true,
+            "angel_one_client_disabled": true,
+            "angel_one_order_boundary_disabled": true,
+            "testnet_order_boundary_disabled": true,
+            "signal_logic_present": true,
+            "signal_source_unchanged": true
+          },
+          "passed": true
+        }
+      }
+    },
+    "finished_unix": 1792042216.886624,
+    "exit_code": 0,
+    "source_hash_after": "31efb87290919c495e624dfad41c426f83ec45dc21bf52dc0b4580a1185edd2f",
+    "totals": {
+      "tests": 2312,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "xml_sha256": "f97d04ac1a71818a4905be84b531410ee9c23b8fcc0cc6e62ab7e0a764feb077",
+    "evidence_classifier_sha256_after": "6d81a9912e08c37aca6ad83eb7fbefe3341c5e46af403801cb4045b5296c98f1",
+    "previous_evidence_classifier_sha256": "9c95b59054aed2adc38a41f5f65b0a65c314ac4cb3b29ea437a88d2b6dfcf8e0",
+    "baseline_minimum": 2248,
+    "expected_minimum": 2312,
+    "checks_after": {
+      "strategy_freeze": {
+        "exit_code": 0,
+        "result": {
+          "baseline": "nse-working-baseline",
+          "file_count": 1,
+          "method_count": 8,
+          "parameter_count": 32,
+          "passed": true
+        }
+      },
+      "phase0": {
+        "exit_code": 0,
+        "result": {
+          "project": "anchorium-perpetual-alpha",
+          "checks": {
+            "project_is_perpetual_alpha": true,
+            "independent_git_directory": true,
+            "migration_branch": true,
+            "testnet_venue": true,
+            "paper_execution_mode": true,
+            "migration_policy_valid": true,
+            "orders_disabled": true,
+            "angel_one_client_disabled": true,
+            "angel_one_order_boundary_disabled": true,
+            "testnet_order_boundary_disabled": true,
+            "signal_logic_present": true,
+            "signal_source_unchanged": true
+          },
+          "passed": true
+        }
+      }
+    },
+    "passed": true
+  },
+  "files_modified": {
+    "algo-trading-bot/exchange/certification_runtime.py": "72d8ab3dbf11f34fea05dcfa534d72de9fe64204b6a996466b1f04d75dbd4cfb",
+    "algo-trading-bot/exchange/rate_limits.py": "8e0f049a29eb7d5ed28087da698e85b20ec5b2e79836dd27b2362962daa554e5",
+    "algo-trading-bot/exchange/exit_recovery.py": "9e62fa6992e8b34820805821a461acad0938bc8137b4513dffb7d9c9e2049256",
+    "algo-trading-bot/test_exit_recovery.py": "2cad97c0a82a5f98dfcfa5140d54aa3a73a3d070c96d9c2ca392884708a3e8a5",
+    "scripts/run_exit_recovery.py": "292926e2c4560c39b9644984251c3b0a198785152d61a829dde298743e46cc13"
+  },
+  "latest_observation": {
+    "status": "AWAITING_EXACT_RECOVERY_APPROVAL",
+    "mandate_id": "bfba5781ae7c028a7cd1572061acd66a1ee488b38e48e7d698b2146a723c9332",
+    "mandate": {
+      "nonce": "14093fccb767417a9606257987bb4af3",
+      "created_ms": 1792042252329,
+      "approval_deadline_ms": 1792042552329,
+      "source_hash": "31efb87290919c495e624dfad41c426f83ec45dc21bf52dc0b4580a1185edd2f",
+      "reliability_policy_hash": "1b8573d07a0f12f3653cf7b92f96c2120e8d61c3f210335ec850ba14ea582455",
+      "envelope_hash": "df6c8a0726baf1fc5e2eed751bf45658bd22cb804af21a712cd7c81adb15c913",
+      "minimum_sell": "80780",
+      "mode": "BOUNDED_LOSS_EXIT",
+      "quantity": "0.0002",
+      "minimum_net_profit": "-0.50",
+      "window_ms": 120000,
+      "maximum_exit_fee": "0.003",
+      "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+      "api_wallet": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+      "symbol": "par:BTC",
+      "original_order_id": "62755970305",
+      "original_fill_id": "800659111758533"
+    },
+    "position": {
+      "symbol": "par:BTC",
+      "quantity": "0.0002",
+      "entry_price": "81512.0",
+      "unrealized_pnl": "-0.1048",
+      "margin_used": "16.1976",
+      "liquidation_price": null,
+      "leverage": {
+        "type": "cross",
+        "value": 1
+      }
+    },
+    "orders": [],
+    "readiness": {
+      "status": "READY",
+      "reasons": [],
+      "team_address": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+      "signer_address": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+      "observed_ms": 1792042250309,
+      "agent_expiry_ms": 1806859924898,
+      "collateral": "999999.880669",
+      "account_mode": "unifiedAccount",
+      "fees": {
+        "dailyUserVlm": [
+          {
+            "date": "2026-10-01",
+            "userCross": "0.0",
+            "userAdd": "0.0",
+            "exchange": "6265670.4400000004"
+          },
+          {
+            "date": "2026-10-02",
+            "userCross": "0.0",
+            "userAdd": "0.0",
+            "exchange": "7303506.9500000002"
+          },
+          {
+            "date": "2026-10-03",
+            "userCross": "0.0",
+            "userAdd": "0.0",
+            "exchange": "2494978.4100000001"
+          },
+          {
+            "date": "2026-10-04",
+            "userCross": "0.0",
+            "userAdd": "0.0",
+            "exchange": "2879836.3700000001"
+          },
+          {
+            "date": "2026-10-05",
+            "userCross": "0.0",
+            "userAdd": "0.0",
+            "exchange": "4295368.6500000004"
+          },
+          {
+            "date": "2026-10-06",
+            "userCross": "0.0",
+            "userAdd": "0.0",
+            "exchange": "5789290.3600000003"
+          },
+          {
+            "date": "2026-10-07",
+            "userCross": "0.0",
+            "userAdd": "0.0",
+            "exchange": "5814031.0899999999"
+          },
+          {
+            "date": "2026-10-08",
+            "userCross": "0.0",
+            "userAdd": "0.0",
+            "exchange": "5803798.0599999996"
+          },
+          {
+            "date": "2026-10-09",
+            "userCross": "0.0",
+            "userAdd": "0.0",
+            "exchange": "16694743.0800000001"
+          },
+          {
+            "date": "2026-10-10",
+            "userCross": "0.0",
+            "userAdd": "0.0",
+            "exchange": "2682872.8100000001"
+          },
+          {
+            "date": "2026-10-11",
+            "userCross": "0.0",
+            "userAdd": "0.0",
+            "exchange": "2604769.8799999999"
+          },
+          {
+            "date": "2026-10-12",
+            "userCross": "0.0",
+            "userAdd": "0.0",
+            "exchange": "3546292.6699999999"
+          },
+          {
+            "date": "2026-10-13",
+            "userCross": "0.0",
+            "userAdd": "0.0",
+            "exchange": "4917761.7999999998"
+          },
+          {
+            "date": "2026-10-14",
+            "userCross": "0.0",
+            "userAdd": "0.0",
+            "exchange": "5397160.9699999997"
+          },
+          {
+            "date": "2026-10-15",
+            "userCross": "0.0",
+            "userAdd": "0.0",
+            "exchange": "1369385.1200000001"
+          }
+        ],
+        "feeSchedule": {
+          "cross": "0.00045",
+          "add": "0.00015",
+          "spotCross": "0.0007",
+          "spotAdd": "0.0004",
+          "tiers": {
+            "vip": [
+              {
+                "ntlCutoff": "5000000.0",
+                "cross": "0.0004",
+                "add": "0.00012",
+                "spotCross": "0.0006",
+                "spotAdd": "0.0003"
+              },
+              {
+                "ntlCutoff": "25000000.0",
+                "cross": "0.00035",
+                "add": "0.00008",
+                "spotCross": "0.0005",
+                "spotAdd": "0.0002"
+              },
+              {
+                "ntlCutoff": "100000000.0",
+                "cross": "0.0003",
+                "add": "0.00004",
+                "spotCross": "0.0004",
+                "spotAdd": "0.0001"
+              },
+              {
+                "ntlCutoff": "500000000.0",
+                "cross": "0.00028",
+                "add": "0.0",
+                "spotCross": "0.00035",
+                "spotAdd": "0.0"
+              },
+              {
+                "ntlCutoff": "2000000000.0",
+                "cross": "0.00026",
+                "add": "0.0",
+                "spotCross": "0.0003",
+                "spotAdd": "0.0"
+              },
+              {
+                "ntlCutoff": "7000000000.0",
+                "cross": "0.00024",
+                "add": "0.0",
+                "spotCross": "0.00025",
+                "spotAdd": "0.0"
+              }
+            ],
+            "mm": [
+              {
+                "makerFractionCutoff": "0.005",
+                "add": "-0.00001"
+              },
+              {
+                "makerFractionCutoff": "0.015",
+                "add": "-0.00002"
+              },
+              {
+                "makerFractionCutoff": "0.03",
+                "add": "-0.00003"
+              }
+            ]
+          },
+          "referralDiscount": "0.04",
+          "stakingDiscountTiers": [
+            {
+              "bpsOfMaxSupply": "0.0",
+              "discount": "0.0"
+            },
+            {
+              "bpsOfMaxSupply": "0.0001",
+              "discount": "0.05"
+            },
+            {
+              "bpsOfMaxSupply": "0.001",
+              "discount": "0.1"
+            },
+            {
+              "bpsOfMaxSupply": "0.01",
+              "discount": "0.15"
+            },
+            {
+              "bpsOfMaxSupply": "0.1",
+              "discount": "0.2"
+            },
+            {
+              "bpsOfMaxSupply": "1.0",
+              "discount": "0.3"
+            },
+            {
+              "bpsOfMaxSupply": "5.0",
+              "discount": "0.4"
+            }
+          ]
+        },
+        "userCrossRate": "0.00045",
+        "userAddRate": "0.00015",
+        "userSpotCrossRate": "0.0007",
+        "userSpotAddRate": "0.0004",
+        "activeReferralDiscount": "0.0",
+        "trial": null,
+        "feeTrialEscrow": "0.0",
+        "nextTrialAvailableTimestamp": null,
+        "stakingLink": null,
+        "activeStakingDiscount": {
+          "bpsOfMaxSupply": "0.0",
+          "discount": "0.0"
+        }
+      },
+      "account_budget": {
+        "cumVlm": "16.3",
+        "nRequestsUsed": 14,
+        "nRequestsCap": 10016,
+        "nRequestsSurplus": 0
+      },
+      "reconciliation_ready": true,
+      "clock_healthy": true,
+      "rate_limits_healthy": true,
+      "signed_transport_implemented": true
+    },
+    "identity": {
+      "status": "MATCH",
+      "derived_public_address": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+      "expected_public_address": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+      "team_address": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+      "key_sources": [
+        "algo-trading-bot/.env"
+      ],
+      "signature_created": false,
+      "exchange_actions_submitted": 0
+    },
+    "lease": {
+      "status": "HEALTHY_LOCAL",
+      "second_process_rejected": true,
+      "ownership_scope": "CURRENT_HOST_AND_OS_USER_ONLY",
+      "remote_ownership_verified": false,
+      "nonce_database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/testnet/anchorium-bot-1/nonces.sqlite",
+      "nonce_allocated": false,
+      "signature_created": false,
+      "exchange_actions_submitted": 0,
+      "owner_during_check": {
+        "nonce_database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/testnet/anchorium-bot-1/nonces.sqlite",
+        "pid": 63327,
+        "hostname": "Adeshs-MacBook-Air.local",
+        "started_ms": 1792042244438,
+        "api_wallet": "0x46c9bed595770150752e7fa3806449f81e0ec6f9"
+      },
+      "lease_released_after_check": true
+    },
+    "observed_ms": 1792042252329,
+    "bid": "80941.0",
+    "ask": "81024.0",
+    "spread_bps": "10.24912789800265489457598864",
+    "book": {
+      "symbol": "par:BTC",
+      "timestamp_ms": 1792042252029,
+      "bids": [
+        {
+          "price": "80941.0",
+          "quantity": "0.0275"
+        },
+        {
+          "price": "80926.0",
+          "quantity": "0.0012"
+        },
+        {
+          "price": "80925.0",
+          "quantity": "0.0617"
+        },
+        {
+          "price": "80917.0",
+          "quantity": "0.0012"
+        },
+        {
+          "price": "80894.0",
+          "quantity": "0.0618"
+        },
+        {
+          "price": "80841.0",
+          "quantity": "0.6173"
+        },
+        {
+          "price": "80699.0",
+          "quantity": "0.1239"
+        },
+        {
+          "price": "80489.0",
+          "quantity": "0.2484"
+        },
+        {
+          "price": "80099.0",
+          "quantity": "0.3745"
+        },
+        {
+          "price": "79515.0",
+          "quantity": "0.503"
+        },
+        {
+          "price": "78541.0",
+          "quantity": "0.5729"
+        },
+        {
+          "price": "78385.0",
+          "quantity": "0.0025"
+        },
+        {
+          "price": "77243.0",
+          "quantity": "0.6473"
+        },
+        {
+          "price": "74730.0",
+          "quantity": "0.0002"
+        }
+      ],
+      "asks": [
+        {
+          "price": "81024.0",
+          "quantity": "0.0012"
+        },
+        {
+          "price": "81039.0",
+          "quantity": "0.0308"
+        },
+        {
+          "price": "81055.0",
+          "quantity": "0.0617"
+        },
+        {
+          "price": "81088.0",
+          "quantity": "0.4321"
+        },
+        {
+          "price": "81091.0",
+          "quantity": "0.0012"
+        },
+        {
+          "price": "81163.0",
+          "quantity": "0.0036"
+        },
+        {
+          "price": "81283.0",
+          "quantity": "0.0615"
+        },
+        {
+          "price": "81478.0",
+          "quantity": "0.1227"
+        },
+        {
+          "price": "81787.0",
+          "quantity": "0.2445"
+        },
+        {
+          "price": "82176.0",
+          "quantity": "0.365"
+        },
+        {
+          "price": "82760.0",
+          "quantity": "0.4833"
+        },
+        {
+          "price": "83734.0",
+          "quantity": "0.5374"
+        },
+        {
+          "price": "85032.0",
+          "quantity": "0.588"
+        }
+      ],
+      "received_timestamp_ms": 1792042252328,
+      "processed_timestamp_ms": 1792042252328
+    },
+    "conservative_exit_fee": "0.00270",
+    "fee_scale": "None",
+    "fee_model": "Official HIP-3 upper bound; absent scale uses maximum 6x; fee-reducing discounts ignored",
+    "funding": "0.000141",
+    "break_even": "81805.52993081319562819612955",
+    "minimum_sell": "80780",
+    "currently_executable": true,
+    "planned_limit": "80861",
+    "exit_price_rule": "FRESH_BID_MINUS_10_BPS; FINAL_20_BPS_CEILING_ON_ALLOWANCE",
+    "depth": {
+      "available_quantity": "0.1534",
+      "requested_quantity": "0.0002",
+      "covered_quantity": "0.0002",
+      "shortfall": "0.0000",
+      "cost": "16.18820",
+      "vwap": "80941.0",
+      "limit": "80861",
+      "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+    },
+    "estimated_net_at_bid": "-0.1724391400",
+    "signed_actions": 0,
+    "protection_verified": false,
+    "organizer_whitelisting_confirmed": false
+  },
+  "proposals": {
+    "profit_proposal": {
+      "status": "AWAITING_EXACT_RECOVERY_APPROVAL",
+      "mandate_id": "eb5905216c2f2445c8f74a293f08f1a9a700f316c24e498b93a7c037b25b246c",
+      "mandate": {
+        "nonce": "2c36f8432dab40a89bed9a28995b28db",
+        "created_ms": 1792042236248,
+        "approval_deadline_ms": 1792042536248,
+        "source_hash": "31efb87290919c495e624dfad41c426f83ec45dc21bf52dc0b4580a1185edd2f",
+        "reliability_policy_hash": "1b8573d07a0f12f3653cf7b92f96c2120e8d61c3f210335ec850ba14ea582455",
+        "envelope_hash": "2bd89009fc8544463ab9835637034b179f853b1ef7752aae6f5959abe4c7f492",
+        "minimum_sell": "81811",
+        "mode": "PROFIT_ONLY_EXIT",
+        "quantity": "0.0002",
+        "minimum_net_profit": "0.001",
+        "window_ms": 600000,
+        "maximum_exit_fee": "0.003",
+        "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+        "api_wallet": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+        "symbol": "par:BTC",
+        "original_order_id": "62755970305",
+        "original_fill_id": "800659111758533"
+      },
+      "position": {
+        "symbol": "par:BTC",
+        "quantity": "0.0002",
+        "entry_price": "81512.0",
+        "unrealized_pnl": "-0.1044",
+        "margin_used": "16.198",
+        "liquidation_price": null,
+        "leverage": {
+          "type": "cross",
+          "value": 1
+        }
+      },
+      "orders": [],
+      "readiness": {
+        "status": "READY",
+        "reasons": [],
+        "team_address": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+        "signer_address": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+        "observed_ms": 1792042234516,
+        "agent_expiry_ms": 1806859924898,
+        "collateral": "999999.881069",
+        "account_mode": "unifiedAccount",
+        "fees": {
+          "dailyUserVlm": [
+            {
+              "date": "2026-10-01",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "6265670.4400000004"
+            },
+            {
+              "date": "2026-10-02",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "7303506.9500000002"
+            },
+            {
+              "date": "2026-10-03",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "2494978.4100000001"
+            },
+            {
+              "date": "2026-10-04",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "2879836.3700000001"
+            },
+            {
+              "date": "2026-10-05",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "4295368.6500000004"
+            },
+            {
+              "date": "2026-10-06",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "5789290.3600000003"
+            },
+            {
+              "date": "2026-10-07",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "5814031.0899999999"
+            },
+            {
+              "date": "2026-10-08",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "5803798.0599999996"
+            },
+            {
+              "date": "2026-10-09",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "16694743.0800000001"
+            },
+            {
+              "date": "2026-10-10",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "2682872.8100000001"
+            },
+            {
+              "date": "2026-10-11",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "2604769.8799999999"
+            },
+            {
+              "date": "2026-10-12",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "3546292.6699999999"
+            },
+            {
+              "date": "2026-10-13",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "4917761.7999999998"
+            },
+            {
+              "date": "2026-10-14",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "5397160.9699999997"
+            },
+            {
+              "date": "2026-10-15",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "1366544.9299999999"
+            }
+          ],
+          "feeSchedule": {
+            "cross": "0.00045",
+            "add": "0.00015",
+            "spotCross": "0.0007",
+            "spotAdd": "0.0004",
+            "tiers": {
+              "vip": [
+                {
+                  "ntlCutoff": "5000000.0",
+                  "cross": "0.0004",
+                  "add": "0.00012",
+                  "spotCross": "0.0006",
+                  "spotAdd": "0.0003"
+                },
+                {
+                  "ntlCutoff": "25000000.0",
+                  "cross": "0.00035",
+                  "add": "0.00008",
+                  "spotCross": "0.0005",
+                  "spotAdd": "0.0002"
+                },
+                {
+                  "ntlCutoff": "100000000.0",
+                  "cross": "0.0003",
+                  "add": "0.00004",
+                  "spotCross": "0.0004",
+                  "spotAdd": "0.0001"
+                },
+                {
+                  "ntlCutoff": "500000000.0",
+                  "cross": "0.00028",
+                  "add": "0.0",
+                  "spotCross": "0.00035",
+                  "spotAdd": "0.0"
+                },
+                {
+                  "ntlCutoff": "2000000000.0",
+                  "cross": "0.00026",
+                  "add": "0.0",
+                  "spotCross": "0.0003",
+                  "spotAdd": "0.0"
+                },
+                {
+                  "ntlCutoff": "7000000000.0",
+                  "cross": "0.00024",
+                  "add": "0.0",
+                  "spotCross": "0.00025",
+                  "spotAdd": "0.0"
+                }
+              ],
+              "mm": [
+                {
+                  "makerFractionCutoff": "0.005",
+                  "add": "-0.00001"
+                },
+                {
+                  "makerFractionCutoff": "0.015",
+                  "add": "-0.00002"
+                },
+                {
+                  "makerFractionCutoff": "0.03",
+                  "add": "-0.00003"
+                }
+              ]
+            },
+            "referralDiscount": "0.04",
+            "stakingDiscountTiers": [
+              {
+                "bpsOfMaxSupply": "0.0",
+                "discount": "0.0"
+              },
+              {
+                "bpsOfMaxSupply": "0.0001",
+                "discount": "0.05"
+              },
+              {
+                "bpsOfMaxSupply": "0.001",
+                "discount": "0.1"
+              },
+              {
+                "bpsOfMaxSupply": "0.01",
+                "discount": "0.15"
+              },
+              {
+                "bpsOfMaxSupply": "0.1",
+                "discount": "0.2"
+              },
+              {
+                "bpsOfMaxSupply": "1.0",
+                "discount": "0.3"
+              },
+              {
+                "bpsOfMaxSupply": "5.0",
+                "discount": "0.4"
+              }
+            ]
+          },
+          "userCrossRate": "0.00045",
+          "userAddRate": "0.00015",
+          "userSpotCrossRate": "0.0007",
+          "userSpotAddRate": "0.0004",
+          "activeReferralDiscount": "0.0",
+          "trial": null,
+          "feeTrialEscrow": "0.0",
+          "nextTrialAvailableTimestamp": null,
+          "stakingLink": null,
+          "activeStakingDiscount": {
+            "bpsOfMaxSupply": "0.0",
+            "discount": "0.0"
+          }
+        },
+        "account_budget": {
+          "cumVlm": "16.3",
+          "nRequestsUsed": 14,
+          "nRequestsCap": 10016,
+          "nRequestsSurplus": 0
+        },
+        "reconciliation_ready": true,
+        "clock_healthy": true,
+        "rate_limits_healthy": true,
+        "signed_transport_implemented": true
+      },
+      "identity": {
+        "status": "MATCH",
+        "derived_public_address": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+        "expected_public_address": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+        "team_address": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+        "key_sources": [
+          "algo-trading-bot/.env"
+        ],
+        "signature_created": false,
+        "exchange_actions_submitted": 0
+      },
+      "lease": {
+        "status": "HEALTHY_LOCAL",
+        "second_process_rejected": true,
+        "ownership_scope": "CURRENT_HOST_AND_OS_USER_ONLY",
+        "remote_ownership_verified": false,
+        "nonce_database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/testnet/anchorium-bot-1/nonces.sqlite",
+        "nonce_allocated": false,
+        "signature_created": false,
+        "exchange_actions_submitted": 0,
+        "owner_during_check": {
+          "nonce_database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/testnet/anchorium-bot-1/nonces.sqlite",
+          "pid": 63295,
+          "hostname": "Adeshs-MacBook-Air.local",
+          "started_ms": 1792042228003,
+          "api_wallet": "0x46c9bed595770150752e7fa3806449f81e0ec6f9"
+        },
+        "lease_released_after_check": true
+      },
+      "observed_ms": 1792042236248,
+      "bid": "80941.0",
+      "ask": "81024.0",
+      "spread_bps": "10.24912789800265489457598864",
+      "book": {
+        "symbol": "par:BTC",
+        "timestamp_ms": 1792042235501,
+        "bids": [
+          {
+            "price": "80941.0",
+            "quantity": "0.0275"
+          },
+          {
+            "price": "80926.0",
+            "quantity": "0.0012"
+          },
+          {
+            "price": "80925.0",
+            "quantity": "0.0617"
+          },
+          {
+            "price": "80917.0",
+            "quantity": "0.0012"
+          },
+          {
+            "price": "80894.0",
+            "quantity": "0.0618"
+          },
+          {
+            "price": "80841.0",
+            "quantity": "0.6173"
+          },
+          {
+            "price": "80699.0",
+            "quantity": "0.1239"
+          },
+          {
+            "price": "80489.0",
+            "quantity": "0.2484"
+          },
+          {
+            "price": "80099.0",
+            "quantity": "0.3745"
+          },
+          {
+            "price": "79515.0",
+            "quantity": "0.503"
+          },
+          {
+            "price": "78541.0",
+            "quantity": "0.5729"
+          },
+          {
+            "price": "78385.0",
+            "quantity": "0.0025"
+          },
+          {
+            "price": "77243.0",
+            "quantity": "0.6473"
+          },
+          {
+            "price": "74730.0",
+            "quantity": "0.0002"
+          }
+        ],
+        "asks": [
+          {
+            "price": "81024.0",
+            "quantity": "0.0012"
+          },
+          {
+            "price": "81039.0",
+            "quantity": "0.0308"
+          },
+          {
+            "price": "81055.0",
+            "quantity": "0.0617"
+          },
+          {
+            "price": "81088.0",
+            "quantity": "0.4321"
+          },
+          {
+            "price": "81091.0",
+            "quantity": "0.0012"
+          },
+          {
+            "price": "81163.0",
+            "quantity": "0.0036"
+          },
+          {
+            "price": "81283.0",
+            "quantity": "0.0615"
+          },
+          {
+            "price": "81478.0",
+            "quantity": "0.1227"
+          },
+          {
+            "price": "81787.0",
+            "quantity": "0.2445"
+          },
+          {
+            "price": "82176.0",
+            "quantity": "0.365"
+          },
+          {
+            "price": "82760.0",
+            "quantity": "0.4833"
+          },
+          {
+            "price": "83734.0",
+            "quantity": "0.5374"
+          },
+          {
+            "price": "85032.0",
+            "quantity": "0.588"
+          }
+        ],
+        "received_timestamp_ms": 1792042236248,
+        "processed_timestamp_ms": 1792042236248
+      },
+      "conservative_exit_fee": "0.00270",
+      "fee_scale": "None",
+      "fee_model": "Official HIP-3 upper bound; absent scale uses maximum 6x; fee-reducing discounts ignored",
+      "funding": "0.000141",
+      "break_even": "81805.52993081319562819612955",
+      "minimum_sell": "81811",
+      "currently_executable": false,
+      "planned_limit": "81811",
+      "exit_price_rule": "FRESH_BID_MINUS_10_BPS; FINAL_20_BPS_CEILING_ON_ALLOWANCE",
+      "depth": {
+        "available_quantity": "0",
+        "requested_quantity": "0.0002",
+        "covered_quantity": "0.0000",
+        "shortfall": "0.0002",
+        "cost": "0",
+        "vwap": null,
+        "limit": "81811",
+        "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+      },
+      "estimated_net_at_bid": "-0.1724391400",
+      "signed_actions": 0,
+      "protection_verified": false,
+      "organizer_whitelisting_confirmed": false
+    },
+    "immediate_close_proposal": {
+      "status": "AWAITING_EXACT_RECOVERY_APPROVAL",
+      "mandate_id": "bfba5781ae7c028a7cd1572061acd66a1ee488b38e48e7d698b2146a723c9332",
+      "mandate": {
+        "nonce": "14093fccb767417a9606257987bb4af3",
+        "created_ms": 1792042252329,
+        "approval_deadline_ms": 1792042552329,
+        "source_hash": "31efb87290919c495e624dfad41c426f83ec45dc21bf52dc0b4580a1185edd2f",
+        "reliability_policy_hash": "1b8573d07a0f12f3653cf7b92f96c2120e8d61c3f210335ec850ba14ea582455",
+        "envelope_hash": "df6c8a0726baf1fc5e2eed751bf45658bd22cb804af21a712cd7c81adb15c913",
+        "minimum_sell": "80780",
+        "mode": "BOUNDED_LOSS_EXIT",
+        "quantity": "0.0002",
+        "minimum_net_profit": "-0.50",
+        "window_ms": 120000,
+        "maximum_exit_fee": "0.003",
+        "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+        "api_wallet": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+        "symbol": "par:BTC",
+        "original_order_id": "62755970305",
+        "original_fill_id": "800659111758533"
+      },
+      "position": {
+        "symbol": "par:BTC",
+        "quantity": "0.0002",
+        "entry_price": "81512.0",
+        "unrealized_pnl": "-0.1048",
+        "margin_used": "16.1976",
+        "liquidation_price": null,
+        "leverage": {
+          "type": "cross",
+          "value": 1
+        }
+      },
+      "orders": [],
+      "readiness": {
+        "status": "READY",
+        "reasons": [],
+        "team_address": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+        "signer_address": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+        "observed_ms": 1792042250309,
+        "agent_expiry_ms": 1806859924898,
+        "collateral": "999999.880669",
+        "account_mode": "unifiedAccount",
+        "fees": {
+          "dailyUserVlm": [
+            {
+              "date": "2026-10-01",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "6265670.4400000004"
+            },
+            {
+              "date": "2026-10-02",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "7303506.9500000002"
+            },
+            {
+              "date": "2026-10-03",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "2494978.4100000001"
+            },
+            {
+              "date": "2026-10-04",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "2879836.3700000001"
+            },
+            {
+              "date": "2026-10-05",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "4295368.6500000004"
+            },
+            {
+              "date": "2026-10-06",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "5789290.3600000003"
+            },
+            {
+              "date": "2026-10-07",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "5814031.0899999999"
+            },
+            {
+              "date": "2026-10-08",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "5803798.0599999996"
+            },
+            {
+              "date": "2026-10-09",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "16694743.0800000001"
+            },
+            {
+              "date": "2026-10-10",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "2682872.8100000001"
+            },
+            {
+              "date": "2026-10-11",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "2604769.8799999999"
+            },
+            {
+              "date": "2026-10-12",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "3546292.6699999999"
+            },
+            {
+              "date": "2026-10-13",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "4917761.7999999998"
+            },
+            {
+              "date": "2026-10-14",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "5397160.9699999997"
+            },
+            {
+              "date": "2026-10-15",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "1369385.1200000001"
+            }
+          ],
+          "feeSchedule": {
+            "cross": "0.00045",
+            "add": "0.00015",
+            "spotCross": "0.0007",
+            "spotAdd": "0.0004",
+            "tiers": {
+              "vip": [
+                {
+                  "ntlCutoff": "5000000.0",
+                  "cross": "0.0004",
+                  "add": "0.00012",
+                  "spotCross": "0.0006",
+                  "spotAdd": "0.0003"
+                },
+                {
+                  "ntlCutoff": "25000000.0",
+                  "cross": "0.00035",
+                  "add": "0.00008",
+                  "spotCross": "0.0005",
+                  "spotAdd": "0.0002"
+                },
+                {
+                  "ntlCutoff": "100000000.0",
+                  "cross": "0.0003",
+                  "add": "0.00004",
+                  "spotCross": "0.0004",
+                  "spotAdd": "0.0001"
+                },
+                {
+                  "ntlCutoff": "500000000.0",
+                  "cross": "0.00028",
+                  "add": "0.0",
+                  "spotCross": "0.00035",
+                  "spotAdd": "0.0"
+                },
+                {
+                  "ntlCutoff": "2000000000.0",
+                  "cross": "0.00026",
+                  "add": "0.0",
+                  "spotCross": "0.0003",
+                  "spotAdd": "0.0"
+                },
+                {
+                  "ntlCutoff": "7000000000.0",
+                  "cross": "0.00024",
+                  "add": "0.0",
+                  "spotCross": "0.00025",
+                  "spotAdd": "0.0"
+                }
+              ],
+              "mm": [
+                {
+                  "makerFractionCutoff": "0.005",
+                  "add": "-0.00001"
+                },
+                {
+                  "makerFractionCutoff": "0.015",
+                  "add": "-0.00002"
+                },
+                {
+                  "makerFractionCutoff": "0.03",
+                  "add": "-0.00003"
+                }
+              ]
+            },
+            "referralDiscount": "0.04",
+            "stakingDiscountTiers": [
+              {
+                "bpsOfMaxSupply": "0.0",
+                "discount": "0.0"
+              },
+              {
+                "bpsOfMaxSupply": "0.0001",
+                "discount": "0.05"
+              },
+              {
+                "bpsOfMaxSupply": "0.001",
+                "discount": "0.1"
+              },
+              {
+                "bpsOfMaxSupply": "0.01",
+                "discount": "0.15"
+              },
+              {
+                "bpsOfMaxSupply": "0.1",
+                "discount": "0.2"
+              },
+              {
+                "bpsOfMaxSupply": "1.0",
+                "discount": "0.3"
+              },
+              {
+                "bpsOfMaxSupply": "5.0",
+                "discount": "0.4"
+              }
+            ]
+          },
+          "userCrossRate": "0.00045",
+          "userAddRate": "0.00015",
+          "userSpotCrossRate": "0.0007",
+          "userSpotAddRate": "0.0004",
+          "activeReferralDiscount": "0.0",
+          "trial": null,
+          "feeTrialEscrow": "0.0",
+          "nextTrialAvailableTimestamp": null,
+          "stakingLink": null,
+          "activeStakingDiscount": {
+            "bpsOfMaxSupply": "0.0",
+            "discount": "0.0"
+          }
+        },
+        "account_budget": {
+          "cumVlm": "16.3",
+          "nRequestsUsed": 14,
+          "nRequestsCap": 10016,
+          "nRequestsSurplus": 0
+        },
+        "reconciliation_ready": true,
+        "clock_healthy": true,
+        "rate_limits_healthy": true,
+        "signed_transport_implemented": true
+      },
+      "identity": {
+        "status": "MATCH",
+        "derived_public_address": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+        "expected_public_address": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+        "team_address": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+        "key_sources": [
+          "algo-trading-bot/.env"
+        ],
+        "signature_created": false,
+        "exchange_actions_submitted": 0
+      },
+      "lease": {
+        "status": "HEALTHY_LOCAL",
+        "second_process_rejected": true,
+        "ownership_scope": "CURRENT_HOST_AND_OS_USER_ONLY",
+        "remote_ownership_verified": false,
+        "nonce_database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/testnet/anchorium-bot-1/nonces.sqlite",
+        "nonce_allocated": false,
+        "signature_created": false,
+        "exchange_actions_submitted": 0,
+        "owner_during_check": {
+          "nonce_database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/testnet/anchorium-bot-1/nonces.sqlite",
+          "pid": 63327,
+          "hostname": "Adeshs-MacBook-Air.local",
+          "started_ms": 1792042244438,
+          "api_wallet": "0x46c9bed595770150752e7fa3806449f81e0ec6f9"
+        },
+        "lease_released_after_check": true
+      },
+      "observed_ms": 1792042252329,
+      "bid": "80941.0",
+      "ask": "81024.0",
+      "spread_bps": "10.24912789800265489457598864",
+      "book": {
+        "symbol": "par:BTC",
+        "timestamp_ms": 1792042252029,
+        "bids": [
+          {
+            "price": "80941.0",
+            "quantity": "0.0275"
+          },
+          {
+            "price": "80926.0",
+            "quantity": "0.0012"
+          },
+          {
+            "price": "80925.0",
+            "quantity": "0.0617"
+          },
+          {
+            "price": "80917.0",
+            "quantity": "0.0012"
+          },
+          {
+            "price": "80894.0",
+            "quantity": "0.0618"
+          },
+          {
+            "price": "80841.0",
+            "quantity": "0.6173"
+          },
+          {
+            "price": "80699.0",
+            "quantity": "0.1239"
+          },
+          {
+            "price": "80489.0",
+            "quantity": "0.2484"
+          },
+          {
+            "price": "80099.0",
+            "quantity": "0.3745"
+          },
+          {
+            "price": "79515.0",
+            "quantity": "0.503"
+          },
+          {
+            "price": "78541.0",
+            "quantity": "0.5729"
+          },
+          {
+            "price": "78385.0",
+            "quantity": "0.0025"
+          },
+          {
+            "price": "77243.0",
+            "quantity": "0.6473"
+          },
+          {
+            "price": "74730.0",
+            "quantity": "0.0002"
+          }
+        ],
+        "asks": [
+          {
+            "price": "81024.0",
+            "quantity": "0.0012"
+          },
+          {
+            "price": "81039.0",
+            "quantity": "0.0308"
+          },
+          {
+            "price": "81055.0",
+            "quantity": "0.0617"
+          },
+          {
+            "price": "81088.0",
+            "quantity": "0.4321"
+          },
+          {
+            "price": "81091.0",
+            "quantity": "0.0012"
+          },
+          {
+            "price": "81163.0",
+            "quantity": "0.0036"
+          },
+          {
+            "price": "81283.0",
+            "quantity": "0.0615"
+          },
+          {
+            "price": "81478.0",
+            "quantity": "0.1227"
+          },
+          {
+            "price": "81787.0",
+            "quantity": "0.2445"
+          },
+          {
+            "price": "82176.0",
+            "quantity": "0.365"
+          },
+          {
+            "price": "82760.0",
+            "quantity": "0.4833"
+          },
+          {
+            "price": "83734.0",
+            "quantity": "0.5374"
+          },
+          {
+            "price": "85032.0",
+            "quantity": "0.588"
+          }
+        ],
+        "received_timestamp_ms": 1792042252328,
+        "processed_timestamp_ms": 1792042252328
+      },
+      "conservative_exit_fee": "0.00270",
+      "fee_scale": "None",
+      "fee_model": "Official HIP-3 upper bound; absent scale uses maximum 6x; fee-reducing discounts ignored",
+      "funding": "0.000141",
+      "break_even": "81805.52993081319562819612955",
+      "minimum_sell": "80780",
+      "currently_executable": true,
+      "planned_limit": "80861",
+      "exit_price_rule": "FRESH_BID_MINUS_10_BPS; FINAL_20_BPS_CEILING_ON_ALLOWANCE",
+      "depth": {
+        "available_quantity": "0.1534",
+        "requested_quantity": "0.0002",
+        "covered_quantity": "0.0002",
+        "shortfall": "0.0000",
+        "cost": "16.18820",
+        "vwap": "80941.0",
+        "limit": "80861",
+        "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+      },
+      "estimated_net_at_bid": "-0.1724391400",
+      "signed_actions": 0,
+      "protection_verified": false,
+      "organizer_whitelisting_confirmed": false
+    }
+  },
+  "new_recovery_exit_intents": [],
+  "nonce_tables_unchanged_since_task_start": true,
+  "original_buy_proof_sha256": {
+    "docs/qualification_2026-10-15/WHITELIST_TRADE_PROOF.json": "3f9b7decb3ca92810fc0e146373c667e621db909d621210cd52cb96f7886a0ab",
+    "docs/qualification_2026-10-15/session_preparation/authorized_session/WHITELIST_TRADE_PROOF.json": "2db49793b45e88aa5e36b24a5ba3a393be874fe7cd251c19e2c23bd45e45faca"
+  },
+  "qualification_fill_verified": true,
+  "organizer_whitelisting_confirmed": false,
+  "protection_verified": false,
+  "realized_roundtrip_pnl": null,
+  "production_mode": "PAPER",
+  "allow_live_orders": false,
+  "practice_ready": false,
+  "live_ready": false
+}

@@ -1,0 +1,186 @@
+{
+  "status": "V8_4_INVESTIGATION_COMPLETE_EXECUTION_BLOCKED",
+  "written_utc": "2026-10-12T10:32:49.077214+00:00",
+  "source_hash": "f1b66075b6769ee24b3e80e8cc3c313868db520de661b6d5deefe72135ff4ca1",
+  "production_source_files_modified": [],
+  "source_files_added": [
+    "algo-trading-bot/test_partial_fill_safety_v8_4.py"
+  ],
+  "old_source_and_configuration_files_unchanged": 215,
+  "root_cause": "Local ordinary minimum blocks small closes/stops; full partial-fill closure and protection capability for one-lot residuals is not established",
+  "venue_evidence": {
+    "historical_hype_full_closes": [
+      {
+        "coin": "par:HYPE",
+        "order_id": 61997055149,
+        "event_utc": "2026-10-06T15:38:11.928000+00:00",
+        "original_quantity": "0.03",
+        "original_limit_price": "93.218",
+        "original_notional": "2.79654",
+        "reduce_only": true,
+        "tif": "Ioc",
+        "starting_position": "-0.03",
+        "actual_fill_size": "0.03",
+        "actual_fill_price": "92.847",
+        "post_fill_quantity": "0.00",
+        "scope": "OTHER_PUBLIC_WALLET_HISTORICAL_CLOSE_NOT_ANCHORIUM_CERTIFICATION"
+      },
+      {
+        "coin": "par:HYPE",
+        "order_id": 61745948135,
+        "event_utc": "2026-10-03T14:11:33.873000+00:00",
+        "original_quantity": "0.07",
+        "original_limit_price": "87.933",
+        "original_notional": "6.15531",
+        "reduce_only": true,
+        "tif": "Ioc",
+        "starting_position": "0.07",
+        "actual_fill_size": "0.07",
+        "actual_fill_price": "88.202",
+        "post_fill_quantity": "0.00",
+        "scope": "OTHER_PUBLIC_WALLET_HISTORICAL_CLOSE_NOT_ANCHORIUM_CERTIFICATION"
+      }
+    ],
+    "reread_completed_utc": "2026-10-12T10:22:14.751084+00:00",
+    "documented_general_exemption_established": false,
+    "par_trigger_records_found": 0,
+    "one_lot_hype_quantity": "0.01",
+    "minimum_exception_scope": "Two specific historical HYPE full closes verified; no generalization to smaller quantities, other markets or protective operations"
+  },
+  "chosen_safe_solution": "Keep certification entry and ordinary minimum checks blocked; retain durable residual/restart containment until supported complete capability is established",
+  "tests": {
+    "prior_baseline": 1522,
+    "added": 16,
+    "focused_passed": 98,
+    "full_totals": {
+      "tests": 1538,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "passed": true,
+    "xml_sha256": "e62d53cdb15d8ba7506a9263340bd49e8b25be8604b43b4925891fb804122ff2",
+    "strategy_freeze_passed": true,
+    "phase0_passed": true,
+    "signal_brain_sha256": "bff940ac5ed35f71ed3dfb537ba15d20dcec35a4e62a938d2f0619c6e9309d83",
+    "sdk_version": "0.24.0"
+  },
+  "fresh_account": {
+    "started_utc": "2026-10-12T10:27:35.263085+00:00",
+    "finished_utc": "2026-10-12T10:27:42.435987+00:00",
+    "network": "testnet",
+    "dex": "par",
+    "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+    "api_wallet": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+    "collateral": "1000000.0",
+    "unified": "unifiedAccount",
+    "agent_expiry_ms": 1806859924898,
+    "all_ten_one_x_cross": true,
+    "observed_flat": true,
+    "actual_par_fill_count": 0,
+    "clock": {
+      "state": "HEALTHY",
+      "reason": null,
+      "offset_ms": -318,
+      "last_reference_ms": 1791800857012,
+      "fresh_confirmations": 2
+    },
+    "public_weight": 458,
+    "account_budget": {
+      "cumVlm": "0.0",
+      "nRequestsUsed": 13,
+      "nRequestsCap": 10000,
+      "nRequestsSurplus": 0
+    },
+    "durable_certification_barrier_verified": false,
+    "readiness_reasons": [
+      "ACCOUNT_RECONCILIATION_REQUIRED"
+    ],
+    "local_signer_verified": true,
+    "local_nonce_ownership_verified": true,
+    "remote_or_sole_host_verified": false,
+    "eth_reference_level_counts": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "reference_reads_certify_executable_liquidity": false
+  },
+  "safety": {
+    "EXECUTION_MODE": "PAPER",
+    "ALLOW_LIVE_ORDERS": false,
+    "protection_enabled": false,
+    "actual_wallet_signatures_created": 0,
+    "exchange_submissions": 0,
+    "orders_created": 0,
+    "cancellations_submitted": 0,
+    "account_administration": 0,
+    "autonomous_trading_enabled": false,
+    "general_market_scan_repeated": false,
+    "ready_proposal_created": false,
+    "operator_approval_created": false,
+    "recurring_tasks_created": 0
+  },
+  "flags": {
+    "HISTORICAL_HYPE_SUBMINIMUM_FULL_CLOSE_OBSERVED": true,
+    "ONE_LOT_FULL_CLOSE_CAPABILITY_VERIFIED": false,
+    "SUBMINIMUM_PROTECTION_CAPABILITY_VERIFIED": false,
+    "PARTIAL_FILL_EXIT_READY": false,
+    "ACTUAL_PROTECTION_READY": false,
+    "CONTROLLED_EXECUTION_READY": false,
+    "LONG_CERTIFIED": false,
+    "SHORT_CERTIFIED": false,
+    "FUNDED_RECOVERY_CERTIFIED": false,
+    "PRACTICE_READY": false,
+    "LIVE_READY": false,
+    "PRODUCTION_CHANGED": false
+  },
+  "sqlite_checks": [
+    {
+      "path": "docs/certification_v8_4_2026-10-12/account_preflight_final/read_only.sqlite",
+      "integrity": "ok",
+      "counts": {
+        "intents": 0,
+        "api_actions": 0,
+        "signed_management": 0
+      }
+    },
+    {
+      "path": "docs/certification_v8_4_2026-10-12/account_preflight_sandbox/read_only.sqlite",
+      "integrity": "ok",
+      "counts": {
+        "intents": 0,
+        "api_actions": 0,
+        "signed_management": 0
+      }
+    },
+    {
+      "path": "docs/certification_v8_4_2026-10-12/account_preflight_verified/read_only.sqlite",
+      "integrity": "ok",
+      "counts": {
+        "intents": 0,
+        "api_actions": 0,
+        "signed_management": 0
+      }
+    }
+  ],
+  "net_actual_anchorium_certification_pnl": null,
+  "remaining_blockers": [
+    "General one-lot exact full-position close capability unverified",
+    "Subminimum protective-order acceptance/trigger behavior unverified",
+    "Fresh executable liquidity not certified; focused ETH books empty",
+    "Future durable certification reconciliation and sole signer-host verification required",
+    "No exact real-trade authorization exists"
+  ],
+  "exact_authorization_proposal": null,
+  "next_safe_action": "Obtain authoritative par testnet clarification using organizer_question_draft.md, then implement only verified scope before preparing an exact approved trade",
+  "git_commit": "33c7cfe9ec241ccc0241144a8dccfd9a06df553a",
+  "git_branch": "perpetual-alpha-migration",
+  "dirty_source_hash": "f1b66075b6769ee24b3e80e8cc3c313868db520de661b6d5deefe72135ff4ca1",
+  "legacy_inventory_receipt": "docs/certification_v8_4_2026-10-12/legacy_inventory_receipt.json"
+}

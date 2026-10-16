@@ -1,0 +1,32 @@
+--- before/algo-trading-bot/test_delegated_qualification.py
++++ algo-trading-bot/test_delegated_qualification.py
+@@ -47,12 +47,27 @@
+     c.auth.delegation=replace(c.delegation,acceptance=a);c.auth.approval=a
+ 
+ 
+-def test_real_calendar_end_is_october_14_2359_ist():
++def test_real_calendar_end_is_october_15_2359_ist():
+     import exchange.delegated_qualification as module
+     ist=timezone(timedelta(hours=5,minutes=30))
+-    assert datetime.fromtimestamp(module.END_MS/1000,ist).isoformat()=='2026-10-14T23:59:00+05:30'
++    assert datetime.fromtimestamp(module.START_MS/1000,ist).isoformat()=='2026-10-15T00:00:00+05:30'
++    assert datetime.fromtimestamp(module.END_MS/1000,ist).isoformat()==SESSION_SCOPE['end_ist']=='2026-10-15T23:59:00+05:30'
++    assert datetime.fromtimestamp((module.END_MS-SESSION_SCOPE['entry_reserve_ms'])/1000,ist).isoformat()=='2026-10-15T23:57:30+05:30'
+     assert SESSION_SCOPE['maximum_opening_notional']=='20'
+     assert SESSION_SCOPE['quantity']=='0.0002' and SESSION_SCOPE['maximum_buy_price']=='100000'
++
++
++@pytest.mark.parametrize('change',['yesterday_created','extended_expiry','tomorrow_scope','old_october_14_mandate'])
++def test_october_15_renewal_never_extends_or_reuses_old_authority(change):
++    import exchange.delegated_qualification as module
++    mandate=SessionMandate('ab'*16,module.START_MS+1,'offline-source','offline-policy')
++    if change=='yesterday_created':mandate=replace(mandate,created_ms=module.START_MS-1)
++    if change=='extended_expiry':mandate=replace(mandate,expires_ms=module.END_MS+1)
++    if change=='tomorrow_scope':mandate=replace(mandate,scope=dict(mandate.scope,end_ist='2026-10-16T23:59:00+05:30'))
++    if change=='old_october_14_mandate':
++        old=Path(__file__).resolve().parents[1]/'docs/readiness_repair_2026-10-14/session_preparation/session_mandate.json'
++        mandate=SessionMandate(**json.loads(old.read_text()))
++    with pytest.raises(ExchangeError,match='INVALID_DELEGATED_TESTNET_SESSION_SCOPE'):mandate.require()
+ 
+ 
+ @pytest.mark.parametrize('key,value',[('network','mainnet'),('dex','pa'),('symbol','par:ETH'),

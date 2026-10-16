@@ -1,0 +1,134 @@
+TEAM ANCHORIUM — CANDLE AVAILABILITY
+Network: Hyperliquid Testnet; DEX: par
+
+OVERALL: STOPPED
+PROCESS: STOPPED
+TRANSPORT: CONNECTED
+SUBSCRIPTIONS: 40 / 40
+MISSING: 0; DUPLICATES: 0
+RECONCILIATION: PASS
+USABLE MARKETS: 0 / 10
+
+MARKETS:
+  par:BRENT: QUARANTINED
+    reasons: INSUFFICIENT_COMPLETED_HISTORY, LAST_CANDLE_TIME_STALE, LAST_ORDERBOOK_TIME_STALE, LAST_TICK_TIME_STALE
+    completed bars: 257; data: INSUFFICIENT_HISTORY
+  par:BTC: QUARANTINED
+    reasons: INSUFFICIENT_COMPLETED_HISTORY, LAST_CANDLE_TIME_STALE, LAST_ORDERBOOK_TIME_STALE, LAST_TICK_TIME_STALE
+    completed bars: 293; data: INSUFFICIENT_HISTORY
+  par:ETH: QUARANTINED
+    reasons: INSUFFICIENT_COMPLETED_HISTORY, LAST_CANDLE_TIME_STALE, LAST_ORDERBOOK_TIME_STALE, LAST_TICK_TIME_STALE
+    completed bars: 288; data: INSUFFICIENT_HISTORY
+  par:EWJ: QUARANTINED
+    reasons: INSUFFICIENT_COMPLETED_HISTORY, LAST_CANDLE_TIME_STALE, LAST_ORDERBOOK_TIME_STALE, LAST_TICK_TIME_STALE
+    completed bars: 221; data: INSUFFICIENT_HISTORY
+  par:EWY: QUARANTINED
+    reasons: INSUFFICIENT_COMPLETED_HISTORY, LAST_CANDLE_TIME_STALE, LAST_ORDERBOOK_TIME_STALE, LAST_TICK_TIME_STALE
+    completed bars: 252; data: INSUFFICIENT_HISTORY
+  par:GOLD: QUARANTINED
+    reasons: STRATEGY_CANDLE_GAP_OR_DUPLICATE, LAST_ORDERBOOK_TIME_STALE, LAST_TICK_TIME_STALE
+    completed bars: 296; data: INVALID_DATA
+  par:HYPE: QUARANTINED
+    reasons: INSUFFICIENT_COMPLETED_HISTORY, LAST_CANDLE_TIME_STALE, LAST_ORDERBOOK_TIME_STALE, LAST_TICK_TIME_STALE
+    completed bars: 285; data: INSUFFICIENT_HISTORY
+  par:SP500: QUARANTINED
+    reasons: INSUFFICIENT_COMPLETED_HISTORY, LAST_CANDLE_TIME_STALE, LAST_ORDERBOOK_TIME_STALE, LAST_TICK_TIME_STALE
+    completed bars: 295; data: INSUFFICIENT_HISTORY
+  par:USDEUR: QUARANTINED
+    reasons: INSUFFICIENT_COMPLETED_HISTORY, LAST_CANDLE_TIME_STALE, LAST_ORDERBOOK_TIME_STALE, LAST_TICK_TIME_STALE
+    completed bars: 221; data: INSUFFICIENT_HISTORY
+  par:USDJPY: QUARANTINED
+    reasons: INSUFFICIENT_COMPLETED_HISTORY, LAST_CANDLE_TIME_STALE, LAST_ORDERBOOK_TIME_STALE, LAST_TICK_TIME_STALE
+    completed bars: 248; data: INSUFFICIENT_HISTORY
+
+FEED_READY: NO
+TRADE_READY: NO (PAPER safety lock)
+SIGNAL / SCANNER: NO_TRADE
+GLOBAL BLOCKER: NO_HEALTHY_PUBLIC_MARKET_FEED
+CHECK RESULT: PAPER_PROCESS_STOPPED; EXIT CODE: 3
+ACCOUNT TRUTH: local PAPER ledger; funded execution is not certified.
+CANDLE SNAPSHOT TIMESTAMP MS: 1791655879169
+
+Market | Valid in latest expected window | Missing | Contiguous tail | Last close age ms | Status
+par:BRENT | 253/300 | 47 | 257 | 2839169 | QUARANTINED
+  missing timestamps (first 5): [1791653040000, 1791653100000, 1791653160000, 1791653220000, 1791653280000]
+  classifications: {1791653040000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED'], 1791653100000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED'], 1791653160000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED'], 1791653220000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED'], 1791653280000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED']}
+  full UTC scanner input: {'observed_ms': 1791655582891, 'as_of_ms': 1791655582085, 'requested_start_ms': 1791589560000, 'requested_end_ms': 1791655559999, 'completed_count': 1058, 'requested_interval_count': 1100, 'requested_window_missing_count': 42, 'last_close_ms': 1791653040000, 'history_gate_passed': False, 'reason': 'COMPLETED_CANDLE_STALE', 'scope': 'ACTUAL_SCANNER_REST_INPUT; FROZEN_VALIDATION; NOT_SIGNAL_OR_ADMISSION'}
+  recovery: pending=False, attempts=8, failures=8, recovered=268, next=1791655978330, deferred=None
+  REST live reception delay: n=0, median=None, p95=None, censored=15
+  WS live reception delay: n=0, median=None, p95=None, censored=15
+par:BTC | 292/300 | 8 | 293 | 499169 | QUARANTINED
+  missing timestamps (first 5): [1791655380000, 1791655440000, 1791655500000, 1791655560000, 1791655620000]
+  classifications: {1791655380000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED', 'WEBSOCKET_EVENT_NOT_OBSERVED'], 1791655440000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED', 'WEBSOCKET_EVENT_NOT_OBSERVED'], 1791655500000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED', 'WEBSOCKET_EVENT_NOT_OBSERVED'], 1791655560000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED', 'WEBSOCKET_EVENT_NOT_OBSERVED'], 1791655620000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED', 'WEBSOCKET_EVENT_NOT_OBSERVED']}
+  full UTC scanner input: {'observed_ms': 1791655583657, 'as_of_ms': 1791655582085, 'requested_start_ms': 1791589560000, 'requested_end_ms': 1791655559999, 'completed_count': 1097, 'requested_interval_count': 1100, 'requested_window_missing_count': 3, 'last_close_ms': 1791655380000, 'history_gate_passed': False, 'reason': 'COMPLETED_CANDLE_STALE', 'scope': 'ACTUAL_SCANNER_REST_INPUT; FROZEN_VALIDATION; NOT_SIGNAL_OR_ADMISSION'}
+  recovery: pending=False, attempts=10, failures=9, recovered=307, next=1791656100683, deferred=None
+  REST live reception delay: n=7, median=203657.0, p95=324374.99999999994, censored=8
+  WS live reception delay: n=0, median=None, p95=None, censored=15
+par:ETH | 284/300 | 16 | 288 | 979169 | QUARANTINED
+  missing timestamps (first 5): [1791654900000, 1791654960000, 1791655020000, 1791655080000, 1791655140000]
+  classifications: {1791654900000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED'], 1791654960000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED', 'WEBSOCKET_EVENT_NOT_OBSERVED'], 1791655020000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED', 'WEBSOCKET_EVENT_NOT_OBSERVED'], 1791655080000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED', 'WEBSOCKET_EVENT_NOT_OBSERVED'], 1791655140000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED', 'WEBSOCKET_EVENT_NOT_OBSERVED']}
+  full UTC scanner input: {'observed_ms': 1791655584581, 'as_of_ms': 1791655582085, 'requested_start_ms': 1791589560000, 'requested_end_ms': 1791655559999, 'completed_count': 1089, 'requested_interval_count': 1100, 'requested_window_missing_count': 11, 'last_close_ms': 1791654900000, 'history_gate_passed': False, 'reason': 'COMPLETED_CANDLE_STALE', 'scope': 'ACTUAL_SCANNER_REST_INPUT; FROZEN_VALIDATION; NOT_SIGNAL_OR_ADMISSION'}
+  recovery: pending=False, attempts=8, failures=8, recovered=299, next=1791655978330, deferred=None
+  REST live reception delay: n=0, median=None, p95=None, censored=15
+  WS live reception delay: n=0, median=None, p95=None, censored=15
+par:EWJ | 217/300 | 83 | 221 | 4999169 | QUARANTINED
+  missing timestamps (first 5): [1791650880000, 1791650940000, 1791651000000, 1791651060000, 1791651120000]
+  classifications: {1791650880000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED'], 1791650940000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED'], 1791651000000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED'], 1791651060000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED'], 1791651120000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED']}
+  full UTC scanner input: {'observed_ms': 1791655585312, 'as_of_ms': 1791655582085, 'requested_start_ms': 1791589560000, 'requested_end_ms': 1791655559999, 'completed_count': 1022, 'requested_interval_count': 1100, 'requested_window_missing_count': 78, 'last_close_ms': 1791650880000, 'history_gate_passed': False, 'reason': 'COMPLETED_CANDLE_STALE', 'scope': 'ACTUAL_SCANNER_REST_INPUT; FROZEN_VALIDATION; NOT_SIGNAL_OR_ADMISSION'}
+  recovery: pending=False, attempts=8, failures=8, recovered=232, next=1791655978330, deferred=None
+  REST live reception delay: n=0, median=None, p95=None, censored=15
+  WS live reception delay: n=0, median=None, p95=None, censored=15
+par:EWY | 248/300 | 52 | 252 | 3139169 | QUARANTINED
+  missing timestamps (first 5): [1791652740000, 1791652800000, 1791652860000, 1791652920000, 1791652980000]
+  classifications: {1791652740000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED'], 1791652800000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED'], 1791652860000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED'], 1791652920000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED'], 1791652980000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED']}
+  full UTC scanner input: {'observed_ms': 1791655586133, 'as_of_ms': 1791655582085, 'requested_start_ms': 1791589560000, 'requested_end_ms': 1791655559999, 'completed_count': 1053, 'requested_interval_count': 1100, 'requested_window_missing_count': 47, 'last_close_ms': 1791652740000, 'history_gate_passed': False, 'reason': 'COMPLETED_CANDLE_STALE', 'scope': 'ACTUAL_SCANNER_REST_INPUT; FROZEN_VALIDATION; NOT_SIGNAL_OR_ADMISSION'}
+  recovery: pending=False, attempts=8, failures=8, recovered=263, next=1791655978330, deferred=None
+  REST live reception delay: n=0, median=None, p95=None, censored=15
+  WS live reception delay: n=0, median=None, p95=None, censored=15
+par:GOLD | 292/300 | 8 | 1 | 19169 | QUARANTINED
+  missing timestamps (first 5): [1791655320000, 1791655380000, 1791655440000, 1791655500000, 1791655560000]
+  classifications: {1791655320000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED', 'WEBSOCKET_EVENT_NOT_OBSERVED'], 1791655380000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED', 'WEBSOCKET_EVENT_NOT_OBSERVED'], 1791655440000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED', 'WEBSOCKET_EVENT_NOT_OBSERVED'], 1791655500000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED', 'WEBSOCKET_EVENT_NOT_OBSERVED'], 1791655560000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED', 'WEBSOCKET_EVENT_NOT_OBSERVED']}
+  full UTC scanner input: {'observed_ms': 1791655586558, 'as_of_ms': 1791655582085, 'requested_start_ms': 1791589560000, 'requested_end_ms': 1791655559999, 'completed_count': 1096, 'requested_interval_count': 1100, 'requested_window_missing_count': 4, 'last_close_ms': 1791655320000, 'history_gate_passed': False, 'reason': 'COMPLETED_CANDLE_STALE', 'scope': 'ACTUAL_SCANNER_REST_INPUT; FROZEN_VALIDATION; NOT_SIGNAL_OR_ADMISSION'}
+  recovery: pending=False, attempts=11, failures=10, recovered=306, next=1791655978330, deferred=None
+  REST live reception delay: n=6, median=124510.0, p95=252185.0, censored=9
+  WS live reception delay: n=0, median=None, p95=None, censored=15
+par:HYPE | 281/300 | 19 | 285 | 1159169 | QUARANTINED
+  missing timestamps (first 5): [1791654720000, 1791654780000, 1791654840000, 1791654900000, 1791654960000]
+  classifications: {1791654720000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED'], 1791654780000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED'], 1791654840000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED'], 1791654900000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED'], 1791654960000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED', 'WEBSOCKET_EVENT_NOT_OBSERVED']}
+  full UTC scanner input: {'observed_ms': 1791655587311, 'as_of_ms': 1791655582085, 'requested_start_ms': 1791589560000, 'requested_end_ms': 1791655559999, 'completed_count': 1086, 'requested_interval_count': 1100, 'requested_window_missing_count': 14, 'last_close_ms': 1791654720000, 'history_gate_passed': False, 'reason': 'COMPLETED_CANDLE_STALE', 'scope': 'ACTUAL_SCANNER_REST_INPUT; FROZEN_VALIDATION; NOT_SIGNAL_OR_ADMISSION'}
+  recovery: pending=False, attempts=8, failures=8, recovered=296, next=1791655978330, deferred=None
+  REST live reception delay: n=0, median=None, p95=None, censored=15
+  WS live reception delay: n=0, median=None, p95=None, censored=15
+par:SP500 | 291/300 | 9 | 295 | 559169 | QUARANTINED
+  missing timestamps (first 5): [1791655320000, 1791655380000, 1791655440000, 1791655500000, 1791655560000]
+  classifications: {1791655320000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED', 'WEBSOCKET_EVENT_NOT_OBSERVED'], 1791655380000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED', 'WEBSOCKET_EVENT_NOT_OBSERVED'], 1791655440000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED', 'WEBSOCKET_EVENT_NOT_OBSERVED'], 1791655500000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED', 'WEBSOCKET_EVENT_NOT_OBSERVED'], 1791655560000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED', 'WEBSOCKET_EVENT_NOT_OBSERVED']}
+  full UTC scanner input: {'observed_ms': 1791655588196, 'as_of_ms': 1791655582085, 'requested_start_ms': 1791589560000, 'requested_end_ms': 1791655559999, 'completed_count': 1096, 'requested_interval_count': 1100, 'requested_window_missing_count': 4, 'last_close_ms': 1791655320000, 'history_gate_passed': False, 'reason': 'COMPLETED_CANDLE_STALE', 'scope': 'ACTUAL_SCANNER_REST_INPUT; FROZEN_VALIDATION; NOT_SIGNAL_OR_ADMISSION'}
+  recovery: pending=False, attempts=16, failures=11, recovered=305, next=1791655978330, deferred=None
+  REST live reception delay: n=6, median=63281.0, p95=193467.0, censored=9
+  WS live reception delay: n=0, median=None, p95=None, censored=15
+par:USDEUR | 217/300 | 83 | 221 | 4999169 | QUARANTINED
+  missing timestamps (first 5): [1791650880000, 1791650940000, 1791651000000, 1791651060000, 1791651120000]
+  classifications: {1791650880000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED'], 1791650940000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED'], 1791651000000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED'], 1791651060000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED'], 1791651120000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED']}
+  full UTC scanner input: {'observed_ms': 1791655589010, 'as_of_ms': 1791655582085, 'requested_start_ms': 1791589560000, 'requested_end_ms': 1791655559999, 'completed_count': 1022, 'requested_interval_count': 1100, 'requested_window_missing_count': 78, 'last_close_ms': 1791650880000, 'history_gate_passed': False, 'reason': 'COMPLETED_CANDLE_STALE', 'scope': 'ACTUAL_SCANNER_REST_INPUT; FROZEN_VALIDATION; NOT_SIGNAL_OR_ADMISSION'}
+  recovery: pending=False, attempts=8, failures=8, recovered=232, next=1791655978330, deferred=None
+  REST live reception delay: n=0, median=None, p95=None, censored=15
+  WS live reception delay: n=0, median=None, p95=None, censored=15
+par:USDJPY | 244/300 | 56 | 248 | 3379169 | QUARANTINED
+  missing timestamps (first 5): [1791652500000, 1791652560000, 1791652620000, 1791652680000, 1791652740000]
+  classifications: {1791652500000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED'], 1791652560000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED'], 1791652620000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED'], 1791652680000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED'], 1791652740000: ['CANDLE_ABSENT_IN_COVERED_REST_RESPONSE', 'CAUSE_UNDETERMINED']}
+  full UTC scanner input: {'observed_ms': 1791655589272, 'as_of_ms': 1791655582085, 'requested_start_ms': 1791589560000, 'requested_end_ms': 1791655559999, 'completed_count': 1049, 'requested_interval_count': 1100, 'requested_window_missing_count': 51, 'last_close_ms': 1791652500000, 'history_gate_passed': False, 'reason': 'COMPLETED_CANDLE_STALE', 'scope': 'ACTUAL_SCANNER_REST_INPUT; FROZEN_VALIDATION; NOT_SIGNAL_OR_ADMISSION'}
+  recovery: pending=False, attempts=8, failures=8, recovered=259, next=1791655978330, deferred=None
+  REST live reception delay: n=0, median=None, p95=None, censored=15
+  WS live reception delay: n=0, median=None, p95=None, censored=15
+Delay includes network/polling; exchange publication clock is unavailable. Startup history excluded from live latency.
+RECOVERY QUEUE: []
+RECENT RESTORATIONS (historical events): [{'symbol': 'par:BTC', 'timestamp_ms': 1791655450953}, {'symbol': 'par:BTC', 'timestamp_ms': 1791655456949}, {'symbol': 'par:BTC', 'timestamp_ms': 1791655462431}, {'symbol': 'par:BTC', 'timestamp_ms': 1791655467933}, {'symbol': 'par:BTC', 'timestamp_ms': 1791655472369}, {'symbol': 'par:BTC', 'timestamp_ms': 1791655477874}, {'symbol': 'par:BTC', 'timestamp_ms': 1791655483382}, {'symbol': 'par:BTC', 'timestamp_ms': 1791655487782}, {'symbol': 'par:BTC', 'timestamp_ms': 1791655493252}, {'symbol': 'par:BTC', 'timestamp_ms': 1791655498773}]
+
+TRANSPORT_READY: False
+SUBSCRIPTIONS_READY: False
+NATIVE_FEED_READY: False
+HEALTHY_MARKET_COUNT: 0
+QUARANTINED_MARKET_COUNT: 10
+SCANNER_EVALUATION_ALLOWED: False
+SIGNAL_AVAILABLE: False
+RATE BUDGET: {'state': 'UNKNOWN', 'policy': {'ip_weight_per_minute': 1200, 'ip_safety_reserve': 120, 'daily_actions': 50000, 'daily_safety_reserve': 500, 'account_action_reserve': 10, 'max_open_orders': 1000, 'max_ws_connections': 10, 'max_ws_subscriptions': 1000, 'max_ws_unique_users': 10, 'venue_ws_connections_per_minute': 30, 'max_ws_messages_per_minute': 2000, 'ws_reconnects_per_minute': 5, 'budget_max_age_ms': 60000, 'optional_poll_interval_ms': 5000, 'read_retry_attempts': 3, 'backoff_base_ms': 1000, 'backoff_max_ms': 30000, 'exhausted_safety_action_interval_ms': 10000, 'caution_fraction': 0.75, 'throttle_fraction': 0.9}, 'ip_weight': 47, 'public_read_blocked': False, 'account_requests_used': None, 'account_requests_cap': None, 'remaining_budget': None, 'budget_observed_ms': None, 'daily_actions': 0, 'daily_limit': 50000, 'entries_allowed': False, 'open_orders': None, 'backoff_until_ms': 0, 'websocket': {'connections': 0, 'subscriptions': 0, 'outgoing_messages': 2, 'heartbeats': 2, 'reconnects_last_minute': 0}, 'public_reads': {'upstream_by_operation': {'perpDexs': 8, 'meta': 8, 'metaAndAssetCtxs': 25, 'candleSnapshot': 102, 'l2Book': 75}, 'failures': {'RATE_LIMITED': 3}, 'pending': 0, 'coalesced': 2, 'max_seconds': 0.8355831671506166}}

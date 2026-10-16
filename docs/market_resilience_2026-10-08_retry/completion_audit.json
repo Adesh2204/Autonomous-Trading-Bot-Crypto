@@ -1,0 +1,1130 @@
+{
+  "verified_at_utc": "2026-10-08T21:10:52.052673+00:00",
+  "active_source_hash": "c0f496204be5aedd5acbacb8977cced15944066d12bd62968e7c987241431d1a",
+  "audit_script_sha256": "8bcfb92e7118ea9763b244cc03dd0342eddee865e0a16b1a11524d00f620516c",
+  "active_source_unchanged": true,
+  "checks": {
+    "source_identity": true,
+    "full_regression": true,
+    "regression_xml_digest": true,
+    "supervisor_source": true,
+    "report_writer_source": true
+  },
+  "current_local_safety_checks": {
+    "phase0_check.py": {
+      "project": "anchorium-perpetual-alpha",
+      "checks": {
+        "project_is_perpetual_alpha": true,
+        "independent_git_directory": true,
+        "migration_branch": true,
+        "testnet_venue": true,
+        "paper_execution_mode": true,
+        "migration_policy_valid": true,
+        "orders_disabled": true,
+        "angel_one_client_disabled": true,
+        "angel_one_order_boundary_disabled": true,
+        "testnet_order_boundary_disabled": true,
+        "signal_logic_present": true,
+        "signal_source_unchanged": true
+      },
+      "passed": true
+    },
+    "check_strategy_freeze.py": {
+      "baseline": "nse-working-baseline",
+      "file_count": 1,
+      "method_count": 8,
+      "parameter_count": 32,
+      "passed": true
+    }
+  },
+  "full_test_totals": {
+    "tests": 1339,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "stages": {
+    "short_30m": {
+      "checks": {
+        "source_identity": true,
+        "health_tape_digest": true,
+        "clean_shutdown": true,
+        "checkpoint_integrity": true,
+        "sample_safety": true,
+        "actual_orders_zero": true,
+        "sample_segment_identity": true,
+        "regenerated_certificate_agrees": true,
+        "workers_stopped": true
+      },
+      "checkpoints": {
+        "paper.sqlite": {
+          "integrity": "ok",
+          "checksum_matches": true,
+          "clean_shutdown": true,
+          "source_hash": "c0f496204be5aedd5acbacb8977cced15944066d12bd62968e7c987241431d1a"
+        },
+        "backups/paper-latest.sqlite": {
+          "integrity": "ok",
+          "checksum_matches": true,
+          "clean_shutdown": true,
+          "source_hash": "c0f496204be5aedd5acbacb8977cced15944066d12bd62968e7c987241431d1a"
+        }
+      },
+      "receipt_sha256": "a805d071fe5a30504edcde32d5c085ccea909f6c4afb63857ca2ac73dab656c1",
+      "certificate_sha256": "879c949b180843e73d91e1252ce3cafe0a9894c23ea50f33b836ce8e11bf5b6a",
+      "health_samples_sha256": "65d9a8819a1bd7a1956c28e028c7ce1a02a0608a22b4394218e0c920dcb983d2",
+      "health_samples": 60,
+      "health_sample_statuses": {
+        "RUNNING": 59,
+        "STOPPED": 1
+      },
+      "post_initial_paper_account_barriers": 2,
+      "socket_reconnects_with_completed_account_barrier": 2,
+      "non_socket_post_initial_account_barriers": [],
+      "reconnect_evidence": [
+        {
+          "disconnected_at_ms": 1791481290107,
+          "connected_at_ms": 1791481291077,
+          "subscribed_at_ms": 1791481292281,
+          "reconciled_at_ms": 1791481298717,
+          "generation": 2
+        },
+        {
+          "disconnected_at_ms": 1791481948645,
+          "connected_at_ms": 1791481949509,
+          "subscribed_at_ms": 1791481950754,
+          "reconciled_at_ms": 1791481956490,
+          "generation": 3
+        }
+      ],
+      "sampled_quarantine_then_healthy_including_intermediate_recovery": {
+        "par:BTC": 1,
+        "par:ETH": 4,
+        "par:USDEUR": 3,
+        "par:BRENT": 2,
+        "par:USDJPY": 1,
+        "par:EWY": 4,
+        "par:GOLD": 2,
+        "par:SP500": 1
+      },
+      "restoration_scope": "Actual ordered health samples, allowing an intervening RECOVERING state. Counts are observed transitions, not distinct sustained recoveries. The original adjacent-sample criterion is preserved.",
+      "invalid_numeric_rejections": [],
+      "final_market_inputs": {
+        "par:BRENT": {
+          "symbol": "par:BRENT",
+          "state": "QUARANTINED",
+          "data_state": "INSUFFICIENT_HISTORY",
+          "healthy": false,
+          "quarantined": true,
+          "reasons": [
+            "INSUFFICIENT_COMPLETED_HISTORY",
+            "LAST_CANDLE_TIME_STALE"
+          ],
+          "evaluated_at_ms": 1791482388226,
+          "recovery_attempts": 17,
+          "restorations": 21,
+          "quarantines": 38,
+          "next_retry_at_ms": 1791482561226,
+          "overall_market_health": "QUARANTINED",
+          "source": "PUBLIC_STREAM",
+          "clocks": {
+            "last_candle_time": 1791481380000,
+            "last_orderbook_time": 1791482384563,
+            "last_mark_time": 1791482387053,
+            "last_tick_time": 1791482384563
+          },
+          "ages_ms": {
+            "last_candle_time": 1008226,
+            "last_orderbook_time": 3663,
+            "last_mark_time": 1173,
+            "last_tick_time": 3663
+          },
+          "completed_candles": 286,
+          "spread_bps": "9.711566475672525978440322424",
+          "history_health": "INSUFFICIENT_HISTORY",
+          "candle_health": "STALE_CANDLE",
+          "book_health": "HEALTHY",
+          "tick_health": "HEALTHY",
+          "context_health": "HEALTHY",
+          "consecutive_recovery_attempts": 6
+        },
+        "par:BTC": {
+          "symbol": "par:BTC",
+          "state": "QUARANTINED",
+          "data_state": "INSUFFICIENT_HISTORY",
+          "healthy": false,
+          "quarantined": true,
+          "reasons": [
+            "INSUFFICIENT_COMPLETED_HISTORY",
+            "LAST_CANDLE_TIME_STALE"
+          ],
+          "evaluated_at_ms": 1791482388226,
+          "recovery_attempts": 14,
+          "restorations": 11,
+          "quarantines": 24,
+          "next_retry_at_ms": 1791482619954,
+          "overall_market_health": "QUARANTINED",
+          "source": "PUBLIC_STREAM",
+          "clocks": {
+            "last_candle_time": 1791481680000,
+            "last_orderbook_time": 1791482384563,
+            "last_mark_time": 1791482387053,
+            "last_tick_time": 1791482384563
+          },
+          "ages_ms": {
+            "last_candle_time": 708226,
+            "last_orderbook_time": 3663,
+            "last_mark_time": 1173,
+            "last_tick_time": 3663
+          },
+          "completed_candles": 290,
+          "spread_bps": "4.090106280791993307098813249",
+          "history_health": "INSUFFICIENT_HISTORY",
+          "candle_health": "STALE_CANDLE",
+          "book_health": "HEALTHY",
+          "tick_health": "HEALTHY",
+          "context_health": "HEALTHY",
+          "consecutive_recovery_attempts": 5
+        },
+        "par:ETH": {
+          "symbol": "par:ETH",
+          "state": "QUARANTINED",
+          "data_state": "INSUFFICIENT_HISTORY",
+          "healthy": false,
+          "quarantined": true,
+          "reasons": [
+            "INSUFFICIENT_COMPLETED_HISTORY",
+            "LAST_CANDLE_TIME_STALE"
+          ],
+          "evaluated_at_ms": 1791482388226,
+          "recovery_attempts": 19,
+          "restorations": 48,
+          "quarantines": 62,
+          "next_retry_at_ms": 1791482561226,
+          "overall_market_health": "QUARANTINED",
+          "source": "PUBLIC_STREAM",
+          "clocks": {
+            "last_candle_time": 1791482160000,
+            "last_orderbook_time": 1791482384563,
+            "last_mark_time": 1791482387053,
+            "last_tick_time": 1791482384563
+          },
+          "ages_ms": {
+            "last_candle_time": 228226,
+            "last_orderbook_time": 3663,
+            "last_mark_time": 1173,
+            "last_tick_time": 3663
+          },
+          "completed_candles": 299,
+          "spread_bps": "5.793263262434825788297608210",
+          "history_health": "INSUFFICIENT_HISTORY",
+          "candle_health": "STALE_CANDLE",
+          "book_health": "HEALTHY",
+          "tick_health": "HEALTHY",
+          "context_health": "HEALTHY",
+          "consecutive_recovery_attempts": 6,
+          "recovery": "INVALID_DATA"
+        },
+        "par:EWJ": {
+          "symbol": "par:EWJ",
+          "state": "QUARANTINED",
+          "data_state": "INSUFFICIENT_HISTORY",
+          "healthy": false,
+          "quarantined": true,
+          "reasons": [
+            "INSUFFICIENT_COMPLETED_HISTORY",
+            "LAST_CANDLE_TIME_STALE"
+          ],
+          "evaluated_at_ms": 1791482388226,
+          "recovery_attempts": 10,
+          "restorations": 0,
+          "quarantines": 11,
+          "next_retry_at_ms": 1791482561226,
+          "overall_market_health": "QUARANTINED",
+          "source": "PUBLIC_STREAM",
+          "clocks": {
+            "last_candle_time": 1791471420000,
+            "last_orderbook_time": 1791482384563,
+            "last_mark_time": 1791482387053,
+            "last_tick_time": 1791482384563
+          },
+          "ages_ms": {
+            "last_candle_time": 10968226,
+            "last_orderbook_time": 3663,
+            "last_mark_time": 1173,
+            "last_tick_time": 3663
+          },
+          "completed_candles": 120,
+          "spread_bps": "9.975472678003054345758110214",
+          "history_health": "INSUFFICIENT_HISTORY",
+          "candle_health": "STALE_CANDLE",
+          "book_health": "HEALTHY",
+          "tick_health": "HEALTHY",
+          "context_health": "HEALTHY",
+          "consecutive_recovery_attempts": 10
+        },
+        "par:EWY": {
+          "symbol": "par:EWY",
+          "state": "HEALTHY",
+          "data_state": "HEALTHY",
+          "healthy": true,
+          "quarantined": false,
+          "reasons": [],
+          "evaluated_at_ms": 1791482388226,
+          "recovery_attempts": 14,
+          "restorations": 64,
+          "quarantines": 75,
+          "next_retry_at_ms": 1791482474563,
+          "overall_market_health": "HEALTHY",
+          "source": "PUBLIC_STREAM",
+          "clocks": {
+            "last_candle_time": 1791482340000,
+            "last_orderbook_time": 1791482384563,
+            "last_mark_time": 1791482387053,
+            "last_tick_time": 1791482384563
+          },
+          "ages_ms": {
+            "last_candle_time": 48226,
+            "last_orderbook_time": 3663,
+            "last_mark_time": 1173,
+            "last_tick_time": 3663
+          },
+          "completed_candles": 300,
+          "spread_bps": "9.707906233046854923907146732",
+          "history_health": "HEALTHY",
+          "candle_health": "HEALTHY",
+          "book_health": "HEALTHY",
+          "tick_health": "HEALTHY",
+          "context_health": "HEALTHY",
+          "consecutive_recovery_attempts": 0
+        },
+        "par:GOLD": {
+          "symbol": "par:GOLD",
+          "state": "QUARANTINED",
+          "data_state": "INSUFFICIENT_HISTORY",
+          "healthy": false,
+          "quarantined": true,
+          "reasons": [
+            "INSUFFICIENT_COMPLETED_HISTORY",
+            "LAST_CANDLE_TIME_STALE"
+          ],
+          "evaluated_at_ms": 1791482388226,
+          "recovery_attempts": 14,
+          "restorations": 37,
+          "quarantines": 51,
+          "next_retry_at_ms": 1791482474563,
+          "overall_market_health": "QUARANTINED",
+          "source": "PUBLIC_STREAM",
+          "clocks": {
+            "last_candle_time": 1791482040000,
+            "last_orderbook_time": 1791482384563,
+            "last_mark_time": 1791482387053,
+            "last_tick_time": 1791482384563
+          },
+          "ages_ms": {
+            "last_candle_time": 348226,
+            "last_orderbook_time": 3663,
+            "last_mark_time": 1173,
+            "last_tick_time": 3663
+          },
+          "completed_candles": 295,
+          "spread_bps": "6.044706650386256754959681807",
+          "history_health": "INSUFFICIENT_HISTORY",
+          "candle_health": "STALE_CANDLE",
+          "book_health": "HEALTHY",
+          "tick_health": "HEALTHY",
+          "context_health": "HEALTHY",
+          "consecutive_recovery_attempts": 3
+        },
+        "par:HYPE": {
+          "symbol": "par:HYPE",
+          "state": "QUARANTINED",
+          "data_state": "INSUFFICIENT_HISTORY",
+          "healthy": false,
+          "quarantined": true,
+          "reasons": [
+            "INSUFFICIENT_COMPLETED_HISTORY",
+            "LAST_CANDLE_TIME_STALE"
+          ],
+          "evaluated_at_ms": 1791482388226,
+          "recovery_attempts": 10,
+          "restorations": 0,
+          "quarantines": 11,
+          "next_retry_at_ms": 1791482561226,
+          "overall_market_health": "QUARANTINED",
+          "source": "PUBLIC_STREAM",
+          "clocks": {
+            "last_candle_time": 1791479400000,
+            "last_orderbook_time": 1791482384563,
+            "last_mark_time": 1791482387053,
+            "last_tick_time": 1791482384563
+          },
+          "ages_ms": {
+            "last_candle_time": 2988226,
+            "last_orderbook_time": 3663,
+            "last_mark_time": 1173,
+            "last_tick_time": 3663
+          },
+          "completed_candles": 253,
+          "spread_bps": "0.1206556427627729079819740470",
+          "history_health": "INSUFFICIENT_HISTORY",
+          "candle_health": "STALE_CANDLE",
+          "book_health": "HEALTHY",
+          "tick_health": "HEALTHY",
+          "context_health": "HEALTHY",
+          "consecutive_recovery_attempts": 10,
+          "recovery": "INVALID_DATA"
+        },
+        "par:SP500": {
+          "symbol": "par:SP500",
+          "state": "QUARANTINED",
+          "data_state": "INSUFFICIENT_HISTORY",
+          "healthy": false,
+          "quarantined": true,
+          "reasons": [
+            "INSUFFICIENT_COMPLETED_HISTORY",
+            "LAST_CANDLE_TIME_STALE"
+          ],
+          "evaluated_at_ms": 1791482388226,
+          "recovery_attempts": 12,
+          "restorations": 21,
+          "quarantines": 33,
+          "next_retry_at_ms": 1791482619954,
+          "overall_market_health": "QUARANTINED",
+          "source": "PUBLIC_STREAM",
+          "clocks": {
+            "last_candle_time": 1791481620000,
+            "last_orderbook_time": 1791482384563,
+            "last_mark_time": 1791482387053,
+            "last_tick_time": 1791482384563
+          },
+          "ages_ms": {
+            "last_candle_time": 768226,
+            "last_orderbook_time": 3663,
+            "last_mark_time": 1173,
+            "last_tick_time": 3663
+          },
+          "completed_candles": 289,
+          "spread_bps": "5.809712548333580784052984578",
+          "history_health": "INSUFFICIENT_HISTORY",
+          "candle_health": "STALE_CANDLE",
+          "book_health": "HEALTHY",
+          "tick_health": "HEALTHY",
+          "context_health": "HEALTHY",
+          "consecutive_recovery_attempts": 5
+        },
+        "par:USDEUR": {
+          "symbol": "par:USDEUR",
+          "state": "QUARANTINED",
+          "data_state": "INSUFFICIENT_HISTORY",
+          "healthy": false,
+          "quarantined": true,
+          "reasons": [
+            "INSUFFICIENT_COMPLETED_HISTORY",
+            "LAST_CANDLE_TIME_STALE"
+          ],
+          "evaluated_at_ms": 1791482388226,
+          "recovery_attempts": 13,
+          "restorations": 19,
+          "quarantines": 31,
+          "next_retry_at_ms": 1791482561226,
+          "overall_market_health": "QUARANTINED",
+          "source": "PUBLIC_STREAM",
+          "clocks": {
+            "last_candle_time": 1791480720000,
+            "last_orderbook_time": 1791482384563,
+            "last_mark_time": 1791482387053,
+            "last_tick_time": 1791482384563
+          },
+          "ages_ms": {
+            "last_candle_time": 1668226,
+            "last_orderbook_time": 3663,
+            "last_mark_time": 1173,
+            "last_tick_time": 3663
+          },
+          "completed_candles": 275,
+          "spread_bps": "6.240805955511968974278964026",
+          "history_health": "INSUFFICIENT_HISTORY",
+          "candle_health": "STALE_CANDLE",
+          "book_health": "HEALTHY",
+          "tick_health": "HEALTHY",
+          "context_health": "HEALTHY",
+          "consecutive_recovery_attempts": 9,
+          "recovery": "INVALID_DATA"
+        },
+        "par:USDJPY": {
+          "symbol": "par:USDJPY",
+          "state": "QUARANTINED",
+          "data_state": "INSUFFICIENT_HISTORY",
+          "healthy": false,
+          "quarantined": true,
+          "reasons": [
+            "INSUFFICIENT_COMPLETED_HISTORY",
+            "LAST_CANDLE_TIME_STALE"
+          ],
+          "evaluated_at_ms": 1791482388226,
+          "recovery_attempts": 13,
+          "restorations": 13,
+          "quarantines": 26,
+          "next_retry_at_ms": 1791482561226,
+          "overall_market_health": "QUARANTINED",
+          "source": "PUBLIC_STREAM",
+          "clocks": {
+            "last_candle_time": 1791480780000,
+            "last_orderbook_time": 1791482384563,
+            "last_mark_time": 1791482387054,
+            "last_tick_time": 1791482384563
+          },
+          "ages_ms": {
+            "last_candle_time": 1608226,
+            "last_orderbook_time": 3663,
+            "last_mark_time": 1172,
+            "last_tick_time": 3663
+          },
+          "completed_candles": 276,
+          "spread_bps": "6.341556217895871646902149788",
+          "history_health": "INSUFFICIENT_HISTORY",
+          "candle_health": "STALE_CANDLE",
+          "book_health": "HEALTHY",
+          "tick_health": "HEALTHY",
+          "context_health": "HEALTHY",
+          "consecutive_recovery_attempts": 9
+        }
+      }
+    },
+    "long_3h": {
+      "checks": {
+        "source_identity": true,
+        "health_tape_digest": true,
+        "clean_shutdown": true,
+        "checkpoint_integrity": true,
+        "sample_safety": true,
+        "actual_orders_zero": true,
+        "sample_segment_identity": true,
+        "regenerated_certificate_agrees": true,
+        "workers_stopped": true
+      },
+      "checkpoints": {
+        "paper.sqlite": {
+          "integrity": "ok",
+          "checksum_matches": true,
+          "clean_shutdown": true,
+          "source_hash": "c0f496204be5aedd5acbacb8977cced15944066d12bd62968e7c987241431d1a"
+        },
+        "backups/paper-latest.sqlite": {
+          "integrity": "ok",
+          "checksum_matches": true,
+          "clean_shutdown": true,
+          "source_hash": "c0f496204be5aedd5acbacb8977cced15944066d12bd62968e7c987241431d1a"
+        }
+      },
+      "receipt_sha256": "fb2206c812cb2edcdf4630e0a25a65d81c832ca8b557b7811c4ca785468d7777",
+      "certificate_sha256": "b005a008bb79dcbc32b483bc60b408605f67be400b5e492e127282dea1583745",
+      "health_samples_sha256": "1caf26b4ce21454529a31bc392961ced82ec5f1b81042343de5c7bea791ed55d",
+      "health_samples": 355,
+      "health_sample_statuses": {
+        "RUNNING": 353,
+        "STOPPED": 2
+      },
+      "post_initial_paper_account_barriers": 17,
+      "socket_reconnects_with_completed_account_barrier": 16,
+      "non_socket_post_initial_account_barriers": [
+        {
+          "phase": "PAPER_ACCOUNT_RECONCILED",
+          "generation": 2,
+          "timestamp_ms": 1791482464351,
+          "source": "LOCAL_PAPER_FILL_REPLAY",
+          "exchange_ts": null,
+          "received_ts": "2026-10-08T18:01:04.351+00:00",
+          "processed_ts": "2026-10-08T18:01:04.351+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        }
+      ],
+      "reconnect_evidence": [
+        {
+          "disconnected_at_ms": 1791483022592,
+          "connected_at_ms": 1791483023515,
+          "subscribed_at_ms": 1791483024683,
+          "reconciled_at_ms": 1791483028533,
+          "generation": 3
+        },
+        {
+          "disconnected_at_ms": 1791483692973,
+          "connected_at_ms": 1791483693911,
+          "subscribed_at_ms": 1791483695197,
+          "reconciled_at_ms": 1791483700834,
+          "generation": 4
+        },
+        {
+          "disconnected_at_ms": 1791484303578,
+          "connected_at_ms": 1791484304398,
+          "subscribed_at_ms": 1791484305676,
+          "reconciled_at_ms": 1791484311834,
+          "generation": 5
+        },
+        {
+          "disconnected_at_ms": 1791484908694,
+          "connected_at_ms": 1791484909552,
+          "subscribed_at_ms": 1791484910819,
+          "reconciled_at_ms": 1791484916889,
+          "generation": 6
+        },
+        {
+          "disconnected_at_ms": 1791485522515,
+          "connected_at_ms": 1791485523341,
+          "subscribed_at_ms": 1791485524523,
+          "reconciled_at_ms": 1791485530667,
+          "generation": 7
+        },
+        {
+          "disconnected_at_ms": 1791486182945,
+          "connected_at_ms": 1791486183827,
+          "subscribed_at_ms": 1791486184992,
+          "reconciled_at_ms": 1791486191545,
+          "generation": 8
+        },
+        {
+          "disconnected_at_ms": 1791486839520,
+          "connected_at_ms": 1791486840433,
+          "subscribed_at_ms": 1791486841748,
+          "reconciled_at_ms": 1791486848127,
+          "generation": 9
+        },
+        {
+          "disconnected_at_ms": 1791487453261,
+          "connected_at_ms": 1791487454247,
+          "subscribed_at_ms": 1791487455497,
+          "reconciled_at_ms": 1791487462479,
+          "generation": 10
+        },
+        {
+          "disconnected_at_ms": 1791488089503,
+          "connected_at_ms": 1791488090456,
+          "subscribed_at_ms": 1791488091750,
+          "reconciled_at_ms": 1791488097594,
+          "generation": 11
+        },
+        {
+          "disconnected_at_ms": 1791488705850,
+          "connected_at_ms": 1791488706766,
+          "subscribed_at_ms": 1791488708241,
+          "reconciled_at_ms": 1791488714654,
+          "generation": 12
+        },
+        {
+          "disconnected_at_ms": 1791489388218,
+          "connected_at_ms": 1791489389110,
+          "subscribed_at_ms": 1791489390364,
+          "reconciled_at_ms": 1791489396749,
+          "generation": 13
+        },
+        {
+          "disconnected_at_ms": 1791490075947,
+          "connected_at_ms": 1791490076904,
+          "subscribed_at_ms": 1791490077770,
+          "reconciled_at_ms": 1791490084230,
+          "generation": 14
+        },
+        {
+          "disconnected_at_ms": 1791490685895,
+          "connected_at_ms": 1791490686718,
+          "subscribed_at_ms": 1791490687918,
+          "reconciled_at_ms": 1791490694484,
+          "generation": 15
+        },
+        {
+          "disconnected_at_ms": 1791491355546,
+          "connected_at_ms": 1791491356420,
+          "subscribed_at_ms": 1791491357350,
+          "reconciled_at_ms": 1791491363919,
+          "generation": 16
+        },
+        {
+          "disconnected_at_ms": 1791492018651,
+          "connected_at_ms": 1791492019587,
+          "subscribed_at_ms": 1791492020917,
+          "reconciled_at_ms": 1791492025227,
+          "generation": 17
+        },
+        {
+          "disconnected_at_ms": 1791492638559,
+          "connected_at_ms": 1791492639430,
+          "subscribed_at_ms": 1791492640815,
+          "reconciled_at_ms": 1791492647740,
+          "generation": 18
+        }
+      ],
+      "sampled_quarantine_then_healthy_including_intermediate_recovery": {
+        "par:EWY": 3,
+        "par:BRENT": 10,
+        "par:BTC": 4,
+        "par:HYPE": 4,
+        "par:SP500": 12,
+        "par:USDEUR": 1,
+        "par:GOLD": 2,
+        "par:ETH": 1
+      },
+      "restoration_scope": "Actual ordered health samples, allowing an intervening RECOVERING state. Counts are observed transitions, not distinct sustained recoveries. The original adjacent-sample criterion is preserved.",
+      "invalid_numeric_rejections": [
+        {
+          "symbol": "par:BRENT",
+          "decision_ms": 1791482698439,
+          "first_blocking_reason": "INVALID_MARKET_DATA",
+          "raw_reasons": [
+            "INVALID_DECIMAL",
+            "INVALID_DECIMAL"
+          ],
+          "data_evidence": {
+            "actual_last_completed_candle_ms": 1791482580000,
+            "brain": {
+              "anti_spam_pass": true,
+              "brain_atr_pass": false,
+              "raw_setup": true,
+              "status": "OBSERVED_FROZEN_LOCALS",
+              "warmup_pass": true
+            },
+            "expected_last_completed_candle_ms": 1791482580000,
+            "lag_seconds": 0.0,
+            "market_health": "HEALTHY",
+            "received_timestamp_ms": 1791482693052,
+            "request_cycle_observed_ms": 1791482692423,
+            "request_time_basis": "EXACT_SEND_TIME_UNAVAILABLE_NO_ADDITIONAL_CLOCK_READ",
+            "request_time_ms": null,
+            "root_cause": "UNDETERMINED",
+            "source": "HyperliquidMarketData",
+            "source_timestamp_ms": 1791482580000
+          }
+        },
+        {
+          "symbol": "par:EWY",
+          "decision_ms": 1791489298981,
+          "first_blocking_reason": "INVALID_MARKET_DATA",
+          "raw_reasons": [
+            "INVALID_DECIMAL",
+            "INVALID_DECIMAL"
+          ],
+          "data_evidence": {
+            "actual_last_completed_candle_ms": 1791489180000,
+            "brain": {
+              "anti_spam_pass": true,
+              "brain_atr_pass": false,
+              "raw_setup": true,
+              "status": "OBSERVED_FROZEN_LOCALS",
+              "warmup_pass": true
+            },
+            "expected_last_completed_candle_ms": 1791489180000,
+            "lag_seconds": 0.0,
+            "market_health": "HEALTHY",
+            "received_timestamp_ms": 1791489294898,
+            "request_cycle_observed_ms": 1791489292820,
+            "request_time_basis": "EXACT_SEND_TIME_UNAVAILABLE_NO_ADDITIONAL_CLOCK_READ",
+            "request_time_ms": null,
+            "root_cause": "UNDETERMINED",
+            "source": "HyperliquidMarketData",
+            "source_timestamp_ms": 1791489180000
+          }
+        }
+      ],
+      "final_market_inputs": {
+        "par:BRENT": {
+          "symbol": "par:BRENT",
+          "state": "QUARANTINED",
+          "data_state": "INSUFFICIENT_HISTORY",
+          "healthy": false,
+          "quarantined": true,
+          "reasons": [
+            "INSUFFICIENT_COMPLETED_HISTORY",
+            "LAST_CANDLE_TIME_STALE"
+          ],
+          "evaluated_at_ms": 1791493190937,
+          "recovery_attempts": 70,
+          "restorations": 166,
+          "quarantines": 225,
+          "next_retry_at_ms": 1791493251057,
+          "overall_market_health": "QUARANTINED",
+          "source": "PUBLIC_STREAM",
+          "clocks": {
+            "last_candle_time": 1791492180000,
+            "last_orderbook_time": 1791493186575,
+            "last_mark_time": 1791493189772,
+            "last_tick_time": 1791493186575
+          },
+          "ages_ms": {
+            "last_candle_time": 1010937,
+            "last_orderbook_time": 4362,
+            "last_mark_time": 1165,
+            "last_tick_time": 4362
+          },
+          "completed_candles": 288,
+          "spread_bps": "9.7656250000",
+          "history_health": "INSUFFICIENT_HISTORY",
+          "candle_health": "STALE_CANDLE",
+          "book_health": "HEALTHY",
+          "tick_health": "HEALTHY",
+          "context_health": "HEALTHY",
+          "consecutive_recovery_attempts": 6
+        },
+        "par:BTC": {
+          "symbol": "par:BTC",
+          "state": "QUARANTINED",
+          "data_state": "INSUFFICIENT_HISTORY",
+          "healthy": false,
+          "quarantined": true,
+          "reasons": [
+            "INSUFFICIENT_COMPLETED_HISTORY",
+            "LAST_CANDLE_TIME_STALE"
+          ],
+          "evaluated_at_ms": 1791493190937,
+          "recovery_attempts": 63,
+          "restorations": 61,
+          "quarantines": 120,
+          "next_retry_at_ms": 1791493369809,
+          "overall_market_health": "QUARANTINED",
+          "source": "PUBLIC_STREAM",
+          "clocks": {
+            "last_candle_time": 1791492480000,
+            "last_orderbook_time": 1791493186575,
+            "last_mark_time": 1791493189772,
+            "last_tick_time": 1791493186575
+          },
+          "ages_ms": {
+            "last_candle_time": 710937,
+            "last_orderbook_time": 4362,
+            "last_mark_time": 1165,
+            "last_tick_time": 4362
+          },
+          "completed_candles": 291,
+          "spread_bps": "2.812509553361254623826847238",
+          "history_health": "INSUFFICIENT_HISTORY",
+          "candle_health": "STALE_CANDLE",
+          "book_health": "HEALTHY",
+          "tick_health": "HEALTHY",
+          "context_health": "HEALTHY",
+          "consecutive_recovery_attempts": 5,
+          "recovery": "INVALID_DATA"
+        },
+        "par:ETH": {
+          "symbol": "par:ETH",
+          "state": "QUARANTINED",
+          "data_state": "INSUFFICIENT_HISTORY",
+          "healthy": false,
+          "quarantined": true,
+          "reasons": [
+            "INSUFFICIENT_COMPLETED_HISTORY",
+            "LAST_CANDLE_TIME_STALE"
+          ],
+          "evaluated_at_ms": 1791493190937,
+          "recovery_attempts": 51,
+          "restorations": 12,
+          "quarantines": 64,
+          "next_retry_at_ms": 1791493251057,
+          "overall_market_health": "QUARANTINED",
+          "source": "PUBLIC_STREAM",
+          "clocks": {
+            "last_candle_time": 1791489840000,
+            "last_orderbook_time": 1791493186575,
+            "last_mark_time": 1791493189772,
+            "last_tick_time": 1791493186575
+          },
+          "ages_ms": {
+            "last_candle_time": 3350937,
+            "last_orderbook_time": 4362,
+            "last_mark_time": 1165,
+            "last_tick_time": 4362
+          },
+          "completed_candles": 249,
+          "spread_bps": "2.020651053769524540807048031",
+          "history_health": "INSUFFICIENT_HISTORY",
+          "candle_health": "STALE_CANDLE",
+          "book_health": "HEALTHY",
+          "tick_health": "HEALTHY",
+          "context_health": "HEALTHY",
+          "consecutive_recovery_attempts": 16
+        },
+        "par:EWJ": {
+          "symbol": "par:EWJ",
+          "state": "QUARANTINED",
+          "data_state": "INSUFFICIENT_HISTORY",
+          "healthy": false,
+          "quarantined": true,
+          "reasons": [
+            "INSUFFICIENT_COMPLETED_HISTORY",
+            "LAST_CANDLE_TIME_STALE"
+          ],
+          "evaluated_at_ms": 1791493190937,
+          "recovery_attempts": 49,
+          "restorations": 0,
+          "quarantines": 50,
+          "next_retry_at_ms": 1791493251057,
+          "overall_market_health": "QUARANTINED",
+          "source": "PUBLIC_STREAM",
+          "clocks": {
+            "last_candle_time": null,
+            "last_orderbook_time": 1791493186575,
+            "last_mark_time": 1791493189772,
+            "last_tick_time": 1791493186575
+          },
+          "ages_ms": {
+            "last_candle_time": null,
+            "last_orderbook_time": 4362,
+            "last_mark_time": 1165,
+            "last_tick_time": 4362
+          },
+          "completed_candles": 0,
+          "spread_bps": "9.960312774357842206055254065",
+          "history_health": "INSUFFICIENT_HISTORY",
+          "candle_health": "STALE_CANDLE",
+          "book_health": "HEALTHY",
+          "tick_health": "HEALTHY",
+          "context_health": "HEALTHY",
+          "consecutive_recovery_attempts": 49,
+          "recovery": "INVALID_DATA"
+        },
+        "par:EWY": {
+          "symbol": "par:EWY",
+          "state": "QUARANTINED",
+          "data_state": "INSUFFICIENT_HISTORY",
+          "healthy": false,
+          "quarantined": true,
+          "reasons": [
+            "INSUFFICIENT_COMPLETED_HISTORY",
+            "LAST_CANDLE_TIME_STALE"
+          ],
+          "evaluated_at_ms": 1791493190937,
+          "recovery_attempts": 57,
+          "restorations": 46,
+          "quarantines": 99,
+          "next_retry_at_ms": 1791493251057,
+          "overall_market_health": "QUARANTINED",
+          "source": "PUBLIC_STREAM",
+          "clocks": {
+            "last_candle_time": 1791491520000,
+            "last_orderbook_time": 1791493186575,
+            "last_mark_time": 1791493189772,
+            "last_tick_time": 1791493186575
+          },
+          "ages_ms": {
+            "last_candle_time": 1670937,
+            "last_orderbook_time": 4362,
+            "last_mark_time": 1165,
+            "last_tick_time": 4362
+          },
+          "completed_candles": 277,
+          "spread_bps": "9.630909554428802084808656488",
+          "history_health": "INSUFFICIENT_HISTORY",
+          "candle_health": "STALE_CANDLE",
+          "book_health": "HEALTHY",
+          "tick_health": "HEALTHY",
+          "context_health": "HEALTHY",
+          "consecutive_recovery_attempts": 15,
+          "recovery": "INVALID_DATA"
+        },
+        "par:GOLD": {
+          "symbol": "par:GOLD",
+          "state": "QUARANTINED",
+          "data_state": "INSUFFICIENT_HISTORY",
+          "healthy": false,
+          "quarantined": true,
+          "reasons": [
+            "INSUFFICIENT_COMPLETED_HISTORY",
+            "LAST_CANDLE_TIME_STALE"
+          ],
+          "evaluated_at_ms": 1791493190937,
+          "recovery_attempts": 56,
+          "restorations": 35,
+          "quarantines": 89,
+          "next_retry_at_ms": 1791493251057,
+          "overall_market_health": "QUARANTINED",
+          "source": "PUBLIC_STREAM",
+          "clocks": {
+            "last_candle_time": 1791492720000,
+            "last_orderbook_time": 1791493186575,
+            "last_mark_time": 1791493189772,
+            "last_tick_time": 1791493186575
+          },
+          "ages_ms": {
+            "last_candle_time": 470937,
+            "last_orderbook_time": 4362,
+            "last_mark_time": 1165,
+            "last_tick_time": 4362
+          },
+          "completed_candles": 297,
+          "spread_bps": "6.043391551338611228621502387",
+          "history_health": "INSUFFICIENT_HISTORY",
+          "candle_health": "STALE_CANDLE",
+          "book_health": "HEALTHY",
+          "tick_health": "HEALTHY",
+          "context_health": "HEALTHY",
+          "consecutive_recovery_attempts": 7,
+          "recovery": "INVALID_DATA"
+        },
+        "par:HYPE": {
+          "symbol": "par:HYPE",
+          "state": "QUARANTINED",
+          "data_state": "INVALID_DATA",
+          "healthy": false,
+          "quarantined": true,
+          "reasons": [
+            "STRATEGY_CANDLE_GAP_OR_DUPLICATE"
+          ],
+          "evaluated_at_ms": 1791493190937,
+          "recovery_attempts": 64,
+          "restorations": 62,
+          "quarantines": 125,
+          "next_retry_at_ms": 1791493251057,
+          "overall_market_health": "QUARANTINED",
+          "source": "PUBLIC_STREAM",
+          "clocks": {
+            "last_candle_time": 1791493080000,
+            "last_orderbook_time": 1791493186575,
+            "last_mark_time": 1791493189772,
+            "last_tick_time": 1791493186575
+          },
+          "ages_ms": {
+            "last_candle_time": 110937,
+            "last_orderbook_time": 4362,
+            "last_mark_time": 1165,
+            "last_tick_time": 4362
+          },
+          "completed_candles": 248,
+          "spread_bps": "8.265731458193111103238985913",
+          "history_health": "INVALID_DATA",
+          "candle_health": "HEALTHY",
+          "book_health": "HEALTHY",
+          "tick_health": "HEALTHY",
+          "context_health": "HEALTHY",
+          "consecutive_recovery_attempts": 16,
+          "recovery": "INVALID_DATA"
+        },
+        "par:SP500": {
+          "symbol": "par:SP500",
+          "state": "QUARANTINED",
+          "data_state": "INSUFFICIENT_HISTORY",
+          "healthy": false,
+          "quarantined": true,
+          "reasons": [
+            "INSUFFICIENT_COMPLETED_HISTORY",
+            "LAST_CANDLE_TIME_STALE"
+          ],
+          "evaluated_at_ms": 1791493190937,
+          "recovery_attempts": 79,
+          "restorations": 244,
+          "quarantines": 303,
+          "next_retry_at_ms": 1791493402184,
+          "overall_market_health": "QUARANTINED",
+          "source": "PUBLIC_STREAM",
+          "clocks": {
+            "last_candle_time": 1791492540000,
+            "last_orderbook_time": 1791493186575,
+            "last_mark_time": 1791493189772,
+            "last_tick_time": 1791493186575
+          },
+          "ages_ms": {
+            "last_candle_time": 650937,
+            "last_orderbook_time": 4362,
+            "last_mark_time": 1165,
+            "last_tick_time": 4362
+          },
+          "completed_candles": 291,
+          "spread_bps": "6.049334251459241001615300954",
+          "history_health": "INSUFFICIENT_HISTORY",
+          "candle_health": "STALE_CANDLE",
+          "book_health": "HEALTHY",
+          "tick_health": "HEALTHY",
+          "context_health": "HEALTHY",
+          "consecutive_recovery_attempts": 5,
+          "recovery": "INVALID_DATA"
+        },
+        "par:USDEUR": {
+          "symbol": "par:USDEUR",
+          "state": "QUARANTINED",
+          "data_state": "INSUFFICIENT_HISTORY",
+          "healthy": false,
+          "quarantined": true,
+          "reasons": [
+            "INSUFFICIENT_COMPLETED_HISTORY",
+            "LAST_CANDLE_TIME_STALE"
+          ],
+          "evaluated_at_ms": 1791493190937,
+          "recovery_attempts": 51,
+          "restorations": 17,
+          "quarantines": 68,
+          "next_retry_at_ms": 1791493251057,
+          "overall_market_health": "QUARANTINED",
+          "source": "PUBLIC_STREAM",
+          "clocks": {
+            "last_candle_time": 1791491220000,
+            "last_orderbook_time": 1791493186575,
+            "last_mark_time": 1791493189772,
+            "last_tick_time": 1791493186575
+          },
+          "ages_ms": {
+            "last_candle_time": 1970937,
+            "last_orderbook_time": 4362,
+            "last_mark_time": 1165,
+            "last_tick_time": 4362
+          },
+          "completed_candles": 272,
+          "spread_bps": "6.240805955511968974278964026",
+          "history_health": "INSUFFICIENT_HISTORY",
+          "candle_health": "STALE_CANDLE",
+          "book_health": "HEALTHY",
+          "tick_health": "HEALTHY",
+          "context_health": "HEALTHY",
+          "consecutive_recovery_attempts": 27,
+          "recovery": "INVALID_DATA"
+        },
+        "par:USDJPY": {
+          "symbol": "par:USDJPY",
+          "state": "QUARANTINED",
+          "data_state": "INSUFFICIENT_HISTORY",
+          "healthy": false,
+          "quarantined": true,
+          "reasons": [
+            "INSUFFICIENT_COMPLETED_HISTORY",
+            "LAST_CANDLE_TIME_STALE"
+          ],
+          "evaluated_at_ms": 1791493190937,
+          "recovery_attempts": 50,
+          "restorations": 1,
+          "quarantines": 52,
+          "next_retry_at_ms": 1791493251057,
+          "overall_market_health": "QUARANTINED",
+          "source": "PUBLIC_STREAM",
+          "clocks": {
+            "last_candle_time": 1791485280000,
+            "last_orderbook_time": 1791493186575,
+            "last_mark_time": 1791493189772,
+            "last_tick_time": 1791493186575
+          },
+          "ages_ms": {
+            "last_candle_time": 7910937,
+            "last_orderbook_time": 4362,
+            "last_mark_time": 1165,
+            "last_tick_time": 4362
+          },
+          "completed_candles": 173,
+          "spread_bps": "6.334726973267452172811351831",
+          "history_health": "INSUFFICIENT_HISTORY",
+          "candle_health": "STALE_CANDLE",
+          "book_health": "HEALTHY",
+          "tick_health": "HEALTHY",
+          "context_health": "HEALTHY",
+          "consecutive_recovery_attempts": 35,
+          "recovery": "INVALID_DATA"
+        }
+      }
+    }
+  },
+  "ownership_locks_released": true,
+  "automation_status": "PAUSED",
+  "old_account_observed_at_utc": "2026-10-07T15:17:28.920851+00:00",
+  "old_signer_local_nonce_observed_ms": 1791386276990,
+  "old_signer_scope": "CURRENT_HOST_AND_OS_USER_ONLY",
+  "funded_preflight_refreshed": false,
+  "actual_exchange_orders": 0,
+  "protection_enabled": false
+}

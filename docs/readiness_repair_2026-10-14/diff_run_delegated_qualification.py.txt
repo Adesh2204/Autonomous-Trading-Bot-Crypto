@@ -1,0 +1,184 @@
+--- before/scripts/run_delegated_qualification.py
++++ scripts/run_delegated_qualification.py
+@@ -6,7 +6,7 @@
+ import argparse
+ from dataclasses import asdict
+ from datetime import datetime, timezone
+-import hashlib, json, signal, sqlite3, sys, time, uuid
++import hashlib, json, signal, sqlite3, sys, time, uuid, threading
+ from pathlib import Path
+ ROOT = Path(__file__).resolve().parents[1]
+ sys.path.insert(0, str(ROOT/'algo-trading-bot'))
+@@ -36,8 +36,8 @@
+     require_paper_migration(); verify_strategy_freeze()
+     path = require_emergency_regression(ROOT, current_test_receipt(receipt, active_source_hash(ROOT)))
+     r = json.loads(path.read_text())
+-    if r['totals']['tests'] < 2115:
+-        raise ExchangeError('DELEGATED_FULL_2115_BASELINE_REQUIRED')
++    if r['totals']['tests'] < 2194:
++        raise ExchangeError('DELEGATED_FULL_2194_BASELINE_REQUIRED')
+     return path
+ 
+ 
+@@ -55,7 +55,7 @@
+         approval_procedure='Human accepts this exact session hash and all scope/risk disclosures in chat; Codex records the genuine acceptance and its current timestamp. No per-proposal human approval is invented.',
+         execute_args=['.venv/bin/python','scripts/run_delegated_qualification.py','--execute',
+             '--output-directory',str(directory/'authorized_session'), '--mandate-file',str(directory/'session_mandate.json'),
+-            '--session-acceptance-file',str(directory/'session_acceptance.json'),'--test-receipt',str(receipt)],
++            '--session-acceptance-file',str(directory/'session_acceptance.json'),'--test-receipt',str(receipt),'--persistent'],
+         recovery_steps=RECOVERY_STEPS)
+ 
+ 
+@@ -64,6 +64,15 @@
+     receipt = require_release(receipt)
+     mandate = SessionMandate(uuid.uuid4().hex, now_ms(), active_source_hash(ROOT),
+         hashlib.sha256((ROOT/'configs/reliability_policy.json').read_bytes()).hexdigest()).require()
++    state=ROOT/'runtime/testnet/anchorium-bot-1/qualification.sqlite'
++    if state.exists():
++        with sqlite3.connect(state.as_uri()+'?mode=ro',uri=True) as db:
++            if db.execute("SELECT 1 FROM sqlite_master WHERE name='nontransmission_resolutions'").fetchone():
++                from dataclasses import replace
++                from exchange.qualification_intent_recovery import effective_rows
++                effective_rows(db)
++                value=db.execute('SELECT checksum FROM nontransmission_resolutions LIMIT 1').fetchone()
++                if value:mandate=replace(mandate,recovery_resolution_hash=value[0]).require()
+     atomic_json(directory/'session_mandate.json', asdict(mandate))
+     atomic_json(directory/'session_acceptance_REQUIRED_UNFILLED.json', asdict(
+         SessionAcceptance(mandate.identity, '', None, None)))
+@@ -89,7 +98,14 @@
+     with sqlite3.connect(path.as_uri()+'?mode=ro', uri=True) as db:
+         controls = {n:json.loads(v) for n,v in db.execute('SELECT name,value FROM controls')
+             if n.startswith('delegated_')}
+-    if (controls.get('delegated_session_active') not in {None, mandate.identity}
++        previous=controls.get('delegated_session_active')
++        prior_ok=False
++        if previous not in {None,mandate.identity}:
++            from exchange.qualification_intent_recovery import prior_session_resolved
++            if prior_session_resolved(db,previous):
++                row=db.execute('SELECT checksum FROM nontransmission_resolutions LIMIT 1').fetchone()
++                prior_ok=row is not None and row[0]==mandate.recovery_resolution_hash
++    if (previous not in {None, mandate.identity} and not prior_ok
+             or any(controls.get(k+mandate.identity) for k in
+                 ('delegated_runtime:', 'delegated_session_finished:', 'delegated_session_revoked:'))):
+         raise ExchangeError('DELEGATED_EXISTING_RUNTIME_READ_ONLY_RECOVERY_REQUIRED')
+@@ -160,9 +176,10 @@
+         result.update(status='SESSION_HALTED', blocker=str(exc) if isinstance(exc,ExchangeError) else type(exc).__name__,
+             recovery_steps=RECOVERY_STEPS)
+         # A failure after any attempt is unresolved until exchange reconciliation.
+-        try: prior_execution_check(ROOT)
+-        except ExchangeError:
+-            result.update(status='EMERGENCY_EXIT_REQUIRED', operator_action_required=True)
++        if result['authorized_entry_attempted']:
++            try: prior_execution_check(ROOT)
++            except ExchangeError:
++                result.update(status='EMERGENCY_EXIT_REQUIRED', operator_action_required=True)
+     finally:
+         if runtime:
+             try: runtime.close()
+@@ -175,12 +192,97 @@
+     return result
+ 
+ 
++def execute_persistent_session(directory,delegation,receipt):
++    from exchange.persistent_qualification_watcher import PersistentQualificationObserver
++    directory=Path(directory).resolve();directory.mkdir(parents=True,exist_ok=True)
++    observer_dir=directory/'persistent_observer'
++    prior=observer_dir/'health.json'
++    read_only_restart=prior.exists() and json.loads(prior.read_text()).get('status')!='READ_ONLY_STOPPED'
++    result=dict(status='READ_ONLY_OBSERVATION',mode=MODE,session_id=delegation.mandate.identity,
++        actual_fill_verified=False,organizer_whitelisting_confirmed=False,protection_verified=False,
++        production_mode='PAPER',allow_live_orders=False,authorized_entry_attempted=False,
++        restart_is_read_only=read_only_restart,observations=[])
++    watcher=runtime=owner=None;handlers={};cancel=threading.Event()
++    def stopped(sig,frame):
++        cancel.set()
++        atomic_json(Path(delegation.acceptance_path).with_name('session_revocation.json'),
++            dict(session_id=delegation.mandate.identity,revoked_ms=now_ms(),reason='OPERATOR_PROCESS_SIGNAL'))
++        raise ExchangeError('DELEGATED_SESSION_REVOKED')
++    try:
++        delegation.require(now_ms());receipt=require_release(receipt)
++        source_unchanged(ROOT,delegation.mandate.source_hash,delegation.mandate.reliability_policy_hash)
++        require_unused_runtime(delegation.mandate)
++        owner=PaperOwner(ROOT/'runtime/testnet/anchorium-bot-1/delegated-session.lock')
++        for sig in (signal.SIGINT,signal.SIGTERM):handlers[sig]=signal.signal(sig,stopped)
++        watcher=PersistentQualificationObserver(ROOT,observer_dir,delegation.mandate.source_hash,
++            delegation.mandate.reliability_policy_hash,mandate=delegation.mandate,cancel=cancel)
++        watcher.start()
++        while True:
++            delegation.require(now_ms());require_unused_runtime(delegation.mandate)
++            if now_ms()+90000>=delegation.mandate.expires_ms:
++                result['status']='SESSION_ENTRY_WINDOW_CLOSED_NO_SUBMISSION';break
++            try:p=watcher.poll()
++            except ExchangeError as exc:
++                if str(exc) not in MARKET_BLOCKERS:raise
++                watcher.progress('READ_ONLY_MARKET_INELIGIBLE',blocker=str(exc));p=None
++            atomic_json(directory/'session_report.json',result)
++            if p is None or read_only_restart:
++                cancel.wait(.5);continue
++            atomic_json(directory/'selected_proposal.json',asdict(p))
++            shared_rates=watcher.pause_for_execution()
++            try:
++                runtime=build_runtime(ROOT,p,None,test_receipt=receipt,delegation=delegation,
++                    nonce_owner=watcher.nonce_owner(),rate_owner=shared_rates)
++            except ExchangeError as exc:
++                persist_price_diagnostics(directory,p);require_unused_runtime(delegation.mandate)
++                # This can repeat only if no durable runtime/intent/nonce
++                # attempt was armed. The exact existing lease must still live.
++                if str(exc) not in MARKET_BLOCKERS:raise
++                watcher.nonce_owner()
++                watcher.status='READ_ONLY_OBSERVATION'
++                watcher.progress('READ_ONLY_FINAL_PREFLIGHT_INELIGIBLE',blocker=str(exc));continue
++            result['authorized_entry_attempted']=True
++            actual=runtime.run();proof=actual['whitelist_trade_proof']
++            result.update(status=actual['status'],execution=actual,proposal_id=p.identity,
++                actual_fill_verified=proof['fill_verified'],final_flat_verified=proof['final_flat_verified'])
++            atomic_json(directory/('WHITELIST_TRADE_PROOF.json' if proof['fill_verified'] else 'NO_FILL_VERIFICATION.json'),
++                dict(proof,delegated_session_id=delegation.mandate.identity))
++            runtime.close();runtime=None;persist_price_diagnostics(directory,p);break
++    except Exception as exc:
++        result.update(status='SESSION_HALTED',blocker=str(exc) if isinstance(exc,ExchangeError) else type(exc).__name__,recovery_steps=RECOVERY_STEPS)
++        if result['authorized_entry_attempted']:
++            try:prior_execution_check(ROOT)
++            except ExchangeError:result.update(status='EMERGENCY_EXIT_REQUIRED',operator_action_required=True)
++    finally:
++        if runtime:
++            try:runtime.close()
++            except Exception as exc:result['runtime_cleanup_error']=type(exc).__name__
++        if watcher:
++            try:watcher.close();result['watcher_health']=json.loads((observer_dir/'health.json').read_text())
++            except Exception as exc:result['watcher_cleanup_error']=type(exc).__name__
++        if owner:owner.close()
++        for sig,h in handlers.items():signal.signal(sig,h)
++        result.update(finished_ms=now_ms(),no_automatic_entry_retry=True,practice_ready=False,live_ready=False,
++            source_hash_after=active_source_hash(ROOT))
++        atomic_json(directory/'session_report.json',result)
++    return result
++
++
+ def main():
+     parser = argparse.ArgumentParser(description=__doc__)
+     parser.add_argument('--output-directory'); parser.add_argument('--test-receipt')
+     parser.add_argument('--execute', action='store_true'); parser.add_argument('--revoke', action='store_true')
++    parser.add_argument('--persistent',action='store_true')
++    parser.add_argument('--observe-only-seconds',type=int)
+     parser.add_argument('--mandate-file'); parser.add_argument('--session-acceptance-file')
+     args = parser.parse_args()
++    if args.observe_only_seconds is not None:
++        if args.execute or args.revoke or args.mandate_file or args.session_acceptance_file or not args.output_directory:
++            parser.error('Engineering observation forbids execution/acceptance and requires an output directory.')
++        from exchange.persistent_qualification_watcher import read_only_soak
++        receipt=require_release(args.test_receipt)
++        result=read_only_soak(ROOT,args.output_directory,duration_seconds=args.observe_only_seconds)
++        print(json.dumps(result,indent=2));return 0 if result['passed'] else 1
+     if args.revoke:
+         if args.execute or not args.mandate_file or not args.session_acceptance_file:
+             parser.error('Revocation requires mandate/acceptance paths and forbids execution.')
+@@ -195,7 +297,7 @@
+         m=SessionMandate(**json.loads(Path(args.mandate_file).read_text()))
+         acceptance=SessionAcceptance(**json.loads(Path(args.session_acceptance_file).read_text()))
+         delegation=Delegation(m,acceptance,str(Path(args.session_acceptance_file).resolve()))
+-        result=execute_session(args.output_directory,delegation,args.test_receipt)
++        result=(execute_persistent_session if args.persistent else execute_session)(args.output_directory,delegation,args.test_receipt)
+     else:
+         if args.mandate_file or args.session_acceptance_file: parser.error('Read-only preparation cannot consume acceptance.')
+         result=prepare_session(args.output_directory,args.test_receipt)

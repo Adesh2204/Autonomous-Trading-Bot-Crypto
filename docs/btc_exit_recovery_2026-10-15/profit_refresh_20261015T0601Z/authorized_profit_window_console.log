@@ -1,0 +1,331 @@
+{
+  "status": "PROFIT_WINDOW_EXPIRED_NO_SELL",
+  "mandate_id": "90505cbc168cda2bbe49f9931f04533808d431c40e7478d77b99df3bb0ebf52e",
+  "evidence_scope": "ACTUAL_TESTNET_ACCOUNT",
+  "entry_orders_submitted": 0,
+  "exit_attempted": false,
+  "final_flat": false,
+  "realized_pnl": null,
+  "protection_verified": false,
+  "organizer_whitelisting_confirmed": false,
+  "final_read_only": {
+    "observed_ms": 1792044773128,
+    "positions": [
+      {
+        "symbol": "par:BTC",
+        "quantity": "0.0002",
+        "entry_price": "81512.0",
+        "unrealized_pnl": "-0.1766",
+        "margin_used": "16.1258",
+        "liquidation_price": null,
+        "leverage": {
+          "type": "cross",
+          "value": 1
+        }
+      }
+    ],
+    "orders": [],
+    "reconciliation": {
+      "ready": true,
+      "reasons": [],
+      "accounting": {
+        "source": "EXCHANGE_REPORTED_ACCOUNT_OBSERVER",
+        "exchange_orders_submitted": 0,
+        "entries_paused": false,
+        "reasons": [],
+        "positions": [
+          {
+            "symbol": "par:BTC",
+            "quantity": "0.0002",
+            "entry_price": "81512.0",
+            "unrealized_pnl": "-0.1766",
+            "margin_used": "16.1258",
+            "liquidation_price": null,
+            "leverage": {
+              "type": "cross",
+              "value": 1
+            }
+          }
+        ],
+        "open_orders": [],
+        "fills": [
+          {
+            "symbol": "par:BTC",
+            "timestamp_ms": 1792039590641,
+            "trade_id": "800659111758533",
+            "order_id": "62755970305",
+            "side": "BUY",
+            "quantity": "0.0002",
+            "price": "81512.0",
+            "fee": "0.014672",
+            "fee_token": "USDPR",
+            "closed_pnl": "0.0",
+            "start_position": "0.0",
+            "source": "EXCHANGE_REPORTED_FILL",
+            "exchange_ts": "2026-10-15T04:46:30.641+00:00",
+            "received_ts": "2026-10-15T06:12:50.700+00:00",
+            "processed_ts": "2026-10-15T06:12:50.700+00:00"
+          }
+        ],
+        "funding_events": [
+          {
+            "symbol": "par:BTC",
+            "timestamp_ms": 1792040400069,
+            "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "cashflow": "0.000141",
+            "position_quantity": "0.0002",
+            "funding_rate": "-0.0000086424",
+            "collateral": "USDPR",
+            "source": "EXCHANGE_REPORTED_USER_FUNDING",
+            "exchange_ts": "2026-10-15T05:00:00.069+00:00",
+            "received_ts": "2026-10-15T06:12:51.109+00:00",
+            "processed_ts": "2026-10-15T06:12:51.109+00:00"
+          },
+          {
+            "symbol": "par:BTC",
+            "timestamp_ms": 1792044000094,
+            "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "cashflow": "-0.000201",
+            "position_quantity": "0.0002",
+            "funding_rate": "0.0000125",
+            "collateral": "USDPR",
+            "source": "EXCHANGE_REPORTED_USER_FUNDING",
+            "exchange_ts": "2026-10-15T06:00:00.094+00:00",
+            "received_ts": "2026-10-15T06:12:51.109+00:00",
+            "processed_ts": "2026-10-15T06:12:51.109+00:00"
+          }
+        ],
+        "reported_account_equity": {
+          "reported_account_value": "999999.808668",
+          "collateral_balance": "999999.808668",
+          "margin_used": "16.1258",
+          "withdrawable": null,
+          "valuation_source": "spotClearinghouseState.USDPR.total"
+        },
+        "accounting_window_ms": [
+          0,
+          1792044770483
+        ],
+        "latest_query_window_ms": [
+          0,
+          1792044770483
+        ],
+        "realized": {
+          "gross_closed_pnl": "0.0",
+          "actual_fill_fees": "0.014672",
+          "actual_funding_cashflow": "-0.000060",
+          "net_after_fees_and_funding": "-0.014732",
+          "scope": "ONLY_OBSERVED_ACCOUNT_EVENTS; excludes deposits/transfers and unknown historical events"
+        },
+        "corrections": [
+          {
+            "kind": "EXCHANGE_TRUTH_ADOPTED",
+            "timestamp_ms": 1792044185765,
+            "differences": {},
+            "new_fill_count": 0,
+            "reasons": [],
+            "exchange_ts": null,
+            "received_ts": "2026-10-15T06:03:05.765+00:00",
+            "processed_ts": "2026-10-15T06:03:05.765+00:00",
+            "timestamp_source": "LOCAL_PROCESS",
+            "exchange_to_receive_ms": null,
+            "receive_to_process_ms": 0,
+            "clock_skew_detected": false
+          },
+          {
+            "kind": "EXCHANGE_TRUTH_ADOPTED",
+            "timestamp_ms": 1792044250308,
+            "differences": {},
+            "new_fill_count": 0,
+            "reasons": [],
+            "exchange_ts": null,
+            "received_ts": "2026-10-15T06:04:10.308+00:00",
+            "processed_ts": "2026-10-15T06:04:10.308+00:00",
+            "timestamp_source": "LOCAL_PROCESS",
+            "exchange_to_receive_ms": null,
+            "receive_to_process_ms": 0,
+            "clock_skew_detected": false
+          },
+          {
+            "kind": "EXCHANGE_TRUTH_ADOPTED",
+            "timestamp_ms": 1792044314236,
+            "differences": {},
+            "new_fill_count": 0,
+            "reasons": [],
+            "exchange_ts": null,
+            "received_ts": "2026-10-15T06:05:14.236+00:00",
+            "processed_ts": "2026-10-15T06:05:14.236+00:00",
+            "timestamp_source": "LOCAL_PROCESS",
+            "exchange_to_receive_ms": null,
+            "receive_to_process_ms": 0,
+            "clock_skew_detected": false
+          },
+          {
+            "kind": "EXCHANGE_TRUTH_ADOPTED",
+            "timestamp_ms": 1792044378368,
+            "differences": {},
+            "new_fill_count": 0,
+            "reasons": [],
+            "exchange_ts": null,
+            "received_ts": "2026-10-15T06:06:18.368+00:00",
+            "processed_ts": "2026-10-15T06:06:18.368+00:00",
+            "timestamp_source": "LOCAL_PROCESS",
+            "exchange_to_receive_ms": null,
+            "receive_to_process_ms": 0,
+            "clock_skew_detected": false
+          },
+          {
+            "kind": "EXCHANGE_TRUTH_ADOPTED",
+            "timestamp_ms": 1792044441895,
+            "differences": {},
+            "new_fill_count": 0,
+            "reasons": [],
+            "exchange_ts": null,
+            "received_ts": "2026-10-15T06:07:21.895+00:00",
+            "processed_ts": "2026-10-15T06:07:21.895+00:00",
+            "timestamp_source": "LOCAL_PROCESS",
+            "exchange_to_receive_ms": null,
+            "receive_to_process_ms": 0,
+            "clock_skew_detected": false
+          },
+          {
+            "kind": "EXCHANGE_TRUTH_ADOPTED",
+            "timestamp_ms": 1792044506716,
+            "differences": {},
+            "new_fill_count": 0,
+            "reasons": [],
+            "exchange_ts": null,
+            "received_ts": "2026-10-15T06:08:26.716+00:00",
+            "processed_ts": "2026-10-15T06:08:26.716+00:00",
+            "timestamp_source": "LOCAL_PROCESS",
+            "exchange_to_receive_ms": null,
+            "receive_to_process_ms": 0,
+            "clock_skew_detected": false
+          },
+          {
+            "kind": "EXCHANGE_TRUTH_ADOPTED",
+            "timestamp_ms": 1792044571019,
+            "differences": {},
+            "new_fill_count": 0,
+            "reasons": [],
+            "exchange_ts": null,
+            "received_ts": "2026-10-15T06:09:31.019+00:00",
+            "processed_ts": "2026-10-15T06:09:31.019+00:00",
+            "timestamp_source": "LOCAL_PROCESS",
+            "exchange_to_receive_ms": null,
+            "receive_to_process_ms": 0,
+            "clock_skew_detected": false
+          },
+          {
+            "kind": "EXCHANGE_TRUTH_ADOPTED",
+            "timestamp_ms": 1792044635431,
+            "differences": {},
+            "new_fill_count": 0,
+            "reasons": [],
+            "exchange_ts": null,
+            "received_ts": "2026-10-15T06:10:35.431+00:00",
+            "processed_ts": "2026-10-15T06:10:35.431+00:00",
+            "timestamp_source": "LOCAL_PROCESS",
+            "exchange_to_receive_ms": null,
+            "receive_to_process_ms": 0,
+            "clock_skew_detected": false
+          },
+          {
+            "kind": "EXCHANGE_TRUTH_ADOPTED",
+            "timestamp_ms": 1792044699397,
+            "differences": {},
+            "new_fill_count": 0,
+            "reasons": [],
+            "exchange_ts": null,
+            "received_ts": "2026-10-15T06:11:39.397+00:00",
+            "processed_ts": "2026-10-15T06:11:39.397+00:00",
+            "timestamp_source": "LOCAL_PROCESS",
+            "exchange_to_receive_ms": null,
+            "receive_to_process_ms": 0,
+            "clock_skew_detected": false
+          },
+          {
+            "kind": "EXCHANGE_TRUTH_ADOPTED",
+            "timestamp_ms": 1792044763612,
+            "differences": {},
+            "new_fill_count": 0,
+            "reasons": [],
+            "exchange_ts": null,
+            "received_ts": "2026-10-15T06:12:43.612+00:00",
+            "processed_ts": "2026-10-15T06:12:43.612+00:00",
+            "timestamp_source": "LOCAL_PROCESS",
+            "exchange_to_receive_ms": null,
+            "receive_to_process_ms": 0,
+            "clock_skew_detected": false
+          },
+          {
+            "kind": "EXCHANGE_TRUTH_ADOPTED",
+            "timestamp_ms": 1792044771993,
+            "differences": {},
+            "new_fill_count": 0,
+            "reasons": [],
+            "exchange_ts": null,
+            "received_ts": "2026-10-15T06:12:51.993+00:00",
+            "processed_ts": "2026-10-15T06:12:51.993+00:00",
+            "timestamp_source": "LOCAL_PROCESS",
+            "exchange_to_receive_ms": null,
+            "receive_to_process_ms": 0,
+            "clock_skew_detected": false
+          }
+        ]
+      }
+    },
+    "fills": [
+      {
+        "symbol": "par:BTC",
+        "timestamp_ms": 1792039590641,
+        "trade_id": "800659111758533",
+        "order_id": "62755970305",
+        "side": "BUY",
+        "quantity": "0.0002",
+        "price": "81512.0",
+        "fee": "0.014672",
+        "fee_token": "USDPR",
+        "closed_pnl": "0.0",
+        "start_position": "0.0",
+        "source": "EXCHANGE_REPORTED_FILL",
+        "exchange_ts": "2026-10-15T04:46:30.641+00:00",
+        "received_ts": "2026-10-15T06:12:50.700+00:00",
+        "processed_ts": "2026-10-15T06:12:50.700+00:00"
+      }
+    ],
+    "funding": [
+      {
+        "symbol": "par:BTC",
+        "timestamp_ms": 1792040400069,
+        "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "cashflow": "0.000141",
+        "position_quantity": "0.0002",
+        "funding_rate": "-0.0000086424",
+        "collateral": "USDPR",
+        "source": "EXCHANGE_REPORTED_USER_FUNDING",
+        "exchange_ts": "2026-10-15T05:00:00.069+00:00",
+        "received_ts": "2026-10-15T06:12:51.109+00:00",
+        "processed_ts": "2026-10-15T06:12:51.109+00:00"
+      },
+      {
+        "symbol": "par:BTC",
+        "timestamp_ms": 1792044000094,
+        "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "cashflow": "-0.000201",
+        "position_quantity": "0.0002",
+        "funding_rate": "0.0000125",
+        "collateral": "USDPR",
+        "source": "EXCHANGE_REPORTED_USER_FUNDING",
+        "exchange_ts": "2026-10-15T06:00:00.094+00:00",
+        "received_ts": "2026-10-15T06:12:51.109+00:00",
+        "processed_ts": "2026-10-15T06:12:51.109+00:00"
+      }
+    ]
+  },
+  "finished_ms": 1792044773136,
+  "no_automatic_retry": true,
+  "source_hash_after": "31efb87290919c495e624dfad41c426f83ec45dc21bf52dc0b4580a1185edd2f",
+  "practice_ready": false,
+  "live_ready": false
+}

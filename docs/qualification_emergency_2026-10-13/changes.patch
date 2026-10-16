@@ -1,0 +1,1307 @@
+--- before/algo-trading-bot/exchange/emergency_qualification.py
++++ after/algo-trading-bot/exchange/emergency_qualification.py
+@@ -0,0 +1,592 @@
++"""Versioned one-order testnet experiment; no strategy signal or production unlock.
++
++The new P0 policy is separate from the old $25/10%-BBO qualification route.
++No stop is submitted. Historical exact-close shapes are evidence, not guarantees.
++"""
++from dataclasses import dataclass, asdict, replace
++from decimal import Decimal as D, ROUND_CEILING
++import hashlib
++import json
++from pathlib import Path
++import sqlite3
++import time
++
++from .base_exchange import ExchangeError, decimal
++from .execution_journal import fingerprint, ExecutionJournal
++from .order_lifecycle import OrderRequest, OrderState
++from . import testnet_certification as cert
++from .testnet_qualification import (residual_close_assessment, QualificationContextProvider,
++    UnverifiedQualificationProtection, require_qualification_regression, whitelist_trade_proof)
++from .sdk_transport import OfficialSDKTransport, OfflineSDKTransport
++from .hyperliquid_execution import HyperliquidExecution
++from .exchange_rules import HyperliquidOrderValidator
++from .compliance_guard import ComplianceGuard
++from .qualification_watcher import sweep, prior_execution_check
++
++POLICY_VERSION = 'ANCHORIUM_P0_1000_V1'
++RULE = 'MINIMUM_VALID_LONG_PUBLIC_L2_OR_REST_AT_BID_V1'
++POLICY = dict(version=POLICY_VERSION, network='testnet', dex='par', max_notional='1000',
++    minimum_entry_notional='10', leverage=1, margin_mode='cross', one_entry=True,
++    max_exit_attempts=2, max_cancel_attempts=1, max_signed_actions=4,
++    spread_bps='50', entry_slippage_bps='20', exit_slippage_bps='20',
++    mark_oracle_bps='50', mid_oracle_bps='100', order_oracle_bps='150',
++    l2_participation='0.5', exit_floor_factor='0.98505', resting_lifetime_seconds=30,
++    approval_window_ms=300000, entry_minimum_remaining_ms=90000,
++    rule=RULE, protection='UNVERIFIED_NO_STOP_WILL_BE_SUBMITTED')
++
++
++def policy_hash():
++    return fingerprint(POLICY)
++
++
++@dataclass(frozen=True)
++class EmergencyProposal(cert.CertificationProposal):
++    mode: str = 'TESTNET_QUALIFICATION_P0_1000_V1'
++    max_notional: str = '1000'
++    session_loss_budget: str = '1000'  # Principal allowance, never a guaranteed loss cap.
++    max_signed_actions: int = 4
++    entry_slippage_bps: str = '20'
++    exit_slippage_bps: str = '20'
++    entry_rule: str = RULE
++    qualification_policy_hash: str = ''
++    entry_tif: str = 'Ioc'
++    order_lifetime_seconds: int = 0
++    candidate_evidence_hash: str = ''
++    maker_fee_rate: str = '0'
++    protection_status: str = 'UNVERIFIED_NO_STOP_WILL_BE_SUBMITTED'
++
++    def require(self):
++        if (self.mode!='TESTNET_QUALIFICATION_P0_1000_V1' or self.network!='testnet' or self.dex!='par'
++                or self.entry_side!='BUY' or not self.symbol.startswith('par:')
++                or self.team_wallet.lower()!=cert.TEAM.lower() or self.api_wallet.lower()!=cert.API.lower()
++                or self.entry_rule!=RULE or self.qualification_policy_hash!=policy_hash()
++                or self.protection_status!=POLICY['protection'] or not self.candidate_evidence_hash
++                or not self.source_hash or not self.reliability_policy_hash
++                or type(self.asset_id) is not int or self.asset_id<100000
++                or type(self.observed_ms) is not int or self.observed_ms<0
++                or decimal(self.max_notional)!=1000 or decimal(self.session_loss_budget)!=1000
++                or type(self.max_exit_attempts) is not int or self.max_exit_attempts!=2
++                or type(self.max_signed_actions) is not int or self.max_signed_actions!=4
++                or decimal(self.entry_slippage_bps)!=20 or decimal(self.exit_slippage_bps)!=20
++                or self.entry_tif not in {'Ioc','Gtc','Alo'}
++                or type(self.order_lifetime_seconds) is not int
++                or self.order_lifetime_seconds!=(0 if self.entry_tif=='Ioc' else 30)):
++            raise ExchangeError('INVALID_P0_QUALIFICATION_PROPOSAL')
++        n={k:decimal(getattr(self,k),positive=True) for k in ('quantity','entry_limit','exit_bound',
++            'stop_trigger','stop_limit','reference_bid','reference_ask','reference_mark','reference_oracle')}
++        decimal(self.taker_fee_rate,nonnegative=True);decimal(self.maker_fee_rate)
++        if (not 10<=n['quantity']*n['entry_limit']<=1000
++                or n['quantity']*n['reference_mark']>1000
++                or not n['stop_limit']==n['exit_bound']<n['stop_trigger']<n['entry_limit']
++                or n['reference_ask']<=n['reference_bid']):
++            raise ExchangeError('P0_QUALIFICATION_SIZE_OR_GEOMETRY_INVALID')
++        return self
++
++
++@dataclass(frozen=True)
++class EmergencyApproval(cert.CertificationApproval):
++    qualification_policy_hash: str = ''
++    unverified_stop_risk_accepted: bool = False
++    l2_and_50bps_qualification_policy_accepted: bool = False
++    possible_manual_residual_recovery_accepted: bool = False
++    maximum_1000_is_not_loss_guarantee_accepted: bool = False
++    one_cancel_two_exits_and_lifetime_accepted: bool = False
++
++
++class EmergencyAuthorization(cert.CertificationAuthorization):
++    def require(self, team, signer):
++        a=self.approval;p=self.proposal
++        if (type(p) is not EmergencyProposal or type(a) is not EmergencyApproval
++                or a.qualification_policy_hash!=policy_hash()
++                or not all(getattr(a,k) is True for k in ('unverified_stop_risk_accepted',
++                    'l2_and_50bps_qualification_policy_accepted','possible_manual_residual_recovery_accepted',
++                    'maximum_1000_is_not_loss_guarantee_accepted','one_cancel_two_exits_and_lifetime_accepted'))):
++            raise ExchangeError('EXACT_NEW_P0_POLICY_AND_RESIDUAL_RISK_APPROVAL_REQUIRED')
++        super().require(team,signer)
++        if self.clock_ms()>=p.observed_ms+POLICY['approval_window_ms']:
++            raise ExchangeError('P0_PROPOSAL_EXPIRED')
++
++    def check_action(self, action):
++        p=self.proposal;self.require(p.team_wallet,p.api_wallet)
++        prefix='certification:'+p.identity+':'
++        if action.get('type')=='cancel':
++            rows=action.get('cancels',[])
++            own=self.journal.intent(prefix+'entry')
++            if (len(rows)!=1 or own is None or own['oid'] is None
++                    or rows[0].get('a')!=p.asset_id or str(rows[0].get('o'))!=str(own['oid'])):
++                raise ExchangeError('P0_CANCEL_ORIGINAL_ENTRY_ONLY')
++            return
++        if action.get('type')!='order' or len(action.get('orders',[]))!=1:
++            raise ExchangeError('P0_ACTION_OUTSIDE_SCOPE')
++        w=action['orders'][0]
++        row=self.journal.db.execute('SELECT * FROM intents WHERE cloid=?',(w.get('c'),)).fetchone()
++        if (row is None or w.get('a')!=p.asset_id or type(w.get('b')) is not bool
++                or type(w.get('r')) is not bool or decimal(w.get('s'),positive=True)>decimal(p.quantity)):
++            raise ExchangeError('P0_ACTION_OUTSIDE_SCOPE')
++        qty,px=decimal(w['s'],positive=True),decimal(w.get('p'),positive=True)
++        if not w['r']:
++            if (row['intent_key']!=prefix+'entry' or w['b'] is not True or qty!=decimal(p.quantity)
++                    or px!=decimal(p.entry_limit) or qty*px>1000
++                    or w.get('t')!={'limit':{'tif':p.entry_tif}}
++                    or self.clock_ms()+POLICY['entry_minimum_remaining_ms']>min(
++                        self.approval.expires_ms,p.observed_ms+POLICY['approval_window_ms'])):
++                raise ExchangeError('P0_EXACT_ENTRY_OR_RECOVERY_TIME_REQUIRED')
++        elif (w['b'] is not False or px<decimal(p.exit_bound)
++                or row['intent_key'] not in {prefix+'exit:0',prefix+'exit:1'}
++                or w.get('t')!={'limit':{'tif':'Ioc'}}):
++            raise ExchangeError('P0_EXACT_REDUCE_ONLY_EXIT_REQUIRED')
++
++    def claim_transmission(self, action):
++        self.check_action(action)
++        p=self.proposal;key='certification_transmissions:'+p.identity;digest=fingerprint(action)
++        entry=action['type']=='order' and action['orders'][0]['r'] is False
++        with self.journal.transaction():
++            history=self.journal.control(key) or []
++            if (len(history)>=4 or any(h['hash']==digest for h in history)
++                    or entry and self.journal.control('qualification_entry_consumed')
++                    or action['type']=='cancel' and any(h['kind']=='cancel' for h in history)):
++                raise ExchangeError('P0_ENTRY_OR_ACTION_ALREADY_CONSUMED')
++            if entry:self.journal.db.execute('INSERT OR REPLACE INTO controls VALUES (?,?)',
++                ('qualification_entry_consumed',json.dumps(p.identity)))
++            if entry:self.journal.db.execute('INSERT OR REPLACE INTO controls VALUES (?,?)',
++                ('p0_entry_submission_ms',json.dumps(self.clock_ms())))
++            history.append(dict(hash=digest,entry=entry,kind=action['type'],timestamp_ms=self.clock_ms()))
++            self.journal.db.execute('INSERT OR REPLACE INTO controls VALUES (?,?)',(key,json.dumps(history)))
++
++
++def inspect_market(spec,book,now_ms,*,tif='Ioc',asset_context=None):
++    """Public Stage A only. New 50% L2 policy is NOT old 10%-BBO compliance."""
++    if tif not in {'Ioc','Gtc','Alo'}:raise ExchangeError('P0_INVALID_TIF')
++    r=dict(symbol=spec.symbol,asset_id=spec.asset_id,size_step=str(spec.size_step),entry_tif=tif,
++        potential=False,maximum_notional='1000',protection_verified=False,
++        depth_policy='P0_50_PERCENT_OF_GENUINE_L2_WITHIN_APPROVED_PRICES',
++        old_10_percent_bbo_passed=False,account_checks_performed=False)
++    try:
++        if book.symbol!=spec.symbol or not 0<=now_ms-book.timestamp_ms<=5000:
++            raise ExchangeError('P0_FRESH_BOOK_REQUIRED')
++        if not book.bids or not book.asks:raise ExchangeError('P0_TWO_SIDED_BOOK_REQUIRED')
++        for levels,reverse in ((book.bids,True),(book.asks,False)):
++            if (any(x.price<=0 or x.quantity<=0 for x in levels)
++                    or len({x.price for x in levels})!=len(levels)
++                    or tuple(sorted(levels,key=lambda x:x.price,reverse=reverse))!=levels):
++                raise ExchangeError('P0_INVALID_BOOK_LEVELS')
++        bid,ask=book.bids[0].price,book.asks[0].price
++        if ask<=bid:raise ExchangeError('P0_TWO_SIDED_BOOK_REQUIRED')
++        spread=(ask-bid)/((ask+bid)/2)*10000
++        price=spec.normalize_price(ask*D('1.002') if tif=='Ioc' else bid,'BUY')
++        floor=spec.normalize_price(bid*D(POLICY['exit_floor_factor']),'SELL')
++        immediate=spec.normalize_price(bid*D('.998'),'SELL')
++        qty=(D(10)/price/spec.size_step).to_integral_value(rounding=ROUND_CEILING)*spec.size_step
++        entry=sweep(book.asks,qty,price,'BUY');exit=sweep(book.bids,qty,immediate,'SELL')
++        residual=residual_close_assessment(spec,qty,floor)
++        r.update(exchange_ms=book.timestamp_ms,observed_ms=now_ms,spread_bps=str(spread),bid=str(bid),ask=str(ask),
++            minimum_quantity=str(qty),minimum_entry_notional=str(qty*price),minimum_lot_notional=str(spec.size_step*price),
++            entry_limit=str(price),exit_floor=str(floor),reviewed_exit_limit=str(immediate),
++            maximum_lot_rounded_quantity=str((D(1000)/price//spec.size_step)*spec.size_step),
++            residuals=residual,entry_depth=entry,exit_depth=exit,raw_book=asdict(book),
++            old_10_percent_bbo_passed=qty<=min(book.bids[0].quantity,book.asks[0].quantity)*D('.1'))
++        if spread>50:raise ExchangeError('P0_SPREAD_EXCEEDED')
++        if not residual['ready']:raise ExchangeError(residual['blocker'])
++        if qty*price>1000:raise ExchangeError('P0_MINIMUM_EXCEEDS_CAP')
++        if decimal(exit['available_quantity'])*D('.5')<qty:raise ExchangeError('P0_EXIT_DEPTH_REQUIRED')
++        if tif=='Ioc' and decimal(entry['available_quantity'])*D('.5')<qty:
++            raise ExchangeError('P0_ENTRY_DEPTH_REQUIRED')
++        if tif!='Ioc' and price>=ask:raise ExchangeError('P0_RESTING_PRICE_WOULD_CROSS')
++        if asset_context is not None:
++            mark,oracle=decimal(asset_context['markPx'],positive=True),decimal(asset_context['oraclePx'],positive=True)
++            r.update(mark=str(mark),oracle=str(oracle))
++            if (abs(mark-oracle)/oracle*10000>50 or abs((bid+ask)/2-oracle)/oracle*10000>100
++                    or abs(price-oracle)/oracle*10000>150 or qty*mark>1000):
++                raise ExchangeError('P0_REFERENCE_DIVERGENCE_OR_CAP')
++        r['potential']=True
++    except (ExchangeError,KeyError,TypeError,ArithmeticError) as exc:
++        r['blocker']=str(exc) if isinstance(exc,ExchangeError) else 'P0_INVALID_MARKET_DATA'
++    r['evidence_hash']=fingerprint(r)
++    return r
++
++
++class EmergencyContextProvider(QualificationContextProvider):
++    """Bind actual full L2 to the final quote; no depth fabricated from BBO."""
++    def load(self,request,*,critical=False):
++        from .hyperliquid_market_data import make_quote
++        context=super().load(request,critical=critical)
++        sent=self.client.clock_ms();book=self.market.get_orderbook(request.symbol)
++        self.clock_health.observe(book.timestamp_ms,sent,self.client.clock_ms())
++        quote=make_quote(book,context.contexts[request.symbol],self.client.clock_ms(),
++            mark_timestamp_ms=context.quote.mark_timestamp_ms)
++        self.last_book=book
++        self.books=getattr(self,'books',{});self.books[request.symbol]=book
++        return replace(context,quote=quote)
++
++
++def check_entry(context,request,proposal,now_ms,book):
++    p=proposal.require();q=context.quote;spec=context.spec
++    if (request.symbol!=p.symbol or request.side!='BUY' or request.reduce_only
++            or request.order_type!='LIMIT' or request.tif!=p.entry_tif
++            or request.quantity!=decimal(p.quantity) or request.price!=decimal(p.entry_limit)
++            or spec.asset_id!=p.asset_id or spec.symbol!=p.symbol
++            or spec.normalize_size(request.quantity)!=request.quantity
++            or spec.normalize_price(request.price,'BUY')!=request.price):
++        raise ExchangeError('P0_EXACT_ENTRY_REQUIRED')
++    minimum=(D(10)/request.price/spec.size_step).to_integral_value(rounding=ROUND_CEILING)*spec.size_step
++    if request.quantity!=minimum:
++        raise ExchangeError('P0_MINIMUM_VALID_QUANTITY_RULE_REQUIRED')
++    if (not context.readiness.account_ready or not context.reconciled or context.positions or context.open_orders
++            or context.readiness.team_address.lower()!=p.team_wallet.lower()
++            or context.readiness.signer_address.lower()!=p.api_wallet.lower()
++            or not context.feed_ready or q.mark_timestamp_ms is None
++            or any(not 0<=now_ms-s<=5000 for s in (context.account_ms,context.readiness.observed_ms,
++                q.timestamp_ms,q.mark_timestamp_ms,book.timestamp_ms))):
++        raise ExchangeError('P0_FRESH_RECONCILED_FLAT_ACCOUNT_REQUIRED')
++    if (book.symbol!=p.symbol or book.timestamp_ms!=q.timestamp_ms
++            or book.bids[0].price!=q.bid or book.asks[0].price!=q.ask):
++        raise ExchangeError('P0_BOOK_QUOTE_IDENTITY_REQUIRED')
++    public=inspect_market(spec,book,now_ms,tif=p.entry_tif,
++        asset_context=dict(markPx=str(q.mark),oraclePx=str(q.oracle)))
++    if not public['potential']:raise ExchangeError(public['blocker'])
++    if (request.quantity*max(request.price,q.mark)>1000 or request.quantity*request.price<10
++            or request.price>spec.normalize_price(q.ask*D('1.002'),'BUY')
++            or p.entry_tif=='Ioc' and request.price<q.ask
++            or p.entry_tif!='Ioc' and (request.price>=q.ask or request.price<spec.normalize_price(q.bid*D('.998'),'BUY'))):
++        raise ExchangeError('P0_CURRENT_PRICE_OR_CAP_REQUIRED')
++    if abs(request.price-q.oracle)/q.oracle*10000>150:raise ExchangeError('P0_ORDER_ORACLE_DEVIATION')
++    ent=sweep(book.asks,request.quantity,request.price,'BUY')
++    exit=sweep(book.bids,request.quantity,spec.normalize_price(q.bid*D('.998'),'SELL'),'SELL')
++    if (decimal(exit['available_quantity'])*D('.5')<request.quantity
++            or p.entry_tif=='Ioc' and decimal(ent['available_quantity'])*D('.5')<request.quantity):
++        raise ExchangeError('P0_APPROVED_L2_PARTICIPATION_EXCEEDED')
++    active=context.active_asset
++    if (active.get('coin')!=p.symbol or active.get('user','').lower()!=p.team_wallet.lower()
++            or active.get('leverage')!=dict(type='cross',value=1) or context.leverage!=1):
++        raise ExchangeError('P0_ONE_X_CROSS_IDENTITY_REQUIRED')
++    fee=decimal(p.taker_fee_rate,nonnegative=True)
++    if (decimal(context.readiness.fees['userCrossRate'])*2!=fee
++            or decimal(context.readiness.fees['userAddRate'])*2!=decimal(p.maker_fee_rate)):
++        raise ExchangeError('P0_FEE_SCHEDULE_CHANGED')
++    if (request.quantity>decimal(active['maxTradeSzs'][0],nonnegative=True)
++            or request.quantity*request.price*(1+max(fee,decimal(p.maker_fee_rate))*4)
++                >decimal(active['availableToTrade'][0],nonnegative=True)):
++        raise ExchangeError('P0_MARGIN_REQUIRED')
++    residual=residual_close_assessment(spec,request.quantity,p.exit_bound)
++    if not residual['ready']:raise ExchangeError(residual['blocker'])
++    return dict(policy=POLICY,entry_depth=ent,exit_depth=exit,residuals=residual,
++                old_10_percent_bbo_passed=request.quantity<=min(q.bid_quantity,q.ask_quantity)*D('.1'))
++
++
++class EmergencyComplianceScope:
++    """Narrow controlled-test capability. Production never constructs this class."""
++    def __init__(self,proposal,provider):
++        if type(proposal) is not EmergencyProposal:raise ExchangeError('P0_SCOPE_REQUIRED')
++        self.proposal=proposal.require();self.provider=provider
++    def validate(self,request,context,permission,now_ms):
++        p=self.proposal
++        if (permission.candidate_id!='certification:'+p.identity
++                or permission.provenance.classification!='CONTROLLED_TEST_ORDER'
++                or permission.provenance.test_authorization.get('qualification_policy_hash')!=policy_hash()):
++            raise ExchangeError('P0_EXACT_POLICY_PROVENANCE_REQUIRED')
++        if request.reduce_only:
++            if request.symbol!=p.symbol or request.quantity>decimal(p.quantity):
++                raise ExchangeError('P0_EXIT_SCOPE_REQUIRED')
++            return dict(policy_hash=policy_hash(),max_notional='1000',reduce_only=True)
++        return check_entry(context,request,p,now_ms,self.provider.books[request.symbol])
++
++
++def permission(request,proposal,now_ms,*,reason=None):
++    result=cert.test_permission(request,proposal,now_ms,reason=reason)
++    a=dict(result.provenance.test_authorization,qualification_policy_hash=policy_hash())
++    return replace(result,provenance=replace(result.provenance,test_authorization=a))
++
++
++class EmergencyExecution(HyperliquidExecution):
++    def __init__(self,*args,proposal,**kwargs):
++        self.proposal=proposal.require()
++        super().__init__(*args,**kwargs)
++        scope=EmergencyComplianceScope(proposal,self.context_provider)
++        self.compliance_guard=ComplianceGuard(self.journal,self.position_guard,
++            clock_ms=self.client.clock_ms,transport=self.transport,execution_owner=self,qualification_scope=scope)
++        self.transport._compliance_guard=self.compliance_guard
++    def close_full_position(self,request,*,permission=None):
++        if (permission is None or permission.candidate_id!='certification:'+self.proposal.identity
++                or request.client_order_id not in {'certification:'+self.proposal.identity+':exit:0',
++                    'certification:'+self.proposal.identity+':exit:1'}):
++            raise ExchangeError('P0_EXACT_EXIT_PERMISSION_REQUIRED')
++        a=dict(permission.provenance.test_authorization,qualification_policy_hash=policy_hash())
++        scoped=replace(permission,provenance=replace(permission.provenance,test_authorization=a))
++        return super().close_full_position(request,permission=scoped)
++    def _guard(self,context,checked_ms,**kwargs):
++        super()._guard(context,checked_ms,**kwargs)
++        if kwargs.get('entry'):
++            p=self.proposal
++            # The original identity is immutable. One extra current public L2
++            # read at each signing boundary, never a stale prepared depth estimate.
++            book=self.context_provider.market.get_orderbook(p.symbol)
++            from .hyperliquid_market_data import make_quote
++            q=make_quote(book,context.contexts[p.symbol],self.client.clock_ms(),
++                mark_timestamp_ms=context.quote.mark_timestamp_ms)
++            current=replace(context,quote=q)
++            check_entry(current,OrderRequest(p.symbol,'BUY',p.quantity,p.entry_limit,tif=p.entry_tif),
++                        p,self.client.clock_ms(),book)
++
++
++class EmergencySDKTransport(OfficialSDKTransport):
++    def __init__(self,client,signer,team_address,nonces,authorization,*,rate_limits):
++        if type(authorization) is not EmergencyAuthorization:raise ExchangeError('P0_CAPABILITY_REQUIRED')
++        authorization.require(team_address,signer.address)
++        self.action_expiry_ms=min(authorization.approval.expires_ms,
++            authorization.proposal.observed_ms+POLICY['approval_window_ms'])
++        super().__init__(client,signer,team_address,nonces,authorization,rate_limits=rate_limits)
++    def check(self,action):
++        super().check(action);self.authorization.check_action(action)
++        if action.get('type')=='order' and action['orders'][0]['r'] is False:
++            p=self.authorization.proposal
++            if not residual_close_assessment(self.client.market(p.symbol),p.quantity,p.exit_bound)['ready']:
++                raise ExchangeError('QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL')
++    def transmit(self,payload):
++        self.check(payload['action'])
++        if payload.get('expiresAfter')!=self.action_expiry_ms:raise ExchangeError('P0_SIGNED_EXPIRY_REQUIRED')
++        self.authorization.claim_transmission(payload['action'])
++        return super().transmit(payload)
++
++
++def propose(context,client,source_hash,reliability_hash,book,*,tif='Ioc',candidate_hash):
++    spec,q=context.spec,context.quote
++    row=inspect_market(spec,book,client.clock_ms(),tif=tif,
++        asset_context=dict(markPx=str(q.mark),oraclePx=str(q.oracle)))
++    if not row['potential']:raise ExchangeError(row['blocker'])
++    # Choose minimum valid whole-lot order; NEVER automatically size toward $1000.
++    p=EmergencyProposal(symbol=spec.symbol,asset_id=spec.asset_id,quantity=row['minimum_quantity'],
++        entry_side='BUY',entry_limit=row['entry_limit'],exit_bound=row['exit_floor'],
++        stop_trigger=str(spec.normalize_price(q.bid*D('.99'),'SELL')),stop_limit=row['exit_floor'],
++        reference_bid=str(q.bid),reference_ask=str(q.ask),reference_mark=str(q.mark),reference_oracle=str(q.oracle),
++        observed_ms=client.clock_ms(),source_hash=source_hash,reliability_policy_hash=reliability_hash,
++        team_wallet=cert.TEAM,api_wallet=cert.API,qualification_policy_hash=policy_hash(),
++        entry_tif=tif,order_lifetime_seconds=0 if tif=='Ioc' else 30,candidate_evidence_hash=candidate_hash,
++        taker_fee_rate=str(decimal(context.readiness.fees['userCrossRate'])*2),
++        maker_fee_rate=str(decimal(context.readiness.fees['userAddRate'])*2)).require()
++    req=OrderRequest(p.symbol,'BUY',p.quantity,p.entry_limit,tif=tif,strategy_id='TESTNET_CERTIFICATION_ENTRY')
++    local=check_entry(context,req,p,client.clock_ms(),book)
++    checked=HyperliquidOrderValidator(client).validate(req,context,permission(req,p,client.clock_ms()),client.clock_ms())
++    if not checked.allowed:raise ExchangeError(checked.code)
++    return p,dict(local=local,central=asdict(checked),final_evidence_hash=fingerprint(dict(
++        book=asdict(book),quote=asdict(q),account_ms=context.account_ms,proposal_id=p.identity)))
++
++
++class EmergencySequence(cert.CertificationSequence):
++    def __init__(self,*args,monotonic=None,**kwargs):
++        super().__init__(*args,verified_full_position_closes=True,**kwargs)
++        if type(self.p) is not EmergencyProposal:raise ExchangeError('P0_PROPOSAL_REQUIRED')
++        self.e.protection=UnverifiedQualificationProtection();self.monotonic=monotonic or time.monotonic
++        self.report.update(execution_mode=self.p.mode,normal_protection_certified=False,
++            protection_accepted=False,organizer_whitelisting_confirmed=False)
++
++    def _entry_settled(self,order):
++        submitted=self.e.journal.control('p0_entry_submission_ms')
++        if type(submitted) is not int:raise ExchangeError('P0_DURABLE_ENTRY_TIME_REQUIRED')
++        remaining=max(0,self.p.order_lifetime_seconds-(self.e.client.clock_ms()-submitted)/1000)
++        deadline=self.monotonic()+remaining
++        while True:
++            order=self.resolved(self.e.recover_uncertain(order.intent_key))
++            positions,orders=self.observe()
++            if any(str(o['oid'])!=str(order.exchange_order_id) for o in orders):
++                raise ExchangeError('P0_UNEXPECTED_OPEN_ORDER')
++            self.report.setdefault('entry_monitor',[]).append(dict(at_ms=self.e.client.clock_ms(),
++                state=order.state.value,filled_quantity=str(order.filled_quantity),orders=orders,
++                positions=[asdict(x) for x in positions.values()]))
++            if not orders:break
++            if order.filled_quantity or self.p.entry_tif=='Ioc' or self.monotonic()>=deadline:
++                # One cancellation, only the original entry; no reprice/replacement.
++                result=self.e.cancel_order(self.p.symbol,order.exchange_order_id,critical=True)
++                self.report['original_entry_cancel']=asdict(result)
++                order=self.resolved(self.e.recover_uncertain(order.intent_key))
++                positions,orders=self.observe()
++                status=self.e.account._query('orderStatus',oid=order.cloid)
++                if (orders or status.get('status')!='order' or status['order'].get('status') not in
++                        {'canceled','cancelled','filled'} and not status['order'].get('status','').endswith('Canceled')):
++                    raise ExchangeError('P0_ENTRY_CANCEL_NOT_AUTHORITATIVELY_CONFIRMED')
++                break
++            self.wait()
++        if not self.e.recovery.last_report.ready:raise ExchangeError('P0_ORDER_RECONCILIATION_REQUIRED')
++        return order,positions
++
++    def run(self):
++        try:
++            self.auth.require(self.p.team_wallet,self.p.api_wallet)
++            if (self.e.journal.control('certification_started:'+self.p.identity)
++                    or self.e.journal.control('qualification_entry_consumed') or self.e.journal.intents()):
++                raise ExchangeError('P0_RESTART_READ_ONLY_RECOVERY_REQUIRED')
++            positions,orders=self.observe()
++            if positions or orders or not self.e.recovery.last_report.ready:
++                raise ExchangeError('P0_INITIAL_FLAT_REQUIRED')
++            self.report['equity_before']=str(self.e.recovery.state.equity.reported_account_value)
++            before_fills=set(self.e.recovery.state.fills);before_funding=set(self.e.recovery.state.funding)
++            self.e.journal.control('certification_started:'+self.p.identity,True)
++            self.e.entries_paused=False
++            req=OrderRequest(self.p.symbol,'BUY',self.p.quantity,self.p.entry_limit,
++                strategy_id='TESTNET_CERTIFICATION_ENTRY',tif=self.p.entry_tif,client_order_id=self.prefix+'entry')
++            self.report['status']='ENTRY_SUBMISSION_PENDING'
++            order=self.resolved(self.e.submit(req,permission=permission(req,self.p,self.e.client.clock_ms())))
++            order,positions=self._entry_settled(order);self.report['entry']=asdict(order)
++            entries=[f for k,f in self.e.recovery.state.fills.items() if k not in before_fills
++                and f.order_id==str(order.exchange_order_id) and f.symbol==self.p.symbol]
++            qty=sum((f.quantity for f in entries),D(0))
++            if (qty!=order.filled_quantity or any(f.side!='BUY' for f in entries)
++                    or positions and (positions[self.p.symbol].quantity!=qty or qty<=0)
++                    or qty and not positions):
++                raise ExchangeError('P0_ACTUAL_ENTRY_FILL_POSITION_MISMATCH')
++            if not positions:self.report['status']='NO_FILL_VERIFIED'
++            else:
++                self.report['status']='UNPROTECTED_FILLED_POSITION'
++                self.close()
++            positions,orders=self.observe()
++            if positions or orders or not self.e.recovery.last_report.ready:
++                raise ExchangeError('P0_FINAL_FLAT_RECONCILIATION_REQUIRED')
++            self.report['final_flat']=True
++            fills=[f for k,f in self.e.recovery.state.fills.items() if k not in before_fills]
++            known={str(r['oid']) for r in self.e.journal.intents() if r['oid'] is not None}
++            if any(f.order_id not in known or f.symbol!=self.p.symbol for f in fills):
++                raise ExchangeError('P0_UNEXPECTED_FILL')
++            if entries:
++                self.report.update(realized(entries,[f for f in fills if f.side=='SELL'],
++                    [f for k,f in self.e.recovery.state.funding.items() if k not in before_funding],self.p))
++                after=self.e.recovery.state.equity.reported_account_value
++                delta=after-decimal(self.report['equity_before'])
++                self.report.update(equity_after=str(after),equity_delta=str(delta))
++                if abs(delta-decimal(self.report['realized_pnl']['net_realized_pnl']))>D('.000001'):
++                    raise ExchangeError('P0_EQUITY_ACCOUNTING_MISMATCH')
++                self.report['status']='TRADE_CLOSED_RECONCILED'
++            self.e.journal.control('certification_completed:'+self.p.identity,True)
++        except Exception as exc:
++            attempted=self.e.journal.control('qualification_entry_consumed')==self.p.identity
++            # A PREPARED/SUBMITTED durable attempt also needs read-only recovery.
++            attempted=attempted or bool(self.e.journal.intents())
++            if self.report['status']=='NO_ORDER_AUTHORIZED' and self.e.journal.control('certification_completed:'+self.p.identity):
++                attempted=False
++            self.report.update(status='EMERGENCY_EXIT_REQUIRED' if attempted else 'PREFLIGHT_BLOCKED',
++                error=str(exc) if isinstance(exc,ExchangeError) else type(exc).__name__,
++                operator_action_required=attempted,realized_pnl_status='REALIZED_PNL_NOT_CERTIFIED',
++                recovery_steps=RECOVERY_STEPS)
++            self.e.journal.control('certification_halted:'+self.p.identity,True)
++        finally:
++            self.e.entries_paused=True;self.auth.revoke()
++            self.report['evidence_scope']='OFFLINE_SIGNED_FIXTURE' if type(self.e.transport) is OfflineSDKTransport else 'ACTUAL_TESTNET_ACCOUNT'
++            self.report.update(certification_passed=False,practice_ready=False,live_ready=False)
++            self.e.journal.event('P0_QUALIFICATION_RESULT',self.e.client.clock_ms(),report=self.report)
++        return self.report
++
++
++RECOVERY_STEPS=[
++    'STOP new entries. Preserve journal, original cloid/oid, consumed attempt and source/approval files.',
++    'Query original orderStatus by cloid, team userFillsByTime, frontendOpenOrders and clearinghouseState with dex=par.',
++    'UNKNOWN is not flat. Reconcile actual fills, original unfilled order and signed-management uncertainty without resubmission.',
++    'An original resting remainder must be canceled and cancellation/terminal state confirmed before a full-position exit.',
++    'Within current exact approval: SELL reduce-only IOC for actual reconciled quantity, at fresh bid less 20 bps, never below the approved floor; at most two exits.',
++    'If halted, expired, disconnected, outside price bounds or cancellation/exits uncertain: no further writes. Obtain separate exact recovery approval or manually inspect the team account.',
++    'Claim flat only after authoritative zero par positions, zero open orders and ready durable account reconciliation.']
++
++
++def realized(entries,exits,funding,p):
++    """Actual reported P&L; GTC may pay maker or taker fees, never assume a rebate."""
++    if (not entries or not exits or any(f.source!='EXCHANGE_REPORTED_FILL' or f.closed_pnl is None
++            or f.fee_token!='USDPR' or f.symbol!=p.symbol for f in entries+exits)
++            or any(f.source!='EXCHANGE_REPORTED_USER_FUNDING' or f.symbol!=p.symbol for f in funding)
++            or len({f.identity for f in entries+exits})!=len(entries+exits)):
++        raise ExchangeError('P0_REPORTED_ACCOUNTING_EVENTS_REQUIRED')
++    qty=sum((f.quantity for f in entries),D(0))
++    if qty!=sum((f.quantity for f in exits),D(0)) or qty>decimal(p.quantity):
++        raise ExchangeError('P0_FILL_SIZE_MISMATCH')
++    en=sum((f.quantity*f.price for f in entries),D(0));ex=sum((f.quantity*f.price for f in exits),D(0))
++    gross=sum((f.closed_pnl for f in entries+exits),D(0))
++    if abs(ex-en-gross)>D('.000001'):raise ExchangeError('P0_CLOSED_PNL_MISMATCH')
++    fees=sum((f.fee for f in entries+exits),D(0));cash=sum((f.cashflow for f in funding),D(0))
++    rates=(decimal(p.maker_fee_rate),decimal(p.taker_fee_rate))
++    if not (en*min(rates)+ex*rates[1]-D('.000002')<=fees<=(en+ex)*max(rates)*D('1.02')+D('.000002')):
++        raise ExchangeError('P0_REPORTED_FEE_OUTSIDE_REVIEWED_SCHEDULE')
++    return dict(realized_pnl_status='EXCHANGE_REALIZED_PNL_CERTIFIED',realized_pnl={k:str(v) for k,v in
++        dict(quantity=qty,entry_notional=en,exit_notional=ex,gross_closed_pnl=gross,
++            actual_entry_fee=sum((f.fee for f in entries),D(0)),actual_exit_fee=sum((f.fee for f in exits),D(0)),
++            actual_funding=cash,net_realized_pnl=gross-fees+cash).items()},fill_proof=[asdict(f) for f in entries+exits],
++            funding_proof=[asdict(f) for f in funding],fee_liquidity_type='REPORTED_FEES; NORMALIZED_FILL_HAS_NO_MAKER_TAKER_TAG')
++
++
++def build_runtime(root,proposal,approval,*,test_receipt):
++    """Construct actual SDK only AFTER exact current approval and fresh read gates."""
++    from venue_config import require_paper_migration
++    from strategy_freeze import verify_strategy_freeze
++    from .paper_operations import active_source_hash
++    from .reliability_policy import load_reliability_policy
++    from .hyperliquid_client import HyperliquidClient
++    from .hyperliquid_account import HyperliquidAccount
++    from .hyperliquid_market_data import HyperliquidMarketData
++    from .execution_safety import ClockHealthMonitor, HyperliquidRateLimitManager, NonceManager
++    from .practice_preflight import read_api_key, api_signer
++    from .certification_runtime import CertificationRecovery
++    root=Path(root).resolve();state=root/'runtime/testnet/anchorium-bot-1'
++    require_paper_migration();verify_strategy_freeze();proposal.require()
++    require_emergency_regression(root,test_receipt);prior_execution_check(root)
++    journal=ExecutionJournal(state/'qualification.sqlite',session_id='anchorium-one-qualification-v1',team_address=proposal.team_wallet)
++    client=transport=nonces=None
++    try:
++        auth=EmergencyAuthorization(proposal,approval,journal,clock_ms=lambda:time.time_ns()//1000000,
++            source_hash=lambda:active_source_hash(root),
++            policy_hash=lambda:hashlib.sha256((root/'configs/reliability_policy.json').read_bytes()).hexdigest())
++        auth.require(proposal.team_wallet,proposal.api_wallet)
++        if journal.intents() or journal.control('qualification_entry_consumed'):
++            raise ExchangeError('P0_PRIOR_ATTEMPT_READ_ONLY_RECOVERY_REQUIRED')
++        rate,cp,protection=load_reliability_policy(root/'configs/reliability_policy.json')
++        if protection.enabled:raise ExchangeError('P0_GLOBAL_PROTECTION_MUST_REMAIN_DISABLED')
++        rates=HyperliquidRateLimitManager(journal,policy=rate,signer_address=proposal.api_wallet)
++        client=HyperliquidClient(rate_limits=rates);client.startup()
++        account=HyperliquidAccount(client,proposal.team_wallet);market=HyperliquidMarketData(client)
++        if account.get_positions() or account.get_frontend_open_orders():raise ExchangeError('P0_INITIAL_FLAT_REQUIRED')
++        clock=ClockHealthMonitor(clock_ms=client.clock_ms,journal=journal,**cp)
++        recovery=CertificationRecovery(account,journal,initial_start_ms=0)
++        provider=EmergencyContextProvider(market,account,proposal.api_wallet,clock,rates,
++            reconcile_before_load=recovery.recover,reconciliation_ready=lambda:recovery.account_truth_ready,feed_ready=lambda:True)
++        req=OrderRequest(proposal.symbol,'BUY',proposal.quantity,proposal.entry_limit,tif=proposal.entry_tif,
++            strategy_id='TESTNET_CERTIFICATION_ENTRY')
++        context=provider.load(req)
++        check_entry(context,req,proposal,client.clock_ms(),provider.last_book)
++        validation=HyperliquidOrderValidator(client).validate(req,context,permission(req,proposal,client.clock_ms()),client.clock_ms())
++        if not validation.allowed:raise ExchangeError(validation.code)
++        provider.reconcile_before_load=None
++        key,_=read_api_key(root)
++        try:signer=api_signer(key,proposal.api_wallet,proposal.team_wallet)
++        finally:key=None
++        nonces=NonceManager(state/'nonces.sqlite',signer.address,journal=journal)
++        transport=EmergencySDKTransport(client,signer,proposal.team_wallet,nonces,auth,rate_limits=rates)
++        signer=None
++        executor=EmergencyExecution(client,proposal=proposal,transport=transport,account=account,journal=journal,
++            context_provider=provider,validator=HyperliquidOrderValidator(client),recovery=recovery,
++            clock_health=clock,rate_limits=rates)
++        return EmergencyRuntime(EmergencySequence(executor,proposal,auth,wait=lambda:time.sleep(1)),
++                                client,transport,nonces,journal)
++    except Exception:
++        if transport:transport.close()
++        if nonces:nonces.close()
++        if client:client.close()
++        journal.close();raise
++
++
++class EmergencyRuntime:
++    def __init__(self,sequence,client,transport,nonces,journal):
++        self.sequence,self.client,self.transport,self.nonces,self.journal=sequence,client,transport,nonces,journal
++    def run(self):
++        result=self.sequence.run()
++        result['whitelist_trade_proof']=whitelist_trade_proof(self.sequence,result,
++            actual_transport=type(self.transport) is EmergencySDKTransport)
++        return result
++    def close(self):
++        self.sequence.auth.revoke()
++        try:self.sequence.e.recovery.checkpoint(clean=True)
++        finally:
++            self.transport.close();self.nonces.close();self.client.close();self.journal.close()
++
++
++def require_emergency_regression(root,receipt):
++    path=require_qualification_regression(root,receipt)
++    r=json.loads(path.read_text())
++    after=r.get('checks_after',{})
++    if (r['totals']['tests']<1984 or set(after)!={'strategy_freeze','phase0'}
++            or any(v.get('exit_code')!=0 or v.get('result',{}).get('passed') is not True for v in after.values())):
++        raise ExchangeError('P0_FULL_BASELINE_AND_AFTER_CHECKS_REQUIRED')
++    return path
+--- before/algo-trading-bot/exchange/compliance_guard.py
++++ after/algo-trading-bot/exchange/compliance_guard.py
+@@ -97,13 +97,19 @@
+ 
+ 
+ class ComplianceGuard:
+-    def __init__(self, journal, position_guard, *, clock_ms, transport, policy=None, execution_owner=None):
++    def __init__(self, journal, position_guard, *, clock_ms, transport, policy=None, execution_owner=None,
++                 qualification_scope=None):
+         self.journal = journal
+         self.position_guard = position_guard
+         self.clock_ms = clock_ms
+         self.transport = transport
+         self.execution_owner = execution_owner
+         self.policy = policy or CompliancePolicy()
++        if qualification_scope is not None:
++            from .emergency_qualification import EmergencyComplianceScope
++            if type(qualification_scope) is not EmergencyComplianceScope:
++                raise ExchangeError('P0_EXACT_COMPLIANCE_SCOPE_REQUIRED')
++        self.qualification_scope = qualification_scope
+         self._approved = {}
+         self._permits = {}
+ 
+@@ -192,13 +198,16 @@
+                     return finish(False, 'UNEXPLAINED_ORDER')
+             elif classification == 'CONTROLLED_TEST_ORDER':
+                 a = p.test_authorization or {}
++                scoped = self.qualification_scope
++                if scoped is not None:
++                    checks['qualification_policy'] = scoped.validate(request, context, permission, now)
+                 checks['performance_statistics'] = 'EXCLUDE_CONTROLLED_TEST'
+                 if (p.action_type != 'CONTROLLED_TEST_ORDER' or not a.get('operator_authorization') or
+                         not a.get('objective') or not a.get('exit_procedure') or
+                         a.get('market') != request.symbol or decimal(a.get('expected_quantity', 0)) != request.quantity or
+                         type(a.get('timestamp_ms')) is not int or type(a.get('expires_ms')) is not int or
+                         not a['timestamp_ms'] <= now < a['expires_ms'] <= a['timestamp_ms']+300000 or
+-                        request.quantity*context.quote.mark > 50):
++                        request.quantity*context.quote.mark > (1000 if scoped is not None else 50)):
+                     return finish(False, 'UNAUTHORIZED_TEST_ORDER')
+             if request.reduce_only and (not held or (held.quantity > 0) == (request.side == 'BUY') or
+                     request.quantity > abs(held.quantity)):
+@@ -264,8 +273,11 @@
+                 depth = q.ask_quantity if request.side == 'BUY' else q.bid_quantity
+                 checks.update(executable_depth=str(depth), order_size=str(request.quantity),
+                               participation=str(request.quantity/depth) if depth else None)
+-                if depth <= 0 or request.quantity > depth*self.policy.depth_participation:
++                separate_l2 = classification == 'CONTROLLED_TEST_ORDER' and self.qualification_scope is not None
++                if not separate_l2 and (depth <= 0 or request.quantity > depth*self.policy.depth_participation):
+                     return finish(False, 'BOOK_MANIPULATION_RISK')
++                if separate_l2:
++                    checks['liquidity_policy'] = 'P0_EXACT_SCOPE_L2_CHECK; NOT_OLD_BBO_RULE'
+             checks['liquidity'] = 'PASS' if not request.reduce_only else 'REDUCE_ONLY_RISK_ACTION'
+             checks['exchange_writes'] = 'SEPARATE_AUTHORIZATION_STILL_REQUIRED'
+             return finish(True, 'COMPLIANCE_PASS')
+--- before/scripts/watch_testnet_qualification.py
++++ after/scripts/watch_testnet_qualification.py
+@@ -215,6 +215,10 @@
+                 path = directory / name
+                 if path.exists():
+                     path.rename(directory / ('INVALIDATED_' + name))
++        # The end audit is diagnostic, not an ongoing account refresh. Expose
++        # the terminal state in readiness as well as the operator handoff.
++        if not r.get('selected_proposal') or r['status'] == 'QUALIFICATION_LOCKED':
++            r['qualification_state'] = r['status']
+         atomic_json(directory / 'readiness.json', r)
+         summary = preparation_summary(r, directory, now_ms=time.time_ns() // 1000000)
+         if not r.get('selected_proposal'):
+--- before/scripts/run_emergency_qualification.py
++++ after/scripts/run_emergency_qualification.py
+@@ -0,0 +1,217 @@
++"""P0 preparation is read-only. --execute requires separate exact risk approval."""
++import argparse
++from dataclasses import asdict
++from datetime import datetime,timezone,timedelta
++import hashlib,json,shlex,signal,sys,threading,time
++from pathlib import Path
++from types import SimpleNamespace
++ROOT=Path(__file__).resolve().parents[1]
++sys.path.insert(0,str(ROOT/'algo-trading-bot'))
++from exchange.base_exchange import ExchangeError,decimal
++from exchange.paper_operations import active_source_hash,atomic_json,PaperOwner
++from exchange.qualification_watcher import (ReadOnlyQualificationSession,PublicBookStream,PublicBookReader,
++    OpportunityGate,source_unchanged,prior_execution_check,durable_readback)
++from exchange.emergency_qualification import (EmergencyContextProvider,EmergencyProposal,EmergencyApproval,
++    POLICY,policy_hash,inspect_market,propose,build_runtime,RECOVERY_STEPS,require_emergency_regression)
++from exchange.testnet_certification import TEAM,API
++from strategy_freeze import verify_strategy_freeze
++from venue_config import require_paper_migration
++from run_testnet_qualification import current_test_receipt
++
++
++def approval_template(p):
++    return asdict(EmergencyApproval(proposal_hash=p.identity,operator_approval='',approved_ms=None,
++        expires_ms=None,qualification_policy_hash=policy_hash()))
++
++
++def handoff(p,directory,receipt):
++    deadline=p.observed_ms+POLICY['approval_window_ms']
++    args=['.venv/bin/python','scripts/run_emergency_qualification.py','--execute',
++        '--output-directory',str(directory/'authorized_attempt'),
++        '--proposal-file',str(directory/'proposal.json'),
++        '--operator-approval-file',str(directory/'operator_approval.json'),'--test-receipt',str(receipt)]
++    qty=decimal(p.quantity);price=decimal(p.entry_limit);floor=decimal(p.exit_bound)
++    fee=decimal(p.taker_fee_rate);maker=decimal(p.maker_fee_rate)
++    return dict(status='AWAITING_EXACT_HUMAN_RISK_APPROVAL',proposal_id=p.identity,proposal=asdict(p),
++        approval_deadline_ms=deadline,approval_deadline_ist=datetime.fromtimestamp(deadline/1000,
++            timezone(timedelta(hours=5,minutes=30))).isoformat(),
++        actual_entry_exposure=str(qty*price),maximum_policy_exposure='1000',
++        selected_quantity_fixed=True,no_automatic_enlargement=True,entry_attempts=1,exit_attempts=2,cancel_attempts=1,
++        estimate_round_trip_taker_fee_at_limits=str(qty*(price+floor)*fee),
++        estimate_resting_entry_fee_range=[str(qty*price*maker),str(qty*price*fee)],
++        loss_if_fully_closed_at_floor_with_taker_fees=str(qty*(price-floor)+qty*(price+floor)*fee),
++        loss_cap_guaranteed=False,protection_verified=False,no_stop_will_be_submitted=True,
++        risks=['Public depth can disappear; IOC may fill zero or partly. GTC may never fill.',
++            'Small protective stops remain UNVERIFIED. All exposure will be unprotected.',
++            'Historical exact one-lot BTC closes do not guarantee future acceptance or liquidity.',
++            'Cancellation, exits or reads can fail. Manual recovery may be needed; funding/fees and cross margin prevent a guaranteed total loss cap.',
++            '30-second GTC/ALO lifetime is a local monitoring/cancel deadline, not exchange-side auto expiry.',
++            'A programmatic practice fill is evidence only; organizer whitelist acceptance remains unconfirmed.'],
++        required_acknowledgements=[k for k,v in approval_template(p).items() if v is False],
++        approval_procedure=['Explicitly authorize this exact proposal ID and all listed risks in chat.',
++            'The operator approval file must contain this exact hash/policy, the human approval text, true acknowledgements and current approved_ms/expires_ms.',
++            'expires_ms must be <= approved_ms + 300000 and <= proposal observed_ms + 300000. Entry needs at least 90 seconds remaining.',
++            'Preparation never fills in approval or constructs an actual signer. Changed/expired prices or source require a new proposal, not silent resizing.'],
++        execute_command=shlex.join(args),recovery_steps=RECOVERY_STEPS,exchange_submissions=0,
++        actual_wallet_signatures=0,actual_fill_verified=False,organizer_whitelisting_confirmed=False,
++        normal_protection_certified=False,practice_ready=False,live_ready=False)
++
++
++def prepare(directory,receipt=None,*,duration_seconds=60,route='auto',transport='auto'):
++    if not 10<=duration_seconds<=300 or route not in {'auto','ioc','gtc','alo'} or transport not in {'auto','rest'}:
++        raise ExchangeError('P0_INVALID_PREPARATION_ARGUMENTS')
++    directory=Path(directory).resolve();directory.mkdir(parents=True,exist_ok=False)
++    source=active_source_hash(ROOT)
++    reliability=hashlib.sha256((ROOT/'configs/reliability_policy.json').read_bytes()).hexdigest()
++    r=dict(status='MONITORING_READ_ONLY',source_hash=source,reliability_policy_hash=reliability,
++        qualification_policy=POLICY,qualification_policy_hash=policy_hash(),execution_mode='PAPER',allow_live_orders=False,
++        exchange_submissions=0,actual_wallet_signatures=0,actual_fill_verified=False,protection_verified=False,
++        started_utc=datetime.now(timezone.utc).isoformat(),markets={},attempts=[],stage_a_observations=0)
++    started=time.monotonic();cancel=threading.Event();session=stream=owner=None
++    timer=threading.Timer(duration_seconds+180,cancel.set);timer.daemon=True;timer.start()
++    handlers={}
++    def progress(event,**details):
++        row=dict(event=event,elapsed_seconds=round(time.monotonic()-started,3),at_ms=time.time_ns()//1000000,**details)
++        with (directory/'progress.jsonl').open('a') as f:f.write(json.dumps(row,default=str)+'\n')
++        if event in {'POTENTIAL_OPPORTUNITY','REFRESHING_ACCOUNT','AWAITING_EXACT_HUMAN_RISK_APPROVAL'}:
++            print(json.dumps(row),flush=True)
++        if cancel.is_set():raise ExchangeError('P0_PREPARATION_CANCELLED_OR_DEADLINE')
++    def stop(sig,frame):cancel.set()
++    try:
++        require_paper_migration();r['freeze_before']=verify_strategy_freeze()
++        receipt=require_emergency_regression(ROOT,current_test_receipt(receipt,source));r['test_receipt']=str(receipt)
++        owner=PaperOwner(ROOT/'runtime/paper/qualification-watch.lock')
++        for sig in (signal.SIGINT,signal.SIGTERM):handlers[sig]=signal.signal(sig,stop)
++        session=ReadOnlyQualificationSession(ROOT,directory,source,reliability,progress=progress,cancel_event=cancel)
++        session._provider_class=EmergencyContextProvider;session.start()
++        r['metadata']={s:asdict(spec) for s,spec in session.client.markets.items()}
++        r['prior_execution']=prior_execution_check(ROOT)
++        # One inventory, not account history replay on each book update.
++        contexts=session.market.get_asset_contexts();r['contexts_observed_ms']=session.client.clock_ms()
++        r['capacity_inventory']={}
++        for symbol in session.client.markets:
++            active=session.account._query('activeAssetData',coin=symbol)
++            r['capacity_inventory'][symbol]=dict(active=active,observed_ms=session.client.clock_ms())
++        if transport=='auto':
++            stream=PublicBookStream(session.client.markets,session.rates,clock_ms=session.client.clock_ms);stream.start()
++        reader=PublicBookReader(session.market,stream);gate=OpportunityGate()
++        tifs=['Ioc','Gtc'] if route=='auto' else [{'ioc':'Ioc','gtc':'Gtc','alo':'Alo'}[route]]
++        seen={};last_source=time.monotonic()
++        while time.monotonic()-started<duration_seconds and not cancel.is_set():
++            if time.monotonic()-last_source>=5:
++                source_unchanged(ROOT,source,reliability);last_source=time.monotonic()
++            potentials=[]
++            for symbol,spec in session.client.markets.items():
++                book,origin=reader.get(symbol)
++                if not book or seen.get(symbol)==book.timestamp_ms:continue
++                seen[symbol]=book.timestamp_ms
++                for tif in tifs:
++                    row=inspect_market(spec,book,session.client.clock_ms(),tif=tif,asset_context=contexts[symbol])
++                    row['input_transport']=origin
++                    r['markets'][symbol+':'+tif]=row;r['stage_a_observations']+=1
++                    with (directory/'observations.jsonl').open('a') as f:f.write(json.dumps(row,default=str)+'\n')
++                    if row['potential']:potentials.append(row)
++            # Freeze exact public candidate identity before the bounded final refresh.
++            potentials.sort(key=lambda x:(x['entry_tif']!='Ioc',decimal(x['minimum_entry_notional']),x['symbol']))
++            for row in potentials:
++                if not gate.claim(row):continue
++                candidate=dict(symbol=row['symbol'],tif=row['entry_tif'],candidate_evidence_hash=row['evidence_hash'],
++                    candidate_exchange_ms=row['exchange_ms'],public_candidate=row)
++                r['attempts'].append(candidate)
++                atomic_json(directory/('candidate_'+str(gate.attempts)+'.json'),candidate)
++                progress('POTENTIAL_OPPORTUNITY',symbol=row['symbol'],entry_tif=row['entry_tif'])
++                try:
++                    source_unchanged(ROOT,source,reliability)
++                    session.verify_signer();progress('REFRESHING_ACCOUNT',symbol=row['symbol'])
++                    req=SimpleNamespace(symbol=row['symbol'],reduce_only=False)
++                    session.rates.read_budget_wait_seconds=65
++                    context=session.provider.load(req)
++                    candidate.update(readiness=asdict(context.readiness),active_asset=context.active_asset,
++                        quote=asdict(context.quote),account_ms=context.account_ms,
++                        positions=[asdict(p) for p in context.positions.values()],orders=list(context.open_orders),
++                        account_reconciliation=asdict(session.recovery.last_report),signer=session.identity,
++                        clock=session.clock.report(),
++                        checkpoint=durable_readback(directory/'read_only.sqlite',session.recovery.source))
++                    p,checks=propose(context,session.client,source,reliability,session.provider.last_book,
++                        tif=row['entry_tif'],candidate_hash=row['evidence_hash'])
++                    candidate.update(proposal=asdict(p),checks=checks,eligible=True)
++                    source_unchanged(ROOT,source,reliability)
++                    atomic_json(directory/'proposal.json',asdict(p))
++                    atomic_json(directory/'approval_REQUIRED_UNFILLED.json',approval_template(p))
++                    r.update(handoff(p,directory,receipt));r['selected_candidate']=candidate
++                    progress('AWAITING_EXACT_HUMAN_RISK_APPROVAL',proposal_id=p.identity)
++                    break
++                except ExchangeError as exc:
++                    candidate.update(eligible=False,blocker=str(exc))
++                    if str(exc) not in {'P0_ENTRY_DEPTH_REQUIRED','P0_EXIT_DEPTH_REQUIRED','P0_SPREAD_EXCEEDED',
++                            'P0_REFERENCE_DIVERGENCE_OR_CAP','P0_APPROVED_L2_PARTICIPATION_EXCEEDED',
++                            'P0_CURRENT_PRICE_OR_CAP_REQUIRED','QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL',
++                            'QUALIFICATION_CLOCK_NOT_HEALTHY','QUALIFICATION_CLOCK_ACCOUNT_QUOTE_PAIR_NOT_READY'}:
++                        raise
++                finally:
++                    session.rates.read_budget_wait_seconds=0
++                    atomic_json(directory/('candidate_'+str(gate.attempts)+'.json'),candidate)
++            if r.get('proposal_id'):break
++            cancel.wait(.5)
++        if cancel.is_set():raise ExchangeError('P0_PREPARATION_CANCELLED_OR_DEADLINE')
++        if not r.get('proposal_id'):r.update(status='NO_CURRENT_QUALIFICATION_PROPOSAL',blocker='NO_SUPPORTED_CURRENT_OPPORTUNITY')
++        r['rates']=session.rates.report();r['reconciliation_calls']=session.reconciliation_calls
++        r['reader_errors']=reader.errors
++    except Exception as exc:
++        r.update(status='QUALIFICATION_LOCKED',blocker=str(exc) if isinstance(exc,ExchangeError) else type(exc).__name__)
++    finally:
++        timer.cancel()
++        if stream:
++            try:r['stream']=stream.report();stream.close();r['stream_after_shutdown']=stream.report()
++            except Exception as exc:r.update(status='QUALIFICATION_LOCKED',cleanup_error=str(exc))
++        if session:
++            try:session.close();r['durable_cleanup']=getattr(session,'cleanup',None)
++            except Exception as exc:r.update(status='QUALIFICATION_LOCKED',cleanup_error=str(exc))
++        if owner:owner.close()
++        for sig,handler in handlers.items():signal.signal(sig,handler)
++        try:source_unchanged(ROOT,source,reliability);r['freeze_after']=verify_strategy_freeze()
++        except Exception as exc:r.update(status='QUALIFICATION_LOCKED',blocker=str(exc))
++        if r['status']=='QUALIFICATION_LOCKED':
++            for name in ('proposal.json','approval_REQUIRED_UNFILLED.json'):
++                path=directory/name
++                if path.exists():path.rename(directory/('INVALIDATED_'+name))
++            r.pop('execute_command',None)
++        r['qualification_state']=r['status']
++        r.update(finished_utc=datetime.now(timezone.utc).isoformat(),elapsed_seconds=round(time.monotonic()-started,3),
++            source_hash_after=active_source_hash(ROOT),actual_order_authorization_supplied=False)
++        atomic_json(directory/'readiness.json',r)
++        if r.get('proposal_id'):atomic_json(directory/'operator_handoff.json',r)
++    return r
++
++
++def main():
++    a=argparse.ArgumentParser(description=__doc__)
++    a.add_argument('--output-directory',required=True);a.add_argument('--test-receipt')
++    a.add_argument('--duration-seconds',type=int,default=60)
++    a.add_argument('--route',choices=['auto','ioc','gtc','alo'],default='auto')
++    a.add_argument('--transport',choices=['auto','rest'],default='auto')
++    a.add_argument('--execute',action='store_true');a.add_argument('--proposal-file');a.add_argument('--operator-approval-file')
++    args=a.parse_args()
++    if args.execute:
++        if not all((args.proposal_file,args.operator_approval_file,args.test_receipt)):
++            a.error('Exact proposal, human operator approval and source-bound test receipt are required.')
++        directory=Path(args.output_directory).resolve();directory.mkdir(parents=True,exist_ok=False)
++        p=EmergencyProposal(**json.loads(Path(args.proposal_file).read_text()))
++        approval=EmergencyApproval(**json.loads(Path(args.operator_approval_file).read_text()))
++        runtime=build_runtime(ROOT,p,approval,test_receipt=args.test_receipt)
++        try:
++            result=runtime.run();atomic_json(directory/'execution_report.json',result)
++            atomic_json(directory/'WHITELIST_TRADE_PROOF.json',result['whitelist_trade_proof'])
++        finally:runtime.close()
++        print(json.dumps(result,default=str,indent=2))
++        return 0 if result.get('final_flat') is True and result['status'] in {'TRADE_CLOSED_RECONCILED','NO_FILL_VERIFIED'} else 1
++    if args.proposal_file or args.operator_approval_file:a.error('Preparation cannot consume an execution authorization.')
++    r=prepare(args.output_directory,args.test_receipt,duration_seconds=args.duration_seconds,route=args.route,transport=args.transport)
++    print(json.dumps({k:r.get(k) for k in ('status','blocker','proposal_id','proposal','approval_deadline_ist',
++        'actual_entry_exposure','estimate_round_trip_taker_fee_at_limits','loss_if_fully_closed_at_floor_with_taker_fees',
++        'execute_command','protection_verified','exchange_submissions')},indent=2))
++    return 1 if r['status']=='QUALIFICATION_LOCKED' else 0
++
++if __name__=='__main__':
++    try:raise SystemExit(main())
++    except ExchangeError as exc:print(json.dumps(dict(status='QUALIFICATION_LOCKED',blocker=str(exc))));raise SystemExit(1)
+--- before/algo-trading-bot/test_emergency_qualification.py
++++ after/algo-trading-bot/test_emergency_qualification.py
+@@ -0,0 +1,422 @@
++"""P0 real composition with ephemeral SDK signing and synthetic account records.
++HTTP is forbidden; these tests never certify an actual wallet or protective stop.
++"""
++from copy import deepcopy
++from dataclasses import asdict,replace
++from decimal import Decimal as D
++import json
++from pathlib import Path
++from types import SimpleNamespace
++import pytest
++from exchange.base_exchange import ExchangeError,BookLevel,OrderBook,MarketSpec
++from exchange.certification_runtime import CertificationRecovery
++from exchange.order_lifecycle import OrderRequest
++from exchange.compliance_guard import ComplianceGuard
++from exchange.emergency_qualification import (EmergencyProposal,EmergencyApproval,EmergencyAuthorization,
++    EmergencyContextProvider,EmergencyExecution,EmergencySequence,EmergencyComplianceScope,
++    inspect_market,propose,check_entry,permission,policy_hash,POLICY,realized,build_runtime)
++from exchange.testnet_qualification import QualificationAuthorization,whitelist_trade_proof
++from test_live_exchange_execution import live,response
++from test_exact_full_close_v8_6 import runtime_mapping
++from test_testnet_certification_v8 import FakeCertificationVenue
++from test_exchange_migration import NOW,TEAM
++
++
++@pytest.fixture
++def emergency(live,monkeypatch):
++    import exchange.testnet_certification as mod
++    monkeypatch.setattr(mod,'TEAM',TEAM);monkeypatch.setattr(mod,'API',live.signer.address)
++    runtime_mapping(live)
++    live.fixture.book.update(levels=[[dict(px='83400',sz='.1'),dict(px='83350',sz='.2')],
++        [dict(px='83440',sz='.0006'),dict(px='83480',sz='.001')]])
++    live.fixture.contexts=[dict(markPx='83500',oraclePx='83500',funding='.0001',openInterest='10')
++        for _ in live.fixture.metadata['universe']]
++    live.fixture.active.update(markPx='83500',availableToTrade=['1000','1000'])
++    recovery=CertificationRecovery(live.account,live.journal,initial_start_ms=NOW)
++    def wait_seconds(seconds):
++        live.fixture.now+=int(seconds*1000)
++        live.fixture.book['time']=live.fixture.now
++    provider=EmergencyContextProvider(live.market,live.account,live.signer.address,live.clock,live.rate,
++        reconciliation_ready=lambda:recovery.account_truth_ready,feed_ready=lambda:True,wait=wait_seconds)
++    recovery.recover()
++    context=provider.load(OrderRequest('par:BTC','BUY','.0002','83606',tif='Ioc'))
++    p,checks=propose(context,live.client,'fixture-source','fixture-policy',provider.last_book,
++                     tif='Ioc',candidate_hash='real-synthetic-book-hash')
++    a=EmergencyApproval(p.identity,'SYNTHETIC_EXACT_RISK_ONLY',NOW,NOW+300000,True,True,True,
++        policy_hash(),True,True,True,True,True)
++    auth=EmergencyAuthorization(p,a,live.journal,clock_ms=lambda:live.fixture.now,
++        source_hash=lambda:'fixture-source',policy_hash=lambda:'fixture-policy')
++    e=EmergencyExecution(live.client,proposal=p,transport=live.transport,account=live.account,
++        journal=live.journal,context_provider=provider,validator=live.validator,recovery=recovery,
++        clock_health=live.clock,rate_limits=live.rate)
++    live.executor=e;live.provider=provider
++    venue=FakeCertificationVenue(live,monkeypatch,auth)
++    seq=EmergencySequence(e,p,auth)
++    return SimpleNamespace(live=live,p=p,a=a,auth=auth,venue=venue,sequence=seq,context=context,checks=checks)
++
++
++def resting(c,monkeypatch,tif='Gtc',partial=None,fill_on_cancel=False):
++    p,checks=propose(c.context,c.live.client,'fixture-source','fixture-policy',c.live.provider.last_book,
++        tif=tif,candidate_hash='synthetic-resting-book')
++    c.p=p;c.a=replace(c.a,proposal_hash=p.identity);c.auth.proposal=p;c.auth.approval=c.a
++    c.live.executor.proposal=p;c.live.executor.compliance_guard.qualification_scope=EmergencyComplianceScope(p,c.live.provider)
++    original=c.venue.transmit
++    pending={}
++    def fill(amount):
++        row=pending['row'];qty=D(amount);px=D(row['limitPx']);fee=qty*px*D('.0003')
++        c.live.fixture.position(qty,str(px));c.live.fixture.fill(qty,price=str(px),oid=row['oid'],tid=row['oid'],fee=str(fee))
++        c.live.fixture.spot['balances'][0]['total']=str(D(c.live.fixture.spot['balances'][0]['total'])-fee)
++        row['sz']=str(D(row['origSz'])-qty)
++        if D(row['sz'])==0:
++            c.live.fixture.orders=[];c.venue.statuses[str(row['oid'])]['order']['status']='filled'
++    def transmit(payload):
++        action=payload['action']
++        if action['type']=='order' and not action['orders'][0]['r']:
++            c.live.transport.check(action);c.auth.claim_transmission(action)
++            c.live.transport.signed_payloads.append(deepcopy(payload));c.venue.calls.append(deepcopy(action))
++            w=action['orders'][0];c.venue.oid+=1
++            row=dict(coin='par:BTC',side='B',oid=c.venue.oid,cloid=w['c'],sz=w['s'],origSz=w['s'],
++                     limitPx=w['p'],isTrigger=False,reduceOnly=False,timestamp=c.live.fixture.now)
++            c.live.fixture.orders=[row];pending['row']=row
++            record=dict(status='order',order=dict(order=row,status='open',statusTimestamp=c.live.fixture.now))
++            c.venue.statuses[str(row['oid'])]=record;c.venue.statuses[w['c']]=record
++            return response({'resting':{'oid':row['oid']}})
++        if action['type']=='cancel' and fill_on_cancel:fill(p.quantity)
++        return original(payload)
++    monkeypatch.setattr(c.live.transport,'transmit',transmit)
++    def wait():
++        c.live.fixture.now+=1000;c.live.fixture.book['time']=c.live.fixture.now
++        if partial is not None and pending and not c.live.fixture.fills:fill(partial)
++    c.sequence=EmergencySequence(c.live.executor,p,c.auth,wait=wait,monotonic=lambda:c.live.fixture.now/1000)
++    return c
++
++
++def test_ioc_real_composition_and_smallest_lot_not_cap_target(emergency):
++    c=emergency;r=c.sequence.run()
++    assert r['status']=='TRADE_CLOSED_RECONCILED',r
++    assert D(c.p.quantity)==D('.0002') and D(c.p.quantity)*D(c.p.entry_limit)<25
++    assert c.p.max_notional=='1000' and c.p.max_signed_actions==4
++    assert len(c.venue.calls)==2 and r['final_flat']
++    assert not r['protection_accepted'] and not r['certification_passed'] and not r['live_ready']
++    proof=whitelist_trade_proof(c.sequence,r,actual_transport=False)
++    assert not proof['fill_verified'] and not proof['final_flat_verified']
++
++
++@pytest.mark.parametrize('fraction',['0','.5','1'])
++def test_ioc_zero_partial_full_one_entry_only(emergency,fraction):
++    c=emergency;c.venue.partial_entry=D(fraction);r=c.sequence.run()
++    assert r['status']==('NO_FILL_VERIFIED' if fraction=='0' else 'TRADE_CLOSED_RECONCILED'),r
++    entries=[a for a in c.venue.calls if a['type']=='order' and not a['orders'][0]['r']]
++    assert len(entries)==1 and r['final_flat']
++    if fraction!='0':assert D(c.venue.calls[-1]['orders'][0]['s'])==D(c.p.quantity)*D(fraction)
++    count=len(c.venue.calls)
++    assert EmergencySequence(c.live.executor,c.p,c.auth).run()['status']=='PREFLIGHT_BLOCKED'
++    assert len(c.venue.calls)==count
++
++
++@pytest.mark.parametrize('tif',['Gtc','Alo'])
++def test_resting_unfilled_one_real_cancel_then_flat(emergency,monkeypatch,tif):
++    c=resting(emergency,monkeypatch,tif);r=c.sequence.run()
++    assert r['status']=='NO_FILL_VERIFIED',r
++    assert [a['type'] for a in c.venue.calls]==['order','cancel']
++    assert len(r['entry_monitor'])>=2 and r['final_flat']
++    assert not c.live.fixture.fills and not c.live.account.get_frontend_open_orders()
++    assert c.live.fixture.now>=NOW+30000
++
++
++@pytest.mark.parametrize('tif',['Gtc','Alo'])
++@pytest.mark.parametrize('amount',['.0001','.0002'])
++def test_resting_partial_or_full_actual_fill_cancels_remainder_before_close(emergency,monkeypatch,tif,amount):
++    c=resting(emergency,monkeypatch,tif,partial=amount);r=c.sequence.run()
++    assert r['status']=='TRADE_CLOSED_RECONCILED',r
++    assert [a['type'] for a in c.venue.calls]==(['order','cancel','order'] if amount=='.0001' else ['order','order'])
++    assert D(c.venue.calls[-1]['orders'][0]['s'])==D(amount)
++    assert r['final_flat'] and D(r['realized_pnl']['actual_entry_fee'])==D(amount)*D(c.p.entry_limit)*D('.0003')
++
++
++def test_fill_during_cancel_reconciles_new_actual_quantity(emergency,monkeypatch):
++    c=resting(emergency,monkeypatch,fill_on_cancel=True);r=c.sequence.run()
++    assert r['status']=='TRADE_CLOSED_RECONCILED',r
++    assert D(c.venue.calls[-1]['orders'][0]['s'])==D(c.p.quantity)
++
++
++def test_uncertain_cancel_stops_without_exit_or_replacement(emergency,monkeypatch):
++    c=resting(emergency,monkeypatch,partial='.0001');c.venue.cancel_uncertain=True
++    r=c.sequence.run()
++    assert r['status']=='EMERGENCY_EXIT_REQUIRED',r
++    assert [a['type'] for a in c.venue.calls]==['order','cancel']
++    assert c.live.account.get_positions() and c.live.account.get_frontend_open_orders()
++    assert not r.get('final_flat',False) and r['operator_action_required']
++
++
++@pytest.mark.parametrize('fail',['entry_rejected','timeout_before','timeout_after_fill',
++    'summary_without_fill','disconnect_after_fill'])
++def test_entry_failures_never_blindly_repeat(emergency,fail):
++    c=emergency;c.venue.fail=fail;r=c.sequence.run()
++    assert r['status']==({'entry_rejected':'NO_FILL_VERIFIED','timeout_after_fill':'TRADE_CLOSED_RECONCILED'}.get(fail,'EMERGENCY_EXIT_REQUIRED')),(r['status'],r.get('error'))
++    assert len([a for a in c.venue.calls if a['type']=='order' and not a['orders'][0]['r']])==1
++    if r['status']=='EMERGENCY_EXIT_REQUIRED':assert not r.get('final_flat',False)
++
++
++@pytest.mark.parametrize('kind',['rejected','timeout','price_gap'])
++def test_failed_close_preserves_exposure_and_bounded_attempts(emergency,monkeypatch,kind):
++    c=emergency;original=c.venue.transmit
++    def transmit(payload):
++        action=payload['action']
++        if action['orders'][0]['r']:
++            if kind=='timeout':raise TimeoutError('SYNTHETIC_EXIT_UNKNOWN')
++            c.auth.claim_transmission(action);c.venue.calls.append(deepcopy(action))
++            return response({'error':'Order must have minimum value of $10.'})
++        result=original(payload)
++        if kind=='price_gap':c.live.fixture.book['levels']=[[dict(px='75000',sz='1')],[dict(px='75010',sz='1')]]
++        return result
++    monkeypatch.setattr(c.live.transport,'transmit',transmit)
++    r=c.sequence.run();assert r['status']=='EMERGENCY_EXIT_REQUIRED',r
++    assert c.live.account.get_positions() and not r.get('final_flat',False)
++    assert len(c.venue.calls)<=3
++
++
++def test_partial_exit_closes_exact_residual_without_increase(emergency):
++    c=emergency;c.venue.partial_exit=D('.6');r=c.sequence.run()
++    assert r['status']=='TRADE_CLOSED_RECONCILED',r
++    assert [D(a['orders'][0]['s']) for a in c.venue.calls]==[D('.0002'),D('.0002'),D('.0001')]
++
++
++@pytest.mark.parametrize('field',['manually_verified_wallets','sole_signer_host_confirmed','maximum_one_entry',
++    'unverified_stop_risk_accepted','l2_and_50bps_qualification_policy_accepted',
++    'possible_manual_residual_recovery_accepted','maximum_1000_is_not_loss_guarantee_accepted',
++    'one_cancel_two_exits_and_lifetime_accepted'])
++def test_all_exact_human_acknowledgements_mandatory(emergency,field):
++    c=emergency;c.auth.approval=replace(c.a,**{field:False})
++    assert c.sequence.run()['status']=='PREFLIGHT_BLOCKED' and not c.venue.calls
++
++
++@pytest.mark.parametrize('field,value',[('proposal_hash','old-hash'),('qualification_policy_hash','old-policy'),
++    ('operator_approval',''),('expires_ms',NOW),('expires_ms',NOW+300001),('approved_ms',NOW+1)])
++def test_invalid_approval_no_actual_order(emergency,field,value):
++    c=emergency;c.auth.approval=replace(c.a,**{field:value})
++    assert c.sequence.run()['status']=='PREFLIGHT_BLOCKED' and not c.venue.calls
++
++
++def test_old_qualification_authorization_cannot_accept_new_policy(emergency):
++    c=emergency;a=QualificationAuthorization(c.p,c.a,c.live.journal,clock_ms=lambda:NOW,
++        source_hash=lambda:'fixture-source',policy_hash=lambda:'fixture-policy')
++    with pytest.raises(ExchangeError):a.require(TEAM,c.live.signer.address)
++
++
++@pytest.mark.parametrize('damage',['source','reliability','expiry'])
++def test_source_policy_expiry_before_any_signature(emergency,damage):
++    c=emergency
++    if damage=='source':c.auth.source_hash=lambda:'changed'
++    if damage=='reliability':c.auth.policy_hash=lambda:'changed'
++    if damage=='expiry':c.live.fixture.now=NOW+300000
++    assert c.sequence.run()['status']=='PREFLIGHT_BLOCKED' and not c.live.transport.signed_payloads
++
++
++def test_entry_insufficient_time_for_recovery_consumes_no_transmission(emergency):
++    c=emergency;c.auth.approval=replace(c.a,expires_ms=NOW+89000)
++    r=c.sequence.run()
++    assert not c.venue.calls and not c.live.transport.signed_payloads
++    assert r['status'] in {'EMERGENCY_EXIT_REQUIRED','PREFLIGHT_BLOCKED'}
++
++
++@pytest.mark.parametrize('field,value',[('max_notional','1001'),('max_notional','25'),('quantity','.02'),
++    ('entry_tif','Foo'),('order_lifetime_seconds',1),('qualification_policy_hash','old'),
++    ('max_signed_actions',5),('max_exit_attempts',3),('entry_side','SELL'),('network','mainnet'),
++    ('dex','pa'),('entry_rule','discretionary'),('protection_status','VERIFIED')])
++def test_policy_exact_cap_type_route_bounds(emergency,field,value):
++    with pytest.raises(ExchangeError):replace(emergency.p,**{field:value}).require()
++
++
++def test_l2_capability_keeps_original_bbo_policy_false(emergency):
++    c=emergency;row=inspect_market(c.context.spec,c.live.provider.last_book,NOW)
++    assert row['potential'] and not row['old_10_percent_bbo_passed']
++    c.live.executor.entries_paused=False
++    req=OrderRequest(c.p.symbol,'BUY',c.p.quantity,c.p.entry_limit,tif='Ioc',strategy_id='TESTNET_CERTIFICATION_ENTRY')
++    c.live.executor.compliance_guard=ComplianceGuard(c.live.journal,c.live.executor.position_guard,
++        clock_ms=c.live.client.clock_ms,transport=c.live.transport,execution_owner=c.live.executor)
++    c.live.transport._compliance_guard=c.live.executor.compliance_guard
++    with pytest.raises(ExchangeError,match='BOOK_MANIPULATION_RISK'):
++        c.live.executor.submit(req,permission=permission(req,c.p,NOW))
++    assert not c.venue.calls
++
++
++def test_fifty_dollar_controlled_cap_only_replaced_inside_exact_scope(emergency):
++    c=emergency
++    c.live.fixture.book['levels']=[[dict(px='600000',sz='1')],[dict(px='600100',sz='1')]]
++    c.live.fixture.contexts=[dict(markPx='600050',oraclePx='600050',funding='.0001',openInterest='0')
++        for _ in c.live.fixture.metadata['universe']]
++    c.live.fixture.active['markPx']='600050'
++    ctx=c.live.provider.load(OrderRequest('par:BTC','BUY','.0001','601300',tif='Ioc'))
++    p,_=propose(ctx,c.live.client,'fixture-source','fixture-policy',c.live.provider.last_book,
++        tif='Ioc',candidate_hash='synthetic-high-lot-notional')
++    c.auth.proposal=p;c.auth.approval=replace(c.a,proposal_hash=p.identity)
++    e=c.live.executor;e.proposal=p;e.compliance_guard.qualification_scope=EmergencyComplianceScope(p,c.live.provider)
++    seq=EmergencySequence(e,p,c.auth);r=seq.run()
++    assert r['status']=='TRADE_CLOSED_RECONCILED',r
++    assert D(p.quantity)*D(p.entry_limit)>50 and D(p.quantity)*D(p.entry_limit)<1000
++
++
++@pytest.mark.parametrize('damage',['depth','spread','oracle','stale','duplicate_price','unsorted','wrong_symbol'])
++def test_authentic_l2_and_price_constraints(emergency,damage):
++    c=emergency;b=c.live.provider.last_book;ctx=c.context.contexts[c.p.symbol]
++    if damage=='depth':b=replace(b,asks=(BookLevel(D('83440'),D('.0001')),))
++    if damage=='spread':b=replace(b,asks=(BookLevel(D('85000'),D('1')),))
++    if damage=='oracle':ctx=dict(ctx,oraclePx='100000')
++    if damage=='stale':b=replace(b,timestamp_ms=NOW-5001)
++    if damage=='duplicate_price':b=replace(b,asks=(b.asks[0],b.asks[0]))
++    if damage=='unsorted':b=replace(b,asks=tuple(reversed(b.asks)))
++    if damage=='wrong_symbol':b=replace(b,symbol='par:ETH')
++    assert not inspect_market(c.context.spec,b,NOW,asset_context=ctx)['potential']
++
++
++@pytest.mark.parametrize('symbol,decimals,asset,price',[
++    ('par:ETH',4,2670001,'2500'),('par:HYPE',2,2670002,'80'),('par:BRENT',2,2670006,'100'),
++    ('par:GOLD',4,2670007,'4000'),('par:EWJ',3,2670005,'100')])
++def test_all_partial_residuals_required_even_with_large_opening_liquidity(symbol,decimals,asset,price):
++    spec=MarketSpec(symbol,decimals,20,asset);px=D(price)
++    b=OrderBook(symbol,NOW,(BookLevel(px,D('100')),),(BookLevel(px*D('1.001'),D('100')),))
++    row=inspect_market(spec,b,NOW)
++    assert not row['potential'] and row['blocker']=='QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL'
++
++
++def test_subminimum_entry_still_blocked(emergency):
++    c=emergency
++    with pytest.raises(ExchangeError):replace(c.p,quantity='.0001').require()
++
++
++def test_restart_durable_consumed_attempt_no_repeat(emergency):
++    c=emergency;c.venue.fail='timeout_before';c.sequence.run()
++    assert c.live.journal.control('qualification_entry_consumed')==c.p.identity
++    auth=EmergencyAuthorization(c.p,c.a,c.live.journal,clock_ms=lambda:NOW,
++        source_hash=lambda:'fixture-source',policy_hash=lambda:'fixture-policy')
++    assert EmergencySequence(c.live.executor,c.p,auth).run()['status']=='EMERGENCY_EXIT_REQUIRED'
++    assert len(c.venue.calls)==1
++
++
++def test_wrong_scope_type_rejected(emergency):
++    c=emergency
++    with pytest.raises(ExchangeError,match='P0_EXACT_COMPLIANCE_SCOPE_REQUIRED'):
++        ComplianceGuard(c.live.journal,c.live.executor.position_guard,clock_ms=lambda:NOW,
++            transport=c.live.transport,qualification_scope=SimpleNamespace(validate=lambda *a:True))
++
++
++def test_shared_rate_limit_blocks_notional_without_signing(emergency,monkeypatch):
++    c=emergency
++    def denied(**kwargs):raise ExchangeError('SYNTHETIC_RATE_BUDGET_EXHAUSTED')
++    monkeypatch.setattr(c.live.rate,'reserve_action',denied)
++    r=c.sequence.run();assert not c.venue.calls and not c.live.transport.signed_payloads
++    assert r['status']=='EMERGENCY_EXIT_REQUIRED'
++
++
++def test_handoff_has_real_cli_and_unfilled_risk_template(emergency,tmp_path):
++    import importlib.util
++    spec=importlib.util.spec_from_file_location('p0launcher',Path(__file__).resolve().parents[1]/'scripts/run_emergency_qualification.py')
++    import sys;sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
++    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
++    template=module.approval_template(emergency.p)
++    assert template['operator_approval']=='' and template['approved_ms'] is None
++    assert not template['unverified_stop_risk_accepted']
++    h=module.handoff(emergency.p,tmp_path,tmp_path/'receipt.json')
++    assert '--execute' in h['execute_command'] and not h['actual_fill_verified']
++    assert h['actual_entry_exposure']!=h['maximum_policy_exposure']
++
++
++@pytest.mark.parametrize('quantity',['.0003','.001','.01'])
++def test_no_manual_upsize_or_non_algorithmic_quantity_even_below_cap(emergency,quantity):
++    c=emergency;p=replace(c.p,quantity=quantity).require()
++    req=OrderRequest(p.symbol,'BUY',p.quantity,p.entry_limit,tif=p.entry_tif)
++    with pytest.raises(ExchangeError,match='P0_MINIMUM_VALID_QUANTITY_RULE_REQUIRED'):
++        check_entry(c.context,req,p,NOW,c.live.provider.last_book)
++
++
++@pytest.mark.parametrize('damage',['leverage','margin','identity','api','account_age','fees','unexpected_order','unexpected_position'])
++def test_fresh_actual_preflight_constraints_independent_of_l2_policy(emergency,damage):
++    c=emergency;ctx=c.context
++    if damage=='leverage':ctx=replace(ctx,active_asset=dict(ctx.active_asset,leverage=dict(type='cross',value=20)))
++    if damage=='margin':ctx=replace(ctx,active_asset=dict(ctx.active_asset,availableToTrade=['1','1']))
++    if damage=='identity':ctx=replace(ctx,active_asset=dict(ctx.active_asset,user='0x'+'2'*40))
++    if damage=='api':ctx=replace(ctx,readiness=replace(ctx.readiness,signer_address='0x'+'1'*40))
++    if damage=='account_age':ctx=replace(ctx,account_ms=NOW-5001)
++    if damage=='fees':ctx=replace(ctx,readiness=replace(ctx.readiness,fees=dict(ctx.readiness.fees,userCrossRate='.001')))
++    if damage=='unexpected_order':ctx=replace(ctx,open_orders=({'oid':123},))
++    if damage=='unexpected_position':ctx=replace(ctx,positions={'par:BTC':SimpleNamespace(quantity=D('.0001'))})
++    with pytest.raises(ExchangeError):check_entry(ctx,OrderRequest(c.p.symbol,'BUY',c.p.quantity,c.p.entry_limit,tif='Ioc'),c.p,NOW,c.live.provider.last_book)
++
++
++def test_depth_beyond_limit_cannot_support_ioc(emergency):
++    c=emergency;b=replace(c.live.provider.last_book,asks=(BookLevel(D('83440'),D('.0001')),BookLevel(D('90000'),D('100'))))
++    r=inspect_market(c.context.spec,b,NOW)
++    assert not r['potential'] and r['blocker']=='P0_ENTRY_DEPTH_REQUIRED'
++
++
++def test_gtc_can_rest_when_taker_depth_fails_without_faking_executable_depth(emergency):
++    c=emergency;b=replace(c.live.provider.last_book,asks=(BookLevel(D('83440'),D('.0001')),))
++    ioc=inspect_market(c.context.spec,b,NOW,tif='Ioc');gtc=inspect_market(c.context.spec,b,NOW,tif='Gtc')
++    assert not ioc['potential'] and gtc['potential']
++    assert D(gtc['entry_depth']['available_quantity'])==0 and not gtc['old_10_percent_bbo_passed']
++
++
++def test_gtc_disconnection_with_resting_order_requires_recovery(emergency,monkeypatch):
++    c=resting(emergency,monkeypatch)
++    def disconnected():
++        c.venue.rest_down=True
++        raise ExchangeError('SYNTHETIC_DISCONNECT')
++    c.sequence.wait=disconnected;r=c.sequence.run()
++    assert r['status']=='EMERGENCY_EXIT_REQUIRED' and len(c.venue.calls)==1
++    assert c.live.fixture.orders and not r.get('final_flat',False)
++
++
++def test_gtc_unknown_status_does_not_replace_original_order(emergency,monkeypatch):
++    c=resting(emergency,monkeypatch);original=c.venue.read
++    def read(payload):
++        if payload['type']=='orderStatus':return dict(status='unknownOid')
++        return original(payload)
++    c.live.client.transport=read
++    # A contradictory unknownOid with a visible original open order is uncertainty,
++    # never permission to replace it. Exact cancellation may still be prevented.
++    r=c.sequence.run()
++    assert r['status']=='EMERGENCY_EXIT_REQUIRED' and not r.get('final_flat',False)
++    assert len([a for a in c.venue.calls if a['type']=='order' and not a['orders'][0]['r']])==1
++
++
++def test_cancellation_ack_without_readback_does_not_claim_flat(emergency,monkeypatch):
++    c=resting(emergency,monkeypatch);original=c.live.transport.transmit
++    def transmit(payload):
++        if payload['action']['type']=='cancel':
++            c.live.transport.check(payload['action']);c.auth.claim_transmission(payload['action'])
++            c.venue.calls.append(deepcopy(payload['action']));return response('success','cancel')
++        return original(payload)
++    monkeypatch.setattr(c.live.transport,'transmit',transmit)
++    r=c.sequence.run();assert r['status']=='EMERGENCY_EXIT_REQUIRED',r
++    assert c.live.fixture.orders and not r.get('final_flat',False)
++
++
++def test_stop_cannot_be_submitted_using_new_qualification_authority(emergency):
++    c=emergency;r=c.sequence.run()
++    assert r['status']=='TRADE_CLOSED_RECONCILED'
++    assert not any('trigger' in a.get('orders',[{}])[0].get('t',{}) for a in c.venue.calls)
++    assert c.live.executor.protection._plan
++    with pytest.raises(ExchangeError,match='STOP_UNVERIFIED'):c.live.executor.protection._plan()
++
++
++def test_historical_btc_shape_does_not_certify_all_larger_subminimum_residuals(emergency):
++    c=emergency;b=replace(c.live.provider.last_book,
++        bids=(BookLevel(D('49000'),D('100')),),asks=(BookLevel(D('49010'),D('100')),))
++    r=inspect_market(c.context.spec,b,NOW)
++    assert not r['potential'] and r['blocker']=='QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL'
++    assert r['residuals']['first_unverified_quantity']=='0.0002'
++
++
++def test_no_risk_acceptance_does_not_construct_actual_client_or_key(emergency,tmp_path,monkeypatch):
++    import exchange.emergency_qualification as module
++    import strategy_freeze
++    import exchange.practice_preflight as preflight
++    import exchange.hyperliquid_client as client
++    monkeypatch.setattr(module,'require_emergency_regression',lambda *a:None)
++    monkeypatch.setattr(strategy_freeze,'verify_strategy_freeze',lambda:True)
++    def prohibited(*a,**k):raise AssertionError('ACTUAL_CLIENT_OR_KEY_PROHIBITED')
++    monkeypatch.setattr(preflight,'read_api_key',prohibited);monkeypatch.setattr(client,'HyperliquidClient',prohibited)
++    a=replace(emergency.a,unverified_stop_risk_accepted=False)
++    with pytest.raises(ExchangeError,match='EXACT_NEW_P0_POLICY'):
++        build_runtime(tmp_path,emergency.p,a,test_receipt=tmp_path/'none.json')

@@ -1,0 +1,18 @@
+--- before/algo-trading-bot/exchange/delegated_qualification.py
++++ algo-trading-bot/exchange/delegated_qualification.py
+@@ -19,12 +19,12 @@
+ 
+ MODE = 'DELEGATED_TESTNET_QUALIFICATION_V1'
+ IST = timezone(timedelta(hours=5, minutes=30))
+-START_MS = int(datetime(2026, 10, 14, tzinfo=IST).timestamp()*1000)
+-END_MS = int(datetime(2026, 10, 14, 23, 59, tzinfo=IST).timestamp()*1000)
++START_MS = int(datetime(2026, 10, 15, tzinfo=IST).timestamp()*1000)
++END_MS = int(datetime(2026, 10, 15, 23, 59, tzinfo=IST).timestamp()*1000)
+ SESSION_SCOPE = dict(network='testnet', dex='par', symbol='par:BTC', collateral='USDPR',
+     side='BUY', tif='Ioc', quantity='0.0002', maximum_opening_notional='20',
+     maximum_buy_price='100000', leverage=1, margin_mode='cross', entry_attempts=1,
+-    exit_attempts=2, cancel_attempts=1, signed_actions=4, end_ist='2026-10-14T23:59:00+05:30',
++    exit_attempts=2, cancel_attempts=1, signed_actions=4, end_ist='2026-10-15T23:59:00+05:30',
+     price_rule='FRESH_ASK_PLUS_10_BPS_CAPPED_AND_NORMALIZED_DOWN',
+     fresh_entry_tolerance_bps='20', qualification_spread_bps='50', l2_participation='0.5',
+     mark_oracle_bps='50', mid_oracle_bps='100', order_oracle_bps='150',

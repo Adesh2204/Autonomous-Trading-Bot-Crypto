@@ -1,0 +1,109 @@
+..................F...............FF.FFFFF....F........F...FF.           [100%]
+=================================== FAILURES ===================================
+____________ test_sweep_honors_limit_prices[SELL-prices1-11-18-.5] _____________
+algo-trading-bot/test_qualification_watcher_v8_9.py:87: in test_sweep_honors_limit_prices
+    assert D(r['cost'])==D(cost)-D('.25')  # 7.5+8.25 or 9+8.25
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert Decimal('17.25') == (Decimal('18') - Decimal('0.25'))
+E    +  where Decimal('17.25') = D('17.25')
+E    +  and   Decimal('18') = D('18')
+E    +  and   Decimal('0.25') = D('.25')
+_____________ test_rest_fallback_is_paced_and_never_reads_account ______________
+algo-trading-bot/test_qualification_watcher_v8_9.py:199: in test_rest_fallback_is_paced_and_never_reads_account
+    for _ in range(20):reader.get('par:BTC')
+                       ^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/qualification_watcher.py:318: in get
+    self.market.client.rate_limits.read_budget_wait_seconds = 0
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'NoneType' object has no attribute 'read_budget_wait_seconds'
+___________________ test_ws_startup_grace_then_rest_fallback ___________________
+algo-trading-bot/test_qualification_watcher_v8_9.py:210: in test_ws_startup_grace_then_rest_fallback
+    tick[0]=10;assert reader.get('par:BTC')[1]=='RATE_LIMITED_REST'
+                      ^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/qualification_watcher.py:318: in get
+    self.market.client.rate_limits.read_budget_wait_seconds = 0
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'NoneType' object has no attribute 'read_budget_wait_seconds'
+_____ test_rest_failure_drops_cached_book_and_does_not_spin[INFO_HTTP_429] _____
+algo-trading-bot/test_qualification_watcher_v8_9.py:224: in test_rest_failure_drops_cached_book_and_does_not_spin
+    tick=[0];reader=PublicBookReader(live.market,monotonic=lambda:tick[0]);reader.get('par:BTC')
+                                                                           ^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/qualification_watcher.py:318: in get
+    self.market.client.rate_limits.read_budget_wait_seconds = 0
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'NoneType' object has no attribute 'read_budget_wait_seconds'
+_ test_rest_failure_drops_cached_book_and_does_not_spin[INFO_PUBLIC_RATE_LIMITED] _
+algo-trading-bot/test_qualification_watcher_v8_9.py:224: in test_rest_failure_drops_cached_book_and_does_not_spin
+    tick=[0];reader=PublicBookReader(live.market,monotonic=lambda:tick[0]);reader.get('par:BTC')
+                                                                           ^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/qualification_watcher.py:318: in get
+    self.market.client.rate_limits.read_budget_wait_seconds = 0
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'NoneType' object has no attribute 'read_budget_wait_seconds'
+___ test_rest_failure_drops_cached_book_and_does_not_spin[INFO_READ_TIMEOUT] ___
+algo-trading-bot/test_qualification_watcher_v8_9.py:224: in test_rest_failure_drops_cached_book_and_does_not_spin
+    tick=[0];reader=PublicBookReader(live.market,monotonic=lambda:tick[0]);reader.get('par:BTC')
+                                                                           ^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/qualification_watcher.py:318: in get
+    self.market.client.rate_limits.read_budget_wait_seconds = 0
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'NoneType' object has no attribute 'read_budget_wait_seconds'
+_________________ test_public_budget_preserves_safety_reserve __________________
+algo-trading-bot/test_qualification_watcher_v8_9.py:236: in test_public_budget_preserves_safety_reserve
+    assert reader.get('par:BTC')[0] is None
+           ^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/qualification_watcher.py:318: in get
+    self.market.client.rate_limits.read_budget_wait_seconds = 0
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'NoneType' object has no attribute 'read_budget_wait_seconds'
+_____________ test_429_guidance_blocks_fallback_until_retry_after ______________
+algo-trading-bot/test_qualification_watcher_v8_9.py:243: in test_429_guidance_blocks_fallback_until_retry_after
+    assert reader.get('par:BTC')[0] is None
+           ^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/qualification_watcher.py:318: in get
+    self.market.client.rate_limits.read_budget_wait_seconds = 0
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'NoneType' object has no attribute 'read_budget_wait_seconds'
+____ test_fast_account_reconciliation_rejects_unexpected_exposure[position] ____
+algo-trading-bot/test_qualification_watcher_v8_9.py:310: in test_fast_account_reconciliation_rejects_unexpected_exposure
+    assert r['blocker']=='QUALIFICATION_DURABLE_RECONCILIATION_REQUIRED'
+E   AssertionError: assert 'QUALIFICATIO...BOOK_REQUIRED' == 'QUALIFICATIO...TION_REQUIRED'
+E     
+E     - QUALIFICATION_DURABLE_RECONCILIATION_REQUIRED
+E     + QUALIFICATION_FRESH_FLAT_ACCOUNT_BOOK_REQUIRED
+______________ test_changed_quote_still_blocks_at_signed_boundary ______________
+algo-trading-bot/test_qualification_watcher_v8_9.py:378: in test_changed_quote_still_blocks_at_signed_boundary
+    assert r['status']=='PREFLIGHT_BLOCKED' and not c.venue.calls
+E   AssertionError: assert ('EMERGENCY_EXIT_REQUIRED' == 'PREFLIGHT_BLOCKED'
+E     
+E     - PREFLIGHT_BLOCKED
+E     + EMERGENCY_EXIT_REQUIRED)
+_ test_watcher_does_not_change_existing_one_entry_and_partial_exit_contract[.3333333333333333] _
+algo-trading-bot/test_qualification_watcher_v8_9.py:403: in test_watcher_does_not_change_existing_one_entry_and_partial_exit_contract
+    assert again['status']=='PREFLIGHT_BLOCKED' and len(c.venue.calls)==calls
+E   AssertionError: assert ('EMERGENCY_EXIT_REQUIRED' == 'PREFLIGHT_BLOCKED'
+E     
+E     - PREFLIGHT_BLOCKED
+E     + EMERGENCY_EXIT_REQUIRED)
+_ test_watcher_does_not_change_existing_one_entry_and_partial_exit_contract[1] _
+algo-trading-bot/test_qualification_watcher_v8_9.py:403: in test_watcher_does_not_change_existing_one_entry_and_partial_exit_contract
+    assert again['status']=='PREFLIGHT_BLOCKED' and len(c.venue.calls)==calls
+E   AssertionError: assert ('EMERGENCY_EXIT_REQUIRED' == 'PREFLIGHT_BLOCKED'
+E     
+E     - PREFLIGHT_BLOCKED
+E     + EMERGENCY_EXIT_REQUIRED)
+- generated xml file: /Users/adesh/Autonomous Trading Bot - Crypto /docs/qualification_watcher_v8_9_2026-10-13/focused_first.xml -
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_qualification_watcher_v8_9.py::test_sweep_honors_limit_prices[SELL-prices1-11-18-.5]
+FAILED algo-trading-bot/test_qualification_watcher_v8_9.py::test_rest_fallback_is_paced_and_never_reads_account
+FAILED algo-trading-bot/test_qualification_watcher_v8_9.py::test_ws_startup_grace_then_rest_fallback
+FAILED algo-trading-bot/test_qualification_watcher_v8_9.py::test_rest_failure_drops_cached_book_and_does_not_spin[INFO_HTTP_429]
+FAILED algo-trading-bot/test_qualification_watcher_v8_9.py::test_rest_failure_drops_cached_book_and_does_not_spin[INFO_PUBLIC_RATE_LIMITED]
+FAILED algo-trading-bot/test_qualification_watcher_v8_9.py::test_rest_failure_drops_cached_book_and_does_not_spin[INFO_READ_TIMEOUT]
+FAILED algo-trading-bot/test_qualification_watcher_v8_9.py::test_public_budget_preserves_safety_reserve
+FAILED algo-trading-bot/test_qualification_watcher_v8_9.py::test_429_guidance_blocks_fallback_until_retry_after
+FAILED algo-trading-bot/test_qualification_watcher_v8_9.py::test_fast_account_reconciliation_rejects_unexpected_exposure[position]
+FAILED algo-trading-bot/test_qualification_watcher_v8_9.py::test_changed_quote_still_blocks_at_signed_boundary
+FAILED algo-trading-bot/test_qualification_watcher_v8_9.py::test_watcher_does_not_change_existing_one_entry_and_partial_exit_contract[.3333333333333333]
+FAILED algo-trading-bot/test_qualification_watcher_v8_9.py::test_watcher_does_not_change_existing_one_entry_and_partial_exit_contract[1]
+12 failed, 50 passed in 5.36s

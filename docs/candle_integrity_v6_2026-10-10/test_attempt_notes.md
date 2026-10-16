@@ -1,0 +1,5 @@
+# Preserved testing attempts
+
+The initial focused run without XML passed 119 tests. An initial XML run exposed two harness issues: pytest record_property with xunit2 was promoted to an error by the new test warning filter, and a legacy fake client factory did not accept the optional audit constructor keyword used by the launcher. The warning filter was removed, xunit1 XML enables explicit evidence labels, and runtime audit attachment preserves the client-factory calling convention. The corrected focused XML run passed 82 tests. The first full-suite attempt started before these final corrections and its source changed while executing; it cannot certify the final source. Its artifacts are retained separately from regression_final. Only a complete successful, unchanged-source final receipt can authorize the short PAPER collection.
+
+The corrected conflict-health and classification focused XML suite passed 123 tests. Final v2 source passed 1,356 tests, with zero failures/errors/skips and unchanged before/after source hash 57410d407fe1b0ce2bc2a44f1b1fcbbdac03032cfa7e183b65919dae32a7d7b6. The earlier 1,354-pass receipt is intermediate evidence only.

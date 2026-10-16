@@ -5,7 +5,10 @@ from dotenv import dotenv_values
 from safety_errors import SafetyError
 
 PROJECT_NAME = 'anchorium-perpetual-alpha'
-_defaults = dotenv_values(Path(__file__).with_name('.env'))
+# Public evidence collectors need no wallet settings. An explicit public-only
+# process skips dotenv entirely; the same PAPER/network/order checks still apply.
+_defaults = ({} if os.environ.get('ANCHORIUM_PUBLIC_ONLY')=='true'
+             else dotenv_values(Path(__file__).with_name('.env')))
 TRADING_VENUE = os.environ.get(
     'TRADING_VENUE', _defaults.get('TRADING_VENUE') or 'HYPERLIQUID_TESTNET'
 ).strip().upper()
@@ -28,6 +31,9 @@ def require_paper_migration():
     execution. Manual wallet verification and explicit user authorization remain
     future prerequisites; this module implements no activation path.
     """
+    if (os.environ.get('SIGNAL_DATA_MODE','PAR_NATIVE_ONLY')!='PAR_NATIVE_ONLY' or
+            os.environ.get('EXTERNAL_SIGNAL_LIVE_APPROVED','false').lower()!='false'):
+        raise MigrationPolicyError('MIGRATION_NATIVE_SIGNAL_SOURCE_REQUIRED')
     if os.environ.get('HL_NETWORK', _defaults.get('HL_NETWORK') or 'testnet').strip().lower()!='testnet':
         raise MigrationPolicyError('MIGRATION_TESTNET_REQUIRED')
     if os.environ.get('HL_DEX', _defaults.get('HL_DEX') or 'par').strip()!='par':

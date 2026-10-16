@@ -1,0 +1,49 @@
+{
+  "started_unix": 1791798071.6890602,
+  "source_hash": "f031a8cd481f421179e653581dc05038de66d6ca3223ca2c67712a79e0adafe2",
+  "scope": "Full offline repository regression; V8.3 all-ten one-lot price, depth, size, capacity, read-only composition and unchanged partial-close/production safeguards; prior baseline 1487; no exchange submissions",
+  "checks_before": {
+    "strategy_freeze": {
+      "exit_code": 0,
+      "result": {
+        "baseline": "nse-working-baseline",
+        "file_count": 1,
+        "method_count": 8,
+        "parameter_count": 32,
+        "passed": true
+      }
+    },
+    "phase0": {
+      "exit_code": 0,
+      "result": {
+        "project": "anchorium-perpetual-alpha",
+        "checks": {
+          "project_is_perpetual_alpha": true,
+          "independent_git_directory": true,
+          "migration_branch": true,
+          "testnet_venue": true,
+          "paper_execution_mode": true,
+          "migration_policy_valid": true,
+          "orders_disabled": true,
+          "angel_one_client_disabled": true,
+          "angel_one_order_boundary_disabled": true,
+          "testnet_order_boundary_disabled": true,
+          "signal_logic_present": true,
+          "signal_source_unchanged": true
+        },
+        "passed": true
+      }
+    }
+  },
+  "finished_unix": 1791798360.15553,
+  "exit_code": 0,
+  "source_hash_after": "f031a8cd481f421179e653581dc05038de66d6ca3223ca2c67712a79e0adafe2",
+  "totals": {
+    "tests": 1522,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "xml_sha256": "74f0f8531726ccc9ac9d0449545a4fdfa90f87d7ad867dd4ff99cb96c2f97e4c",
+  "passed": true
+}

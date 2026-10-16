@@ -156,7 +156,10 @@ def main():
         if owner:owner.close()
         raise
     recorder=PublicReplayRecorder(RequestsInfoTransport()) if args.cycles==1 and not args.account_address else None
+    from exchange.candle_audit import PublicCandleAudit
+    candle_audit=PublicCandleAudit(output/'public_candle_audit.jsonl')
     client=HyperliquidClient(recorder,clock_ms=recorder.clock_ms) if recorder else HyperliquidClient()
+    client.candle_audit=candle_audit
     feed_client=None
     scan_client=None
     stop=threading.Event()
@@ -165,6 +168,11 @@ def main():
     started=time.monotonic()
     try:
         client.startup()
+        from exchange.candle_availability import CandleAvailabilityMonitor
+        availability=CandleAvailabilityMonitor(tuple(sorted(client.markets)),clock_ms=client.clock_ms,
+            history_bars=scanner_policy.history_bars)
+        client.availability_monitor=availability
+        client.availability_role='SCANNER'
         market=HyperliquidMarketData(client)
         scanner=MarketRegimeScanner(market,scanner_policy)
         execution=PaperExecution(client.markets,fees=fees,clock_ms=client.clock_ms,
@@ -214,13 +222,24 @@ def main():
                                              team_address='0x'+'0'*40)
                 client.rate_limits=HyperliquidRateLimitManager(rate_journal)
             feed_client=HyperliquidClient(rate_limits=client.rate_limits) if client.rate_limits is not None else HyperliquidClient()
+            feed_client.candle_audit=candle_audit
+            feed_client.availability_monitor=availability
             feed_client.startup()
             scan_client=HyperliquidClient(rate_limits=client.rate_limits) if client.rate_limits is not None else HyperliquidClient()
+            scan_client.candle_audit=candle_audit
+            scan_client.availability_monitor=availability
+            scan_client.availability_role='SCANNER'
             scanner=MarketRegimeScanner(HyperliquidMarketData(scan_client),scanner_policy)
             bot.scanner=scanner
             engine=ParMarketDataEngine(HyperliquidMarketData(feed_client),history_bars=scanner_policy.history_bars,
                                       include_trades=True)
             stream=MarketStream(engine,risk_policy,account_recovery=account_recovery)
+            engine.health_manager.max_book_age_ms=risk_policy.max_data_age_ms
+            engine.health_manager.max_candle_age_ms=risk_policy.max_candle_age_ms
+            engine.health_manager.max_context_age_ms=risk_policy.max_mark_age_ms
+            scanner.health_manager=engine.health_manager
+            scanner.public_snapshot_sink=engine.publish_public_snapshot
+            scanner.public_failure_sink=engine.note_scanner_failure
             bot.breakers.pause('stream','STREAM_RECOVERY_REQUIRED')
             scans=queue.Queue(maxsize=1)
             failures=queue.Queue()
@@ -344,6 +363,17 @@ def main():
         for worker in workers:
             worker.join(timeout=12)
         if any(worker.is_alive() for worker in workers):clean=False
+        if bot and bot.stream_report and client.rate_limits is not None:
+            # Receiver/scanner workers have stopped. Preserve the last operating
+            # stream snapshot but report the actual drained public read budget.
+            bot.stream_report['public_rate_budget']=client.rate_limits.report()
+            bot.stream_report['workers_stopped_cleanly']=not any(worker.is_alive() for worker in workers)
+            if 'engine' in locals():
+                bot.feed_health=engine.market_health()
+                bot.stream_report['market_health']=engine.health_manager.report()
+                bot.stream_report['candle_availability']=availability.snapshot()
+        if 'availability' in locals():
+            atomic_json(output/'candle_availability.json',availability.snapshot(include_records=True))
         if bot and state and state_ready:
             state.save(bot,clean=clean)
             state.backup(args.state_directory/'backups'/'paper-latest.sqlite')

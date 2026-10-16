@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="5" time="1.114" timestamp="2026-10-13T10:04:07.661536+05:30" hostname="Adeshs-MacBook-Air.local"><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_read_timeout_is_distinct_from_unknown_http_failure" time="0.000"><failure message="AssertionError: &#10;- INFO_REQUEST_FAILED&#10;+ INFO_READ_TIMEOUT">algo-trading-bot/test_qualification_stability_v8_8.py:20: in fail
+    def fail(*args,**kwargs):raise requests.ReadTimeout('OFFLINE_HUNG_RESPONSE')
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   requests.exceptions.ReadTimeout: OFFLINE_HUNG_RESPONSE
+
+The above exception was the direct cause of the following exception:
+algo-trading-bot/test_qualification_stability_v8_8.py:24: in test_read_timeout_is_distinct_from_unknown_http_failure
+    with pytest.raises(ExchangeError,match='^INFO_READ_TIMEOUT$'):t({'type':'userAbstraction'})
+                                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_client.py:48: in __call__
+    raise ExchangeError('INFO_REQUEST_FAILED') from exc
+E   exchange.base_exchange.ExchangeError: INFO_REQUEST_FAILED
+
+During handling of the above exception, another exception occurred:
+algo-trading-bot/test_qualification_stability_v8_8.py:24: in test_read_timeout_is_distinct_from_unknown_http_failure
+    with pytest.raises(ExchangeError,match='^INFO_READ_TIMEOUT$'):t({'type':'userAbstraction'})
+E   AssertionError: 
+E   - INFO_REQUEST_FAILED
+E   + INFO_READ_TIMEOUT</failure></testcase><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_transport_has_separate_timeouts_and_an_absolute_read_deadline" time="0.000"><failure message="TypeError: RequestsInfoTransport.__init__() got an unexpected keyword argument 'connect_timeout'">algo-trading-bot/test_qualification_stability_v8_8.py:32: in test_transport_has_separate_timeouts_and_an_absolute_read_deadline
+    t=RequestsInfoTransport(connect_timeout=.02,read_timeout=.02,total_timeout=.05)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: RequestsInfoTransport.__init__() got an unexpected keyword argument 'connect_timeout'</failure></testcase><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_server_retry_after_is_not_silently_shortened" time="0.052"><failure message="assert (30000 &gt;= 90000)">algo-trading-bot/test_qualification_stability_v8_8.py:42: in test_server_retry_after_is_not_silently_shortened
+    assert duration&gt;=90000 and live.rate.backoff_until&gt;=NOW+90000
+E   assert (30000 &gt;= 90000)</failure></testcase><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_interrupted_read_is_not_reported_as_success_to_coalesced_waiter" time="0.006"><failure message="AssertionError: assert [None] == ['INFO_READ_INTERRUPTED']&#10;  &#10;  At index 0 diff: None != 'INFO_READ_INTERRUPTED'&#10;  Use -v to get more diff">algo-trading-bot/test_qualification_stability_v8_8.py:59: in test_interrupted_read_is_not_reported_as_success_to_coalesced_waiter
+    assert values==['INFO_READ_INTERRUPTED']
+E   AssertionError: assert [None] == ['INFO_READ_INTERRUPTED']
+E     
+E     At index 0 diff: None != 'INFO_READ_INTERRUPTED'
+E     Use -v to get more diff</failure></testcase><testcase classname="algo-trading-bot.test_qualification_stability_v8_8" name="test_interrupt_preparation_saves_diagnostic_json_and_closes_sqlite" time="0.101"><failure message="Failed: Interrupted preparation lost final diagnostics">algo-trading-bot/test_qualification_stability_v8_8.py:71: in test_interrupt_preparation_saves_diagnostic_json_and_closes_sqlite
+    try:r=mod.prepare(out)
+          ^^^^^^^^^^^^^^^^
+scripts/run_testnet_qualification.py:64: in prepare
+    client=HyperliquidClient(rate_limits=rates);client.startup()
+                                                ^^^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_stability_v8_8.py:66: in startup
+    def startup(self):raise KeyboardInterrupt()
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyboardInterrupt
+
+During handling of the above exception, another exception occurred:
+algo-trading-bot/test_qualification_stability_v8_8.py:72: in test_interrupt_preparation_saves_diagnostic_json_and_closes_sqlite
+    except KeyboardInterrupt:pytest.fail('Interrupted preparation lost final diagnostics')
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: Interrupted preparation lost final diagnostics</failure></testcase></testsuite></testsuites>

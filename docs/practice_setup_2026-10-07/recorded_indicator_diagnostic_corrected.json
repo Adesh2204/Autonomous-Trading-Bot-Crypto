@@ -1,0 +1,96 @@
+{
+  "scope": "OFFLINE_DIAGNOSTIC_OF_RECORDED_PUBLIC_SCAN_INPUTS",
+  "active_source_hash": "90ebdb94c333f18a6e75f937dd6f574a7e43d1ded4780b2b424fae21a79617fe",
+  "exchange_actions_submitted": 0,
+  "strategy_changed": false,
+  "input_path": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/practice_setup_2026-10-07/paper_segments/20261007T052432Z-bb04b3e2/candles.jsonl",
+  "input_snapshot_sha256": "3b9de7fc678d4207ad75bb96a3d6feac083d17547752e3442397159fe5bb40a3",
+  "snapshots": [
+    {
+      "symbol": "par:HYPE",
+      "scan_observed_at_ms": 1791351581868,
+      "bar_count": 292,
+      "zero_volume_bars": 258,
+      "zero_range_bars": 288,
+      "last_candle_open_ms": 1791347820000,
+      "indicators": {
+        "Close": {
+          "value": "90.576",
+          "scanner_requires_positive": true,
+          "validation": "PASS"
+        },
+        "ATR_14": {
+          "value": "0.0015714285714279544",
+          "scanner_requires_positive": true,
+          "validation": "PASS"
+        },
+        "EMA_9": {
+          "value": "90.56337510962757",
+          "scanner_requires_positive": true,
+          "validation": "PASS"
+        },
+        "EMA_21": {
+          "value": "90.61351976455643",
+          "scanner_requires_positive": true,
+          "validation": "PASS"
+        },
+        "VWAP": {
+          "value": "91.27902003374105",
+          "scanner_requires_positive": true,
+          "validation": "PASS"
+        },
+        "VWAP_Slope": {
+          "value": "-0.00013368223755776397",
+          "scanner_requires_positive": false,
+          "validation": "PASS"
+        }
+      },
+      "invalid_required_indicators": [],
+      "note": "Signed/zero slope is valid. Positive ATR validation is an existing guard, not a strategy change."
+    },
+    {
+      "symbol": "par:SP500",
+      "scan_observed_at_ms": 1791351581868,
+      "bar_count": 353,
+      "zero_volume_bars": 327,
+      "zero_range_bars": 344,
+      "last_candle_open_ms": 1791351480000,
+      "indicators": {
+        "Close": {
+          "value": "7827.9",
+          "scanner_requires_positive": true,
+          "validation": "PASS"
+        },
+        "ATR_14": {
+          "value": "0.0",
+          "scanner_requires_positive": true,
+          "validation": "INVALID_DECIMAL"
+        },
+        "EMA_9": {
+          "value": "7827.7858184461775",
+          "scanner_requires_positive": true,
+          "validation": "PASS"
+        },
+        "EMA_21": {
+          "value": "7826.024290457054",
+          "scanner_requires_positive": true,
+          "validation": "PASS"
+        },
+        "VWAP": {
+          "value": "7819.528791469194",
+          "scanner_requires_positive": true,
+          "validation": "PASS"
+        },
+        "VWAP_Slope": {
+          "value": "0.0",
+          "scanner_requires_positive": false,
+          "validation": "PASS"
+        }
+      },
+      "invalid_required_indicators": [
+        "ATR_14"
+      ],
+      "note": "Signed/zero slope is valid. Positive ATR validation is an existing guard, not a strategy change."
+    }
+  ]
+}

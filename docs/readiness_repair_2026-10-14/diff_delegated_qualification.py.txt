@@ -1,0 +1,53 @@
+--- before/algo-trading-bot/exchange/delegated_qualification.py
++++ algo-trading-bot/exchange/delegated_qualification.py
+@@ -53,6 +53,7 @@
+     expires_ms: int = END_MS
+     execution_policy_hash: str = field(default_factory=lambda: fingerprint(BOUNDED_POLICY))
+     scope: dict = field(default_factory=lambda: dict(SESSION_SCOPE))
++    recovery_resolution_hash: str | None = None
+ 
+     def require(self):
+         if (self.mode != MODE or type(self.created_ms) is not int
+@@ -65,12 +66,17 @@
+                 or self.team_wallet.lower() != cert.TEAM.lower()
+                 or self.api_wallet.lower() != cert.API.lower()):
+             raise ExchangeError('INVALID_DELEGATED_TESTNET_SESSION_SCOPE')
++        if self.recovery_resolution_hash is not None and (len(self.recovery_resolution_hash)!=64
++                or any(c not in '0123456789abcdef' for c in self.recovery_resolution_hash)):
++            raise ExchangeError('INVALID_DELEGATED_RECOVERY_REFERENCE')
+         return self
+ 
+     @property
+     def identity(self):
+         self.require()
+-        return fingerprint(asdict(self))
++        data=asdict(self)
++        if self.recovery_resolution_hash is None:data.pop('recovery_resolution_hash')
++        return fingerprint(data)
+ 
+ 
+ @dataclass(frozen=True)
+@@ -182,7 +188,12 @@
+             raise ExchangeError('DELEGATED_SESSION_REVOKED_EXPIRED_OR_IDENTITY_CHANGED')
+         registered = self.journal.control('delegated_session_active')
+         if registered and registered != m.identity:
+-            raise ExchangeError('ANOTHER_DELEGATED_SESSION_REQUIRES_OPERATOR_REVIEW')
++            from .qualification_intent_recovery import prior_session_resolved
++            row=self.journal.db.execute('SELECT checksum FROM nontransmission_resolutions LIMIT 1').fetchone() \
++                if self.journal.db.execute("SELECT 1 FROM sqlite_master WHERE name='nontransmission_resolutions'").fetchone() else None
++            if (not prior_session_resolved(self.journal.db,registered) or row is None
++                    or m.recovery_resolution_hash!=row[0]):
++                raise ExchangeError('ANOTHER_DELEGATED_SESSION_REQUIRES_OPERATOR_REVIEW')
+         runtime = self.journal.control('delegated_runtime:'+m.identity)
+         if runtime and runtime != dict(proposal_id=p.identity, token=self.runtime_token):
+             raise ExchangeError('DELEGATED_RESTART_READ_ONLY_RECOVERY_REQUIRED')
+@@ -192,7 +203,8 @@
+         with self.journal.transaction():
+             # Recheck while holding the shared account transaction lock.
+             self.require(self.mandate.team_wallet, self.mandate.api_wallet)
+-            if self.journal.intents() or self.journal.control('qualification_entry_consumed'):
++            from .qualification_intent_recovery import qualification_intents
++            if qualification_intents(self.journal) or self.journal.control('qualification_entry_consumed'):
+                 raise ExchangeError('DELEGATED_ENTRY_ALREADY_CONSUMED')
+             self.journal.db.execute('INSERT OR REPLACE INTO controls VALUES (?,?)',
+                 ('delegated_session_active', json.dumps(self.mandate.identity)))

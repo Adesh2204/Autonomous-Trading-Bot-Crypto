@@ -1,0 +1,13 @@
+.......................F..........................                       [100%]
+=================================== FAILURES ===================================
+________________ test_short_fixture_is_independent_of_strategy _________________
+algo-trading-bot/test_testnet_certification_v8.py:207: in test_short_fixture_is_independent_of_strategy
+    p=propose(ctx,l.client,'fixture-source',reliability_policy_hash='fixture-policy',side='SELL')
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:118: in propose
+    raise ExchangeError('CERTIFICATION_FRESH_ACCOUNT_BOOK_REQUIRED')
+E   exchange.base_exchange.ExchangeError: CERTIFICATION_FRESH_ACCOUNT_BOOK_REQUIRED
+- generated xml file: /Users/adesh/Autonomous Trading Bot - Crypto /docs/certification_v8_1_2026-10-12/targeted_v7.xml -
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_testnet_certification_v8.py::test_short_fixture_is_independent_of_strategy
+1 failed, 49 passed in 15.99s

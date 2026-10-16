@@ -1,0 +1,21 @@
+--- before/algo-trading-bot/exchange/qualification_watcher.py
++++ algo-trading-bot/exchange/qualification_watcher.py
+@@ -401,11 +401,16 @@
+             pending = db.execute("SELECT COUNT(*) FROM intents WHERE state IN "
+                 "('PREPARED','SUBMITTED','UNKNOWN','OPEN','PARTIALLY_FILLED')").fetchone()[0]
+             total = db.execute('SELECT COUNT(*) FROM intents').fetchone()[0]
++            effective_total=total
++            if name=='qualification.sqlite':
++                from .qualification_intent_recovery import effective_rows
++                effective_total=len(effective_rows(db))
+             consumed = db.execute("SELECT value FROM controls WHERE name='qualification_entry_consumed'").fetchone()
+-            result[name] = dict(exists=True, pending=pending, intents=total, entry_consumed=bool(consumed))
++            result[name] = dict(exists=True, pending=pending, intents=total, entry_consumed=bool(consumed),
++                actionable_intents=effective_total,certified_nontransmission_records=total-effective_total)
+             if name == 'certification.sqlite' and pending:
+                 raise ExchangeError('PRIOR_CERTIFICATION_UNRESOLVED_REVIEW_REQUIRED')
+-            if name == 'qualification.sqlite' and (total or consumed):
++            if name == 'qualification.sqlite' and (effective_total or consumed):
+                 raise ExchangeError('QUALIFICATION_PRIOR_ATTEMPT_READ_ONLY_RECOVERY_REQUIRED')
+     return result
+ 

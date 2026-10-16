@@ -49,6 +49,8 @@ class RejectionReason(str,Enum):
     UNCLASSIFIED='UNCLASSIFIED'
 
 ALIASES={'COMPLETED_CANDLE_STALE':'STALE_CANDLE','SIGNAL_STALE_OR_OPEN':'STALE_CANDLE',
+ 'LAST_CANDLE_TIME_STALE':'STALE_CANDLE','LAST_ORDERBOOK_TIME_STALE':'STALE_BOOK',
+ 'LAST_TICK_TIME_STALE':'STALE_BOOK','LAST_MARK_TIME_STALE':'STALE_MARK',
  'ORDERBOOK_STALE':'STALE_BOOK','MARK_DATA_STALE':'STALE_MARK','SCANNER_ASSET_CONTEXT_STALE':'STALE_MARK',
  'ASSET_CONTEXT_STALE':'STALE_MARK','INSUFFICIENT_COMPLETED_HISTORY':'INSUFFICIENT_HISTORY',
  'ATR_BELOW_BASELINE_SCANNER_FLOOR':'ATR_BELOW_SCANNER_FLOOR','WINDOW_LIQUIDITY_INSUFFICIENT':'ZERO_LIQUIDITY',
@@ -62,9 +64,11 @@ ALIASES={'COMPLETED_CANDLE_STALE':'STALE_CANDLE','SIGNAL_STALE_OR_OPEN':'STALE_C
 
 def reason_code(reason):
     text=str(reason)
+    if text=='CONFLICTING_COMPLETED_CANDLES':return 'INVALID_MARKET_DATA'
     if text in ALIASES:return ALIASES[text]
     if text in RejectionReason._value2member_map_:return text
     if 'CANDLE' in text and 'GAP' in text:return 'HISTORY_GAP'
+    if 'FUTURE' in text:return 'INVALID_MARKET_DATA'
     if 'FUNDING' in text:return 'FUNDING_TOO_EXPENSIVE'
     if 'LIQUIDATION' in text:return 'LIQUIDATION_BUFFER'
     if 'DRAWDOWN' in text:return 'MAX_DRAWDOWN'
@@ -130,7 +134,7 @@ class OpportunityFunnel:
             p=policy
             history=len(d.candles)
             enough=history>=p.history_bars if p else bool(d.signal)
-            data_fail=next((reason_code(r) for r in d.reasons if reason_code(r) in {'STALE_CANDLE','STALE_BOOK','STALE_MARK','HISTORY_GAP','INVALID_MARKET_DATA','MARKET_DATA_UNAVAILABLE'}),None)
+            data_fail=next((reason_code(r) for r in d.reasons if reason_code(r) in {'STALE_CANDLE','STALE_BOOK','STALE_MARK','HISTORY_GAP','INVALID_MARKET_DATA','MARKET_DATA_UNAVAILABLE','INSUFFICIENT_HISTORY','RECOVERY_PENDING'}),None)
             healthy=d.snapshot is not None and data_fail is None and bool(d.signal)
             self._stage(t,'MARKET_DATA_HEALTHY','PASS' if healthy else 'FAIL' if data_fail else 'NOT_OBSERVED',data_fail)
             self._stage(t,'ENOUGH_HISTORY','PASS' if enough else 'FAIL','INSUFFICIENT_HISTORY' if not enough else None)
@@ -208,8 +212,13 @@ class OpportunityFunnel:
             statuses=Counter(t['stages'][stage]['status'] for t in traces)
             reached=statuses['PASS']+statuses['FAIL']
             previous=len(survivors)
+            admitted_statuses=Counter(t['stages'][stage]['status'] for t in survivors)
             survivors=[t for t in survivors if t['stages'][stage]['status']=='PASS']
             rows.append(dict(stage=stage,passed=statuses['PASS'],failed=statuses['FAIL'],reached=reached,
+                evaluated=reached,pass_percent=100*statuses['PASS']/reached if reached else None,
+                admission_evaluated=admitted_statuses['PASS']+admitted_statuses['FAIL'],
+                admission_passed=admitted_statuses['PASS'],admission_failed=admitted_statuses['FAIL'],
+                admission_unobserved=previous-admitted_statuses['PASS']-admitted_statuses['FAIL'],
                 admission_survivors=len(survivors),admission_percent_of_previous=100*len(survivors)/previous if previous else None,
                 not_reached=statuses['NOT_REACHED'],not_observed=statuses['NOT_OBSERVED'],
                 percent_of_observations=100*statuses['PASS']/n if n else None,
@@ -218,7 +227,14 @@ class OpportunityFunnel:
         first=Counter(t['first_blocking_reason'] for t in traces if t['first_blocking_reason'])
         days={t['utc_day'] for t in traces}
         sufficient=n>=100 and len(days)>=3
+        categories={'INFRASTRUCTURE':{'STALE_CANDLE','STALE_BOOK','STALE_MARK','HISTORY_GAP','INSUFFICIENT_HISTORY','INVALID_MARKET_DATA','MARKET_DATA_UNAVAILABLE','RECOVERY_PENDING','RATE_LIMIT','ACCOUNT_UNREADY'},
+            'MARKET':{'ATR_BELOW_SCANNER_FLOOR','SPREAD_TOO_WIDE','INSUFFICIENT_DEPTH','ZERO_LIQUIDITY','NOT_TOP3'},
+            'STRATEGY':{'NO_SETUP','BIAS_MISMATCH','WARMUP','ANTI_SPAM_LOCK','COOLDOWN','ATR_BELOW_BRAIN_FLOOR'},
+            'RISK_ECONOMICS':{'NEGATIVE_NET_EDGE_OR_RR','FEES_TOO_HIGH','FUNDING_TOO_EXPENSIVE','SLIPPAGE_TOO_HIGH','DAILY_LOSS_LIMIT','MAX_DRAWDOWN','EXPOSURE_LIMIT','MARGIN_LIMIT','LIQUIDATION_BUFFER','POSITION_ALREADY_OPEN','ENTRY_PAUSED'}}
+        separated={name:{r:c for r,c in first.items() if r in codes} for name,codes in categories.items()}
+        separated['UNCLASSIFIED']={r:c for r,c in first.items() if not any(r in codes for codes in categories.values())}
         return dict(observations=n,dates=len(days),stages=rows,first_blocking_reasons=dict(first),
+            first_rejection_categories=separated,
             first_blocking_percent_of_observations={r:100*c/n for r,c in first.items()} if n else {},
             all_observed_failures=dict(Counter(r for t in traces for r in set(t['all_observed_failed_conditions']))),
             bottleneck_status='OBSERVATIONAL_EVIDENCE' if sufficient else 'INSUFFICIENT OBSERVATIONS',

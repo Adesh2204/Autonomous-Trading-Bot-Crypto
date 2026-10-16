@@ -1,0 +1,201 @@
+{
+  "directive": "V8.6",
+  "generated_utc": "2026-10-12T17:16:17.956528+00:00",
+  "verdict": "SCOPED_CLOSE_IMPLEMENTED_ENTRY_BLOCKED_UNVERIFIED_ONE_LOT_PROTECTION",
+  "source_hash": "d06cc6ebb16ad2859b317e2a310dfadf8b11310187f4c222b0b62e5baa9dbc75",
+  "production_source_files_modified": [
+    "algo-trading-bot/exchange/certification_runtime.py",
+    "algo-trading-bot/exchange/compliance_guard.py",
+    "algo-trading-bot/exchange/exchange_rules.py",
+    "algo-trading-bot/exchange/hyperliquid_execution.py",
+    "algo-trading-bot/exchange/partial_fill_safety.py",
+    "algo-trading-bot/exchange/testnet_certification.py"
+  ],
+  "new_active_files": [
+    "algo-trading-bot/exchange/full_position_close.py",
+    "algo-trading-bot/test_exact_full_close_v8_6.py"
+  ],
+  "strategy_brain_sha256": "bff940ac5ed35f71ed3dfb537ba15d20dcec35a4e62a938d2f0619c6e9309d83",
+  "safety_checks": {
+    "strategy_freeze": {
+      "exit_code": 0,
+      "result": {
+        "baseline": "nse-working-baseline",
+        "file_count": 1,
+        "method_count": 8,
+        "parameter_count": 32,
+        "passed": true
+      }
+    },
+    "phase0": {
+      "exit_code": 0,
+      "result": {
+        "project": "anchorium-perpetual-alpha",
+        "checks": {
+          "project_is_perpetual_alpha": true,
+          "independent_git_directory": true,
+          "migration_branch": true,
+          "testnet_venue": true,
+          "paper_execution_mode": true,
+          "migration_policy_valid": true,
+          "orders_disabled": true,
+          "angel_one_client_disabled": true,
+          "angel_one_order_boundary_disabled": true,
+          "testnet_order_boundary_disabled": true,
+          "signal_logic_present": true,
+          "signal_source_unchanged": true
+        },
+        "passed": true
+      }
+    }
+  },
+  "tests": {
+    "tests": 1633,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "baseline_tests": 1577,
+  "new_tests": 56,
+  "full_regression_passed": true,
+  "regression_xml_sha256": "e4469c8ea62567cecaa0b5a228d708fe2f50ac2f36b7fa3ef2045b5d80f664d4",
+  "historical_close_evidence": [
+    {
+      "coin": "par:EWJ",
+      "oid": 61956380536,
+      "close_side": "BUY",
+      "quantity": "0.001",
+      "limit": "99.731",
+      "notional": "0.099731",
+      "post_position": "0.000"
+    },
+    {
+      "coin": "par:BRENT",
+      "oid": 61912483832,
+      "close_side": "SELL",
+      "quantity": "0.01",
+      "limit": "101.63",
+      "notional": "1.0163",
+      "post_position": "0.00"
+    },
+    {
+      "coin": "par:HYPE",
+      "oid": 61878767079,
+      "close_side": "BUY",
+      "quantity": "0.01",
+      "limit": "91.65",
+      "notional": "0.9165",
+      "post_position": "0.00"
+    },
+    {
+      "coin": "par:BTC",
+      "oid": 62391880965,
+      "close_side": "BUY",
+      "quantity": "0.0001",
+      "limit": "83368.0",
+      "notional": "8.33680",
+      "post_position": "0.0000"
+    },
+    {
+      "coin": "par:BTC",
+      "oid": 62228843959,
+      "close_side": "SELL",
+      "quantity": "0.0001",
+      "limit": "82075.0",
+      "notional": "8.20750",
+      "post_position": "0.0000"
+    },
+    {
+      "coin": "par:ETH",
+      "oid": 61841673908,
+      "close_side": "BUY",
+      "quantity": "0.0001",
+      "limit": "2717.2",
+      "notional": "0.27172",
+      "post_position": "0.0000"
+    }
+  ],
+  "close_scope": "Only verified exact size/direction/market/runtime-mapping IOC full closes; ordinary/trigger minimum unchanged",
+  "public_stop_inspection": {
+    "started_utc": "2026-10-12T17:09:34.885098+00:00",
+    "finished_utc": "2026-10-12T17:09:44.365924+00:00",
+    "users": 12,
+    "open_order_rows": 252,
+    "open_trigger_rows": 0,
+    "additional_history_rows": 4000,
+    "unique_additional_historical_orders": 2377,
+    "historical_trigger_rows": 0,
+    "requests": 32,
+    "charged_weight": 840,
+    "source_stable": true
+  },
+  "flags": {
+    "ONE_LOT_FULL_CLOSE_EVIDENCE_VERIFIED": true,
+    "CLOSING_EXCEPTION_IMPLEMENTED": true,
+    "SCOPED_FULL_POSITION_CLOSE_OFFLINE_TESTS_PASSED": true,
+    "UNIVERSAL_SUBMINIMUM_CLOSE_VERIFIED": false,
+    "ONE_LOT_PROTECTIVE_STOP_ACCEPTANCE_VERIFIED": false,
+    "SUBMINIMUM_PROTECTION_CAPABILITY_VERIFIED": false,
+    "PROTECTION_PARTIAL_FILL_BEHAVIOR_VERIFIED": false,
+    "PARTIAL_FILL_EXIT_READY": false,
+    "ACTUAL_PROTECTION_READY": false,
+    "CONTROLLED_EXECUTION_READY": false,
+    "LONG_CERTIFIED": false,
+    "SHORT_CERTIFIED": false,
+    "FUNDED_RECOVERY_CERTIFIED": false,
+    "PRACTICE_READY": false,
+    "LIVE_READY": false,
+    "PROTECTION_ENABLED": false,
+    "PRODUCTION_INFRASTRUCTURE_CHANGED": true,
+    "PRODUCTION_STRATEGY_CHANGED": false,
+    "PRODUCTION_TRADING_ACTIVATED": false,
+    "SOLE_SIGNER_HOST_CONFIRMED": false
+  },
+  "actual_exchange_submissions": 0,
+  "actual_wallet_signatures": 0,
+  "offline_signing": "Ephemeral fixtures only; real HTTP prohibited by fixture",
+  "fresh_activation_preflight_performed": false,
+  "fresh_activation_preflight_status": "DEFERRED_UNTIL_CLOSING_AND_PROTECTION_GATES_BOTH_PASS",
+  "prior_account_observation": {
+    "started_utc": "2026-10-12T11:43:13.138849+00:00",
+    "finished_utc": "2026-10-12T11:43:27.286717+00:00",
+    "account_ready": "READY",
+    "balance": "1000000.0",
+    "observed_flat": true,
+    "all_ten_one_x_cross": true,
+    "scope": "Prior V8.5 only, older source, not a V8.6 activation permit or present account guarantee"
+  },
+  "actual_round_trip_pnl": null,
+  "proposal": null,
+  "approval_requested": false,
+  "remaining_blockers": [
+    "One-lot/sub-$10 stop admission, readback coverage and residual behavior unverified",
+    "Closing scope does not establish arbitrary subminimum sizes/directions; two-lot residual remains blocked",
+    "Fresh account/signer/nonce/clock/liquidity/reconciliation preflight still required after venue behavior validated",
+    "Human sole-signer-host confirmation and an exact bounded trade approval remain outstanding"
+  ],
+  "next_safe_action": "Obtain authoritative par one-lot protective-stop clarification or a verifiable original stop/position/fill record using the UNSENT organizer question. Keep entry blocked.",
+  "legacy_inventory_refresh": {
+    "exit_code": 0,
+    "summary": {
+      "occurrences": 1103169,
+      "files_with_occurrences": 472,
+      "disposition_counts": {
+        "KEEP AS LEGACY REFERENCE": 2305,
+        "REPLACE": 1068268,
+        "REMOVE": 32596
+      }
+    },
+    "paths": {
+      "docs/legacy_dependency_inventory.csv": {
+        "sha256": "a8697c7b3779439c3f2274e373934fc2eda6dca6c6e823d40f73d475606f7b54",
+        "bytes": 213863513
+      },
+      "docs/legacy_dependency_inventory.json": {
+        "sha256": "38c04399ffff850467f6d6f84505b78d6d863ee6403d29968dd2e2f3ff6bb057",
+        "bytes": 167322
+      }
+    },
+    "scope": "Generated repository-wide legacy inventory, including pre-existing cached references; counts are not new runtime dependencies"
+  }
+}

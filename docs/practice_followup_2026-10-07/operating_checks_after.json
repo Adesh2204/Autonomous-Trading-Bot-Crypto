@@ -1,0 +1,59 @@
+{
+  "scope": "LOCAL_COMPLETION_AND_DURABLE_RECORDS",
+  "active_source_hash": "4b24a85f9fbb2ba4ef84eefafe8b847fea893b972aaddcaeb7f765e7c3b9b07c",
+  "paper_owner_lease_released": true,
+  "checkpoint_integrity_ok": true,
+  "checkpoints": {
+    "paper.sqlite": {
+      "integrity": "ok",
+      "checksum_matches": true,
+      "clean_shutdown": true,
+      "source_hash": "4b24a85f9fbb2ba4ef84eefafe8b847fea893b972aaddcaeb7f765e7c3b9b07c"
+    },
+    "backups/paper-latest.sqlite": {
+      "integrity": "ok",
+      "checksum_matches": true,
+      "clean_shutdown": true,
+      "source_hash": "4b24a85f9fbb2ba4ef84eefafe8b847fea893b972aaddcaeb7f765e7c3b9b07c"
+    }
+  },
+  "counters": {
+    "configuration": {
+      "intents": 0,
+      "signed_management": 11,
+      "api_actions": 11,
+      "management_states": [
+        [
+          "ACKNOWLEDGED",
+          10
+        ],
+        [
+          "REJECTED_BEFORE_TRANSMISSION",
+          1
+        ]
+      ],
+      "configuration_nonces": 10,
+      "configuration_action_kinds": [
+        [
+          "updateLeverage",
+          11
+        ]
+      ]
+    },
+    "public_paper": {
+      "intents": 0,
+      "signed_management": 0,
+      "api_actions": 0
+    }
+  },
+  "nonce_error_latches": 0,
+  "nonce_highwater_public": [
+    [
+      "0x46c9bed595770150752e7fa3806449f81e0ec6f9",
+      1791362882462
+    ]
+  ],
+  "actual_orders_submitted": 0,
+  "actual_configuration_submissions": 10,
+  "action_reservations_explanation": "Local api_actions includes the first pre-transmission reservation. Count actual submissions from the immutable transport receipt, not reservations."
+}

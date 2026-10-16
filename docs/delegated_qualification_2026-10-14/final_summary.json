@@ -1,0 +1,363 @@
+{
+  "status": "HALTED_BEFORE_HTTP_ACCOUNT_FLAT_NO_QUALIFYING_FILL",
+  "session_id": "47fc3e21b13b4081e1c226c7e365d1d42798f206e1e80547c1c909c886511ee7",
+  "source_hash": "ed9022e9513832f220786ca9850e49834541607935583c1c5aa0a1a635546825",
+  "baseline_tests": 2115,
+  "new_tests": 79,
+  "regression": {
+    "tests": 2194,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "source_bound_full_regression": true,
+  "source_unchanged": true,
+  "scope": {
+    "network": "testnet",
+    "dex": "par",
+    "symbol": "par:BTC",
+    "collateral": "USDPR",
+    "side": "BUY",
+    "tif": "Ioc",
+    "quantity": "0.0002",
+    "maximum_opening_notional": "20",
+    "maximum_buy_price": "100000",
+    "leverage": 1,
+    "margin_mode": "cross",
+    "entry_attempts": 1,
+    "exit_attempts": 2,
+    "cancel_attempts": 1,
+    "signed_actions": 4,
+    "end_ist": "2026-10-14T23:59:00+05:30",
+    "price_rule": "FRESH_ASK_PLUS_10_BPS_CAPPED_AND_NORMALIZED_DOWN",
+    "fresh_entry_tolerance_bps": "20",
+    "qualification_spread_bps": "50",
+    "l2_participation": "0.5",
+    "mark_oracle_bps": "50",
+    "mid_oracle_bps": "100",
+    "order_oracle_bps": "150",
+    "exit_rule": "EXACT_ACTUAL_LONG_REDUCE_ONLY_IOC_FRESH_BID_MINUS_20_BPS",
+    "exit_floor_rule": "REVIEWED_BID_TIMES_0.98505_NORMALIZED_UP",
+    "entry_reserve_ms": 90000,
+    "proposal_window_ms": 300000,
+    "no_scope_enlargement": true,
+    "no_entry_after_actual_or_uncertain_submission": true,
+    "protection": "UNVERIFIED_NO_STOP_WILL_BE_SUBMITTED",
+    "exposure_cap_is_loss_guarantee": false
+  },
+  "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+  "api_wallet": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+  "account_observed_ms": 1791964239102,
+  "account_readiness": "READY",
+  "collateral": "1000000.0",
+  "unified": true,
+  "actual_positions": [],
+  "actual_open_orders": [],
+  "all_ten_one_x_cross": true,
+  "account_reconciliation_ready": true,
+  "clock": {
+    "state": "HEALTHY",
+    "reason": null,
+    "offset_ms": -577,
+    "last_reference_ms": 1791964239939,
+    "fresh_confirmations": 3
+  },
+  "signer": {
+    "observed_ms": 1791964232866,
+    "identity": {
+      "status": "MATCH",
+      "derived_public_address": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+      "expected_public_address": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+      "team_address": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+      "key_sources": [
+        "algo-trading-bot/.env"
+      ],
+      "signature_created": false,
+      "exchange_actions_submitted": 0
+    },
+    "local_lease": {
+      "status": "HEALTHY_LOCAL",
+      "second_process_rejected": true,
+      "ownership_scope": "CURRENT_HOST_AND_OS_USER_ONLY",
+      "remote_ownership_verified": false,
+      "nonce_database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/testnet/anchorium-bot-1/nonces.sqlite",
+      "nonce_allocated": false,
+      "signature_created": false,
+      "exchange_actions_submitted": 0,
+      "owner_during_check": {
+        "nonce_database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/testnet/anchorium-bot-1/nonces.sqlite",
+        "pid": 34201,
+        "hostname": "Adeshs-MacBook-Air.local",
+        "started_ms": 1791964232828,
+        "api_wallet": "0x46c9bed595770150752e7fa3806449f81e0ec6f9"
+      },
+      "lease_released_after_check": true
+    },
+    "sole_host_evidence": "HUMAN_CONFIRMED_IN_CHAT; LOCAL_LEASE_CANNOT_CHECK_OTHER_MACHINES",
+    "signature_created": false
+  },
+  "durable_read_only_cleanup": {
+    "integrity": "ok",
+    "snapshots_verified": 2,
+    "checksums_verified": true,
+    "source_identity": {
+      "git_commit": "33c7cfe9ec241ccc0241144a8dccfd9a06df553a",
+      "working_source_hash": "aba57dac7ed33fd61327d6353a63104b07e49ba52ef9568bfbc7f4bd1e8a6f58",
+      "strategy_source_hash": "bff940ac5ed35f71ed3dfb537ba15d20dcec35a4e62a938d2f0619c6e9309d83"
+    },
+    "clean": true,
+    "actions": {
+      "intents": 0,
+      "api_actions": 0,
+      "signed_management": 0
+    }
+  },
+  "current_example_proposal": {
+    "symbol": "par:BTC",
+    "asset_id": 2670000,
+    "quantity": "0.0002",
+    "entry_side": "BUY",
+    "entry_limit": "83585",
+    "exit_bound": "82073",
+    "stop_trigger": "82485",
+    "stop_limit": "82073",
+    "reference_bid": "83318.0",
+    "reference_ask": "83419.0",
+    "reference_mark": "83375.0",
+    "reference_oracle": "83472.0",
+    "observed_ms": 1791964239942,
+    "source_hash": "ed9022e9513832f220786ca9850e49834541607935583c1c5aa0a1a635546825",
+    "reliability_policy_hash": "1b8573d07a0f12f3653cf7b92f96c2120e8d61c3f210335ec850ba14ea582455",
+    "max_notional": "1000",
+    "session_loss_budget": "1000",
+    "entry_slippage_bps": "20",
+    "exit_slippage_bps": "20",
+    "taker_fee_rate": "0.00090",
+    "max_exit_attempts": 2,
+    "max_signed_actions": 4,
+    "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+    "api_wallet": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+    "network": "testnet",
+    "dex": "par",
+    "mode": "TESTNET_QUALIFICATION_P0_BOUNDED_IOC_V2",
+    "entry_rule": "MINIMUM_VALID_LONG_FRESH_IOC_WITHIN_APPROVED_ENVELOPE_V2",
+    "qualification_policy_hash": "25c54fbdcda01ed803c2fdff6378358b7c87814cf796cb80aa388dd24c3ff7ca",
+    "entry_tif": "Ioc",
+    "order_lifetime_seconds": 0,
+    "candidate_evidence_hash": "bddb3f42086d919f0461f412caa03ea23c139979532dd9d558008ba5782781f7",
+    "maker_fee_rate": "0.00030",
+    "protection_status": "UNVERIFIED_NO_STOP_WILL_BE_SUBMITTED",
+    "price_authorization_mode": "BOUNDED_FRESH_IOC_V2",
+    "max_buy_price": "83585",
+    "quantity_ceiling": "0.0002",
+    "entry_notional_ceiling": "16.7170"
+  },
+  "example_spread_bps": "12.11488751746762866070518241",
+  "example_notional": "16.7170",
+  "example_round_trip_fee": "0.029818440",
+  "example_conditional_floor_loss": "0.332218440",
+  "actual_wallet_signatures": null,
+  "exchange_submissions": 0,
+  "qualification_journal_actions": {
+    "intents": 1,
+    "api_actions": 1,
+    "signed_management": 0
+  },
+  "session_authorized": true,
+  "actual_protection_ready": false,
+  "controlled_protected_execution_ready": false,
+  "actual_fill_verified": false,
+  "organizer_whitelisting_confirmed": false,
+  "unrestricted_trading_enabled": false,
+  "production_changed": false,
+  "files_modified": [
+    {
+      "path": "algo-trading-bot/exchange/emergency_qualification.py",
+      "before_sha256": "e9a34d836bad39788ab560fcc73f19700181e1e6373c32947c3cd9e87aa80702",
+      "after_sha256": "c319802bbe0fab0eaadc29744516ff1b766803fee98d8c14c37ba989789d70cf",
+      "new": false
+    },
+    {
+      "path": "algo-trading-bot/exchange/delegated_qualification.py",
+      "before_sha256": null,
+      "after_sha256": "b46af45f7ae8a22df95a81b6e0c7c337346ce6051a4c8c9a1e792746fe9fa9e0",
+      "new": true
+    },
+    {
+      "path": "scripts/run_delegated_qualification.py",
+      "before_sha256": null,
+      "after_sha256": "713cd7408c313ad2a987b2de43bd43ca714fcf1530e496ed31c7b63e914a5250",
+      "new": true
+    },
+    {
+      "path": "algo-trading-bot/test_delegated_qualification.py",
+      "before_sha256": null,
+      "after_sha256": "751ba4312d5e010b8558f81884f5f9172225630260852dc73a059914502a28ed",
+      "new": true
+    }
+  ],
+  "protected_files_unchanged": {
+    "algo-trading-bot/signal_brain.py": true,
+    "docs/strategy_freeze.json": true,
+    "configs/reliability_policy.json": true
+  },
+  "session_finished": true,
+  "signing_enabled": false,
+  "signing_path_reached": true,
+  "execution_workflow_status": "EMERGENCY_EXIT_REQUIRED",
+  "attempt_proposal_id": "3b744e33e2de25c1afd6764eac3268ba8d51ac8ef905200e62230bc4a2261ddf",
+  "original_cloid": "0x3486c3b8e88add1a77175c9c5965350f",
+  "local_intent_state": "UNKNOWN",
+  "post_failure_flat_observed": true,
+  "post_failure_account_observed_ms": 1791964839428,
+  "post_failure_observations": [
+    {
+      "observed_ms": 1791964833984,
+      "positions_before": [],
+      "positions_after": [],
+      "orders": [],
+      "original_order_status": {
+        "status": "unknownOid"
+      },
+      "fills_since_acceptance": [],
+      "account_reconciliation": {
+        "ready": true,
+        "reasons": [],
+        "accounting": {
+          "source": "EXCHANGE_REPORTED_ACCOUNT_OBSERVER",
+          "exchange_orders_submitted": 0,
+          "entries_paused": false,
+          "reasons": [],
+          "positions": [],
+          "open_orders": [],
+          "fills": [],
+          "funding_events": [],
+          "reported_account_equity": {
+            "reported_account_value": "1000000.0",
+            "collateral_balance": "1000000.0",
+            "margin_used": "0",
+            "withdrawable": null,
+            "valuation_source": "spotClearinghouseState.USDPR.total"
+          },
+          "accounting_window_ms": [
+            0,
+            1791964831077
+          ],
+          "latest_query_window_ms": [
+            0,
+            1791964831077
+          ],
+          "realized": {
+            "gross_closed_pnl": "0",
+            "actual_fill_fees": "0",
+            "actual_funding_cashflow": "0",
+            "net_after_fees_and_funding": "0",
+            "scope": "ONLY_OBSERVED_ACCOUNT_EVENTS; excludes deposits/transfers and unknown historical events"
+          },
+          "corrections": [
+            {
+              "kind": "EXCHANGE_TRUTH_ADOPTED",
+              "timestamp_ms": 1791964832431,
+              "differences": {},
+              "new_fill_count": 0,
+              "reasons": [],
+              "exchange_ts": null,
+              "received_ts": "2026-10-14T08:00:32.431+00:00",
+              "processed_ts": "2026-10-14T08:00:32.431+00:00",
+              "timestamp_source": "LOCAL_PROCESS",
+              "exchange_to_receive_ms": null,
+              "receive_to_process_ms": 0,
+              "clock_skew_detected": false
+            }
+          ]
+        }
+      },
+      "flat_observed": true
+    },
+    {
+      "observed_ms": 1791964839427,
+      "positions_before": [],
+      "positions_after": [],
+      "orders": [],
+      "original_order_status": {
+        "status": "unknownOid"
+      },
+      "fills_since_acceptance": [],
+      "account_reconciliation": {
+        "ready": true,
+        "reasons": [],
+        "accounting": {
+          "source": "EXCHANGE_REPORTED_ACCOUNT_OBSERVER",
+          "exchange_orders_submitted": 0,
+          "entries_paused": false,
+          "reasons": [],
+          "positions": [],
+          "open_orders": [],
+          "fills": [],
+          "funding_events": [],
+          "reported_account_equity": {
+            "reported_account_value": "1000000.0",
+            "collateral_balance": "1000000.0",
+            "margin_used": "0",
+            "withdrawable": null,
+            "valuation_source": "spotClearinghouseState.USDPR.total"
+          },
+          "accounting_window_ms": [
+            0,
+            1791964836459
+          ],
+          "latest_query_window_ms": [
+            0,
+            1791964836459
+          ],
+          "realized": {
+            "gross_closed_pnl": "0",
+            "actual_fill_fees": "0",
+            "actual_funding_cashflow": "0",
+            "net_after_fees_and_funding": "0",
+            "scope": "ONLY_OBSERVED_ACCOUNT_EVENTS; excludes deposits/transfers and unknown historical events"
+          },
+          "corrections": [
+            {
+              "kind": "EXCHANGE_TRUTH_ADOPTED",
+              "timestamp_ms": 1791964832431,
+              "differences": {},
+              "new_fill_count": 0,
+              "reasons": [],
+              "exchange_ts": null,
+              "received_ts": "2026-10-14T08:00:32.431+00:00",
+              "processed_ts": "2026-10-14T08:00:32.431+00:00",
+              "timestamp_source": "LOCAL_PROCESS",
+              "exchange_to_receive_ms": null,
+              "receive_to_process_ms": 0,
+              "clock_skew_detected": false
+            },
+            {
+              "kind": "EXCHANGE_TRUTH_ADOPTED",
+              "timestamp_ms": 1791964837676,
+              "differences": {},
+              "new_fill_count": 0,
+              "reasons": [],
+              "exchange_ts": null,
+              "received_ts": "2026-10-14T08:00:37.676+00:00",
+              "processed_ts": "2026-10-14T08:00:37.676+00:00",
+              "timestamp_source": "LOCAL_PROCESS",
+              "exchange_to_receive_ms": null,
+              "receive_to_process_ms": 0,
+              "clock_skew_detected": false
+            }
+          ]
+        }
+      },
+      "flat_observed": true
+    }
+  ],
+  "execution_root_gate": "P0_FRESH_RECONCILED_FLAT_ACCOUNT_REQUIRED",
+  "price_bounds_passed": true,
+  "whitelist_trade_proof_created": false,
+  "session_unusable_for_new_entry": true,
+  "remaining_blocker": "Retained account-readiness freshness expires during repeated final signing checks; local UNKNOWN intent remains conservatively locked pending explicit recovery review.",
+  "next_safe_action": "Review and repair final signing freshness/latency without weakening age limits, retain the original UNKNOWN journal record, and obtain a new explicit authorization before any later entry.",
+  "source_hash_after_execution": "ed9022e9513832f220786ca9850e49834541607935583c1c5aa0a1a635546825",
+  "source_unchanged_after_execution": true
+}

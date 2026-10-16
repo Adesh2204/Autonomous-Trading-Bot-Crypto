@@ -1,0 +1,460 @@
+.........................................FFF.........FFFFFFFFF.F.FF..... [ 30%]
+.....................................................FFFFFFFFFFF...F.... [ 60%]
+....FFFFFFFFFFFFFFFFFFFFF.................................F............. [ 90%]
+F................FFFF..                                                  [100%]
+=================================== FAILURES ===================================
+_ test_session_uses_existing_fresh_price_rule_in_real_composition[83380-83420] _
+algo-trading-bot/test_delegated_qualification.py:112: in test_session_uses_existing_fresh_price_rule_in_real_composition
+    assert result['status']=='TRADE_CLOSED_RECONCILED',result
+E   AssertionError: {'actual_exchange_proof': [{'accounting': {'accounting_window_ms': (1790942400000, 1790942400000), 'corrections': [{'c...], 'certification_passed': False, 'equity_before': '1000', 'error': 'CERTIFICATION_UNCERTAIN_ORDER_URGENT_REVIEW', ...}
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'TRADE_CLOSED_RECONCILED'
+E     
+E     - TRADE_CLOSED_RECONCILED
+E     + EMERGENCY_EXIT_REQUIRED
+_ test_session_uses_existing_fresh_price_rule_in_real_composition[83440-83470] _
+algo-trading-bot/test_delegated_qualification.py:112: in test_session_uses_existing_fresh_price_rule_in_real_composition
+    assert result['status']=='TRADE_CLOSED_RECONCILED',result
+E   AssertionError: {'actual_exchange_proof': [{'accounting': {'accounting_window_ms': (1790942400000, 1790942400000), 'corrections': [{'c...], 'certification_passed': False, 'equity_before': '1000', 'error': 'CERTIFICATION_UNCERTAIN_ORDER_URGENT_REVIEW', ...}
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'TRADE_CLOSED_RECONCILED'
+E     
+E     - TRADE_CLOSED_RECONCILED
+E     + EMERGENCY_EXIT_REQUIRED
+_ test_session_uses_existing_fresh_price_rule_in_real_composition[83560-83600] _
+algo-trading-bot/test_delegated_qualification.py:112: in test_session_uses_existing_fresh_price_rule_in_real_composition
+    assert result['status']=='TRADE_CLOSED_RECONCILED',result
+E   AssertionError: {'actual_exchange_proof': [{'accounting': {'accounting_window_ms': (1790942400000, 1790942400000), 'corrections': [{'c...], 'certification_passed': False, 'equity_before': '1000', 'error': 'CERTIFICATION_UNCERTAIN_ORDER_URGENT_REVIEW', ...}
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'TRADE_CLOSED_RECONCILED'
+E     
+E     - TRADE_CLOSED_RECONCILED
+E     + EMERGENCY_EXIT_REQUIRED
+____ test_actual_quantity_zero_partial_full_is_reconciled_without_repeat[0] ____
+algo-trading-bot/test_delegated_qualification.py:151: in test_actual_quantity_zero_partial_full_is_reconciled_without_repeat
+    assert result['status']==('NO_FILL_VERIFIED' if fraction=='0' else 'TRADE_CLOSED_RECONCILED'),result
+E   AssertionError: {'actual_exchange_proof': [{'accounting': {'accounting_window_ms': (1790942400000, 1790942400000), 'corrections': [{'c...], 'certification_passed': False, 'equity_before': '1000', 'error': 'CERTIFICATION_UNCERTAIN_ORDER_URGENT_REVIEW', ...}
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'NO_FILL_VERIFIED'
+E     
+E     - NO_FILL_VERIFIED
+E     + EMERGENCY_EXIT_REQUIRED
+___ test_actual_quantity_zero_partial_full_is_reconciled_without_repeat[.5] ____
+algo-trading-bot/test_delegated_qualification.py:151: in test_actual_quantity_zero_partial_full_is_reconciled_without_repeat
+    assert result['status']==('NO_FILL_VERIFIED' if fraction=='0' else 'TRADE_CLOSED_RECONCILED'),result
+E   AssertionError: {'actual_exchange_proof': [{'accounting': {'accounting_window_ms': (1790942400000, 1790942400000), 'corrections': [{'c...], 'certification_passed': False, 'equity_before': '1000', 'error': 'CERTIFICATION_UNCERTAIN_ORDER_URGENT_REVIEW', ...}
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'TRADE_CLOSED_RECONCILED'
+E     
+E     - TRADE_CLOSED_RECONCILED
+E     + EMERGENCY_EXIT_REQUIRED
+____ test_actual_quantity_zero_partial_full_is_reconciled_without_repeat[1] ____
+algo-trading-bot/test_delegated_qualification.py:151: in test_actual_quantity_zero_partial_full_is_reconciled_without_repeat
+    assert result['status']==('NO_FILL_VERIFIED' if fraction=='0' else 'TRADE_CLOSED_RECONCILED'),result
+E   AssertionError: {'actual_exchange_proof': [{'accounting': {'accounting_window_ms': (1790942400000, 1790942400000), 'corrections': [{'c...], 'certification_passed': False, 'equity_before': '1000', 'error': 'CERTIFICATION_UNCERTAIN_ORDER_URGENT_REVIEW', ...}
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'TRADE_CLOSED_RECONCILED'
+E     
+E     - TRADE_CLOSED_RECONCILED
+E     + EMERGENCY_EXIT_REQUIRED
+_ test_uncertain_or_rejected_entry_never_refreshes_into_second_entry[entry_rejected] _
+algo-trading-bot/test_delegated_qualification.py:161: in test_uncertain_or_rejected_entry_never_refreshes_into_second_entry
+    assert len([a for a in c.venue.calls if not a['orders'][0]['r']])==1
+E   assert 0 == 1
+E    +  where 0 = len([])
+_ test_uncertain_or_rejected_entry_never_refreshes_into_second_entry[timeout_before] _
+algo-trading-bot/test_delegated_qualification.py:161: in test_uncertain_or_rejected_entry_never_refreshes_into_second_entry
+    assert len([a for a in c.venue.calls if not a['orders'][0]['r']])==1
+E   assert 0 == 1
+E    +  where 0 = len([])
+_ test_uncertain_or_rejected_entry_never_refreshes_into_second_entry[timeout_after_fill] _
+algo-trading-bot/test_delegated_qualification.py:161: in test_uncertain_or_rejected_entry_never_refreshes_into_second_entry
+    assert len([a for a in c.venue.calls if not a['orders'][0]['r']])==1
+E   assert 0 == 1
+E    +  where 0 = len([])
+_ test_uncertain_or_rejected_entry_never_refreshes_into_second_entry[disconnect_after_fill] _
+algo-trading-bot/test_delegated_qualification.py:161: in test_uncertain_or_rejected_entry_never_refreshes_into_second_entry
+    assert len([a for a in c.venue.calls if not a['orders'][0]['r']])==1
+E   assert 0 == 1
+E    +  where 0 = len([])
+_______________ test_partial_exit_handles_one_lot_exact_residual _______________
+algo-trading-bot/test_delegated_qualification.py:167: in test_partial_exit_handles_one_lot_exact_residual
+    assert result['status']=='TRADE_CLOSED_RECONCILED',result
+E   AssertionError: {'actual_exchange_proof': [{'accounting': {'accounting_window_ms': (1790942400000, 1790942400000), 'corrections': [{'c...], 'certification_passed': False, 'equity_before': '1000', 'error': 'CERTIFICATION_UNCERTAIN_ORDER_URGENT_REVIEW', ...}
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'TRADE_CLOSED_RECONCILED'
+E     
+E     - TRADE_CLOSED_RECONCILED
+E     + EMERGENCY_EXIT_REQUIRED
+__________ test_rejected_exits_halt_and_preserve_unprotected_residual __________
+algo-trading-bot/test_delegated_qualification.py:181: in test_rejected_exits_halt_and_preserve_unprotected_residual
+    assert len(c.venue.calls)==3 and c.live.account.get_position('par:BTC')
+E   AssertionError: assert (0 == 3)
+E    +  where 0 = len([])
+E    +    where [] = <test_testnet_certification_v8.FakeCertificationVenue object at 0x10be75dc0>.calls
+E    +      where <test_testnet_certification_v8.FakeCertificationVenue object at 0x10be75dc0> = namespace(live=namespace(fixture=<test_live_exchange_execution.LiveInfoFixture object at 0x10b9a7f80>, client=<exchang.../3n84_zgj3xxgpkhtf_xzrnpc0000gn/T/pytest-of-adesh/pytest-639/test_rejected_exits_halt_and_p0/session_acceptance.json')).venue
+___________ test_duplicate_submit_returns_original_intent_and_price ____________
+algo-trading-bot/test_delegated_qualification.py:198: in test_duplicate_submit_returns_original_intent_and_price
+    assert len(c.venue.calls)==1
+E   AssertionError: assert 0 == 1
+E    +  where 0 = len([])
+E    +    where [] = <test_testnet_certification_v8.FakeCertificationVenue object at 0x10bd81730>.calls
+E    +      where <test_testnet_certification_v8.FakeCertificationVenue object at 0x10bd81730> = namespace(live=namespace(fixture=<test_live_exchange_execution.LiveInfoFixture object at 0x10bed13a0>, client=<exchang.../3n84_zgj3xxgpkhtf_xzrnpc0000gn/T/pytest-of-adesh/pytest-639/test_duplicate_submit_returns_0/session_acceptance.json')).venue
+_____ test_revocation_after_filling_prevents_further_writes_and_escalates ______
+algo-trading-bot/test_delegated_qualification.py:217: in test_revocation_after_filling_prevents_further_writes_and_escalates
+    assert result['status']=='EMERGENCY_EXIT_REQUIRED' and c.live.account.get_position('par:BTC')
+E   AssertionError: assert ('EMERGENCY_EXIT_REQUIRED' == 'EMERGENCY_EXIT_REQUIRED'
+E     
+E       EMERGENCY_EXIT_REQUIRED and None)
+E    +  where None = get_position('par:BTC')
+E    +    where get_position = <exchange.hyperliquid_account.HyperliquidAccount object at 0x10bb283b0>.get_position
+E    +      where <exchange.hyperliquid_account.HyperliquidAccount object at 0x10bb283b0> = namespace(fixture=<test_live_exchange_execution.LiveInfoFixture object at 0x10bcac740>, client=<exchange.hyperliquid_c...ation.EmergencyExecution object at 0x10b9a4aa0>, signer=<eth_account.signers.local.LocalAccount object at 0x10bcafb60>).account
+E    +        where namespace(fixture=<test_live_exchange_execution.LiveInfoFixture object at 0x10bcac740>, client=<exchange.hyperliquid_c...ation.EmergencyExecution object at 0x10b9a4aa0>, signer=<eth_account.signers.local.LocalAccount object at 0x10bcafb60>) = namespace(live=namespace(fixture=<test_live_exchange_execution.LiveInfoFixture object at 0x10bcac740>, client=<exchang.../3n84_zgj3xxgpkhtf_xzrnpc0000gn/T/pytest-of-adesh/pytest-639/test_revocation_after_filling_0/session_acceptance.json')).live
+__________ test_missing_acceptance_cannot_even_start_readiness_or_sdk __________
+algo-trading-bot/test_delegated_qualification.py:232: in test_missing_acceptance_cannot_even_start_readiness_or_sdk
+    assert result['status']=='SESSION_HALTED' and not result['authorized_entry_attempted']
+E   AssertionError: assert ('EMERGENCY_EXIT_REQUIRED' == 'SESSION_HALTED'
+E     
+E     - SESSION_HALTED
+E     + EMERGENCY_EXIT_REQUIRED)
+___ test_real_runtime_and_ephemeral_sdk_uses_new_selected_price[83380-83420] ___
+algo-trading-bot/test_qualification_price_guard.py:215: in test_real_runtime_and_ephemeral_sdk_uses_new_selected_price
+    assert r['status']=='TRADE_CLOSED_RECONCILED',json.dumps(dict(status=r['status'],error=r.get('error'),
+E   AssertionError: {"status": "EMERGENCY_EXIT_REQUIRED", "error": "CERTIFICATION_UNCERTAIN_ORDER_URGENT_REVIEW", "transport_error": "DUPLICATE_ORDER", "calls": [], "intents": [{"intent_key": "certification:9ad355d6b65a256fc82da5a49ebd9dcfe7616f62a170d981f9e24f8356a70b09:entry", "cloid": "0x234eb197879ed4d500aa8653e49d049b", "fingerprint": "d1b159f46321da2f20add9eefd965b986887541cc47fec6718b423508d65e4d5", "request": "{\"client_order_id\":\"certification:9ad355d6b65a256fc82da5a49ebd9dcfe7616f62a170d981f9e24f8356a70b09:entry\",\"order_type\":\"LIMIT\",\"price\":\"83503\",\"quantity\":\"0.0002\",\"reduce_only\":false,\"side\":\"BUY\",\"strategy_id\":\"TESTNET_CERTIFICATION_ENTRY\",\"symbol\":\"par:BTC\",\"tif\":\"Ioc\"}", "candidate": "certification:9ad355d6b65a256fc82da5a49ebd9dcfe7616f62a170d981f9e24f8356a70b09", "state": "UNKNOWN", "oid": null, "outcome": "{\"code\":\"TRANSMISSION_UNCERTAIN\",\"reason\":\"ExchangeError\"}", "created_ms": 1790942400000, "updated_ms": 1790942400000}], "events": [{"kind": "P0_ENTRY_PRICE_GUARD", "data": "{\"account_ms\":1790942400000,\"allowed\":true,\"approved_notional_ceiling\":\"16.7212\",\"ask\":\"83420\",\"bid\":\"83380\",\"book_ms\":1790942400000,\"candidate_id\":null,\"clock_skew_detected\":false,\"conditions\":{\"above_approved_max_buy\":false,\"above_approved_order_or_mark_notional\":false,\"above_approved_quantity\":false,\"ioc_limit_below_ask\":false,\"limit_above_current_20bps\":false,\"order_notional_below_10\":false,\"order_or_mark_notional_above_1000\":false,\"resting_limit_below_bid_tolerance\":false,\"resting_limit_crosses_ask\":false},\"configuration_hash\":\"9ad355d6b65a256fc82da5a49ebd9dcfe7616f62a170d981f9e24f8356a70b09\",\"current_20bps_maximum\":\"83586\",\"current_ioc_minimum\":\"83420\",\"entry_buffer_bps\":\"10\",\"entry_deadline_ms\":1790942610000,\"entry_tolerance_bps\":\"20\",\"evaluated_ms\":1790942400000,\"event_type\":\"P0_ENTRY_PRICE_GUARD\",\"exchange_to_receive_ms\":null,\"exchange_ts\":null,\"guard_result\":\"ALLOWED\",\"mark\":\"83500\",\"mark_ms\":1790942400000,\"mark_notional\":\"16.7000\",\"max_buy_price\":\"83606\",\"minimum_notional\":\"10\",\"oracle\":\"83500\",\"order_notional\":\"16.7006\",\"outer_notional_ceiling\":\"1000\",\"price_authorization_mode\":\"BOUNDED_FRESH_IOC_V2\",\"processed_ts\":\"2026-10-02T12:00:00.000+00:00\",\"proposal_observed_ms\":1790942400000,\"proposed_limit\":\"83503\",\"quantity\":\"0.0002\",\"quantity_ceiling\":\"0.0002\",\"quote_ms\":1790942400000,\"readiness_age_ms\":0,\"readiness_ms\":1790942400000,\"receive_to_process_ms\":0,\"received_ts\":\"2026-10-02T12:00:00.000+00:00\",\"rejected_conditions\":[],\"reviewed_limit_or_cap\":\"83606\",\"session_id\":\"offline:test\",\"stage\":\"FRESH_CONTEXT_PRICE_SELECTION\",\"symbol\":\"par:BTC\",\"timestamp_source\":\"LOCAL_PROCESS\",\"working_source_hash\":\"fixture-source\"}"}, {"kind": "P0_ENTRY_PRICE_GUARD", "data": "{\"account_ms\":1790942400000,\"allowed\":true,\"approved_notional_ceiling\":\"16.7212\",\"ask\":\"83420\",\"bid\":\"83380\",\"book_ms\":1790942400000,\"candidate_id\":null,\"clock_skew_detected\":false,\"conditions\":{\"above_approved_max_buy\":false,\"above_approved_order_or_mark_notional\":false,\"above_approved_quantity\":false,\"ioc_limit_below_ask\":false,\"limit_above_current_20bps\":false,\"order_notional_below_10\":false,\"order_or_mark_notional_above_1000\":false,\"resting_limit_below_bid_tolerance\":false,\"resting_limit_crosses_ask\":false},\"configuration_hash\":\"9ad355d6b65a256fc82da5a49ebd9dcfe7616f62a170d981f9e24f8356a70b09\",\"current_20bps_maximum\":\"83586\",\"current_ioc_minimum\":\"83420\",\"entry_buffer_bps\":\"10\",\"entry_deadline_ms\":1790942610000,\"entry_tolerance_bps\":\"20\",\"evaluated_ms\":1790942400000,\"event_type\":\"P0_ENTRY_PRICE_GUARD\",\"exchange_to_receive_ms\":null,\"exchange_ts\":null,\"guard_result\":\"ALLOWED\",\"mark\":\"83500\",\"mark_ms\":1790942400000,\"mark_notional\":\"16.7000\",\"max_buy_price\":\"83606\",\"minimum_notional\":\"10\",\"oracle\":\"83500\",\"order_notional\":\"16.7006\",\"outer_notional_ceiling\":\"1000\",\"price_authorization_mode\":\"BOUNDED_FRESH_IOC_V2\",\"processed_ts\":\"2026-10-02T12:00:00.000+00:00\",\"proposal_observed_ms\":1790942400000,\"proposed_limit\":\"83503\",\"quantity\":\"0.0002\",\"quantity_ceiling\":\"0.0002\",\"quote_ms\":1790942400000,\"readiness_age_ms\":0,\"readiness_ms\":1790942400000,\"receive_to_process_ms\":0,\"received_ts\":\"2026-10-02T12:00:00.000+00:00\",\"rejected_conditions\":[],\"reviewed_limit_or_cap\":\"83606\",\"session_id\":\"offline:test\",\"stage\":\"CENTRAL_VALIDATION\",\"symbol\":\"par:BTC\",\"timestamp_source\":\"LOCAL_PROCESS\",\"working_source_hash\":\"fixture-source\"}"}, {"kind": "P0_ENTRY_PRICE_GUARD", "data": "{\"account_ms\":1790942400000,\"allowed\":true,\"approved_notional_ceiling\":\"16.7212\",\"ask\":\"83420\",\"bid\":\"83380\",\"book_ms\":1790942400000,\"candidate_id\":null,\"clock_skew_detected\":false,\"conditions\":{\"above_approved_max_buy\":false,\"above_approved_order_or_mark_notional\":false,\"above_approved_quantity\":false,\"ioc_limit_below_ask\":false,\"limit_above_current_20bps\":false,\"order_notional_below_10\":false,\"order_or_mark_notional_above_1000\":false,\"resting_limit_below_bid_tolerance\":false,\"resting_limit_crosses_ask\":false},\"configuration_hash\":\"9ad355d6b65a256fc82da5a49ebd9dcfe7616f62a170d981f9e24f8356a70b09\",\"current_20bps_maximum\":\"83586\",\"current_ioc_minimum\":\"83420\",\"entry_buffer_bps\":\"10\",\"entry_deadline_ms\":1790942610000,\"entry_tolerance_bps\":\"20\",\"evaluated_ms\":1790942400000,\"event_type\":\"P0_ENTRY_PRICE_GUARD\",\"exchange_to_receive_ms\":null,\"exchange_ts\":null,\"guard_result\":\"ALLOWED\",\"mark\":\"83500\",\"mark_ms\":1790942400000,\"mark_notional\":\"16.7000\",\"max_buy_price\":\"83606\",\"minimum_notional\":\"10\",\"oracle\":\"83500\",\"order_notional\":\"16.7006\",\"outer_notional_ceiling\":\"1000\",\"price_authorization_mode\":\"BOUNDED_FRESH_IOC_V2\",\"processed_ts\":\"2026-10-02T12:00:00.000+00:00\",\"proposal_observed_ms\":1790942400000,\"proposed_limit\":\"83503\",\"quantity\":\"0.0002\",\"quantity_ceiling\":\"0.0002\",\"quote_ms\":1790942400000,\"readiness_age_ms\":0,\"readiness_ms\":1790942400000,\"receive_to_process_ms\":0,\"received_ts\":\"2026-10-02T12:00:00.000+00:00\",\"rejected_conditions\":[],\"reviewed_limit_or_cap\":\"83606\",\"session_id\":\"offline:test\",\"stage\":\"CENTRAL_VALIDATION\",\"symbol\":\"par:BTC\",\"timestamp_source\":\"LOCAL_PROCESS\",\"working_source_hash\":\"fixture-source\"}"}, {"kind": "EXCHANGE_ORDER_RESULT", "data": "{\"candidate_id\":\"certification:[REDACTED]\",\"clock_skew_detected\":false,\"cloid\":\"0x234eb197879ed4d500aa8653e49d049b\",\"code\":\"TRANSMISSION_UNCERTAIN\",\"error_type\":\"ExchangeError\",\"event_type\":\"EXCHANGE_ORDER_RESULT\",\"exchange_to_receive_ms\":null,\"exchange_ts\":null,\"intent_key\":\"certification:[REDACTED]:entry\",\"processed_ts\":\"2026-10-02T12:00:00.000+00:00\",\"receive_to_process_ms\":0,\"received_ts\":\"2026-10-02T12:00:00.000+00:00\",\"session_id\":\"offline:test\",\"state\":\"UNKNOWN\",\"symbol\":null,\"timestamp_source\":\"LOCAL_PROCESS\"}"}, {"kind": "AMBIGUOUS_ORDER_RESULT", "data": "{\"blind_retry\":false,\"candidate_id\":null,\"clock_skew_detected\":false,\"cloid\":\"0x234eb197879ed4d500aa8653e49d049b\",\"event_type\":\"AMBIGUOUS_ORDER_RESULT\",\"exchange_to_receive_ms\":null,\"exchange_ts\":null,\"intent_key\":\"certification:[REDACTED]:entry\",\"processed_ts\":\"2026-10-02T12:00:00.000+00:00\",\"receive_to_process_ms\":0,\"received_ts\":\"2026-10-02T12:00:00.000+00:00\",\"session_id\":\"offline:test\",\"symbol\":null,\"timestamp_source\":\"LOCAL_PROCESS\"}"}]}
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'TRADE_CLOSED_RECONCILED'
+E     
+E     - TRADE_CLOSED_RECONCILED
+E     + EMERGENCY_EXIT_REQUIRED
+___ test_real_runtime_and_ephemeral_sdk_uses_new_selected_price[83440-83470] ___
+algo-trading-bot/test_qualification_price_guard.py:215: in test_real_runtime_and_ephemeral_sdk_uses_new_selected_price
+    assert r['status']=='TRADE_CLOSED_RECONCILED',json.dumps(dict(status=r['status'],error=r.get('error'),
+E   AssertionError: {"status": "EMERGENCY_EXIT_REQUIRED", "error": "CERTIFICATION_UNCERTAIN_ORDER_URGENT_REVIEW", "transport_error": "DUPLICATE_ORDER", "calls": [], "intents": [{"intent_key": "certification:86f19e91a97344922f47d33ae1e09674c6fec8291eb1c62e92b34fc6cf697d2e:entry", "cloid": "0x50df17aecc538d7346d8fd8864a46743", "fingerprint": "323e178749bd1da397a7e136968783675c1790dbae7699de5accb399a745e62f", "request": "{\"client_order_id\":\"certification:86f19e91a97344922f47d33ae1e09674c6fec8291eb1c62e92b34fc6cf697d2e:entry\",\"order_type\":\"LIMIT\",\"price\":\"83553\",\"quantity\":\"0.0002\",\"reduce_only\":false,\"side\":\"BUY\",\"strategy_id\":\"TESTNET_CERTIFICATION_ENTRY\",\"symbol\":\"par:BTC\",\"tif\":\"Ioc\"}", "candidate": "certification:86f19e91a97344922f47d33ae1e09674c6fec8291eb1c62e92b34fc6cf697d2e", "state": "UNKNOWN", "oid": null, "outcome": "{\"code\":\"TRANSMISSION_UNCERTAIN\",\"reason\":\"ExchangeError\"}", "created_ms": 1790942400000, "updated_ms": 1790942400000}], "events": [{"kind": "P0_ENTRY_PRICE_GUARD", "data": "{\"account_ms\":1790942400000,\"allowed\":true,\"approved_notional_ceiling\":\"16.7212\",\"ask\":\"83470\",\"bid\":\"83440\",\"book_ms\":1790942400000,\"candidate_id\":null,\"clock_skew_detected\":false,\"conditions\":{\"above_approved_max_buy\":false,\"above_approved_order_or_mark_notional\":false,\"above_approved_quantity\":false,\"ioc_limit_below_ask\":false,\"limit_above_current_20bps\":false,\"order_notional_below_10\":false,\"order_or_mark_notional_above_1000\":false,\"resting_limit_below_bid_tolerance\":false,\"resting_limit_crosses_ask\":false},\"configuration_hash\":\"86f19e91a97344922f47d33ae1e09674c6fec8291eb1c62e92b34fc6cf697d2e\",\"current_20bps_maximum\":\"83636\",\"current_ioc_minimum\":\"83470\",\"entry_buffer_bps\":\"10\",\"entry_deadline_ms\":1790942610000,\"entry_tolerance_bps\":\"20\",\"evaluated_ms\":1790942400000,\"event_type\":\"P0_ENTRY_PRICE_GUARD\",\"exchange_to_receive_ms\":null,\"exchange_ts\":null,\"guard_result\":\"ALLOWED\",\"mark\":\"83500\",\"mark_ms\":1790942400000,\"mark_notional\":\"16.7000\",\"max_buy_price\":\"83606\",\"minimum_notional\":\"10\",\"oracle\":\"83500\",\"order_notional\":\"16.7106\",\"outer_notional_ceiling\":\"1000\",\"price_authorization_mode\":\"BOUNDED_FRESH_IOC_V2\",\"processed_ts\":\"2026-10-02T12:00:00.000+00:00\",\"proposal_observed_ms\":1790942400000,\"proposed_limit\":\"83553\",\"quantity\":\"0.0002\",\"quantity_ceiling\":\"0.0002\",\"quote_ms\":1790942400000,\"readiness_age_ms\":0,\"readiness_ms\":1790942400000,\"receive_to_process_ms\":0,\"received_ts\":\"2026-10-02T12:00:00.000+00:00\",\"rejected_conditions\":[],\"reviewed_limit_or_cap\":\"83606\",\"session_id\":\"offline:test\",\"stage\":\"FRESH_CONTEXT_PRICE_SELECTION\",\"symbol\":\"par:BTC\",\"timestamp_source\":\"LOCAL_PROCESS\",\"working_source_hash\":\"fixture-source\"}"}, {"kind": "P0_ENTRY_PRICE_GUARD", "data": "{\"account_ms\":1790942400000,\"allowed\":true,\"approved_notional_ceiling\":\"16.7212\",\"ask\":\"83470\",\"bid\":\"83440\",\"book_ms\":1790942400000,\"candidate_id\":null,\"clock_skew_detected\":false,\"conditions\":{\"above_approved_max_buy\":false,\"above_approved_order_or_mark_notional\":false,\"above_approved_quantity\":false,\"ioc_limit_below_ask\":false,\"limit_above_current_20bps\":false,\"order_notional_below_10\":false,\"order_or_mark_notional_above_1000\":false,\"resting_limit_below_bid_tolerance\":false,\"resting_limit_crosses_ask\":false},\"configuration_hash\":\"86f19e91a97344922f47d33ae1e09674c6fec8291eb1c62e92b34fc6cf697d2e\",\"current_20bps_maximum\":\"83636\",\"current_ioc_minimum\":\"83470\",\"entry_buffer_bps\":\"10\",\"entry_deadline_ms\":1790942610000,\"entry_tolerance_bps\":\"20\",\"evaluated_ms\":1790942400000,\"event_type\":\"P0_ENTRY_PRICE_GUARD\",\"exchange_to_receive_ms\":null,\"exchange_ts\":null,\"guard_result\":\"ALLOWED\",\"mark\":\"83500\",\"mark_ms\":1790942400000,\"mark_notional\":\"16.7000\",\"max_buy_price\":\"83606\",\"minimum_notional\":\"10\",\"oracle\":\"83500\",\"order_notional\":\"16.7106\",\"outer_notional_ceiling\":\"1000\",\"price_authorization_mode\":\"BOUNDED_FRESH_IOC_V2\",\"processed_ts\":\"2026-10-02T12:00:00.000+00:00\",\"proposal_observed_ms\":1790942400000,\"proposed_limit\":\"83553\",\"quantity\":\"0.0002\",\"quantity_ceiling\":\"0.0002\",\"quote_ms\":1790942400000,\"readiness_age_ms\":0,\"readiness_ms\":1790942400000,\"receive_to_process_ms\":0,\"received_ts\":\"2026-10-02T12:00:00.000+00:00\",\"rejected_conditions\":[],\"reviewed_limit_or_cap\":\"83606\",\"session_id\":\"offline:test\",\"stage\":\"CENTRAL_VALIDATION\",\"symbol\":\"par:BTC\",\"timestamp_source\":\"LOCAL_PROCESS\",\"working_source_hash\":\"fixture-source\"}"}, {"kind": "P0_ENTRY_PRICE_GUARD", "data": "{\"account_ms\":1790942400000,\"allowed\":true,\"approved_notional_ceiling\":\"16.7212\",\"ask\":\"83470\",\"bid\":\"83440\",\"book_ms\":1790942400000,\"candidate_id\":null,\"clock_skew_detected\":false,\"conditions\":{\"above_approved_max_buy\":false,\"above_approved_order_or_mark_notional\":false,\"above_approved_quantity\":false,\"ioc_limit_below_ask\":false,\"limit_above_current_20bps\":false,\"order_notional_below_10\":false,\"order_or_mark_notional_above_1000\":false,\"resting_limit_below_bid_tolerance\":false,\"resting_limit_crosses_ask\":false},\"configuration_hash\":\"86f19e91a97344922f47d33ae1e09674c6fec8291eb1c62e92b34fc6cf697d2e\",\"current_20bps_maximum\":\"83636\",\"current_ioc_minimum\":\"83470\",\"entry_buffer_bps\":\"10\",\"entry_deadline_ms\":1790942610000,\"entry_tolerance_bps\":\"20\",\"evaluated_ms\":1790942400000,\"event_type\":\"P0_ENTRY_PRICE_GUARD\",\"exchange_to_receive_ms\":null,\"exchange_ts\":null,\"guard_result\":\"ALLOWED\",\"mark\":\"83500\",\"mark_ms\":1790942400000,\"mark_notional\":\"16.7000\",\"max_buy_price\":\"83606\",\"minimum_notional\":\"10\",\"oracle\":\"83500\",\"order_notional\":\"16.7106\",\"outer_notional_ceiling\":\"1000\",\"price_authorization_mode\":\"BOUNDED_FRESH_IOC_V2\",\"processed_ts\":\"2026-10-02T12:00:00.000+00:00\",\"proposal_observed_ms\":1790942400000,\"proposed_limit\":\"83553\",\"quantity\":\"0.0002\",\"quantity_ceiling\":\"0.0002\",\"quote_ms\":1790942400000,\"readiness_age_ms\":0,\"readiness_ms\":1790942400000,\"receive_to_process_ms\":0,\"received_ts\":\"2026-10-02T12:00:00.000+00:00\",\"rejected_conditions\":[],\"reviewed_limit_or_cap\":\"83606\",\"session_id\":\"offline:test\",\"stage\":\"CENTRAL_VALIDATION\",\"symbol\":\"par:BTC\",\"timestamp_source\":\"LOCAL_PROCESS\",\"working_source_hash\":\"fixture-source\"}"}, {"kind": "EXCHANGE_ORDER_RESULT", "data": "{\"candidate_id\":\"certification:[REDACTED]\",\"clock_skew_detected\":false,\"cloid\":\"0x50df17aecc538d7346d8fd8864a46743\",\"code\":\"TRANSMISSION_UNCERTAIN\",\"error_type\":\"ExchangeError\",\"event_type\":\"EXCHANGE_ORDER_RESULT\",\"exchange_to_receive_ms\":null,\"exchange_ts\":null,\"intent_key\":\"certification:[REDACTED]:entry\",\"processed_ts\":\"2026-10-02T12:00:00.000+00:00\",\"receive_to_process_ms\":0,\"received_ts\":\"2026-10-02T12:00:00.000+00:00\",\"session_id\":\"offline:test\",\"state\":\"UNKNOWN\",\"symbol\":null,\"timestamp_source\":\"LOCAL_PROCESS\"}"}, {"kind": "AMBIGUOUS_ORDER_RESULT", "data": "{\"blind_retry\":false,\"candidate_id\":null,\"clock_skew_detected\":false,\"cloid\":\"0x50df17aecc538d7346d8fd8864a46743\",\"event_type\":\"AMBIGUOUS_ORDER_RESULT\",\"exchange_to_receive_ms\":null,\"exchange_ts\":null,\"intent_key\":\"certification:[REDACTED]:entry\",\"processed_ts\":\"2026-10-02T12:00:00.000+00:00\",\"receive_to_process_ms\":0,\"received_ts\":\"2026-10-02T12:00:00.000+00:00\",\"session_id\":\"offline:test\",\"symbol\":null,\"timestamp_source\":\"LOCAL_PROCESS\"}"}]}
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'TRADE_CLOSED_RECONCILED'
+E     
+E     - TRADE_CLOSED_RECONCILED
+E     + EMERGENCY_EXIT_REQUIRED
+___ test_real_runtime_and_ephemeral_sdk_uses_new_selected_price[83560-83600] ___
+algo-trading-bot/test_qualification_price_guard.py:215: in test_real_runtime_and_ephemeral_sdk_uses_new_selected_price
+    assert r['status']=='TRADE_CLOSED_RECONCILED',json.dumps(dict(status=r['status'],error=r.get('error'),
+E   AssertionError: {"status": "EMERGENCY_EXIT_REQUIRED", "error": "CERTIFICATION_UNCERTAIN_ORDER_URGENT_REVIEW", "transport_error": "DUPLICATE_ORDER", "calls": [], "intents": [{"intent_key": "certification:e4ca2b38ee74364016428220268d986b57559c8ccac207c8a7896f93838502d7:entry", "cloid": "0xc1516e5e13f8ecc578810aefa510dbe6", "fingerprint": "a5fe093ebe1be772f2e5e8a9c7114eec53ae7af9ee640bdb57b9a52afb726dd7", "request": "{\"client_order_id\":\"certification:e4ca2b38ee74364016428220268d986b57559c8ccac207c8a7896f93838502d7:entry\",\"order_type\":\"LIMIT\",\"price\":\"83606\",\"quantity\":\"0.0002\",\"reduce_only\":false,\"side\":\"BUY\",\"strategy_id\":\"TESTNET_CERTIFICATION_ENTRY\",\"symbol\":\"par:BTC\",\"tif\":\"Ioc\"}", "candidate": "certification:e4ca2b38ee74364016428220268d986b57559c8ccac207c8a7896f93838502d7", "state": "UNKNOWN", "oid": null, "outcome": "{\"code\":\"TRANSMISSION_UNCERTAIN\",\"reason\":\"ExchangeError\"}", "created_ms": 1790942400000, "updated_ms": 1790942400000}], "events": [{"kind": "P0_ENTRY_PRICE_GUARD", "data": "{\"account_ms\":1790942400000,\"allowed\":true,\"approved_notional_ceiling\":\"16.7212\",\"ask\":\"83600\",\"bid\":\"83560\",\"book_ms\":1790942400000,\"candidate_id\":null,\"clock_skew_detected\":false,\"conditions\":{\"above_approved_max_buy\":false,\"above_approved_order_or_mark_notional\":false,\"above_approved_quantity\":false,\"ioc_limit_below_ask\":false,\"limit_above_current_20bps\":false,\"order_notional_below_10\":false,\"order_or_mark_notional_above_1000\":false,\"resting_limit_below_bid_tolerance\":false,\"resting_limit_crosses_ask\":false},\"configuration_hash\":\"e4ca2b38ee74364016428220268d986b57559c8ccac207c8a7896f93838502d7\",\"current_20bps_maximum\":\"83767\",\"current_ioc_minimum\":\"83600\",\"entry_buffer_bps\":\"10\",\"entry_deadline_ms\":1790942610000,\"entry_tolerance_bps\":\"20\",\"evaluated_ms\":1790942400000,\"event_type\":\"P0_ENTRY_PRICE_GUARD\",\"exchange_to_receive_ms\":null,\"exchange_ts\":null,\"guard_result\":\"ALLOWED\",\"mark\":\"83500\",\"mark_ms\":1790942400000,\"mark_notional\":\"16.7000\",\"max_buy_price\":\"83606\",\"minimum_notional\":\"10\",\"oracle\":\"83500\",\"order_notional\":\"16.7212\",\"outer_notional_ceiling\":\"1000\",\"price_authorization_mode\":\"BOUNDED_FRESH_IOC_V2\",\"processed_ts\":\"2026-10-02T12:00:00.000+00:00\",\"proposal_observed_ms\":1790942400000,\"proposed_limit\":\"83606\",\"quantity\":\"0.0002\",\"quantity_ceiling\":\"0.0002\",\"quote_ms\":1790942400000,\"readiness_age_ms\":0,\"readiness_ms\":1790942400000,\"receive_to_process_ms\":0,\"received_ts\":\"2026-10-02T12:00:00.000+00:00\",\"rejected_conditions\":[],\"reviewed_limit_or_cap\":\"83606\",\"session_id\":\"offline:test\",\"stage\":\"FRESH_CONTEXT_PRICE_SELECTION\",\"symbol\":\"par:BTC\",\"timestamp_source\":\"LOCAL_PROCESS\",\"working_source_hash\":\"fixture-source\"}"}, {"kind": "P0_ENTRY_PRICE_GUARD", "data": "{\"account_ms\":1790942400000,\"allowed\":true,\"approved_notional_ceiling\":\"16.7212\",\"ask\":\"83600\",\"bid\":\"83560\",\"book_ms\":1790942400000,\"candidate_id\":null,\"clock_skew_detected\":false,\"conditions\":{\"above_approved_max_buy\":false,\"above_approved_order_or_mark_notional\":false,\"above_approved_quantity\":false,\"ioc_limit_below_ask\":false,\"limit_above_current_20bps\":false,\"order_notional_below_10\":false,\"order_or_mark_notional_above_1000\":false,\"resting_limit_below_bid_tolerance\":false,\"resting_limit_crosses_ask\":false},\"configuration_hash\":\"e4ca2b38ee74364016428220268d986b57559c8ccac207c8a7896f93838502d7\",\"current_20bps_maximum\":\"83767\",\"current_ioc_minimum\":\"83600\",\"entry_buffer_bps\":\"10\",\"entry_deadline_ms\":1790942610000,\"entry_tolerance_bps\":\"20\",\"evaluated_ms\":1790942400000,\"event_type\":\"P0_ENTRY_PRICE_GUARD\",\"exchange_to_receive_ms\":null,\"exchange_ts\":null,\"guard_result\":\"ALLOWED\",\"mark\":\"83500\",\"mark_ms\":1790942400000,\"mark_notional\":\"16.7000\",\"max_buy_price\":\"83606\",\"minimum_notional\":\"10\",\"oracle\":\"83500\",\"order_notional\":\"16.7212\",\"outer_notional_ceiling\":\"1000\",\"price_authorization_mode\":\"BOUNDED_FRESH_IOC_V2\",\"processed_ts\":\"2026-10-02T12:00:00.000+00:00\",\"proposal_observed_ms\":1790942400000,\"proposed_limit\":\"83606\",\"quantity\":\"0.0002\",\"quantity_ceiling\":\"0.0002\",\"quote_ms\":1790942400000,\"readiness_age_ms\":0,\"readiness_ms\":1790942400000,\"receive_to_process_ms\":0,\"received_ts\":\"2026-10-02T12:00:00.000+00:00\",\"rejected_conditions\":[],\"reviewed_limit_or_cap\":\"83606\",\"session_id\":\"offline:test\",\"stage\":\"CENTRAL_VALIDATION\",\"symbol\":\"par:BTC\",\"timestamp_source\":\"LOCAL_PROCESS\",\"working_source_hash\":\"fixture-source\"}"}, {"kind": "P0_ENTRY_PRICE_GUARD", "data": "{\"account_ms\":1790942400000,\"allowed\":true,\"approved_notional_ceiling\":\"16.7212\",\"ask\":\"83600\",\"bid\":\"83560\",\"book_ms\":1790942400000,\"candidate_id\":null,\"clock_skew_detected\":false,\"conditions\":{\"above_approved_max_buy\":false,\"above_approved_order_or_mark_notional\":false,\"above_approved_quantity\":false,\"ioc_limit_below_ask\":false,\"limit_above_current_20bps\":false,\"order_notional_below_10\":false,\"order_or_mark_notional_above_1000\":false,\"resting_limit_below_bid_tolerance\":false,\"resting_limit_crosses_ask\":false},\"configuration_hash\":\"e4ca2b38ee74364016428220268d986b57559c8ccac207c8a7896f93838502d7\",\"current_20bps_maximum\":\"83767\",\"current_ioc_minimum\":\"83600\",\"entry_buffer_bps\":\"10\",\"entry_deadline_ms\":1790942610000,\"entry_tolerance_bps\":\"20\",\"evaluated_ms\":1790942400000,\"event_type\":\"P0_ENTRY_PRICE_GUARD\",\"exchange_to_receive_ms\":null,\"exchange_ts\":null,\"guard_result\":\"ALLOWED\",\"mark\":\"83500\",\"mark_ms\":1790942400000,\"mark_notional\":\"16.7000\",\"max_buy_price\":\"83606\",\"minimum_notional\":\"10\",\"oracle\":\"83500\",\"order_notional\":\"16.7212\",\"outer_notional_ceiling\":\"1000\",\"price_authorization_mode\":\"BOUNDED_FRESH_IOC_V2\",\"processed_ts\":\"2026-10-02T12:00:00.000+00:00\",\"proposal_observed_ms\":1790942400000,\"proposed_limit\":\"83606\",\"quantity\":\"0.0002\",\"quantity_ceiling\":\"0.0002\",\"quote_ms\":1790942400000,\"readiness_age_ms\":0,\"readiness_ms\":1790942400000,\"receive_to_process_ms\":0,\"received_ts\":\"2026-10-02T12:00:00.000+00:00\",\"rejected_conditions\":[],\"reviewed_limit_or_cap\":\"83606\",\"session_id\":\"offline:test\",\"stage\":\"CENTRAL_VALIDATION\",\"symbol\":\"par:BTC\",\"timestamp_source\":\"LOCAL_PROCESS\",\"working_source_hash\":\"fixture-source\"}"}, {"kind": "EXCHANGE_ORDER_RESULT", "data": "{\"candidate_id\":\"certification:[REDACTED]\",\"clock_skew_detected\":false,\"cloid\":\"0xc1516e5e13f8ecc578810aefa510dbe6\",\"code\":\"TRANSMISSION_UNCERTAIN\",\"error_type\":\"ExchangeError\",\"event_type\":\"EXCHANGE_ORDER_RESULT\",\"exchange_to_receive_ms\":null,\"exchange_ts\":null,\"intent_key\":\"certification:[REDACTED]:entry\",\"processed_ts\":\"2026-10-02T12:00:00.000+00:00\",\"receive_to_process_ms\":0,\"received_ts\":\"2026-10-02T12:00:00.000+00:00\",\"session_id\":\"offline:test\",\"state\":\"UNKNOWN\",\"symbol\":null,\"timestamp_source\":\"LOCAL_PROCESS\"}"}, {"kind": "AMBIGUOUS_ORDER_RESULT", "data": "{\"blind_retry\":false,\"candidate_id\":null,\"clock_skew_detected\":false,\"cloid\":\"0xc1516e5e13f8ecc578810aefa510dbe6\",\"event_type\":\"AMBIGUOUS_ORDER_RESULT\",\"exchange_to_receive_ms\":null,\"exchange_ts\":null,\"intent_key\":\"certification:[REDACTED]:entry\",\"processed_ts\":\"2026-10-02T12:00:00.000+00:00\",\"receive_to_process_ms\":0,\"received_ts\":\"2026-10-02T12:00:00.000+00:00\",\"session_id\":\"offline:test\",\"symbol\":null,\"timestamp_source\":\"LOCAL_PROCESS\"}"}]}
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'TRADE_CLOSED_RECONCILED'
+E     
+E     - TRADE_CLOSED_RECONCILED
+E     + EMERGENCY_EXIT_REQUIRED
+_____ test_new_mode_zero_partial_full_entry_closes_only_actual_exposure[0] _____
+algo-trading-bot/test_qualification_price_guard.py:227: in test_new_mode_zero_partial_full_entry_closes_only_actual_exposure
+    assert r['status']==('NO_FILL_VERIFIED' if fraction=='0' else 'TRADE_CLOSED_RECONCILED'),r
+E   AssertionError: {'actual_exchange_proof': [{'accounting': {'accounting_window_ms': (1790942400000, 1790942400000), 'corrections': [{'c...], 'certification_passed': False, 'equity_before': '1000', 'error': 'CERTIFICATION_UNCERTAIN_ORDER_URGENT_REVIEW', ...}
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'NO_FILL_VERIFIED'
+E     
+E     - NO_FILL_VERIFIED
+E     + EMERGENCY_EXIT_REQUIRED
+____ test_new_mode_zero_partial_full_entry_closes_only_actual_exposure[.5] _____
+algo-trading-bot/test_qualification_price_guard.py:227: in test_new_mode_zero_partial_full_entry_closes_only_actual_exposure
+    assert r['status']==('NO_FILL_VERIFIED' if fraction=='0' else 'TRADE_CLOSED_RECONCILED'),r
+E   AssertionError: {'actual_exchange_proof': [{'accounting': {'accounting_window_ms': (1790942400000, 1790942400000), 'corrections': [{'c...], 'certification_passed': False, 'equity_before': '1000', 'error': 'CERTIFICATION_UNCERTAIN_ORDER_URGENT_REVIEW', ...}
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'TRADE_CLOSED_RECONCILED'
+E     
+E     - TRADE_CLOSED_RECONCILED
+E     + EMERGENCY_EXIT_REQUIRED
+_____ test_new_mode_zero_partial_full_entry_closes_only_actual_exposure[1] _____
+algo-trading-bot/test_qualification_price_guard.py:227: in test_new_mode_zero_partial_full_entry_closes_only_actual_exposure
+    assert r['status']==('NO_FILL_VERIFIED' if fraction=='0' else 'TRADE_CLOSED_RECONCILED'),r
+E   AssertionError: {'actual_exchange_proof': [{'accounting': {'accounting_window_ms': (1790942400000, 1790942400000), 'corrections': [{'c...], 'certification_passed': False, 'equity_before': '1000', 'error': 'CERTIFICATION_UNCERTAIN_ORDER_URGENT_REVIEW', ...}
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'TRADE_CLOSED_RECONCILED'
+E     
+E     - TRADE_CLOSED_RECONCILED
+E     + EMERGENCY_EXIT_REQUIRED
+_ test_new_mode_rejection_uncertainty_never_reprices_a_second_order[entry_rejected] _
+algo-trading-bot/test_qualification_price_guard.py:236: in test_new_mode_rejection_uncertainty_never_reprices_a_second_order
+    assert len([a for a in c.venue.calls if a['type']=='order' and not a['orders'][0]['r']])==1
+E   assert 0 == 1
+E    +  where 0 = len([])
+_ test_new_mode_rejection_uncertainty_never_reprices_a_second_order[timeout_before] _
+algo-trading-bot/test_qualification_price_guard.py:236: in test_new_mode_rejection_uncertainty_never_reprices_a_second_order
+    assert len([a for a in c.venue.calls if a['type']=='order' and not a['orders'][0]['r']])==1
+E   assert 0 == 1
+E    +  where 0 = len([])
+_ test_new_mode_rejection_uncertainty_never_reprices_a_second_order[timeout_after_fill] _
+algo-trading-bot/test_qualification_price_guard.py:236: in test_new_mode_rejection_uncertainty_never_reprices_a_second_order
+    assert len([a for a in c.venue.calls if a['type']=='order' and not a['orders'][0]['r']])==1
+E   assert 0 == 1
+E    +  where 0 = len([])
+_ test_new_mode_rejection_uncertainty_never_reprices_a_second_order[disconnect_after_fill] _
+algo-trading-bot/test_qualification_price_guard.py:236: in test_new_mode_rejection_uncertainty_never_reprices_a_second_order
+    assert len([a for a in c.venue.calls if a['type']=='order' and not a['orders'][0]['r']])==1
+E   assert 0 == 1
+E    +  where 0 = len([])
+___________ test_rejected_exit_preserves_residual_and_attempt_bound ____________
+algo-trading-bot/test_qualification_price_guard.py:249: in test_rejected_exit_preserves_residual_and_attempt_bound
+    assert r['status']=='EMERGENCY_EXIT_REQUIRED' and c.live.account.get_position(c.p.symbol)
+E   AssertionError: assert ('EMERGENCY_EXIT_REQUIRED' == 'EMERGENCY_EXIT_REQUIRED'
+E     
+E       EMERGENCY_EXIT_REQUIRED and None)
+E    +  where None = get_position('par:BTC')
+E    +    where get_position = <exchange.hyperliquid_account.HyperliquidAccount object at 0x10bdce570>.get_position
+E    +      where <exchange.hyperliquid_account.HyperliquidAccount object at 0x10bdce570> = namespace(fixture=<test_live_exchange_execution.LiveInfoFixture object at 0x10bdcf200>, client=<exchange.hyperliquid_c...ation.EmergencyExecution object at 0x10bcaf350>, signer=<eth_account.signers.local.LocalAccount object at 0x10bdcda90>).account
+E    +        where namespace(fixture=<test_live_exchange_execution.LiveInfoFixture object at 0x10bdcf200>, client=<exchange.hyperliquid_c...ation.EmergencyExecution object at 0x10bcaf350>, signer=<eth_account.signers.local.LocalAccount object at 0x10bdcda90>) = namespace(live=namespace(fixture=<test_live_exchange_execution.LiveInfoFixture object at 0x10bdcf200>, client=<exchang...ure_increase': '16.7000'}}, 'final_evidence_hash': '21a0f5e61e939da36181c14947333920b4355bdf6dbdd31cc337af59cc983b44'}).live
+E    +    and   'par:BTC' = EmergencyProposal(symbol='par:BTC', asset_id=2670000, quantity='0.0002', entry_side='BUY', entry_limit='83606', exit_b...zation_mode='BOUNDED_FRESH_IOC_V2', max_buy_price='83606', quantity_ceiling='0.0002', entry_notional_ceiling='16.7212').symbol
+E    +      where EmergencyProposal(symbol='par:BTC', asset_id=2670000, quantity='0.0002', entry_side='BUY', entry_limit='83606', exit_b...zation_mode='BOUNDED_FRESH_IOC_V2', max_buy_price='83606', quantity_ceiling='0.0002', entry_notional_ceiling='16.7212') = namespace(live=namespace(fixture=<test_live_exchange_execution.LiveInfoFixture object at 0x10bdcf200>, client=<exchang...ure_increase': '16.7000'}}, 'final_evidence_hash': '21a0f5e61e939da36181c14947333920b4355bdf6dbdd31cc337af59cc983b44'}).p
+__ test_full_round_trip_cannot_repeat_after_restart_or_completed_consumption ___
+algo-trading-bot/test_qualification_price_guard.py:288: in test_full_round_trip_cannot_repeat_after_restart_or_completed_consumption
+    c=bounded;assert c.sequence.run()['status']=='TRADE_CLOSED_RECONCILED'
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 'EMERGENCY_EXIT_REQUIRED' == 'TRADE_CLOSED_RECONCILED'
+E     
+E     - TRADE_CLOSED_RECONCILED
+E     + EMERGENCY_EXIT_REQUIRED
+__________ test_ioc_real_composition_and_smallest_lot_not_cap_target ___________
+algo-trading-bot/test_emergency_qualification.py:96: in test_ioc_real_composition_and_smallest_lot_not_cap_target
+    assert r['status']=='TRADE_CLOSED_RECONCILED',r
+E   AssertionError: {'actual_exchange_proof': [{'accounting': {'accounting_window_ms': (1790942400000, 1790942400000), 'corrections': [{'c...], 'certification_passed': False, 'equity_before': '1000', 'error': 'CERTIFICATION_UNCERTAIN_ORDER_URGENT_REVIEW', ...}
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'TRADE_CLOSED_RECONCILED'
+E     
+E     - TRADE_CLOSED_RECONCILED
+E     + EMERGENCY_EXIT_REQUIRED
+_________________ test_ioc_zero_partial_full_one_entry_only[0] _________________
+algo-trading-bot/test_emergency_qualification.py:108: in test_ioc_zero_partial_full_one_entry_only
+    assert r['status']==('NO_FILL_VERIFIED' if fraction=='0' else 'TRADE_CLOSED_RECONCILED'),r
+E   AssertionError: {'actual_exchange_proof': [{'accounting': {'accounting_window_ms': (1790942400000, 1790942400000), 'corrections': [{'c...], 'certification_passed': False, 'equity_before': '1000', 'error': 'CERTIFICATION_UNCERTAIN_ORDER_URGENT_REVIEW', ...}
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'NO_FILL_VERIFIED'
+E     
+E     - NO_FILL_VERIFIED
+E     + EMERGENCY_EXIT_REQUIRED
+________________ test_ioc_zero_partial_full_one_entry_only[.5] _________________
+algo-trading-bot/test_emergency_qualification.py:108: in test_ioc_zero_partial_full_one_entry_only
+    assert r['status']==('NO_FILL_VERIFIED' if fraction=='0' else 'TRADE_CLOSED_RECONCILED'),r
+E   AssertionError: {'actual_exchange_proof': [{'accounting': {'accounting_window_ms': (1790942400000, 1790942400000), 'corrections': [{'c...], 'certification_passed': False, 'equity_before': '1000', 'error': 'CERTIFICATION_UNCERTAIN_ORDER_URGENT_REVIEW', ...}
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'TRADE_CLOSED_RECONCILED'
+E     
+E     - TRADE_CLOSED_RECONCILED
+E     + EMERGENCY_EXIT_REQUIRED
+_________________ test_ioc_zero_partial_full_one_entry_only[1] _________________
+algo-trading-bot/test_emergency_qualification.py:108: in test_ioc_zero_partial_full_one_entry_only
+    assert r['status']==('NO_FILL_VERIFIED' if fraction=='0' else 'TRADE_CLOSED_RECONCILED'),r
+E   AssertionError: {'actual_exchange_proof': [{'accounting': {'accounting_window_ms': (1790942400000, 1790942400000), 'corrections': [{'c...], 'certification_passed': False, 'equity_before': '1000', 'error': 'CERTIFICATION_UNCERTAIN_ORDER_URGENT_REVIEW', ...}
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'TRADE_CLOSED_RECONCILED'
+E     
+E     - TRADE_CLOSED_RECONCILED
+E     + EMERGENCY_EXIT_REQUIRED
+_____________ test_resting_unfilled_one_real_cancel_then_flat[Gtc] _____________
+algo-trading-bot/test_emergency_qualification.py:120: in test_resting_unfilled_one_real_cancel_then_flat
+    assert r['status']=='NO_FILL_VERIFIED',r
+E   AssertionError: {'actual_exchange_proof': [{'accounting': {'accounting_window_ms': (1790942400000, 1790942400000), 'corrections': [{'c...], 'certification_passed': False, 'equity_before': '1000', 'error': 'CERTIFICATION_UNCERTAIN_ORDER_URGENT_REVIEW', ...}
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'NO_FILL_VERIFIED'
+E     
+E     - NO_FILL_VERIFIED
+E     + EMERGENCY_EXIT_REQUIRED
+_____________ test_resting_unfilled_one_real_cancel_then_flat[Alo] _____________
+algo-trading-bot/test_emergency_qualification.py:120: in test_resting_unfilled_one_real_cancel_then_flat
+    assert r['status']=='NO_FILL_VERIFIED',r
+E   AssertionError: {'actual_exchange_proof': [{'accounting': {'accounting_window_ms': (1790942400000, 1790942400000), 'corrections': [{'c...], 'certification_passed': False, 'equity_before': '1000', 'error': 'CERTIFICATION_UNCERTAIN_ORDER_URGENT_REVIEW', ...}
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'NO_FILL_VERIFIED'
+E     
+E     - NO_FILL_VERIFIED
+E     + EMERGENCY_EXIT_REQUIRED
+_ test_resting_partial_or_full_actual_fill_cancels_remainder_before_close[.0001-Gtc] _
+algo-trading-bot/test_emergency_qualification.py:131: in test_resting_partial_or_full_actual_fill_cancels_remainder_before_close
+    assert r['status']=='TRADE_CLOSED_RECONCILED',r
+E   AssertionError: {'actual_exchange_proof': [{'accounting': {'accounting_window_ms': (1790942400000, 1790942400000), 'corrections': [{'c...], 'certification_passed': False, 'equity_before': '1000', 'error': 'CERTIFICATION_UNCERTAIN_ORDER_URGENT_REVIEW', ...}
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'TRADE_CLOSED_RECONCILED'
+E     
+E     - TRADE_CLOSED_RECONCILED
+E     + EMERGENCY_EXIT_REQUIRED
+_ test_resting_partial_or_full_actual_fill_cancels_remainder_before_close[.0001-Alo] _
+algo-trading-bot/test_emergency_qualification.py:131: in test_resting_partial_or_full_actual_fill_cancels_remainder_before_close
+    assert r['status']=='TRADE_CLOSED_RECONCILED',r
+E   AssertionError: {'actual_exchange_proof': [{'accounting': {'accounting_window_ms': (1790942400000, 1790942400000), 'corrections': [{'c...], 'certification_passed': False, 'equity_before': '1000', 'error': 'CERTIFICATION_UNCERTAIN_ORDER_URGENT_REVIEW', ...}
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'TRADE_CLOSED_RECONCILED'
+E     
+E     - TRADE_CLOSED_RECONCILED
+E     + EMERGENCY_EXIT_REQUIRED
+_ test_resting_partial_or_full_actual_fill_cancels_remainder_before_close[.0002-Gtc] _
+algo-trading-bot/test_emergency_qualification.py:131: in test_resting_partial_or_full_actual_fill_cancels_remainder_before_close
+    assert r['status']=='TRADE_CLOSED_RECONCILED',r
+E   AssertionError: {'actual_exchange_proof': [{'accounting': {'accounting_window_ms': (1790942400000, 1790942400000), 'corrections': [{'c...], 'certification_passed': False, 'equity_before': '1000', 'error': 'CERTIFICATION_UNCERTAIN_ORDER_URGENT_REVIEW', ...}
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'TRADE_CLOSED_RECONCILED'
+E     
+E     - TRADE_CLOSED_RECONCILED
+E     + EMERGENCY_EXIT_REQUIRED
+_ test_resting_partial_or_full_actual_fill_cancels_remainder_before_close[.0002-Alo] _
+algo-trading-bot/test_emergency_qualification.py:131: in test_resting_partial_or_full_actual_fill_cancels_remainder_before_close
+    assert r['status']=='TRADE_CLOSED_RECONCILED',r
+E   AssertionError: {'actual_exchange_proof': [{'accounting': {'accounting_window_ms': (1790942400000, 1790942400000), 'corrections': [{'c...], 'certification_passed': False, 'equity_before': '1000', 'error': 'CERTIFICATION_UNCERTAIN_ORDER_URGENT_REVIEW', ...}
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'TRADE_CLOSED_RECONCILED'
+E     
+E     - TRADE_CLOSED_RECONCILED
+E     + EMERGENCY_EXIT_REQUIRED
+____________ test_fill_during_cancel_reconciles_new_actual_quantity ____________
+algo-trading-bot/test_emergency_qualification.py:139: in test_fill_during_cancel_reconciles_new_actual_quantity
+    assert r['status']=='TRADE_CLOSED_RECONCILED',r
+E   AssertionError: {'actual_exchange_proof': [{'accounting': {'accounting_window_ms': (1790942400000, 1790942400000), 'corrections': [{'c...], 'certification_passed': False, 'equity_before': '1000', 'error': 'CERTIFICATION_UNCERTAIN_ORDER_URGENT_REVIEW', ...}
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'TRADE_CLOSED_RECONCILED'
+E     
+E     - TRADE_CLOSED_RECONCILED
+E     + EMERGENCY_EXIT_REQUIRED
+___________ test_uncertain_cancel_stops_without_exit_or_replacement ____________
+algo-trading-bot/test_emergency_qualification.py:147: in test_uncertain_cancel_stops_without_exit_or_replacement
+    assert [a['type'] for a in c.venue.calls]==['order','cancel']
+E   AssertionError: assert [] == ['order', 'cancel']
+E     
+E     Right contains 2 more items, first extra item: 'order'
+E     Use -v to get more diff
+___________ test_entry_failures_never_blindly_repeat[entry_rejected] ___________
+algo-trading-bot/test_emergency_qualification.py:156: in test_entry_failures_never_blindly_repeat
+    assert r['status']==({'entry_rejected':'NO_FILL_VERIFIED','timeout_after_fill':'TRADE_CLOSED_RECONCILED'}.get(fail,'EMERGENCY_EXIT_REQUIRED')),(r['status'],r.get('error'))
+E   AssertionError: ('EMERGENCY_EXIT_REQUIRED', 'CERTIFICATION_UNCERTAIN_ORDER_URGENT_REVIEW')
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'NO_FILL_VERIFIED'
+E     
+E     - NO_FILL_VERIFIED
+E     + EMERGENCY_EXIT_REQUIRED
+___________ test_entry_failures_never_blindly_repeat[timeout_before] ___________
+algo-trading-bot/test_emergency_qualification.py:157: in test_entry_failures_never_blindly_repeat
+    assert len([a for a in c.venue.calls if a['type']=='order' and not a['orders'][0]['r']])==1
+E   assert 0 == 1
+E    +  where 0 = len([])
+_________ test_entry_failures_never_blindly_repeat[timeout_after_fill] _________
+algo-trading-bot/test_emergency_qualification.py:156: in test_entry_failures_never_blindly_repeat
+    assert r['status']==({'entry_rejected':'NO_FILL_VERIFIED','timeout_after_fill':'TRADE_CLOSED_RECONCILED'}.get(fail,'EMERGENCY_EXIT_REQUIRED')),(r['status'],r.get('error'))
+E   AssertionError: ('EMERGENCY_EXIT_REQUIRED', 'CERTIFICATION_UNCERTAIN_ORDER_URGENT_REVIEW')
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'TRADE_CLOSED_RECONCILED'
+E     
+E     - TRADE_CLOSED_RECONCILED
+E     + EMERGENCY_EXIT_REQUIRED
+________ test_entry_failures_never_blindly_repeat[summary_without_fill] ________
+algo-trading-bot/test_emergency_qualification.py:157: in test_entry_failures_never_blindly_repeat
+    assert len([a for a in c.venue.calls if a['type']=='order' and not a['orders'][0]['r']])==1
+E   assert 0 == 1
+E    +  where 0 = len([])
+_______ test_entry_failures_never_blindly_repeat[disconnect_after_fill] ________
+algo-trading-bot/test_emergency_qualification.py:157: in test_entry_failures_never_blindly_repeat
+    assert len([a for a in c.venue.calls if a['type']=='order' and not a['orders'][0]['r']])==1
+E   assert 0 == 1
+E    +  where 0 = len([])
+_____ test_failed_close_preserves_exposure_and_bounded_attempts[rejected] ______
+algo-trading-bot/test_emergency_qualification.py:175: in test_failed_close_preserves_exposure_and_bounded_attempts
+    assert c.live.account.get_positions() and not r.get('final_flat',False)
+E   AssertionError: assert ({})
+E    +  where {} = get_positions()
+E    +    where get_positions = <exchange.hyperliquid_account.HyperliquidAccount object at 0x10bbe6e70>.get_positions
+E    +      where <exchange.hyperliquid_account.HyperliquidAccount object at 0x10bbe6e70> = namespace(fixture=<test_live_exchange_execution.LiveInfoFixture object at 0x10bbe5970>, client=<exchange.hyperliquid_c...ation.EmergencyExecution object at 0x10be57560>, signer=<eth_account.signers.local.LocalAccount object at 0x10bbe69f0>).account
+E    +        where namespace(fixture=<test_live_exchange_execution.LiveInfoFixture object at 0x10bbe5970>, client=<exchange.hyperliquid_c...ation.EmergencyExecution object at 0x10be57560>, signer=<eth_account.signers.local.LocalAccount object at 0x10bbe69f0>) = namespace(live=namespace(fixture=<test_live_exchange_execution.LiveInfoFixture object at 0x10bbe5970>, client=<exchang...ure_increase': '16.7000'}}, 'final_evidence_hash': '5eefebd2bf548edd04125c0cd374f81ec41e7a0b584cd8505e05465db995dcbf'}).live
+______ test_failed_close_preserves_exposure_and_bounded_attempts[timeout] ______
+algo-trading-bot/test_emergency_qualification.py:175: in test_failed_close_preserves_exposure_and_bounded_attempts
+    assert c.live.account.get_positions() and not r.get('final_flat',False)
+E   AssertionError: assert ({})
+E    +  where {} = get_positions()
+E    +    where get_positions = <exchange.hyperliquid_account.HyperliquidAccount object at 0x10be55550>.get_positions
+E    +      where <exchange.hyperliquid_account.HyperliquidAccount object at 0x10be55550> = namespace(fixture=<test_live_exchange_execution.LiveInfoFixture object at 0x10be56630>, client=<exchange.hyperliquid_c...ation.EmergencyExecution object at 0x10bed1c10>, signer=<eth_account.signers.local.LocalAccount object at 0x10be565d0>).account
+E    +        where namespace(fixture=<test_live_exchange_execution.LiveInfoFixture object at 0x10be56630>, client=<exchange.hyperliquid_c...ation.EmergencyExecution object at 0x10bed1c10>, signer=<eth_account.signers.local.LocalAccount object at 0x10be565d0>) = namespace(live=namespace(fixture=<test_live_exchange_execution.LiveInfoFixture object at 0x10be56630>, client=<exchang...ure_increase': '16.7000'}}, 'final_evidence_hash': '56c7675ee4ad3700c676ca1b6ea0fc86acd4478a11d59102a80d8b4bdea5f59f'}).live
+_____ test_failed_close_preserves_exposure_and_bounded_attempts[price_gap] _____
+algo-trading-bot/test_emergency_qualification.py:175: in test_failed_close_preserves_exposure_and_bounded_attempts
+    assert c.live.account.get_positions() and not r.get('final_flat',False)
+E   AssertionError: assert ({})
+E    +  where {} = get_positions()
+E    +    where get_positions = <exchange.hyperliquid_account.HyperliquidAccount object at 0x10bbe5310>.get_positions
+E    +      where <exchange.hyperliquid_account.HyperliquidAccount object at 0x10bbe5310> = namespace(fixture=<test_live_exchange_execution.LiveInfoFixture object at 0x10b9a50d0>, client=<exchange.hyperliquid_c...ation.EmergencyExecution object at 0x10bb2b050>, signer=<eth_account.signers.local.LocalAccount object at 0x10b9a7290>).account
+E    +        where namespace(fixture=<test_live_exchange_execution.LiveInfoFixture object at 0x10b9a50d0>, client=<exchange.hyperliquid_c...ation.EmergencyExecution object at 0x10bb2b050>, signer=<eth_account.signers.local.LocalAccount object at 0x10b9a7290>) = namespace(live=namespace(fixture=<test_live_exchange_execution.LiveInfoFixture object at 0x10b9a50d0>, client=<exchang...ure_increase': '16.7000'}}, 'final_evidence_hash': '880d8e060042ff1fed3fd12754b242324058193c77d352fe780f732014ea57cd'}).live
+___________ test_partial_exit_closes_exact_residual_without_increase ___________
+algo-trading-bot/test_emergency_qualification.py:181: in test_partial_exit_closes_exact_residual_without_increase
+    assert r['status']=='TRADE_CLOSED_RECONCILED',r
+E   AssertionError: {'actual_exchange_proof': [{'accounting': {'accounting_window_ms': (1790942400000, 1790942400000), 'corrections': [{'c...], 'certification_passed': False, 'equity_before': '1000', 'error': 'CERTIFICATION_UNCERTAIN_ORDER_URGENT_REVIEW', ...}
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'TRADE_CLOSED_RECONCILED'
+E     
+E     - TRADE_CLOSED_RECONCILED
+E     + EMERGENCY_EXIT_REQUIRED
+______ test_fifty_dollar_controlled_cap_only_replaced_inside_exact_scope _______
+algo-trading-bot/test_emergency_qualification.py:256: in test_fifty_dollar_controlled_cap_only_replaced_inside_exact_scope
+    assert r['status']=='TRADE_CLOSED_RECONCILED',r
+E   AssertionError: {'actual_exchange_proof': [{'accounting': {'accounting_window_ms': (1790942400000, 1790942400000), 'corrections': [{'c...], 'certification_passed': False, 'equity_before': '1000', 'error': 'CERTIFICATION_UNCERTAIN_ORDER_URGENT_REVIEW', ...}
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'TRADE_CLOSED_RECONCILED'
+E     
+E     - TRADE_CLOSED_RECONCILED
+E     + EMERGENCY_EXIT_REQUIRED
+_______________ test_restart_durable_consumed_attempt_no_repeat ________________
+algo-trading-bot/test_emergency_qualification.py:290: in test_restart_durable_consumed_attempt_no_repeat
+    assert c.live.journal.control('qualification_entry_consumed')==c.p.identity
+E   AssertionError: assert None == '34358092aa68bf793066bf02c8a8c48018d84df32776c2af86b4ad21d91f4b5f'
+E    +  where None = control('qualification_entry_consumed')
+E    +    where control = <exchange.execution_journal.ExecutionJournal object at 0x10bb37bf0>.control
+E    +      where <exchange.execution_journal.ExecutionJournal object at 0x10bb37bf0> = namespace(fixture=<test_live_exchange_execution.LiveInfoFixture object at 0x10bb356a0>, client=<exchange.hyperliquid_c...ation.EmergencyExecution object at 0x10ba809e0>, signer=<eth_account.signers.local.LocalAccount object at 0x10bb37800>).journal
+E    +        where namespace(fixture=<test_live_exchange_execution.LiveInfoFixture object at 0x10bb356a0>, client=<exchange.hyperliquid_c...ation.EmergencyExecution object at 0x10ba809e0>, signer=<eth_account.signers.local.LocalAccount object at 0x10bb37800>) = namespace(live=namespace(fixture=<test_live_exchange_execution.LiveInfoFixture object at 0x10bb356a0>, client=<exchang...ure_increase': '16.7000'}}, 'final_evidence_hash': 'de0960e5776321ea690a9cf191cd0824f5d6ce75f3d84aa3676972f12c6e83a1'}).live
+E    +  and   '34358092aa68bf793066bf02c8a8c48018d84df32776c2af86b4ad21d91f4b5f' = EmergencyProposal(symbol='par:BTC', asset_id=2670000, quantity='0.0002', entry_side='BUY', entry_limit='83606', exit_b...ED', price_authorization_mode='FIXED_LIMIT_V1', max_buy_price=None, quantity_ceiling=None, entry_notional_ceiling=None).identity
+E    +    where EmergencyProposal(symbol='par:BTC', asset_id=2670000, quantity='0.0002', entry_side='BUY', entry_limit='83606', exit_b...ED', price_authorization_mode='FIXED_LIMIT_V1', max_buy_price=None, quantity_ceiling=None, entry_notional_ceiling=None) = namespace(live=namespace(fixture=<test_live_exchange_execution.LiveInfoFixture object at 0x10bb356a0>, client=<exchang...ure_increase': '16.7000'}}, 'final_evidence_hash': 'de0960e5776321ea690a9cf191cd0824f5d6ce75f3d84aa3676972f12c6e83a1'}).p
+_________ test_gtc_disconnection_with_resting_order_requires_recovery __________
+algo-trading-bot/test_emergency_qualification.py:366: in test_gtc_disconnection_with_resting_order_requires_recovery
+    assert r['status']=='EMERGENCY_EXIT_REQUIRED' and len(c.venue.calls)==1
+E   AssertionError: assert ('EMERGENCY_EXIT_REQUIRED' == 'EMERGENCY_EXIT_REQUIRED'
+E     
+E       EMERGENCY_EXIT_REQUIRED and 0 == 1)
+E    +  where 0 = len([])
+E    +    where [] = <test_testnet_certification_v8.FakeCertificationVenue object at 0x10bc7c3b0>.calls
+E    +      where <test_testnet_certification_v8.FakeCertificationVenue object at 0x10bc7c3b0> = namespace(live=namespace(fixture=<test_live_exchange_execution.LiveInfoFixture object at 0x10bb29a30>, client=<exchang...ure_increase': '16.7000'}}, 'final_evidence_hash': '480715fe15982cdea368dfad95d1507f32eb5d2badf890332e4d45a55eeb920e'}).venue
+___________ test_gtc_unknown_status_does_not_replace_original_order ____________
+algo-trading-bot/test_emergency_qualification.py:380: in test_gtc_unknown_status_does_not_replace_original_order
+    assert len([a for a in c.venue.calls if a['type']=='order' and not a['orders'][0]['r']])==1
+E   assert 0 == 1
+E    +  where 0 = len([])
+__________ test_cancellation_ack_without_readback_does_not_claim_flat __________
+algo-trading-bot/test_emergency_qualification.py:392: in test_cancellation_ack_without_readback_does_not_claim_flat
+    assert c.live.fixture.orders and not r.get('final_flat',False)
+E   AssertionError: assert ([])
+E    +  where [] = <test_live_exchange_execution.LiveInfoFixture object at 0x10bb343b0>.orders
+E    +    where <test_live_exchange_execution.LiveInfoFixture object at 0x10bb343b0> = namespace(fixture=<test_live_exchange_execution.LiveInfoFixture object at 0x10bb343b0>, client=<exchange.hyperliquid_c...ation.EmergencyExecution object at 0x10bcac410>, signer=<eth_account.signers.local.LocalAccount object at 0x10bb36600>).fixture
+E    +      where namespace(fixture=<test_live_exchange_execution.LiveInfoFixture object at 0x10bb343b0>, client=<exchange.hyperliquid_c...ation.EmergencyExecution object at 0x10bcac410>, signer=<eth_account.signers.local.LocalAccount object at 0x10bb36600>) = namespace(live=namespace(fixture=<test_live_exchange_execution.LiveInfoFixture object at 0x10bb343b0>, client=<exchang...ure_increase': '16.7000'}}, 'final_evidence_hash': 'dce8c1d8cd643312a1b06d01357b258f5a7ae6b703e6993238cc1f8afb482e7d'}).live
+_______ test_stop_cannot_be_submitted_using_new_qualification_authority ________
+algo-trading-bot/test_emergency_qualification.py:397: in test_stop_cannot_be_submitted_using_new_qualification_authority
+    assert r['status']=='TRADE_CLOSED_RECONCILED'
+E   AssertionError: assert 'EMERGENCY_EXIT_REQUIRED' == 'TRADE_CLOSED_RECONCILED'
+E     
+E     - TRADE_CLOSED_RECONCILED
+E     + EMERGENCY_EXIT_REQUIRED
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_delegated_qualification.py::test_session_uses_existing_fresh_price_rule_in_real_composition[83380-83420]
+FAILED algo-trading-bot/test_delegated_qualification.py::test_session_uses_existing_fresh_price_rule_in_real_composition[83440-83470]
+FAILED algo-trading-bot/test_delegated_qualification.py::test_session_uses_existing_fresh_price_rule_in_real_composition[83560-83600]
+FAILED algo-trading-bot/test_delegated_qualification.py::test_actual_quantity_zero_partial_full_is_reconciled_without_repeat[0]
+FAILED algo-trading-bot/test_delegated_qualification.py::test_actual_quantity_zero_partial_full_is_reconciled_without_repeat[.5]
+FAILED algo-trading-bot/test_delegated_qualification.py::test_actual_quantity_zero_partial_full_is_reconciled_without_repeat[1]
+FAILED algo-trading-bot/test_delegated_qualification.py::test_uncertain_or_rejected_entry_never_refreshes_into_second_entry[entry_rejected]
+FAILED algo-trading-bot/test_delegated_qualification.py::test_uncertain_or_rejected_entry_never_refreshes_into_second_entry[timeout_before]
+FAILED algo-trading-bot/test_delegated_qualification.py::test_uncertain_or_rejected_entry_never_refreshes_into_second_entry[timeout_after_fill]
+FAILED algo-trading-bot/test_delegated_qualification.py::test_uncertain_or_rejected_entry_never_refreshes_into_second_entry[disconnect_after_fill]
+FAILED algo-trading-bot/test_delegated_qualification.py::test_partial_exit_handles_one_lot_exact_residual
+FAILED algo-trading-bot/test_delegated_qualification.py::test_rejected_exits_halt_and_preserve_unprotected_residual
+FAILED algo-trading-bot/test_delegated_qualification.py::test_duplicate_submit_returns_original_intent_and_price
+FAILED algo-trading-bot/test_delegated_qualification.py::test_revocation_after_filling_prevents_further_writes_and_escalates
+FAILED algo-trading-bot/test_delegated_qualification.py::test_missing_acceptance_cannot_even_start_readiness_or_sdk
+FAILED algo-trading-bot/test_qualification_price_guard.py::test_real_runtime_and_ephemeral_sdk_uses_new_selected_price[83380-83420]
+FAILED algo-trading-bot/test_qualification_price_guard.py::test_real_runtime_and_ephemeral_sdk_uses_new_selected_price[83440-83470]
+FAILED algo-trading-bot/test_qualification_price_guard.py::test_real_runtime_and_ephemeral_sdk_uses_new_selected_price[83560-83600]
+FAILED algo-trading-bot/test_qualification_price_guard.py::test_new_mode_zero_partial_full_entry_closes_only_actual_exposure[0]
+FAILED algo-trading-bot/test_qualification_price_guard.py::test_new_mode_zero_partial_full_entry_closes_only_actual_exposure[.5]
+FAILED algo-trading-bot/test_qualification_price_guard.py::test_new_mode_zero_partial_full_entry_closes_only_actual_exposure[1]
+FAILED algo-trading-bot/test_qualification_price_guard.py::test_new_mode_rejection_uncertainty_never_reprices_a_second_order[entry_rejected]
+FAILED algo-trading-bot/test_qualification_price_guard.py::test_new_mode_rejection_uncertainty_never_reprices_a_second_order[timeout_before]
+FAILED algo-trading-bot/test_qualification_price_guard.py::test_new_mode_rejection_uncertainty_never_reprices_a_second_order[timeout_after_fill]
+FAILED algo-trading-bot/test_qualification_price_guard.py::test_new_mode_rejection_uncertainty_never_reprices_a_second_order[disconnect_after_fill]
+FAILED algo-trading-bot/test_qualification_price_guard.py::test_rejected_exit_preserves_residual_and_attempt_bound
+FAILED algo-trading-bot/test_qualification_price_guard.py::test_full_round_trip_cannot_repeat_after_restart_or_completed_consumption
+FAILED algo-trading-bot/test_emergency_qualification.py::test_ioc_real_composition_and_smallest_lot_not_cap_target
+FAILED algo-trading-bot/test_emergency_qualification.py::test_ioc_zero_partial_full_one_entry_only[0]
+FAILED algo-trading-bot/test_emergency_qualification.py::test_ioc_zero_partial_full_one_entry_only[.5]
+FAILED algo-trading-bot/test_emergency_qualification.py::test_ioc_zero_partial_full_one_entry_only[1]
+FAILED algo-trading-bot/test_emergency_qualification.py::test_resting_unfilled_one_real_cancel_then_flat[Gtc]
+FAILED algo-trading-bot/test_emergency_qualification.py::test_resting_unfilled_one_real_cancel_then_flat[Alo]
+FAILED algo-trading-bot/test_emergency_qualification.py::test_resting_partial_or_full_actual_fill_cancels_remainder_before_close[.0001-Gtc]
+FAILED algo-trading-bot/test_emergency_qualification.py::test_resting_partial_or_full_actual_fill_cancels_remainder_before_close[.0001-Alo]
+FAILED algo-trading-bot/test_emergency_qualification.py::test_resting_partial_or_full_actual_fill_cancels_remainder_before_close[.0002-Gtc]
+FAILED algo-trading-bot/test_emergency_qualification.py::test_resting_partial_or_full_actual_fill_cancels_remainder_before_close[.0002-Alo]
+FAILED algo-trading-bot/test_emergency_qualification.py::test_fill_during_cancel_reconciles_new_actual_quantity
+FAILED algo-trading-bot/test_emergency_qualification.py::test_uncertain_cancel_stops_without_exit_or_replacement
+FAILED algo-trading-bot/test_emergency_qualification.py::test_entry_failures_never_blindly_repeat[entry_rejected]
+FAILED algo-trading-bot/test_emergency_qualification.py::test_entry_failures_never_blindly_repeat[timeout_before]
+FAILED algo-trading-bot/test_emergency_qualification.py::test_entry_failures_never_blindly_repeat[timeout_after_fill]
+FAILED algo-trading-bot/test_emergency_qualification.py::test_entry_failures_never_blindly_repeat[summary_without_fill]
+FAILED algo-trading-bot/test_emergency_qualification.py::test_entry_failures_never_blindly_repeat[disconnect_after_fill]
+FAILED algo-trading-bot/test_emergency_qualification.py::test_failed_close_preserves_exposure_and_bounded_attempts[rejected]
+FAILED algo-trading-bot/test_emergency_qualification.py::test_failed_close_preserves_exposure_and_bounded_attempts[timeout]
+FAILED algo-trading-bot/test_emergency_qualification.py::test_failed_close_preserves_exposure_and_bounded_attempts[price_gap]
+FAILED algo-trading-bot/test_emergency_qualification.py::test_partial_exit_closes_exact_residual_without_increase
+FAILED algo-trading-bot/test_emergency_qualification.py::test_fifty_dollar_controlled_cap_only_replaced_inside_exact_scope
+FAILED algo-trading-bot/test_emergency_qualification.py::test_restart_durable_consumed_attempt_no_repeat
+FAILED algo-trading-bot/test_emergency_qualification.py::test_gtc_disconnection_with_resting_order_requires_recovery
+FAILED algo-trading-bot/test_emergency_qualification.py::test_gtc_unknown_status_does_not_replace_original_order
+FAILED algo-trading-bot/test_emergency_qualification.py::test_cancellation_ack_without_readback_does_not_claim_flat
+FAILED algo-trading-bot/test_emergency_qualification.py::test_stop_cannot_be_submitted_using_new_qualification_authority
+54 failed, 185 passed in 61.84s (0:01:01)

@@ -1,0 +1,129 @@
+{
+  "status": "EXACT_HUMAN_ORDER_AND_RESIDUAL_RISK_APPROVAL_REQUIRED",
+  "source_hash": "7dc796d83416fb1f68cf8c32e5d26db403c361d6470e889527bc67f617665339",
+  "source_changed": false,
+  "strategy_changed": false,
+  "configuration_changed": false,
+  "exchange_submissions": 0,
+  "actual_wallet_signatures": 0,
+  "sole_signer_host_confirmed": true,
+  "sole_host_basis": "Direct human confirmation plus current-host lease test; no remote machine inspection",
+  "registered_team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+  "approved_api_wallet": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+  "account_address": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+  "account_address_basis": "Inspected existing official SDK constructor and prior source-bound offline wire tests; no actual signed action this turn",
+  "account_preflight_passed": true,
+  "selected_market": "par:BTC",
+  "proposal": {
+    "symbol": "par:BTC",
+    "asset_id": 2670000,
+    "quantity": "0.0003",
+    "entry_side": "BUY",
+    "entry_limit": "82491",
+    "exit_bound": "81120",
+    "stop_trigger": "81527",
+    "stop_limit": "81120",
+    "reference_bid": "82350.0",
+    "reference_ask": "82450.0",
+    "reference_mark": "82388.0",
+    "reference_oracle": "82470.0",
+    "observed_ms": 1791828484002,
+    "source_hash": "7dc796d83416fb1f68cf8c32e5d26db403c361d6470e889527bc67f617665339",
+    "reliability_policy_hash": "1b8573d07a0f12f3653cf7b92f96c2120e8d61c3f210335ec850ba14ea582455",
+    "max_notional": "25",
+    "session_loss_budget": "25",
+    "entry_slippage_bps": "5",
+    "exit_slippage_bps": "20",
+    "taker_fee_rate": "0.00090",
+    "max_exit_attempts": 2,
+    "max_signed_actions": 5,
+    "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+    "api_wallet": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+    "network": "testnet",
+    "dex": "par",
+    "mode": "TESTNET_QUALIFICATION",
+    "entry_rule": "ONE_BOUNDED_LONG_THEN_IMMEDIATE_CLOSE_V1",
+    "qualification_spread_bps": "50",
+    "protection_status": "UNVERIFIED_NO_STOP_WILL_BE_SUBMITTED"
+  },
+  "proposal_hash": "2047be2789f5ba3433955ca584257243fec1e5fb3cd5f2fb01b9cb19a6f954bb",
+  "latest_human_approval_time_utc": "2026-10-12T18:13:04.002000+00:00",
+  "latest_human_approval_time_ist": "2026-10-12T23:43:04.002000+05:30",
+  "full_regression_reused": {
+    "tests": 1682,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "fresh_safety_checks": {
+    "strategy_freeze": {
+      "exit_code": 0,
+      "result": {
+        "baseline": "nse-working-baseline",
+        "file_count": 1,
+        "method_count": 8,
+        "parameter_count": 32,
+        "passed": true
+      }
+    },
+    "phase0": {
+      "exit_code": 0,
+      "result": {
+        "project": "anchorium-perpetual-alpha",
+        "checks": {
+          "project_is_perpetual_alpha": true,
+          "independent_git_directory": true,
+          "migration_branch": true,
+          "testnet_venue": true,
+          "paper_execution_mode": true,
+          "migration_policy_valid": true,
+          "orders_disabled": true,
+          "angel_one_client_disabled": true,
+          "angel_one_order_boundary_disabled": true,
+          "testnet_order_boundary_disabled": true,
+          "signal_logic_present": true,
+          "signal_source_unchanged": true
+        },
+        "passed": true
+      }
+    }
+  },
+  "integrity": {
+    "account_check": {
+      "sqlite": "ok",
+      "checkpoint_count": 2,
+      "checksums": [
+        true,
+        true
+      ],
+      "actions": {
+        "intents": 0,
+        "api_actions": 0,
+        "signed_management": 0
+      }
+    },
+    "proposal_review": {
+      "sqlite": "ok",
+      "checkpoint_count": 2,
+      "checksums": [
+        true,
+        true
+      ],
+      "actions": {
+        "intents": 0,
+        "api_actions": 0,
+        "signed_management": 0
+      }
+    }
+  },
+  "qualification_attempted": false,
+  "actual_fill_verified": false,
+  "protection_verified": false,
+  "controlled_execution_ready": false,
+  "qualification_execution_authorized": false,
+  "organizer_whitelist_confirmed": false,
+  "execution_mode": "PAPER",
+  "allow_live_orders": false,
+  "protection_enabled": false,
+  "pa_usdp_review_status": "Read-only draft staged; post-attempt review pending; no pa probes or practice switch"
+}

@@ -147,8 +147,15 @@ def test_signal_source_matches_the_tagged_baseline():
     assert hashlib.sha256(current).digest() == hashlib.sha256(baseline).digest()
 
 
-def test_clone_environment_contains_only_development_settings():
+def test_clone_environment_retains_development_locks_with_account_configuration():
     from dotenv import dotenv_values
     values = dotenv_values(ROOT/'algo-trading-bot/.env')
-    assert values == {'TRADING_VENUE': 'HYPERLIQUID_TESTNET',
-                      'EXECUTION_MODE': 'PAPER', 'ALLOW_LIVE_ORDERS': 'false'}
+    required = {'TRADING_VENUE': 'HYPERLIQUID_TESTNET',
+                'EXECUTION_MODE': 'PAPER', 'ALLOW_LIVE_ORDERS': 'false'}
+    # Public account settings may coexist with the migration locks. Compare
+    # only these controls so a failure cannot print unrelated credentials.
+    observed = {name: values.get(name) for name in required}
+    assert observed == required
+    public_venue = {name: values.get(name, default) for name, default in
+                    (('HL_NETWORK', 'testnet'), ('HL_DEX', 'par'))}
+    assert public_venue == {'HL_NETWORK': 'testnet', 'HL_DEX': 'par'}

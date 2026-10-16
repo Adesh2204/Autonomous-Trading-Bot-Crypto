@@ -223,16 +223,37 @@ class HyperliquidAccount:
         state = self._query('clearinghouseState')
         spot = self._query('spotClearinghouseState')
         try:
-            summary = state['marginSummary']
+            token = self.client.collateral_token_id
+            if type(token) is not int or token < 0:
+                raise ExchangeError('COLLATERAL_TOKEN_MAPPING_REQUIRED')
             balances = [row for row in spot['balances'] if row['coin'] == 'USDPR']
             if len(balances) > 1:
                 raise ExchangeError('AMBIGUOUS_COLLATERAL_BALANCE')
+            token_balances = [row for row in spot['balances'] if row.get('token') == token]
+            if balances and (type(balances[0].get('token')) is not int or
+                             balances[0]['token'] != token or len(token_balances) != 1):
+                raise ExchangeError('COLLATERAL_TOKEN_MISMATCH')
+            if not balances and token_balances:
+                raise ExchangeError('COLLATERAL_TOKEN_MISMATCH')
             collateral = decimal(balances[0]['total'], nonnegative=True) if balances else decimal(0)
-            # Report the API's account value rather than summing overlapping
-            # unified spot/cross balances or inventing free-margin arithmetic.
-            return AccountEquity(decimal(summary['accountValue']), collateral,
-                                 decimal(summary['totalMarginUsed'], nonnegative=True),
-                                 decimal(state['withdrawable'], nonnegative=True))
+            # Hyperliquid unified balances/holds live in spotClearinghouseState;
+            # per-DEX marginSummary/accountValue and withdrawable are not
+            # meaningful. Preserve the reported USDPR balance once, without
+            # adding per-DEX equity or unrealized P&L to it. Trading capacity
+            # still comes separately from activeAssetData for the exact side.
+            margin = decimal(0)
+            seen = set()
+            for row in state['assetPositions']:
+                position = row['position']
+                symbol = position['coin']
+                self.client.market(symbol)
+                if symbol in seen:
+                    raise ExchangeError('DUPLICATE_ACCOUNT_POSITION')
+                seen.add(symbol)
+                if decimal(position['szi']):
+                    margin += decimal(position['marginUsed'], nonnegative=True)
+            return AccountEquity(collateral, collateral, margin, None,
+                                 'spotClearinghouseState.USDPR.total')
         except (KeyError, TypeError) as exc:
             raise ExchangeError('ACCOUNT_EQUITY_UNAVAILABLE') from exc
 

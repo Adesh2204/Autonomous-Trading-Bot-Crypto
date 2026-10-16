@@ -1,0 +1,139 @@
+{
+  "observed_ms": 1792080336326,
+  "scope": "LOCAL_READ_ONLY_INTEGRITY; no exchange calls, signing or nonce allocation",
+  "journal_integrity": "ok",
+  "verified_view": {
+    "intents": [
+      {
+        "intent_key": "certification:3e057842531f7b43ae3f46a21503350ddcee932afce369dca98a8d7d5d5b5f99:entry",
+        "cloid": "0x8e73fd40fceb5abb949215079466cb0b",
+        "fingerprint": "951b6df702f51ddfa4fcf98be678c2d80a89c0838d7dd2aecc1a525d717cc418",
+        "request": "{\"client_order_id\":\"certification:3e057842531f7b43ae3f46a21503350ddcee932afce369dca98a8d7d5d5b5f99:entry\",\"order_type\":\"LIMIT\",\"price\":\"81593\",\"quantity\":\"0.0002\",\"reduce_only\":false,\"side\":\"BUY\",\"strategy_id\":\"TESTNET_CERTIFICATION_ENTRY\",\"symbol\":\"par:BTC\",\"tif\":\"Ioc\"}",
+        "candidate": "certification:3e057842531f7b43ae3f46a21503350ddcee932afce369dca98a8d7d5d5b5f99",
+        "state": "FILLED",
+        "oid": "62755970305",
+        "outcome": "{\"average_price\":\"81512.0\",\"code\":\"ACCOUNT_EVIDENCE_RECOVERY\",\"filled_quantity\":\"0.0002\",\"remainder_cancelled\":false,\"remaining_quantity\":\"0.0000\"}",
+        "created_ms": 1792039588464,
+        "updated_ms": 1792039594533
+      }
+    ],
+    "resolutions": [
+      {
+        "intent_key": "certification:3b744e33e2de25c1afd6764eac3268ba8d51ac8ef905200e62230bc4a2261ddf:entry",
+        "cloid": "0x3486c3b8e88add1a77175c9c5965350f",
+        "resolution_hash": "a6ea851efdd3c0e90b26b55587bdb60e3ba8449b782d1e39a94a01743acdd058",
+        "reason": "Verified original mandatory pre-HTTP claim path, explicit final guard failure, no claim/HTTP record, matching nonce and two complete fresh account histories",
+        "original_state_preserved": "UNKNOWN",
+        "effective_state": "PROVEN_NOT_TRANSMITTED"
+      }
+    ]
+  },
+  "certificates": [
+    {
+      "intent_key": "certification:3b744e33e2de25c1afd6764eac3268ba8d51ac8ef905200e62230bc4a2261ddf:entry",
+      "original_hash": "8d6aa3f50119dad14a8e3c0e0196028b8eb2024c15052e73a95829917e14c6a4",
+      "checksum": "a6ea851efdd3c0e90b26b55587bdb60e3ba8449b782d1e39a94a01743acdd058",
+      "created_ms": 1791974932866
+    }
+  ],
+  "raw_intents": [
+    {
+      "intent_key": "certification:3b744e33e2de25c1afd6764eac3268ba8d51ac8ef905200e62230bc4a2261ddf:entry",
+      "cloid": "0x3486c3b8e88add1a77175c9c5965350f",
+      "fingerprint": "19adf528da6d6e1fba19a914e61fc3e0287fa0cab95c610b7612f825132be930",
+      "request": "{\"client_order_id\":\"certification:3b744e33e2de25c1afd6764eac3268ba8d51ac8ef905200e62230bc4a2261ddf:entry\",\"order_type\":\"LIMIT\",\"price\":\"83513\",\"quantity\":\"0.0002\",\"reduce_only\":false,\"side\":\"BUY\",\"strategy_id\":\"TESTNET_CERTIFICATION_ENTRY\",\"symbol\":\"par:BTC\",\"tif\":\"Ioc\"}",
+      "candidate": "certification:3b744e33e2de25c1afd6764eac3268ba8d51ac8ef905200e62230bc4a2261ddf",
+      "state": "UNKNOWN",
+      "oid": null,
+      "outcome": "{\"code\":\"TRANSMISSION_UNCERTAIN\",\"reason\":\"ExchangeError\"}",
+      "created_ms": 1791964524123,
+      "updated_ms": 1791964526982
+    },
+    {
+      "intent_key": "certification:3e057842531f7b43ae3f46a21503350ddcee932afce369dca98a8d7d5d5b5f99:entry",
+      "cloid": "0x8e73fd40fceb5abb949215079466cb0b",
+      "fingerprint": "951b6df702f51ddfa4fcf98be678c2d80a89c0838d7dd2aecc1a525d717cc418",
+      "request": "{\"client_order_id\":\"certification:3e057842531f7b43ae3f46a21503350ddcee932afce369dca98a8d7d5d5b5f99:entry\",\"order_type\":\"LIMIT\",\"price\":\"81593\",\"quantity\":\"0.0002\",\"reduce_only\":false,\"side\":\"BUY\",\"strategy_id\":\"TESTNET_CERTIFICATION_ENTRY\",\"symbol\":\"par:BTC\",\"tif\":\"Ioc\"}",
+      "candidate": "certification:3e057842531f7b43ae3f46a21503350ddcee932afce369dca98a8d7d5d5b5f99",
+      "state": "FILLED",
+      "oid": "62755970305",
+      "outcome": "{\"average_price\":\"81512.0\",\"code\":\"ACCOUNT_EVIDENCE_RECOVERY\",\"filled_quantity\":\"0.0002\",\"remainder_cancelled\":false,\"remaining_quantity\":\"0.0000\"}",
+      "created_ms": 1792039588464,
+      "updated_ms": 1792039594533
+    }
+  ],
+  "retained_checkpoints": [
+    {
+      "seq": 125,
+      "checksum": "350022ff9397e9d6eaf39dcacf2a093fb416ea631e1c950503bd592c7b132c0b",
+      "checksum_valid": true,
+      "timestamp_ms": null,
+      "source_identity": {
+        "git_commit": "33c7cfe9ec241ccc0241144a8dccfd9a06df553a",
+        "strategy_source_hash": "bff940ac5ed35f71ed3dfb537ba15d20dcec35a4e62a938d2f0619c6e9309d83",
+        "working_source_hash": "20f55a1534568299470417efa9b628d61678e360a1052958b51d90c7c3abb90b"
+      }
+    },
+    {
+      "seq": 126,
+      "checksum": "bbf15f248b371287e1c145725a06b2763a45bff91123b2eaba2eb44c3e55f234",
+      "checksum_valid": true,
+      "timestamp_ms": null,
+      "source_identity": {
+        "git_commit": "33c7cfe9ec241ccc0241144a8dccfd9a06df553a",
+        "strategy_source_hash": "bff940ac5ed35f71ed3dfb537ba15d20dcec35a4e62a938d2f0619c6e9309d83",
+        "working_source_hash": "f5590a219e8d00b032c1789695ceaa4d3a7546bd726c12efd2cb7d2bd229f479"
+      }
+    }
+  ],
+  "certificate_exit_audits": [
+    {
+      "candidate_id": null,
+      "clock_skew_detected": false,
+      "cloid": "0x3486c3b8e88add1a77175c9c5965350f",
+      "current_intent": null,
+      "effective_state": "PROVEN_NOT_TRANSMITTED",
+      "event_type": "QUALIFICATION_EXIT_HISTORICAL_NONTRANSMISSION_VERIFIED",
+      "exchange_to_receive_ms": null,
+      "exchange_ts": null,
+      "intent_key": "certification:[REDACTED]:entry",
+      "original_state_preserved": "UNKNOWN",
+      "processed_ts": "2026-10-15T16:04:09.284+00:00",
+      "reason": "Verified original mandatory pre-HTTP claim path, explicit final guard failure, no claim/HTTP record, matching nonce and two complete fresh account histories",
+      "receive_to_process_ms": 0,
+      "received_ts": "2026-10-15T16:04:09.284+00:00",
+      "resolution_hash": "a6ea851efdd3c0e90b26b55587bdb60e3ba8449b782d1e39a94a01743acdd058",
+      "session_id": "anchorium-one-qualification-v1",
+      "settlement_scope": "HISTORICAL_INTENT_ONLY",
+      "symbol": null,
+      "timestamp_source": "LOCAL_PROCESS"
+    }
+  ],
+  "consumed_old_session": {
+    "exit_recovery_started:fbad5fe98614a88acfdd3ac079e2644f46371265cf6600a2b04f604a63deb1a5": "cc5c7c1956ee47a99f82317cced84491",
+    "exit_long_profit_floor:fbad5fe98614a88acfdd3ac079e2644f46371265cf6600a2b04f604a63deb1a5": "81811",
+    "exit_long_closing_path:fbad5fe98614a88acfdd3ac079e2644f46371265cf6600a2b04f604a63deb1a5": 1792076205406,
+    "exit_recovery_finished:fbad5fe98614a88acfdd3ac079e2644f46371265cf6600a2b04f604a63deb1a5": 1792076206191
+  },
+  "nonce_integrity": "ok",
+  "nonce_history": [
+    [
+      "0x46c9bed595770150752e7fa3806449f81e0ec6f9",
+      1792039589283
+    ]
+  ],
+  "preserved_proofs": {
+    "algo-trading-bot/signal_brain.py": {
+      "before_sha256": "bff940ac5ed35f71ed3dfb537ba15d20dcec35a4e62a938d2f0619c6e9309d83",
+      "after_sha256": "bff940ac5ed35f71ed3dfb537ba15d20dcec35a4e62a938d2f0619c6e9309d83"
+    },
+    "docs/qualification_2026-10-15/WHITELIST_TRADE_PROOF.json": {
+      "before_sha256": "3f9b7decb3ca92810fc0e146373c667e621db909d621210cd52cb96f7886a0ab",
+      "after_sha256": "3f9b7decb3ca92810fc0e146373c667e621db909d621210cd52cb96f7886a0ab"
+    },
+    "docs/qualification_2026-10-15/session_preparation/authorized_session/WHITELIST_TRADE_PROOF.json": {
+      "before_sha256": "2db49793b45e88aa5e36b24a5ba3a393be874fe7cd251c19e2c23bd45e45faca",
+      "after_sha256": "2db49793b45e88aa5e36b24a5ba3a393be874fe7cd251c19e2c23bd45e45faca"
+    }
+  }
+}

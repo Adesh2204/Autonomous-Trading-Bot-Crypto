@@ -1,0 +1,37 @@
+    def market_close(
+        self,
+        coin: str,
+        sz: Optional[float] = None,
+        px: Optional[float] = None,
+        slippage: float = DEFAULT_SLIPPAGE,
+        cloid: Optional[Cloid] = None,
+        builder: Optional[BuilderInfo] = None,
+    ) -> Any:
+        address: str = self.wallet.address
+        if self.account_address:
+            address = self.account_address
+        if self.vault_address:
+            address = self.vault_address
+        dex = _get_dex(coin)
+        positions = self.info.user_state(address, dex)["assetPositions"]
+        for position in positions:
+            item = position["position"]
+            if coin != item["coin"]:
+                continue
+            szi = float(item["szi"])
+            if not sz:
+                sz = abs(szi)
+            is_buy = True if szi < 0 else False
+            # Get aggressive Market Price
+            px = self._slippage_price(coin, is_buy, slippage, px)
+            # Market Order is an aggressive Limit Order IoC
+            return self.order(
+                coin,
+                is_buy,
+                sz,
+                px,
+                order_type={"limit": {"tif": "Ioc"}},
+                reduce_only=True,
+                cloid=cloid,
+                builder=builder,
+            )

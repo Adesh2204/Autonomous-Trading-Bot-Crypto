@@ -871,7 +871,10 @@ def test_default_policy_file_disabled_and_values_applied():
     rates,clock,protection=load_reliability_policy(path)
     assert rates.ip_safety_reserve==120 and rates.daily_safety_reserve==500
     assert clock==dict(max_skew_ms=2000,max_age_ms=30000)
-    assert not protection.enabled and protection.atr_distance_multiple is None
+    assert not protection.enabled
+    assert protection.atr_distance_multiple == '1'
+    assert protection.execution_slippage_fraction == '0.005'
+    assert protection.approval_reference == 'docs/practice_setup_2026-10-07/protection_configuration_approval.md'
     with pytest.raises(ExchangeError):
         protection.require()
 

@@ -1,0 +1,17 @@
+...............F
+=================================== FAILURES ===================================
+_____ test_ask_above_approved_cap_remains_blocked_without_upsizing[83607] ______
+algo-trading-bot/test_qualification_price_guard.py:105: in test_ask_above_approved_cap_remains_blocked_without_upsizing
+    assert not c.venue.calls and c.p.quantity=='.0002'
+E   AssertionError: assert (not [] and '0.0002' == '.0002'
+E    +  where [] = <test_testnet_certification_v8.FakeCertificationVenue object at 0x1086119d0>.calls
+E    +    where <test_testnet_certification_v8.FakeCertificationVenue object at 0x1086119d0> = namespace(live=namespace(fixture=<test_live_exchange_execution.LiveInfoFixture object at 0x1087416d0>, client=<exchang...ure_increase': '16.7000'}}, 'final_evidence_hash': '365592763b1173bad070ddfe938d4a4730e3f0bc31093be51f6c2cfb474051ed'}).venue
+E     
+E     - .0002
+E     + 0.0002
+E     ? +)
+- generated xml file: /Users/adesh/Autonomous Trading Bot - Crypto /docs/price_guard_repair_2026-10-14/bounded_first.xml -
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_qualification_price_guard.py::test_ask_above_approved_cap_remains_blocked_without_upsizing[83607]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 15 passed in 3.81s

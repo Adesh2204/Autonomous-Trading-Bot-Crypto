@@ -1,0 +1,365 @@
+{
+  "scope": "READ_ONLY_POST_HALT_ACCOUNT_OBSERVATION",
+  "exchange_actions_submitted": 0,
+  "signatures_created": 0,
+  "source_hash": "2806a21a449f5d18e1a0ce6cf76f194c31604ca647ac6d6db5fb7fa4b43675e7",
+  "snapshots": [
+    {
+      "observed_ms": 1792039925611,
+      "positions_before": [
+        {
+          "symbol": "par:BTC",
+          "quantity": "0.0002",
+          "entry_price": "81512.0",
+          "unrealized_pnl": "0.009",
+          "margin_used": "16.3114",
+          "liquidation_price": null,
+          "leverage": {
+            "type": "cross",
+            "value": 1
+          }
+        }
+      ],
+      "positions_after": [
+        {
+          "symbol": "par:BTC",
+          "quantity": "0.0002",
+          "entry_price": "81512.0",
+          "unrealized_pnl": "0.009",
+          "margin_used": "16.3114",
+          "liquidation_price": null,
+          "leverage": {
+            "type": "cross",
+            "value": 1
+          }
+        }
+      ],
+      "orders": [],
+      "original_order_status": {
+        "status": "order",
+        "order": {
+          "order": {
+            "coin": "par:BTC",
+            "side": "B",
+            "limitPx": "81593.0",
+            "sz": "0.0",
+            "oid": 62755970305,
+            "timestamp": 1792039590641,
+            "triggerCondition": "N/A",
+            "isTrigger": false,
+            "triggerPx": "0.0",
+            "children": [],
+            "isPositionTpsl": false,
+            "reduceOnly": false,
+            "orderType": "Limit",
+            "origSz": "0.0002",
+            "tif": "Ioc",
+            "cloid": "0x8e73fd40fceb5abb949215079466cb0b"
+          },
+          "status": "filled",
+          "statusTimestamp": 1792039590641
+        }
+      },
+      "fills_since_acceptance": [
+        {
+          "coin": "par:BTC",
+          "px": "81512.0",
+          "sz": "0.0002",
+          "side": "B",
+          "time": 1792039590641,
+          "startPosition": "0.0",
+          "dir": "Open Long",
+          "closedPnl": "0.0",
+          "hash": "0x25ddf2eb3d9791b72757042bbcfc450000190ad0d89ab089c9a69e3dfc9b6ba1",
+          "oid": 62755970305,
+          "crossed": true,
+          "fee": "0.014672",
+          "tid": 800659111758533,
+          "cloid": "0x8e73fd40fceb5abb949215079466cb0b",
+          "feeToken": "USDPR",
+          "twapId": null
+        }
+      ],
+      "account_reconciliation": {
+        "ready": true,
+        "reasons": [],
+        "accounting": {
+          "source": "EXCHANGE_REPORTED_ACCOUNT_OBSERVER",
+          "exchange_orders_submitted": 0,
+          "entries_paused": false,
+          "reasons": [],
+          "positions": [
+            {
+              "symbol": "par:BTC",
+              "quantity": "0.0002",
+              "entry_price": "81512.0",
+              "unrealized_pnl": "0.009",
+              "margin_used": "16.3114",
+              "liquidation_price": null,
+              "leverage": {
+                "type": "cross",
+                "value": 1
+              }
+            }
+          ],
+          "open_orders": [],
+          "fills": [
+            {
+              "symbol": "par:BTC",
+              "timestamp_ms": 1792039590641,
+              "trade_id": "800659111758533",
+              "order_id": "62755970305",
+              "side": "BUY",
+              "quantity": "0.0002",
+              "price": "81512.0",
+              "fee": "0.014672",
+              "fee_token": "USDPR",
+              "closed_pnl": "0.0",
+              "start_position": "0.0",
+              "source": "EXCHANGE_REPORTED_FILL",
+              "exchange_ts": "2026-10-15T04:46:30.641+00:00",
+              "received_ts": "2026-10-15T04:52:02.555+00:00",
+              "processed_ts": "2026-10-15T04:52:02.556+00:00"
+            }
+          ],
+          "funding_events": [],
+          "reported_account_equity": {
+            "reported_account_value": "999999.994328",
+            "collateral_balance": "999999.994328",
+            "margin_used": "16.3114",
+            "withdrawable": null,
+            "valuation_source": "spotClearinghouseState.USDPR.total"
+          },
+          "accounting_window_ms": [
+            0,
+            1792039922391
+          ],
+          "latest_query_window_ms": [
+            0,
+            1792039922391
+          ],
+          "realized": {
+            "gross_closed_pnl": "0.0",
+            "actual_fill_fees": "0.014672",
+            "actual_funding_cashflow": "0",
+            "net_after_fees_and_funding": "-0.014672",
+            "scope": "ONLY_OBSERVED_ACCOUNT_EVENTS; excludes deposits/transfers and unknown historical events"
+          },
+          "corrections": [
+            {
+              "kind": "EXCHANGE_TRUTH_ADOPTED",
+              "timestamp_ms": 1792039923786,
+              "differences": {
+                "par:BTC": {
+                  "local": "0",
+                  "exchange": "0.0002"
+                }
+              },
+              "new_fill_count": 1,
+              "reasons": [],
+              "exchange_ts": null,
+              "received_ts": "2026-10-15T04:52:03.786+00:00",
+              "processed_ts": "2026-10-15T04:52:03.786+00:00",
+              "timestamp_source": "LOCAL_PROCESS",
+              "exchange_to_receive_ms": null,
+              "receive_to_process_ms": 0,
+              "clock_skew_detected": false
+            }
+          ]
+        }
+      },
+      "flat_observed": false
+    },
+    {
+      "observed_ms": 1792039931476,
+      "positions_before": [
+        {
+          "symbol": "par:BTC",
+          "quantity": "0.0002",
+          "entry_price": "81512.0",
+          "unrealized_pnl": "0.009",
+          "margin_used": "16.3114",
+          "liquidation_price": null,
+          "leverage": {
+            "type": "cross",
+            "value": 1
+          }
+        }
+      ],
+      "positions_after": [
+        {
+          "symbol": "par:BTC",
+          "quantity": "0.0002",
+          "entry_price": "81512.0",
+          "unrealized_pnl": "0.009",
+          "margin_used": "16.3114",
+          "liquidation_price": null,
+          "leverage": {
+            "type": "cross",
+            "value": 1
+          }
+        }
+      ],
+      "orders": [],
+      "original_order_status": {
+        "status": "order",
+        "order": {
+          "order": {
+            "coin": "par:BTC",
+            "side": "B",
+            "limitPx": "81593.0",
+            "sz": "0.0",
+            "oid": 62755970305,
+            "timestamp": 1792039590641,
+            "triggerCondition": "N/A",
+            "isTrigger": false,
+            "triggerPx": "0.0",
+            "children": [],
+            "isPositionTpsl": false,
+            "reduceOnly": false,
+            "orderType": "Limit",
+            "origSz": "0.0002",
+            "tif": "Ioc",
+            "cloid": "0x8e73fd40fceb5abb949215079466cb0b"
+          },
+          "status": "filled",
+          "statusTimestamp": 1792039590641
+        }
+      },
+      "fills_since_acceptance": [
+        {
+          "coin": "par:BTC",
+          "px": "81512.0",
+          "sz": "0.0002",
+          "side": "B",
+          "time": 1792039590641,
+          "startPosition": "0.0",
+          "dir": "Open Long",
+          "closedPnl": "0.0",
+          "hash": "0x25ddf2eb3d9791b72757042bbcfc450000190ad0d89ab089c9a69e3dfc9b6ba1",
+          "oid": 62755970305,
+          "crossed": true,
+          "fee": "0.014672",
+          "tid": 800659111758533,
+          "cloid": "0x8e73fd40fceb5abb949215079466cb0b",
+          "feeToken": "USDPR",
+          "twapId": null
+        }
+      ],
+      "account_reconciliation": {
+        "ready": true,
+        "reasons": [],
+        "accounting": {
+          "source": "EXCHANGE_REPORTED_ACCOUNT_OBSERVER",
+          "exchange_orders_submitted": 0,
+          "entries_paused": false,
+          "reasons": [],
+          "positions": [
+            {
+              "symbol": "par:BTC",
+              "quantity": "0.0002",
+              "entry_price": "81512.0",
+              "unrealized_pnl": "0.009",
+              "margin_used": "16.3114",
+              "liquidation_price": null,
+              "leverage": {
+                "type": "cross",
+                "value": 1
+              }
+            }
+          ],
+          "open_orders": [],
+          "fills": [
+            {
+              "symbol": "par:BTC",
+              "timestamp_ms": 1792039590641,
+              "trade_id": "800659111758533",
+              "order_id": "62755970305",
+              "side": "BUY",
+              "quantity": "0.0002",
+              "price": "81512.0",
+              "fee": "0.014672",
+              "fee_token": "USDPR",
+              "closed_pnl": "0.0",
+              "start_position": "0.0",
+              "source": "EXCHANGE_REPORTED_FILL",
+              "exchange_ts": "2026-10-15T04:46:30.641+00:00",
+              "received_ts": "2026-10-15T04:52:08.214+00:00",
+              "processed_ts": "2026-10-15T04:52:08.214+00:00"
+            }
+          ],
+          "funding_events": [],
+          "reported_account_equity": {
+            "reported_account_value": "999999.994328",
+            "collateral_balance": "999999.994328",
+            "margin_used": "16.3114",
+            "withdrawable": null,
+            "valuation_source": "spotClearinghouseState.USDPR.total"
+          },
+          "accounting_window_ms": [
+            0,
+            1792039928049
+          ],
+          "latest_query_window_ms": [
+            0,
+            1792039928049
+          ],
+          "realized": {
+            "gross_closed_pnl": "0.0",
+            "actual_fill_fees": "0.014672",
+            "actual_funding_cashflow": "0",
+            "net_after_fees_and_funding": "-0.014672",
+            "scope": "ONLY_OBSERVED_ACCOUNT_EVENTS; excludes deposits/transfers and unknown historical events"
+          },
+          "corrections": [
+            {
+              "kind": "EXCHANGE_TRUTH_ADOPTED",
+              "timestamp_ms": 1792039923786,
+              "differences": {
+                "par:BTC": {
+                  "local": "0",
+                  "exchange": "0.0002"
+                }
+              },
+              "new_fill_count": 1,
+              "reasons": [],
+              "exchange_ts": null,
+              "received_ts": "2026-10-15T04:52:03.786+00:00",
+              "processed_ts": "2026-10-15T04:52:03.786+00:00",
+              "timestamp_source": "LOCAL_PROCESS",
+              "exchange_to_receive_ms": null,
+              "receive_to_process_ms": 0,
+              "clock_skew_detected": false
+            },
+            {
+              "kind": "EXCHANGE_TRUTH_ADOPTED",
+              "timestamp_ms": 1792039929530,
+              "differences": {},
+              "new_fill_count": 0,
+              "reasons": [],
+              "exchange_ts": null,
+              "received_ts": "2026-10-15T04:52:09.530+00:00",
+              "processed_ts": "2026-10-15T04:52:09.530+00:00",
+              "timestamp_source": "LOCAL_PROCESS",
+              "exchange_to_receive_ms": null,
+              "receive_to_process_ms": 0,
+              "clock_skew_detected": false
+            }
+          ]
+        }
+      },
+      "flat_observed": false
+    }
+  ],
+  "original_intent": {
+    "intent_key": "certification:3e057842531f7b43ae3f46a21503350ddcee932afce369dca98a8d7d5d5b5f99:entry",
+    "cloid": "0x8e73fd40fceb5abb949215079466cb0b",
+    "oid": "62755970305"
+  },
+  "final_flat_observed": false,
+  "actual_fill_verified": true,
+  "original_order_unknown_to_exchange": false,
+  "no_local_uncertainty_cleared": true,
+  "no_entry_retry": true,
+  "completed_ms": 1792039931478
+}

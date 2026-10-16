@@ -1,0 +1,42 @@
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+________________ test_three_lots_fail_but_two_lots_are_selected ________________
+algo-trading-bot/test_qualification_recovery_v8_7.py:21: in test_three_lots_fail_but_two_lots_are_selected
+    c=qualification;ctx=context(c)
+                        ^^^^^^^^^^
+algo-trading-bot/test_qualification_recovery_v8_7.py:17: in context
+    return c.live.provider.load(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/exchange_rules.py:247: in load
+    reconciliation_ready=self.reconciliation_ready(),critical=critical)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/test_testnet_qualification.py:41: in <lambda>
+    live.provider.reconciliation_ready=lambda:recovery.account_truth_ready
+                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'CertificationRecovery' object has no attribute 'account_truth_ready'
+_________________ test_margin_bound_selects_smaller_valid_size _________________
+algo-trading-bot/test_qualification_recovery_v8_7.py:29: in test_margin_bound_selects_smaller_valid_size
+    c=qualification;ctx=context(c)
+                        ^^^^^^^^^^
+algo-trading-bot/test_qualification_recovery_v8_7.py:17: in context
+    return c.live.provider.load(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/exchange_rules.py:247: in load
+    reconciliation_ready=self.reconciliation_ready(),critical=critical)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/test_testnet_qualification.py:41: in <lambda>
+    live.provider.reconciliation_ready=lambda:recovery.account_truth_ready
+                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'CertificationRecovery' object has no attribute 'account_truth_ready'
+___________ test_stale_clock_is_recovered_before_readiness_snapshot ____________
+algo-trading-bot/test_qualification_recovery_v8_7.py:49: in test_stale_clock_is_recovered_before_readiness_snapshot
+    assert ctx.readiness.clock_healthy and ctx.readiness.account_ready
+E   AssertionError: assert (False)
+E    +  where False = LiveReadiness(status='NOT_READY', reasons=('CLOCK_HEALTH_REQUIRED',), team_address='0x11111111111111111111111111111111...': 10000}, reconciliation_ready=True, clock_healthy=False, rate_limits_healthy=True, signed_transport_implemented=True).clock_healthy
+E    +    where LiveReadiness(status='NOT_READY', reasons=('CLOCK_HEALTH_REQUIRED',), team_address='0x11111111111111111111111111111111...': 10000}, reconciliation_ready=True, clock_healthy=False, rate_limits_healthy=True, signed_transport_implemented=True) = ValidationContext(spec=MarketSpec(symbol='par:BTC', size_decimals=4, max_leverage=10, asset_id=2670000, margin_tiers=(...ing': '.0001', 'openInterest': '10'}}, feed_ready=True, leverage=1, fills=(), reconciled=True, oracle_ms=1790942400001).readiness
+- generated xml file: /Users/adesh/Autonomous Trading Bot - Crypto /docs/qualification_recovery_v8_7_2026-10-13/reproduced_defects_v2.xml -
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_qualification_recovery_v8_7.py::test_three_lots_fail_but_two_lots_are_selected
+FAILED algo-trading-bot/test_qualification_recovery_v8_7.py::test_margin_bound_selects_smaller_valid_size
+FAILED algo-trading-bot/test_qualification_recovery_v8_7.py::test_stale_clock_is_recovered_before_readiness_snapshot
+3 failed in 1.23s

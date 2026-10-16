@@ -1,0 +1,189 @@
+{
+  "report_type": "WHITELIST_TRADE_PROOF",
+  "status": "ACTUAL_PRACTICE_FILL_VERIFIED",
+  "registered_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+  "approved_api_wallet": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+  "network": "testnet",
+  "dex": "par",
+  "market": "par:BTC",
+  "exchange_order_id": "62755970305",
+  "fill_verified": true,
+  "fills": [
+    {
+      "symbol": "par:BTC",
+      "timestamp_ms": 1792039590641,
+      "trade_id": "800659111758533",
+      "order_id": "62755970305",
+      "side": "BUY",
+      "quantity": "0.0002",
+      "price": "81512.0",
+      "fee": "0.014672",
+      "fee_token": "USDPR",
+      "closed_pnl": "0.0",
+      "start_position": "0.0",
+      "source": "EXCHANGE_REPORTED_FILL",
+      "exchange_ts": "2026-10-15T04:46:30.641+00:00",
+      "received_ts": "2026-10-15T04:46:31.736+00:00",
+      "processed_ts": "2026-10-15T04:46:31.737+00:00"
+    }
+  ],
+  "executed_notional": "16.30240",
+  "fill_ids": [
+    "800659111758533"
+  ],
+  "timestamps_ms": [
+    1792039590641
+  ],
+  "account_reconciliation": {
+    "source": "EXCHANGE_REPORTED_ACCOUNT_OBSERVER",
+    "exchange_orders_submitted": 0,
+    "entries_paused": true,
+    "reasons": [
+      "RATE_LIMITED"
+    ],
+    "positions": [
+      {
+        "symbol": "par:BTC",
+        "quantity": "0.0002",
+        "entry_price": "81512.0",
+        "unrealized_pnl": "0.0",
+        "margin_used": "16.3024",
+        "liquidation_price": null,
+        "leverage": {
+          "type": "cross",
+          "value": 1
+        }
+      }
+    ],
+    "open_orders": [],
+    "fills": [
+      {
+        "symbol": "par:BTC",
+        "timestamp_ms": 1792039590641,
+        "trade_id": "800659111758533",
+        "order_id": "62755970305",
+        "side": "BUY",
+        "quantity": "0.0002",
+        "price": "81512.0",
+        "fee": "0.014672",
+        "fee_token": "USDPR",
+        "closed_pnl": "0.0",
+        "start_position": "0.0",
+        "source": "EXCHANGE_REPORTED_FILL",
+        "exchange_ts": "2026-10-15T04:46:30.641+00:00",
+        "received_ts": "2026-10-15T04:46:31.736+00:00",
+        "processed_ts": "2026-10-15T04:46:31.737+00:00"
+      }
+    ],
+    "funding_events": [],
+    "reported_account_equity": {
+      "reported_account_value": "999999.985328",
+      "collateral_balance": "999999.985328",
+      "margin_used": "16.3024",
+      "withdrawable": null,
+      "valuation_source": "spotClearinghouseState.USDPR.total"
+    },
+    "accounting_window_ms": [
+      0,
+      1792039591410
+    ],
+    "latest_query_window_ms": [
+      0,
+      1792039591410
+    ],
+    "realized": {
+      "gross_closed_pnl": "0.0",
+      "actual_fill_fees": "0.014672",
+      "actual_funding_cashflow": "0",
+      "net_after_fees_and_funding": "-0.014672",
+      "scope": "ONLY_OBSERVED_ACCOUNT_EVENTS; excludes deposits/transfers and unknown historical events"
+    },
+    "corrections": [
+      {
+        "kind": "EXCHANGE_TRUTH_ADOPTED",
+        "timestamp_ms": 1792039573615,
+        "differences": {},
+        "new_fill_count": 0,
+        "reasons": [],
+        "exchange_ts": null,
+        "received_ts": "2026-10-15T04:46:13.615+00:00",
+        "processed_ts": "2026-10-15T04:46:13.615+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      {
+        "kind": "EXCHANGE_TRUTH_ADOPTED",
+        "timestamp_ms": 1792039582266,
+        "differences": {},
+        "new_fill_count": 0,
+        "reasons": [],
+        "exchange_ts": null,
+        "received_ts": "2026-10-15T04:46:22.266+00:00",
+        "processed_ts": "2026-10-15T04:46:22.266+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      {
+        "kind": "EXCHANGE_TRUTH_ADOPTED",
+        "timestamp_ms": 1792039593283,
+        "differences": {
+          "par:BTC": {
+            "local": "0",
+            "exchange": "0.0002"
+          }
+        },
+        "new_fill_count": 1,
+        "reasons": [],
+        "exchange_ts": null,
+        "received_ts": "2026-10-15T04:46:33.283+00:00",
+        "processed_ts": "2026-10-15T04:46:33.283+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      }
+    ]
+  },
+  "final_flat_verified": false,
+  "final_flat_observed_in_scope": false,
+  "outcome_status": "EMERGENCY_EXIT_REQUIRED",
+  "evidence_scope": "ACTUAL_TESTNET_ACCOUNT",
+  "normal_protection_certified": false,
+  "organizer_whitelisting_confirmed": false,
+  "practice_ready": false,
+  "live_ready": false,
+  "delegated_session_id": "66b034a017f6b460631bba11def79c9d61c50ff7c81d88c251086555e97d4049",
+  "original_client_order_id": "0x8e73fd40fceb5abb949215079466cb0b",
+  "entry_wire_limit": "81593",
+  "source_hash": "2806a21a449f5d18e1a0ce6cf76f194c31604ca647ac6d6db5fb7fa4b43675e7",
+  "source_bound_regression_receipt": "regression_release/test_receipt.json",
+  "original_workflow_proof_sha256": "2db49793b45e88aa5e36b24a5ba3a393be874fe7cd251c19e2c23bd45e45faca",
+  "post_halt_read_only_evidence": "post_execution_read_only/report.json",
+  "last_position_observed_ms": 1792039931476,
+  "last_positions_observed": [
+    {
+      "symbol": "par:BTC",
+      "quantity": "0.0002",
+      "entry_price": "81512.0",
+      "unrealized_pnl": "0.009",
+      "margin_used": "16.3114",
+      "liquidation_price": null,
+      "leverage": {
+        "type": "cross",
+        "value": 1
+      }
+    }
+  ],
+  "last_open_orders_observed": [],
+  "entry_http_status": 200,
+  "actual_entry_fee": "0.014672",
+  "fee_token": "USDPR",
+  "exit_orders_submitted": 0,
+  "realized_roundtrip_pnl": null,
+  "recovery_status": "EMERGENCY_EXIT_REQUIRED; MANUAL_OR_SEPARATELY_AUTHORIZED_RECOVERY_NEEDED",
+  "final_read_only_evidence": "final_position_read_only/report.json"
+}

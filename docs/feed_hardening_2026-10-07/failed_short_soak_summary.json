@@ -1,0 +1,15 @@
+{
+  "source_hash": "94716e310e23e17a1e4fd7bf696766eefcf4772ff429628c55421fc75ed9744e",
+  "duration_seconds": 18.13449501991272,
+  "exit_code": 1,
+  "status": "FAILED",
+  "actual_orders": 0,
+  "failure_causes": [
+    "UNEXPECTED_SUBSCRIPTION_ACK for expanded venue book defaults",
+    "Cancellation event remained set before subsequent metadata startup"
+  ],
+  "preserved_receipt": "docs/feed_hardening_2026-10-07/short_soak/short_15m_paper_receipt.json",
+  "raw_ack_evidence": "docs/feed_hardening_2026-10-07/raw_all_channel_acks.json",
+  "long_run_started": false,
+  "resolution": "Known defaults canonicalized; cancellation cleared before startup; new tests plus full regression required before retry"
+}

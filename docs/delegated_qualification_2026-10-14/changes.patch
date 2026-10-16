@@ -1,0 +1,876 @@
+--- before/algo-trading-bot/exchange/emergency_qualification.py
++++ after/algo-trading-bot/exchange/emergency_qualification.py
+@@ -449,6 +449,10 @@
+         return super().close_full_position(request,permission=scoped)
+     def _guard(self,context,checked_ms,**kwargs):
+         super()._guard(context,checked_ms,**kwargs)
++        from .delegated_qualification import DelegatedAuthorization
++        if type(getattr(self.transport,'authorization',None)) is DelegatedAuthorization:
++            request=kwargs.get('entry_request') or kwargs.get('exact_full_close')
++            if request is not None:self.transport.authorization.require_context(context,request)
+         if kwargs.get('exact_full_close') is not None:
+             from .qualification_protection import require_settled_exit_orders
+             require_settled_exit_orders(self, current_intent=kwargs['exact_full_close'].client_order_id)
+@@ -467,7 +471,8 @@
+ 
+ class EmergencySDKTransport(OfficialSDKTransport):
+     def __init__(self,client,signer,team_address,nonces,authorization,*,rate_limits):
+-        if type(authorization) is not EmergencyAuthorization:raise ExchangeError('P0_CAPABILITY_REQUIRED')
++        from .delegated_qualification import DelegatedAuthorization
++        if type(authorization) not in {EmergencyAuthorization,DelegatedAuthorization}:raise ExchangeError('P0_CAPABILITY_REQUIRED')
+         authorization.require(team_address,signer.address)
+         self.action_expiry_ms=min(authorization.approval.expires_ms,
+             authorization.proposal.observed_ms+POLICY['approval_window_ms'])
+@@ -655,7 +660,7 @@
+             funding_proof=[asdict(f) for f in funding],fee_liquidity_type='REPORTED_FEES; NORMALIZED_FILL_HAS_NO_MAKER_TAKER_TAG')
+ 
+ 
+-def build_runtime(root,proposal,approval,*,test_receipt):
++def build_runtime(root,proposal,approval,*,test_receipt,delegation=None):
+     """Construct actual SDK only AFTER exact current approval and fresh read gates."""
+     from venue_config import require_paper_migration
+     from strategy_freeze import verify_strategy_freeze
+@@ -673,9 +678,16 @@
+     journal=ExecutionJournal(state/'qualification.sqlite',session_id='anchorium-one-qualification-v1',team_address=proposal.team_wallet)
+     client=transport=nonces=None
+     try:
+-        auth=EmergencyAuthorization(proposal,approval,journal,clock_ms=lambda:time.time_ns()//1000000,
+-            source_hash=lambda:active_source_hash(root),
++        auth_kwargs=dict(clock_ms=lambda:time.time_ns()//1000000,source_hash=lambda:active_source_hash(root),
+             policy_hash=lambda:hashlib.sha256((root/'configs/reliability_policy.json').read_bytes()).hexdigest())
++        if delegation is not None:
++            from .delegated_qualification import Delegation,DelegatedAuthorization
++            if type(delegation) is not Delegation or approval is not None:
++                raise ExchangeError('DELEGATED_CAPABILITY_CANNOT_SYNTHESIZE_PROPOSAL_APPROVAL')
++            if json.loads(Path(test_receipt).read_text())['totals']['tests']<2115:
++                raise ExchangeError('DELEGATED_FULL_2115_BASELINE_REQUIRED')
++            auth=DelegatedAuthorization(proposal,delegation,journal,**auth_kwargs)
++        else:auth=EmergencyAuthorization(proposal,approval,journal,**auth_kwargs)
+         auth.require(proposal.team_wallet,proposal.api_wallet)
+         if journal.intents() or journal.control('qualification_entry_consumed'):
+             raise ExchangeError('P0_PRIOR_ATTEMPT_READ_ONLY_RECOVERY_REQUIRED')
+@@ -704,6 +716,9 @@
+                 journal=journal,stage='BUILD_RUNTIME_FRESH_PREFLIGHT')
+         validation=HyperliquidOrderValidator(client).validate(req,context,permission(req,proposal,client.clock_ms()),client.clock_ms())
+         if not validation.allowed:raise ExchangeError(validation.code)
++        if delegation is not None:
++            auth.require_context(context,req)
++            auth.register_runtime()
+         provider.reconcile_before_load=None
+         key,_=read_api_key(root)
+         try:signer=api_signer(key,proposal.api_wallet,proposal.team_wallet)
+--- before/algo-trading-bot/exchange/delegated_qualification.py
++++ after/algo-trading-bot/exchange/delegated_qualification.py
+@@ -0,0 +1,237 @@
++"""One human-accepted testnet session, never a production trading permission.
++
++A mandate authorizes an algorithm and ceilings, not fabricated per-price human
++approvals. Each selected envelope still uses the existing V2 execution checks.
++The shared account journal consumes any transmitted entry permanently.
++"""
++from dataclasses import asdict, dataclass, field
++from datetime import datetime, timezone, timedelta
++from decimal import Decimal as D
++import json
++from pathlib import Path
++import uuid
++
++from .base_exchange import ExchangeError, decimal
++from .execution_journal import fingerprint
++from . import testnet_certification as cert
++from .emergency_qualification import (EmergencyAuthorization, EmergencyProposal,
++    BOUNDED_PRICE, BOUNDED_POLICY, POLICY, propose)
++
++MODE = 'DELEGATED_TESTNET_QUALIFICATION_V1'
++IST = timezone(timedelta(hours=5, minutes=30))
++START_MS = int(datetime(2026, 10, 14, tzinfo=IST).timestamp()*1000)
++END_MS = int(datetime(2026, 10, 14, 23, 59, tzinfo=IST).timestamp()*1000)
++SESSION_SCOPE = dict(network='testnet', dex='par', symbol='par:BTC', collateral='USDPR',
++    side='BUY', tif='Ioc', quantity='0.0002', maximum_opening_notional='20',
++    maximum_buy_price='100000', leverage=1, margin_mode='cross', entry_attempts=1,
++    exit_attempts=2, cancel_attempts=1, signed_actions=4, end_ist='2026-10-14T23:59:00+05:30',
++    price_rule='FRESH_ASK_PLUS_10_BPS_CAPPED_AND_NORMALIZED_DOWN',
++    fresh_entry_tolerance_bps='20', qualification_spread_bps='50', l2_participation='0.5',
++    mark_oracle_bps='50', mid_oracle_bps='100', order_oracle_bps='150',
++    exit_rule='EXACT_ACTUAL_LONG_REDUCE_ONLY_IOC_FRESH_BID_MINUS_20_BPS',
++    exit_floor_rule='REVIEWED_BID_TIMES_0.98505_NORMALIZED_UP',
++    entry_reserve_ms=90000, proposal_window_ms=300000, no_scope_enlargement=True,
++    no_entry_after_actual_or_uncertain_submission=True,
++    protection='UNVERIFIED_NO_STOP_WILL_BE_SUBMITTED', exposure_cap_is_loss_guarantee=False)
++ACKNOWLEDGMENTS = ('manually_verified_wallets', 'sole_signer_host_confirmed',
++    'exact_delegated_scope_accepted', 'one_entry_no_retry_accepted',
++    'unverified_stop_and_unprotected_exposure_accepted',
++    'rejected_partial_exits_and_manual_recovery_accepted',
++    'exposure_cap_not_guaranteed_loss_accepted',
++    'qualification_only_risk_exceptions_accepted', 'dynamic_price_and_exit_rules_accepted')
++
++
++@dataclass(frozen=True)
++class SessionMandate:
++    nonce: str
++    created_ms: int
++    source_hash: str
++    reliability_policy_hash: str
++    team_wallet: str = cert.TEAM
++    api_wallet: str = cert.API
++    mode: str = MODE
++    expires_ms: int = END_MS
++    execution_policy_hash: str = field(default_factory=lambda: fingerprint(BOUNDED_POLICY))
++    scope: dict = field(default_factory=lambda: dict(SESSION_SCOPE))
++
++    def require(self):
++        if (self.mode != MODE or type(self.created_ms) is not int
++                or not START_MS <= self.created_ms < END_MS
++                or type(self.expires_ms) is not int or self.expires_ms != END_MS
++                or fingerprint(self.scope) != fingerprint(SESSION_SCOPE) or not isinstance(self.nonce, str)
++                or len(self.nonce) != 32 or any(c not in '0123456789abcdef' for c in self.nonce)
++                or self.execution_policy_hash != fingerprint(BOUNDED_POLICY)
++                or not self.source_hash or not self.reliability_policy_hash
++                or self.team_wallet.lower() != cert.TEAM.lower()
++                or self.api_wallet.lower() != cert.API.lower()):
++            raise ExchangeError('INVALID_DELEGATED_TESTNET_SESSION_SCOPE')
++        return self
++
++    @property
++    def identity(self):
++        self.require()
++        return fingerprint(asdict(self))
++
++
++@dataclass(frozen=True)
++class SessionAcceptance:
++    session_hash: str
++    operator_acceptance: str
++    accepted_ms: int | None
++    expires_ms: int | None
++    manually_verified_wallets: bool = False
++    sole_signer_host_confirmed: bool = False
++    exact_delegated_scope_accepted: bool = False
++    one_entry_no_retry_accepted: bool = False
++    unverified_stop_and_unprotected_exposure_accepted: bool = False
++    rejected_partial_exits_and_manual_recovery_accepted: bool = False
++    exposure_cap_not_guaranteed_loss_accepted: bool = False
++    qualification_only_risk_exceptions_accepted: bool = False
++    dynamic_price_and_exit_rules_accepted: bool = False
++
++    def require(self, mandate, now_ms):
++        mandate.require()
++        if (self.session_hash != mandate.identity or not self.operator_acceptance.strip()
++                or any(getattr(self, k) is not True for k in ACKNOWLEDGMENTS)
++                or type(self.accepted_ms) is not int or type(self.expires_ms) is not int
++                or not mandate.created_ms <= self.accepted_ms <= now_ms < self.expires_ms
++                or self.expires_ms != mandate.expires_ms):
++            raise ExchangeError('EXPLICIT_DELEGATED_SESSION_ACCEPTANCE_REQUIRED')
++        return self
++
++
++@dataclass(frozen=True)
++class Delegation:
++    mandate: SessionMandate
++    acceptance: SessionAcceptance
++    acceptance_path: str
++
++    def require(self, now_ms):
++        if type(self.mandate) is not SessionMandate or type(self.acceptance) is not SessionAcceptance:
++            raise ExchangeError('DELEGATED_SESSION_CAPABILITY_REQUIRED')
++        self.acceptance.require(self.mandate, now_ms)
++        if Path(self.acceptance_path).with_name('session_revocation.json').exists():
++            raise ExchangeError('DELEGATED_SESSION_REVOKED')
++        # A missing/replaced acceptance is a revocation. Never cache it past a
++        # signing boundary. Runtime construction also rechecks source/receipt.
++        try:
++            current = json.loads(Path(self.acceptance_path).read_text())
++        except (OSError, ValueError, TypeError):
++            raise ExchangeError('DELEGATED_ACCEPTANCE_MISSING_OR_CHANGED') from None
++        if current != asdict(self.acceptance):
++            raise ExchangeError('DELEGATED_ACCEPTANCE_MISSING_OR_CHANGED')
++        return self
++
++
++def validate_proposal(mandate, p, spec=None):
++    mandate.require(); p.require()
++    if (type(p) is not EmergencyProposal or p.price_authorization_mode != BOUNDED_PRICE
++            or p.symbol != 'par:BTC' or p.entry_side != 'BUY' or p.entry_tif != 'Ioc'
++            or decimal(p.quantity) != D('0.0002') or decimal(p.quantity_ceiling) != D('0.0002')
++            or p.team_wallet.lower() != mandate.team_wallet.lower()
++            or p.api_wallet.lower() != mandate.api_wallet.lower()
++            or p.source_hash != mandate.source_hash or p.reliability_policy_hash != mandate.reliability_policy_hash
++            or not mandate.created_ms <= p.observed_ms < mandate.expires_ms
++            or not 10 <= decimal(p.entry_notional_ceiling) <= 20
++            or decimal(p.max_buy_price) > 100000
++            or decimal(p.quantity)*decimal(p.reference_mark) > 20
++            or decimal(p.max_buy_price) > decimal(p.reference_ask)*D('1.002')):
++        raise ExchangeError('DELEGATED_PROPOSAL_OUTSIDE_ACCEPTED_SCOPE')
++    if spec is not None:
++        cap = spec.normalize_price(min(decimal(p.reference_ask)*D('1.002'), D(100000)), 'BUY')
++        floor = spec.normalize_price(decimal(p.reference_bid)*D(POLICY['exit_floor_factor']), 'SELL')
++        if (spec.symbol != p.symbol or spec.asset_id != p.asset_id
++                or spec.normalize_size(p.quantity) != decimal(p.quantity)
++                or decimal(p.max_buy_price) != cap or decimal(p.exit_bound) != floor):
++            raise ExchangeError('DELEGATED_ALGORITHMIC_ENVELOPE_OR_PRECISION_REQUIRED')
++    return p
++
++
++def propose_delegated(context, client, mandate, book, *, candidate_hash):
++    """Same objective V2 algorithm; exact quantity and $20 never auto-expand."""
++    p, checks = propose(context, client, mandate.source_hash, mandate.reliability_policy_hash,
++        book, tif='Ioc', candidate_hash=candidate_hash, price_mode=BOUNDED_PRICE)
++    validate_proposal(mandate, p, context.spec)
++    return p, checks
++
++
++class DelegatedAuthorization(EmergencyAuthorization):
++    def __init__(self, proposal, delegation, journal, *, clock_ms, source_hash, policy_hash):
++        if type(delegation) is not Delegation:
++            raise ExchangeError('DELEGATED_SESSION_CAPABILITY_REQUIRED')
++        self.delegation = delegation
++        self.mandate = delegation.mandate
++        self.runtime_token = uuid.uuid4().hex
++        super().__init__(proposal, delegation.acceptance, journal, clock_ms=clock_ms,
++            source_hash=source_hash, policy_hash=policy_hash)
++
++    def require(self, team, signer):
++        from venue_config import require_paper_migration
++        require_paper_migration()
++        m, p, now = self.mandate, self.proposal, self.clock_ms()
++        self.delegation.require(now)
++        validate_proposal(m, p)
++        if (self.revoked or self.journal.control('delegated_session_revoked:'+m.identity)
++                or self.journal.control('delegated_session_finished:'+m.identity)
++                or team.lower() != m.team_wallet.lower() or signer.lower() != m.api_wallet.lower()
++                or self.journal.team_address != m.team_wallet.lower()
++                or self.source_hash() != m.source_hash or self.policy_hash() != m.reliability_policy_hash
++                or not p.observed_ms <= now < min(m.expires_ms, p.observed_ms+300000)
++                or self.journal.control('certification_halted:'+p.identity)
++                or self.journal.control('certification_completed:'+p.identity)):
++            raise ExchangeError('DELEGATED_SESSION_REVOKED_EXPIRED_OR_IDENTITY_CHANGED')
++        registered = self.journal.control('delegated_session_active')
++        if registered and registered != m.identity:
++            raise ExchangeError('ANOTHER_DELEGATED_SESSION_REQUIRES_OPERATOR_REVIEW')
++        runtime = self.journal.control('delegated_runtime:'+m.identity)
++        if runtime and runtime != dict(proposal_id=p.identity, token=self.runtime_token):
++            raise ExchangeError('DELEGATED_RESTART_READ_ONLY_RECOVERY_REQUIRED')
++
++    def register_runtime(self):
++        self.require(self.mandate.team_wallet, self.mandate.api_wallet)
++        with self.journal.transaction():
++            # Recheck while holding the shared account transaction lock.
++            self.require(self.mandate.team_wallet, self.mandate.api_wallet)
++            if self.journal.intents() or self.journal.control('qualification_entry_consumed'):
++                raise ExchangeError('DELEGATED_ENTRY_ALREADY_CONSUMED')
++            self.journal.db.execute('INSERT OR REPLACE INTO controls VALUES (?,?)',
++                ('delegated_session_active', json.dumps(self.mandate.identity)))
++            self.journal.db.execute('INSERT OR REPLACE INTO controls VALUES (?,?)',
++                ('delegated_runtime:'+self.mandate.identity,
++                 json.dumps(dict(proposal_id=self.proposal.identity, token=self.runtime_token))))
++        self.journal.event('DELEGATED_SESSION_RUNTIME', self.clock_ms(),
++            session_id=self.mandate.identity, proposal_id=self.proposal.identity,
++            mandate=asdict(self.mandate), acceptance=asdict(self.approval))
++
++    def require_context(self, context, request):
++        self.require(self.mandate.team_wallet, self.mandate.api_wallet)
++        validate_proposal(self.mandate, self.proposal, context.spec)
++        if not request.reduce_only and (request.quantity != D('0.0002')
++                or request.price > 100000 or request.quantity*max(request.price, context.quote.mark) > 20):
++            raise ExchangeError('DELEGATED_CURRENT_TWENTY_USDPR_CAP_EXCEEDED')
++
++    def check_action(self, action):
++        # V2 still binds the selected envelope, asset, direction, IOC, cloid,
++        # exact exits, four actions, one cancel and fresh per-envelope expiry.
++        super().check_action(action)
++        if self.journal.control('delegated_runtime:'+self.mandate.identity) != dict(
++                proposal_id=self.proposal.identity, token=self.runtime_token):
++            raise ExchangeError('DELEGATED_DURABLE_RUNTIME_REQUIRED')
++        if action.get('type') == 'order' and action['orders'][0]['r'] is False:
++            wire = action['orders'][0]
++            if (decimal(wire['s']) != D('0.0002') or decimal(wire['p']) > 100000
++                    or decimal(wire['s'])*decimal(wire['p']) > 20):
++                raise ExchangeError('DELEGATED_SIGNED_ENTRY_EXCEEDS_SCOPE')
++
++    def revoke(self):
++        self.revoked = True
++        self.journal.control('delegated_session_finished:'+self.mandate.identity, self.clock_ms())
++
++
++def revoke_session(journal, mandate, now_ms, *, reason):
++    """Local durable revocation only; never an exchange cancellation or transfer."""
++    mandate.require()
++    if journal.team_address != mandate.team_wallet.lower() or not reason.strip():
++        raise ExchangeError('DELEGATED_REVOCATION_IDENTITY_REQUIRED')
++    journal.control('delegated_session_revoked:'+mandate.identity, now_ms)
++    journal.event('DELEGATED_SESSION_REVOKED', now_ms, session_id=mandate.identity, reason=reason)
+--- before/scripts/run_delegated_qualification.py
++++ after/scripts/run_delegated_qualification.py
+@@ -0,0 +1,210 @@
++"""Prepare one session mandate, or execute it only after genuine human acceptance.
++
++No per-price approval is synthesized. Production remains PAPER/false. A failed
++or uncertain entry is final; only pre-transmission public observation can repeat.
++"""
++import argparse
++from dataclasses import asdict
++from datetime import datetime, timezone
++import hashlib, json, signal, sqlite3, sys, time, uuid
++from pathlib import Path
++ROOT = Path(__file__).resolve().parents[1]
++sys.path.insert(0, str(ROOT/'algo-trading-bot'))
++from exchange.base_exchange import ExchangeError
++from exchange.paper_operations import active_source_hash, atomic_json, PaperOwner
++from exchange.qualification_watcher import prior_execution_check, source_unchanged
++from exchange.emergency_qualification import (EmergencyProposal, BOUNDED_PRICE,
++    build_runtime, require_emergency_regression, RECOVERY_STEPS)
++from exchange.delegated_qualification import (SessionMandate, SessionAcceptance, Delegation,
++    validate_proposal, ACKNOWLEDGMENTS, MODE, END_MS)
++from strategy_freeze import verify_strategy_freeze
++from venue_config import require_paper_migration
++from run_emergency_qualification import prepare, persist_price_diagnostics
++from run_testnet_qualification import current_test_receipt
++
++MARKET_BLOCKERS = {'P0_ENTRY_DEPTH_REQUIRED', 'P0_EXIT_DEPTH_REQUIRED', 'P0_SPREAD_EXCEEDED',
++    'P0_REFERENCE_DIVERGENCE_OR_CAP', 'P0_APPROVED_L2_PARTICIPATION_EXCEEDED',
++    'P0_CURRENT_PRICE_OR_CAP_REQUIRED', 'P0_APPROVED_ENVELOPE_OR_TIME_EXCEEDED',
++    'P0_ENTRY_WINDOW_CLOSED', 'P0_MINIMUM_VALID_QUANTITY_RULE_REQUIRED',
++    'QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL', 'DELEGATED_PROPOSAL_OUTSIDE_ACCEPTED_SCOPE'}
++
++
++def now_ms(): return time.time_ns()//1000000
++
++
++def require_release(receipt):
++    require_paper_migration(); verify_strategy_freeze()
++    path = require_emergency_regression(ROOT, current_test_receipt(receipt, active_source_hash(ROOT)))
++    r = json.loads(path.read_text())
++    if r['totals']['tests'] < 2115:
++        raise ExchangeError('DELEGATED_FULL_2115_BASELINE_REQUIRED')
++    return path
++
++
++def session_handoff(m, receipt, directory, observation):
++    return dict(status='AWAITING_EXPLICIT_SESSION_ACCEPTANCE', session_id=m.identity,
++        mandate=asdict(m), scope=m.scope, expiry_ist=m.scope['end_ist'],
++        entry_cutoff_ms=m.expires_ms-90000, source_hash=m.source_hash,
++        test_receipt=str(receipt), test_receipt_sha256=hashlib.sha256(Path(receipt).read_bytes()).hexdigest(),
++        required_acknowledgments=list(ACKNOWLEDGMENTS), protection_verified=False,
++        no_stop_will_be_submitted=True, exposure_cap_is_loss_guarantee=False,
++        price_updates_need_new_approval=False, scope_or_source_change_needs_new_approval=True,
++        actual_wallet_signatures=0, exchange_submissions=0, actual_fill_verified=False,
++        organizer_whitelisting_confirmed=False, normal_protection_certified=False,
++        practice_ready=False, live_ready=False, initial_read_only_observation=observation,
++        approval_procedure='Human accepts this exact session hash and all scope/risk disclosures in chat; Codex records the genuine acceptance and its current timestamp. No per-proposal human approval is invented.',
++        execute_args=['.venv/bin/python','scripts/run_delegated_qualification.py','--execute',
++            '--output-directory',str(directory/'authorized_session'), '--mandate-file',str(directory/'session_mandate.json'),
++            '--session-acceptance-file',str(directory/'session_acceptance.json'),'--test-receipt',str(receipt)],
++        recovery_steps=RECOVERY_STEPS)
++
++
++def prepare_session(directory, receipt=None):
++    directory = Path(directory).resolve(); directory.mkdir(parents=True, exist_ok=False)
++    receipt = require_release(receipt)
++    mandate = SessionMandate(uuid.uuid4().hex, now_ms(), active_source_hash(ROOT),
++        hashlib.sha256((ROOT/'configs/reliability_policy.json').read_bytes()).hexdigest()).require()
++    atomic_json(directory/'session_mandate.json', asdict(mandate))
++    atomic_json(directory/'session_acceptance_REQUIRED_UNFILLED.json', asdict(
++        SessionAcceptance(mandate.identity, '', None, None)))
++    observation = prepare(directory/'initial_read_only', receipt, duration_seconds=60,
++        route='ioc', transport='rest', price_mode=BOUNDED_PRICE)
++    # This is only a current example. Its short-lived price approval is unused;
++    # future fresh envelopes will instead be validated against the session.
++    if observation.get('proposal'):
++        try: validate_proposal(mandate, EmergencyProposal(**observation['proposal']))
++        except ExchangeError as exc: observation['delegated_scope_blocker'] = str(exc)
++    handoff = session_handoff(mandate, receipt, directory, observation)
++    if observation['status'] == 'QUALIFICATION_LOCKED' and observation.get('blocker') not in MARKET_BLOCKERS:
++        handoff.update(status='SESSION_PREPARATION_BLOCKED', blocker=observation.get('blocker'))
++    source_unchanged(ROOT, mandate.source_hash, mandate.reliability_policy_hash)
++    atomic_json(directory/'session_handoff.json', handoff)
++    return handoff
++
++
++def require_unused_runtime(mandate):
++    prior_execution_check(ROOT)
++    path = ROOT/'runtime/testnet/anchorium-bot-1/qualification.sqlite'
++    if not path.exists(): return
++    with sqlite3.connect(path.as_uri()+'?mode=ro', uri=True) as db:
++        controls = {n:json.loads(v) for n,v in db.execute('SELECT name,value FROM controls')
++            if n.startswith('delegated_')}
++    if (controls.get('delegated_session_active') not in {None, mandate.identity}
++            or any(controls.get(k+mandate.identity) for k in
++                ('delegated_runtime:', 'delegated_session_finished:', 'delegated_session_revoked:'))):
++        raise ExchangeError('DELEGATED_EXISTING_RUNTIME_READ_ONLY_RECOVERY_REQUIRED')
++
++
++def execute_session(directory, delegation, receipt):
++    directory = Path(directory).resolve(); directory.mkdir(parents=True, exist_ok=False)
++    result = dict(status='READ_ONLY_OBSERVATION', mode=MODE, session_id=delegation.mandate.identity,
++        actual_fill_verified=False, organizer_whitelisting_confirmed=False,
++        protection_verified=False, production_mode='PAPER', allow_live_orders=False,
++        observations=[], authorized_entry_attempted=False)
++    owner = runtime = None; old_handlers = {}
++    def stopped(signum, frame):
++        atomic_json(Path(delegation.acceptance_path).with_name('session_revocation.json'),
++            dict(session_id=delegation.mandate.identity, revoked_ms=now_ms(), reason='OPERATOR_PROCESS_SIGNAL'))
++        raise ExchangeError('DELEGATED_SESSION_REVOKED')
++    try:
++        # Acceptance is checked before any actual-key runtime is constructed.
++        delegation.require(now_ms()); receipt = require_release(receipt)
++        source_unchanged(ROOT, delegation.mandate.source_hash, delegation.mandate.reliability_policy_hash)
++        require_unused_runtime(delegation.mandate)
++        owner = PaperOwner(ROOT/'runtime/testnet/anchorium-bot-1/delegated-session.lock')
++        for signum in (signal.SIGINT, signal.SIGTERM): old_handlers[signum] = signal.signal(signum, stopped)
++        index = 0
++        while True:
++            delegation.require(now_ms())
++            if now_ms()+90000 >= delegation.mandate.expires_ms:
++                result['status']='SESSION_ENTRY_WINDOW_CLOSED_NO_SUBMISSION'; break
++            source_unchanged(ROOT, delegation.mandate.source_hash, delegation.mandate.reliability_policy_hash)
++            require_unused_runtime(delegation.mandate)
++            index += 1
++            observed = prepare(directory/('observation_'+str(index)), receipt,
++                duration_seconds=60, route='ioc', transport='rest', price_mode=BOUNDED_PRICE)
++            result['observations'].append(dict(directory='observation_'+str(index),
++                status=observed['status'], blocker=observed.get('blocker'), at_ms=now_ms()))
++            atomic_json(directory/'session_report.json', result)
++            delegation.require(now_ms())
++            if observed.get('source_hash_after') != delegation.mandate.source_hash:
++                raise ExchangeError('QUALIFICATION_SOURCE_CHANGED')
++            if observed['status']=='QUALIFICATION_LOCKED' and observed.get('blocker') not in MARKET_BLOCKERS:
++                raise ExchangeError(observed.get('blocker') or 'DELEGATED_READINESS_FAILED')
++            if not observed.get('proposal') or observed['status']=='QUALIFICATION_LOCKED':
++                time.sleep(1); continue
++            p = EmergencyProposal(**observed['proposal'])
++            try:
++                validate_proposal(delegation.mandate, p)
++                runtime = build_runtime(ROOT, p, None, test_receipt=receipt, delegation=delegation)
++            except ExchangeError as exc:
++                persist_price_diagnostics(directory, p)
++                require_unused_runtime(delegation.mandate)
++                if str(exc) not in MARKET_BLOCKERS: raise
++                result['observations'][-1]['final_preflight_blocker']=str(exc)
++                time.sleep(1); continue
++            # This consumes the entire one-off workflow, whatever its outcome.
++            # Any local durable intent or uncertainty ends observation/repricing.
++            result['authorized_entry_attempted']=True
++            actual = runtime.run()
++            result.update(status=actual['status'], execution=actual, proposal_id=p.identity,
++                actual_fill_verified=actual['whitelist_trade_proof']['fill_verified'],
++                final_flat_verified=actual['whitelist_trade_proof']['final_flat_verified'])
++            proof = dict(actual['whitelist_trade_proof'], delegated_session_id=delegation.mandate.identity,
++                session_acceptance_hash=hashlib.sha256(Path(delegation.acceptance_path).read_bytes()).hexdigest())
++            atomic_json(directory/('WHITELIST_TRADE_PROOF.json' if proof['fill_verified'] else 'NO_FILL_VERIFICATION.json'), proof)
++            runtime.close(); runtime=None
++            persist_price_diagnostics(directory, p)
++            break
++    except Exception as exc:
++        result.update(status='SESSION_HALTED', blocker=str(exc) if isinstance(exc,ExchangeError) else type(exc).__name__,
++            recovery_steps=RECOVERY_STEPS)
++        # A failure after any attempt is unresolved until exchange reconciliation.
++        try: prior_execution_check(ROOT)
++        except ExchangeError:
++            result.update(status='EMERGENCY_EXIT_REQUIRED', operator_action_required=True)
++    finally:
++        if runtime:
++            try: runtime.close()
++            except Exception as exc: result['cleanup_error']=type(exc).__name__
++        if owner: owner.close()
++        for signum, handler in old_handlers.items(): signal.signal(signum, handler)
++        result.update(finished_ms=now_ms(), practice_ready=False, live_ready=False,
++            no_automatic_entry_retry=True, source_hash_after=active_source_hash(ROOT))
++        atomic_json(directory/'session_report.json', result)
++    return result
++
++
++def main():
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('--output-directory'); parser.add_argument('--test-receipt')
++    parser.add_argument('--execute', action='store_true'); parser.add_argument('--revoke', action='store_true')
++    parser.add_argument('--mandate-file'); parser.add_argument('--session-acceptance-file')
++    args = parser.parse_args()
++    if args.revoke:
++        if args.execute or not args.mandate_file or not args.session_acceptance_file:
++            parser.error('Revocation requires mandate/acceptance paths and forbids execution.')
++        m = SessionMandate(**json.loads(Path(args.mandate_file).read_text())).require()
++        path=Path(args.session_acceptance_file).with_name('session_revocation.json')
++        atomic_json(path, dict(session_id=m.identity, revoked_ms=now_ms(), reason='OPERATOR_REVOCATION'))
++        print(json.dumps(dict(status='SESSION_REVOKED', exchange_submissions=0))); return 0
++    if not args.output_directory: parser.error('An evidence output directory is required.')
++    if args.execute:
++        if not all((args.mandate_file,args.session_acceptance_file,args.test_receipt)):
++            parser.error('Genuine session acceptance, mandate and source-bound regression receipt required.')
++        m=SessionMandate(**json.loads(Path(args.mandate_file).read_text()))
++        acceptance=SessionAcceptance(**json.loads(Path(args.session_acceptance_file).read_text()))
++        delegation=Delegation(m,acceptance,str(Path(args.session_acceptance_file).resolve()))
++        result=execute_session(args.output_directory,delegation,args.test_receipt)
++    else:
++        if args.mandate_file or args.session_acceptance_file: parser.error('Read-only preparation cannot consume acceptance.')
++        result=prepare_session(args.output_directory,args.test_receipt)
++    print(json.dumps({k:result.get(k) for k in ('status','blocker','session_id','scope','expiry_ist',
++        'actual_fill_verified','final_flat_verified','protection_verified')},indent=2))
++    return 1 if result['status'] in {'SESSION_HALTED','SESSION_PREPARATION_BLOCKED','EMERGENCY_EXIT_REQUIRED'} else 0
++
++
++if __name__=='__main__':
++    try: raise SystemExit(main())
++    except ExchangeError as exc:
++        print(json.dumps(dict(status='SESSION_LOCKED',blocker=str(exc)))); raise SystemExit(1)
+--- before/algo-trading-bot/test_delegated_qualification.py
++++ after/algo-trading-bot/test_delegated_qualification.py
+@@ -0,0 +1,359 @@
++"""Delegated authorization over real execution composition, no actual exchange.
++
++Ephemeral fixtures and simulated fills never certify team trading or protection.
++"""
++from copy import deepcopy
++from dataclasses import asdict, replace
++from decimal import Decimal as D
++from datetime import datetime, timezone, timedelta
++import importlib.util, json
++from pathlib import Path
++from types import SimpleNamespace
++import pytest
++from exchange.base_exchange import ExchangeError
++from exchange.delegated_qualification import (SessionMandate, SessionAcceptance, Delegation,
++    DelegatedAuthorization, SESSION_SCOPE, ACKNOWLEDGMENTS, validate_proposal, revoke_session)
++from exchange.emergency_qualification import (EmergencySequence, EmergencyComplianceScope,
++    permission, build_runtime)
++from test_qualification_price_guard import bounded, moved, move_venue, draft
++from test_emergency_qualification import emergency
++from test_live_exchange_execution import live, response
++from test_exchange_migration import NOW
++
++
++@pytest.fixture
++def delegated(bounded, monkeypatch, tmp_path):
++    import exchange.delegated_qualification as module
++    monkeypatch.setattr(module, 'START_MS', NOW-3600000)
++    monkeypatch.setattr(module, 'END_MS', NOW+8*3600000)
++    c = bounded
++    m = SessionMandate('ab'*16, NOW, 'fixture-source', 'fixture-policy',
++        team_wallet=c.p.team_wallet, api_wallet=c.p.api_wallet, expires_ms=module.END_MS).require()
++    a = SessionAcceptance(m.identity, 'SYNTHETIC_EXPLICIT_SESSION_ACCEPTANCE', NOW, m.expires_ms,
++        **{k:True for k in ACKNOWLEDGMENTS})
++    path=tmp_path/'session_acceptance.json';path.write_text(json.dumps(asdict(a)))
++    delegation=Delegation(m,a,str(path))
++    auth=DelegatedAuthorization(c.p,delegation,c.live.journal,clock_ms=lambda:c.live.fixture.now,
++        source_hash=lambda:'fixture-source',policy_hash=lambda:'fixture-policy')
++    auth.register_runtime()
++    c.m,c.a,c.delegation,c.auth,c.acceptance_path=m,a,delegation,auth,path
++    c.venue.auth=auth;c.live.transport.authorization=auth
++    c.sequence=EmergencySequence(c.live.executor,c.p,auth)
++    return c
++
++
++def replace_acceptance(c, **values):
++    a=replace(c.a,**values);c.acceptance_path.write_text(json.dumps(asdict(a)))
++    c.auth.delegation=replace(c.delegation,acceptance=a);c.auth.approval=a
++
++
++def test_real_calendar_end_is_october_14_2359_ist():
++    import exchange.delegated_qualification as module
++    ist=timezone(timedelta(hours=5,minutes=30))
++    assert datetime.fromtimestamp(module.END_MS/1000,ist).isoformat()=='2026-10-14T23:59:00+05:30'
++    assert SESSION_SCOPE['maximum_opening_notional']=='20'
++    assert SESSION_SCOPE['quantity']=='0.0002' and SESSION_SCOPE['maximum_buy_price']=='100000'
++
++
++@pytest.mark.parametrize('key,value',[('network','mainnet'),('dex','pa'),('symbol','par:ETH'),
++    ('quantity','0.0003'),('maximum_opening_notional','1000'),('maximum_buy_price','100001'),
++    ('leverage',2),('margin_mode','isolated'),('side','SELL'),('tif','Gtc'),
++    ('entry_attempts',2),('exit_attempts',3),('signed_actions',5),('l2_participation','1'),
++    ('qualification_spread_bps','51'),('protection','VERIFIED')])
++def test_mandate_cannot_enlarge_or_change_scope(delegated,key,value):
++    scope=dict(delegated.m.scope,**{key:value})
++    with pytest.raises(ExchangeError):replace(delegated.m,scope=scope).require()
++    assert not delegated.venue.calls
++
++
++@pytest.mark.parametrize('field', ACKNOWLEDGMENTS)
++def test_every_genuine_session_risk_acknowledgment_required(delegated,field):
++    c=delegated;replace_acceptance(c,**{field:False})
++    result=c.sequence.run()
++    assert result['status']=='PREFLIGHT_BLOCKED'
++    assert not c.venue.calls and not c.live.transport.signed_payloads
++
++
++@pytest.mark.parametrize('field,value',[('session_hash','wrong-session'),('operator_acceptance',''),
++    ('accepted_ms',NOW+1),('accepted_ms',NOW-1),('expires_ms',NOW),('expires_ms',NOW+8*3600000+1)])
++def test_session_acceptance_is_not_synthesized_or_backdated(delegated,field,value):
++    c=delegated;replace_acceptance(c,**{field:value})
++    assert c.sequence.run()['status']=='PREFLIGHT_BLOCKED' and not c.venue.calls
++
++
++@pytest.mark.parametrize('how',['file','durable','missing','changed'])
++def test_revocation_or_acceptance_file_change_blocks_signing(delegated,how):
++    c=delegated
++    if how=='file':c.acceptance_path.with_name('session_revocation.json').write_text('{}')
++    if how=='durable':revoke_session(c.live.journal,c.m,NOW,reason='SYNTHETIC_REVOKE')
++    if how=='missing':c.acceptance_path.unlink()
++    if how=='changed':c.acceptance_path.write_text(json.dumps(dict(asdict(c.a),operator_acceptance='other')))
++    assert c.sequence.run()['status']=='PREFLIGHT_BLOCKED' and not c.live.transport.signed_payloads
++
++
++@pytest.mark.parametrize('what',['source','policy','signer','team','expiry'])
++def test_identity_source_and_expiry_are_session_bound(delegated,what):
++    c=delegated
++    if what=='source':c.auth.source_hash=lambda:'changed-source'
++    if what=='policy':c.auth.policy_hash=lambda:'changed-policy'
++    if what=='expiry':c.live.fixture.now=c.m.expires_ms
++    if what in {'signer','team'}:
++        with pytest.raises(ExchangeError):
++            c.auth.require('0x'+'3'*40 if what=='team' else c.m.team_wallet,
++                '0x'+'4'*40 if what=='signer' else c.m.api_wallet)
++    else:assert c.sequence.run()['status']=='PREFLIGHT_BLOCKED'
++    assert not c.venue.calls
++
++
++@pytest.mark.parametrize('bid,ask',[('83380','83420'),('83440','83470'),('83560','83600')])
++def test_session_uses_existing_fresh_price_rule_in_real_composition(delegated,bid,ask):
++    c=delegated;move_venue(c,bid,ask)
++    result=c.sequence.run()
++    assert result['status']=='TRADE_CLOSED_RECONCILED',result
++    entry=c.venue.calls[0]['orders'][0]
++    assert D(entry['s'])==D('.0002') and D(entry['p'])*D(entry['s'])<=20
++    assert D(entry['p'])==min(c.context.spec.normalize_price(D(ask)*D('1.001'),'BUY'),D(c.p.max_buy_price))
++    assert result['final_flat'] and not result['protection_accepted']
++    assert not result['certification_passed'] and not result['live_ready']
++
++
++@pytest.mark.parametrize('field,value',[('symbol','par:ETH'),('quantity','.0003'),('max_buy_price','110000'),
++    ('source_hash','other'),('reliability_policy_hash','other'),('price_authorization_mode','FIXED_LIMIT_V1')])
++def test_generated_proposal_must_fit_session_not_outer_thousand_cap(delegated,field,value):
++    c=delegated;values={field:value}
++    if field=='quantity':values.update(quantity_ceiling=value,entry_notional_ceiling=str(D(value)*D(c.p.entry_limit)))
++    if field=='max_buy_price':values.update(entry_limit=value,entry_notional_ceiling=str(D(value)*D(c.p.quantity)))
++    with pytest.raises(ExchangeError):validate_proposal(c.m,replace(c.p,**values))
++
++
++def test_current_mark_exposure_cannot_exceed_twenty(delegated):
++    c=delegated;ctx,book=moved(c,'83400','83440',mark='100001',oracle='100001')
++    with pytest.raises(ExchangeError,match='TWENTY'):
++        c.auth.require_context(ctx,draft(c))
++    assert not c.live.transport.signed_payloads
++
++
++def test_floor_is_derived_from_reviewed_bid_not_discretionary(delegated):
++    c=delegated;p=replace(c.p,exit_bound='82000',stop_limit='82000').require()
++    with pytest.raises(ExchangeError,match='ALGORITHMIC'):
++        validate_proposal(c.m,p,c.context.spec)
++
++
++def test_stale_quote_preserves_existing_entry_guard(delegated):
++    c=delegated;c.live.fixture.book['time']=NOW-5001
++    assert c.sequence.run()['status'] in {'PREFLIGHT_BLOCKED','EMERGENCY_EXIT_REQUIRED'}
++    assert not c.venue.calls
++
++
++@pytest.mark.parametrize('fraction',['0','.5','1'])
++def test_actual_quantity_zero_partial_full_is_reconciled_without_repeat(delegated,fraction):
++    c=delegated;c.venue.partial_entry=D(fraction);result=c.sequence.run()
++    assert result['status']==('NO_FILL_VERIFIED' if fraction=='0' else 'TRADE_CLOSED_RECONCILED'),result
++    assert len([a for a in c.venue.calls if not a['orders'][0]['r']])==1
++    assert result['final_flat']
++    if fraction!='0':assert D(c.venue.calls[-1]['orders'][0]['s'])==D('.0002')*D(fraction)
++    with pytest.raises(ExchangeError):c.auth.require(c.m.team_wallet,c.m.api_wallet)
++
++
++@pytest.mark.parametrize('fail',['entry_rejected','timeout_before','timeout_after_fill','disconnect_after_fill'])
++def test_uncertain_or_rejected_entry_never_refreshes_into_second_entry(delegated,fail):
++    c=delegated;c.venue.fail=fail;result=c.sequence.run()
++    assert len([a for a in c.venue.calls if not a['orders'][0]['r']])==1
++    assert result['status']=={'entry_rejected':'NO_FILL_VERIFIED','timeout_after_fill':'TRADE_CLOSED_RECONCILED'}.get(fail,'EMERGENCY_EXIT_REQUIRED')
++
++
++def test_partial_exit_handles_one_lot_exact_residual(delegated):
++    c=delegated;c.venue.partial_exit=D('.6');result=c.sequence.run()
++    assert result['status']=='TRADE_CLOSED_RECONCILED',result
++    assert [D(a['orders'][0]['s']) for a in c.venue.calls]==[D('.0002'),D('.0002'),D('.0001')]
++
++
++def test_rejected_exits_halt_and_preserve_unprotected_residual(delegated,monkeypatch):
++    c=delegated;original=c.venue.transmit
++    def rejected(payload):
++        if payload['action']['orders'][0]['r']:
++            c.auth.claim_transmission(payload['action']);c.venue.calls.append(deepcopy(payload['action']))
++            return response({'error':'Order must have minimum value of $10.'})
++        return original(payload)
++    monkeypatch.setattr(c.live.transport,'transmit',rejected)
++    result=c.sequence.run()
++    assert result['status']=='EMERGENCY_EXIT_REQUIRED' and not result.get('final_flat')
++    assert len(c.venue.calls)==3 and c.live.account.get_position('par:BTC')
++
++
++def test_restart_cannot_resume_a_registered_runtime_even_without_order(delegated):
++    c=delegated
++    fresh=DelegatedAuthorization(c.p,c.delegation,c.live.journal,clock_ms=lambda:NOW,
++        source_hash=lambda:'fixture-source',policy_hash=lambda:'fixture-policy')
++    with pytest.raises(ExchangeError,match='RESTART_READ_ONLY'):fresh.require(c.m.team_wallet,c.m.api_wallet)
++    assert not c.venue.calls
++
++
++def test_duplicate_submit_returns_original_intent_and_price(delegated):
++    c=delegated;c.live.executor.entries_paused=False;req=draft(c)
++    first=c.live.executor.submit(req,permission=permission(req,c.p,NOW))
++    move_venue(c,'83380','83420')
++    second=c.live.executor.submit(req,permission=permission(req,c.p,NOW))
++    assert first.cloid==second.cloid and first.request.price==second.request.price
++    assert len(c.venue.calls)==1
++
++
++def test_future_envelope_needs_no_fabricated_human_price_approval(delegated):
++    c=delegated;p=replace(c.p,observed_ms=NOW+1000,candidate_evidence_hash='new-book-hash')
++    validate_proposal(c.m,p,c.context.spec)
++    assert p.identity!=c.p.identity and c.a.session_hash==c.m.identity
++    assert not hasattr(c.a,'proposal_hash') and not hasattr(c.a,'approved_ms')
++
++
++def test_revocation_after_filling_prevents_further_writes_and_escalates(delegated,monkeypatch):
++    c=delegated;original=c.venue.transmit
++    def transmit(payload):
++        result=original(payload)
++        if not payload['action']['orders'][0]['r']:
++            revoke_session(c.live.journal,c.m,NOW,reason='SYNTHETIC_POST_FILL_REVOCATION')
++        return result
++    monkeypatch.setattr(c.live.transport,'transmit',transmit)
++    result=c.sequence.run()
++    assert result['status']=='EMERGENCY_EXIT_REQUIRED' and c.live.account.get_position('par:BTC')
++    assert len(c.venue.calls)==1 and not result.get('final_flat')
++
++
++def launcher(monkeypatch):
++    root=Path(__file__).resolve().parents[1];monkeypatch.syspath_prepend(str(root/'scripts'))
++    spec=importlib.util.spec_from_file_location('delegated_fixture_launcher',root/'scripts/run_delegated_qualification.py')
++    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
++
++
++def test_missing_acceptance_cannot_even_start_readiness_or_sdk(delegated,monkeypatch,tmp_path):
++    c=delegated;module=launcher(monkeypatch);c.acceptance_path.unlink()
++    def forbidden(*a,**k):raise AssertionError('ACTUAL_PREPARATION_OR_SIGNER_PROHIBITED')
++    monkeypatch.setattr(module,'prepare',forbidden);monkeypatch.setattr(module,'build_runtime',forbidden)
++    result=module.execute_session(tmp_path/'never_signed',c.delegation,tmp_path/'receipt.json')
++    assert result['status']=='SESSION_HALTED' and not result['authorized_entry_attempted']
++
++
++def test_legacy_exact_proposal_route_does_not_accept_session_object(delegated):
++    from exchange.emergency_qualification import EmergencyAuthorization
++    c=delegated;auth=EmergencyAuthorization(c.p,c.a,c.live.journal,clock_ms=lambda:NOW,
++        source_hash=lambda:'fixture-source',policy_hash=lambda:'fixture-policy')
++    with pytest.raises(ExchangeError):auth.require(c.m.team_wallet,c.m.api_wallet)
++
++
++def test_session_acceptance_template_stays_blank(delegated):
++    c=delegated;template=asdict(SessionAcceptance(c.m.identity,'',None,None))
++    assert template['operator_acceptance']=='' and template['accepted_ms'] is None
++    assert all(template[k] is False for k in ACKNOWLEDGMENTS)
++
++
++def test_per_envelope_expiry_still_applies_during_long_session(delegated):
++    c=delegated;c.live.fixture.now=NOW+300000
++    assert c.live.fixture.now<c.m.expires_ms
++    with pytest.raises(ExchangeError):c.auth.require(c.m.team_wallet,c.m.api_wallet)
++    assert not c.venue.calls
++
++
++def runner_fixture(c,monkeypatch,tmp_path):
++    module=launcher(monkeypatch);monkeypatch.setattr(module,'ROOT',tmp_path)
++    monkeypatch.setattr(module,'require_release',lambda receipt:receipt)
++    monkeypatch.setattr(module,'source_unchanged',lambda *a:None)
++    monkeypatch.setattr(module,'require_unused_runtime',lambda *a:None)
++    monkeypatch.setattr(module,'prior_execution_check',lambda *a:None)
++    monkeypatch.setattr(module,'persist_price_diagnostics',lambda *a:None)
++    monkeypatch.setattr(module,'PaperOwner',lambda *a:SimpleNamespace(close=lambda:None))
++    monkeypatch.setattr(module.time,'sleep',lambda seconds:None)
++    clock=[NOW];monkeypatch.setattr(module,'now_ms',lambda:clock[0])
++    return module,clock
++
++
++def observed(c,**kwargs):
++    return dict(status='AWAITING_EXACT_HUMAN_RISK_APPROVAL',source_hash_after='fixture-source',
++        proposal=asdict(c.p),**kwargs)
++
++
++def test_read_only_observation_can_wait_until_cutoff_without_any_runtime(delegated,monkeypatch,tmp_path):
++    c=delegated;module,clock=runner_fixture(c,monkeypatch,tmp_path)
++    def prepare(*a,**k):
++        clock[0]=c.m.expires_ms-60000
++        return dict(status='NO_CURRENT_QUALIFICATION_PROPOSAL',source_hash_after='fixture-source')
++    monkeypatch.setattr(module,'prepare',prepare)
++    def forbidden(*a,**k):raise AssertionError('NO_ELIGIBLE_MARKET_MUST_NOT_CONSTRUCT_SIGNER')
++    monkeypatch.setattr(module,'build_runtime',forbidden)
++    result=module.execute_session(tmp_path/'observation_only',c.delegation,tmp_path/'receipt')
++    assert result['status']=='SESSION_ENTRY_WINDOW_CLOSED_NO_SUBMISSION'
++    assert not result['authorized_entry_attempted'] and len(result['observations'])==1
++
++
++def test_revocation_after_read_only_refresh_prevents_runtime_construction(delegated,monkeypatch,tmp_path):
++    c=delegated;module,clock=runner_fixture(c,monkeypatch,tmp_path)
++    def prepare(*a,**k):
++        c.acceptance_path.with_name('session_revocation.json').write_text('{}');return observed(c)
++    monkeypatch.setattr(module,'prepare',prepare)
++    def forbidden(*a,**k):raise AssertionError('REVOKED_SESSION_MUST_NOT_CONSTRUCT_SIGNER')
++    monkeypatch.setattr(module,'build_runtime',forbidden)
++    result=module.execute_session(tmp_path/'revoked_during_reads',c.delegation,tmp_path/'receipt')
++    assert result['status']=='SESSION_HALTED' and not result['authorized_entry_attempted']
++
++
++@pytest.mark.parametrize('blocker',['ACCOUNT_NOT_READY','API_WALLET_EXPIRED','EXCHANGE_CONTEXT_UNAVAILABLE'])
++def test_account_or_signing_failure_is_never_read_only_retry_permission(delegated,monkeypatch,tmp_path,blocker):
++    c=delegated;module,clock=runner_fixture(c,monkeypatch,tmp_path)
++    monkeypatch.setattr(module,'prepare',lambda *a,**k:dict(status='QUALIFICATION_LOCKED',blocker=blocker,
++        source_hash_after='fixture-source'))
++    def forbidden(*a,**k):raise AssertionError('UNHEALTHY_ACCOUNT_MUST_NOT_CONSTRUCT_SIGNER')
++    monkeypatch.setattr(module,'build_runtime',forbidden)
++    result=module.execute_session(tmp_path/'unhealthy',c.delegation,tmp_path/'receipt')
++    assert result['status']=='SESSION_HALTED' and not result['authorized_entry_attempted']
++    assert len(result['observations'])==1
++
++
++def test_pre_transmission_price_rejection_allows_only_new_reads_then_one_workflow(delegated,monkeypatch,tmp_path):
++    c=delegated;module,clock=runner_fixture(c,monkeypatch,tmp_path);builds=[];runs=[]
++    monkeypatch.setattr(module,'prepare',lambda *a,**k:observed(c))
++    def run():
++        runs.append(1);return dict(status='NO_FILL_VERIFIED',final_flat=True,
++            whitelist_trade_proof=dict(fill_verified=False,final_flat_verified=True))
++    runtime=SimpleNamespace(run=run,close=lambda:None)
++    def build(*a,**k):
++        builds.append(k)
++        if len(builds)==1:raise ExchangeError('P0_CURRENT_PRICE_OR_CAP_REQUIRED')
++        return runtime
++    monkeypatch.setattr(module,'build_runtime',build)
++    result=module.execute_session(tmp_path/'bounded',c.delegation,tmp_path/'receipt')
++    assert result['status']=='NO_FILL_VERIFIED' and len(builds)==2 and len(runs)==1
++    assert all(k['delegation'] is c.delegation for k in builds)
++    assert (tmp_path/'bounded/NO_FILL_VERIFICATION.json').exists()
++    assert not (tmp_path/'bounded/WHITELIST_TRADE_PROOF.json').exists()
++
++
++def test_runtime_result_uncertain_ends_session_instead_of_observing_another_entry(delegated,monkeypatch,tmp_path):
++    c=delegated;module,clock=runner_fixture(c,monkeypatch,tmp_path);reads=[]
++    def prepare(*a,**k):reads.append(1);return observed(c)
++    monkeypatch.setattr(module,'prepare',prepare)
++    runtime=SimpleNamespace(run=lambda:dict(status='EMERGENCY_EXIT_REQUIRED',operator_action_required=True,
++        whitelist_trade_proof=dict(fill_verified=False,final_flat_verified=False)),close=lambda:None)
++    monkeypatch.setattr(module,'build_runtime',lambda *a,**k:runtime)
++    result=module.execute_session(tmp_path/'uncertain',c.delegation,tmp_path/'receipt')
++    assert result['status']=='EMERGENCY_EXIT_REQUIRED' and len(reads)==1
++    assert not result['final_flat_verified']
++
++
++def test_actual_transport_expiry_is_short_envelope_not_whole_session(delegated,monkeypatch):
++    from exchange.emergency_qualification import EmergencySDKTransport
++    from exchange.sdk_transport import OfficialSDKTransport
++    c=delegated;called=[]
++    def initialized(*a,**k):called.append(1)
++    monkeypatch.setattr(OfficialSDKTransport,'__init__',initialized)
++    transport=EmergencySDKTransport(c.live.client,c.live.signer,c.m.team_wallet,c.live.nonces,c.auth,
++        rate_limits=c.live.rate)
++    assert called==[1] and transport.action_expiry_ms==NOW+300000
++    assert transport.action_expiry_ms<c.m.expires_ms
++
++
++def test_price_guard_new_final_read_rejects_abrupt_move_even_with_session(delegated):
++    c=delegated;ctx,book=moved(c,'83400','83440')
++    from exchange.emergency_qualification import calculate_bounded_entry
++    req=calculate_bounded_entry(ctx,c.p,NOW,book);c.live.executor.entries_paused=False
++    move_venue(c,'83270','83300')
++    with pytest.raises(ExchangeError,match='P0_CURRENT_PRICE_OR_CAP_REQUIRED'):
++        c.live.executor._guard(ctx,NOW,entry=True,entry_request=req)
++    assert not c.live.transport.signed_payloads

@@ -1,0 +1,2799 @@
+{
+  "par:BRENT": {
+    "observations": 15,
+    "dates": 1,
+    "stages": [
+      {
+        "stage": "TOTAL_MARKETS_SEEN",
+        "passed": 15,
+        "failed": 0,
+        "reached": 15,
+        "admission_survivors": 15,
+        "admission_percent_of_previous": 100.0,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 100.0,
+        "pass_percent_of_reached": 100.0,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "VALID_MARKET_IDENTITY",
+        "passed": 15,
+        "failed": 0,
+        "reached": 15,
+        "admission_survivors": 15,
+        "admission_percent_of_previous": 100.0,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 100.0,
+        "pass_percent_of_reached": 100.0,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "MARKET_DATA_HEALTHY",
+        "passed": 2,
+        "failed": 8,
+        "reached": 10,
+        "admission_survivors": 2,
+        "admission_percent_of_previous": 13.333333333333334,
+        "not_reached": 0,
+        "not_observed": 5,
+        "percent_of_observations": 13.333333333333334,
+        "pass_percent_of_reached": 20.0,
+        "rejection_reasons": {
+          "STALE_CANDLE": 8
+        }
+      },
+      {
+        "stage": "ENOUGH_HISTORY",
+        "passed": 10,
+        "failed": 5,
+        "reached": 15,
+        "admission_survivors": 2,
+        "admission_percent_of_previous": 100.0,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 66.66666666666667,
+        "pass_percent_of_reached": 66.66666666666667,
+        "rejection_reasons": {
+          "INSUFFICIENT_HISTORY": 5
+        }
+      },
+      {
+        "stage": "LIQUIDITY_PASS",
+        "passed": 2,
+        "failed": 0,
+        "reached": 2,
+        "admission_survivors": 2,
+        "admission_percent_of_previous": 100.0,
+        "not_reached": 0,
+        "not_observed": 13,
+        "percent_of_observations": 13.333333333333334,
+        "pass_percent_of_reached": 100.0,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "SPREAD_PASS",
+        "passed": 2,
+        "failed": 0,
+        "reached": 2,
+        "admission_survivors": 2,
+        "admission_percent_of_previous": 100.0,
+        "not_reached": 0,
+        "not_observed": 13,
+        "percent_of_observations": 13.333333333333334,
+        "pass_percent_of_reached": 100.0,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "ATR_PASS",
+        "passed": 0,
+        "failed": 2,
+        "reached": 2,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": 0.0,
+        "not_reached": 0,
+        "not_observed": 13,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "ATR_BELOW_SCANNER_FLOOR": 2
+        }
+      },
+      {
+        "stage": "SCANNER_QUALIFIED",
+        "passed": 0,
+        "failed": 15,
+        "reached": 15,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "INSUFFICIENT_HISTORY": 5,
+          "ATR_BELOW_SCANNER_FLOOR": 2,
+          "STALE_CANDLE": 8
+        }
+      },
+      {
+        "stage": "TOP3_SELECTED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "STRATEGY_EVALUATED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "SIGNAL_GENERATED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "BIAS_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "ANTI_SPAM_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "FRICTION_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "RISK_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "EXECUTION_PERMISSION",
+        "passed": 0,
+        "failed": 15,
+        "reached": 15,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "INSUFFICIENT_HISTORY": 5,
+          "ATR_BELOW_SCANNER_FLOOR": 2,
+          "STALE_CANDLE": 8
+        }
+      },
+      {
+        "stage": "ORDER_ATTEMPTED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "FILLED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "TRADE_COMPLETED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      }
+    ],
+    "first_blocking_reasons": {
+      "INSUFFICIENT_HISTORY": 5,
+      "ATR_BELOW_SCANNER_FLOOR": 2,
+      "STALE_CANDLE": 8
+    },
+    "first_blocking_percent_of_observations": {
+      "INSUFFICIENT_HISTORY": 33.333333333333336,
+      "ATR_BELOW_SCANNER_FLOOR": 13.333333333333334,
+      "STALE_CANDLE": 53.333333333333336
+    },
+    "all_observed_failures": {
+      "INSUFFICIENT_HISTORY": 5,
+      "ATR_BELOW_SCANNER_FLOOR": 2,
+      "STALE_CANDLE": 8
+    },
+    "bottleneck_status": "INSUFFICIENT OBSERVATIONS",
+    "top_bottlenecks": [],
+    "note": "Counts are unique market-cycle candidates; stages reflect observed production checks. NOT_OBSERVED is not PASS. Existing decision order is retained, including combined friction/risk checks."
+  },
+  "par:BTC": {
+    "observations": 15,
+    "dates": 1,
+    "stages": [
+      {
+        "stage": "TOTAL_MARKETS_SEEN",
+        "passed": 15,
+        "failed": 0,
+        "reached": 15,
+        "admission_survivors": 15,
+        "admission_percent_of_previous": 100.0,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 100.0,
+        "pass_percent_of_reached": 100.0,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "VALID_MARKET_IDENTITY",
+        "passed": 15,
+        "failed": 0,
+        "reached": 15,
+        "admission_survivors": 15,
+        "admission_percent_of_previous": 100.0,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 100.0,
+        "pass_percent_of_reached": 100.0,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "MARKET_DATA_HEALTHY",
+        "passed": 2,
+        "failed": 4,
+        "reached": 6,
+        "admission_survivors": 2,
+        "admission_percent_of_previous": 13.333333333333334,
+        "not_reached": 0,
+        "not_observed": 9,
+        "percent_of_observations": 13.333333333333334,
+        "pass_percent_of_reached": 33.333333333333336,
+        "rejection_reasons": {
+          "STALE_CANDLE": 4
+        }
+      },
+      {
+        "stage": "ENOUGH_HISTORY",
+        "passed": 6,
+        "failed": 9,
+        "reached": 15,
+        "admission_survivors": 2,
+        "admission_percent_of_previous": 100.0,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 40.0,
+        "pass_percent_of_reached": 40.0,
+        "rejection_reasons": {
+          "INSUFFICIENT_HISTORY": 9
+        }
+      },
+      {
+        "stage": "LIQUIDITY_PASS",
+        "passed": 2,
+        "failed": 0,
+        "reached": 2,
+        "admission_survivors": 2,
+        "admission_percent_of_previous": 100.0,
+        "not_reached": 0,
+        "not_observed": 13,
+        "percent_of_observations": 13.333333333333334,
+        "pass_percent_of_reached": 100.0,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "SPREAD_PASS",
+        "passed": 0,
+        "failed": 2,
+        "reached": 2,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": 0.0,
+        "not_reached": 0,
+        "not_observed": 13,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "SPREAD_TOO_WIDE": 2
+        }
+      },
+      {
+        "stage": "ATR_PASS",
+        "passed": 0,
+        "failed": 2,
+        "reached": 2,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 13,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "ATR_BELOW_SCANNER_FLOOR": 2
+        }
+      },
+      {
+        "stage": "SCANNER_QUALIFIED",
+        "passed": 0,
+        "failed": 15,
+        "reached": 15,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "INSUFFICIENT_HISTORY": 9,
+          "STALE_CANDLE": 4,
+          "ATR_BELOW_SCANNER_FLOOR": 2
+        }
+      },
+      {
+        "stage": "TOP3_SELECTED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "STRATEGY_EVALUATED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "SIGNAL_GENERATED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "BIAS_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "ANTI_SPAM_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "FRICTION_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "RISK_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "EXECUTION_PERMISSION",
+        "passed": 0,
+        "failed": 15,
+        "reached": 15,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "INSUFFICIENT_HISTORY": 9,
+          "STALE_CANDLE": 4,
+          "ATR_BELOW_SCANNER_FLOOR": 2
+        }
+      },
+      {
+        "stage": "ORDER_ATTEMPTED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "FILLED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "TRADE_COMPLETED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      }
+    ],
+    "first_blocking_reasons": {
+      "INSUFFICIENT_HISTORY": 9,
+      "STALE_CANDLE": 4,
+      "ATR_BELOW_SCANNER_FLOOR": 2
+    },
+    "first_blocking_percent_of_observations": {
+      "INSUFFICIENT_HISTORY": 60.0,
+      "STALE_CANDLE": 26.666666666666668,
+      "ATR_BELOW_SCANNER_FLOOR": 13.333333333333334
+    },
+    "all_observed_failures": {
+      "INSUFFICIENT_HISTORY": 9,
+      "STALE_CANDLE": 4,
+      "SPREAD_TOO_WIDE": 2,
+      "ATR_BELOW_SCANNER_FLOOR": 2
+    },
+    "bottleneck_status": "INSUFFICIENT OBSERVATIONS",
+    "top_bottlenecks": [],
+    "note": "Counts are unique market-cycle candidates; stages reflect observed production checks. NOT_OBSERVED is not PASS. Existing decision order is retained, including combined friction/risk checks."
+  },
+  "par:ETH": {
+    "observations": 15,
+    "dates": 1,
+    "stages": [
+      {
+        "stage": "TOTAL_MARKETS_SEEN",
+        "passed": 15,
+        "failed": 0,
+        "reached": 15,
+        "admission_survivors": 15,
+        "admission_percent_of_previous": 100.0,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 100.0,
+        "pass_percent_of_reached": 100.0,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "VALID_MARKET_IDENTITY",
+        "passed": 15,
+        "failed": 0,
+        "reached": 15,
+        "admission_survivors": 15,
+        "admission_percent_of_previous": 100.0,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 100.0,
+        "pass_percent_of_reached": 100.0,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "MARKET_DATA_HEALTHY",
+        "passed": 1,
+        "failed": 14,
+        "reached": 15,
+        "admission_survivors": 1,
+        "admission_percent_of_previous": 6.666666666666667,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 6.666666666666667,
+        "pass_percent_of_reached": 6.666666666666667,
+        "rejection_reasons": {
+          "STALE_CANDLE": 14
+        }
+      },
+      {
+        "stage": "ENOUGH_HISTORY",
+        "passed": 15,
+        "failed": 0,
+        "reached": 15,
+        "admission_survivors": 1,
+        "admission_percent_of_previous": 100.0,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 100.0,
+        "pass_percent_of_reached": 100.0,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "LIQUIDITY_PASS",
+        "passed": 1,
+        "failed": 0,
+        "reached": 1,
+        "admission_survivors": 1,
+        "admission_percent_of_previous": 100.0,
+        "not_reached": 0,
+        "not_observed": 14,
+        "percent_of_observations": 6.666666666666667,
+        "pass_percent_of_reached": 100.0,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "SPREAD_PASS",
+        "passed": 0,
+        "failed": 1,
+        "reached": 1,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": 0.0,
+        "not_reached": 0,
+        "not_observed": 14,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "SPREAD_TOO_WIDE": 1
+        }
+      },
+      {
+        "stage": "ATR_PASS",
+        "passed": 0,
+        "failed": 1,
+        "reached": 1,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 14,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "ATR_BELOW_SCANNER_FLOOR": 1
+        }
+      },
+      {
+        "stage": "SCANNER_QUALIFIED",
+        "passed": 0,
+        "failed": 15,
+        "reached": 15,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "STALE_CANDLE": 14,
+          "ATR_BELOW_SCANNER_FLOOR": 1
+        }
+      },
+      {
+        "stage": "TOP3_SELECTED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "STRATEGY_EVALUATED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "SIGNAL_GENERATED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "BIAS_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "ANTI_SPAM_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "FRICTION_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "RISK_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "EXECUTION_PERMISSION",
+        "passed": 0,
+        "failed": 15,
+        "reached": 15,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "STALE_CANDLE": 14,
+          "ATR_BELOW_SCANNER_FLOOR": 1
+        }
+      },
+      {
+        "stage": "ORDER_ATTEMPTED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "FILLED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "TRADE_COMPLETED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      }
+    ],
+    "first_blocking_reasons": {
+      "STALE_CANDLE": 14,
+      "ATR_BELOW_SCANNER_FLOOR": 1
+    },
+    "first_blocking_percent_of_observations": {
+      "STALE_CANDLE": 93.33333333333333,
+      "ATR_BELOW_SCANNER_FLOOR": 6.666666666666667
+    },
+    "all_observed_failures": {
+      "STALE_CANDLE": 14,
+      "SPREAD_TOO_WIDE": 1,
+      "ATR_BELOW_SCANNER_FLOOR": 1
+    },
+    "bottleneck_status": "INSUFFICIENT OBSERVATIONS",
+    "top_bottlenecks": [],
+    "note": "Counts are unique market-cycle candidates; stages reflect observed production checks. NOT_OBSERVED is not PASS. Existing decision order is retained, including combined friction/risk checks."
+  },
+  "par:EWJ": {
+    "observations": 15,
+    "dates": 1,
+    "stages": [
+      {
+        "stage": "TOTAL_MARKETS_SEEN",
+        "passed": 15,
+        "failed": 0,
+        "reached": 15,
+        "admission_survivors": 15,
+        "admission_percent_of_previous": 100.0,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 100.0,
+        "pass_percent_of_reached": 100.0,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "VALID_MARKET_IDENTITY",
+        "passed": 15,
+        "failed": 0,
+        "reached": 15,
+        "admission_survivors": 15,
+        "admission_percent_of_previous": 100.0,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 100.0,
+        "pass_percent_of_reached": 100.0,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "MARKET_DATA_HEALTHY",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": 0.0,
+        "not_reached": 0,
+        "not_observed": 15,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "ENOUGH_HISTORY",
+        "passed": 0,
+        "failed": 15,
+        "reached": 15,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "INSUFFICIENT_HISTORY": 15
+        }
+      },
+      {
+        "stage": "LIQUIDITY_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 15,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "SPREAD_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 15,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "ATR_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 15,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "SCANNER_QUALIFIED",
+        "passed": 0,
+        "failed": 15,
+        "reached": 15,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "INSUFFICIENT_HISTORY": 15
+        }
+      },
+      {
+        "stage": "TOP3_SELECTED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "STRATEGY_EVALUATED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "SIGNAL_GENERATED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "BIAS_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "ANTI_SPAM_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "FRICTION_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "RISK_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "EXECUTION_PERMISSION",
+        "passed": 0,
+        "failed": 15,
+        "reached": 15,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "INSUFFICIENT_HISTORY": 15
+        }
+      },
+      {
+        "stage": "ORDER_ATTEMPTED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "FILLED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "TRADE_COMPLETED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      }
+    ],
+    "first_blocking_reasons": {
+      "INSUFFICIENT_HISTORY": 15
+    },
+    "first_blocking_percent_of_observations": {
+      "INSUFFICIENT_HISTORY": 100.0
+    },
+    "all_observed_failures": {
+      "INSUFFICIENT_HISTORY": 15
+    },
+    "bottleneck_status": "INSUFFICIENT OBSERVATIONS",
+    "top_bottlenecks": [],
+    "note": "Counts are unique market-cycle candidates; stages reflect observed production checks. NOT_OBSERVED is not PASS. Existing decision order is retained, including combined friction/risk checks."
+  },
+  "par:EWY": {
+    "observations": 15,
+    "dates": 1,
+    "stages": [
+      {
+        "stage": "TOTAL_MARKETS_SEEN",
+        "passed": 15,
+        "failed": 0,
+        "reached": 15,
+        "admission_survivors": 15,
+        "admission_percent_of_previous": 100.0,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 100.0,
+        "pass_percent_of_reached": 100.0,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "VALID_MARKET_IDENTITY",
+        "passed": 15,
+        "failed": 0,
+        "reached": 15,
+        "admission_survivors": 15,
+        "admission_percent_of_previous": 100.0,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 100.0,
+        "pass_percent_of_reached": 100.0,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "MARKET_DATA_HEALTHY",
+        "passed": 0,
+        "failed": 15,
+        "reached": 15,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": 0.0,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "STALE_CANDLE": 15
+        }
+      },
+      {
+        "stage": "ENOUGH_HISTORY",
+        "passed": 15,
+        "failed": 0,
+        "reached": 15,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 100.0,
+        "pass_percent_of_reached": 100.0,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "LIQUIDITY_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 15,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "SPREAD_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 15,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "ATR_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 15,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "SCANNER_QUALIFIED",
+        "passed": 0,
+        "failed": 15,
+        "reached": 15,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "STALE_CANDLE": 15
+        }
+      },
+      {
+        "stage": "TOP3_SELECTED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "STRATEGY_EVALUATED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "SIGNAL_GENERATED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "BIAS_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "ANTI_SPAM_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "FRICTION_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "RISK_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "EXECUTION_PERMISSION",
+        "passed": 0,
+        "failed": 15,
+        "reached": 15,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "STALE_CANDLE": 15
+        }
+      },
+      {
+        "stage": "ORDER_ATTEMPTED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "FILLED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "TRADE_COMPLETED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      }
+    ],
+    "first_blocking_reasons": {
+      "STALE_CANDLE": 15
+    },
+    "first_blocking_percent_of_observations": {
+      "STALE_CANDLE": 100.0
+    },
+    "all_observed_failures": {
+      "STALE_CANDLE": 15
+    },
+    "bottleneck_status": "INSUFFICIENT OBSERVATIONS",
+    "top_bottlenecks": [],
+    "note": "Counts are unique market-cycle candidates; stages reflect observed production checks. NOT_OBSERVED is not PASS. Existing decision order is retained, including combined friction/risk checks."
+  },
+  "par:GOLD": {
+    "observations": 15,
+    "dates": 1,
+    "stages": [
+      {
+        "stage": "TOTAL_MARKETS_SEEN",
+        "passed": 15,
+        "failed": 0,
+        "reached": 15,
+        "admission_survivors": 15,
+        "admission_percent_of_previous": 100.0,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 100.0,
+        "pass_percent_of_reached": 100.0,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "VALID_MARKET_IDENTITY",
+        "passed": 15,
+        "failed": 0,
+        "reached": 15,
+        "admission_survivors": 15,
+        "admission_percent_of_previous": 100.0,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 100.0,
+        "pass_percent_of_reached": 100.0,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "MARKET_DATA_HEALTHY",
+        "passed": 1,
+        "failed": 14,
+        "reached": 15,
+        "admission_survivors": 1,
+        "admission_percent_of_previous": 6.666666666666667,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 6.666666666666667,
+        "pass_percent_of_reached": 6.666666666666667,
+        "rejection_reasons": {
+          "STALE_CANDLE": 14
+        }
+      },
+      {
+        "stage": "ENOUGH_HISTORY",
+        "passed": 15,
+        "failed": 0,
+        "reached": 15,
+        "admission_survivors": 1,
+        "admission_percent_of_previous": 100.0,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 100.0,
+        "pass_percent_of_reached": 100.0,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "LIQUIDITY_PASS",
+        "passed": 1,
+        "failed": 0,
+        "reached": 1,
+        "admission_survivors": 1,
+        "admission_percent_of_previous": 100.0,
+        "not_reached": 0,
+        "not_observed": 14,
+        "percent_of_observations": 6.666666666666667,
+        "pass_percent_of_reached": 100.0,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "SPREAD_PASS",
+        "passed": 0,
+        "failed": 1,
+        "reached": 1,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": 0.0,
+        "not_reached": 0,
+        "not_observed": 14,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "SPREAD_TOO_WIDE": 1
+        }
+      },
+      {
+        "stage": "ATR_PASS",
+        "passed": 0,
+        "failed": 1,
+        "reached": 1,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 14,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "ATR_BELOW_SCANNER_FLOOR": 1
+        }
+      },
+      {
+        "stage": "SCANNER_QUALIFIED",
+        "passed": 0,
+        "failed": 15,
+        "reached": 15,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "ATR_BELOW_SCANNER_FLOOR": 1,
+          "STALE_CANDLE": 14
+        }
+      },
+      {
+        "stage": "TOP3_SELECTED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "STRATEGY_EVALUATED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "SIGNAL_GENERATED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "BIAS_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "ANTI_SPAM_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "FRICTION_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "RISK_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "EXECUTION_PERMISSION",
+        "passed": 0,
+        "failed": 15,
+        "reached": 15,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "ATR_BELOW_SCANNER_FLOOR": 1,
+          "STALE_CANDLE": 14
+        }
+      },
+      {
+        "stage": "ORDER_ATTEMPTED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "FILLED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "TRADE_COMPLETED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      }
+    ],
+    "first_blocking_reasons": {
+      "ATR_BELOW_SCANNER_FLOOR": 1,
+      "STALE_CANDLE": 14
+    },
+    "first_blocking_percent_of_observations": {
+      "ATR_BELOW_SCANNER_FLOOR": 6.666666666666667,
+      "STALE_CANDLE": 93.33333333333333
+    },
+    "all_observed_failures": {
+      "SPREAD_TOO_WIDE": 1,
+      "ATR_BELOW_SCANNER_FLOOR": 1,
+      "STALE_CANDLE": 14
+    },
+    "bottleneck_status": "INSUFFICIENT OBSERVATIONS",
+    "top_bottlenecks": [],
+    "note": "Counts are unique market-cycle candidates; stages reflect observed production checks. NOT_OBSERVED is not PASS. Existing decision order is retained, including combined friction/risk checks."
+  },
+  "par:HYPE": {
+    "observations": 15,
+    "dates": 1,
+    "stages": [
+      {
+        "stage": "TOTAL_MARKETS_SEEN",
+        "passed": 15,
+        "failed": 0,
+        "reached": 15,
+        "admission_survivors": 15,
+        "admission_percent_of_previous": 100.0,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 100.0,
+        "pass_percent_of_reached": 100.0,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "VALID_MARKET_IDENTITY",
+        "passed": 15,
+        "failed": 0,
+        "reached": 15,
+        "admission_survivors": 15,
+        "admission_percent_of_previous": 100.0,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 100.0,
+        "pass_percent_of_reached": 100.0,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "MARKET_DATA_HEALTHY",
+        "passed": 1,
+        "failed": 10,
+        "reached": 11,
+        "admission_survivors": 1,
+        "admission_percent_of_previous": 6.666666666666667,
+        "not_reached": 0,
+        "not_observed": 4,
+        "percent_of_observations": 6.666666666666667,
+        "pass_percent_of_reached": 9.090909090909092,
+        "rejection_reasons": {
+          "STALE_CANDLE": 10
+        }
+      },
+      {
+        "stage": "ENOUGH_HISTORY",
+        "passed": 11,
+        "failed": 4,
+        "reached": 15,
+        "admission_survivors": 1,
+        "admission_percent_of_previous": 100.0,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 73.33333333333333,
+        "pass_percent_of_reached": 73.33333333333333,
+        "rejection_reasons": {
+          "INSUFFICIENT_HISTORY": 4
+        }
+      },
+      {
+        "stage": "LIQUIDITY_PASS",
+        "passed": 1,
+        "failed": 0,
+        "reached": 1,
+        "admission_survivors": 1,
+        "admission_percent_of_previous": 100.0,
+        "not_reached": 0,
+        "not_observed": 14,
+        "percent_of_observations": 6.666666666666667,
+        "pass_percent_of_reached": 100.0,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "SPREAD_PASS",
+        "passed": 0,
+        "failed": 1,
+        "reached": 1,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": 0.0,
+        "not_reached": 0,
+        "not_observed": 14,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "SPREAD_TOO_WIDE": 1
+        }
+      },
+      {
+        "stage": "ATR_PASS",
+        "passed": 0,
+        "failed": 1,
+        "reached": 1,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 14,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "ATR_BELOW_SCANNER_FLOOR": 1
+        }
+      },
+      {
+        "stage": "SCANNER_QUALIFIED",
+        "passed": 0,
+        "failed": 15,
+        "reached": 15,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "INSUFFICIENT_HISTORY": 4,
+          "STALE_CANDLE": 10,
+          "ATR_BELOW_SCANNER_FLOOR": 1
+        }
+      },
+      {
+        "stage": "TOP3_SELECTED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "STRATEGY_EVALUATED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "SIGNAL_GENERATED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "BIAS_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "ANTI_SPAM_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "FRICTION_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "RISK_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "EXECUTION_PERMISSION",
+        "passed": 0,
+        "failed": 15,
+        "reached": 15,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "INSUFFICIENT_HISTORY": 4,
+          "STALE_CANDLE": 10,
+          "ATR_BELOW_SCANNER_FLOOR": 1
+        }
+      },
+      {
+        "stage": "ORDER_ATTEMPTED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "FILLED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "TRADE_COMPLETED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      }
+    ],
+    "first_blocking_reasons": {
+      "INSUFFICIENT_HISTORY": 4,
+      "STALE_CANDLE": 10,
+      "ATR_BELOW_SCANNER_FLOOR": 1
+    },
+    "first_blocking_percent_of_observations": {
+      "INSUFFICIENT_HISTORY": 26.666666666666668,
+      "STALE_CANDLE": 66.66666666666667,
+      "ATR_BELOW_SCANNER_FLOOR": 6.666666666666667
+    },
+    "all_observed_failures": {
+      "INSUFFICIENT_HISTORY": 4,
+      "STALE_CANDLE": 10,
+      "SPREAD_TOO_WIDE": 1,
+      "ATR_BELOW_SCANNER_FLOOR": 1
+    },
+    "bottleneck_status": "INSUFFICIENT OBSERVATIONS",
+    "top_bottlenecks": [],
+    "note": "Counts are unique market-cycle candidates; stages reflect observed production checks. NOT_OBSERVED is not PASS. Existing decision order is retained, including combined friction/risk checks."
+  },
+  "par:SP500": {
+    "observations": 15,
+    "dates": 1,
+    "stages": [
+      {
+        "stage": "TOTAL_MARKETS_SEEN",
+        "passed": 15,
+        "failed": 0,
+        "reached": 15,
+        "admission_survivors": 15,
+        "admission_percent_of_previous": 100.0,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 100.0,
+        "pass_percent_of_reached": 100.0,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "VALID_MARKET_IDENTITY",
+        "passed": 15,
+        "failed": 0,
+        "reached": 15,
+        "admission_survivors": 15,
+        "admission_percent_of_previous": 100.0,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 100.0,
+        "pass_percent_of_reached": 100.0,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "MARKET_DATA_HEALTHY",
+        "passed": 0,
+        "failed": 15,
+        "reached": 15,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": 0.0,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "STALE_CANDLE": 14,
+          "INVALID_MARKET_DATA": 1
+        }
+      },
+      {
+        "stage": "ENOUGH_HISTORY",
+        "passed": 15,
+        "failed": 0,
+        "reached": 15,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 100.0,
+        "pass_percent_of_reached": 100.0,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "LIQUIDITY_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 15,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "SPREAD_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 15,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "ATR_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 15,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "SCANNER_QUALIFIED",
+        "passed": 0,
+        "failed": 15,
+        "reached": 15,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "STALE_CANDLE": 14,
+          "INVALID_MARKET_DATA": 1
+        }
+      },
+      {
+        "stage": "TOP3_SELECTED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "STRATEGY_EVALUATED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "SIGNAL_GENERATED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "BIAS_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "ANTI_SPAM_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "FRICTION_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "RISK_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "EXECUTION_PERMISSION",
+        "passed": 0,
+        "failed": 15,
+        "reached": 15,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "STALE_CANDLE": 14,
+          "INVALID_MARKET_DATA": 1
+        }
+      },
+      {
+        "stage": "ORDER_ATTEMPTED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "FILLED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "TRADE_COMPLETED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      }
+    ],
+    "first_blocking_reasons": {
+      "STALE_CANDLE": 14,
+      "INVALID_MARKET_DATA": 1
+    },
+    "first_blocking_percent_of_observations": {
+      "STALE_CANDLE": 93.33333333333333,
+      "INVALID_MARKET_DATA": 6.666666666666667
+    },
+    "all_observed_failures": {
+      "STALE_CANDLE": 14,
+      "INVALID_MARKET_DATA": 1
+    },
+    "bottleneck_status": "INSUFFICIENT OBSERVATIONS",
+    "top_bottlenecks": [],
+    "note": "Counts are unique market-cycle candidates; stages reflect observed production checks. NOT_OBSERVED is not PASS. Existing decision order is retained, including combined friction/risk checks."
+  },
+  "par:USDEUR": {
+    "observations": 15,
+    "dates": 1,
+    "stages": [
+      {
+        "stage": "TOTAL_MARKETS_SEEN",
+        "passed": 15,
+        "failed": 0,
+        "reached": 15,
+        "admission_survivors": 15,
+        "admission_percent_of_previous": 100.0,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 100.0,
+        "pass_percent_of_reached": 100.0,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "VALID_MARKET_IDENTITY",
+        "passed": 15,
+        "failed": 0,
+        "reached": 15,
+        "admission_survivors": 15,
+        "admission_percent_of_previous": 100.0,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 100.0,
+        "pass_percent_of_reached": 100.0,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "MARKET_DATA_HEALTHY",
+        "passed": 0,
+        "failed": 15,
+        "reached": 15,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": 0.0,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "STALE_CANDLE": 14,
+          "INVALID_MARKET_DATA": 1
+        }
+      },
+      {
+        "stage": "ENOUGH_HISTORY",
+        "passed": 15,
+        "failed": 0,
+        "reached": 15,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 100.0,
+        "pass_percent_of_reached": 100.0,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "LIQUIDITY_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 15,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "SPREAD_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 15,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "ATR_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 15,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "SCANNER_QUALIFIED",
+        "passed": 0,
+        "failed": 15,
+        "reached": 15,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "STALE_CANDLE": 14,
+          "INVALID_MARKET_DATA": 1
+        }
+      },
+      {
+        "stage": "TOP3_SELECTED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "STRATEGY_EVALUATED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "SIGNAL_GENERATED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "BIAS_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "ANTI_SPAM_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "FRICTION_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "RISK_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "EXECUTION_PERMISSION",
+        "passed": 0,
+        "failed": 15,
+        "reached": 15,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "STALE_CANDLE": 14,
+          "INVALID_MARKET_DATA": 1
+        }
+      },
+      {
+        "stage": "ORDER_ATTEMPTED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "FILLED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "TRADE_COMPLETED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      }
+    ],
+    "first_blocking_reasons": {
+      "STALE_CANDLE": 14,
+      "INVALID_MARKET_DATA": 1
+    },
+    "first_blocking_percent_of_observations": {
+      "STALE_CANDLE": 93.33333333333333,
+      "INVALID_MARKET_DATA": 6.666666666666667
+    },
+    "all_observed_failures": {
+      "STALE_CANDLE": 14,
+      "INVALID_MARKET_DATA": 1
+    },
+    "bottleneck_status": "INSUFFICIENT OBSERVATIONS",
+    "top_bottlenecks": [],
+    "note": "Counts are unique market-cycle candidates; stages reflect observed production checks. NOT_OBSERVED is not PASS. Existing decision order is retained, including combined friction/risk checks."
+  },
+  "par:USDJPY": {
+    "observations": 15,
+    "dates": 1,
+    "stages": [
+      {
+        "stage": "TOTAL_MARKETS_SEEN",
+        "passed": 15,
+        "failed": 0,
+        "reached": 15,
+        "admission_survivors": 15,
+        "admission_percent_of_previous": 100.0,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 100.0,
+        "pass_percent_of_reached": 100.0,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "VALID_MARKET_IDENTITY",
+        "passed": 15,
+        "failed": 0,
+        "reached": 15,
+        "admission_survivors": 15,
+        "admission_percent_of_previous": 100.0,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 100.0,
+        "pass_percent_of_reached": 100.0,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "MARKET_DATA_HEALTHY",
+        "passed": 0,
+        "failed": 12,
+        "reached": 12,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": 0.0,
+        "not_reached": 0,
+        "not_observed": 3,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "STALE_CANDLE": 12
+        }
+      },
+      {
+        "stage": "ENOUGH_HISTORY",
+        "passed": 12,
+        "failed": 3,
+        "reached": 15,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 80.0,
+        "pass_percent_of_reached": 80.0,
+        "rejection_reasons": {
+          "INSUFFICIENT_HISTORY": 3
+        }
+      },
+      {
+        "stage": "LIQUIDITY_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 15,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "SPREAD_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 15,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "ATR_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 15,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "SCANNER_QUALIFIED",
+        "passed": 0,
+        "failed": 15,
+        "reached": 15,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "INSUFFICIENT_HISTORY": 3,
+          "STALE_CANDLE": 12
+        }
+      },
+      {
+        "stage": "TOP3_SELECTED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "STRATEGY_EVALUATED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "SIGNAL_GENERATED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "BIAS_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "ANTI_SPAM_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "FRICTION_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "RISK_PASS",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "EXECUTION_PERMISSION",
+        "passed": 0,
+        "failed": 15,
+        "reached": 15,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 0,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": 0.0,
+        "rejection_reasons": {
+          "INSUFFICIENT_HISTORY": 3,
+          "STALE_CANDLE": 12
+        }
+      },
+      {
+        "stage": "ORDER_ATTEMPTED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "FILLED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      },
+      {
+        "stage": "TRADE_COMPLETED",
+        "passed": 0,
+        "failed": 0,
+        "reached": 0,
+        "admission_survivors": 0,
+        "admission_percent_of_previous": null,
+        "not_reached": 15,
+        "not_observed": 0,
+        "percent_of_observations": 0.0,
+        "pass_percent_of_reached": null,
+        "rejection_reasons": {}
+      }
+    ],
+    "first_blocking_reasons": {
+      "INSUFFICIENT_HISTORY": 3,
+      "STALE_CANDLE": 12
+    },
+    "first_blocking_percent_of_observations": {
+      "INSUFFICIENT_HISTORY": 20.0,
+      "STALE_CANDLE": 80.0
+    },
+    "all_observed_failures": {
+      "INSUFFICIENT_HISTORY": 3,
+      "STALE_CANDLE": 12
+    },
+    "bottleneck_status": "INSUFFICIENT OBSERVATIONS",
+    "top_bottlenecks": [],
+    "note": "Counts are unique market-cycle candidates; stages reflect observed production checks. NOT_OBSERVED is not PASS. Existing decision order is retained, including combined friction/risk checks."
+  }
+}

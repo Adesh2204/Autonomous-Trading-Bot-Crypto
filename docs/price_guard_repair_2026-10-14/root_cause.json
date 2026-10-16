@@ -1,0 +1,23 @@
+{
+  "previous_limit": "83610",
+  "previous_quantity": "0.0002",
+  "previous_reference_ask": "83444.0",
+  "previous_selected_notional": "16.7220",
+  "old_mode": "FIXED_LIMIT_V1",
+  "comparison": "request.price > normalize_price(fresh_ask * 1.002, BUY) OR IOC limit < fresh ask; plus unchanged minimum and outer mark/notional checks",
+  "historical_failed_quote_available": false,
+  "actual_historical_branch_not_reconstructable": true,
+  "deterministic_reproduction": {
+    "fresh_ask": "83442",
+    "old_limit": "83610",
+    "fresh_20bps_maximum": "83608",
+    "old_limit_exceeds_new_live_maximum": true,
+    "new_10bps_limit": "83525",
+    "new_limit_executable_and_below_caps": true
+  },
+  "new_mode": "BOUNDED_FRESH_IOC_V2",
+  "max_price_enlarged": false,
+  "quantity_enlarged": false,
+  "protection_verified": false,
+  "actual_exchange_submissions": 0
+}

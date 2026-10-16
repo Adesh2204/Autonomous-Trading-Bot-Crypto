@@ -1,0 +1,674 @@
+{
+  "observed_at_ist": "2026-10-07T11:56:07.389419+05:30",
+  "flags": {
+    "STRATEGY_FREEZE": "PASS",
+    "ACCOUNT_READY": "YES",
+    "API_APPROVAL_READY": "YES",
+    "API_SIGNER_IDENTITY_VERIFIED": "YES",
+    "NONCE_LOCAL_HEALTHY": "YES",
+    "REMOTE_SIGNER_OWNERSHIP_VERIFIED": "NO",
+    "CLOCK_READY": "YES",
+    "ACCOUNT_RATE_BUDGET_READY": "YES",
+    "LEVERAGE_ALIGNED": "NO",
+    "PROTECTION_CONFIGURED": "YES",
+    "PROTECTION_ENABLED": "NO",
+    "PAPER_ONE_HOUR_COMPLETE": "YES",
+    "SUSTAINED_USABLE_FEED_DEMONSTRATED": "NO",
+    "READ_ONLY_RECONCILIATION_READY": "YES",
+    "LONG_CERTIFIED": "NO",
+    "SHORT_CERTIFIED": "NO",
+    "FUNDED_RECOVERY_CERTIFIED": "NO",
+    "PRACTICE_READY": "NO",
+    "LIVE_READY": "NO"
+  },
+  "execution_mode": "PAPER",
+  "allow_live_orders": false,
+  "actual_orders_submitted": 0,
+  "configuration_transmission_attempts": 0,
+  "git_commit": "6e4e520892b91b613bce237195ea67f5f69846b4",
+  "git_dirty": true,
+  "active_source_hash": "90ebdb94c333f18a6e75f937dd6f574a7e43d1ded4780b2b424fae21a79617fe",
+  "all_active_source_checks_match": true,
+  "safety_lock": {
+    "TRADING_VENUE": "HYPERLIQUID_TESTNET",
+    "EXECUTION_MODE": "PAPER",
+    "ALLOW_LIVE_ORDERS": false
+  },
+  "strategy_freeze": {
+    "baseline": "nse-working-baseline",
+    "file_count": 1,
+    "method_count": 8,
+    "parameter_count": 32,
+    "passed": true
+  },
+  "full_suite": {
+    "tests": 1276,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "additional_protection_tests": {
+    "scope": "OFFLINE_REQUESTED_ONE_ATR_HALF_PERCENT_GEOMETRY_ONLY",
+    "totals": {
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "active_source_hash": "90ebdb94c333f18a6e75f937dd6f574a7e43d1ded4780b2b424fae21a79617fe",
+    "policy_sha256": "1b8573d07a0f12f3653cf7b92f96c2120e8d61c3f210335ec850ba14ea582455",
+    "test_source_sha256": "38f5cf8fceee2fbb546102c6460784977e844fc5cbe9cbf1ce470c084c6aeb74",
+    "xml_sha256": "9fd85831dc82fd311aa3003f741f8b0965e2c923f2b887b23755887cbc351774",
+    "actual_exchange_submissions": 0,
+    "keys": "EPHEMERAL_FIXTURES_ONLY",
+    "production_protection_enabled": false
+  },
+  "account_evidence": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/practice_setup_2026-10-07/account_check_final.json",
+  "account_observed_at_ist": "2026-10-07T11:55:04.945984+05:30",
+  "api_identity": {
+    "status": "MATCH",
+    "derived_public_address": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+    "expected_public_address": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+    "team_address": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+    "key_sources": [
+      "algo-trading-bot/.env"
+    ],
+    "signature_created": false,
+    "exchange_actions_submitted": 0
+  },
+  "nonce_local_check": {
+    "status": "HEALTHY_LOCAL",
+    "second_process_rejected": true,
+    "ownership_scope": "CURRENT_HOST_AND_OS_USER_ONLY",
+    "remote_ownership_verified": false,
+    "nonce_database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/testnet/anchorium-bot-1/nonces.sqlite",
+    "nonce_allocated": false,
+    "signature_created": false,
+    "exchange_actions_submitted": 0,
+    "owner_during_check": {
+      "nonce_database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/testnet/anchorium-bot-1/nonces.sqlite",
+      "pid": 56709,
+      "hostname": "Adeshs-MacBook-Air.local",
+      "started_ms": 1791350670828,
+      "api_wallet": "0x46c9bed595770150752e7fa3806449f81e0ec6f9"
+    },
+    "lease_released_after_check": true
+  },
+  "protection": {
+    "enabled": false,
+    "approval_reference": "docs/practice_setup_2026-10-07/protection_configuration_approval.md",
+    "atr_distance_multiple": "1",
+    "execution_slippage_fraction": "0.005"
+  },
+  "leverage_apply": null,
+  "final_local_operating_checks": {
+    "scope": "ACTUAL_LOCAL_PAPER_FINAL_SHUTDOWN_CHECK",
+    "active_source_hash": "90ebdb94c333f18a6e75f937dd6f574a7e43d1ded4780b2b424fae21a79617fe",
+    "paper_owner_lease_released": true,
+    "exchange_orders_submitted": 0,
+    "account_configuration_submissions": 0,
+    "public_run": {
+      "intents": 0,
+      "signed_management": 0,
+      "api_actions": 0
+    },
+    "configuration": {
+      "intents": 0,
+      "signed_management": 0,
+      "api_actions": 0
+    },
+    "actual_api_nonce_allocations": 0,
+    "nonce_error_latches": 0,
+    "final_status": "STOPPED",
+    "elapsed_seconds": 3601.952696084976,
+    "source_unchanged": true
+  },
+  "paper": {
+    "start_ist": "2026-10-07T10:54:32.794525+05:30",
+    "end_ist": "2026-10-07T11:54:34.747221+05:30",
+    "requested_seconds": 3600,
+    "elapsed_wall_seconds": 3601.952696084976,
+    "exit_code": 0,
+    "state_directory": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/paper/readiness-2026-10-07-current-setup",
+    "segment": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/practice_setup_2026-10-07/paper_segments/20261007T052432Z-bb04b3e2",
+    "running_heartbeat_samples": 118,
+    "any_healthy_samples": 54,
+    "largest_heartbeat_gap_ms": 32365,
+    "heartbeat_severities": {
+      "WARNING": 64,
+      "OK": 54
+    },
+    "healthy_sample_counts_by_market": {
+      "par:BRENT": 2,
+      "par:BTC": 9,
+      "par:ETH": 6,
+      "par:EWY": 13,
+      "par:GOLD": 4,
+      "par:HYPE": 13,
+      "par:SP500": 20,
+      "par:USDEUR": 3,
+      "par:USDJPY": 4
+    },
+    "all_ten_healthy_samples": 0,
+    "scans": 12,
+    "qualified_market_observations": 0,
+    "scanner_rejection_summary": {
+      "INSUFFICIENT_HISTORY": 33,
+      "STALE_CANDLE": 81,
+      "ATR_BELOW_SCANNER_FLOOR": 5,
+      "INVALID_MARKET_DATA": 1
+    },
+    "scan_status": "NO_TRADE",
+    "local_orders": 0,
+    "local_fills": 0,
+    "paper_portfolio": {
+      "timestamp_ms": 1791353984637,
+      "cash": "20000",
+      "unrealized_pnl": "0",
+      "equity": "20000",
+      "initial_margin": "0",
+      "maintenance_margin_estimate": "0",
+      "order_reservations": "0",
+      "available_margin": "20000",
+      "gross_notional": "0",
+      "realized_pnl": "0",
+      "fees_paid": "0",
+      "funding_cashflow": "0",
+      "collateral": "USDPR"
+    },
+    "accounting_halt": null,
+    "stream": {
+      "connected": true,
+      "reconciled": true,
+      "generation": 6,
+      "accepted_generation": 6,
+      "messages": 41543,
+      "reconnections": 5,
+      "last_receive_ms": 1791354271231,
+      "last_error": "ExchangeError:STREAM_DISCONNECTED",
+      "account_recovery": {
+        "source": "LOCAL_PAPER_FILL_REPLAY",
+        "exchange_account_verified": false,
+        "entries_paused": false,
+        "reasons": [],
+        "position_corrections": {},
+        "position_count": 0,
+        "open_order_count": 0,
+        "fill_count": 0,
+        "funding_event_count": 0,
+        "reported_equity": "20000",
+        "exchange_orders_submitted": 0,
+        "recovered_at_ms": 1791354069158
+      },
+      "last_account_recovery_ms": 1791354069159,
+      "events": [
+        {
+          "phase": "CONNECTING",
+          "timestamp_ms": 1791350675208,
+          "generation": 0,
+          "exchange_ts": null,
+          "received_ts": "2026-10-07T05:24:35.208+00:00",
+          "processed_ts": "2026-10-07T05:24:35.208+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        },
+        {
+          "phase": "SUBSCRIBED",
+          "timestamp_ms": 1791350676750,
+          "generation": 0,
+          "exchange_ts": null,
+          "received_ts": "2026-10-07T05:24:36.750+00:00",
+          "processed_ts": "2026-10-07T05:24:36.750+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        },
+        {
+          "phase": "REST_MARKET_RECONCILED",
+          "timestamp_ms": 1791350682278,
+          "generation": 1,
+          "exchange_ts": null,
+          "received_ts": "2026-10-07T05:24:42.278+00:00",
+          "processed_ts": "2026-10-07T05:24:42.278+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        },
+        {
+          "phase": "PAPER_ACCOUNT_RECONCILED",
+          "generation": 1,
+          "timestamp_ms": 1791350682321,
+          "source": "LOCAL_PAPER_FILL_REPLAY",
+          "exchange_ts": null,
+          "received_ts": "2026-10-07T05:24:42.321+00:00",
+          "processed_ts": "2026-10-07T05:24:42.321+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        },
+        {
+          "phase": "DISCONNECTED",
+          "timestamp_ms": 1791351338379,
+          "generation": 1,
+          "exchange_ts": null,
+          "received_ts": "2026-10-07T05:35:38.379+00:00",
+          "processed_ts": "2026-10-07T05:35:38.379+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false,
+          "reason": "ExchangeError:STREAM_DISCONNECTED",
+          "consecutive_failures": 1
+        },
+        {
+          "phase": "CONNECTING",
+          "timestamp_ms": 1791351339384,
+          "generation": 1,
+          "exchange_ts": null,
+          "received_ts": "2026-10-07T05:35:39.384+00:00",
+          "processed_ts": "2026-10-07T05:35:39.384+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        },
+        {
+          "phase": "SUBSCRIBED",
+          "timestamp_ms": 1791351340829,
+          "generation": 1,
+          "exchange_ts": null,
+          "received_ts": "2026-10-07T05:35:40.829+00:00",
+          "processed_ts": "2026-10-07T05:35:40.829+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        },
+        {
+          "phase": "REST_MARKET_RECONCILED",
+          "timestamp_ms": 1791351346365,
+          "generation": 2,
+          "exchange_ts": null,
+          "received_ts": "2026-10-07T05:35:46.365+00:00",
+          "processed_ts": "2026-10-07T05:35:46.365+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        },
+        {
+          "phase": "PAPER_ACCOUNT_RECONCILED",
+          "generation": 2,
+          "timestamp_ms": 1791351347246,
+          "source": "LOCAL_PAPER_FILL_REPLAY",
+          "exchange_ts": null,
+          "received_ts": "2026-10-07T05:35:47.246+00:00",
+          "processed_ts": "2026-10-07T05:35:47.246+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        },
+        {
+          "phase": "DISCONNECTED",
+          "timestamp_ms": 1791351982160,
+          "generation": 2,
+          "exchange_ts": null,
+          "received_ts": "2026-10-07T05:46:22.160+00:00",
+          "processed_ts": "2026-10-07T05:46:22.160+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false,
+          "reason": "ExchangeError:STREAM_DISCONNECTED",
+          "consecutive_failures": 1
+        },
+        {
+          "phase": "CONNECTING",
+          "timestamp_ms": 1791351983183,
+          "generation": 2,
+          "exchange_ts": null,
+          "received_ts": "2026-10-07T05:46:23.183+00:00",
+          "processed_ts": "2026-10-07T05:46:23.183+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        },
+        {
+          "phase": "SUBSCRIBED",
+          "timestamp_ms": 1791351984646,
+          "generation": 2,
+          "exchange_ts": null,
+          "received_ts": "2026-10-07T05:46:24.646+00:00",
+          "processed_ts": "2026-10-07T05:46:24.646+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        },
+        {
+          "phase": "REST_MARKET_RECONCILED",
+          "timestamp_ms": 1791351991044,
+          "generation": 3,
+          "exchange_ts": null,
+          "received_ts": "2026-10-07T05:46:31.044+00:00",
+          "processed_ts": "2026-10-07T05:46:31.044+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        },
+        {
+          "phase": "PAPER_ACCOUNT_RECONCILED",
+          "generation": 3,
+          "timestamp_ms": 1791351991392,
+          "source": "LOCAL_PAPER_FILL_REPLAY",
+          "exchange_ts": null,
+          "received_ts": "2026-10-07T05:46:31.392+00:00",
+          "processed_ts": "2026-10-07T05:46:31.392+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        },
+        {
+          "phase": "DISCONNECTED",
+          "timestamp_ms": 1791352679318,
+          "generation": 3,
+          "exchange_ts": null,
+          "received_ts": "2026-10-07T05:57:59.318+00:00",
+          "processed_ts": "2026-10-07T05:57:59.318+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false,
+          "reason": "ExchangeError:STREAM_DISCONNECTED",
+          "consecutive_failures": 1
+        },
+        {
+          "phase": "CONNECTING",
+          "timestamp_ms": 1791352680323,
+          "generation": 3,
+          "exchange_ts": null,
+          "received_ts": "2026-10-07T05:58:00.323+00:00",
+          "processed_ts": "2026-10-07T05:58:00.323+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        },
+        {
+          "phase": "SUBSCRIBED",
+          "timestamp_ms": 1791352681806,
+          "generation": 3,
+          "exchange_ts": null,
+          "received_ts": "2026-10-07T05:58:01.806+00:00",
+          "processed_ts": "2026-10-07T05:58:01.806+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        },
+        {
+          "phase": "REST_MARKET_RECONCILED",
+          "timestamp_ms": 1791352687527,
+          "generation": 4,
+          "exchange_ts": null,
+          "received_ts": "2026-10-07T05:58:07.527+00:00",
+          "processed_ts": "2026-10-07T05:58:07.527+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        },
+        {
+          "phase": "PAPER_ACCOUNT_RECONCILED",
+          "generation": 4,
+          "timestamp_ms": 1791352687694,
+          "source": "LOCAL_PAPER_FILL_REPLAY",
+          "exchange_ts": null,
+          "received_ts": "2026-10-07T05:58:07.694+00:00",
+          "processed_ts": "2026-10-07T05:58:07.694+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        },
+        {
+          "phase": "DISCONNECTED",
+          "timestamp_ms": 1791353371240,
+          "generation": 4,
+          "exchange_ts": null,
+          "received_ts": "2026-10-07T06:09:31.240+00:00",
+          "processed_ts": "2026-10-07T06:09:31.240+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false,
+          "reason": "ExchangeError:STREAM_DISCONNECTED",
+          "consecutive_failures": 1
+        },
+        {
+          "phase": "CONNECTING",
+          "timestamp_ms": 1791353372243,
+          "generation": 4,
+          "exchange_ts": null,
+          "received_ts": "2026-10-07T06:09:32.243+00:00",
+          "processed_ts": "2026-10-07T06:09:32.243+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        },
+        {
+          "phase": "SUBSCRIBED",
+          "timestamp_ms": 1791353373904,
+          "generation": 4,
+          "exchange_ts": null,
+          "received_ts": "2026-10-07T06:09:33.904+00:00",
+          "processed_ts": "2026-10-07T06:09:33.904+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        },
+        {
+          "phase": "REST_MARKET_RECONCILED",
+          "timestamp_ms": 1791353379792,
+          "generation": 5,
+          "exchange_ts": null,
+          "received_ts": "2026-10-07T06:09:39.792+00:00",
+          "processed_ts": "2026-10-07T06:09:39.792+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        },
+        {
+          "phase": "PAPER_ACCOUNT_RECONCILED",
+          "generation": 5,
+          "timestamp_ms": 1791353380421,
+          "source": "LOCAL_PAPER_FILL_REPLAY",
+          "exchange_ts": null,
+          "received_ts": "2026-10-07T06:09:40.421+00:00",
+          "processed_ts": "2026-10-07T06:09:40.421+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        },
+        {
+          "phase": "DISCONNECTED",
+          "timestamp_ms": 1791354059950,
+          "generation": 5,
+          "exchange_ts": null,
+          "received_ts": "2026-10-07T06:20:59.950+00:00",
+          "processed_ts": "2026-10-07T06:20:59.950+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false,
+          "reason": "ExchangeError:STREAM_DISCONNECTED",
+          "consecutive_failures": 1
+        },
+        {
+          "phase": "CONNECTING",
+          "timestamp_ms": 1791354060952,
+          "generation": 5,
+          "exchange_ts": null,
+          "received_ts": "2026-10-07T06:21:00.952+00:00",
+          "processed_ts": "2026-10-07T06:21:00.952+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        },
+        {
+          "phase": "SUBSCRIBED",
+          "timestamp_ms": 1791354062593,
+          "generation": 5,
+          "exchange_ts": null,
+          "received_ts": "2026-10-07T06:21:02.593+00:00",
+          "processed_ts": "2026-10-07T06:21:02.593+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        },
+        {
+          "phase": "REST_MARKET_RECONCILED",
+          "timestamp_ms": 1791354068794,
+          "generation": 6,
+          "exchange_ts": null,
+          "received_ts": "2026-10-07T06:21:08.794+00:00",
+          "processed_ts": "2026-10-07T06:21:08.794+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        },
+        {
+          "phase": "PAPER_ACCOUNT_RECONCILED",
+          "generation": 6,
+          "timestamp_ms": 1791354069159,
+          "source": "LOCAL_PAPER_FILL_REPLAY",
+          "exchange_ts": null,
+          "received_ts": "2026-10-07T06:21:09.159+00:00",
+          "processed_ts": "2026-10-07T06:21:09.159+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        }
+      ]
+    },
+    "checkpoint_checks": {
+      "paper.sqlite_integrity": "ok",
+      "paper.sqlite_checksum": true,
+      "paper.sqlite_clean": true,
+      "paper.sqlite_source": "90ebdb94c333f18a6e75f937dd6f574a7e43d1ded4780b2b424fae21a79617fe",
+      "backups/paper-latest.sqlite_integrity": "ok",
+      "backups/paper-latest.sqlite_checksum": true,
+      "backups/paper-latest.sqlite_clean": true,
+      "backups/paper-latest.sqlite_source": "90ebdb94c333f18a6e75f937dd6f574a7e43d1ded4780b2b424fae21a79617fe"
+    },
+    "final_rejections": {
+      "par:BRENT": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "par:BTC": [
+        "ATR_BELOW_BASELINE_SCANNER_FLOOR",
+        "SPREAD_TOO_WIDE"
+      ],
+      "par:ETH": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "par:EWJ": [
+        "INSUFFICIENT_COMPLETED_HISTORY"
+      ],
+      "par:EWY": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "par:GOLD": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "par:HYPE": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "par:SP500": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "par:USDEUR": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "par:USDJPY": [
+        "COMPLETED_CANDLE_STALE"
+      ]
+    },
+    "maximum_memory_mb": 147.34375
+  },
+  "history": {
+    "original_zip_available": false,
+    "official_provenance_verified": false,
+    "user_reports_official_discord_source": true,
+    "raw_csv_hashes_unchanged": true,
+    "csv_count": 10,
+    "csv_rows": 49831,
+    "live_pipeline_isolated": true
+  },
+  "research_state": {
+    "SESSION_ANCHOR_VALIDATED": false,
+    "ML_DATA_READY": false,
+    "ML_MODEL_VALIDATED": false,
+    "HOLDOUT_COMPLETE": false,
+    "PROMOTION_RECOMMENDED": false,
+    "PRODUCTION_CHANGED": false
+  },
+  "artifact_sha256": {
+    "docs/practice_setup_2026-10-07/test_receipt.json": "4070501f6157b17fc553e6c5f393a3af53c6241e271557b43693dbea5f645d1b",
+    "docs/practice_setup_2026-10-07/regression.xml": "02235a0ac328aa045ac3b923754e56c202a1a63a4c04c09b163c671fc11bcf81",
+    "docs/practice_setup_2026-10-07/signer_preflight_final.json": "f63a60a73635132e335c90d69abc113743fdf6415b5917824a2f70a71099dcad",
+    "docs/practice_setup_2026-10-07/leverage_plan.json": "bae67ffef76ace99441b136af587ec07a6df8d9e5810b505893678ccaad5308c",
+    "docs/practice_setup_2026-10-07/continuous_paper_receipt.json": "64be120920a7c5d340a7064b31447d3faf5d7c92de0601ae2e13bfe88b77770a",
+    "docs/practice_setup_2026-10-07/continuous_health_samples.jsonl": "8780f56ef327a47c9da4a2dcd00448c31eb49b52d453e0045493051cd85ac972",
+    "docs/practice_setup_2026-10-07/requested_protection_receipt.json": "917b1ec815d63a3507570f98080a9668f29d884e0621ed5b6eac212878e53014",
+    "docs/practice_setup_2026-10-07/requested_protection_geometry.xml": "9fd85831dc82fd311aa3003f741f8b0965e2c923f2b887b23755887cbc351774",
+    "docs/practice_setup_2026-10-07/operating_checks.json": "d2bea121ccd31cc732ae478dc4b4ddb8d8b37401c5c15dd00330d4c66fb9a00d",
+    "docs/practice_setup_2026-10-07/operating_checks_final.json": "8abe9d53a28b62168d4555113ae13d0c68ca65f7d00ffbb60feff352e0b613e2",
+    "docs/practice_setup_2026-10-07/direct_candle_probe.json": "19fe90d1b5dca815549ce04e24bc3e0f75c09aa23de254acf49a19a7ce5c06d4",
+    "docs/practice_setup_2026-10-07/candle_request_range_probe.json": "1f12e88b34af011bc39bb15e120f0867d672af4573d04fa25ab0728a7abce792",
+    "docs/practice_setup_2026-10-07/candle_request_range_responses.jsonl": "bedea5f22cfb330be246103478948a08ac863cf415ba35fa8112dce0e8042674",
+    "docs/practice_setup_2026-10-07/recorded_indicator_diagnostic_corrected.json": "d79fdd57760b4debfe69c39d4040f7c4e4ffb2b9ae39ce4c1c31a69c228a6e52",
+    "docs/practice_setup_2026-10-07/account_check_final.json": "8502150c00e32379a543864a2943be0d44b739b18dda7fcfa675680ff119d753",
+    "docs/practice_setup_2026-10-07/paper_segments/20261007T052432Z-bb04b3e2/report.json": "0c38af7e7a923eed2b57030d1d4575f121723302cb006510af579bb49f889aba",
+    "docs/practice_setup_2026-10-07/paper_segments/20261007T052432Z-bb04b3e2/results/session_manifest.json": "0da619511ba8a1af615b6404b7105dd86cf3ae0a259be1f5ea7ee7526907cfdc",
+    "configs/reliability_policy.json": "1b8573d07a0f12f3653cf7b92f96c2120e8d61c3f210335ec850ba14ea582455",
+    "configs/practice_ops.json": "f35d72d21914874578a95280d453f857d875d0587e33a82167b8ddb446ce8be2",
+    "docs/strategy_freeze.json": "aeda15740802c1082f38f4e69f415f16a77d749a1aa050061026a99120fb9f8b",
+    "algo-trading-bot/signal_brain.py": "bff940ac5ed35f71ed3dfb537ba15d20dcec35a4e62a938d2f0619c6e9309d83",
+    "AGENTS.md": "d35450fdbd0f11f7f08251d6e02feaeb964c1c0df1264e95e5ad8faca5ee123b",
+    "docs/practice_setup_2026-10-07/protection_configuration_approval.md": "0a41a9188a73f1ee91fe0189337510b8e6dda43de33c359ae19f0ad0c69aa3c3",
+    "docs/practice_setup_2026-10-07/certification_plan.md": "afddfe33bc5a0c559ac3b10b607e740cc7f0690fcca6f2a43558b3d33de34169",
+    "docs/practice_setup_2026-10-07/build_report.py": "a840086d9d56da5cfc7b29529ddb57a1ad9fe839b83ebc332742f13e6356427a",
+    "docs/practice_setup_2026-10-07/run_paper_validation.py": "6d44cd8ece5e9c4ebd27a7b3f6f039747e8e27734fa944fb0f7404d068c9eda3",
+    "docs/practice_setup_2026-10-07/check_account.py": "309c7fb7a28dc77df95807834a8b9ea1f88cbc9527efaa2fc0a32367b353bbcb",
+    "docs/practice_setup_2026-10-07/check_account_final.py": "53a859ed69ac419e4e0fad6c34f1608c0eabecf62a3cadbf06e9bbd605064442",
+    "docs/practice_setup_2026-10-07/diagnose_recorded_indicators.py": "b58bd0952850abf443afe6d5b0bf0005c2c9962170b6f6823f8943afa8567449",
+    "docs/practice_setup_2026-10-07/probe_request_ranges.py": "6326eb9019145de4e8447796838ace3e8c3be26671e75d8fa6efe274e95e010e",
+    "docs/practice_setup_2026-10-07/probe_live_candles.py": "4897f5599b8220fd0f9e2f1950b4e3ed27a91d66845ad5b0e99a4283c5b7e470"
+  },
+  "scope_notes": {
+    "ACCOUNT_READY": "Timestamped read-only funded/unified check; not activation.",
+    "PAPER_ONE_HOUR_COMPLETE": "Local launcher and zero-exposure operation, not profitability or funded fills.",
+    "SUSTAINED_USABLE_FEED_DEMONSTRATED": "Not demonstrated; per-market observations below. All ten fresh at once is not a new trading rule.",
+    "NONCE_LOCAL_HEALTHY": "No nonce allocated; no actual signature; lock scope is one host and OS user.",
+    "PROTECTION_CONFIGURED": "User-requested exact policy recorded; still disabled and not exchange-certified.",
+    "RESEARCH_PRODUCTION_CHANGED": "Research promotion flag; infrastructure changes do not certify model promotion."
+  }
+}

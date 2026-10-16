@@ -1,0 +1,3332 @@
+{
+  "status": "QUALIFICATION_LOCKED",
+  "execution_mode": "PAPER",
+  "prepared_mode": "TESTNET_QUALIFICATION",
+  "allow_live_orders": false,
+  "exchange_submissions": 0,
+  "actual_wallet_signatures": 0,
+  "source_hash": "b2ad88fde083120ed3f1502935e1f33946cd1e2509cccb46f25289785cb963a3",
+  "started_utc": "2026-10-13T04:57:07.772111+00:00",
+  "entry_rule": "ONE_BOUNDED_LONG_THEN_IMMEDIATE_CLOSE_V1",
+  "qualification_only_spread_ceiling_bps": 50,
+  "normal_strategy_spread_ceiling_bps": 15,
+  "maximum_notional": "25",
+  "normal_protection_certified": false,
+  "whitelist_trade_proof": false,
+  "organizer_whitelisting_confirmed": false,
+  "sole_signer_host_confirmed": false,
+  "candidates": [
+    {
+      "symbol": "par:BTC",
+      "eligible_for_risk_review": false,
+      "quote": {
+        "symbol": "par:BTC",
+        "timestamp_ms": 1791867565217,
+        "bid": "83314.0",
+        "ask": "83431.0",
+        "bid_quantity": "0.0041",
+        "ask_quantity": "0.0002",
+        "mid": "83372.5",
+        "mark": "83359.0",
+        "oracle": "83435.0",
+        "hourly_funding": "0.0000076005",
+        "open_interest": "2.2698",
+        "daily_notional_volume": "265143.4822000001",
+        "mark_timestamp_ms": 1791867565412,
+        "received_timestamp_ms": 1791867565579,
+        "processed_timestamp_ms": 1791867565579
+      },
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "par:BTC",
+        "leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "maxTradeSzs": [
+          "11.9963",
+          "11.9963"
+        ],
+        "availableToTrade": [
+          "1000000.0",
+          "1000000.0"
+        ],
+        "markPx": "83359.0"
+      },
+      "readiness": {
+        "status": "READY",
+        "reasons": [],
+        "team_address": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+        "signer_address": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+        "observed_ms": 1791867563656,
+        "agent_expiry_ms": 1806859924898,
+        "collateral": "1000000.0",
+        "account_mode": "unifiedAccount",
+        "fees": {
+          "dailyUserVlm": [
+            {
+              "date": "2026-09-29",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "4035362.29"
+            },
+            {
+              "date": "2026-09-30",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "5033407.0099999998"
+            },
+            {
+              "date": "2026-10-01",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "6265670.4400000004"
+            },
+            {
+              "date": "2026-10-02",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "7303506.9500000002"
+            },
+            {
+              "date": "2026-10-03",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "2494978.4100000001"
+            },
+            {
+              "date": "2026-10-04",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "2879836.3700000001"
+            },
+            {
+              "date": "2026-10-05",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "4295368.6500000004"
+            },
+            {
+              "date": "2026-10-06",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "5789290.3600000003"
+            },
+            {
+              "date": "2026-10-07",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "5814031.0899999999"
+            },
+            {
+              "date": "2026-10-08",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "5803798.0599999996"
+            },
+            {
+              "date": "2026-10-09",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "16694743.0800000001"
+            },
+            {
+              "date": "2026-10-10",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "2682872.8100000001"
+            },
+            {
+              "date": "2026-10-11",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "2604769.8799999999"
+            },
+            {
+              "date": "2026-10-12",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "3546292.6699999999"
+            },
+            {
+              "date": "2026-10-13",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "1964232.49"
+            }
+          ],
+          "feeSchedule": {
+            "cross": "0.00045",
+            "add": "0.00015",
+            "spotCross": "0.0007",
+            "spotAdd": "0.0004",
+            "tiers": {
+              "vip": [
+                {
+                  "ntlCutoff": "5000000.0",
+                  "cross": "0.0004",
+                  "add": "0.00012",
+                  "spotCross": "0.0006",
+                  "spotAdd": "0.0003"
+                },
+                {
+                  "ntlCutoff": "25000000.0",
+                  "cross": "0.00035",
+                  "add": "0.00008",
+                  "spotCross": "0.0005",
+                  "spotAdd": "0.0002"
+                },
+                {
+                  "ntlCutoff": "100000000.0",
+                  "cross": "0.0003",
+                  "add": "0.00004",
+                  "spotCross": "0.0004",
+                  "spotAdd": "0.0001"
+                },
+                {
+                  "ntlCutoff": "500000000.0",
+                  "cross": "0.00028",
+                  "add": "0.0",
+                  "spotCross": "0.00035",
+                  "spotAdd": "0.0"
+                },
+                {
+                  "ntlCutoff": "2000000000.0",
+                  "cross": "0.00026",
+                  "add": "0.0",
+                  "spotCross": "0.0003",
+                  "spotAdd": "0.0"
+                },
+                {
+                  "ntlCutoff": "7000000000.0",
+                  "cross": "0.00024",
+                  "add": "0.0",
+                  "spotCross": "0.00025",
+                  "spotAdd": "0.0"
+                }
+              ],
+              "mm": [
+                {
+                  "makerFractionCutoff": "0.005",
+                  "add": "-0.00001"
+                },
+                {
+                  "makerFractionCutoff": "0.015",
+                  "add": "-0.00002"
+                },
+                {
+                  "makerFractionCutoff": "0.03",
+                  "add": "-0.00003"
+                }
+              ]
+            },
+            "referralDiscount": "0.04",
+            "stakingDiscountTiers": [
+              {
+                "bpsOfMaxSupply": "0.0",
+                "discount": "0.0"
+              },
+              {
+                "bpsOfMaxSupply": "0.0001",
+                "discount": "0.05"
+              },
+              {
+                "bpsOfMaxSupply": "0.001",
+                "discount": "0.1"
+              },
+              {
+                "bpsOfMaxSupply": "0.01",
+                "discount": "0.15"
+              },
+              {
+                "bpsOfMaxSupply": "0.1",
+                "discount": "0.2"
+              },
+              {
+                "bpsOfMaxSupply": "1.0",
+                "discount": "0.3"
+              },
+              {
+                "bpsOfMaxSupply": "5.0",
+                "discount": "0.4"
+              }
+            ]
+          },
+          "userCrossRate": "0.00045",
+          "userAddRate": "0.00015",
+          "userSpotCrossRate": "0.0007",
+          "userSpotAddRate": "0.0004",
+          "activeReferralDiscount": "0.0",
+          "trial": null,
+          "feeTrialEscrow": "0.0",
+          "nextTrialAvailableTimestamp": null,
+          "stakingLink": null,
+          "activeStakingDiscount": {
+            "bpsOfMaxSupply": "0.0",
+            "discount": "0.0"
+          }
+        },
+        "account_budget": {
+          "cumVlm": "0.0",
+          "nRequestsUsed": 13,
+          "nRequestsCap": 10000,
+          "nRequestsSurplus": 0
+        },
+        "reconciliation_ready": true,
+        "clock_healthy": true,
+        "rate_limits_healthy": true,
+        "signed_transport_implemented": true
+      },
+      "observed_ms": 1791867565579,
+      "spec": {
+        "symbol": "par:BTC",
+        "size_decimals": 4,
+        "max_leverage": 40,
+        "asset_id": 2670000,
+        "margin_tiers": [
+          [
+            "0",
+            40
+          ]
+        ]
+      },
+      "clock": {
+        "state": "HEALTHY",
+        "reason": null,
+        "offset_ms": -278,
+        "last_reference_ms": 1791867565579,
+        "fresh_confirmations": 4
+      },
+      "sizing": {
+        "ready": false,
+        "symbol": "par:BTC",
+        "maximum_notional": "25",
+        "minimum_opening_notional": "10",
+        "size_step": "0.0001",
+        "selected_quantity": null,
+        "candidates": [],
+        "quantity_bounds": {
+          "notional": "0.0002995016292888633314165229059",
+          "bid_depth": "0.00041",
+          "ask_depth": "0.00002",
+          "account_size": "11.9963",
+          "margin": "11.93709164164461265111689541"
+        },
+        "largest_bounded_quantity": "0.0000",
+        "entry_limit": "83472",
+        "exit_floor": "82069",
+        "spread_bps": "14.03340429997900986536327926",
+        "taker_fee_rate": "0.00090",
+        "rejection": "QUALIFICATION_NO_LOT_MEETS_OPENING_MINIMUM_WITHIN_BOUNDS"
+      },
+      "one_lot_close_assessment": {
+        "ready": true,
+        "possible_residual_count": 1,
+        "subminimum_residuals": [
+          {
+            "quantity": "0.0001",
+            "notional_at_floor": "8.2069",
+            "proof": {
+              "scope": "VERIFIED_EXACT_FULL_POSITION_IOC_CLOSE",
+              "historical_oid": 62228843959,
+              "evidence": "V8.5_ORIGINAL_ORDER_AND_FULL_POSITION_FILL_READBACK",
+              "evidence_sha256": "c421e3ffc251cb770c67b44395301e50ec0fbb6903146f18c51aa370a88a2764"
+            }
+          }
+        ],
+        "scope": "HISTORICAL_SHAPES_AND_APPROVED_PRICE_FLOOR_NOT_FUTURE_FILL_GUARANTEE"
+      },
+      "proposal": {
+        "symbol": "par:BTC",
+        "asset_id": 2670000,
+        "quantity": "0.0002",
+        "entry_side": "BUY",
+        "entry_limit": "83472",
+        "exit_bound": "82069",
+        "stop_trigger": "82481",
+        "stop_limit": "82069",
+        "reference_bid": "83314.0",
+        "reference_ask": "83431.0",
+        "reference_mark": "83365.0",
+        "reference_oracle": "83458.0",
+        "observed_ms": 1791867442209,
+        "source_hash": "b2ad88fde083120ed3f1502935e1f33946cd1e2509cccb46f25289785cb963a3",
+        "reliability_policy_hash": "1b8573d07a0f12f3653cf7b92f96c2120e8d61c3f210335ec850ba14ea582455",
+        "max_notional": "25",
+        "session_loss_budget": "25",
+        "entry_slippage_bps": "5",
+        "exit_slippage_bps": "20",
+        "taker_fee_rate": "0.00090",
+        "max_exit_attempts": 2,
+        "max_signed_actions": 5,
+        "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+        "api_wallet": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+        "network": "testnet",
+        "dex": "par",
+        "mode": "TESTNET_QUALIFICATION",
+        "entry_rule": "ONE_BOUNDED_LONG_THEN_IMMEDIATE_CLOSE_V1",
+        "qualification_spread_bps": "50",
+        "protection_status": "UNVERIFIED_NO_STOP_WILL_BE_SUBMITTED"
+      },
+      "proposal_hash": "ba9705b12c749edc5286b687dfbfb88650c9ddb92dde4e4fdfbea6d97f3dad9f",
+      "spread_bps": "14.03340429997900986536327926",
+      "central_validation": {
+        "allowed": true,
+        "code": "ALLOWED",
+        "reason": "All pre-trade checks passed",
+        "checked_ms": 1791867442209,
+        "normalized": {
+          "symbol": "par:BTC",
+          "side": "BUY",
+          "quantity": "0.0002",
+          "price": "83472",
+          "asset_id": 2670000,
+          "reduce_only": false,
+          "tif": "Ioc"
+        },
+        "audit": {
+          "symbol": "par:BTC",
+          "requested_size": "0.0002",
+          "requested_price": "83472",
+          "leverage": 1,
+          "metadata_hash": "b5cbc22f98b81a74bc21eb0f60afe4b74a28fc7185ae054fd69d0230ed30f114",
+          "normalized_size": "0.0002",
+          "normalized_price": "83472",
+          "notional": "16.6944",
+          "asset_id": 2670000,
+          "relevant_reference_price": "83365.0",
+          "reference_price_source": "markPx",
+          "oracle_price": "83458.0",
+          "deviation_percentage": "0.1283512265339171114976309003",
+          "candidate_id": "certification:ba9705b12c749edc5286b687dfbfb88650c9ddb92dde4e4fdfbea6d97f3dad9f",
+          "side": "BUY",
+          "strategy_setup": "TESTNET_CERTIFICATION_ENTRY",
+          "reduce_only": false,
+          "current_open_interest_notional": "189432.96840",
+          "open_interest_cap": "500000000.0",
+          "proposed_exposure_increase": "16.69160"
+        }
+      },
+      "residual_close_scope": {
+        "ready": true,
+        "possible_residual_count": 2,
+        "subminimum_residuals": [
+          {
+            "quantity": "0.0001",
+            "notional_at_floor": "8.2069",
+            "proof": {
+              "scope": "VERIFIED_EXACT_FULL_POSITION_IOC_CLOSE",
+              "historical_oid": 62228843959,
+              "evidence": "V8.5_ORIGINAL_ORDER_AND_FULL_POSITION_FILL_READBACK",
+              "evidence_sha256": "c421e3ffc251cb770c67b44395301e50ec0fbb6903146f18c51aa370a88a2764"
+            }
+          }
+        ],
+        "scope": "HISTORICAL_SHAPES_AND_APPROVED_PRICE_FLOOR_NOT_FUTURE_FILL_GUARANTEE"
+      },
+      "context_observations": [
+        {
+          "symbol": "par:BTC",
+          "attempt": 0,
+          "started_ms": 1791867507934,
+          "clock_before": {
+            "state": "HEALTHY",
+            "reason": null,
+            "offset_ms": -257,
+            "last_reference_ms": 1791867507932,
+            "fresh_confirmations": 7
+          },
+          "clock_synchronized": {
+            "state": "HEALTHY",
+            "reason": null,
+            "offset_ms": -230,
+            "last_reference_ms": 1791867558761,
+            "fresh_confirmations": 2
+          },
+          "reconciled_ms": 1791867561389,
+          "readiness": {
+            "status": "READY",
+            "reasons": [],
+            "team_address": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+            "signer_address": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+            "observed_ms": 1791867563656,
+            "agent_expiry_ms": 1806859924898,
+            "collateral": "1000000.0",
+            "account_mode": "unifiedAccount",
+            "fees": {
+              "dailyUserVlm": [
+                {
+                  "date": "2026-09-29",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "4035362.29"
+                },
+                {
+                  "date": "2026-09-30",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "5033407.0099999998"
+                },
+                {
+                  "date": "2026-10-01",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "6265670.4400000004"
+                },
+                {
+                  "date": "2026-10-02",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "7303506.9500000002"
+                },
+                {
+                  "date": "2026-10-03",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "2494978.4100000001"
+                },
+                {
+                  "date": "2026-10-04",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "2879836.3700000001"
+                },
+                {
+                  "date": "2026-10-05",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "4295368.6500000004"
+                },
+                {
+                  "date": "2026-10-06",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "5789290.3600000003"
+                },
+                {
+                  "date": "2026-10-07",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "5814031.0899999999"
+                },
+                {
+                  "date": "2026-10-08",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "5803798.0599999996"
+                },
+                {
+                  "date": "2026-10-09",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "16694743.0800000001"
+                },
+                {
+                  "date": "2026-10-10",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "2682872.8100000001"
+                },
+                {
+                  "date": "2026-10-11",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "2604769.8799999999"
+                },
+                {
+                  "date": "2026-10-12",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "3546292.6699999999"
+                },
+                {
+                  "date": "2026-10-13",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "1964232.49"
+                }
+              ],
+              "feeSchedule": {
+                "cross": "0.00045",
+                "add": "0.00015",
+                "spotCross": "0.0007",
+                "spotAdd": "0.0004",
+                "tiers": {
+                  "vip": [
+                    {
+                      "ntlCutoff": "5000000.0",
+                      "cross": "0.0004",
+                      "add": "0.00012",
+                      "spotCross": "0.0006",
+                      "spotAdd": "0.0003"
+                    },
+                    {
+                      "ntlCutoff": "25000000.0",
+                      "cross": "0.00035",
+                      "add": "0.00008",
+                      "spotCross": "0.0005",
+                      "spotAdd": "0.0002"
+                    },
+                    {
+                      "ntlCutoff": "100000000.0",
+                      "cross": "0.0003",
+                      "add": "0.00004",
+                      "spotCross": "0.0004",
+                      "spotAdd": "0.0001"
+                    },
+                    {
+                      "ntlCutoff": "500000000.0",
+                      "cross": "0.00028",
+                      "add": "0.0",
+                      "spotCross": "0.00035",
+                      "spotAdd": "0.0"
+                    },
+                    {
+                      "ntlCutoff": "2000000000.0",
+                      "cross": "0.00026",
+                      "add": "0.0",
+                      "spotCross": "0.0003",
+                      "spotAdd": "0.0"
+                    },
+                    {
+                      "ntlCutoff": "7000000000.0",
+                      "cross": "0.00024",
+                      "add": "0.0",
+                      "spotCross": "0.00025",
+                      "spotAdd": "0.0"
+                    }
+                  ],
+                  "mm": [
+                    {
+                      "makerFractionCutoff": "0.005",
+                      "add": "-0.00001"
+                    },
+                    {
+                      "makerFractionCutoff": "0.015",
+                      "add": "-0.00002"
+                    },
+                    {
+                      "makerFractionCutoff": "0.03",
+                      "add": "-0.00003"
+                    }
+                  ]
+                },
+                "referralDiscount": "0.04",
+                "stakingDiscountTiers": [
+                  {
+                    "bpsOfMaxSupply": "0.0",
+                    "discount": "0.0"
+                  },
+                  {
+                    "bpsOfMaxSupply": "0.0001",
+                    "discount": "0.05"
+                  },
+                  {
+                    "bpsOfMaxSupply": "0.001",
+                    "discount": "0.1"
+                  },
+                  {
+                    "bpsOfMaxSupply": "0.01",
+                    "discount": "0.15"
+                  },
+                  {
+                    "bpsOfMaxSupply": "0.1",
+                    "discount": "0.2"
+                  },
+                  {
+                    "bpsOfMaxSupply": "1.0",
+                    "discount": "0.3"
+                  },
+                  {
+                    "bpsOfMaxSupply": "5.0",
+                    "discount": "0.4"
+                  }
+                ]
+              },
+              "userCrossRate": "0.00045",
+              "userAddRate": "0.00015",
+              "userSpotCrossRate": "0.0007",
+              "userSpotAddRate": "0.0004",
+              "activeReferralDiscount": "0.0",
+              "trial": null,
+              "feeTrialEscrow": "0.0",
+              "nextTrialAvailableTimestamp": null,
+              "stakingLink": null,
+              "activeStakingDiscount": {
+                "bpsOfMaxSupply": "0.0",
+                "discount": "0.0"
+              }
+            },
+            "account_budget": {
+              "cumVlm": "0.0",
+              "nRequestsUsed": 13,
+              "nRequestsCap": 10000,
+              "nRequestsSurplus": 0
+            },
+            "reconciliation_ready": true,
+            "clock_healthy": true,
+            "rate_limits_healthy": true,
+            "signed_transport_implemented": true
+          },
+          "account_ms": 1791867564711,
+          "quote_ms": 1791867565217,
+          "mark_ms": 1791867565412,
+          "clock_after": {
+            "state": "HEALTHY",
+            "reason": null,
+            "offset_ms": -278,
+            "last_reference_ms": 1791867565579,
+            "fresh_confirmations": 4
+          },
+          "evaluated_ms": 1791867565579,
+          "result": "CONSISTENT_FRESH_CONTEXT"
+        }
+      ],
+      "external_blocker": "INSUFFICIENT_REAL_LIQUIDITY",
+      "blocker": "QUALIFICATION_NO_LOT_MEETS_OPENING_MINIMUM_WITHIN_BOUNDS",
+      "initial_review": {
+        "symbol": "par:BTC",
+        "eligible_for_risk_review": true,
+        "quote": {
+          "symbol": "par:BTC",
+          "timestamp_ms": 1791867441774,
+          "bid": "83314.0",
+          "ask": "83431.0",
+          "bid_quantity": "0.0041",
+          "ask_quantity": "0.0301",
+          "mid": "83372.5",
+          "mark": "83365.0",
+          "oracle": "83458.0",
+          "hourly_funding": "0.0000092447",
+          "open_interest": "2.2698",
+          "daily_notional_volume": "265143.4822000001",
+          "mark_timestamp_ms": 1791867442004,
+          "received_timestamp_ms": 1791867442209,
+          "processed_timestamp_ms": 1791867442209
+        },
+        "active_asset": {
+          "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+          "coin": "par:BTC",
+          "leverage": {
+            "type": "cross",
+            "value": 1
+          },
+          "maxTradeSzs": [
+            "11.9954",
+            "11.9954"
+          ],
+          "availableToTrade": [
+            "1000000.0",
+            "1000000.0"
+          ],
+          "markPx": "83365.0"
+        },
+        "readiness": {
+          "status": "READY",
+          "reasons": [],
+          "team_address": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+          "signer_address": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+          "observed_ms": 1791867440314,
+          "agent_expiry_ms": 1806859924898,
+          "collateral": "1000000.0",
+          "account_mode": "unifiedAccount",
+          "fees": {
+            "dailyUserVlm": [
+              {
+                "date": "2026-09-29",
+                "userCross": "0.0",
+                "userAdd": "0.0",
+                "exchange": "4035362.29"
+              },
+              {
+                "date": "2026-09-30",
+                "userCross": "0.0",
+                "userAdd": "0.0",
+                "exchange": "5033407.0099999998"
+              },
+              {
+                "date": "2026-10-01",
+                "userCross": "0.0",
+                "userAdd": "0.0",
+                "exchange": "6265670.4400000004"
+              },
+              {
+                "date": "2026-10-02",
+                "userCross": "0.0",
+                "userAdd": "0.0",
+                "exchange": "7303506.9500000002"
+              },
+              {
+                "date": "2026-10-03",
+                "userCross": "0.0",
+                "userAdd": "0.0",
+                "exchange": "2494978.4100000001"
+              },
+              {
+                "date": "2026-10-04",
+                "userCross": "0.0",
+                "userAdd": "0.0",
+                "exchange": "2879836.3700000001"
+              },
+              {
+                "date": "2026-10-05",
+                "userCross": "0.0",
+                "userAdd": "0.0",
+                "exchange": "4295368.6500000004"
+              },
+              {
+                "date": "2026-10-06",
+                "userCross": "0.0",
+                "userAdd": "0.0",
+                "exchange": "5789290.3600000003"
+              },
+              {
+                "date": "2026-10-07",
+                "userCross": "0.0",
+                "userAdd": "0.0",
+                "exchange": "5814031.0899999999"
+              },
+              {
+                "date": "2026-10-08",
+                "userCross": "0.0",
+                "userAdd": "0.0",
+                "exchange": "5803798.0599999996"
+              },
+              {
+                "date": "2026-10-09",
+                "userCross": "0.0",
+                "userAdd": "0.0",
+                "exchange": "16694743.0800000001"
+              },
+              {
+                "date": "2026-10-10",
+                "userCross": "0.0",
+                "userAdd": "0.0",
+                "exchange": "2682872.8100000001"
+              },
+              {
+                "date": "2026-10-11",
+                "userCross": "0.0",
+                "userAdd": "0.0",
+                "exchange": "2604769.8799999999"
+              },
+              {
+                "date": "2026-10-12",
+                "userCross": "0.0",
+                "userAdd": "0.0",
+                "exchange": "3546292.6699999999"
+              },
+              {
+                "date": "2026-10-13",
+                "userCross": "0.0",
+                "userAdd": "0.0",
+                "exchange": "1936718.6399999999"
+              }
+            ],
+            "feeSchedule": {
+              "cross": "0.00045",
+              "add": "0.00015",
+              "spotCross": "0.0007",
+              "spotAdd": "0.0004",
+              "tiers": {
+                "vip": [
+                  {
+                    "ntlCutoff": "5000000.0",
+                    "cross": "0.0004",
+                    "add": "0.00012",
+                    "spotCross": "0.0006",
+                    "spotAdd": "0.0003"
+                  },
+                  {
+                    "ntlCutoff": "25000000.0",
+                    "cross": "0.00035",
+                    "add": "0.00008",
+                    "spotCross": "0.0005",
+                    "spotAdd": "0.0002"
+                  },
+                  {
+                    "ntlCutoff": "100000000.0",
+                    "cross": "0.0003",
+                    "add": "0.00004",
+                    "spotCross": "0.0004",
+                    "spotAdd": "0.0001"
+                  },
+                  {
+                    "ntlCutoff": "500000000.0",
+                    "cross": "0.00028",
+                    "add": "0.0",
+                    "spotCross": "0.00035",
+                    "spotAdd": "0.0"
+                  },
+                  {
+                    "ntlCutoff": "2000000000.0",
+                    "cross": "0.00026",
+                    "add": "0.0",
+                    "spotCross": "0.0003",
+                    "spotAdd": "0.0"
+                  },
+                  {
+                    "ntlCutoff": "7000000000.0",
+                    "cross": "0.00024",
+                    "add": "0.0",
+                    "spotCross": "0.00025",
+                    "spotAdd": "0.0"
+                  }
+                ],
+                "mm": [
+                  {
+                    "makerFractionCutoff": "0.005",
+                    "add": "-0.00001"
+                  },
+                  {
+                    "makerFractionCutoff": "0.015",
+                    "add": "-0.00002"
+                  },
+                  {
+                    "makerFractionCutoff": "0.03",
+                    "add": "-0.00003"
+                  }
+                ]
+              },
+              "referralDiscount": "0.04",
+              "stakingDiscountTiers": [
+                {
+                  "bpsOfMaxSupply": "0.0",
+                  "discount": "0.0"
+                },
+                {
+                  "bpsOfMaxSupply": "0.0001",
+                  "discount": "0.05"
+                },
+                {
+                  "bpsOfMaxSupply": "0.001",
+                  "discount": "0.1"
+                },
+                {
+                  "bpsOfMaxSupply": "0.01",
+                  "discount": "0.15"
+                },
+                {
+                  "bpsOfMaxSupply": "0.1",
+                  "discount": "0.2"
+                },
+                {
+                  "bpsOfMaxSupply": "1.0",
+                  "discount": "0.3"
+                },
+                {
+                  "bpsOfMaxSupply": "5.0",
+                  "discount": "0.4"
+                }
+              ]
+            },
+            "userCrossRate": "0.00045",
+            "userAddRate": "0.00015",
+            "userSpotCrossRate": "0.0007",
+            "userSpotAddRate": "0.0004",
+            "activeReferralDiscount": "0.0",
+            "trial": null,
+            "feeTrialEscrow": "0.0",
+            "nextTrialAvailableTimestamp": null,
+            "stakingLink": null,
+            "activeStakingDiscount": {
+              "bpsOfMaxSupply": "0.0",
+              "discount": "0.0"
+            }
+          },
+          "account_budget": {
+            "cumVlm": "0.0",
+            "nRequestsUsed": 13,
+            "nRequestsCap": 10000,
+            "nRequestsSurplus": 0
+          },
+          "reconciliation_ready": true,
+          "clock_healthy": true,
+          "rate_limits_healthy": true,
+          "signed_transport_implemented": true
+        },
+        "observed_ms": 1791867442209,
+        "spec": {
+          "symbol": "par:BTC",
+          "size_decimals": 4,
+          "max_leverage": 40,
+          "asset_id": 2670000,
+          "margin_tiers": [
+            [
+              "0",
+              40
+            ]
+          ]
+        },
+        "clock": {
+          "state": "HEALTHY",
+          "reason": null,
+          "offset_ms": -332,
+          "last_reference_ms": 1791867442209,
+          "fresh_confirmations": 3
+        },
+        "sizing": {
+          "ready": true,
+          "symbol": "par:BTC",
+          "maximum_notional": "25",
+          "minimum_opening_notional": "10",
+          "size_step": "0.0001",
+          "selected_quantity": "0.0002",
+          "candidates": [
+            {
+              "quantity": "0.0002",
+              "notional": "16.6944",
+              "allowed": true
+            }
+          ],
+          "quantity_bounds": {
+            "notional": "0.0002995016292888633314165229059",
+            "bid_depth": "0.00041",
+            "ask_depth": "0.00301",
+            "account_size": "11.9954",
+            "margin": "11.93709164164461265111689541"
+          },
+          "largest_bounded_quantity": "0.0002",
+          "entry_limit": "83472",
+          "exit_floor": "82069",
+          "spread_bps": "14.03340429997900986536327926",
+          "taker_fee_rate": "0.00090",
+          "proposal": {
+            "symbol": "par:BTC",
+            "asset_id": 2670000,
+            "quantity": "0.0002",
+            "entry_side": "BUY",
+            "entry_limit": "83472",
+            "exit_bound": "82069",
+            "stop_trigger": "82481",
+            "stop_limit": "82069",
+            "reference_bid": "83314.0",
+            "reference_ask": "83431.0",
+            "reference_mark": "83365.0",
+            "reference_oracle": "83458.0",
+            "observed_ms": 1791867442209,
+            "source_hash": "b2ad88fde083120ed3f1502935e1f33946cd1e2509cccb46f25289785cb963a3",
+            "reliability_policy_hash": "1b8573d07a0f12f3653cf7b92f96c2120e8d61c3f210335ec850ba14ea582455",
+            "max_notional": "25",
+            "session_loss_budget": "25",
+            "entry_slippage_bps": "5",
+            "exit_slippage_bps": "20",
+            "taker_fee_rate": "0.00090",
+            "max_exit_attempts": 2,
+            "max_signed_actions": 5,
+            "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+            "api_wallet": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+            "network": "testnet",
+            "dex": "par",
+            "mode": "TESTNET_QUALIFICATION",
+            "entry_rule": "ONE_BOUNDED_LONG_THEN_IMMEDIATE_CLOSE_V1",
+            "qualification_spread_bps": "50",
+            "protection_status": "UNVERIFIED_NO_STOP_WILL_BE_SUBMITTED"
+          },
+          "entry_notional": "16.6944",
+          "bid_depth_utilization": "0.04878048780487804878048780488",
+          "ask_depth_utilization": "0.006644518272425249169435215947",
+          "residual_close_scope": {
+            "ready": true,
+            "possible_residual_count": 2,
+            "subminimum_residuals": [
+              {
+                "quantity": "0.0001",
+                "notional_at_floor": "8.2069",
+                "proof": {
+                  "scope": "VERIFIED_EXACT_FULL_POSITION_IOC_CLOSE",
+                  "historical_oid": 62228843959,
+                  "evidence": "V8.5_ORIGINAL_ORDER_AND_FULL_POSITION_FILL_READBACK",
+                  "evidence_sha256": "c421e3ffc251cb770c67b44395301e50ec0fbb6903146f18c51aa370a88a2764"
+                }
+              }
+            ],
+            "scope": "HISTORICAL_SHAPES_AND_APPROVED_PRICE_FLOOR_NOT_FUTURE_FILL_GUARANTEE"
+          },
+          "verified_residual_quantities": [
+            "0.0001",
+            "0.0002"
+          ],
+          "estimated_exit_limit": "83148",
+          "central_validation": {
+            "allowed": true,
+            "code": "ALLOWED",
+            "reason": "All pre-trade checks passed",
+            "checked_ms": 1791867442209,
+            "normalized": {
+              "symbol": "par:BTC",
+              "side": "BUY",
+              "quantity": "0.0002",
+              "price": "83472",
+              "asset_id": 2670000,
+              "reduce_only": false,
+              "tif": "Ioc"
+            },
+            "audit": {
+              "symbol": "par:BTC",
+              "requested_size": "0.0002",
+              "requested_price": "83472",
+              "leverage": 1,
+              "metadata_hash": "b5cbc22f98b81a74bc21eb0f60afe4b74a28fc7185ae054fd69d0230ed30f114",
+              "normalized_size": "0.0002",
+              "normalized_price": "83472",
+              "notional": "16.6944",
+              "asset_id": 2670000,
+              "relevant_reference_price": "83365.0",
+              "reference_price_source": "markPx",
+              "oracle_price": "83458.0",
+              "deviation_percentage": "0.1283512265339171114976309003",
+              "candidate_id": "certification:ba9705b12c749edc5286b687dfbfb88650c9ddb92dde4e4fdfbea6d97f3dad9f",
+              "side": "BUY",
+              "strategy_setup": "TESTNET_CERTIFICATION_ENTRY",
+              "reduce_only": false,
+              "current_open_interest_notional": "189432.96840",
+              "open_interest_cap": "500000000.0",
+              "proposed_exposure_increase": "16.69160"
+            }
+          }
+        },
+        "one_lot_close_assessment": {
+          "ready": true,
+          "possible_residual_count": 1,
+          "subminimum_residuals": [
+            {
+              "quantity": "0.0001",
+              "notional_at_floor": "8.2069",
+              "proof": {
+                "scope": "VERIFIED_EXACT_FULL_POSITION_IOC_CLOSE",
+                "historical_oid": 62228843959,
+                "evidence": "V8.5_ORIGINAL_ORDER_AND_FULL_POSITION_FILL_READBACK",
+                "evidence_sha256": "c421e3ffc251cb770c67b44395301e50ec0fbb6903146f18c51aa370a88a2764"
+              }
+            }
+          ],
+          "scope": "HISTORICAL_SHAPES_AND_APPROVED_PRICE_FLOOR_NOT_FUTURE_FILL_GUARANTEE"
+        },
+        "proposal": {
+          "symbol": "par:BTC",
+          "asset_id": 2670000,
+          "quantity": "0.0002",
+          "entry_side": "BUY",
+          "entry_limit": "83472",
+          "exit_bound": "82069",
+          "stop_trigger": "82481",
+          "stop_limit": "82069",
+          "reference_bid": "83314.0",
+          "reference_ask": "83431.0",
+          "reference_mark": "83365.0",
+          "reference_oracle": "83458.0",
+          "observed_ms": 1791867442209,
+          "source_hash": "b2ad88fde083120ed3f1502935e1f33946cd1e2509cccb46f25289785cb963a3",
+          "reliability_policy_hash": "1b8573d07a0f12f3653cf7b92f96c2120e8d61c3f210335ec850ba14ea582455",
+          "max_notional": "25",
+          "session_loss_budget": "25",
+          "entry_slippage_bps": "5",
+          "exit_slippage_bps": "20",
+          "taker_fee_rate": "0.00090",
+          "max_exit_attempts": 2,
+          "max_signed_actions": 5,
+          "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+          "api_wallet": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+          "network": "testnet",
+          "dex": "par",
+          "mode": "TESTNET_QUALIFICATION",
+          "entry_rule": "ONE_BOUNDED_LONG_THEN_IMMEDIATE_CLOSE_V1",
+          "qualification_spread_bps": "50",
+          "protection_status": "UNVERIFIED_NO_STOP_WILL_BE_SUBMITTED"
+        },
+        "proposal_hash": "ba9705b12c749edc5286b687dfbfb88650c9ddb92dde4e4fdfbea6d97f3dad9f",
+        "spread_bps": "14.03340429997900986536327926",
+        "central_validation": {
+          "allowed": true,
+          "code": "ALLOWED",
+          "reason": "All pre-trade checks passed",
+          "checked_ms": 1791867442209,
+          "normalized": {
+            "symbol": "par:BTC",
+            "side": "BUY",
+            "quantity": "0.0002",
+            "price": "83472",
+            "asset_id": 2670000,
+            "reduce_only": false,
+            "tif": "Ioc"
+          },
+          "audit": {
+            "symbol": "par:BTC",
+            "requested_size": "0.0002",
+            "requested_price": "83472",
+            "leverage": 1,
+            "metadata_hash": "b5cbc22f98b81a74bc21eb0f60afe4b74a28fc7185ae054fd69d0230ed30f114",
+            "normalized_size": "0.0002",
+            "normalized_price": "83472",
+            "notional": "16.6944",
+            "asset_id": 2670000,
+            "relevant_reference_price": "83365.0",
+            "reference_price_source": "markPx",
+            "oracle_price": "83458.0",
+            "deviation_percentage": "0.1283512265339171114976309003",
+            "candidate_id": "certification:ba9705b12c749edc5286b687dfbfb88650c9ddb92dde4e4fdfbea6d97f3dad9f",
+            "side": "BUY",
+            "strategy_setup": "TESTNET_CERTIFICATION_ENTRY",
+            "reduce_only": false,
+            "current_open_interest_notional": "189432.96840",
+            "open_interest_cap": "500000000.0",
+            "proposed_exposure_increase": "16.69160"
+          }
+        },
+        "residual_close_scope": {
+          "ready": true,
+          "possible_residual_count": 2,
+          "subminimum_residuals": [
+            {
+              "quantity": "0.0001",
+              "notional_at_floor": "8.2069",
+              "proof": {
+                "scope": "VERIFIED_EXACT_FULL_POSITION_IOC_CLOSE",
+                "historical_oid": 62228843959,
+                "evidence": "V8.5_ORIGINAL_ORDER_AND_FULL_POSITION_FILL_READBACK",
+                "evidence_sha256": "c421e3ffc251cb770c67b44395301e50ec0fbb6903146f18c51aa370a88a2764"
+              }
+            }
+          ],
+          "scope": "HISTORICAL_SHAPES_AND_APPROVED_PRICE_FLOOR_NOT_FUTURE_FILL_GUARANTEE"
+        },
+        "context_observations": [
+          {
+            "symbol": "par:BTC",
+            "attempt": 0,
+            "started_ms": 1791867434668,
+            "clock_before": {
+              "state": "WARNING",
+              "reason": "CLOCK_REFERENCE_REQUIRED",
+              "offset_ms": null,
+              "last_reference_ms": null,
+              "fresh_confirmations": 0
+            },
+            "clock_synchronized": {
+              "state": "HEALTHY",
+              "reason": null,
+              "offset_ms": -515,
+              "last_reference_ms": 1791867435183,
+              "fresh_confirmations": 1
+            },
+            "reconciled_ms": 1791867438016,
+            "readiness": {
+              "status": "READY",
+              "reasons": [],
+              "team_address": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+              "signer_address": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+              "observed_ms": 1791867440314,
+              "agent_expiry_ms": 1806859924898,
+              "collateral": "1000000.0",
+              "account_mode": "unifiedAccount",
+              "fees": {
+                "dailyUserVlm": [
+                  {
+                    "date": "2026-09-29",
+                    "userCross": "0.0",
+                    "userAdd": "0.0",
+                    "exchange": "4035362.29"
+                  },
+                  {
+                    "date": "2026-09-30",
+                    "userCross": "0.0",
+                    "userAdd": "0.0",
+                    "exchange": "5033407.0099999998"
+                  },
+                  {
+                    "date": "2026-10-01",
+                    "userCross": "0.0",
+                    "userAdd": "0.0",
+                    "exchange": "6265670.4400000004"
+                  },
+                  {
+                    "date": "2026-10-02",
+                    "userCross": "0.0",
+                    "userAdd": "0.0",
+                    "exchange": "7303506.9500000002"
+                  },
+                  {
+                    "date": "2026-10-03",
+                    "userCross": "0.0",
+                    "userAdd": "0.0",
+                    "exchange": "2494978.4100000001"
+                  },
+                  {
+                    "date": "2026-10-04",
+                    "userCross": "0.0",
+                    "userAdd": "0.0",
+                    "exchange": "2879836.3700000001"
+                  },
+                  {
+                    "date": "2026-10-05",
+                    "userCross": "0.0",
+                    "userAdd": "0.0",
+                    "exchange": "4295368.6500000004"
+                  },
+                  {
+                    "date": "2026-10-06",
+                    "userCross": "0.0",
+                    "userAdd": "0.0",
+                    "exchange": "5789290.3600000003"
+                  },
+                  {
+                    "date": "2026-10-07",
+                    "userCross": "0.0",
+                    "userAdd": "0.0",
+                    "exchange": "5814031.0899999999"
+                  },
+                  {
+                    "date": "2026-10-08",
+                    "userCross": "0.0",
+                    "userAdd": "0.0",
+                    "exchange": "5803798.0599999996"
+                  },
+                  {
+                    "date": "2026-10-09",
+                    "userCross": "0.0",
+                    "userAdd": "0.0",
+                    "exchange": "16694743.0800000001"
+                  },
+                  {
+                    "date": "2026-10-10",
+                    "userCross": "0.0",
+                    "userAdd": "0.0",
+                    "exchange": "2682872.8100000001"
+                  },
+                  {
+                    "date": "2026-10-11",
+                    "userCross": "0.0",
+                    "userAdd": "0.0",
+                    "exchange": "2604769.8799999999"
+                  },
+                  {
+                    "date": "2026-10-12",
+                    "userCross": "0.0",
+                    "userAdd": "0.0",
+                    "exchange": "3546292.6699999999"
+                  },
+                  {
+                    "date": "2026-10-13",
+                    "userCross": "0.0",
+                    "userAdd": "0.0",
+                    "exchange": "1936718.6399999999"
+                  }
+                ],
+                "feeSchedule": {
+                  "cross": "0.00045",
+                  "add": "0.00015",
+                  "spotCross": "0.0007",
+                  "spotAdd": "0.0004",
+                  "tiers": {
+                    "vip": [
+                      {
+                        "ntlCutoff": "5000000.0",
+                        "cross": "0.0004",
+                        "add": "0.00012",
+                        "spotCross": "0.0006",
+                        "spotAdd": "0.0003"
+                      },
+                      {
+                        "ntlCutoff": "25000000.0",
+                        "cross": "0.00035",
+                        "add": "0.00008",
+                        "spotCross": "0.0005",
+                        "spotAdd": "0.0002"
+                      },
+                      {
+                        "ntlCutoff": "100000000.0",
+                        "cross": "0.0003",
+                        "add": "0.00004",
+                        "spotCross": "0.0004",
+                        "spotAdd": "0.0001"
+                      },
+                      {
+                        "ntlCutoff": "500000000.0",
+                        "cross": "0.00028",
+                        "add": "0.0",
+                        "spotCross": "0.00035",
+                        "spotAdd": "0.0"
+                      },
+                      {
+                        "ntlCutoff": "2000000000.0",
+                        "cross": "0.00026",
+                        "add": "0.0",
+                        "spotCross": "0.0003",
+                        "spotAdd": "0.0"
+                      },
+                      {
+                        "ntlCutoff": "7000000000.0",
+                        "cross": "0.00024",
+                        "add": "0.0",
+                        "spotCross": "0.00025",
+                        "spotAdd": "0.0"
+                      }
+                    ],
+                    "mm": [
+                      {
+                        "makerFractionCutoff": "0.005",
+                        "add": "-0.00001"
+                      },
+                      {
+                        "makerFractionCutoff": "0.015",
+                        "add": "-0.00002"
+                      },
+                      {
+                        "makerFractionCutoff": "0.03",
+                        "add": "-0.00003"
+                      }
+                    ]
+                  },
+                  "referralDiscount": "0.04",
+                  "stakingDiscountTiers": [
+                    {
+                      "bpsOfMaxSupply": "0.0",
+                      "discount": "0.0"
+                    },
+                    {
+                      "bpsOfMaxSupply": "0.0001",
+                      "discount": "0.05"
+                    },
+                    {
+                      "bpsOfMaxSupply": "0.001",
+                      "discount": "0.1"
+                    },
+                    {
+                      "bpsOfMaxSupply": "0.01",
+                      "discount": "0.15"
+                    },
+                    {
+                      "bpsOfMaxSupply": "0.1",
+                      "discount": "0.2"
+                    },
+                    {
+                      "bpsOfMaxSupply": "1.0",
+                      "discount": "0.3"
+                    },
+                    {
+                      "bpsOfMaxSupply": "5.0",
+                      "discount": "0.4"
+                    }
+                  ]
+                },
+                "userCrossRate": "0.00045",
+                "userAddRate": "0.00015",
+                "userSpotCrossRate": "0.0007",
+                "userSpotAddRate": "0.0004",
+                "activeReferralDiscount": "0.0",
+                "trial": null,
+                "feeTrialEscrow": "0.0",
+                "nextTrialAvailableTimestamp": null,
+                "stakingLink": null,
+                "activeStakingDiscount": {
+                  "bpsOfMaxSupply": "0.0",
+                  "discount": "0.0"
+                }
+              },
+              "account_budget": {
+                "cumVlm": "0.0",
+                "nRequestsUsed": 13,
+                "nRequestsCap": 10000,
+                "nRequestsSurplus": 0
+              },
+              "reconciliation_ready": true,
+              "clock_healthy": true,
+              "rate_limits_healthy": true,
+              "signed_transport_implemented": true
+            },
+            "account_ms": 1791867441420,
+            "quote_ms": 1791867441774,
+            "mark_ms": 1791867442004,
+            "clock_after": {
+              "state": "HEALTHY",
+              "reason": null,
+              "offset_ms": -332,
+              "last_reference_ms": 1791867442209,
+              "fresh_confirmations": 3
+            },
+            "evaluated_ms": 1791867442209,
+            "result": "CONSISTENT_FRESH_CONTEXT"
+          }
+        ]
+      }
+    },
+    {
+      "symbol": "par:ETH",
+      "eligible_for_risk_review": false,
+      "quote": {
+        "symbol": "par:ETH",
+        "timestamp_ms": 1791867499189,
+        "bid": "2512.8",
+        "ask": "2519.4",
+        "bid_quantity": "2.0083",
+        "ask_quantity": "0.1236",
+        "mid": "2516.1",
+        "mark": "2514.3",
+        "oracle": "2517.1",
+        "hourly_funding": "-0.0000050507",
+        "open_interest": "83.8192",
+        "daily_notional_volume": "259954.6656299999",
+        "mark_timestamp_ms": 1791867499500,
+        "received_timestamp_ms": 1791867499663,
+        "processed_timestamp_ms": 1791867499663
+      },
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "par:ETH",
+        "leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "maxTradeSzs": [
+          "397.725",
+          "397.725"
+        ],
+        "availableToTrade": [
+          "1000000.0",
+          "1000000.0"
+        ],
+        "markPx": "2514.3"
+      },
+      "readiness": {
+        "status": "READY",
+        "reasons": [],
+        "team_address": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+        "signer_address": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+        "observed_ms": 1791867497588,
+        "agent_expiry_ms": 1806859924898,
+        "collateral": "1000000.0",
+        "account_mode": "unifiedAccount",
+        "fees": {
+          "dailyUserVlm": [
+            {
+              "date": "2026-09-29",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "4035362.29"
+            },
+            {
+              "date": "2026-09-30",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "5033407.0099999998"
+            },
+            {
+              "date": "2026-10-01",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "6265670.4400000004"
+            },
+            {
+              "date": "2026-10-02",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "7303506.9500000002"
+            },
+            {
+              "date": "2026-10-03",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "2494978.4100000001"
+            },
+            {
+              "date": "2026-10-04",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "2879836.3700000001"
+            },
+            {
+              "date": "2026-10-05",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "4295368.6500000004"
+            },
+            {
+              "date": "2026-10-06",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "5789290.3600000003"
+            },
+            {
+              "date": "2026-10-07",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "5814031.0899999999"
+            },
+            {
+              "date": "2026-10-08",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "5803798.0599999996"
+            },
+            {
+              "date": "2026-10-09",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "16694743.0800000001"
+            },
+            {
+              "date": "2026-10-10",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "2682872.8100000001"
+            },
+            {
+              "date": "2026-10-11",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "2604769.8799999999"
+            },
+            {
+              "date": "2026-10-12",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "3546292.6699999999"
+            },
+            {
+              "date": "2026-10-13",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "1963839.49"
+            }
+          ],
+          "feeSchedule": {
+            "cross": "0.00045",
+            "add": "0.00015",
+            "spotCross": "0.0007",
+            "spotAdd": "0.0004",
+            "tiers": {
+              "vip": [
+                {
+                  "ntlCutoff": "5000000.0",
+                  "cross": "0.0004",
+                  "add": "0.00012",
+                  "spotCross": "0.0006",
+                  "spotAdd": "0.0003"
+                },
+                {
+                  "ntlCutoff": "25000000.0",
+                  "cross": "0.00035",
+                  "add": "0.00008",
+                  "spotCross": "0.0005",
+                  "spotAdd": "0.0002"
+                },
+                {
+                  "ntlCutoff": "100000000.0",
+                  "cross": "0.0003",
+                  "add": "0.00004",
+                  "spotCross": "0.0004",
+                  "spotAdd": "0.0001"
+                },
+                {
+                  "ntlCutoff": "500000000.0",
+                  "cross": "0.00028",
+                  "add": "0.0",
+                  "spotCross": "0.00035",
+                  "spotAdd": "0.0"
+                },
+                {
+                  "ntlCutoff": "2000000000.0",
+                  "cross": "0.00026",
+                  "add": "0.0",
+                  "spotCross": "0.0003",
+                  "spotAdd": "0.0"
+                },
+                {
+                  "ntlCutoff": "7000000000.0",
+                  "cross": "0.00024",
+                  "add": "0.0",
+                  "spotCross": "0.00025",
+                  "spotAdd": "0.0"
+                }
+              ],
+              "mm": [
+                {
+                  "makerFractionCutoff": "0.005",
+                  "add": "-0.00001"
+                },
+                {
+                  "makerFractionCutoff": "0.015",
+                  "add": "-0.00002"
+                },
+                {
+                  "makerFractionCutoff": "0.03",
+                  "add": "-0.00003"
+                }
+              ]
+            },
+            "referralDiscount": "0.04",
+            "stakingDiscountTiers": [
+              {
+                "bpsOfMaxSupply": "0.0",
+                "discount": "0.0"
+              },
+              {
+                "bpsOfMaxSupply": "0.0001",
+                "discount": "0.05"
+              },
+              {
+                "bpsOfMaxSupply": "0.001",
+                "discount": "0.1"
+              },
+              {
+                "bpsOfMaxSupply": "0.01",
+                "discount": "0.15"
+              },
+              {
+                "bpsOfMaxSupply": "0.1",
+                "discount": "0.2"
+              },
+              {
+                "bpsOfMaxSupply": "1.0",
+                "discount": "0.3"
+              },
+              {
+                "bpsOfMaxSupply": "5.0",
+                "discount": "0.4"
+              }
+            ]
+          },
+          "userCrossRate": "0.00045",
+          "userAddRate": "0.00015",
+          "userSpotCrossRate": "0.0007",
+          "userSpotAddRate": "0.0004",
+          "activeReferralDiscount": "0.0",
+          "trial": null,
+          "feeTrialEscrow": "0.0",
+          "nextTrialAvailableTimestamp": null,
+          "stakingLink": null,
+          "activeStakingDiscount": {
+            "bpsOfMaxSupply": "0.0",
+            "discount": "0.0"
+          }
+        },
+        "account_budget": {
+          "cumVlm": "0.0",
+          "nRequestsUsed": 13,
+          "nRequestsCap": 10000,
+          "nRequestsSurplus": 0
+        },
+        "reconciliation_ready": true,
+        "clock_healthy": true,
+        "rate_limits_healthy": true,
+        "signed_transport_implemented": true
+      },
+      "observed_ms": 1791867499663,
+      "spec": {
+        "symbol": "par:ETH",
+        "size_decimals": 4,
+        "max_leverage": 25,
+        "asset_id": 2670001,
+        "margin_tiers": [
+          [
+            "0",
+            25
+          ]
+        ]
+      },
+      "clock": {
+        "state": "HEALTHY",
+        "reason": null,
+        "offset_ms": -392,
+        "last_reference_ms": 1791867499663,
+        "fresh_confirmations": 4
+      },
+      "sizing": {
+        "ready": false,
+        "symbol": "par:ETH",
+        "maximum_notional": "25",
+        "minimum_opening_notional": "10",
+        "size_step": "0.0001",
+        "selected_quantity": null,
+        "candidates": [
+          {
+            "quantity": "0.0099",
+            "notional": "24.95394",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0098",
+            "notional": "24.70188",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0097",
+            "notional": "24.44982",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0096",
+            "notional": "24.19776",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0095",
+            "notional": "23.94570",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0094",
+            "notional": "23.69364",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0093",
+            "notional": "23.44158",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0092",
+            "notional": "23.18952",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0091",
+            "notional": "22.93746",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0090",
+            "notional": "22.68540",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0089",
+            "notional": "22.43334",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0088",
+            "notional": "22.18128",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0087",
+            "notional": "21.92922",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0086",
+            "notional": "21.67716",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0085",
+            "notional": "21.42510",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0084",
+            "notional": "21.17304",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0083",
+            "notional": "20.92098",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0082",
+            "notional": "20.66892",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0081",
+            "notional": "20.41686",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0080",
+            "notional": "20.16480",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0079",
+            "notional": "19.91274",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0078",
+            "notional": "19.66068",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0077",
+            "notional": "19.40862",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0076",
+            "notional": "19.15656",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0075",
+            "notional": "18.90450",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0074",
+            "notional": "18.65244",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0073",
+            "notional": "18.40038",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0072",
+            "notional": "18.14832",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0071",
+            "notional": "17.89626",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0070",
+            "notional": "17.64420",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0069",
+            "notional": "17.39214",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0068",
+            "notional": "17.14008",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0067",
+            "notional": "16.88802",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0066",
+            "notional": "16.63596",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0065",
+            "notional": "16.38390",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0064",
+            "notional": "16.13184",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0063",
+            "notional": "15.87978",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0062",
+            "notional": "15.62772",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0061",
+            "notional": "15.37566",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0060",
+            "notional": "15.12360",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0059",
+            "notional": "14.87154",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0058",
+            "notional": "14.61948",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0057",
+            "notional": "14.36742",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0056",
+            "notional": "14.11536",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0055",
+            "notional": "13.86330",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0054",
+            "notional": "13.61124",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0053",
+            "notional": "13.35918",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0052",
+            "notional": "13.10712",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0051",
+            "notional": "12.85506",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0050",
+            "notional": "12.60300",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0049",
+            "notional": "12.35094",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0048",
+            "notional": "12.09888",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0047",
+            "notional": "11.84682",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0046",
+            "notional": "11.59476",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0045",
+            "notional": "11.34270",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0044",
+            "notional": "11.09064",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0043",
+            "notional": "10.83858",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0042",
+            "notional": "10.58652",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0041",
+            "notional": "10.33446",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.0040",
+            "notional": "10.08240",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          }
+        ],
+        "quantity_bounds": {
+          "notional": "0.009918273426961834483853050861",
+          "bid_depth": "0.20083",
+          "ask_depth": "0.01236",
+          "account_size": "397.725",
+          "margin": "395.3078288944533473038282527"
+        },
+        "largest_bounded_quantity": "0.0099",
+        "entry_limit": "2520.6",
+        "exit_floor": "2475.3",
+        "spread_bps": "26.23107189698342673184690593",
+        "taker_fee_rate": "0.00090",
+        "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+      },
+      "one_lot_close_assessment": {
+        "ready": false,
+        "blocker": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL",
+        "first_unverified_quantity": "0.0001",
+        "notional_at_floor": "0.24753"
+      },
+      "blocker": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL",
+      "context_observations": [
+        {
+          "symbol": "par:ETH",
+          "attempt": 0,
+          "started_ms": 1791867442209,
+          "clock_before": {
+            "state": "HEALTHY",
+            "reason": null,
+            "offset_ms": -332,
+            "last_reference_ms": 1791867442209,
+            "fresh_confirmations": 3
+          },
+          "clock_synchronized": {
+            "state": "HEALTHY",
+            "reason": null,
+            "offset_ms": -211,
+            "last_reference_ms": 1791867493227,
+            "fresh_confirmations": 2
+          },
+          "reconciled_ms": 1791867495511,
+          "readiness": {
+            "status": "READY",
+            "reasons": [],
+            "team_address": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+            "signer_address": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+            "observed_ms": 1791867497588,
+            "agent_expiry_ms": 1806859924898,
+            "collateral": "1000000.0",
+            "account_mode": "unifiedAccount",
+            "fees": {
+              "dailyUserVlm": [
+                {
+                  "date": "2026-09-29",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "4035362.29"
+                },
+                {
+                  "date": "2026-09-30",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "5033407.0099999998"
+                },
+                {
+                  "date": "2026-10-01",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "6265670.4400000004"
+                },
+                {
+                  "date": "2026-10-02",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "7303506.9500000002"
+                },
+                {
+                  "date": "2026-10-03",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "2494978.4100000001"
+                },
+                {
+                  "date": "2026-10-04",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "2879836.3700000001"
+                },
+                {
+                  "date": "2026-10-05",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "4295368.6500000004"
+                },
+                {
+                  "date": "2026-10-06",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "5789290.3600000003"
+                },
+                {
+                  "date": "2026-10-07",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "5814031.0899999999"
+                },
+                {
+                  "date": "2026-10-08",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "5803798.0599999996"
+                },
+                {
+                  "date": "2026-10-09",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "16694743.0800000001"
+                },
+                {
+                  "date": "2026-10-10",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "2682872.8100000001"
+                },
+                {
+                  "date": "2026-10-11",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "2604769.8799999999"
+                },
+                {
+                  "date": "2026-10-12",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "3546292.6699999999"
+                },
+                {
+                  "date": "2026-10-13",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "1963839.49"
+                }
+              ],
+              "feeSchedule": {
+                "cross": "0.00045",
+                "add": "0.00015",
+                "spotCross": "0.0007",
+                "spotAdd": "0.0004",
+                "tiers": {
+                  "vip": [
+                    {
+                      "ntlCutoff": "5000000.0",
+                      "cross": "0.0004",
+                      "add": "0.00012",
+                      "spotCross": "0.0006",
+                      "spotAdd": "0.0003"
+                    },
+                    {
+                      "ntlCutoff": "25000000.0",
+                      "cross": "0.00035",
+                      "add": "0.00008",
+                      "spotCross": "0.0005",
+                      "spotAdd": "0.0002"
+                    },
+                    {
+                      "ntlCutoff": "100000000.0",
+                      "cross": "0.0003",
+                      "add": "0.00004",
+                      "spotCross": "0.0004",
+                      "spotAdd": "0.0001"
+                    },
+                    {
+                      "ntlCutoff": "500000000.0",
+                      "cross": "0.00028",
+                      "add": "0.0",
+                      "spotCross": "0.00035",
+                      "spotAdd": "0.0"
+                    },
+                    {
+                      "ntlCutoff": "2000000000.0",
+                      "cross": "0.00026",
+                      "add": "0.0",
+                      "spotCross": "0.0003",
+                      "spotAdd": "0.0"
+                    },
+                    {
+                      "ntlCutoff": "7000000000.0",
+                      "cross": "0.00024",
+                      "add": "0.0",
+                      "spotCross": "0.00025",
+                      "spotAdd": "0.0"
+                    }
+                  ],
+                  "mm": [
+                    {
+                      "makerFractionCutoff": "0.005",
+                      "add": "-0.00001"
+                    },
+                    {
+                      "makerFractionCutoff": "0.015",
+                      "add": "-0.00002"
+                    },
+                    {
+                      "makerFractionCutoff": "0.03",
+                      "add": "-0.00003"
+                    }
+                  ]
+                },
+                "referralDiscount": "0.04",
+                "stakingDiscountTiers": [
+                  {
+                    "bpsOfMaxSupply": "0.0",
+                    "discount": "0.0"
+                  },
+                  {
+                    "bpsOfMaxSupply": "0.0001",
+                    "discount": "0.05"
+                  },
+                  {
+                    "bpsOfMaxSupply": "0.001",
+                    "discount": "0.1"
+                  },
+                  {
+                    "bpsOfMaxSupply": "0.01",
+                    "discount": "0.15"
+                  },
+                  {
+                    "bpsOfMaxSupply": "0.1",
+                    "discount": "0.2"
+                  },
+                  {
+                    "bpsOfMaxSupply": "1.0",
+                    "discount": "0.3"
+                  },
+                  {
+                    "bpsOfMaxSupply": "5.0",
+                    "discount": "0.4"
+                  }
+                ]
+              },
+              "userCrossRate": "0.00045",
+              "userAddRate": "0.00015",
+              "userSpotCrossRate": "0.0007",
+              "userSpotAddRate": "0.0004",
+              "activeReferralDiscount": "0.0",
+              "trial": null,
+              "feeTrialEscrow": "0.0",
+              "nextTrialAvailableTimestamp": null,
+              "stakingLink": null,
+              "activeStakingDiscount": {
+                "bpsOfMaxSupply": "0.0",
+                "discount": "0.0"
+              }
+            },
+            "account_budget": {
+              "cumVlm": "0.0",
+              "nRequestsUsed": 13,
+              "nRequestsCap": 10000,
+              "nRequestsSurplus": 0
+            },
+            "reconciliation_ready": true,
+            "clock_healthy": true,
+            "rate_limits_healthy": true,
+            "signed_transport_implemented": true
+          },
+          "account_ms": 1791867499001,
+          "quote_ms": 1791867499189,
+          "mark_ms": 1791867499500,
+          "clock_after": {
+            "state": "HEALTHY",
+            "reason": null,
+            "offset_ms": -392,
+            "last_reference_ms": 1791867499663,
+            "fresh_confirmations": 4
+          },
+          "evaluated_ms": 1791867499663,
+          "result": "CONSISTENT_FRESH_CONTEXT"
+        }
+      ]
+    },
+    {
+      "symbol": "par:HYPE",
+      "eligible_for_risk_review": false,
+      "quote": {
+        "symbol": "par:HYPE",
+        "timestamp_ms": 1791867507594,
+        "bid": "82.343",
+        "ask": "82.721",
+        "bid_quantity": "61.06",
+        "ask_quantity": "6.74",
+        "mid": "82.532",
+        "mark": "82.53",
+        "oracle": "82.584",
+        "hourly_funding": "0.0000125",
+        "open_interest": "2761.58",
+        "daily_notional_volume": "358125.53969",
+        "mark_timestamp_ms": 1791867507770,
+        "received_timestamp_ms": 1791867507932,
+        "processed_timestamp_ms": 1791867507932
+      },
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "par:HYPE",
+        "leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "maxTradeSzs": [
+          "12116.8",
+          "12116.8"
+        ],
+        "availableToTrade": [
+          "1000000.0",
+          "1000000.0"
+        ],
+        "markPx": "82.53"
+      },
+      "readiness": {
+        "status": "READY",
+        "reasons": [],
+        "team_address": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+        "signer_address": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+        "observed_ms": 1791867505786,
+        "agent_expiry_ms": 1806859924898,
+        "collateral": "1000000.0",
+        "account_mode": "unifiedAccount",
+        "fees": {
+          "dailyUserVlm": [
+            {
+              "date": "2026-09-29",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "4035362.29"
+            },
+            {
+              "date": "2026-09-30",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "5033407.0099999998"
+            },
+            {
+              "date": "2026-10-01",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "6265670.4400000004"
+            },
+            {
+              "date": "2026-10-02",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "7303506.9500000002"
+            },
+            {
+              "date": "2026-10-03",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "2494978.4100000001"
+            },
+            {
+              "date": "2026-10-04",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "2879836.3700000001"
+            },
+            {
+              "date": "2026-10-05",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "4295368.6500000004"
+            },
+            {
+              "date": "2026-10-06",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "5789290.3600000003"
+            },
+            {
+              "date": "2026-10-07",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "5814031.0899999999"
+            },
+            {
+              "date": "2026-10-08",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "5803798.0599999996"
+            },
+            {
+              "date": "2026-10-09",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "16694743.0800000001"
+            },
+            {
+              "date": "2026-10-10",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "2682872.8100000001"
+            },
+            {
+              "date": "2026-10-11",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "2604769.8799999999"
+            },
+            {
+              "date": "2026-10-12",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "3546292.6699999999"
+            },
+            {
+              "date": "2026-10-13",
+              "userCross": "0.0",
+              "userAdd": "0.0",
+              "exchange": "1963884.3200000001"
+            }
+          ],
+          "feeSchedule": {
+            "cross": "0.00045",
+            "add": "0.00015",
+            "spotCross": "0.0007",
+            "spotAdd": "0.0004",
+            "tiers": {
+              "vip": [
+                {
+                  "ntlCutoff": "5000000.0",
+                  "cross": "0.0004",
+                  "add": "0.00012",
+                  "spotCross": "0.0006",
+                  "spotAdd": "0.0003"
+                },
+                {
+                  "ntlCutoff": "25000000.0",
+                  "cross": "0.00035",
+                  "add": "0.00008",
+                  "spotCross": "0.0005",
+                  "spotAdd": "0.0002"
+                },
+                {
+                  "ntlCutoff": "100000000.0",
+                  "cross": "0.0003",
+                  "add": "0.00004",
+                  "spotCross": "0.0004",
+                  "spotAdd": "0.0001"
+                },
+                {
+                  "ntlCutoff": "500000000.0",
+                  "cross": "0.00028",
+                  "add": "0.0",
+                  "spotCross": "0.00035",
+                  "spotAdd": "0.0"
+                },
+                {
+                  "ntlCutoff": "2000000000.0",
+                  "cross": "0.00026",
+                  "add": "0.0",
+                  "spotCross": "0.0003",
+                  "spotAdd": "0.0"
+                },
+                {
+                  "ntlCutoff": "7000000000.0",
+                  "cross": "0.00024",
+                  "add": "0.0",
+                  "spotCross": "0.00025",
+                  "spotAdd": "0.0"
+                }
+              ],
+              "mm": [
+                {
+                  "makerFractionCutoff": "0.005",
+                  "add": "-0.00001"
+                },
+                {
+                  "makerFractionCutoff": "0.015",
+                  "add": "-0.00002"
+                },
+                {
+                  "makerFractionCutoff": "0.03",
+                  "add": "-0.00003"
+                }
+              ]
+            },
+            "referralDiscount": "0.04",
+            "stakingDiscountTiers": [
+              {
+                "bpsOfMaxSupply": "0.0",
+                "discount": "0.0"
+              },
+              {
+                "bpsOfMaxSupply": "0.0001",
+                "discount": "0.05"
+              },
+              {
+                "bpsOfMaxSupply": "0.001",
+                "discount": "0.1"
+              },
+              {
+                "bpsOfMaxSupply": "0.01",
+                "discount": "0.15"
+              },
+              {
+                "bpsOfMaxSupply": "0.1",
+                "discount": "0.2"
+              },
+              {
+                "bpsOfMaxSupply": "1.0",
+                "discount": "0.3"
+              },
+              {
+                "bpsOfMaxSupply": "5.0",
+                "discount": "0.4"
+              }
+            ]
+          },
+          "userCrossRate": "0.00045",
+          "userAddRate": "0.00015",
+          "userSpotCrossRate": "0.0007",
+          "userSpotAddRate": "0.0004",
+          "activeReferralDiscount": "0.0",
+          "trial": null,
+          "feeTrialEscrow": "0.0",
+          "nextTrialAvailableTimestamp": null,
+          "stakingLink": null,
+          "activeStakingDiscount": {
+            "bpsOfMaxSupply": "0.0",
+            "discount": "0.0"
+          }
+        },
+        "account_budget": {
+          "cumVlm": "0.0",
+          "nRequestsUsed": 13,
+          "nRequestsCap": 10000,
+          "nRequestsSurplus": 0
+        },
+        "reconciliation_ready": true,
+        "clock_healthy": true,
+        "rate_limits_healthy": true,
+        "signed_transport_implemented": true
+      },
+      "observed_ms": 1791867507932,
+      "spec": {
+        "symbol": "par:HYPE",
+        "size_decimals": 2,
+        "max_leverage": 10,
+        "asset_id": 2670002,
+        "margin_tiers": [
+          [
+            "0",
+            10
+          ]
+        ]
+      },
+      "clock": {
+        "state": "HEALTHY",
+        "reason": null,
+        "offset_ms": -257,
+        "last_reference_ms": 1791867507932,
+        "fresh_confirmations": 7
+      },
+      "sizing": {
+        "ready": false,
+        "symbol": "par:HYPE",
+        "maximum_notional": "25",
+        "minimum_opening_notional": "10",
+        "size_step": "0.01",
+        "selected_quantity": null,
+        "candidates": [
+          {
+            "quantity": "0.30",
+            "notional": "24.82860",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.29",
+            "notional": "24.00098",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.28",
+            "notional": "23.17336",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.27",
+            "notional": "22.34574",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.26",
+            "notional": "21.51812",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.25",
+            "notional": "20.69050",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.24",
+            "notional": "19.86288",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.23",
+            "notional": "19.03526",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.22",
+            "notional": "18.20764",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.21",
+            "notional": "17.38002",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.20",
+            "notional": "16.55240",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.19",
+            "notional": "15.72478",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.18",
+            "notional": "14.89716",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.17",
+            "notional": "14.06954",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.16",
+            "notional": "13.24192",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.15",
+            "notional": "12.41430",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.14",
+            "notional": "11.58668",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          },
+          {
+            "quantity": "0.13",
+            "notional": "10.75906",
+            "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+          }
+        ],
+        "quantity_bounds": {
+          "notional": "0.3020709987675503250283946739",
+          "bid_depth": "6.106",
+          "ask_depth": "0.674",
+          "account_size": "12116.8",
+          "margin": "12039.49775877043941922657130"
+        },
+        "largest_bounded_quantity": "0.30",
+        "entry_limit": "82.762",
+        "exit_floor": "81.113",
+        "spread_bps": "45.80041680802597780254931421",
+        "taker_fee_rate": "0.00090",
+        "rejection": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL"
+      },
+      "one_lot_close_assessment": {
+        "ready": false,
+        "blocker": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL",
+        "first_unverified_quantity": "0.01",
+        "notional_at_floor": "0.81113"
+      },
+      "blocker": "QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL",
+      "context_observations": [
+        {
+          "symbol": "par:HYPE",
+          "attempt": 0,
+          "started_ms": 1791867499664,
+          "clock_before": {
+            "state": "HEALTHY",
+            "reason": null,
+            "offset_ms": -392,
+            "last_reference_ms": 1791867499663,
+            "fresh_confirmations": 4
+          },
+          "clock_synchronized": {
+            "state": "HEALTHY",
+            "reason": null,
+            "offset_ms": -620,
+            "last_reference_ms": 1791867501482,
+            "fresh_confirmations": 5
+          },
+          "reconciled_ms": 1791867503715,
+          "readiness": {
+            "status": "READY",
+            "reasons": [],
+            "team_address": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+            "signer_address": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+            "observed_ms": 1791867505786,
+            "agent_expiry_ms": 1806859924898,
+            "collateral": "1000000.0",
+            "account_mode": "unifiedAccount",
+            "fees": {
+              "dailyUserVlm": [
+                {
+                  "date": "2026-09-29",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "4035362.29"
+                },
+                {
+                  "date": "2026-09-30",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "5033407.0099999998"
+                },
+                {
+                  "date": "2026-10-01",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "6265670.4400000004"
+                },
+                {
+                  "date": "2026-10-02",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "7303506.9500000002"
+                },
+                {
+                  "date": "2026-10-03",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "2494978.4100000001"
+                },
+                {
+                  "date": "2026-10-04",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "2879836.3700000001"
+                },
+                {
+                  "date": "2026-10-05",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "4295368.6500000004"
+                },
+                {
+                  "date": "2026-10-06",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "5789290.3600000003"
+                },
+                {
+                  "date": "2026-10-07",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "5814031.0899999999"
+                },
+                {
+                  "date": "2026-10-08",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "5803798.0599999996"
+                },
+                {
+                  "date": "2026-10-09",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "16694743.0800000001"
+                },
+                {
+                  "date": "2026-10-10",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "2682872.8100000001"
+                },
+                {
+                  "date": "2026-10-11",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "2604769.8799999999"
+                },
+                {
+                  "date": "2026-10-12",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "3546292.6699999999"
+                },
+                {
+                  "date": "2026-10-13",
+                  "userCross": "0.0",
+                  "userAdd": "0.0",
+                  "exchange": "1963884.3200000001"
+                }
+              ],
+              "feeSchedule": {
+                "cross": "0.00045",
+                "add": "0.00015",
+                "spotCross": "0.0007",
+                "spotAdd": "0.0004",
+                "tiers": {
+                  "vip": [
+                    {
+                      "ntlCutoff": "5000000.0",
+                      "cross": "0.0004",
+                      "add": "0.00012",
+                      "spotCross": "0.0006",
+                      "spotAdd": "0.0003"
+                    },
+                    {
+                      "ntlCutoff": "25000000.0",
+                      "cross": "0.00035",
+                      "add": "0.00008",
+                      "spotCross": "0.0005",
+                      "spotAdd": "0.0002"
+                    },
+                    {
+                      "ntlCutoff": "100000000.0",
+                      "cross": "0.0003",
+                      "add": "0.00004",
+                      "spotCross": "0.0004",
+                      "spotAdd": "0.0001"
+                    },
+                    {
+                      "ntlCutoff": "500000000.0",
+                      "cross": "0.00028",
+                      "add": "0.0",
+                      "spotCross": "0.00035",
+                      "spotAdd": "0.0"
+                    },
+                    {
+                      "ntlCutoff": "2000000000.0",
+                      "cross": "0.00026",
+                      "add": "0.0",
+                      "spotCross": "0.0003",
+                      "spotAdd": "0.0"
+                    },
+                    {
+                      "ntlCutoff": "7000000000.0",
+                      "cross": "0.00024",
+                      "add": "0.0",
+                      "spotCross": "0.00025",
+                      "spotAdd": "0.0"
+                    }
+                  ],
+                  "mm": [
+                    {
+                      "makerFractionCutoff": "0.005",
+                      "add": "-0.00001"
+                    },
+                    {
+                      "makerFractionCutoff": "0.015",
+                      "add": "-0.00002"
+                    },
+                    {
+                      "makerFractionCutoff": "0.03",
+                      "add": "-0.00003"
+                    }
+                  ]
+                },
+                "referralDiscount": "0.04",
+                "stakingDiscountTiers": [
+                  {
+                    "bpsOfMaxSupply": "0.0",
+                    "discount": "0.0"
+                  },
+                  {
+                    "bpsOfMaxSupply": "0.0001",
+                    "discount": "0.05"
+                  },
+                  {
+                    "bpsOfMaxSupply": "0.001",
+                    "discount": "0.1"
+                  },
+                  {
+                    "bpsOfMaxSupply": "0.01",
+                    "discount": "0.15"
+                  },
+                  {
+                    "bpsOfMaxSupply": "0.1",
+                    "discount": "0.2"
+                  },
+                  {
+                    "bpsOfMaxSupply": "1.0",
+                    "discount": "0.3"
+                  },
+                  {
+                    "bpsOfMaxSupply": "5.0",
+                    "discount": "0.4"
+                  }
+                ]
+              },
+              "userCrossRate": "0.00045",
+              "userAddRate": "0.00015",
+              "userSpotCrossRate": "0.0007",
+              "userSpotAddRate": "0.0004",
+              "activeReferralDiscount": "0.0",
+              "trial": null,
+              "feeTrialEscrow": "0.0",
+              "nextTrialAvailableTimestamp": null,
+              "stakingLink": null,
+              "activeStakingDiscount": {
+                "bpsOfMaxSupply": "0.0",
+                "discount": "0.0"
+              }
+            },
+            "account_budget": {
+              "cumVlm": "0.0",
+              "nRequestsUsed": 13,
+              "nRequestsCap": 10000,
+              "nRequestsSurplus": 0
+            },
+            "reconciliation_ready": true,
+            "clock_healthy": true,
+            "rate_limits_healthy": true,
+            "signed_transport_implemented": true
+          },
+          "account_ms": 1791867507256,
+          "quote_ms": 1791867507594,
+          "mark_ms": 1791867507770,
+          "clock_after": {
+            "state": "HEALTHY",
+            "reason": null,
+            "offset_ms": -257,
+            "last_reference_ms": 1791867507932,
+            "fresh_confirmations": 7
+          },
+          "evaluated_ms": 1791867507932,
+          "result": "CONSISTENT_FRESH_CONTEXT"
+        }
+      ]
+    }
+  ],
+  "approval_requested": false,
+  "practice_ready": false,
+  "live_ready": false,
+  "safety": {
+    "TRADING_VENUE": "HYPERLIQUID_TESTNET",
+    "EXECUTION_MODE": "PAPER",
+    "ALLOW_LIVE_ORDERS": false
+  },
+  "freeze": {
+    "baseline": "nse-working-baseline",
+    "file_count": 1,
+    "method_count": 8,
+    "parameter_count": 32,
+    "passed": true
+  },
+  "test_receipt": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/qualification_stability_v8_8_2026-10-13/regression_release/test_receipt.json",
+  "qualification_state": "PREPARATION_ONLY",
+  "stage": "VERIFYING_RESIDUAL_EXITS",
+  "last_progress": {
+    "event": "INFO_READ_COMPLETED",
+    "stage": "VERIFYING_RESIDUAL_EXITS",
+    "elapsed_seconds": 140.95,
+    "query": "frontendOpenOrders",
+    "request_elapsed_seconds": 0.325
+  },
+  "initial_reconciliation": {
+    "ready": true,
+    "reasons": [],
+    "accounting": {
+      "source": "EXCHANGE_REPORTED_ACCOUNT_OBSERVER",
+      "exchange_orders_submitted": 0,
+      "entries_paused": false,
+      "reasons": [],
+      "positions": [],
+      "open_orders": [],
+      "fills": [],
+      "funding_events": [],
+      "reported_account_equity": {
+        "reported_account_value": "1000000.0",
+        "collateral_balance": "1000000.0",
+        "margin_used": "0",
+        "withdrawable": null,
+        "valuation_source": "spotClearinghouseState.USDPR.total"
+      },
+      "accounting_window_ms": [
+        0,
+        1791867429299
+      ],
+      "latest_query_window_ms": [
+        0,
+        1791867429299
+      ],
+      "realized": {
+        "gross_closed_pnl": "0",
+        "actual_fill_fees": "0",
+        "actual_funding_cashflow": "0",
+        "net_after_fees_and_funding": "0",
+        "scope": "ONLY_OBSERVED_ACCOUNT_EVENTS; excludes deposits/transfers and unknown historical events"
+      },
+      "corrections": [
+        {
+          "kind": "EXCHANGE_TRUTH_ADOPTED",
+          "timestamp_ms": 1791867430492,
+          "differences": {},
+          "new_fill_count": 0,
+          "reasons": [],
+          "exchange_ts": null,
+          "received_ts": "2026-10-13T04:57:10.492+00:00",
+          "processed_ts": "2026-10-13T04:57:10.492+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        }
+      ]
+    }
+  },
+  "public_read_weight_before_reopen": 212,
+  "public_read_weight_after_reopen": 212,
+  "restored_checkpoint": true,
+  "reconciliation_after_reopen": {
+    "ready": true,
+    "reasons": [],
+    "accounting": {
+      "source": "EXCHANGE_REPORTED_ACCOUNT_OBSERVER",
+      "exchange_orders_submitted": 0,
+      "entries_paused": false,
+      "reasons": [],
+      "positions": [],
+      "open_orders": [],
+      "fills": [],
+      "funding_events": [],
+      "reported_account_equity": {
+        "reported_account_value": "1000000.0",
+        "collateral_balance": "1000000.0",
+        "margin_used": "0",
+        "withdrawable": null,
+        "valuation_source": "spotClearinghouseState.USDPR.total"
+      },
+      "accounting_window_ms": [
+        0,
+        1791867432376
+      ],
+      "latest_query_window_ms": [
+        0,
+        1791867432376
+      ],
+      "realized": {
+        "gross_closed_pnl": "0",
+        "actual_fill_fees": "0",
+        "actual_funding_cashflow": "0",
+        "net_after_fees_and_funding": "0",
+        "scope": "ONLY_OBSERVED_ACCOUNT_EVENTS; excludes deposits/transfers and unknown historical events"
+      },
+      "corrections": [
+        {
+          "kind": "EXCHANGE_TRUTH_ADOPTED",
+          "timestamp_ms": 1791867433815,
+          "differences": {},
+          "new_fill_count": 0,
+          "reasons": [],
+          "exchange_ts": null,
+          "received_ts": "2026-10-13T04:57:13.815+00:00",
+          "processed_ts": "2026-10-13T04:57:13.815+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        }
+      ]
+    }
+  },
+  "blocker": "NO_MARKET_PASSES_QUALIFICATION_MARKET_AND_RESIDUAL_RULE",
+  "final_reconciliation": {
+    "ready": true,
+    "reasons": [],
+    "accounting": {
+      "source": "EXCHANGE_REPORTED_ACCOUNT_OBSERVER",
+      "exchange_orders_submitted": 0,
+      "entries_paused": false,
+      "reasons": [],
+      "positions": [],
+      "open_orders": [],
+      "fills": [],
+      "funding_events": [],
+      "reported_account_equity": {
+        "reported_account_value": "1000000.0",
+        "collateral_balance": "1000000.0",
+        "margin_used": "0",
+        "withdrawable": null,
+        "valuation_source": "spotClearinghouseState.USDPR.total"
+      },
+      "accounting_window_ms": [
+        0,
+        1791867565976
+      ],
+      "latest_query_window_ms": [
+        0,
+        1791867565976
+      ],
+      "realized": {
+        "gross_closed_pnl": "0",
+        "actual_fill_fees": "0",
+        "actual_funding_cashflow": "0",
+        "net_after_fees_and_funding": "0",
+        "scope": "ONLY_OBSERVED_ACCOUNT_EVENTS; excludes deposits/transfers and unknown historical events"
+      },
+      "corrections": [
+        {
+          "kind": "EXCHANGE_TRUTH_ADOPTED",
+          "timestamp_ms": 1791867433815,
+          "differences": {},
+          "new_fill_count": 0,
+          "reasons": [],
+          "exchange_ts": null,
+          "received_ts": "2026-10-13T04:57:13.815+00:00",
+          "processed_ts": "2026-10-13T04:57:13.815+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        },
+        {
+          "kind": "EXCHANGE_TRUTH_ADOPTED",
+          "timestamp_ms": 1791867437198,
+          "differences": {},
+          "new_fill_count": 0,
+          "reasons": [],
+          "exchange_ts": null,
+          "received_ts": "2026-10-13T04:57:17.198+00:00",
+          "processed_ts": "2026-10-13T04:57:17.198+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        },
+        {
+          "kind": "EXCHANGE_TRUTH_ADOPTED",
+          "timestamp_ms": 1791867494837,
+          "differences": {},
+          "new_fill_count": 0,
+          "reasons": [],
+          "exchange_ts": null,
+          "received_ts": "2026-10-13T04:58:14.837+00:00",
+          "processed_ts": "2026-10-13T04:58:14.837+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        },
+        {
+          "kind": "EXCHANGE_TRUTH_ADOPTED",
+          "timestamp_ms": 1791867503083,
+          "differences": {},
+          "new_fill_count": 0,
+          "reasons": [],
+          "exchange_ts": null,
+          "received_ts": "2026-10-13T04:58:23.083+00:00",
+          "processed_ts": "2026-10-13T04:58:23.083+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        },
+        {
+          "kind": "EXCHANGE_TRUTH_ADOPTED",
+          "timestamp_ms": 1791867560694,
+          "differences": {},
+          "new_fill_count": 0,
+          "reasons": [],
+          "exchange_ts": null,
+          "received_ts": "2026-10-13T04:59:20.694+00:00",
+          "processed_ts": "2026-10-13T04:59:20.694+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        },
+        {
+          "kind": "EXCHANGE_TRUTH_ADOPTED",
+          "timestamp_ms": 1791867567555,
+          "differences": {},
+          "new_fill_count": 0,
+          "reasons": [],
+          "exchange_ts": null,
+          "received_ts": "2026-10-13T04:59:27.555+00:00",
+          "processed_ts": "2026-10-13T04:59:27.555+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        }
+      ]
+    }
+  },
+  "final_positions": [],
+  "final_orders": [],
+  "account_observed_ms": 1791867568723,
+  "rates": {
+    "state": "HEALTHY",
+    "policy": {
+      "ip_weight_per_minute": 1200,
+      "ip_safety_reserve": 120,
+      "daily_actions": 50000,
+      "daily_safety_reserve": 500,
+      "account_action_reserve": 10,
+      "max_open_orders": 1000,
+      "max_ws_connections": 10,
+      "max_ws_subscriptions": 1000,
+      "max_ws_unique_users": 10,
+      "venue_ws_connections_per_minute": 30,
+      "max_ws_messages_per_minute": 2000,
+      "ws_reconnects_per_minute": 5,
+      "budget_max_age_ms": 60000,
+      "optional_poll_interval_ms": 5000,
+      "read_retry_attempts": 3,
+      "backoff_base_ms": 1000,
+      "backoff_max_ms": 30000,
+      "exhausted_safety_action_interval_ms": 10000,
+      "caution_fraction": 0.75,
+      "throttle_fraction": 0.9
+    },
+    "ip_weight": 580,
+    "public_read_blocked": false,
+    "account_requests_used": 13,
+    "account_requests_cap": 10000,
+    "remaining_budget": 9987,
+    "budget_observed_ms": 1791867563315,
+    "daily_actions": 0,
+    "daily_limit": 50000,
+    "entries_allowed": true,
+    "open_orders": 0,
+    "backoff_until_ms": 0,
+    "websocket": {
+      "connections": 0,
+      "subscriptions": 0,
+      "outgoing_messages": 0,
+      "heartbeats": 0,
+      "reconnects_last_minute": 0
+    },
+    "public_reads": {
+      "upstream_by_operation": {
+        "perpDexs": 1,
+        "meta": 1,
+        "clearinghouseState": 46,
+        "openOrders": 18,
+        "userFillsByTime": 11,
+        "userFunding": 7,
+        "userAbstraction": 11,
+        "spotClearinghouseState": 11,
+        "frontendOpenOrders": 24,
+        "l2Book": 16,
+        "metaAndAssetCtxs": 8,
+        "extraAgents": 4,
+        "userFees": 4,
+        "userRateLimit": 4,
+        "activeAssetData": 4,
+        "perpDexLimits": 4
+      },
+      "failures": {},
+      "pending": 0,
+      "coalesced": 0,
+      "max_seconds": 0.5162094589322805,
+      "failure_details": []
+    }
+  },
+  "http_diagnostic": {
+    "query": "frontendOpenOrders",
+    "result": "OK",
+    "elapsed_seconds": 0.325
+  },
+  "snapshot_reuse_count": 4,
+  "http_timeouts": {
+    "connect_read_seconds": [
+      3.05,
+      5
+    ],
+    "total_seconds": 12
+  },
+  "sqlite_integrity": "ok",
+  "actual_action_rows": {
+    "intents": 0,
+    "api_actions": 0,
+    "signed_management": 0
+  },
+  "finished_utc": "2026-10-13T04:59:28.728117+00:00",
+  "source_hash_after": "b2ad88fde083120ed3f1502935e1f33946cd1e2509cccb46f25289785cb963a3"
+}

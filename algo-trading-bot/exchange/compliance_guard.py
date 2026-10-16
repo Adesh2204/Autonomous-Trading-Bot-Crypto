@@ -85,8 +85,17 @@ class ActionPermit:
     def require(self, transport, action):
         if (not self.active or self.guard._permits.get(id(self)) is not self or self.guard.transport is not transport or
                 getattr(transport, '_compliance_guard', None) is not self.guard or
-                fingerprint(action) != self.action_hash or
-                not 0 <= self.guard.clock_ms()-self.issued_ms <= 5000):
+                fingerprint(action) != self.action_hash):
+            raise ExchangeError('COMPLIANCE_ACTION_PERMIT_REQUIRED')
+        # Only the isolated qualification owner installs this typed boundary.
+        # Production retains its original fixed five-second permit behavior.
+        boundary=getattr(self.guard.execution_owner,'signing_boundary',None)
+        if boundary is not None:
+            from .qualification_signing_boundary import QualificationSigningBoundary
+            if type(boundary) is not QualificationSigningBoundary:
+                raise ExchangeError('QUALIFICATION_SIGNING_BOUNDARY_REQUIRED')
+            boundary.refresh_permit(self,action)
+        if not 0 <= self.guard.clock_ms()-self.issued_ms <= 5000:
             raise ExchangeError('COMPLIANCE_ACTION_PERMIT_REQUIRED')
         if self.entry_key is not None:
             self.guard.position_guard.require_entry_lease(self.entry_key, self.generation)
@@ -97,13 +106,19 @@ class ActionPermit:
 
 
 class ComplianceGuard:
-    def __init__(self, journal, position_guard, *, clock_ms, transport, policy=None, execution_owner=None):
+    def __init__(self, journal, position_guard, *, clock_ms, transport, policy=None, execution_owner=None,
+                 qualification_scope=None):
         self.journal = journal
         self.position_guard = position_guard
         self.clock_ms = clock_ms
         self.transport = transport
         self.execution_owner = execution_owner
         self.policy = policy or CompliancePolicy()
+        if qualification_scope is not None:
+            from .emergency_qualification import EmergencyComplianceScope
+            if type(qualification_scope) is not EmergencyComplianceScope:
+                raise ExchangeError('P0_EXACT_COMPLIANCE_SCOPE_REQUIRED')
+        self.qualification_scope = qualification_scope
         self._approved = {}
         self._permits = {}
 
@@ -129,11 +144,13 @@ class ComplianceGuard:
             provenance=asdict(provenance) if isinstance(provenance, OrderProvenance) else None)
         return decision
 
-    def evaluate(self, request, context, permission, position, *, trigger=False, modify_oid=None):
+    def evaluate(self, request, context, permission, position, *, trigger=False, modify_oid=None,
+                 full_position_close=False, renewal=None):
         now = self.clock_ms()
         candidate = getattr(permission, 'candidate_id', None)
         checks = dict(single_position=asdict(position), policy=asdict(self.policy),
                       trigger_order=trigger, modifies_order_id=modify_oid,
+                      exact_full_position_close=full_position_close is True,
                       position_generation=(self.journal.control('global_position_lock') or {}).get('generation'))
         p = getattr(permission, 'provenance', None)
         classification = None
@@ -142,11 +159,17 @@ class ComplianceGuard:
                                           safe_data(checks), now, classification)
             self.record(decision, request, order_id=modify_oid, provenance=p)
             if allowed:
-                self._approved[id(decision)] = (decision, fingerprint(asdict(request)), modify_oid, trigger)
+                self._approved[id(decision)] = (decision, fingerprint(asdict(request)), modify_oid, trigger,
+                                                full_position_close is True)
                 if len(self._approved)>512:
                     del self._approved[next(iter(self._approved))]
             return decision
         try:
+            if full_position_close:
+                from .full_position_close import normalize_exact_full_close
+                if trigger or modify_oid is not None:
+                    return finish(False, 'EXACT_FULL_CLOSE_CANNOT_BE_TRIGGER_OR_REPLACEMENT')
+                normalize_exact_full_close(context.spec, request, context, now)
             if not isinstance(p, OrderProvenance):
                 return finish(False, 'MISSING_STRATEGY_PROVENANCE')
             try:
@@ -184,19 +207,37 @@ class ComplianceGuard:
                     return finish(False, 'UNEXPLAINED_ORDER')
             elif classification == 'CONTROLLED_TEST_ORDER':
                 a = p.test_authorization or {}
+                scoped = self.qualification_scope
+                if scoped is not None:
+                    checks['qualification_policy'] = scoped.validate(request, context, permission, now)
                 checks['performance_statistics'] = 'EXCLUDE_CONTROLLED_TEST'
                 if (p.action_type != 'CONTROLLED_TEST_ORDER' or not a.get('operator_authorization') or
                         not a.get('objective') or not a.get('exit_procedure') or
                         a.get('market') != request.symbol or decimal(a.get('expected_quantity', 0)) != request.quantity or
                         type(a.get('timestamp_ms')) is not int or type(a.get('expires_ms')) is not int or
                         not a['timestamp_ms'] <= now < a['expires_ms'] <= a['timestamp_ms']+300000 or
-                        request.quantity*context.quote.mark > 50):
+                        request.quantity*context.quote.mark > (1000 if scoped is not None else 50)):
                     return finish(False, 'UNAUTHORIZED_TEST_ORDER')
             if request.reduce_only and (not held or (held.quantity > 0) == (request.side == 'BUY') or
                     request.quantity > abs(held.quantity)):
                 return finish(False, 'REDUCE_ONLY_VIOLATION')
             checks['provenance'] = 'PASS'
-            for row in self.journal.intents():
+            renewal_key=None
+            if renewal is not None:
+                from .qualification_signing_boundary import QualificationSigningBoundary
+                permit,action=renewal
+                wire=action.get('orders',[{}])[0]
+                own=self.journal.db.execute('SELECT * FROM intents WHERE cloid=?',(wire.get('c'),)).fetchone()
+                if (type(permit) is not ActionPermit or self._permits.get(id(permit)) is not permit
+                        or permit.guard is not self or not permit.active or fingerprint(action)!=permit.action_hash
+                        or type(getattr(self.execution_owner,'signing_boundary',None)) is not QualificationSigningBoundary
+                        or self.qualification_scope is None or own is None
+                        or own['state'] not in {'PREPARED','SUBMITTED'}
+                        or own['candidate']!=candidate or own['fingerprint']!=fingerprint(asdict(request))):
+                    return finish(False,'INVALID_SAME_ACTION_REVALIDATION')
+                renewal_key=own['intent_key']
+            for row in self.position_guard.intent_rows():
+                if row['intent_key']==renewal_key:continue
                 old = json.loads(row['request'])
                 if modify_oid is not None and str(row['oid']) == str(modify_oid):
                     # Only a tracked reduce-only replacement may be changed;
@@ -256,8 +297,11 @@ class ComplianceGuard:
                 depth = q.ask_quantity if request.side == 'BUY' else q.bid_quantity
                 checks.update(executable_depth=str(depth), order_size=str(request.quantity),
                               participation=str(request.quantity/depth) if depth else None)
-                if depth <= 0 or request.quantity > depth*self.policy.depth_participation:
+                separate_l2 = classification == 'CONTROLLED_TEST_ORDER' and self.qualification_scope is not None
+                if not separate_l2 and (depth <= 0 or request.quantity > depth*self.policy.depth_participation):
                     return finish(False, 'BOOK_MANIPULATION_RISK')
+                if separate_l2:
+                    checks['liquidity_policy'] = 'P0_EXACT_SCOPE_L2_CHECK; NOT_OLD_BBO_RULE'
             checks['liquidity'] = 'PASS' if not request.reduce_only else 'REDUCE_ONLY_RISK_ACTION'
             checks['exchange_writes'] = 'SEPARATE_AUTHORIZATION_STILL_REQUIRED'
             return finish(True, 'COMPLIANCE_PASS')
@@ -268,7 +312,7 @@ class ComplianceGuard:
         approved = self._approved.pop(id(decision), None)
         if approved is None or approved[0] is not decision or approved[1] != fingerprint(asdict(request)):
             raise ExchangeError('COMPLIANCE_ACTION_PERMIT_REQUIRED')
-        modify_oid, trigger = approved[2:]
+        modify_oid, trigger, full_position_close = approved[2:]
         kind = action.get('type')
         if kind == 'order' and modify_oid is None and len(action.get('orders', [])) == 1:
             wire = action['orders'][0]
@@ -290,7 +334,9 @@ class ComplianceGuard:
         # The executor's fixed boundary supplies nonce/clock/account/health gates;
         # an alternate caller cannot replace them with a permissive callback.
         callback=lambda:self.execution_owner._guard(context,decision.timestamp,
-            critical=request.reduce_only,entry=not request.reduce_only)
+            critical=request.reduce_only,entry=not request.reduce_only,
+            entry_request=request if not request.reduce_only else None,
+            exact_full_close=request if full_position_close else None)
         self.journal.event('COMPLIANCE_ACTION_AUTHORIZED', self.clock_ms(),
             candidate_id=decision.candidate_id, cloid=wire['c'], order_classification=decision.classification,
             action_type=kind, order=asdict(request), context_ms=context.account_ms,

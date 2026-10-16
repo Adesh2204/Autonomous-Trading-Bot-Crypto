@@ -1,0 +1,249 @@
+--- before/algo-trading-bot/exchange/emergency_qualification.py
++++ algo-trading-bot/exchange/emergency_qualification.py
+@@ -258,6 +258,52 @@
+         self.books=getattr(self,'books',{});self.books[request.symbol]=book
+         return replace(context,quote=quote)
+ 
++    def refresh_for_signing(self,request,recovery,own_intent):
++        """New network observations, ordered with readiness near the boundary."""
++        from .exchange_rules import ValidationContext
++        from .live_readiness import verify_live_account_readiness
++        from .hyperliquid_market_data import make_quote
++        started=self.client.clock_ms()
++        self.rate_limits.wait_for_read_budget(450,max_wait_seconds=65,
++            cancel_event=self.client.read_cancel_event,wait_ms=lambda ms:self.wait(ms/1000))
++        from .testnet_qualification import prime_read_only_clock
++        prime_read_only_clock(self.market,self.clock_health,request.symbol)
++        report=recovery.recover_for_signing(own_intent) if hasattr(recovery,'recover_for_signing') else recovery.recover()
++        if not getattr(recovery,'account_truth_ready',report.ready):
++            raise ExchangeError('QUALIFICATION_DURABLE_RECONCILIATION_REQUIRED')
++        before=self.account.get_positions();orders=tuple(self.account.get_frontend_open_orders())
++        active=self.account._query('activeAssetData',coin=request.symbol)
++        fills=tuple(self.account.get_fills(start_ms=max(0,self.client.clock_ms()-300000),end_ms=self.client.clock_ms()))
++        limits={} if request.reduce_only else self.client.post_info('perpDexLimits')
++        after=self.account.get_positions();after_orders=tuple(self.account.get_frontend_open_orders())
++        if before!=after or orders!=after_orders:raise ExchangeError('ACCOUNT_CHANGED_DURING_PREFLIGHT')
++        account_ms=self.client.clock_ms()
++        readiness=verify_live_account_readiness(self.account,self.signer_address,
++            clock_health=self.clock_health,rate_limits=self.rate_limits,
++            reconciliation_ready=recovery.account_truth_ready,critical=request.reduce_only)
++        metadata,values=self.client.post_info('metaAndAssetCtxs');metadata_ms=self.client.last_received_ms
++        self.client.validate_metadata(metadata)
++        if fingerprint(metadata)!=self.metadata_hash or len(values)!=len(metadata['universe']):
++            raise ExchangeError('MARKET_METADATA_CHANGED')
++        self.client.metadata_timestamp_ms=metadata_ms
++        contexts={row['name']:v for row,v in zip(metadata['universe'],values) if not row.get('isDelisted')}
++        sent=self.client.clock_ms();book=self.market.get_orderbook(request.symbol)
++        self.clock_health.observe(book.timestamp_ms,sent,self.client.clock_ms())
++        quote=make_quote(book,contexts[request.symbol],self.client.clock_ms(),mark_timestamp_ms=metadata_ms)
++        self.last_book=book;self.books[request.symbol]=book
++        context=ValidationContext(self.client.market(request.symbol),self.metadata_hash,self.metadata_hash,
++            metadata_ms,quote,readiness,after,after_orders,active,account_ms,limits,contexts,
++            bool(self.feed_ready()) or request.reduce_only,self.policy_leverage,fills,
++            recovery.account_truth_ready,metadata_ms)
++        from .qualification_signing_boundary import fresh,context_ages
++        self.rate_limits.journal.event('QUALIFICATION_FRESH_ACCOUNT_ACQUIRED',self.client.clock_ms(),
++            started_ms=started,readiness=asdict(readiness),account_ms=account_ms,
++            quote_ms=quote.timestamp_ms,mark_ms=metadata_ms,ages_ms=context_ages(context,self.client.clock_ms()),
++            actual_positions=[asdict(p) for p in after.values()],open_orders=list(after_orders),
++            actual_recent_fills=[asdict(f) for f in fills],retimestamped=False)
++        if not fresh(context,self.client.clock_ms()):raise ExchangeError('QUALIFICATION_FRESH_BOUNDARY_UNAVAILABLE')
++        return context
++
+ 
+ def entry_price_diagnostics(context,request,proposal,now_ms,book):
+     """Only public numeric/account-observation fields; no signer or payload."""
+@@ -282,6 +328,7 @@
+         minimum_notional='10',outer_notional_ceiling='1000',approved_notional_ceiling=str(selected),
+         evaluated_ms=now_ms,proposal_observed_ms=p.observed_ms,quote_ms=q.timestamp_ms,
+         mark_ms=q.mark_timestamp_ms,book_ms=book.timestamp_ms,account_ms=context.account_ms,
++        readiness_ms=context.readiness.observed_ms,readiness_age_ms=now_ms-context.readiness.observed_ms,
+         entry_deadline_ms=p.observed_ms+210000,conditions=conditions,
+         rejected_conditions=[k for k,v in conditions.items() if v],configuration_hash=p.identity,
+         working_source_hash=p.source_hash)
+@@ -407,11 +454,21 @@
+     def __init__(self,*args,proposal,**kwargs):
+         self.proposal=proposal.require()
+         super().__init__(*args,**kwargs)
++        from .qualification_intent_recovery import QualificationPositionGuard
++        self.position_guard=QualificationPositionGuard(self.journal,clock_ms=self.client.clock_ms)
+         scope=EmergencyComplianceScope(proposal,self.context_provider)
+         self.compliance_guard=ComplianceGuard(self.journal,self.position_guard,
+             clock_ms=self.client.clock_ms,transport=self.transport,execution_owner=self,qualification_scope=scope)
+         self.transport._compliance_guard=self.compliance_guard
+         self.context_provider.diagnostic_journal=self.journal
++        from .qualification_signing_boundary import QualificationSigningBoundary
++        self.signing_boundary=QualificationSigningBoundary(self)
++
++    def _validated(self,request,permission,**kwargs):
++        result=super()._validated(request,permission,**kwargs)
++        req,context,_,decision=result
++        self.signing_boundary.bind(req,permission,context,decision,full_close=kwargs.get('full_position_close',False))
++        return result
+     def _prepare_context_request(self,request,risk,context):
+         p=self.proposal
+         if request.reduce_only or p.price_authorization_mode==FIXED_PRICE:return request,risk
+@@ -448,6 +505,36 @@
+         scoped=replace(permission,provenance=replace(permission.provenance,test_authorization=a))
+         return super().close_full_position(request,permission=scoped)
+     def _guard(self,context,checked_ms,**kwargs):
++        request=kwargs.get('entry_request') or kwargs.get('exact_full_close')
++        if request is not None and self.signing_boundary.current is not None:
++            context,checked_ms=self.signing_boundary.context_for(request)
++            # The typed boundary has already performed genuine current account,
++            # central risk/compliance and exact-position checks. Avoid duplicate
++            # account and book reads that aged the old readiness evidence.
++            self._require();self.clock_health.require()
++            if not self.transport.nonces.healthy:raise ExchangeError('NONCE_SIGNING_DEGRADED')
++            if kwargs.get('entry') and (self.entries_paused or not self.rate_limits.entries_allowed
++                    or self.protection is not None and not self.protection.entries_allowed):
++                raise ExchangeError('ENTRY_RELIABILITY_GATE_REQUIRED')
++            startup=getattr(self.recovery,'startup_coordinator',None)
++            if kwargs.get('entry') and startup is not None and not startup.entry_ready:
++                raise ExchangeError('STARTUP_ENTRY_LOCK_REQUIRED')
++            now=self.client.clock_ms()
++            if (not self.client.ready or not 0<=now-checked_ms<=5000
++                    or not context.readiness.account_ready
++                    or context.readiness.agent_expiry_ms is None or context.readiness.agent_expiry_ms<=now
++                    or not kwargs.get('critical',False) and
++                       (not self.context_provider.feed_ready() or now<self.rate_limits.backoff_until)):
++                raise ExchangeError('SIGNING_READINESS_REVOKED')
++            from .qualification_signing_boundary import fresh
++            if not fresh(context,self.client.clock_ms()):raise ExchangeError('QUALIFICATION_FRESH_BOUNDARY_UNAVAILABLE')
++            from .delegated_qualification import DelegatedAuthorization
++            if type(getattr(self.transport,'authorization',None)) is DelegatedAuthorization:
++                self.transport.authorization.require_context(context,request)
++            if kwargs.get('exact_full_close') is not None:
++                from .qualification_protection import require_settled_exit_orders
++                require_settled_exit_orders(self,current_intent=request.client_order_id)
++            return
+         super()._guard(context,checked_ms,**kwargs)
+         from .delegated_qualification import DelegatedAuthorization
+         if type(getattr(self.transport,'authorization',None)) is DelegatedAuthorization:
+@@ -484,10 +571,22 @@
+             if not residual_close_assessment(self.client.market(p.symbol),p.quantity,p.exit_bound)['ready']:
+                 raise ExchangeError('QUALIFICATION_UNVERIFIED_CLOSE_RESIDUAL')
+     def transmit(self,payload):
+-        self.check(payload['action'])
++        self.boundary_phase='PRE_HTTP'
++        try:self.check(payload['action'])
++        except Exception as exc:
++            self.record_transport_boundary('PRE_HTTP_REJECTED',payload,
++                error_type=type(exc).__name__,reason=str(exc) if isinstance(exc,ExchangeError) else type(exc).__name__)
++            raise
+         if payload.get('expiresAfter')!=self.action_expiry_ms:raise ExchangeError('P0_SIGNED_EXPIRY_REQUIRED')
+         self.authorization.claim_transmission(payload['action'])
+         return super().transmit(payload)
++
++    def record_transport_boundary(self,stage,payload,**details):
++        action=payload['action'];orders=action.get('orders',[])
++        self.authorization.journal.event('QUALIFICATION_TRANSPORT_BOUNDARY',self.client.clock_ms(),
++            stage=stage,cloid=orders[0].get('c') if len(orders)==1 else None,
++            action_hash=fingerprint(action),nonce=payload.get('nonce'),
++            expires_ms=payload.get('expiresAfter'),network='testnet',dex='par',**details)
+ 
+ 
+ def propose(context,client,source_hash,reliability_hash,book,*,tif='Ioc',candidate_hash,price_mode=FIXED_PRICE):
+@@ -564,7 +663,7 @@
+         try:
+             self.auth.require(self.p.team_wallet,self.p.api_wallet)
+             if (self.e.journal.control('certification_started:'+self.p.identity)
+-                    or self.e.journal.control('qualification_entry_consumed') or self.e.journal.intents()):
++                    or self.e.journal.control('qualification_entry_consumed') or self.e.position_guard.intent_rows()):
+                 raise ExchangeError('P0_RESTART_READ_ONLY_RECOVERY_REQUIRED')
+             positions,orders=self.observe()
+             if positions or orders or not self.e.recovery.last_report.ready:
+@@ -610,7 +709,7 @@
+         except Exception as exc:
+             attempted=self.e.journal.control('qualification_entry_consumed')==self.p.identity
+             # A PREPARED/SUBMITTED durable attempt also needs read-only recovery.
+-            attempted=attempted or bool(self.e.journal.intents())
++            attempted=attempted or bool(self.e.position_guard.intent_rows())
+             if self.report['status']=='NO_ORDER_AUTHORIZED' and self.e.journal.control('certification_completed:'+self.p.identity):
+                 attempted=False
+             self.report.update(status='EMERGENCY_EXIT_REQUIRED' if attempted else 'PREFLIGHT_BLOCKED',
+@@ -660,7 +759,7 @@
+             funding_proof=[asdict(f) for f in funding],fee_liquidity_type='REPORTED_FEES; NORMALIZED_FILL_HAS_NO_MAKER_TAKER_TAG')
+ 
+ 
+-def build_runtime(root,proposal,approval,*,test_receipt,delegation=None):
++def build_runtime(root,proposal,approval,*,test_receipt,delegation=None,nonce_owner=None,rate_owner=None):
+     """Construct actual SDK only AFTER exact current approval and fresh read gates."""
+     from venue_config import require_paper_migration
+     from strategy_freeze import verify_strategy_freeze
+@@ -671,12 +770,13 @@
+     from .hyperliquid_market_data import HyperliquidMarketData
+     from .execution_safety import ClockHealthMonitor, HyperliquidRateLimitManager, NonceManager
+     from .practice_preflight import read_api_key, api_signer
+-    from .certification_runtime import CertificationRecovery
++    from .qualification_intent_recovery import QualificationRecovery,qualification_intents
+     root=Path(root).resolve();state=root/'runtime/testnet/anchorium-bot-1'
+     require_paper_migration();verify_strategy_freeze();proposal.require()
+     require_emergency_regression(root,test_receipt);prior_execution_check(root)
+     journal=ExecutionJournal(state/'qualification.sqlite',session_id='anchorium-one-qualification-v1',team_address=proposal.team_wallet)
+     client=transport=nonces=None
++    previous_rate_journal=getattr(rate_owner,'journal',None)
+     try:
+         auth_kwargs=dict(clock_ms=lambda:time.time_ns()//1000000,source_hash=lambda:active_source_hash(root),
+             policy_hash=lambda:hashlib.sha256((root/'configs/reliability_policy.json').read_bytes()).hexdigest())
+@@ -684,16 +784,22 @@
+             from .delegated_qualification import Delegation,DelegatedAuthorization
+             if type(delegation) is not Delegation or approval is not None:
+                 raise ExchangeError('DELEGATED_CAPABILITY_CANNOT_SYNTHESIZE_PROPOSAL_APPROVAL')
+-            if json.loads(Path(test_receipt).read_text())['totals']['tests']<2115:
+-                raise ExchangeError('DELEGATED_FULL_2115_BASELINE_REQUIRED')
++            if json.loads(Path(test_receipt).read_text())['totals']['tests']<2194:
++                raise ExchangeError('DELEGATED_FULL_2194_BASELINE_REQUIRED')
+             auth=DelegatedAuthorization(proposal,delegation,journal,**auth_kwargs)
+         else:auth=EmergencyAuthorization(proposal,approval,journal,**auth_kwargs)
+         auth.require(proposal.team_wallet,proposal.api_wallet)
+-        if journal.intents() or journal.control('qualification_entry_consumed'):
++        if qualification_intents(journal) or journal.control('qualification_entry_consumed'):
+             raise ExchangeError('P0_PRIOR_ATTEMPT_READ_ONLY_RECOVERY_REQUIRED')
+         rate,cp,protection=load_reliability_policy(root/'configs/reliability_policy.json')
+         if protection.enabled:raise ExchangeError('P0_GLOBAL_PROTECTION_MUST_REMAIN_DISABLED')
+-        rates=HyperliquidRateLimitManager(journal,policy=rate,signer_address=proposal.api_wallet)
++        if rate_owner is not None:
++            if (type(rate_owner) is not HyperliquidRateLimitManager or rate_owner.policy!=rate
++                    or rate_owner.signer_address.lower()!=proposal.api_wallet.lower()):
++                raise ExchangeError('QUALIFICATION_SHARED_RATE_OWNER_REQUIRED')
++            rates=rate_owner
++            rates.journal=journal  # Preserve rolling usage/reserves across the paused observer handoff.
++        else:rates=HyperliquidRateLimitManager(journal,policy=rate,signer_address=proposal.api_wallet)
+         client=HyperliquidClient(rate_limits=rates);client.startup()
+         account=HyperliquidAccount(client,proposal.team_wallet);market=HyperliquidMarketData(client)
+         # V2's mandatory provider bundle already reads/reconciles positions and
+@@ -702,7 +808,7 @@
+         if proposal.price_authorization_mode==FIXED_PRICE and (account.get_positions() or account.get_frontend_open_orders()):
+             raise ExchangeError('P0_INITIAL_FLAT_REQUIRED')
+         clock=ClockHealthMonitor(clock_ms=client.clock_ms,journal=journal,**cp)
+-        recovery=CertificationRecovery(account,journal,initial_start_ms=0)
++        recovery=QualificationRecovery(account,journal,initial_start_ms=0)
+         provider=EmergencyContextProvider(market,account,proposal.api_wallet,clock,rates,
+             reconcile_before_load=recovery.recover,reconciliation_ready=lambda:recovery.account_truth_ready,feed_ready=lambda:True)
+         req=OrderRequest(proposal.symbol,'BUY',proposal.quantity,proposal.entry_limit,tif=proposal.entry_tif,
+@@ -723,7 +829,14 @@
+         key,_=read_api_key(root)
+         try:signer=api_signer(key,proposal.api_wallet,proposal.team_wallet)
+         finally:key=None
+-        nonces=NonceManager(state/'nonces.sqlite',signer.address,journal=journal)
++        if nonce_owner is not None:
++            if (type(nonce_owner) is not NonceManager or nonce_owner.closed or not nonce_owner.healthy
++                    or nonce_owner.path.resolve()!=(state/'nonces.sqlite').resolve()
++                    or nonce_owner.signer_address!=signer.address.lower()):
++                raise ExchangeError('EXCLUSIVE_EXISTING_NONCE_OWNER_REQUIRED')
++            nonces=nonce_owner
++            nonces.journal=journal  # Actual nonce evidence belongs to the execution journal.
++        else:nonces=NonceManager(state/'nonces.sqlite',signer.address,journal=journal)
+         transport=EmergencySDKTransport(client,signer,proposal.team_wallet,nonces,auth,rate_limits=rates)
+         signer=None
+         executor=EmergencyExecution(client,proposal=proposal,transport=transport,account=account,journal=journal,
+@@ -735,6 +848,8 @@
+         if transport:transport.close()
+         if nonces:nonces.close()
+         if client:client.close()
++        if rate_owner is not None and previous_rate_journal is not None:
++            rate_owner.journal=previous_rate_journal
+         journal.close();raise
+ 
+ 

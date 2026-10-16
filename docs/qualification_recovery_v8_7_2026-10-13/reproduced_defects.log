@@ -1,0 +1,41 @@
+EEE                                                                      [100%]
+==================================== ERRORS ====================================
+_______ ERROR at setup of test_three_lots_fail_but_two_lots_are_selected _______
+file /Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/test_qualification_recovery_v8_7.py, line 19
+  def test_three_lots_fail_but_two_lots_are_selected(qualification):
+file /Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/test_testnet_qualification.py, line 23
+  @pytest.fixture
+  def qualification(live,monkeypatch):
+E       fixture 'live' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, doctest_namespace, monkeypatch, pytestconfig, qualification, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/test_testnet_qualification.py:23
+________ ERROR at setup of test_margin_bound_selects_smaller_valid_size ________
+file /Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/test_qualification_recovery_v8_7.py, line 27
+  def test_margin_bound_selects_smaller_valid_size(qualification):
+file /Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/test_testnet_qualification.py, line 23
+  @pytest.fixture
+  def qualification(live,monkeypatch):
+E       fixture 'live' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, doctest_namespace, monkeypatch, pytestconfig, qualification, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/test_testnet_qualification.py:23
+__ ERROR at setup of test_stale_clock_is_recovered_before_readiness_snapshot ___
+file /Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/test_qualification_recovery_v8_7.py, line 34
+  def test_stale_clock_is_recovered_before_readiness_snapshot(qualification,monkeypatch):
+file /Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/test_testnet_qualification.py, line 23
+  @pytest.fixture
+  def qualification(live,monkeypatch):
+E       fixture 'live' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, doctest_namespace, monkeypatch, pytestconfig, qualification, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/test_testnet_qualification.py:23
+- generated xml file: /Users/adesh/Autonomous Trading Bot - Crypto /docs/qualification_recovery_v8_7_2026-10-13/reproduced_defects.xml -
+=========================== short test summary info ============================
+ERROR algo-trading-bot/test_qualification_recovery_v8_7.py::test_three_lots_fail_but_two_lots_are_selected
+ERROR algo-trading-bot/test_qualification_recovery_v8_7.py::test_margin_bound_selects_smaller_valid_size
+ERROR algo-trading-bot/test_qualification_recovery_v8_7.py::test_stale_clock_is_recovered_before_readiness_snapshot
+3 errors in 0.54s

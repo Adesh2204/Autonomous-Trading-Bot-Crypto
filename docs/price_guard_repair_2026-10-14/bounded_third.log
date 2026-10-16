@@ -1,0 +1,15 @@
+..............................................F
+=================================== FAILURES ===================================
+___ test_real_runtime_and_ephemeral_sdk_uses_new_selected_price[83380-83420] ___
+algo-trading-bot/test_qualification_price_guard.py:206: in test_real_runtime_and_ephemeral_sdk_uses_new_selected_price
+    assert r['status']=='TRADE_CLOSED_RECONCILED',r
+E   AssertionError: {'actual_exchange_proof': [{'accounting': {'accounting_window_ms': (1790942400000, 1790942400000), 'corrections': [{'c...], 'certification_passed': False, 'equity_before': '1000', 'error': 'CERTIFICATION_UNCERTAIN_ORDER_URGENT_REVIEW', ...}
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'TRADE_CLOSED_RECONCILED'
+E     
+E     - TRADE_CLOSED_RECONCILED
+E     + EMERGENCY_EXIT_REQUIRED
+- generated xml file: /Users/adesh/Autonomous Trading Bot - Crypto /docs/price_guard_repair_2026-10-14/bounded_third.xml -
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_qualification_price_guard.py::test_real_runtime_and_ephemeral_sdk_uses_new_selected_price[83380-83420]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 46 passed in 10.44s

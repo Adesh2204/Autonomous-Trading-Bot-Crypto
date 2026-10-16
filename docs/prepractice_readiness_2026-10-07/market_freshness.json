@@ -1,0 +1,1867 @@
+{
+  "execution_mode": "PAPER",
+  "network": "testnet",
+  "dex": "par",
+  "read_only": true,
+  "exchange_orders_submitted": 0,
+  "provenance": "LIVE_PUBLIC_PAR_FRESHNESS_OBSERVATION",
+  "markets": {
+    "par:BRENT": {
+      "expected_completed_start_ms": 1791344340000,
+      "raw_completed_count": 300,
+      "raw_latest": {
+        "t": 1791344340000,
+        "T": 1791344399999,
+        "s": "par:BRENT",
+        "i": "1m",
+        "o": "101.33",
+        "c": "101.33",
+        "h": "101.33",
+        "l": "101.33",
+        "v": "0.0",
+        "n": 0
+      },
+      "parsed_latest": {
+        "symbol": "par:BRENT",
+        "interval": "1m",
+        "timestamp_ms": 1791344340000,
+        "close_timestamp_ms": 1791344399999,
+        "open": "101.33",
+        "high": "101.33",
+        "low": "101.33",
+        "close": "101.33",
+        "volume": "0.0",
+        "received_timestamp_ms": null,
+        "processed_timestamp_ms": null
+      },
+      "adapter_matches_raw": true,
+      "missing_minutes_between_returned_bars": 0,
+      "completed_age_ms": 34468,
+      "completed_fresh": true,
+      "book": {
+        "symbol": "par:BRENT",
+        "timestamp_ms": 1791344434647,
+        "bids": [
+          {
+            "price": "101.25",
+            "quantity": "12.51"
+          },
+          {
+            "price": "101.24",
+            "quantity": "493.87"
+          },
+          {
+            "price": "101.14",
+            "quantity": "988.72"
+          },
+          {
+            "price": "100.99",
+            "quantity": "1980.39"
+          },
+          {
+            "price": "100.98",
+            "quantity": "0.54"
+          },
+          {
+            "price": "100.78",
+            "quantity": "2976.78"
+          },
+          {
+            "price": "100.69",
+            "quantity": "1.08"
+          },
+          {
+            "price": "100.53",
+            "quantity": "3481.54"
+          },
+          {
+            "price": "100.37",
+            "quantity": "1.09"
+          },
+          {
+            "price": "94.152",
+            "quantity": "0.13"
+          }
+        ],
+        "asks": [
+          {
+            "price": "101.43",
+            "quantity": "0.41"
+          },
+          {
+            "price": "101.44",
+            "quantity": "492.9"
+          },
+          {
+            "price": "101.54",
+            "quantity": "984.83"
+          },
+          {
+            "price": "101.61",
+            "quantity": "0.27"
+          },
+          {
+            "price": "101.69",
+            "quantity": "1966.76"
+          },
+          {
+            "price": "101.89",
+            "quantity": "0.55"
+          },
+          {
+            "price": "101.9",
+            "quantity": "2944.06"
+          },
+          {
+            "price": "102.15",
+            "quantity": "3426.33"
+          },
+          {
+            "price": "102.23",
+            "quantity": "0.55"
+          }
+        ],
+        "received_timestamp_ms": 1791344435163,
+        "processed_timestamp_ms": 1791344435163
+      },
+      "book_age_ms": 516,
+      "latest_public_trade": {
+        "coin": "par:BRENT",
+        "side": "B",
+        "px": "101.43",
+        "sz": "1.57",
+        "time": 1791344414492,
+        "hash": "0xd85153e94e24149ed9cb042b16ce5b0103006bcee92733707c19ff3c0d27ee89",
+        "tid": 896381998058983,
+        "users": [
+          "0x6c0eb3c0b539d637c1d507e6a2a68bdfd2fb3b3c",
+          "0x06a336acf9d4ed8fae9e60c453fff4ecda409a11"
+        ]
+      },
+      "latest_public_trade_age_ms": 20864,
+      "stream_cache_latest_completed": {
+        "symbol": "par:BRENT",
+        "interval": "1m",
+        "timestamp_ms": 1791344340000,
+        "close_timestamp_ms": 1791344399999,
+        "open": "101.33",
+        "high": "101.33",
+        "low": "101.33",
+        "close": "101.33",
+        "volume": "0.0",
+        "received_timestamp_ms": 1791344444852,
+        "processed_timestamp_ms": 1791344444854
+      },
+      "websocket_candle_message": null,
+      "stream_last_public_trade": {
+        "coin": "par:BRENT",
+        "side": "B",
+        "px": "101.43",
+        "sz": "1.57",
+        "time": 1791344414492,
+        "hash": "0xd85153e94e24149ed9cb042b16ce5b0103006bcee92733707c19ff3c0d27ee89",
+        "tid": 896381998058983,
+        "users": [
+          "0x6c0eb3c0b539d637c1d507e6a2a68bdfd2fb3b3c",
+          "0x06a336acf9d4ed8fae9e60c453fff4ecda409a11"
+        ],
+        "exchange_ts": "2026-10-07T03:40:14.492+00:00",
+        "received_ts": "2026-10-07T03:40:50.602+00:00",
+        "processed_ts": "2026-10-07T03:40:50.602+00:00",
+        "timestamp_source": "EXCHANGE_PUBLIC_TRADE",
+        "exchange_to_receive_ms": 36110,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      "stream_observations": {
+        "last_tick_time": 1791344484238,
+        "last_candle_time": 1791344400000,
+        "last_orderbook_time": 1791344484238,
+        "last_mark_time": 1791344487334
+      },
+      "newer_completed_ws_bar": false,
+      "finding": "RAW_COMPLETED_HISTORY_FRESH"
+    },
+    "par:BTC": {
+      "expected_completed_start_ms": 1791344340000,
+      "raw_completed_count": 298,
+      "raw_latest": {
+        "t": 1791344220000,
+        "T": 1791344279999,
+        "s": "par:BTC",
+        "i": "1m",
+        "o": "84145.0",
+        "c": "84146.0",
+        "h": "84146.0",
+        "l": "84145.0",
+        "v": "0.004",
+        "n": 2
+      },
+      "parsed_latest": {
+        "symbol": "par:BTC",
+        "interval": "1m",
+        "timestamp_ms": 1791344220000,
+        "close_timestamp_ms": 1791344279999,
+        "open": "84145.0",
+        "high": "84146.0",
+        "low": "84145.0",
+        "close": "84146.0",
+        "volume": "0.004",
+        "received_timestamp_ms": null,
+        "processed_timestamp_ms": null
+      },
+      "adapter_matches_raw": true,
+      "missing_minutes_between_returned_bars": 0,
+      "completed_age_ms": 155356,
+      "completed_fresh": false,
+      "book": {
+        "symbol": "par:BTC",
+        "timestamp_ms": 1791344435673,
+        "bids": [
+          {
+            "price": "83979.0",
+            "quantity": "0.0166"
+          },
+          {
+            "price": "83978.0",
+            "quantity": "0.5953"
+          },
+          {
+            "price": "83894.0",
+            "quantity": "1.1919"
+          },
+          {
+            "price": "83768.0",
+            "quantity": "2.3875"
+          },
+          {
+            "price": "83739.0",
+            "quantity": "0.0008"
+          },
+          {
+            "price": "83600.0",
+            "quantity": "3.5885"
+          },
+          {
+            "price": "83487.0",
+            "quantity": "0.0016"
+          },
+          {
+            "price": "83390.0",
+            "quantity": "4.1971"
+          },
+          {
+            "price": "83221.0",
+            "quantity": "0.0017"
+          },
+          {
+            "price": "78385.0",
+            "quantity": "0.0025"
+          },
+          {
+            "price": "74730.0",
+            "quantity": "0.0002"
+          }
+        ],
+        "asks": [
+          {
+            "price": "84146.0",
+            "quantity": "0.5936"
+          },
+          {
+            "price": "84171.0",
+            "quantity": "0.0014"
+          },
+          {
+            "price": "84230.0",
+            "quantity": "1.1872"
+          },
+          {
+            "price": "84356.0",
+            "quantity": "2.3709"
+          },
+          {
+            "price": "84524.0",
+            "quantity": "3.5492"
+          },
+          {
+            "price": "84734.0",
+            "quantity": "4.1305"
+          },
+          {
+            "price": "85323.0",
+            "quantity": "0.0013"
+          }
+        ],
+        "received_timestamp_ms": 1791344436025,
+        "processed_timestamp_ms": 1791344436025
+      },
+      "book_age_ms": 353,
+      "latest_public_trade": {
+        "coin": "par:BTC",
+        "side": "B",
+        "px": "84146.0",
+        "sz": "0.0006",
+        "time": 1791344278630,
+        "hash": "0xcdebc5f4c3b15fb5cf65042b16c5da010900ddda5eb47e8771b4714782b539a0",
+        "tid": 702469175663242,
+        "users": [
+          "0xad01d62676ebcae07603b1f3809a6311b4ae0d20",
+          "0x7a25cf5798af0604482fa5d5850e908256eda181"
+        ]
+      },
+      "latest_public_trade_age_ms": 157768,
+      "stream_cache_latest_completed": {
+        "symbol": "par:BTC",
+        "interval": "1m",
+        "timestamp_ms": 1791344220000,
+        "close_timestamp_ms": 1791344279999,
+        "open": "84145.0",
+        "high": "84146.0",
+        "low": "84145.0",
+        "close": "84146.0",
+        "volume": "0.004",
+        "received_timestamp_ms": 1791344445260,
+        "processed_timestamp_ms": 1791344445262
+      },
+      "websocket_candle_message": null,
+      "stream_last_public_trade": {
+        "coin": "par:BTC",
+        "side": "B",
+        "px": "84146.0",
+        "sz": "0.0006",
+        "time": 1791344278630,
+        "hash": "0xcdebc5f4c3b15fb5cf65042b16c5da010900ddda5eb47e8771b4714782b539a0",
+        "tid": 702469175663242,
+        "users": [
+          "0xad01d62676ebcae07603b1f3809a6311b4ae0d20",
+          "0x7a25cf5798af0604482fa5d5850e908256eda181"
+        ],
+        "exchange_ts": "2026-10-07T03:37:58.630+00:00",
+        "received_ts": "2026-10-07T03:40:50.604+00:00",
+        "processed_ts": "2026-10-07T03:40:50.604+00:00",
+        "timestamp_source": "EXCHANGE_PUBLIC_TRADE",
+        "exchange_to_receive_ms": 171974,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      "stream_observations": {
+        "last_tick_time": 1791344484238,
+        "last_candle_time": 1791344280000,
+        "last_orderbook_time": 1791344484238,
+        "last_mark_time": 1791344487334
+      },
+      "newer_completed_ws_bar": false,
+      "finding": "RAW_HISTORY_STALE_ADAPTER_MATCHES"
+    },
+    "par:ETH": {
+      "expected_completed_start_ms": 1791344340000,
+      "raw_completed_count": 236,
+      "raw_latest": {
+        "t": 1791340500000,
+        "T": 1791340559999,
+        "s": "par:ETH",
+        "i": "1m",
+        "o": "2616.6",
+        "c": "2616.6",
+        "h": "2616.6",
+        "l": "2616.6",
+        "v": "0.0997",
+        "n": 1
+      },
+      "parsed_latest": {
+        "symbol": "par:ETH",
+        "interval": "1m",
+        "timestamp_ms": 1791340500000,
+        "close_timestamp_ms": 1791340559999,
+        "open": "2616.6",
+        "high": "2616.6",
+        "low": "2616.6",
+        "close": "2616.6",
+        "volume": "0.0997",
+        "received_timestamp_ms": null,
+        "processed_timestamp_ms": null
+      },
+      "adapter_matches_raw": true,
+      "missing_minutes_between_returned_bars": 0,
+      "completed_age_ms": 3876398,
+      "completed_fresh": false,
+      "book": {
+        "symbol": "par:ETH",
+        "timestamp_ms": 1791344436780,
+        "bids": [
+          {
+            "price": "2607.7",
+            "quantity": "0.198"
+          },
+          {
+            "price": "2607.6",
+            "quantity": "19.1747"
+          },
+          {
+            "price": "2605.0",
+            "quantity": "38.3877"
+          },
+          {
+            "price": "2601.1",
+            "quantity": "76.8905"
+          },
+          {
+            "price": "2595.8",
+            "quantity": "115.5713"
+          },
+          {
+            "price": "2595.5",
+            "quantity": "0.0423"
+          },
+          {
+            "price": "2593.1",
+            "quantity": "0.021"
+          },
+          {
+            "price": "2589.3",
+            "quantity": "135.1716"
+          },
+          {
+            "price": "2588.8",
+            "quantity": "0.0426"
+          },
+          {
+            "price": "2547.8",
+            "quantity": "0.0046"
+          }
+        ],
+        "asks": [
+          {
+            "price": "2612.8",
+            "quantity": "19.1365"
+          },
+          {
+            "price": "2615.4",
+            "quantity": "38.235"
+          },
+          {
+            "price": "2615.7",
+            "quantity": "0.3084"
+          },
+          {
+            "price": "2619.3",
+            "quantity": "76.3562"
+          },
+          {
+            "price": "2624.6",
+            "quantity": "114.3031"
+          },
+          {
+            "price": "2629.5",
+            "quantity": "0.043"
+          },
+          {
+            "price": "2631.1",
+            "quantity": "133.0242"
+          },
+          {
+            "price": "2634.6",
+            "quantity": "0.0406"
+          },
+          {
+            "price": "2638.9",
+            "quantity": "0.0431"
+          }
+        ],
+        "received_timestamp_ms": 1791344437066,
+        "processed_timestamp_ms": 1791344437066
+      },
+      "book_age_ms": 286,
+      "latest_public_trade": {
+        "coin": "par:ETH",
+        "side": "B",
+        "px": "2616.6",
+        "sz": "0.0997",
+        "time": 1791340532094,
+        "hash": "0x3e8fd750e2472c9b4009042b15d329010f00ef367d4a4b6de25882a3a14b0685",
+        "tid": 78660046555848,
+        "users": [
+          "0x46777827eef009da5e00e672cd5546b05ab6901a",
+          "0x06a336acf9d4ed8fae9e60c453fff4ecda409a11"
+        ]
+      },
+      "latest_public_trade_age_ms": 3905226,
+      "stream_cache_latest_completed": {
+        "symbol": "par:ETH",
+        "interval": "1m",
+        "timestamp_ms": 1791340500000,
+        "close_timestamp_ms": 1791340559999,
+        "open": "2616.6",
+        "high": "2616.6",
+        "low": "2616.6",
+        "close": "2616.6",
+        "volume": "0.0997",
+        "received_timestamp_ms": 1791344445613,
+        "processed_timestamp_ms": 1791344445615
+      },
+      "websocket_candle_message": null,
+      "stream_last_public_trade": {
+        "coin": "par:ETH",
+        "side": "B",
+        "px": "2616.6",
+        "sz": "0.0997",
+        "time": 1791340532094,
+        "hash": "0x3e8fd750e2472c9b4009042b15d329010f00ef367d4a4b6de25882a3a14b0685",
+        "tid": 78660046555848,
+        "users": [
+          "0x46777827eef009da5e00e672cd5546b05ab6901a",
+          "0x06a336acf9d4ed8fae9e60c453fff4ecda409a11"
+        ],
+        "exchange_ts": "2026-10-07T02:35:32.094+00:00",
+        "received_ts": "2026-10-07T03:40:50.606+00:00",
+        "processed_ts": "2026-10-07T03:40:50.607+00:00",
+        "timestamp_source": "EXCHANGE_PUBLIC_TRADE",
+        "exchange_to_receive_ms": 3918512,
+        "receive_to_process_ms": 1,
+        "clock_skew_detected": false
+      },
+      "stream_observations": {
+        "last_tick_time": 1791344484238,
+        "last_candle_time": 1791340560000,
+        "last_orderbook_time": 1791344484238,
+        "last_mark_time": 1791344487334
+      },
+      "newer_completed_ws_bar": false,
+      "finding": "RAW_HISTORY_STALE_ADAPTER_MATCHES"
+    },
+    "par:EWJ": {
+      "expected_completed_start_ms": 1791344340000,
+      "raw_completed_count": 0,
+      "raw_latest": null,
+      "parsed_latest": null,
+      "adapter_matches_raw": true,
+      "missing_minutes_between_returned_bars": 0,
+      "completed_age_ms": null,
+      "completed_fresh": false,
+      "book": {
+        "symbol": "par:EWJ",
+        "timestamp_ms": 1791344437410,
+        "bids": [
+          {
+            "price": "99.253",
+            "quantity": "503.763"
+          },
+          {
+            "price": "99.153",
+            "quantity": "1008.542"
+          },
+          {
+            "price": "99.004",
+            "quantity": "2020.12"
+          },
+          {
+            "price": "98.895",
+            "quantity": "3.604"
+          },
+          {
+            "price": "98.868",
+            "quantity": "0.471"
+          },
+          {
+            "price": "98.806",
+            "quantity": "3036.252"
+          },
+          {
+            "price": "98.622",
+            "quantity": "0.945"
+          },
+          {
+            "price": "98.557",
+            "quantity": "3551.244"
+          },
+          {
+            "price": "98.391",
+            "quantity": "0.947"
+          },
+          {
+            "price": "92.493",
+            "quantity": "0.125"
+          }
+        ],
+        "asks": [
+          {
+            "price": "99.45",
+            "quantity": "3.911"
+          },
+          {
+            "price": "99.451",
+            "quantity": "502.76"
+          },
+          {
+            "price": "99.536",
+            "quantity": "1.404"
+          },
+          {
+            "price": "99.551",
+            "quantity": "1004.51"
+          },
+          {
+            "price": "99.7",
+            "quantity": "2006.018"
+          },
+          {
+            "price": "99.734",
+            "quantity": "0.934"
+          },
+          {
+            "price": "99.898",
+            "quantity": "3003.063"
+          },
+          {
+            "price": "100.15",
+            "quantity": "3494.757"
+          }
+        ],
+        "received_timestamp_ms": 1791344437780,
+        "processed_timestamp_ms": 1791344437780
+      },
+      "book_age_ms": 370,
+      "latest_public_trade": {
+        "coin": "par:EWJ",
+        "side": "A",
+        "px": "99.687",
+        "sz": "3.951",
+        "time": 1791321490832,
+        "hash": "0x6fc7c9b4d6eddd5e7141042b1178e4010200e19a71e0fc301390750795e1b749",
+        "tid": 898353227747183,
+        "users": [
+          "0x7a25cf5798af0604482fa5d5850e908256eda181",
+          "0x6c0eb3c0b539d637c1d507e6a2a68bdfd2fb3b3c"
+        ]
+      },
+      "latest_public_trade_age_ms": 22947186,
+      "stream_cache_latest_completed": null,
+      "websocket_candle_message": null,
+      "stream_last_public_trade": {
+        "coin": "par:EWJ",
+        "side": "A",
+        "px": "99.687",
+        "sz": "3.951",
+        "time": 1791321490832,
+        "hash": "0x6fc7c9b4d6eddd5e7141042b1178e4010200e19a71e0fc301390750795e1b749",
+        "tid": 898353227747183,
+        "users": [
+          "0x7a25cf5798af0604482fa5d5850e908256eda181",
+          "0x6c0eb3c0b539d637c1d507e6a2a68bdfd2fb3b3c"
+        ],
+        "exchange_ts": "2026-10-06T21:18:10.832+00:00",
+        "received_ts": "2026-10-07T03:40:50.609+00:00",
+        "processed_ts": "2026-10-07T03:40:50.609+00:00",
+        "timestamp_source": "EXCHANGE_PUBLIC_TRADE",
+        "exchange_to_receive_ms": 22959777,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      "stream_observations": {
+        "last_tick_time": 1791344484238,
+        "last_candle_time": null,
+        "last_orderbook_time": 1791344484238,
+        "last_mark_time": 1791344487334
+      },
+      "newer_completed_ws_bar": false,
+      "finding": "RAW_HISTORY_STALE_ADAPTER_MATCHES"
+    },
+    "par:EWY": {
+      "expected_completed_start_ms": 1791344340000,
+      "raw_completed_count": 178,
+      "raw_latest": {
+        "t": 1791337020000,
+        "T": 1791337079999,
+        "s": "par:EWY",
+        "i": "1m",
+        "o": "187.98",
+        "c": "187.84",
+        "h": "187.98",
+        "l": "187.84",
+        "v": "1.847",
+        "n": 2
+      },
+      "parsed_latest": {
+        "symbol": "par:EWY",
+        "interval": "1m",
+        "timestamp_ms": 1791337020000,
+        "close_timestamp_ms": 1791337079999,
+        "open": "187.98",
+        "high": "187.98",
+        "low": "187.84",
+        "close": "187.84",
+        "volume": "1.847",
+        "received_timestamp_ms": null,
+        "processed_timestamp_ms": null
+      },
+      "adapter_matches_raw": true,
+      "missing_minutes_between_returned_bars": 0,
+      "completed_age_ms": 7358018,
+      "completed_fresh": false,
+      "book": {
+        "symbol": "par:EWY",
+        "timestamp_ms": 1791344438430,
+        "bids": [
+          {
+            "price": "186.98",
+            "quantity": "267.408"
+          },
+          {
+            "price": "186.8",
+            "quantity": "535.331"
+          },
+          {
+            "price": "186.51",
+            "quantity": "1072.328"
+          },
+          {
+            "price": "186.14",
+            "quantity": "1611.69"
+          },
+          {
+            "price": "185.67",
+            "quantity": "1885.064"
+          },
+          {
+            "price": "176.63",
+            "quantity": "0.066"
+          }
+        ],
+        "asks": [
+          {
+            "price": "187.35",
+            "quantity": "2.936"
+          },
+          {
+            "price": "187.36",
+            "quantity": "266.865"
+          },
+          {
+            "price": "187.54",
+            "quantity": "533.219"
+          },
+          {
+            "price": "187.62",
+            "quantity": "0.232"
+          },
+          {
+            "price": "187.83",
+            "quantity": "1064.792"
+          },
+          {
+            "price": "188.08",
+            "quantity": "0.412"
+          },
+          {
+            "price": "188.2",
+            "quantity": "1594.048"
+          },
+          {
+            "price": "188.5",
+            "quantity": "0.506"
+          },
+          {
+            "price": "188.67",
+            "quantity": "1855.09"
+          }
+        ],
+        "received_timestamp_ms": 1791344438822,
+        "processed_timestamp_ms": 1791344438822
+      },
+      "book_age_ms": 392,
+      "latest_public_trade": {
+        "coin": "par:EWY",
+        "side": "A",
+        "px": "187.84",
+        "sz": "0.304",
+        "time": 1791337065127,
+        "hash": "0xeb1043228d10c293ec89042b14eb900101005b082813e1658ed8ee754c149c7e",
+        "tid": 788371797895681,
+        "users": [
+          "0x7a25cf5798af0604482fa5d5850e908256eda181",
+          "0x46777827eef009da5e00e672cd5546b05ab6901a"
+        ]
+      },
+      "latest_public_trade_age_ms": 7373880,
+      "stream_cache_latest_completed": {
+        "symbol": "par:EWY",
+        "interval": "1m",
+        "timestamp_ms": 1791337020000,
+        "close_timestamp_ms": 1791337079999,
+        "open": "187.98",
+        "high": "187.98",
+        "low": "187.84",
+        "close": "187.84",
+        "volume": "1.847",
+        "received_timestamp_ms": 1791344446142,
+        "processed_timestamp_ms": 1791344446144
+      },
+      "websocket_candle_message": null,
+      "stream_last_public_trade": {
+        "coin": "par:EWY",
+        "side": "A",
+        "px": "187.84",
+        "sz": "0.304",
+        "time": 1791337065127,
+        "hash": "0xeb1043228d10c293ec89042b14eb900101005b082813e1658ed8ee754c149c7e",
+        "tid": 788371797895681,
+        "users": [
+          "0x7a25cf5798af0604482fa5d5850e908256eda181",
+          "0x46777827eef009da5e00e672cd5546b05ab6901a"
+        ],
+        "exchange_ts": "2026-10-07T01:37:45.127+00:00",
+        "received_ts": "2026-10-07T03:40:50.611+00:00",
+        "processed_ts": "2026-10-07T03:40:50.611+00:00",
+        "timestamp_source": "EXCHANGE_PUBLIC_TRADE",
+        "exchange_to_receive_ms": 7385484,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      "stream_observations": {
+        "last_tick_time": 1791344484238,
+        "last_candle_time": 1791337080000,
+        "last_orderbook_time": 1791344484238,
+        "last_mark_time": 1791344487334
+      },
+      "newer_completed_ws_bar": false,
+      "finding": "RAW_HISTORY_STALE_ADAPTER_MATCHES"
+    },
+    "par:GOLD": {
+      "expected_completed_start_ms": 1791344340000,
+      "raw_completed_count": 285,
+      "raw_latest": {
+        "t": 1791343440000,
+        "T": 1791343499999,
+        "s": "par:GOLD",
+        "i": "1m",
+        "o": "4151.0",
+        "c": "4151.0",
+        "h": "4151.0",
+        "l": "4151.0",
+        "v": "0.1161",
+        "n": 1
+      },
+      "parsed_latest": {
+        "symbol": "par:GOLD",
+        "interval": "1m",
+        "timestamp_ms": 1791343440000,
+        "close_timestamp_ms": 1791343499999,
+        "open": "4151.0",
+        "high": "4151.0",
+        "low": "4151.0",
+        "close": "4151.0",
+        "volume": "0.1161",
+        "received_timestamp_ms": null,
+        "processed_timestamp_ms": null
+      },
+      "adapter_matches_raw": true,
+      "missing_minutes_between_returned_bars": 0,
+      "completed_age_ms": 939007,
+      "completed_fresh": false,
+      "book": {
+        "symbol": "par:GOLD",
+        "timestamp_ms": 1791344438941,
+        "bids": [
+          {
+            "price": "4146.3",
+            "quantity": "0.2687"
+          },
+          {
+            "price": "4146.2",
+            "quantity": "12.0592"
+          },
+          {
+            "price": "4142.1",
+            "quantity": "24.1423"
+          },
+          {
+            "price": "4138.6",
+            "quantity": "0.0154"
+          },
+          {
+            "price": "4135.9",
+            "quantity": "48.357"
+          },
+          {
+            "price": "4128.9",
+            "quantity": "0.031"
+          },
+          {
+            "price": "4127.6",
+            "quantity": "72.6814"
+          },
+          {
+            "price": "4120.2",
+            "quantity": "0.0308"
+          },
+          {
+            "price": "4117.2",
+            "quantity": "85.0092"
+          },
+          {
+            "price": "4053.5",
+            "quantity": "0.0029"
+          }
+        ],
+        "asks": [
+          {
+            "price": "4154.3",
+            "quantity": "0.0814"
+          },
+          {
+            "price": "4154.4",
+            "quantity": "0.0091"
+          },
+          {
+            "price": "4154.6",
+            "quantity": "12.0348"
+          },
+          {
+            "price": "4158.7",
+            "quantity": "24.0459"
+          },
+          {
+            "price": "4161.9",
+            "quantity": "0.0182"
+          },
+          {
+            "price": "4164.9",
+            "quantity": "48.0203"
+          },
+          {
+            "price": "4170.4",
+            "quantity": "0.0182"
+          },
+          {
+            "price": "4173.2",
+            "quantity": "71.8872"
+          },
+          {
+            "price": "4183.6",
+            "quantity": "83.66"
+          }
+        ],
+        "received_timestamp_ms": 1791344439547,
+        "processed_timestamp_ms": 1791344439547
+      },
+      "book_age_ms": 606,
+      "latest_public_trade": {
+        "coin": "par:GOLD",
+        "side": "B",
+        "px": "4151.0",
+        "sz": "0.1161",
+        "time": 1791343460896,
+        "hash": "0x7c51f0bae779f7e47dcb042b16922101020008a0827d16b6201a9c0da67dd1cf",
+        "tid": 926998141244537,
+        "users": [
+          "0x5ed555d7a2df7c5178084a49a43ce0b1ffef0a83",
+          "0x06a336acf9d4ed8fae9e60c453fff4ecda409a11"
+        ]
+      },
+      "latest_public_trade_age_ms": 978973,
+      "stream_cache_latest_completed": {
+        "symbol": "par:GOLD",
+        "interval": "1m",
+        "timestamp_ms": 1791343440000,
+        "close_timestamp_ms": 1791343499999,
+        "open": "4151.0",
+        "high": "4151.0",
+        "low": "4151.0",
+        "close": "4151.0",
+        "volume": "0.1161",
+        "received_timestamp_ms": 1791344446497,
+        "processed_timestamp_ms": 1791344446501
+      },
+      "websocket_candle_message": null,
+      "stream_last_public_trade": {
+        "coin": "par:GOLD",
+        "side": "B",
+        "px": "4151.0",
+        "sz": "0.1161",
+        "time": 1791343460896,
+        "hash": "0x7c51f0bae779f7e47dcb042b16922101020008a0827d16b6201a9c0da67dd1cf",
+        "tid": 926998141244537,
+        "users": [
+          "0x5ed555d7a2df7c5178084a49a43ce0b1ffef0a83",
+          "0x06a336acf9d4ed8fae9e60c453fff4ecda409a11"
+        ],
+        "exchange_ts": "2026-10-07T03:24:20.896+00:00",
+        "received_ts": "2026-10-07T03:40:50.613+00:00",
+        "processed_ts": "2026-10-07T03:40:50.614+00:00",
+        "timestamp_source": "EXCHANGE_PUBLIC_TRADE",
+        "exchange_to_receive_ms": 989717,
+        "receive_to_process_ms": 1,
+        "clock_skew_detected": false
+      },
+      "stream_observations": {
+        "last_tick_time": 1791344484238,
+        "last_candle_time": 1791343500000,
+        "last_orderbook_time": 1791344484238,
+        "last_mark_time": 1791344487334
+      },
+      "newer_completed_ws_bar": false,
+      "finding": "RAW_HISTORY_STALE_ADAPTER_MATCHES"
+    },
+    "par:HYPE": {
+      "expected_completed_start_ms": 1791344340000,
+      "raw_completed_count": 300,
+      "raw_latest": {
+        "t": 1791344340000,
+        "T": 1791344399999,
+        "s": "par:HYPE",
+        "i": "1m",
+        "o": "91.004",
+        "c": "91.004",
+        "h": "91.004",
+        "l": "91.004",
+        "v": "0.0",
+        "n": 0
+      },
+      "parsed_latest": {
+        "symbol": "par:HYPE",
+        "interval": "1m",
+        "timestamp_ms": 1791344340000,
+        "close_timestamp_ms": 1791344399999,
+        "open": "91.004",
+        "high": "91.004",
+        "low": "91.004",
+        "close": "91.004",
+        "volume": "0.0",
+        "received_timestamp_ms": null,
+        "processed_timestamp_ms": null
+      },
+      "adapter_matches_raw": true,
+      "missing_minutes_between_returned_bars": 0,
+      "completed_age_ms": 39869,
+      "completed_fresh": true,
+      "book": {
+        "symbol": "par:HYPE",
+        "timestamp_ms": 1791344439960,
+        "bids": [
+          {
+            "price": "90.823",
+            "quantity": "7.08"
+          },
+          {
+            "price": "90.822",
+            "quantity": "550.52"
+          },
+          {
+            "price": "90.731",
+            "quantity": "1102.15"
+          },
+          {
+            "price": "90.595",
+            "quantity": "2207.62"
+          },
+          {
+            "price": "90.488",
+            "quantity": "0.47"
+          },
+          {
+            "price": "90.413",
+            "quantity": "3318.1"
+          },
+          {
+            "price": "90.186",
+            "quantity": "3880.86"
+          },
+          {
+            "price": "90.115",
+            "quantity": "0.93"
+          },
+          {
+            "price": "89.821",
+            "quantity": "0.94"
+          }
+        ],
+        "asks": [
+          {
+            "price": "91.004",
+            "quantity": "1090.77"
+          },
+          {
+            "price": "91.095",
+            "quantity": "1097.75"
+          },
+          {
+            "price": "91.106",
+            "quantity": "1.09"
+          },
+          {
+            "price": "91.222",
+            "quantity": "0.56"
+          },
+          {
+            "price": "91.231",
+            "quantity": "2192.23"
+          },
+          {
+            "price": "91.413",
+            "quantity": "3281.8"
+          },
+          {
+            "price": "91.59",
+            "quantity": "1.12"
+          },
+          {
+            "price": "91.64",
+            "quantity": "3819.29"
+          },
+          {
+            "price": "92.031",
+            "quantity": "1.11"
+          }
+        ],
+        "received_timestamp_ms": 1791344440399,
+        "processed_timestamp_ms": 1791344440399
+      },
+      "book_age_ms": 439,
+      "latest_public_trade": {
+        "coin": "par:HYPE",
+        "side": "B",
+        "px": "91.004",
+        "sz": "2.44",
+        "time": 1791344414492,
+        "hash": "0x3df8411f814699963f71042b16ce5b01050059051c49b868e1c0ec72404a7380",
+        "tid": 380972855218306,
+        "users": [
+          "0x3c29b43c3fae5d210879cb9fe6a192f63c1c2ed3",
+          "0x7a25cf5798af0604482fa5d5850e908256eda181"
+        ]
+      },
+      "latest_public_trade_age_ms": 26094,
+      "stream_cache_latest_completed": {
+        "symbol": "par:HYPE",
+        "interval": "1m",
+        "timestamp_ms": 1791344340000,
+        "close_timestamp_ms": 1791344399999,
+        "open": "91.004",
+        "high": "91.004",
+        "low": "91.004",
+        "close": "91.004",
+        "volume": "0.0",
+        "received_timestamp_ms": 1791344446859,
+        "processed_timestamp_ms": 1791344446862
+      },
+      "websocket_candle_message": null,
+      "stream_last_public_trade": {
+        "coin": "par:HYPE",
+        "side": "B",
+        "px": "91.004",
+        "sz": "2.44",
+        "time": 1791344414492,
+        "hash": "0x3df8411f814699963f71042b16ce5b01050059051c49b868e1c0ec72404a7380",
+        "tid": 380972855218306,
+        "users": [
+          "0x3c29b43c3fae5d210879cb9fe6a192f63c1c2ed3",
+          "0x7a25cf5798af0604482fa5d5850e908256eda181"
+        ],
+        "exchange_ts": "2026-10-07T03:40:14.492+00:00",
+        "received_ts": "2026-10-07T03:40:50.616+00:00",
+        "processed_ts": "2026-10-07T03:40:50.616+00:00",
+        "timestamp_source": "EXCHANGE_PUBLIC_TRADE",
+        "exchange_to_receive_ms": 36124,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      "stream_observations": {
+        "last_tick_time": 1791344484238,
+        "last_candle_time": 1791344400000,
+        "last_orderbook_time": 1791344484238,
+        "last_mark_time": 1791344487334
+      },
+      "newer_completed_ws_bar": false,
+      "finding": "RAW_COMPLETED_HISTORY_FRESH"
+    },
+    "par:SP500": {
+      "expected_completed_start_ms": 1791344340000,
+      "raw_completed_count": 300,
+      "raw_latest": {
+        "t": 1791344340000,
+        "T": 1791344399999,
+        "s": "par:SP500",
+        "i": "1m",
+        "o": "7812.4",
+        "c": "7812.4",
+        "h": "7812.4",
+        "l": "7812.4",
+        "v": "0.0",
+        "n": 0
+      },
+      "parsed_latest": {
+        "symbol": "par:SP500",
+        "interval": "1m",
+        "timestamp_ms": 1791344340000,
+        "close_timestamp_ms": 1791344399999,
+        "open": "7812.4",
+        "high": "7812.4",
+        "low": "7812.4",
+        "close": "7812.4",
+        "volume": "0.0",
+        "received_timestamp_ms": null,
+        "processed_timestamp_ms": null
+      },
+      "adapter_matches_raw": true,
+      "missing_minutes_between_returned_bars": 0,
+      "completed_age_ms": 40586,
+      "completed_fresh": true,
+      "book": {
+        "symbol": "par:SP500",
+        "timestamp_ms": 1791344440478,
+        "bids": [
+          {
+            "price": "7812.4",
+            "quantity": "6.314"
+          },
+          {
+            "price": "7809.8",
+            "quantity": "0.006"
+          },
+          {
+            "price": "7804.6",
+            "quantity": "12.812"
+          },
+          {
+            "price": "7798.6",
+            "quantity": "0.012"
+          },
+          {
+            "price": "7792.8",
+            "quantity": "25.664"
+          },
+          {
+            "price": "7787.1",
+            "quantity": "0.012"
+          },
+          {
+            "price": "7777.2",
+            "quantity": "38.574"
+          },
+          {
+            "price": "7757.6",
+            "quantity": "45.117"
+          },
+          {
+            "price": "7315.3",
+            "quantity": "0.002"
+          }
+        ],
+        "asks": [
+          {
+            "price": "7827.9",
+            "quantity": "0.083"
+          },
+          {
+            "price": "7828.0",
+            "quantity": "6.387"
+          },
+          {
+            "price": "7835.4",
+            "quantity": "0.007"
+          },
+          {
+            "price": "7835.8",
+            "quantity": "12.761"
+          },
+          {
+            "price": "7845.5",
+            "quantity": "0.015"
+          },
+          {
+            "price": "7847.6",
+            "quantity": "25.485"
+          },
+          {
+            "price": "7856.9",
+            "quantity": "0.015"
+          },
+          {
+            "price": "7863.2",
+            "quantity": "38.152"
+          },
+          {
+            "price": "7882.8",
+            "quantity": "44.4"
+          }
+        ],
+        "received_timestamp_ms": 1791344441131,
+        "processed_timestamp_ms": 1791344441131
+      },
+      "book_age_ms": 653,
+      "latest_public_trade": {
+        "coin": "par:SP500",
+        "side": "A",
+        "px": "7812.4",
+        "sz": "0.022",
+        "time": 1791344414492,
+        "hash": "0x8b24ca8467b5571a8c9e042b16ce5b010400e26a02b875ec2eed75d726b93105",
+        "tid": 147340701650108,
+        "users": [
+          "0x7a25cf5798af0604482fa5d5850e908256eda181",
+          "0x46777827eef009da5e00e672cd5546b05ab6901a"
+        ]
+      },
+      "latest_public_trade_age_ms": 26826,
+      "stream_cache_latest_completed": {
+        "symbol": "par:SP500",
+        "interval": "1m",
+        "timestamp_ms": 1791344340000,
+        "close_timestamp_ms": 1791344399999,
+        "open": "7812.4",
+        "high": "7812.4",
+        "low": "7812.4",
+        "close": "7812.4",
+        "volume": "0.0",
+        "received_timestamp_ms": 1791344447338,
+        "processed_timestamp_ms": 1791344447341
+      },
+      "websocket_candle_message": null,
+      "stream_last_public_trade": {
+        "coin": "par:SP500",
+        "side": "A",
+        "px": "7812.4",
+        "sz": "0.022",
+        "time": 1791344414492,
+        "hash": "0x8b24ca8467b5571a8c9e042b16ce5b010400e26a02b875ec2eed75d726b93105",
+        "tid": 147340701650108,
+        "users": [
+          "0x7a25cf5798af0604482fa5d5850e908256eda181",
+          "0x46777827eef009da5e00e672cd5546b05ab6901a"
+        ],
+        "exchange_ts": "2026-10-07T03:40:14.492+00:00",
+        "received_ts": "2026-10-07T03:40:50.618+00:00",
+        "processed_ts": "2026-10-07T03:40:50.618+00:00",
+        "timestamp_source": "EXCHANGE_PUBLIC_TRADE",
+        "exchange_to_receive_ms": 36126,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      "stream_observations": {
+        "last_tick_time": 1791344484238,
+        "last_candle_time": 1791344400000,
+        "last_orderbook_time": 1791344484238,
+        "last_mark_time": 1791344487334
+      },
+      "newer_completed_ws_bar": false,
+      "finding": "RAW_COMPLETED_HISTORY_FRESH"
+    },
+    "par:USDEUR": {
+      "expected_completed_start_ms": 1791344340000,
+      "raw_completed_count": 157,
+      "raw_latest": {
+        "t": 1791335760000,
+        "T": 1791335819999,
+        "s": "par:USDEUR",
+        "i": "1m",
+        "o": "1.1261",
+        "c": "1.1261",
+        "h": "1.1261",
+        "l": "1.1261",
+        "v": "193.4",
+        "n": 1
+      },
+      "parsed_latest": {
+        "symbol": "par:USDEUR",
+        "interval": "1m",
+        "timestamp_ms": 1791335760000,
+        "close_timestamp_ms": 1791335819999,
+        "open": "1.1261",
+        "high": "1.1261",
+        "low": "1.1261",
+        "close": "1.1261",
+        "volume": "193.4",
+        "received_timestamp_ms": null,
+        "processed_timestamp_ms": null
+      },
+      "adapter_matches_raw": true,
+      "missing_minutes_between_returned_bars": 0,
+      "completed_age_ms": 8621318,
+      "completed_fresh": false,
+      "book": {
+        "symbol": "par:USDEUR",
+        "timestamp_ms": 1791344441503,
+        "bids": [
+          {
+            "price": "1.124",
+            "quantity": "44483.9"
+          },
+          {
+            "price": "1.1239",
+            "quantity": "694.7"
+          },
+          {
+            "price": "1.123",
+            "quantity": "65.9"
+          },
+          {
+            "price": "1.1228",
+            "quantity": "89063.0"
+          },
+          {
+            "price": "1.1219",
+            "quantity": "132.0"
+          },
+          {
+            "price": "1.1212",
+            "quantity": "178380.3"
+          },
+          {
+            "price": "1.1208",
+            "quantity": "132.1"
+          },
+          {
+            "price": "1.1189",
+            "quantity": "268120.4"
+          },
+          {
+            "price": "1.1161",
+            "quantity": "313591.9"
+          },
+          {
+            "price": "1.0835",
+            "quantity": "10.7"
+          }
+        ],
+        "asks": [
+          {
+            "price": "1.1261",
+            "quantity": "402.0"
+          },
+          {
+            "price": "1.1262",
+            "quantity": "44449.4"
+          },
+          {
+            "price": "1.1265",
+            "quantity": "104.9"
+          },
+          {
+            "price": "1.1274",
+            "quantity": "88699.6"
+          },
+          {
+            "price": "1.1276",
+            "quantity": "104.8"
+          },
+          {
+            "price": "1.129",
+            "quantity": "177147.9"
+          },
+          {
+            "price": "1.1313",
+            "quantity": "265181.6"
+          },
+          {
+            "price": "1.1341",
+            "quantity": "308614.7"
+          }
+        ],
+        "received_timestamp_ms": 1791344441833,
+        "processed_timestamp_ms": 1791344441834
+      },
+      "book_age_ms": 331,
+      "latest_public_trade": {
+        "coin": "par:USDEUR",
+        "side": "B",
+        "px": "1.1261",
+        "sz": "193.4",
+        "time": 1791335781728,
+        "hash": "0x37b30276efd8644b392c042b149d120103001a5c8adb831ddb7badc9aedc3e35",
+        "tid": 24797302428869,
+        "users": [
+          "0x3c29b43c3fae5d210879cb9fe6a192f63c1c2ed3",
+          "0x06a336acf9d4ed8fae9e60c453fff4ecda409a11"
+        ]
+      },
+      "latest_public_trade_age_ms": 8660292,
+      "stream_cache_latest_completed": {
+        "symbol": "par:USDEUR",
+        "interval": "1m",
+        "timestamp_ms": 1791335760000,
+        "close_timestamp_ms": 1791335819999,
+        "open": "1.1261",
+        "high": "1.1261",
+        "low": "1.1261",
+        "close": "1.1261",
+        "volume": "193.4",
+        "received_timestamp_ms": 1791344447546,
+        "processed_timestamp_ms": 1791344447547
+      },
+      "websocket_candle_message": null,
+      "stream_last_public_trade": {
+        "coin": "par:USDEUR",
+        "side": "B",
+        "px": "1.1261",
+        "sz": "193.4",
+        "time": 1791335781728,
+        "hash": "0x37b30276efd8644b392c042b149d120103001a5c8adb831ddb7badc9aedc3e35",
+        "tid": 24797302428869,
+        "users": [
+          "0x3c29b43c3fae5d210879cb9fe6a192f63c1c2ed3",
+          "0x06a336acf9d4ed8fae9e60c453fff4ecda409a11"
+        ],
+        "exchange_ts": "2026-10-07T01:16:21.728+00:00",
+        "received_ts": "2026-10-07T03:40:50.620+00:00",
+        "processed_ts": "2026-10-07T03:40:50.621+00:00",
+        "timestamp_source": "EXCHANGE_PUBLIC_TRADE",
+        "exchange_to_receive_ms": 8668892,
+        "receive_to_process_ms": 1,
+        "clock_skew_detected": false
+      },
+      "stream_observations": {
+        "last_tick_time": 1791344484238,
+        "last_candle_time": 1791335820000,
+        "last_orderbook_time": 1791344484238,
+        "last_mark_time": 1791344487335
+      },
+      "newer_completed_ws_bar": false,
+      "finding": "RAW_HISTORY_STALE_ADAPTER_MATCHES"
+    },
+    "par:USDJPY": {
+      "expected_completed_start_ms": 1791344340000,
+      "raw_completed_count": 223,
+      "raw_latest": {
+        "t": 1791339720000,
+        "T": 1791339779999,
+        "s": "par:USDJPY",
+        "i": "1m",
+        "o": "158.41",
+        "c": "158.41",
+        "h": "158.41",
+        "l": "158.41",
+        "v": "1.53",
+        "n": 1
+      },
+      "parsed_latest": {
+        "symbol": "par:USDJPY",
+        "interval": "1m",
+        "timestamp_ms": 1791339720000,
+        "close_timestamp_ms": 1791339779999,
+        "open": "158.41",
+        "high": "158.41",
+        "low": "158.41",
+        "close": "158.41",
+        "volume": "1.53",
+        "received_timestamp_ms": null,
+        "processed_timestamp_ms": null
+      },
+      "adapter_matches_raw": true,
+      "missing_minutes_between_returned_bars": 0,
+      "completed_age_ms": 4662020,
+      "completed_fresh": false,
+      "book": {
+        "symbol": "par:USDJPY",
+        "timestamp_ms": 1791344442521,
+        "bids": [
+          {
+            "price": "158.11",
+            "quantity": "1.43"
+          },
+          {
+            "price": "158.1",
+            "quantity": "316.25"
+          },
+          {
+            "price": "158.06",
+            "quantity": "0.49"
+          },
+          {
+            "price": "157.94",
+            "quantity": "633.15"
+          },
+          {
+            "price": "157.9",
+            "quantity": "0.99"
+          },
+          {
+            "price": "157.74",
+            "quantity": "0.99"
+          },
+          {
+            "price": "157.71",
+            "quantity": "1268.15"
+          },
+          {
+            "price": "157.39",
+            "quantity": "1906.09"
+          },
+          {
+            "price": "156.99",
+            "quantity": "2229.44"
+          },
+          {
+            "price": "149.25",
+            "quantity": "0.08"
+          }
+        ],
+        "asks": [
+          {
+            "price": "158.41",
+            "quantity": "5.36"
+          },
+          {
+            "price": "158.42",
+            "quantity": "315.61"
+          },
+          {
+            "price": "158.48",
+            "quantity": "0.49"
+          },
+          {
+            "price": "158.58",
+            "quantity": "630.59"
+          },
+          {
+            "price": "158.74",
+            "quantity": "0.98"
+          },
+          {
+            "price": "158.81",
+            "quantity": "1259.36"
+          },
+          {
+            "price": "158.93",
+            "quantity": "0.98"
+          },
+          {
+            "price": "159.13",
+            "quantity": "1885.25"
+          },
+          {
+            "price": "159.53",
+            "quantity": "2193.94"
+          }
+        ],
+        "received_timestamp_ms": 1791344442853,
+        "processed_timestamp_ms": 1791344442853
+      },
+      "book_age_ms": 332,
+      "latest_public_trade": {
+        "coin": "par:USDJPY",
+        "side": "B",
+        "px": "158.41",
+        "sz": "1.53",
+        "time": 1791339731912,
+        "hash": "0xedf1fe1329579100ef6b042b159c8a01030015f8c45aafd291baa965e85b6aeb",
+        "tid": 1100729707607863,
+        "users": [
+          "0xfa642e7df595e1fce3672709da262e07e04319b3",
+          "0x06a336acf9d4ed8fae9e60c453fff4ecda409a11"
+        ]
+      },
+      "latest_public_trade_age_ms": 4711128,
+      "stream_cache_latest_completed": {
+        "symbol": "par:USDJPY",
+        "interval": "1m",
+        "timestamp_ms": 1791339720000,
+        "close_timestamp_ms": 1791339779999,
+        "open": "158.41",
+        "high": "158.41",
+        "low": "158.41",
+        "close": "158.41",
+        "volume": "1.53",
+        "received_timestamp_ms": 1791344447885,
+        "processed_timestamp_ms": 1791344447887
+      },
+      "websocket_candle_message": null,
+      "stream_last_public_trade": {
+        "coin": "par:USDJPY",
+        "side": "B",
+        "px": "158.41",
+        "sz": "1.53",
+        "time": 1791339731912,
+        "hash": "0xedf1fe1329579100ef6b042b159c8a01030015f8c45aafd291baa965e85b6aeb",
+        "tid": 1100729707607863,
+        "users": [
+          "0xfa642e7df595e1fce3672709da262e07e04319b3",
+          "0x06a336acf9d4ed8fae9e60c453fff4ecda409a11"
+        ],
+        "exchange_ts": "2026-10-07T02:22:11.912+00:00",
+        "received_ts": "2026-10-07T03:40:50.623+00:00",
+        "processed_ts": "2026-10-07T03:40:50.624+00:00",
+        "timestamp_source": "EXCHANGE_PUBLIC_TRADE",
+        "exchange_to_receive_ms": 4718711,
+        "receive_to_process_ms": 1,
+        "clock_skew_detected": false
+      },
+      "stream_observations": {
+        "last_tick_time": 1791344484238,
+        "last_candle_time": 1791339780000,
+        "last_orderbook_time": 1791344484238,
+        "last_mark_time": 1791344487335
+      },
+      "newer_completed_ws_bar": false,
+      "finding": "RAW_HISTORY_STALE_ADAPTER_MATCHES"
+    }
+  },
+  "dex_index": 257,
+  "contexts": {
+    "par:BTC": {
+      "funding": "0.0000125",
+      "openInterest": "0.0762",
+      "prevDayPx": "85570.0",
+      "dayNtlVlm": "154050.9611",
+      "premium": "-0.0006406035",
+      "oraclePx": "84116.0",
+      "markPx": "84116.0",
+      "midPx": "84062.5",
+      "impactPxs": [
+        "83978.23",
+        "84146.0"
+      ],
+      "dayBaseVlm": "1.796"
+    },
+    "par:ETH": {
+      "funding": "0.0000125",
+      "openInterest": "11.3448",
+      "prevDayPx": "2702.4",
+      "dayNtlVlm": "111522.61359",
+      "premium": "-0.0005743386",
+      "oraclePx": "2611.7",
+      "markPx": "2611.7",
+      "midPx": "2610.25",
+      "impactPxs": [
+        "2607.6",
+        "2612.8"
+      ],
+      "dayBaseVlm": "41.3226"
+    },
+    "par:HYPE": {
+      "funding": "0.0000125",
+      "openInterest": "100.54",
+      "prevDayPx": "93.276",
+      "dayNtlVlm": "75782.69605",
+      "premium": "0.0002536033",
+      "oraclePx": "90.89",
+      "markPx": "90.89",
+      "midPx": "90.9135",
+      "impactPxs": [
+        "90.8221",
+        "91.004"
+      ],
+      "dayBaseVlm": "817.63"
+    },
+    "par:SP500": {
+      "funding": "0.0000032366",
+      "openInterest": "10.808",
+      "prevDayPx": "7772.9",
+      "dayNtlVlm": "72922.2326",
+      "premium": "-0.0004480617",
+      "oraclePx": "7823.7",
+      "markPx": "7821.2",
+      "midPx": "7820.15",
+      "impactPxs": [
+        "7812.4",
+        "7827.989"
+      ],
+      "dayBaseVlm": "9.323"
+    },
+    "par:EWY": {
+      "funding": "0.00000625",
+      "openInterest": "94.692",
+      "prevDayPx": "188.42",
+      "dayNtlVlm": "21130.11932",
+      "premium": "-0.0002163346",
+      "oraclePx": "187.21",
+      "markPx": "187.22",
+      "midPx": "187.165",
+      "impactPxs": [
+        "186.98",
+        "187.359"
+      ],
+      "dayBaseVlm": "111.948"
+    },
+    "par:EWJ": {
+      "funding": "0.0002761542",
+      "openInterest": "120.128",
+      "prevDayPx": "99.334",
+      "dayNtlVlm": "6387.569039",
+      "premium": "0.0043824178",
+      "oraclePx": "98.918",
+      "markPx": "99.368",
+      "midPx": "99.351",
+      "impactPxs": [
+        "99.253",
+        "99.45"
+      ],
+      "dayBaseVlm": "64.016"
+    },
+    "par:BRENT": {
+      "funding": "0.00000625",
+      "openInterest": "105.56",
+      "prevDayPx": "100.56",
+      "dayNtlVlm": "96246.81314",
+      "premium": "0.000799921",
+      "oraclePx": "101.26",
+      "markPx": "101.29",
+      "midPx": "101.34",
+      "impactPxs": [
+        "101.2421",
+        "101.4399"
+      ],
+      "dayBaseVlm": "971.78"
+    },
+    "par:GOLD": {
+      "funding": "0.0000253201",
+      "openInterest": "3.643",
+      "prevDayPx": "4139.3",
+      "dayNtlVlm": "24014.27969",
+      "premium": "0.0005773867",
+      "oraclePx": "4148.0",
+      "markPx": "4150.8",
+      "midPx": "4150.3",
+      "impactPxs": [
+        "4146.21",
+        "4154.58"
+      ],
+      "dayBaseVlm": "5.7748"
+    },
+    "par:USDEUR": {
+      "funding": "0.0000340814",
+      "openInterest": "2906.2",
+      "prevDayPx": "1.1215",
+      "dayNtlVlm": "19241.28443",
+      "premium": "0.0007071066",
+      "oraclePx": "1.1243",
+      "markPx": "1.1251",
+      "midPx": "1.12505",
+      "impactPxs": [
+        "1.124",
+        "1.12619"
+      ],
+      "dayBaseVlm": "17110.4"
+    },
+    "par:USDJPY": {
+      "funding": "-0.000004809",
+      "openInterest": "12.18",
+      "prevDayPx": "158.26",
+      "dayNtlVlm": "9634.4115",
+      "premium": "-0.0001933161",
+      "oraclePx": "158.29",
+      "markPx": "158.29",
+      "midPx": "158.26",
+      "impactPxs": [
+        "158.1003",
+        "158.4185"
+      ],
+      "dayBaseVlm": "60.95"
+    }
+  },
+  "websocket": {
+    "duration_seconds": 45.0,
+    "messages": 528,
+    "channels": {
+      "subscriptionResponse": 40,
+      "l2Book": 90,
+      "activeAssetCtx": 428,
+      "trades": 10,
+      "pong": 1
+    },
+    "last_error": null,
+    "reconnections": 0
+  },
+  "status": "OBSERVED",
+  "observed_at_utc": "2026-10-07T03:41:28.518292+00:00"
+}

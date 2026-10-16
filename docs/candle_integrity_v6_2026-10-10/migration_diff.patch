@@ -1,0 +1,479 @@
+--- before/scripts/run_crypto_paper.py
++++ after/scripts/run_crypto_paper.py
+@@ -156,7 +156,10 @@
+         if owner:owner.close()
+         raise
+     recorder=PublicReplayRecorder(RequestsInfoTransport()) if args.cycles==1 and not args.account_address else None
++    from exchange.candle_audit import PublicCandleAudit
++    candle_audit=PublicCandleAudit(output/'public_candle_audit.jsonl')
+     client=HyperliquidClient(recorder,clock_ms=recorder.clock_ms) if recorder else HyperliquidClient()
++    client.candle_audit=candle_audit
+     feed_client=None
+     scan_client=None
+     stop=threading.Event()
+@@ -214,8 +217,10 @@
+                                              team_address='0x'+'0'*40)
+                 client.rate_limits=HyperliquidRateLimitManager(rate_journal)
+             feed_client=HyperliquidClient(rate_limits=client.rate_limits) if client.rate_limits is not None else HyperliquidClient()
++            feed_client.candle_audit=candle_audit
+             feed_client.startup()
+             scan_client=HyperliquidClient(rate_limits=client.rate_limits) if client.rate_limits is not None else HyperliquidClient()
++            scan_client.candle_audit=candle_audit
+             scanner=MarketRegimeScanner(HyperliquidMarketData(scan_client),scanner_policy)
+             bot.scanner=scanner
+             engine=ParMarketDataEngine(HyperliquidMarketData(feed_client),history_bars=scanner_policy.history_bars,
+--- before/algo-trading-bot/venue_config.py
++++ after/algo-trading-bot/venue_config.py
+@@ -5,7 +5,10 @@
+ from safety_errors import SafetyError
+ 
+ PROJECT_NAME = 'anchorium-perpetual-alpha'
+-_defaults = dotenv_values(Path(__file__).with_name('.env'))
++# Public evidence collectors need no wallet settings. An explicit public-only
++# process skips dotenv entirely; the same PAPER/network/order checks still apply.
++_defaults = ({} if os.environ.get('ANCHORIUM_PUBLIC_ONLY')=='true'
++             else dotenv_values(Path(__file__).with_name('.env')))
+ TRADING_VENUE = os.environ.get(
+     'TRADING_VENUE', _defaults.get('TRADING_VENUE') or 'HYPERLIQUID_TESTNET'
+ ).strip().upper()
+--- before/algo-trading-bot/opportunity_funnel.py
++++ after/algo-trading-bot/opportunity_funnel.py
+@@ -64,6 +64,7 @@
+ 
+ def reason_code(reason):
+     text=str(reason)
++    if text=='CONFLICTING_COMPLETED_CANDLES':return 'INVALID_MARKET_DATA'
+     if text in ALIASES:return ALIASES[text]
+     if text in RejectionReason._value2member_map_:return text
+     if 'CANDLE' in text and 'GAP' in text:return 'HISTORY_GAP'
+--- before/algo-trading-bot/market_regime_scanner.py
++++ after/algo-trading-bot/market_regime_scanner.py
+@@ -10,6 +10,7 @@
+ from exchange.hyperliquid_market_data import make_quote
+ from exchange.market_snapshot import MarketSnapshot
+ from exchange.market_health import MarketHealthManager,validate_history
++from exchange.scanner_numeric import scanner_number
+ from frozen_strategy import FrozenStrategy
+ from session_manager import SessionManager
+ from venue_config import require_paper_migration
+@@ -142,9 +143,11 @@
+                 enriched,brain_evidence=observe_frozen_call(lambda:self.brain.evaluate_candles(candles))
+                 d.evidence['brain']=brain_evidence
+                 last=enriched.iloc[-1]
+-                close=decimal(last['Close'],positive=True)
+-                atr=decimal(last['ATR_14'],positive=True)
+-                ema9,ema21,vwap=(decimal(last[name],positive=True) for name in ('EMA_9','EMA_21','VWAP'))
++                close=scanner_number(last['Close'],'Close',d.evidence)
++                # A real flat market has finite zero ATR. The unchanged floor
++                # rejects it as unqualified, rather than invalid market data.
++                atr=scanner_number(last['ATR_14'],'ATR_14',d.evidence,nonnegative=True)
++                ema9,ema21,vwap=(scanner_number(last[name],name,d.evidence) for name in ('EMA_9','EMA_21','VWAP'))
+                 window=candles[-p.history_bars:]
+                 notional=sum((c.volume*c.close for c in window),Decimal(0))
+                 depth=min(quote.bid*quote.bid_quantity,quote.ask*quote.ask_quantity)
+--- before/algo-trading-bot/exchange/hyperliquid_client.py
++++ after/algo-trading-bot/exchange/hyperliquid_client.py
+@@ -52,7 +52,7 @@
+ 
+ 
+ class HyperliquidClient:
+-    def __init__(self, transport=None, *, base_url=TESTNET_API_URL, clock_ms=None, rate_limits=None):
++    def __init__(self, transport=None, *, base_url=TESTNET_API_URL, clock_ms=None, rate_limits=None, candle_audit=None):
+         if base_url != TESTNET_API_URL:
+             raise VenueMismatch('TESTNET_ENDPOINT_REQUIRED')
+         self.transport = transport if transport is not None else RequestsInfoTransport()
+@@ -66,6 +66,7 @@
+         self.metadata = None
+         self.rate_limits = rate_limits
+         self.read_cancel_event=None
++        self.candle_audit=candle_audit
+ 
+     def post_info(self, query, *, priority=None, **parameters):
+         if {'type', 'action', 'signature', 'nonce'} & parameters.keys():
+@@ -95,6 +96,9 @@
+         else:
+             result = self.transport(payload)
+         self.last_received_ms = self.clock_ms()
++        if self.candle_audit is not None and query=='candleSnapshot':
++            self.candle_audit.record('RAW_REST',request=payload,response=result,
++                received_ms=self.last_received_ms,client_id=id(self),network='testnet')
+         return result
+ 
+     def _validate_coin(self, symbol):
+--- before/algo-trading-bot/exchange/hyperliquid_market_data.py
++++ after/algo-trading-bot/exchange/hyperliquid_market_data.py
+@@ -12,6 +12,7 @@
+ from .hyperliquid_client import TESTNET_WS_URL
+ from .feed_transport import FeedTransportHealth
+ from .market_health import MarketHealthManager, validate_history
++from .candle_audit import merge_candle
+ 
+ INTERVAL_MS = {'1m': 60_000, '3m': 180_000, '5m': 300_000, '15m': 900_000,
+                '30m': 1_800_000, '1h': 3_600_000, '2h': 7_200_000,
+@@ -119,6 +120,7 @@
+         if not isinstance(result, list):
+             raise ExchangeError('INVALID_CANDLE_RESPONSE')
+         as_of = self.client.clock_ms() if now_ms is None else timestamp(now_ms)
++        rows=result
+         candles = {}
+         for row in result:
+             candle = replace(parse_candle(row,symbol,interval),received_timestamp_ms=self.client.last_received_ms,
+@@ -134,7 +136,12 @@
+                     processed_timestamp_ms=candle.processed_timestamp_ms) != candle:
+                 raise ExchangeError('CONFLICTING_COMPLETED_CANDLES')
+             candles[candle.timestamp_ms] = candle
+-        return [candles[key] for key in sorted(candles)]
++        result=[candles[key] for key in sorted(candles)]
++        if getattr(self.client,'candle_audit',None) is not None:
++            self.client.candle_audit.record('NORMALIZED_REST',symbol=symbol,start_ms=start_ms,
++                end_ms=end_ms,as_of_ms=as_of,raw_count=len(rows),candles=result,
++                discarded_open_count=sum(1 for r in rows if r['t']+INTERVAL_MS[interval]>as_of))
++        return result
+ 
+ 
+ class ParMarketDataEngine:
+@@ -238,9 +245,12 @@
+                     for a,b in zip(completed,completed[1:])):repair_start=start
+             try:
+                 fresh=self.market.get_candles(symbol,repair_start,end,now_ms=now)
+-                validate_history(symbol,fresh,now,0)
+                 combined={b.timestamp_ms:b for b in previous if start<=b.timestamp_ms<=end}
+-                combined.update({b.timestamp_ms:b for b in fresh})
++                # Validate each genuine row in get_candles, then merge before
++                # checking continuity. Retained rows can complete a sparse REST
++                # response; an unresolved hole still fails market_health.
++                for b in fresh:
++                    combined[b.timestamp_ms]=merge_candle(combined.get(b.timestamp_ms),b,now)
+                 histories[symbol]=[combined[t] for t in sorted(combined)]
+             except VenueMismatch:
+                 raise
+@@ -277,10 +287,13 @@
+                 merged={bar.timestamp_ms:bar for bar in history}
+                 for t,b in self.candles[symbol].items():
+                     prior=merged.get(t)
+-                    if t>=end+1 or prior is not None and (b.received_timestamp_ms or 0)>(prior.received_timestamp_ms or 0):
+-                        merged[t]=b
++                    if t>=start:
++                        try:merged[t]=merge_candle(prior,b,self.client.clock_ms())
++                        except ExchangeError as exc:
++                            errors[symbol]=str(exc);merged[t]=b
+                 self.candles[symbol]=dict(sorted(merged.items())[-(self.history_bars+1):])
+                 self.input_errors[symbol].pop('history_health',None)
++                self._audit_cache(symbol,'REST_MERGE',start,end)
+             for symbol in selected:self.recovery_errors.pop(symbol,None)
+             self.recovery_errors.update(errors)
+             previous_reconciled=self.reconciled
+@@ -290,7 +303,16 @@
+                 self.recovery_generation+=1
+         self._lifecycle('REST_MARKET_RECONCILED',per_market_errors=errors)
+ 
+-    def ingest(self, message, *, generation=None):
++    def ingest(self, message, *, generation=None, _audit_recorded=False):
++        audit=getattr(self.client,'candle_audit',None)
++        if audit is not None and not _audit_recorded:
++            decoded=message
++            if isinstance(message,str):
++                try:decoded=json.loads(message)
++                except ValueError:decoded=None
++            if isinstance(decoded,dict) and decoded.get('channel')=='candle':
++                audit.record('RAW_WS',message=message,received_ms=self.client.clock_ms(),
++                    generation=generation,active_generation=self.transport_health.generation)
+         if generation is not None and generation!=self.transport_health.generation:
+             return False
+         # A malformed fact for one verified symbol is quarantined locally. Unknown
+@@ -298,7 +320,8 @@
+         if (isinstance(message,dict) and message.get('channel') in {'candle','trades'} and
+                 isinstance(message.get('data'),list) and (message['channel']=='candle' or len(message['data'])>1)):
+             for row in message['data']:
+-                self.ingest(dict(message,data=[row] if message['channel']=='trades' else row),generation=generation)
++                self.ingest(dict(message,data=[row] if message['channel']=='trades' else row),generation=generation,
++                            _audit_recorded=True)
+             return
+         try:
+             self._ingest_validated(message)
+@@ -319,6 +342,8 @@
+                 self.connected=self.reconciled=False
+                 raise
+             with self._lock:self.input_errors[symbol][component]=str(exc)
++            if message.get('channel')=='candle' and getattr(self.client,'candle_audit',None) is not None:
++                self.client.candle_audit.record('CANDLE_REJECTED',symbol=symbol,reason=str(exc),source='WS')
+             self._lifecycle('MARKET_DATA_QUARANTINED',symbol=symbol,reason=str(exc))
+             return False
+ 
+@@ -402,11 +427,16 @@
+                                      processed_timestamp_ms=self.client.clock_ms())
+                     if candle.timestamp_ms > self.client.clock_ms():
+                         raise ExchangeError('FUTURE_STREAM_CANDLE')
+-                    self.candles[symbol][candle.timestamp_ms] = candle
++                    self.candles[symbol][candle.timestamp_ms] = merge_candle(
++                        self.candles[symbol].get(candle.timestamp_ms),candle,received_ms)
+                     keys = sorted(self.candles[symbol])
+                     # A current open bar must not evict the 300th completed bar.
+                     for key in keys[:-(self.history_bars+1)]:
+                         del self.candles[symbol][key]
++                    if getattr(self.client,'candle_audit',None) is not None:
++                        self.client.candle_audit.record('WS_MERGE',symbol=symbol,candle=candle,
++                            retained_timestamp_ms=sorted(self.candles[symbol]),
++                            evicted_timestamp_ms=keys[:-(self.history_bars+1)])
+             self.messages += 1
+ 
+     def market_health(self):
+@@ -422,11 +452,12 @@
+         """Share validated scanner REST facts; keep its full UTC brain lookback intact."""
+         validate_history(symbol,candles,self.client.clock_ms(),self.history_bars)
+         with self._lock:
++            merged=dict(self.candles[symbol])
+             for c in candles:
+                 prior=self.candles[symbol].get(c.timestamp_ms)
+-                if prior is None or (c.received_timestamp_ms or 0)>=(prior.received_timestamp_ms or 0):
+-                    self.candles[symbol][c.timestamp_ms]=c
+-            self.candles[symbol]=dict(sorted(self.candles[symbol].items())[-(self.history_bars+1):])
++                merged[c.timestamp_ms]=merge_candle(prior,c,self.client.clock_ms())
++            self.candles[symbol]=dict(sorted(merged.items())[-(self.history_bars+1):])
++            self._audit_cache(symbol,'SCANNER_SNAPSHOT',candles[0].timestamp_ms,candles[-1].close_timestamp_ms)
+             prior=self.books.get(symbol)
+             if prior is None or book.timestamp_ms>=prior.timestamp_ms:self.books[symbol]=book
+             if context_ms>=self.context_times.get(symbol,0):
+@@ -434,11 +465,17 @@
+             self.input_errors[symbol].clear();self.recovery_errors.pop(symbol,None)
+             self.scanner_errors.pop(symbol,None)
+ 
++    def _audit_cache(self,symbol,operation,start_ms,end_ms):
++        if getattr(self.client,'candle_audit',None) is not None:
++            self.client.candle_audit.record('CACHE',symbol=symbol,operation=operation,
++                requested_start_ms=start_ms,requested_end_ms=end_ms,
++                capacity=self.history_bars+1,candles=list(self.candles[symbol].values()))
++
+     def note_scanner_failure(self,symbol,reason):
+         if symbol not in self.symbols:raise VenueMismatch('STREAM_MARKET_IDENTITY_MISMATCH')
+         # The scanner validates its full UTC lookback, which may exceed the
+         # engine's 300-bar buffer. A hole there needs another full scanner check.
+-        if reason=='STRATEGY_CANDLE_GAP_OR_DUPLICATE':
++        if reason in {'STRATEGY_CANDLE_GAP_OR_DUPLICATE','CONFLICTING_COMPLETED_CANDLES'} or reason.startswith('SCANNER_NUMERIC_INVALID:'):
+             with self._lock:self.scanner_errors[symbol]=str(reason)
+ 
+     def get_observations(self,symbol):
+--- /dev/null
++++ algo-trading-bot/exchange/candle_audit.py
+@@ -0,0 +1,52 @@
++"""Optional bounded public-candle provenance. Never records account or key data."""
++from dataclasses import asdict, is_dataclass
++from decimal import Decimal
++import json
++from pathlib import Path
++import threading
++import time
++
++from .base_exchange import ExchangeError
++
++
++class PublicCandleAudit:
++    def __init__(self, path, *, max_bytes=256*1024*1024):
++        self.path=Path(path)
++        self.max_bytes=max_bytes
++        self.lock=threading.Lock()
++        self.path.parent.mkdir(parents=True,exist_ok=True)
++        self.bytes=self.path.stat().st_size if self.path.exists() else 0
++        self.sequence=0
++
++    def record(self, stage, **data):
++        def encode(v):
++            if is_dataclass(v):return asdict(v)
++            if isinstance(v,Decimal):return str(v)
++            raise TypeError(type(v).__name__)
++        with self.lock:
++            row=dict(stage=stage,sequence=self.sequence,observed_ms=time.time_ns()//1000000,**data)
++            text=json.dumps(row,default=encode,allow_nan=False,separators=(',',':'))+'\n'
++            size=len(text.encode())
++            if self.bytes+size>self.max_bytes:raise ExchangeError('PUBLIC_CANDLE_AUDIT_SIZE_LIMIT')
++            with self.path.open('a') as stream:stream.write(text)
++            self.bytes+=size;self.sequence+=1
++
++
++def merge_candle(previous, incoming, now_ms):
++    """A previously observed completed fact cannot silently change OHLCV.
++
++    A row observed while open may still evolve. Unknown receive times are
++    treated conservatively as completed when its exchange interval has ended.
++    """
++    if previous is None:return incoming
++    fields=('symbol','interval','timestamp_ms','open','high','low','close','volume')
++    identical=all(getattr(previous,k)==getattr(incoming,k) for k in fields)
++    previous_final=previous.timestamp_ms+60000<=min(now_ms,previous.received_timestamp_ms
++        if previous.received_timestamp_ms is not None else now_ms)
++    incoming_final=incoming.timestamp_ms+60000<=min(now_ms,incoming.received_timestamp_ms
++        if incoming.received_timestamp_ms is not None else now_ms)
++    if previous_final and incoming_final and not identical:
++        raise ExchangeError('CONFLICTING_COMPLETED_CANDLES')
++    if previous_final and not incoming_final:return previous
++    if incoming_final and not previous_final:return incoming
++    return incoming if (incoming.received_timestamp_ms or 0)>=(previous.received_timestamp_ms or 0) else previous
+--- /dev/null
++++ algo-trading-bot/exchange/scanner_numeric.py
+@@ -0,0 +1,19 @@
++"""Validate frozen output at the scanner boundary without changing its math."""
++from .base_exchange import ExchangeError,decimal
++
++
++def scanner_number(value, field, evidence, *, nonnegative=False):
++    record=dict(field=field,operand_type=type(value).__name__,operand=str(value))
++    try:
++        result=decimal(value,nonnegative=nonnegative,positive=not nonnegative)
++    except ExchangeError as exc:
++        try:
++            candidate=decimal(value)
++            reason='NEGATIVE' if candidate<0 else 'NONPOSITIVE'
++        except ExchangeError:reason='NONFINITE_OR_NOT_DECIMAL'
++        record.update(valid=False,reason=reason,exception_type=type(exc).__name__)
++        evidence.setdefault('numeric_fields',{})[field]=record
++        raise ExchangeError('SCANNER_NUMERIC_INVALID:'+field+':'+reason) from exc
++    record['valid']=True
++    evidence.setdefault('numeric_fields',{})[field]=record
++    return result
+--- /dev/null
++++ algo-trading-bot/test_candle_integrity_v6.py
+@@ -0,0 +1,144 @@
++"""Labeled OFFLINE_FIXTURE and RECORDED_EXCHANGE_REPLAY; network forbidden."""
++from dataclasses import replace
++from decimal import Decimal
++import json
++from pathlib import Path
++
++import pytest
++from exchange.base_exchange import Candle,ExchangeError,decimal
++from exchange.candle_audit import PublicCandleAudit,merge_candle
++from exchange.scanner_numeric import scanner_number
++from market_regime_scanner import MarketRegimeScanner,ScannerPolicy
++from test_market_resilience import engine,ready
++from test_exchange_migration import candle_row,NOW
++
++ROOT=Path(__file__).resolve().parents[1]
++
++
++@pytest.fixture(autouse=True)
++def no_network(monkeypatch):
++    import requests,websocket
++    def reject(*a,**k):raise AssertionError('OFFLINE_TEST_NETWORK_FORBIDDEN')
++    monkeypatch.setattr(requests.Session,'post',reject)
++    monkeypatch.setattr(websocket,'create_connection',reject)
++
++
++@pytest.mark.parametrize('name',['brent','ewy'])
++def test_recorded_zero_atr_is_valid_but_never_qualified(name,monkeypatch,record_property):
++    record_property('evidence_class','RECORDED_EXCHANGE_REPLAY')
++    row=json.loads((ROOT/'docs/candle_integrity_v6_2026-10-10'/f'{name}_numeric_candles.json').read_text())
++    candles=[Candle(**{k:(decimal(v) if k in {'open','high','low','close','volume'} else v)
++        for k,v in c.items() if k in Candle.__dataclass_fields__}) for c in row['candles']]
++    source,e=engine();source.now=row['scan_observed_at_ms'];source.book['time']=source.now
++    price=candles[-1].close
++    source.book['levels'][0][0]['px']=str(price-Decimal('.001'))
++    source.book['levels'][1][0]['px']=str(price+Decimal('.001'))
++    monkeypatch.setattr(e.market,'get_candles',lambda symbol,*a,**kw:candles if symbol==row['symbol'] else [])
++    s=MarketRegimeScanner(e.market,ScannerPolicy('.004',15,0,10));scan=s.scan()
++    d=next(d for d in scan.diagnostics if d.symbol==row['symbol'])
++    assert d.metrics['atr']==0 and d.metrics['atr_fraction']==0
++    assert d.evidence['numeric_fields']['ATR_14']['valid']
++    assert 'ATR_BELOW_BASELINE_SCANNER_FLOOR' in d.reasons
++    assert not d.qualified and not scan.watchlist
++    assert not any('INVALID' in r for r in d.reasons)
++
++
++@pytest.mark.parametrize('value,field,nonnegative',[('NaN','ATR_14',True),('Infinity','Close',False),('-1','ATR_14',True),('0','VWAP',False)])
++def test_invalid_numeric_field_records_exact_operand_and_fails_closed(value,field,nonnegative,record_property):
++    record_property('evidence_class','OFFLINE_FIXTURE');evidence={}
++    with pytest.raises(ExchangeError,match='SCANNER_NUMERIC_INVALID:'+field):
++        scanner_number(value,field,evidence,nonnegative=nonnegative)
++    assert evidence['numeric_fields'][field]['operand']==value
++    assert not evidence['numeric_fields'][field]['valid']
++
++
++def test_gapped_rest_response_can_join_retained_genuine_rows(record_property):
++    record_property('evidence_class','OFFLINE_FIXTURE');source,e=engine();ready(e)
++    missing=NOW-120000;del e.candles['par:BTC'][missing]
++    retained=NOW-600000
++    source.history=[candle_row(t) for t in range(NOW-300*60000,NOW,60000) if t!=retained]
++    e.reconcile_history(symbols=['par:BTC'])
++    assert e.market_health()['par:BTC']['healthy']
++    assert missing in e.candles['par:BTC'] and retained in e.candles['par:BTC']
++    assert len(e.get_completed_candles('par:BTC'))==300
++
++
++@pytest.mark.parametrize('kind',['WS','REST','SCANNER'])
++def test_completed_conflict_preserves_cache_and_blocks_only_affected_symbol(kind,record_property):
++    record_property('evidence_class','OFFLINE_FIXTURE');source,e=engine();ready(e)
++    before=e.candles['par:BTC'][NOW-60000]
++    if kind=='WS':assert e.ingest({'channel':'candle','data':candle_row(NOW-60000,close='50001')}) is False
++    elif kind=='REST':
++        source.history=[candle_row(t,close='50001') for t in range(NOW-3*60000,NOW,60000)]
++        e.reconcile_history(symbols=['par:BTC'])
++    else:
++        bars=e.get_completed_candles('par:BTC');bars[-1]=replace(bars[-1],close=Decimal('50001'))
++        with pytest.raises(ExchangeError,match='CONFLICTING_COMPLETED_CANDLES'):
++            e.publish_public_snapshot('par:BTC',bars,e.books['par:BTC'],e.contexts['par:BTC'],NOW)
++        e.note_scanner_failure('par:BTC','CONFLICTING_COMPLETED_CANDLES')
++    assert e.candles['par:BTC'][NOW-60000]==before
++    assert not e.market_health()['par:BTC']['healthy']
++    assert e.market_health()['par:ETH']['healthy']
++
++
++def test_open_row_can_evolve_but_cannot_replace_final_fact(record_property):
++    record_property('evidence_class','OFFLINE_FIXTURE');_,e=engine();ready(e)
++    final=e.candles['par:BTC'][NOW-60000]
++    partial=replace(final,close=Decimal('50001'),received_timestamp_ms=NOW-30000)
++    assert merge_candle(final,partial,NOW)==final
++    assert merge_candle(partial,final,NOW)==final
++    newer=replace(partial,close=Decimal('50002'),received_timestamp_ms=NOW-10000)
++    assert merge_candle(partial,newer,NOW-1)==newer
++
++
++def test_audit_stages_use_same_request_and_never_capture_account_payload(tmp_path,record_property):
++    record_property('evidence_class','OFFLINE_FIXTURE');source,e=engine()
++    audit=PublicCandleAudit(tmp_path/'public.jsonl');e.client.candle_audit=audit
++    e.market.get_candles('par:BTC',NOW-300*60000,NOW-1,now_ms=NOW)
++    e.client.post_info('userAbstraction',user='0x'+'1'*40)
++    rows=[json.loads(l) for l in audit.path.read_text().splitlines()]
++    assert [r['stage'] for r in rows]==['RAW_REST','NORMALIZED_REST']
++    assert rows[0]['request']['req']['startTime']==rows[1]['start_ms']
++    assert len(rows[0]['response'])==len(rows[1]['candles'])==300
++    assert 'userAbstraction' not in audit.path.read_text()
++
++
++def test_audit_size_limit_fails_explicitly(tmp_path,record_property):
++    record_property('evidence_class','OFFLINE_FIXTURE');a=PublicCandleAudit(tmp_path/'audit',max_bytes=1)
++    with pytest.raises(ExchangeError,match='PUBLIC_CANDLE_AUDIT_SIZE_LIMIT'):a.record('CACHE')
++    assert not a.path.exists()
++
++
++def test_public_only_config_never_reads_dotenv(monkeypatch,record_property):
++    record_property('evidence_class','OFFLINE_FIXTURE')
++    import importlib,venue_config,dotenv
++    def forbidden(*a,**k):raise AssertionError('PUBLIC_ONLY_MUST_NOT_READ_WALLET_SETTINGS')
++    monkeypatch.setenv('ANCHORIUM_PUBLIC_ONLY','true')
++    monkeypatch.setattr(dotenv,'dotenv_values',forbidden)
++    importlib.reload(venue_config)
++    assert venue_config._defaults=={}
++    assert venue_config.require_paper_migration()['ALLOW_LIVE_ORDERS'] is False
++
++
++def test_ws_batch_audit_preserves_original_payload_once(tmp_path,record_property):
++    record_property('evidence_class','OFFLINE_FIXTURE');_,e=engine();ready(e)
++    a=PublicCandleAudit(tmp_path/'ws.jsonl');e.client.candle_audit=a
++    message={'channel':'candle','data':[candle_row(NOW-60000),candle_row(NOW-60000,'par:ETH')]}
++    e.ingest(message)
++    records=[json.loads(l) for l in a.path.read_text().splitlines()]
++    raw=[r for r in records if r['stage']=='RAW_WS']
++    assert len(raw)==1 and raw[0]['message']==message
++    assert len([r for r in records if r['stage']=='WS_MERGE'])==2
++
++
++@pytest.mark.parametrize('reason',['CONFLICTING_COMPLETED_CANDLES','SCANNER_NUMERIC_INVALID:VWAP:NONFINITE_OR_NOT_DECIMAL'])
++def test_scanner_integrity_latch_requires_validated_snapshot_to_restore(reason,record_property):
++    record_property('evidence_class','OFFLINE_FIXTURE');_,e=engine();ready(e)
++    from opportunity_funnel import reason_code
++    assert reason_code(reason)=='INVALID_MARKET_DATA'
++    e.note_scanner_failure('par:BTC',reason)
++    assert not e.market_health()['par:BTC']['healthy'] and e.market_health()['par:ETH']['healthy']
++    e.publish_public_snapshot('par:BTC',e.get_completed_candles('par:BTC'),e.books['par:BTC'],e.contexts['par:BTC'],NOW)
++    assert e.market_health()['par:BTC']['healthy']
++    e.note_scanner_failure('par:BTC','ATR_BELOW_BASELINE_SCANNER_FLOOR')
++    assert e.market_health()['par:BTC']['healthy']

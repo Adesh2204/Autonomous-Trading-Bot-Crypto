@@ -1,0 +1,922 @@
+--- algo-trading-bot/exchange/emergency_qualification.py (before)
++++ algo-trading-bot/exchange/emergency_qualification.py (after)
+@@ -33,10 +33,21 @@
+     l2_participation='0.5', exit_floor_factor='0.98505', resting_lifetime_seconds=30,
+     approval_window_ms=300000, entry_minimum_remaining_ms=90000,
+     rule=RULE, protection='UNVERIFIED_NO_STOP_WILL_BE_SUBMITTED')
+-
+-
+-def policy_hash():
+-    return fingerprint(POLICY)
++FIXED_PRICE = 'FIXED_LIMIT_V1'
++BOUNDED_PRICE = 'BOUNDED_FRESH_IOC_V2'
++BOUNDED_RULE = 'MINIMUM_VALID_LONG_FRESH_IOC_WITHIN_APPROVED_ENVELOPE_V2'
++BOUNDED_POLICY = dict(POLICY, version='ANCHORIUM_P0_BOUNDED_IOC_V2',
++    rule=BOUNDED_RULE, price_authorization=BOUNDED_PRICE, entry_price_buffer_bps='10',
++    quantity_expansion=False, price_cap_expansion=False)
++ENVELOPE_FIELDS = ('price_authorization_mode','max_buy_price','quantity_ceiling','entry_notional_ceiling')
++
++
++def proposal_policy(proposal=None):
++    return BOUNDED_POLICY if proposal is not None and proposal.price_authorization_mode==BOUNDED_PRICE else POLICY
++
++
++def policy_hash(proposal=None):
++    return fingerprint(proposal_policy(proposal))
+ 
+ 
+ @dataclass(frozen=True)
+@@ -54,12 +65,19 @@
+     candidate_evidence_hash: str = ''
+     maker_fee_rate: str = '0'
+     protection_status: str = 'UNVERIFIED_NO_STOP_WILL_BE_SUBMITTED'
++    price_authorization_mode: str = FIXED_PRICE
++    max_buy_price: str | None = None
++    quantity_ceiling: str | None = None
++    entry_notional_ceiling: str | None = None
+ 
+     def require(self):
+-        if (self.mode!='TESTNET_QUALIFICATION_P0_1000_V1' or self.network!='testnet' or self.dex!='par'
++        bounded=self.price_authorization_mode==BOUNDED_PRICE
++        expected_mode='TESTNET_QUALIFICATION_P0_BOUNDED_IOC_V2' if bounded else 'TESTNET_QUALIFICATION_P0_1000_V1'
++        if (self.price_authorization_mode not in {FIXED_PRICE,BOUNDED_PRICE}
++                or self.mode!=expected_mode or self.network!='testnet' or self.dex!='par'
+                 or self.entry_side!='BUY' or not self.symbol.startswith('par:')
+                 or self.team_wallet.lower()!=cert.TEAM.lower() or self.api_wallet.lower()!=cert.API.lower()
+-                or self.entry_rule!=RULE or self.qualification_policy_hash!=policy_hash()
++                or self.entry_rule!=(BOUNDED_RULE if bounded else RULE) or self.qualification_policy_hash!=policy_hash(self)
+                 or self.protection_status!=POLICY['protection'] or not self.candidate_evidence_hash
+                 or not self.source_hash or not self.reliability_policy_hash
+                 or type(self.asset_id) is not int or self.asset_id<100000
+@@ -80,7 +98,24 @@
+                 or not n['stop_limit']==n['exit_bound']<n['stop_trigger']<n['entry_limit']
+                 or n['reference_ask']<=n['reference_bid']):
+             raise ExchangeError('P0_QUALIFICATION_SIZE_OR_GEOMETRY_INVALID')
++        if bounded:
++            if (self.symbol!='par:BTC' or self.entry_tif!='Ioc'
++                    or decimal(self.max_buy_price,positive=True)!=n['entry_limit']
++                    or decimal(self.quantity_ceiling,positive=True)!=n['quantity']
++                    or decimal(self.entry_notional_ceiling,positive=True)!=n['quantity']*n['entry_limit']
++                    or decimal(self.entry_notional_ceiling)>1000):
++                raise ExchangeError('P0_INVALID_BOUNDED_PRICE_ENVELOPE')
++        elif any(getattr(self,k) is not None for k in ENVELOPE_FIELDS[1:]):
++            raise ExchangeError('P0_FIXED_PROPOSAL_CANNOT_REPRICE')
+         return self
++
++    @property
++    def identity(self):
++        self.require()
++        data=asdict(self)
++        if self.price_authorization_mode==FIXED_PRICE:
++            for field in ENVELOPE_FIELDS:data.pop(field)
++        return fingerprint(data)  # Byte-identical legacy proposal identity.
+ 
+ 
+ @dataclass(frozen=True)
+@@ -91,13 +126,15 @@
+     possible_manual_residual_recovery_accepted: bool = False
+     maximum_1000_is_not_loss_guarantee_accepted: bool = False
+     one_cancel_two_exits_and_lifetime_accepted: bool = False
++    bounded_price_authorization_accepted: bool = False
+ 
+ 
+ class EmergencyAuthorization(cert.CertificationAuthorization):
+     def require(self, team, signer):
+         a=self.approval;p=self.proposal
+         if (type(p) is not EmergencyProposal or type(a) is not EmergencyApproval
+-                or a.qualification_policy_hash!=policy_hash()
++                or a.qualification_policy_hash!=policy_hash(p)
++                or a.bounded_price_authorization_accepted is not (p.price_authorization_mode==BOUNDED_PRICE)
+                 or not all(getattr(a,k) is True for k in ('unverified_stop_risk_accepted',
+                     'l2_and_50bps_qualification_policy_accepted','possible_manual_residual_recovery_accepted',
+                     'maximum_1000_is_not_loss_guarantee_accepted','one_cancel_two_exits_and_lifetime_accepted'))):
+@@ -125,8 +162,11 @@
+             raise ExchangeError('P0_ACTION_OUTSIDE_SCOPE')
+         qty,px=decimal(w['s'],positive=True),decimal(w.get('p'),positive=True)
+         if not w['r']:
++            price_allowed=(px==decimal(p.entry_limit) if p.price_authorization_mode==FIXED_PRICE else
++                px<=decimal(p.max_buy_price) and qty<=decimal(p.quantity_ceiling)
++                and 10<=qty*px<=decimal(p.entry_notional_ceiling))
+             if (row['intent_key']!=prefix+'entry' or w['b'] is not True or qty!=decimal(p.quantity)
+-                    or px!=decimal(p.entry_limit) or qty*px>1000
++                    or not price_allowed or qty*px>1000
+                     or w.get('t')!={'limit':{'tif':p.entry_tif}}
+                     or self.clock_ms()+POLICY['entry_minimum_remaining_ms']>min(
+                         self.approval.expires_ms,p.observed_ms+POLICY['approval_window_ms'])):
+@@ -219,11 +259,69 @@
+         return replace(context,quote=quote)
+ 
+ 
+-def check_entry(context,request,proposal,now_ms,book):
++def entry_price_diagnostics(context,request,proposal,now_ms,book):
++    """Only public numeric/account-observation fields; no signer or payload."""
++    p=proposal;q=context.quote;spec=context.spec
++    px,qty=decimal(request.price),decimal(request.quantity)
++    upper=spec.normalize_price(q.ask*D('1.002'),'BUY')
++    selected=decimal(p.entry_notional_ceiling) if p.price_authorization_mode==BOUNDED_PRICE else D(1000)
++    conditions=dict(order_or_mark_notional_above_1000=qty*max(px,q.mark)>1000,
++        order_notional_below_10=qty*px<10,limit_above_current_20bps=px>upper,
++        ioc_limit_below_ask=p.entry_tif=='Ioc' and px<q.ask,
++        resting_limit_crosses_ask=p.entry_tif!='Ioc' and px>=q.ask,
++        resting_limit_below_bid_tolerance=p.entry_tif!='Ioc' and px<spec.normalize_price(q.bid*D('.998'),'BUY'),
++        above_approved_max_buy=p.price_authorization_mode==BOUNDED_PRICE and px>decimal(p.max_buy_price),
++        above_approved_quantity=p.price_authorization_mode==BOUNDED_PRICE and qty>decimal(p.quantity_ceiling),
++        above_approved_order_or_mark_notional=qty*max(px,q.mark)>selected)
++    return dict(symbol=request.symbol,price_authorization_mode=p.price_authorization_mode,
++        bid=str(q.bid),ask=str(q.ask),mark=str(q.mark),oracle=str(q.oracle),
++        proposed_limit=str(px),reviewed_limit_or_cap=p.entry_limit,max_buy_price=p.max_buy_price,
++        current_ioc_minimum=str(q.ask),current_20bps_maximum=str(upper),entry_tolerance_bps='20',
++        entry_buffer_bps=proposal_policy(p).get('entry_price_buffer_bps'),quantity=str(qty),
++        quantity_ceiling=p.quantity_ceiling,order_notional=str(qty*px),mark_notional=str(qty*q.mark),
++        minimum_notional='10',outer_notional_ceiling='1000',approved_notional_ceiling=str(selected),
++        evaluated_ms=now_ms,proposal_observed_ms=p.observed_ms,quote_ms=q.timestamp_ms,
++        mark_ms=q.mark_timestamp_ms,book_ms=book.timestamp_ms,account_ms=context.account_ms,
++        entry_deadline_ms=p.observed_ms+210000,conditions=conditions,
++        rejected_conditions=[k for k,v in conditions.items() if v],configuration_hash=p.identity,
++        working_source_hash=p.source_hash)
++
++
++def check_entry(context,request,proposal,now_ms,book,*,journal=None,stage='ENTRY_VALIDATION'):
++    diagnostic=entry_price_diagnostics(context,request,proposal,now_ms,book)
++    try:
++        result=_check_entry(context,request,proposal,now_ms,book)
++        diagnostic.update(allowed=True,guard_result='ALLOWED')
++        return result
++    except ExchangeError as exc:
++        diagnostic.update(allowed=False,guard_result=str(exc))
++        raise
++    finally:
++        if journal is not None:journal.event('P0_ENTRY_PRICE_GUARD',now_ms,stage=stage,**diagnostic)
++
++
++def calculate_bounded_entry(context,proposal,now_ms,book,*,client_order_id=None,journal=None,stage='PRICE_SELECTION'):
++    p=proposal.require()
++    if p.price_authorization_mode!=BOUNDED_PRICE:raise ExchangeError('P0_BOUNDED_APPROVAL_MODE_REQUIRED')
++    if now_ms+90000>p.observed_ms+300000:raise ExchangeError('P0_ENTRY_WINDOW_CLOSED')
++    qty=decimal(p.quantity);spec=context.spec
++    if (spec.asset_id!=p.asset_id or spec.symbol!=p.symbol or spec.normalize_size(qty)!=qty
++            or spec.normalize_price(p.max_buy_price,'BUY')!=decimal(p.max_buy_price)):
++        raise ExchangeError('P0_BOUNDED_RUNTIME_PRECISION_OR_MAPPING')
++    price=spec.normalize_price(min(context.quote.ask*D('1.001'),decimal(p.max_buy_price),
++                                  decimal(p.entry_notional_ceiling)/qty),'BUY')
++    request=OrderRequest(p.symbol,'BUY',qty,price,tif='Ioc',strategy_id='TESTNET_CERTIFICATION_ENTRY',
++                         client_order_id=client_order_id)
++    check_entry(context,request,p,now_ms,book,journal=journal,stage=stage)
++    return request
++
++
++def _check_entry(context,request,proposal,now_ms,book):
+     p=proposal.require();q=context.quote;spec=context.spec
+     if (request.symbol!=p.symbol or request.side!='BUY' or request.reduce_only
+             or request.order_type!='LIMIT' or request.tif!=p.entry_tif
+-            or request.quantity!=decimal(p.quantity) or request.price!=decimal(p.entry_limit)
++            or request.quantity!=decimal(p.quantity)
++            or p.price_authorization_mode==FIXED_PRICE and request.price!=decimal(p.entry_limit)
+             or spec.asset_id!=p.asset_id or spec.symbol!=p.symbol
+             or spec.normalize_size(request.quantity)!=request.quantity
+             or spec.normalize_price(request.price,'BUY')!=request.price):
+@@ -244,6 +342,13 @@
+     public=inspect_market(spec,book,now_ms,tif=p.entry_tif,
+         asset_context=dict(markPx=str(q.mark),oraclePx=str(q.oracle)))
+     if not public['potential']:raise ExchangeError(public['blocker'])
++    if p.price_authorization_mode==BOUNDED_PRICE:
++        if spec.normalize_price(p.max_buy_price,'BUY')!=decimal(p.max_buy_price):
++            raise ExchangeError('P0_BOUNDED_RUNTIME_PRECISION_OR_MAPPING')
++        if (now_ms+90000>p.observed_ms+300000
++                or request.price>decimal(p.max_buy_price) or request.quantity>decimal(p.quantity_ceiling)
++                or request.quantity*max(request.price,q.mark)>decimal(p.entry_notional_ceiling)):
++            raise ExchangeError('P0_APPROVED_ENVELOPE_OR_TIME_EXCEEDED')
+     if (request.quantity*max(request.price,q.mark)>1000 or request.quantity*request.price<10
+             or request.price>spec.normalize_price(q.ask*D('1.002'),'BUY')
+             or p.entry_tif=='Ioc' and request.price<q.ask
+@@ -269,7 +374,7 @@
+         raise ExchangeError('P0_MARGIN_REQUIRED')
+     residual=residual_close_assessment(spec,request.quantity,p.exit_bound)
+     if not residual['ready']:raise ExchangeError(residual['blocker'])
+-    return dict(policy=POLICY,entry_depth=ent,exit_depth=exit,residuals=residual,
++    return dict(policy=proposal_policy(p),entry_depth=ent,exit_depth=exit,residuals=residual,
+                 old_10_percent_bbo_passed=request.quantity<=min(q.bid_quantity,q.ask_quantity)*D('.1'))
+ 
+ 
+@@ -282,18 +387,19 @@
+         p=self.proposal
+         if (permission.candidate_id!='certification:'+p.identity
+                 or permission.provenance.classification!='CONTROLLED_TEST_ORDER'
+-                or permission.provenance.test_authorization.get('qualification_policy_hash')!=policy_hash()):
++                or permission.provenance.test_authorization.get('qualification_policy_hash')!=policy_hash(p)):
+             raise ExchangeError('P0_EXACT_POLICY_PROVENANCE_REQUIRED')
+         if request.reduce_only:
+             if request.symbol!=p.symbol or request.quantity>decimal(p.quantity):
+                 raise ExchangeError('P0_EXIT_SCOPE_REQUIRED')
+-            return dict(policy_hash=policy_hash(),max_notional='1000',reduce_only=True)
+-        return check_entry(context,request,p,now_ms,self.provider.books[request.symbol])
++            return dict(policy_hash=policy_hash(p),max_notional='1000',reduce_only=True)
++        return check_entry(context,request,p,now_ms,self.provider.books[request.symbol],
++                           journal=getattr(self.provider,'diagnostic_journal',None),stage='CENTRAL_VALIDATION')
+ 
+ 
+ def permission(request,proposal,now_ms,*,reason=None):
+     result=cert.test_permission(request,proposal,now_ms,reason=reason)
+-    a=dict(result.provenance.test_authorization,qualification_policy_hash=policy_hash())
++    a=dict(result.provenance.test_authorization,qualification_policy_hash=policy_hash(proposal))
+     return replace(result,provenance=replace(result.provenance,test_authorization=a))
+ 
+ 
+@@ -305,6 +411,31 @@
+         self.compliance_guard=ComplianceGuard(self.journal,self.position_guard,
+             clock_ms=self.client.clock_ms,transport=self.transport,execution_owner=self,qualification_scope=scope)
+         self.transport._compliance_guard=self.compliance_guard
++        self.context_provider.diagnostic_journal=self.journal
++    def _prepare_context_request(self,request,risk,context):
++        p=self.proposal
++        if request.reduce_only or p.price_authorization_mode==FIXED_PRICE:return request,risk
++        if (request.symbol!=p.symbol or request.side!='BUY' or request.quantity!=decimal(p.quantity)
++                or request.price!=decimal(p.entry_limit) or request.tif!='Ioc'
++                or request.strategy_id!='TESTNET_CERTIFICATION_ENTRY' or request.order_type!='LIMIT'
++                or request.client_order_id!='certification:'+p.identity+':entry'
++                or risk.candidate_id!='certification:'+p.identity):
++            raise ExchangeError('P0_BOUNDED_ENTRY_DRAFT_REQUIRED')
++        selected=calculate_bounded_entry(context,p,self.client.clock_ms(),self.context_provider.books[p.symbol],
++            client_order_id=request.client_order_id,journal=self.journal,stage='FRESH_CONTEXT_PRICE_SELECTION')
++        return selected,permission(selected,p,self.client.clock_ms())
++    def submit(self,request,*,permission=None):
++        # Restore the actual durable price, never select a second price/order.
++        if self.proposal.price_authorization_mode==BOUNDED_PRICE and not request.reduce_only:
++            prior=self.journal.intent(request.client_order_id) if request.client_order_id else None
++            if prior:
++                saved=OrderRequest(**json.loads(prior['request']))
++                if (request.price!=decimal(self.proposal.entry_limit)
++                        or replace(request,price=saved.price)!=saved
++                        or saved.price>decimal(self.proposal.max_buy_price)):
++                    raise ExchangeError('P0_BOUNDED_DUPLICATE_INTENT_CONFLICT')
++                request=saved
++        return super().submit(request,permission=permission)
+     def close_full_position(self,request,*,permission=None):
+         if (permission is None or permission.candidate_id!='certification:'+self.proposal.identity
+                 or request.client_order_id not in {'certification:'+self.proposal.identity+':exit:0',
+@@ -313,7 +444,7 @@
+         if self.journal.intent(request.client_order_id) is None:
+             from .qualification_protection import require_settled_exit_orders
+             require_settled_exit_orders(self)
+-        a=dict(permission.provenance.test_authorization,qualification_policy_hash=policy_hash())
++        a=dict(permission.provenance.test_authorization,qualification_policy_hash=policy_hash(self.proposal))
+         scoped=replace(permission,provenance=replace(permission.provenance,test_authorization=a))
+         return super().close_full_position(request,permission=scoped)
+     def _guard(self,context,checked_ms,**kwargs):
+@@ -330,8 +461,8 @@
+             q=make_quote(book,context.contexts[p.symbol],self.client.clock_ms(),
+                 mark_timestamp_ms=context.quote.mark_timestamp_ms)
+             current=replace(context,quote=q)
+-            check_entry(current,OrderRequest(p.symbol,'BUY',p.quantity,p.entry_limit,tif=p.entry_tif),
+-                        p,self.client.clock_ms(),book)
++            request=kwargs.get('entry_request') or OrderRequest(p.symbol,'BUY',p.quantity,p.entry_limit,tif=p.entry_tif)
++            check_entry(current,request,p,self.client.clock_ms(),book,journal=self.journal,stage='FINAL_SIGNING_VALIDATOR')
+ 
+ 
+ class EmergencySDKTransport(OfficialSDKTransport):
+@@ -354,22 +485,32 @@
+         return super().transmit(payload)
+ 
+ 
+-def propose(context,client,source_hash,reliability_hash,book,*,tif='Ioc',candidate_hash):
++def propose(context,client,source_hash,reliability_hash,book,*,tif='Ioc',candidate_hash,price_mode=FIXED_PRICE):
+     spec,q=context.spec,context.quote
+     row=inspect_market(spec,book,client.clock_ms(),tif=tif,
+         asset_context=dict(markPx=str(q.mark),oraclePx=str(q.oracle)))
+     if not row['potential']:raise ExchangeError(row['blocker'])
+     # Choose minimum valid whole-lot order; NEVER automatically size toward $1000.
++    if price_mode not in {FIXED_PRICE,BOUNDED_PRICE}:raise ExchangeError('P0_UNKNOWN_PRICE_MODE')
++    if price_mode==BOUNDED_PRICE and (spec.symbol!='par:BTC' or tif!='Ioc'):
++        raise ExchangeError('P0_BOUNDED_BTC_IOC_ONLY')
++    envelope=(dict(price_authorization_mode=BOUNDED_PRICE,max_buy_price=row['entry_limit'],
++        quantity_ceiling=row['minimum_quantity'],
++        entry_notional_ceiling=str(decimal(row['minimum_quantity'])*decimal(row['entry_limit'])),
++        mode='TESTNET_QUALIFICATION_P0_BOUNDED_IOC_V2',entry_rule=BOUNDED_RULE,
++        qualification_policy_hash=fingerprint(BOUNDED_POLICY)) if price_mode==BOUNDED_PRICE else
++        dict(qualification_policy_hash=policy_hash()))
+     p=EmergencyProposal(symbol=spec.symbol,asset_id=spec.asset_id,quantity=row['minimum_quantity'],
+         entry_side='BUY',entry_limit=row['entry_limit'],exit_bound=row['exit_floor'],
+         stop_trigger=str(spec.normalize_price(q.bid*D('.99'),'SELL')),stop_limit=row['exit_floor'],
+         reference_bid=str(q.bid),reference_ask=str(q.ask),reference_mark=str(q.mark),reference_oracle=str(q.oracle),
+         observed_ms=client.clock_ms(),source_hash=source_hash,reliability_policy_hash=reliability_hash,
+-        team_wallet=cert.TEAM,api_wallet=cert.API,qualification_policy_hash=policy_hash(),
++        team_wallet=cert.TEAM,api_wallet=cert.API,**envelope,
+         entry_tif=tif,order_lifetime_seconds=0 if tif=='Ioc' else 30,candidate_evidence_hash=candidate_hash,
+         taker_fee_rate=str(decimal(context.readiness.fees['userCrossRate'])*2),
+         maker_fee_rate=str(decimal(context.readiness.fees['userAddRate'])*2)).require()
+-    req=OrderRequest(p.symbol,'BUY',p.quantity,p.entry_limit,tif=tif,strategy_id='TESTNET_CERTIFICATION_ENTRY')
++    req=(calculate_bounded_entry(context,p,client.clock_ms(),book) if price_mode==BOUNDED_PRICE else
++         OrderRequest(p.symbol,'BUY',p.quantity,p.entry_limit,tif=tif,strategy_id='TESTNET_CERTIFICATION_ENTRY'))
+     local=check_entry(context,req,p,client.clock_ms(),book)
+     checked=HyperliquidOrderValidator(client).validate(req,context,permission(req,p,client.clock_ms()),client.clock_ms())
+     if not checked.allowed:raise ExchangeError(checked.code)
+@@ -543,7 +684,11 @@
+         rates=HyperliquidRateLimitManager(journal,policy=rate,signer_address=proposal.api_wallet)
+         client=HyperliquidClient(rate_limits=rates);client.startup()
+         account=HyperliquidAccount(client,proposal.team_wallet);market=HyperliquidMarketData(client)
+-        if account.get_positions() or account.get_frontend_open_orders():raise ExchangeError('P0_INITIAL_FLAT_REQUIRED')
++        # V2's mandatory provider bundle already reads/reconciles positions and
++        # frontend orders, and check_entry requires flat. Avoid only this extra
++        # duplicate pair; retain all validation and final signing-boundary reads.
++        if proposal.price_authorization_mode==FIXED_PRICE and (account.get_positions() or account.get_frontend_open_orders()):
++            raise ExchangeError('P0_INITIAL_FLAT_REQUIRED')
+         clock=ClockHealthMonitor(clock_ms=client.clock_ms,journal=journal,**cp)
+         recovery=CertificationRecovery(account,journal,initial_start_ms=0)
+         provider=EmergencyContextProvider(market,account,proposal.api_wallet,clock,rates,
+@@ -551,7 +696,12 @@
+         req=OrderRequest(proposal.symbol,'BUY',proposal.quantity,proposal.entry_limit,tif=proposal.entry_tif,
+             strategy_id='TESTNET_CERTIFICATION_ENTRY')
+         context=provider.load(req)
+-        check_entry(context,req,proposal,client.clock_ms(),provider.last_book)
++        if proposal.price_authorization_mode==BOUNDED_PRICE:
++            req=calculate_bounded_entry(context,proposal,client.clock_ms(),provider.last_book,
++                journal=journal,stage='BUILD_RUNTIME_FRESH_PREFLIGHT')
++        else:
++            check_entry(context,req,proposal,client.clock_ms(),provider.last_book,
++                journal=journal,stage='BUILD_RUNTIME_FRESH_PREFLIGHT')
+         validation=HyperliquidOrderValidator(client).validate(req,context,permission(req,proposal,client.clock_ms()),client.clock_ms())
+         if not validation.allowed:raise ExchangeError(validation.code)
+         provider.reconcile_before_load=None
+@@ -592,7 +742,7 @@
+     path=require_qualification_regression(root,receipt)
+     r=json.loads(path.read_text())
+     after=r.get('checks_after',{})
+-    if (r['totals']['tests']<1984 or set(after)!={'strategy_freeze','phase0'}
++    if (r['totals']['tests']<2046 or set(after)!={'strategy_freeze','phase0'}
+             or any(v.get('exit_code')!=0 or v.get('result',{}).get('passed') is not True for v in after.values())):
+         raise ExchangeError('P0_FULL_BASELINE_AND_AFTER_CHECKS_REQUIRED')
+     return path
+--- algo-trading-bot/exchange/hyperliquid_execution.py (before)
++++ algo-trading-bot/exchange/hyperliquid_execution.py (after)
+@@ -83,7 +83,7 @@
+                 self.journal.team_address):
+             raise ExchangeError('TEAM_ACCOUNT_IDENTITY_MISMATCH')
+ 
+-    def _guard(self, context, checked_ms, *, critical=False, entry=False, exact_full_close=None):
++    def _guard(self, context, checked_ms, *, critical=False, entry=False, exact_full_close=None, entry_request=None):
+         self._require()
+         self.clock_health.require()
+         if not self.transport.nonces.healthy:
+@@ -202,6 +202,9 @@
+                 bool(self.recovery.last_report.ready) and
+                 {s:p.quantity for s,p in state.positions.items()}=={s:p.quantity for s,p in context.positions.items()} and
+                 set(state.orders)=={str(o['oid']) for o in context.open_orders})
++        # Default is identity. Only the versioned qualification executor opts
++        # into a bounded request selected from this mandatory fresh context.
++        request,permission=self._prepare_context_request(request,permission,context)
+         spec=self.client.market(request.symbol)
+         if full_position_close and (spec.normalize_size(request.quantity)!=request.quantity or
+                 spec.normalize_price(request.price,request.side)!=request.price):
+@@ -250,11 +253,15 @@
+         request = replace(request, quantity=result.normalized.quantity, price=result.normalized.price)
+         return request, context, result, decision
+ 
++    def _prepare_context_request(self,request,permission,context):
++        return request,permission
++
+     def _permit(self, action, decision, request, context, checked_ms, *, entry_key=None,
+                 full_position_close=False):
+         return self.compliance_guard.authorize(action,decision,request,context,
+             lambda:self._guard(context,checked_ms,critical=request.reduce_only,
+                                entry=not request.reduce_only,
++                               entry_request=request if not request.reduce_only else None,
+                                exact_full_close=request if full_position_close else None),entry_key=entry_key)
+ 
+     def submit(self, request, *, permission=None):
+--- algo-trading-bot/exchange/compliance_guard.py (before)
++++ algo-trading-bot/exchange/compliance_guard.py (after)
+@@ -311,6 +311,7 @@
+         # an alternate caller cannot replace them with a permissive callback.
+         callback=lambda:self.execution_owner._guard(context,decision.timestamp,
+             critical=request.reduce_only,entry=not request.reduce_only,
++            entry_request=request if not request.reduce_only else None,
+             exact_full_close=request if full_position_close else None)
+         self.journal.event('COMPLIANCE_ACTION_AUTHORIZED', self.clock_ms(),
+             candidate_id=decision.candidate_id, cloid=wire['c'], order_classification=decision.classification,
+--- scripts/run_emergency_qualification.py (before)
++++ scripts/run_emergency_qualification.py (after)
+@@ -2,17 +2,19 @@
+ import argparse
+ from dataclasses import asdict
+ from datetime import datetime,timezone,timedelta
+-import hashlib,json,shlex,signal,sys,threading,time
++import hashlib,json,shlex,signal,sys,threading,time,sqlite3
+ from pathlib import Path
+ from types import SimpleNamespace
+ ROOT=Path(__file__).resolve().parents[1]
+ sys.path.insert(0,str(ROOT/'algo-trading-bot'))
+ from exchange.base_exchange import ExchangeError,decimal
++from exchange.execution_journal import fingerprint
+ from exchange.paper_operations import active_source_hash,atomic_json,PaperOwner
+ from exchange.qualification_watcher import (ReadOnlyQualificationSession,PublicBookStream,PublicBookReader,
+     OpportunityGate,source_unchanged,prior_execution_check,durable_readback)
+ from exchange.emergency_qualification import (EmergencyContextProvider,EmergencyProposal,EmergencyApproval,
+-    POLICY,policy_hash,inspect_market,propose,build_runtime,RECOVERY_STEPS,require_emergency_regression)
++    POLICY,BOUNDED_POLICY,FIXED_PRICE,BOUNDED_PRICE,proposal_policy,policy_hash,inspect_market,propose,
++    build_runtime,RECOVERY_STEPS,require_emergency_regression)
+ from exchange.testnet_certification import TEAM,API
+ from strategy_freeze import verify_strategy_freeze
+ from venue_config import require_paper_migration
+@@ -20,8 +22,22 @@
+ 
+ 
+ def approval_template(p):
+-    return asdict(EmergencyApproval(proposal_hash=p.identity,operator_approval='',approved_ms=None,
+-        expires_ms=None,qualification_policy_hash=policy_hash()))
++    data=asdict(EmergencyApproval(proposal_hash=p.identity,operator_approval='',approved_ms=None,
++        expires_ms=None,qualification_policy_hash=policy_hash(p)))
++    if p.price_authorization_mode==FIXED_PRICE:data.pop('bounded_price_authorization_accepted')
++    return data
++
++
++def persist_price_diagnostics(directory,p):
++    path=ROOT/'runtime/testnet/anchorium-bot-1/qualification.sqlite'
++    rows=[]
++    if path.exists():
++        with sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True) as db:
++            for ms,data in db.execute("SELECT timestamp_ms,data FROM events WHERE kind='P0_ENTRY_PRICE_GUARD' ORDER BY seq"):
++                row=json.loads(data)
++                if row.get('configuration_hash')==p.identity:rows.append(dict(event_ms=ms,**row))
++    atomic_json(directory/'price_guard_diagnostics.json',dict(proposal_id=p.identity,observations=rows,
++        scope='Exact persisted validation snapshots, not reconstructed market prices'))
+ 
+ 
+ def handoff(p,directory,receipt):
+@@ -37,6 +53,10 @@
+             timezone(timedelta(hours=5,minutes=30))).isoformat(),
+         actual_entry_exposure=str(qty*price),maximum_policy_exposure='1000',
+         selected_quantity_fixed=True,no_automatic_enlargement=True,entry_attempts=1,exit_attempts=2,cancel_attempts=1,
++        price_authorization_mode=p.price_authorization_mode,max_buy_price=p.max_buy_price,
++        quantity_ceiling=p.quantity_ceiling,entry_notional_ceiling=p.entry_notional_ceiling,
++        execution_price_rule=('Fresh ask plus 10 bps, normalized down and clamped to approved BUY/notional caps; final wire must remain executable and within current 20 bps'
++                              if p.price_authorization_mode==BOUNDED_PRICE else 'Exact immutable reviewed limit'),
+         estimate_round_trip_taker_fee_at_limits=str(qty*(price+floor)*fee),
+         estimate_resting_entry_fee_range=[str(qty*price*maker),str(qty*price*fee)],
+         loss_if_fully_closed_at_floor_with_taker_fees=str(qty*(price-floor)+qty*(price+floor)*fee),
+@@ -51,20 +71,22 @@
+         approval_procedure=['Explicitly authorize this exact proposal ID and all listed risks in chat.',
+             'The operator approval file must contain this exact hash/policy, the human approval text, true acknowledgements and current approved_ms/expires_ms.',
+             'expires_ms must be <= approved_ms + 300000 and <= proposal observed_ms + 300000. Entry needs at least 90 seconds remaining.',
+-            'Preparation never fills in approval or constructs an actual signer. Changed/expired prices or source require a new proposal, not silent resizing.'],
++            'Preparation never fills approval or constructs an actual signer. Fixed proposals cannot reprice; bounded proposals allow only the explicitly approved fresh-price envelope. Changed source, envelope or expiry requires new approval.'],
+         execute_command=shlex.join(args),recovery_steps=RECOVERY_STEPS,exchange_submissions=0,
+         actual_wallet_signatures=0,actual_fill_verified=False,organizer_whitelisting_confirmed=False,
+         normal_protection_certified=False,practice_ready=False,live_ready=False)
+ 
+ 
+-def prepare(directory,receipt=None,*,duration_seconds=60,route='auto',transport='auto'):
++def prepare(directory,receipt=None,*,duration_seconds=60,route='auto',transport='auto',price_mode=FIXED_PRICE):
+     if not 10<=duration_seconds<=300 or route not in {'auto','ioc','gtc','alo'} or transport not in {'auto','rest'}:
+         raise ExchangeError('P0_INVALID_PREPARATION_ARGUMENTS')
+     directory=Path(directory).resolve();directory.mkdir(parents=True,exist_ok=False)
+     source=active_source_hash(ROOT)
++    if price_mode not in {FIXED_PRICE,BOUNDED_PRICE}:raise ExchangeError('P0_UNKNOWN_PRICE_MODE')
+     reliability=hashlib.sha256((ROOT/'configs/reliability_policy.json').read_bytes()).hexdigest()
+     r=dict(status='MONITORING_READ_ONLY',source_hash=source,reliability_policy_hash=reliability,
+-        qualification_policy=POLICY,qualification_policy_hash=policy_hash(),execution_mode='PAPER',allow_live_orders=False,
++        qualification_policy=BOUNDED_POLICY if price_mode==BOUNDED_PRICE else POLICY,
++        qualification_policy_hash=fingerprint(BOUNDED_POLICY if price_mode==BOUNDED_PRICE else POLICY),execution_mode='PAPER',allow_live_orders=False,
+         exchange_submissions=0,actual_wallet_signatures=0,actual_fill_verified=False,protection_verified=False,
+         started_utc=datetime.now(timezone.utc).isoformat(),markets={},attempts=[],stage_a_observations=0)
+     started=time.monotonic();cancel=threading.Event();session=stream=owner=None
+@@ -95,13 +117,15 @@
+         if transport=='auto':
+             stream=PublicBookStream(session.client.markets,session.rates,clock_ms=session.client.clock_ms);stream.start()
+         reader=PublicBookReader(session.market,stream);gate=OpportunityGate()
+-        tifs=['Ioc','Gtc'] if route=='auto' else [{'ioc':'Ioc','gtc':'Gtc','alo':'Alo'}[route]]
++        if price_mode==BOUNDED_PRICE and route not in {'auto','ioc'}:raise ExchangeError('P0_BOUNDED_BTC_IOC_ONLY')
++        tifs=['Ioc'] if price_mode==BOUNDED_PRICE else (['Ioc','Gtc'] if route=='auto' else [{'ioc':'Ioc','gtc':'Gtc','alo':'Alo'}[route]])
+         seen={};last_source=time.monotonic()
+         while time.monotonic()-started<duration_seconds and not cancel.is_set():
+             if time.monotonic()-last_source>=5:
+                 source_unchanged(ROOT,source,reliability);last_source=time.monotonic()
+             potentials=[]
+             for symbol,spec in session.client.markets.items():
++                if price_mode==BOUNDED_PRICE and symbol!='par:BTC':continue
+                 book,origin=reader.get(symbol)
+                 if not book or seen.get(symbol)==book.timestamp_ms:continue
+                 seen[symbol]=book.timestamp_ms
+@@ -133,7 +157,7 @@
+                         clock=session.clock.report(),
+                         checkpoint=durable_readback(directory/'read_only.sqlite',session.recovery.source))
+                     p,checks=propose(context,session.client,source,reliability,session.provider.last_book,
+-                        tif=row['entry_tif'],candidate_hash=row['evidence_hash'])
++                        tif=row['entry_tif'],candidate_hash=row['evidence_hash'],price_mode=price_mode)
+                     candidate.update(proposal=asdict(p),checks=checks,eligible=True)
+                     source_unchanged(ROOT,source,reliability)
+                     atomic_json(directory/'proposal.json',asdict(p))
+@@ -190,6 +214,7 @@
+     a.add_argument('--duration-seconds',type=int,default=60)
+     a.add_argument('--route',choices=['auto','ioc','gtc','alo'],default='auto')
+     a.add_argument('--transport',choices=['auto','rest'],default='auto')
++    a.add_argument('--price-mode',choices=['fixed','bounded'],default='fixed')
+     a.add_argument('--execute',action='store_true');a.add_argument('--proposal-file');a.add_argument('--operator-approval-file')
+     args=a.parse_args()
+     if args.execute:
+@@ -198,15 +223,23 @@
+         directory=Path(args.output_directory).resolve();directory.mkdir(parents=True,exist_ok=False)
+         p=EmergencyProposal(**json.loads(Path(args.proposal_file).read_text()))
+         approval=EmergencyApproval(**json.loads(Path(args.operator_approval_file).read_text()))
+-        runtime=build_runtime(ROOT,p,approval,test_receipt=args.test_receipt)
++        try:runtime=build_runtime(ROOT,p,approval,test_receipt=args.test_receipt)
++        except ExchangeError as exc:
++            persist_price_diagnostics(directory,p)
++            atomic_json(directory/'execution_report.json',dict(status='BUILD_PREFLIGHT_BLOCKED',blocker=str(exc),
++                proposal_id=p.identity,entry_submission_attempted=False,actual_fill_verified=False))
++            raise
+         try:
+             result=runtime.run();atomic_json(directory/'execution_report.json',result)
+-            atomic_json(directory/'WHITELIST_TRADE_PROOF.json',result['whitelist_trade_proof'])
+-        finally:runtime.close()
++            proof=result['whitelist_trade_proof']
++            atomic_json(directory/('WHITELIST_TRADE_PROOF.json' if proof.get('fill_verified') else 'NO_FILL_VERIFICATION.json'),proof)
++        finally:
++            runtime.close();persist_price_diagnostics(directory,p)
+         print(json.dumps(result,default=str,indent=2))
+         return 0 if result.get('final_flat') is True and result['status'] in {'TRADE_CLOSED_RECONCILED','NO_FILL_VERIFIED'} else 1
+     if args.proposal_file or args.operator_approval_file:a.error('Preparation cannot consume an execution authorization.')
+-    r=prepare(args.output_directory,args.test_receipt,duration_seconds=args.duration_seconds,route=args.route,transport=args.transport)
++    r=prepare(args.output_directory,args.test_receipt,duration_seconds=args.duration_seconds,route=args.route,transport=args.transport,
++              price_mode=BOUNDED_PRICE if args.price_mode=='bounded' else FIXED_PRICE)
+     print(json.dumps({k:r.get(k) for k in ('status','blocker','proposal_id','proposal','approval_deadline_ist',
+         'actual_entry_exposure','estimate_round_trip_taker_fee_at_limits','loss_if_fully_closed_at_floor_with_taker_fees',
+         'execute_command','protection_verified','exchange_submissions')},indent=2))
+--- algo-trading-bot/test_qualification_price_guard.py (before)
++++ algo-trading-bot/test_qualification_price_guard.py (after)
+@@ -0,0 +1,376 @@
++"""Versioned bounded pricing, real executor/SDK composition, ephemeral fixtures.
++
++Every HTTP exchange call is forbidden by the live fixture. Unit outcomes never
++prove an actual team fill, protection acceptance or committee qualification.
++"""
++from copy import deepcopy
++from dataclasses import asdict,replace
++from decimal import Decimal as D
++import json
++import importlib.util
++from pathlib import Path
++from types import SimpleNamespace
++import pytest
++from exchange.base_exchange import ExchangeError,BookLevel
++from exchange.order_lifecycle import OrderRequest,OrderState
++from exchange.execution_journal import fingerprint
++from exchange.emergency_qualification import (EmergencyProposal,EmergencyApproval,EmergencyComplianceScope,
++    EmergencySequence,BOUNDED_PRICE,FIXED_PRICE,BOUNDED_POLICY,ENVELOPE_FIELDS,RULE,
++    calculate_bounded_entry,entry_price_diagnostics,check_entry,propose,permission,policy_hash)
++from test_emergency_qualification import emergency
++from test_live_exchange_execution import live,response
++from test_exchange_migration import NOW
++
++
++@pytest.fixture
++def bounded(emergency):
++    c=emergency
++    p,_=propose(c.context,c.live.client,'fixture-source','fixture-policy',c.live.provider.last_book,
++        tif='Ioc',candidate_hash='synthetic-genuine-l2',price_mode=BOUNDED_PRICE)
++    c.p=p;c.a=replace(c.a,proposal_hash=p.identity,qualification_policy_hash=policy_hash(p),
++        bounded_price_authorization_accepted=True)
++    c.auth.proposal=p;c.auth.approval=c.a
++    c.live.executor.proposal=p
++    c.live.executor.compliance_guard.qualification_scope=EmergencyComplianceScope(p,c.live.provider)
++    c.sequence=EmergencySequence(c.live.executor,p,c.auth)
++    return c
++
++
++def moved(c,bid,ask,*,now=NOW,mark=None,oracle=None):
++    bid,ask=D(bid),D(ask);old=c.live.provider.last_book
++    book=replace(old,timestamp_ms=now,bids=(BookLevel(bid,D('.1')),BookLevel(bid-50,D('.2'))),
++        asks=(BookLevel(ask,D('.006')),BookLevel(ask+50,D('.02'))))
++    quote=replace(c.context.quote,bid=bid,ask=ask,mid=(bid+ask)/2,
++        mark=D(mark) if mark else c.context.quote.mark,oracle=D(oracle) if oracle else c.context.quote.oracle,
++        timestamp_ms=now,mark_timestamp_ms=now)
++    ctx=replace(c.context,quote=quote,account_ms=now,
++                readiness=replace(c.context.readiness,observed_ms=now))
++    return ctx,book
++
++
++def move_venue(c,bid,ask):
++    c.live.fixture.book['levels']=[[dict(px=str(bid),sz='.1'),dict(px=str(D(bid)-50),sz='.2')],
++        [dict(px=str(ask),sz='.006'),dict(px=str(D(ask)+50),sz='.02')]]
++
++
++def draft(c):
++    return OrderRequest(c.p.symbol,'BUY',c.p.quantity,c.p.entry_limit,tif='Ioc',
++        strategy_id='TESTNET_CERTIFICATION_ENTRY',client_order_id=c.sequence.prefix+'entry')
++
++
++def test_legacy_identity_is_preserved_byte_for_byte(emergency):
++    c=emergency;raw=asdict(c.p)
++    for field in ENVELOPE_FIELDS:raw.pop(field)
++    assert fingerprint(raw)==c.p.identity
++    assert policy_hash(c.p)==policy_hash() and c.p.price_authorization_mode==FIXED_PRICE
++
++
++def test_old_approval_cannot_authorize_new_bounded_semantics(bounded):
++    c=bounded;c.auth.approval=replace(c.a,bounded_price_authorization_accepted=False)
++    assert c.sequence.run()['status']=='PREFLIGHT_BLOCKED' and not c.venue.calls
++
++
++@pytest.mark.parametrize('field,value',[('max_buy_price','83607'),('quantity_ceiling','.0003'),
++    ('entry_notional_ceiling','1000'),('entry_rule','old-rule'),('mode','TESTNET_QUALIFICATION_P0_1000_V1'),
++    ('qualification_policy_hash','old-hash'),('entry_tif','Gtc'),('price_authorization_mode','OTHER')])
++def test_envelope_schema_tampering_rejected(bounded,field,value):
++    with pytest.raises(ExchangeError):replace(bounded.p,**{field:value}).require()
++
++
++@pytest.mark.parametrize('bid,ask',[('83380','83420'),('83400','83440'),('83440','83470'),('83560','83600')])
++def test_moving_ask_both_directions_selects_only_inside_approved_envelope(bounded,bid,ask):
++    c=bounded;ctx,book=moved(c,bid,ask)
++    req=calculate_bounded_entry(ctx,c.p,NOW,book)
++    assert D(ask)<=req.price<=ctx.spec.normalize_price(D(ask)*D('1.002'),'BUY')
++    assert req.price<=D(c.p.max_buy_price) and req.quantity==D('.0002')
++    assert req.quantity*req.price<=D(c.p.entry_notional_ceiling)
++    assert ctx.spec.normalize_price(req.price,'BUY')==req.price
++    assert c.p.identity==c.auth.approval.proposal_hash
++
++
++def test_exact_old_rejection_now_allows_fresh_lower_price_but_not_old_repricing(bounded):
++    old=bounded;legacy=replace(old.p,price_authorization_mode=FIXED_PRICE,max_buy_price=None,
++        quantity_ceiling=None,entry_notional_ceiling=None,mode='TESTNET_QUALIFICATION_P0_1000_V1',
++        entry_rule=RULE,qualification_policy_hash=policy_hash())
++    ctx,book=moved(old,'83380','83420')
++    with pytest.raises(ExchangeError,match='P0_CURRENT_PRICE_OR_CAP_REQUIRED'):
++        check_entry(ctx,draft(old),legacy,NOW,book,journal=old.live.journal,stage='LEGACY_FIXED_REPRODUCTION')
++    rows=[json.loads(r['data']) for r in old.live.journal.db.execute("SELECT data FROM events WHERE kind='P0_ENTRY_PRICE_GUARD'")]
++    assert rows[-1]['rejected_conditions']==['limit_above_current_20bps']
++    assert rows[-1]['proposed_limit']==old.p.entry_limit
++    assert 'ask' in rows[-1] and rows[-1]['stage']=='LEGACY_FIXED_REPRODUCTION'
++    c=bounded;ctx,book=moved(c,'83380','83420')
++    req=calculate_bounded_entry(ctx,c.p,NOW,book)
++    assert req.price<D(c.p.entry_limit)
++
++
++@pytest.mark.parametrize('ask',['83607','83650'])
++def test_ask_above_approved_cap_remains_blocked_without_upsizing(bounded,ask):
++    c=bounded;ctx,book=moved(c,str(D(ask)-30),ask)
++    with pytest.raises(ExchangeError):calculate_bounded_entry(ctx,c.p,NOW,book)
++    assert not c.venue.calls and D(c.p.quantity)==D('.0002')
++
++
++@pytest.mark.parametrize('price',['83607','90000'])
++def test_final_validator_blocks_above_approved_price_and_selected_notional(bounded,price):
++    c=bounded;ctx,book=moved(c,'83400','83440')
++    req=replace(draft(c),price=D(price))
++    with pytest.raises(ExchangeError):check_entry(ctx,req,c.p,NOW,book,journal=c.live.journal)
++    last=json.loads(c.live.journal.db.execute("SELECT data FROM events WHERE kind='P0_ENTRY_PRICE_GUARD' ORDER BY seq DESC LIMIT 1").fetchone()[0])
++    assert 'above_approved_max_buy' in last['rejected_conditions']
++    assert 'above_approved_order_or_mark_notional' in last['rejected_conditions']
++
++
++def test_mark_notional_ceiling_independent_of_chosen_limit(bounded):
++    c=bounded;ctx,book=moved(c,'83400','83440',mark='83607',oracle='83607')
++    with pytest.raises(ExchangeError,match='APPROVED_ENVELOPE'):
++        calculate_bounded_entry(ctx,c.p,NOW,book)
++
++
++@pytest.mark.parametrize('qty',['.0001','.0003','.00025'])
++def test_fixed_quantity_cannot_shrink_or_expand(bounded,qty):
++    c=bounded;ctx,book=moved(c,'83400','83440')
++    with pytest.raises(ExchangeError):check_entry(ctx,replace(draft(c),quantity=D(qty)),c.p,NOW,book)
++    assert not c.venue.calls
++
++
++@pytest.mark.parametrize('bid,ask',[('83000','83440'),('83440','83440'),('83450','83440')])
++def test_spread_crossed_and_empty_executable_conditions_are_still_enforced(bounded,bid,ask):
++    c=bounded
++    if D(bid)>D(ask):
++        with pytest.raises(ExchangeError):moved(c,bid,ask)
++    elif D(bid)==D(ask):
++        ctx,book=moved(c,bid,ask)
++        with pytest.raises(ExchangeError,match='TWO_SIDED'):calculate_bounded_entry(ctx,c.p,NOW,book)
++    else:
++        ctx,book=moved(c,bid,ask)
++        with pytest.raises(ExchangeError,match='SPREAD'):calculate_bounded_entry(ctx,c.p,NOW,book)
++
++
++@pytest.mark.parametrize('which',['entry','exit'])
++def test_actual_depth_at_selected_limit_required(bounded,which):
++    c=bounded;ctx,book=moved(c,'83400','83440')
++    levels=(BookLevel(D('83440') if which=='entry' else D('83400'),D('.0001')),)
++    book=replace(book,asks=levels) if which=='entry' else replace(book,bids=levels)
++    with pytest.raises(ExchangeError):calculate_bounded_entry(ctx,c.p,NOW,book)
++
++
++@pytest.mark.parametrize('field',['timestamp_ms','mark_timestamp_ms','account_ms','readiness'])
++def test_stale_inputs_cannot_select_or_sign(bounded,field):
++    c=bounded;ctx,book=moved(c,'83400','83440')
++    if field in {'timestamp_ms','mark_timestamp_ms'}:
++        ctx=replace(ctx,quote=replace(ctx.quote,**{field:NOW-5001}))
++        if field=='timestamp_ms':book=replace(book,timestamp_ms=NOW-5001)
++    elif field=='readiness':ctx=replace(ctx,readiness=replace(ctx.readiness,observed_ms=NOW-5001))
++    else:ctx=replace(ctx,account_ms=NOW-5001)
++    with pytest.raises(ExchangeError):calculate_bounded_entry(ctx,c.p,NOW,book)
++
++
++@pytest.mark.parametrize('offset',[210001,300000,300001])
++def test_entry_time_reserve_and_expiry_cannot_be_repaired_by_pricing(bounded,offset):
++    c=bounded;ctx,book=moved(c,'83400','83440',now=NOW+offset)
++    with pytest.raises(ExchangeError,match='WINDOW_CLOSED'):
++        calculate_bounded_entry(ctx,c.p,NOW+offset,book)
++
++
++@pytest.mark.parametrize('failure',['approved_ms','expires_ms','source','policy'])
++def test_actual_authorization_time_source_and_policy_still_required(bounded,failure):
++    c=bounded
++    if failure=='approved_ms':c.auth.approval=replace(c.a,approved_ms=NOW+1)
++    if failure=='expires_ms':c.auth.approval=replace(c.a,expires_ms=NOW)
++    if failure=='source':c.auth.source_hash=lambda:'changed-source'
++    if failure=='policy':c.auth.policy_hash=lambda:'changed-policy'
++    assert c.sequence.run()['status']=='PREFLIGHT_BLOCKED' and not c.venue.calls
++
++
++@pytest.mark.parametrize('change',['cap','quantity'])
++def test_precision_not_silently_rounded_in_approval_envelope(bounded,change):
++    c=bounded
++    values=({'entry_limit':'83606.5','max_buy_price':'83606.5','entry_notional_ceiling':str(D('.0002')*D('83606.5'))}
++        if change=='cap' else {'quantity':'.00025','quantity_ceiling':'.00025','entry_notional_ceiling':str(D('.00025')*D(c.p.max_buy_price))})
++    p=replace(c.p,**values).require();ctx,book=moved(c,'83400','83440')
++    with pytest.raises(ExchangeError,match='PRECISION'):calculate_bounded_entry(ctx,p,NOW,book)
++
++
++@pytest.mark.parametrize('price,quantity,reduce,tif',[('83607','.0002',False,'Ioc'),
++    ('83523','.0003',False,'Ioc'),('1','.0002',False,'Ioc'),('83523','.0002',False,'Gtc'),
++    ('83523','.0002',True,'Ioc')])
++def test_signed_action_envelope_and_direction_not_just_proposal_schema(bounded,price,quantity,reduce,tif):
++    c=bounded;req=draft(c)
++    row,_=c.live.journal.reserve(req.client_order_id,asdict(req),'certification:'+c.p.identity,NOW)
++    wire,action=c.live.transport.order_action(replace(req,price=D(price),quantity=D(quantity),reduce_only=reduce,tif=tif),row['cloid'])
++    with pytest.raises(ExchangeError):c.auth.check_action(action)
++    assert not c.live.transport.signed_payloads
++
++
++@pytest.mark.parametrize('bid,ask',[('83380','83420'),('83440','83470'),('83560','83600')])
++def test_real_runtime_and_ephemeral_sdk_uses_new_selected_price(bounded,monkeypatch,bid,ask):
++    c=bounded;move_venue(c,bid,ask);original=c.live.transport.perform
++    def perform(*args,**kwargs):
++        try:return original(*args,**kwargs)
++        except ExchangeError as exc:
++            c.transport_error=str(exc);raise
++    monkeypatch.setattr(c.live.transport,'perform',perform)
++    r=c.sequence.run()
++    assert r['status']=='TRADE_CLOSED_RECONCILED',json.dumps(dict(status=r['status'],error=r.get('error'),
++        transport_error=getattr(c,'transport_error',None),calls=c.venue.calls,intents=c.live.journal.intents(),events=[dict(x) for x in c.live.journal.db.execute(
++        "SELECT kind,data FROM events WHERE kind IN ('P0_ENTRY_PRICE_GUARD','COMPLIANCE_SIGNING_BLOCK','PROTECTION_UNCERTAIN','AMBIGUOUS_ORDER_RESULT','EXCHANGE_ORDER_RESULT')")]),default=str)
++    actual=D(c.venue.calls[0]['orders'][0]['p'])
++    assert actual==min(c.context.spec.normalize_price(D(ask)*D('1.001'),'BUY'),D(c.p.max_buy_price))
++    assert actual<=D(c.p.max_buy_price) and D(c.venue.calls[0]['orders'][0]['s'])==D('.0002')
++    assert r['final_flat'] and not r['protection_accepted'] and not r['certification_passed']
++
++
++@pytest.mark.parametrize('fraction',['0','.5','1'])
++def test_new_mode_zero_partial_full_entry_closes_only_actual_exposure(bounded,fraction):
++    c=bounded;c.venue.partial_entry=D(fraction);r=c.sequence.run()
++    assert r['status']==('NO_FILL_VERIFIED' if fraction=='0' else 'TRADE_CLOSED_RECONCILED'),r
++    entries=[a for a in c.venue.calls if not a['orders'][0]['r']]
++    assert len(entries)==1 and r['final_flat']
++    if fraction!='0':assert D(c.venue.calls[-1]['orders'][0]['s'])==D('.0002')*D(fraction)
++
++
++@pytest.mark.parametrize('failure',['entry_rejected','timeout_before','timeout_after_fill','disconnect_after_fill'])
++def test_new_mode_rejection_uncertainty_never_reprices_a_second_order(bounded,failure):
++    c=bounded;c.venue.fail=failure;r=c.sequence.run()
++    assert len([a for a in c.venue.calls if a['type']=='order' and not a['orders'][0]['r']])==1
++    assert r['status']=={'entry_rejected':'NO_FILL_VERIFIED','timeout_after_fill':'TRADE_CLOSED_RECONCILED'}.get(failure,'EMERGENCY_EXIT_REQUIRED'),r
++
++
++def test_rejected_exit_preserves_residual_and_attempt_bound(bounded,monkeypatch):
++    c=bounded;original=c.venue.transmit
++    def transmit(payload):
++        if payload['action']['orders'][0]['r']:
++            c.auth.claim_transmission(payload['action']);c.venue.calls.append(deepcopy(payload['action']))
++            return response({'error':'Order must have minimum value of $10.'})
++        return original(payload)
++    monkeypatch.setattr(c.live.transport,'transmit',transmit)
++    r=c.sequence.run()
++    assert r['status']=='EMERGENCY_EXIT_REQUIRED' and c.live.account.get_position(c.p.symbol)
++    assert len(c.venue.calls)==3 and not r.get('final_flat',False)
++
++
++def test_duplicate_returns_original_durable_price_not_new_quote(bounded):
++    c=bounded;c.live.executor.entries_paused=False;req=draft(c)
++    first=c.live.executor.submit(req,permission=permission(req,c.p,NOW))
++    count=len(c.venue.calls);move_venue(c,'83380','83420')
++    second=c.live.executor.submit(req,permission=permission(req,c.p,NOW))
++    assert second.cloid==first.cloid and second.request.price==first.request.price
++    assert len(c.venue.calls)==count
++
++
++def test_final_signing_validator_checks_actual_selected_wire_price(bounded):
++    c=bounded;ctx,book=moved(c,'83400','83440');selected=calculate_bounded_entry(ctx,c.p,NOW,book)
++    assert selected.price<D(c.p.entry_limit)
++    c.live.executor.entries_paused=False
++    c.live.executor._guard(ctx,NOW,entry=True,entry_request=selected)
++    # A rapid additional fall outside the selected price's live 20-bps range is
++    # still a legitimate stop. The signed wire is never edited after validation.
++    move_venue(c,'83270','83300')
++    with pytest.raises(ExchangeError,match='P0_CURRENT_PRICE_OR_CAP_REQUIRED'):
++        c.live.executor._guard(ctx,NOW,entry=True,entry_request=selected)
++    assert not c.venue.calls
++
++
++def test_diagnostics_complete_persistent_and_secret_free(bounded):
++    c=bounded;ctx,book=moved(c,'83400','83440');req=calculate_bounded_entry(ctx,c.p,NOW,book,
++        journal=c.live.journal,stage='READ_ONLY_DIAGNOSTIC_TEST')
++    row=json.loads(c.live.journal.db.execute("SELECT data FROM events WHERE kind='P0_ENTRY_PRICE_GUARD' ORDER BY seq DESC LIMIT 1").fetchone()[0])
++    for key in ('bid','ask','mark','oracle','proposed_limit','current_20bps_maximum','entry_tolerance_bps',
++        'outer_notional_ceiling','approved_notional_ceiling','quote_ms','book_ms','mark_ms','account_ms',
++        'evaluated_ms','conditions','rejected_conditions','configuration_hash'):
++        assert key in row
++    assert row['configuration_hash']==c.p.identity and row['allowed']
++    assert not any(k in row for k in ('private_key','signer','signature','authorization'))
++
++
++def test_full_round_trip_cannot_repeat_after_restart_or_completed_consumption(bounded):
++    c=bounded;assert c.sequence.run()['status']=='TRADE_CLOSED_RECONCILED'
++    count=len(c.venue.calls)
++    assert EmergencySequence(c.live.executor,c.p,c.auth).run()['status']=='PREFLIGHT_BLOCKED'
++    assert len(c.venue.calls)==count
++
++
++def launcher(monkeypatch):
++    root=Path(__file__).resolve().parents[1]
++    monkeypatch.syspath_prepend(str(root/'scripts'))
++    spec=importlib.util.spec_from_file_location('isolated_price_guard_launcher',root/'scripts/run_emergency_qualification.py')
++    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
++    return module
++
++
++def test_new_approval_template_requires_explicit_bounded_price_ack(bounded,monkeypatch):
++    module=launcher(monkeypatch);template=module.approval_template(bounded.p)
++    assert template['bounded_price_authorization_accepted'] is False
++    assert template['qualification_policy_hash']==policy_hash(bounded.p)!=policy_hash()
++    assert template['approved_ms'] is None and template['expires_ms'] is None and template['operator_approval']==''
++
++
++def test_legacy_template_keeps_original_eight_acknowledgments(emergency,monkeypatch):
++    template=launcher(monkeypatch).approval_template(emergency.p)
++    assert 'bounded_price_authorization_accepted' not in template
++    assert len([k for k,v in template.items() if v is False])==8
++
++
++def test_handoff_exposes_envelope_not_unlimited_repricing(bounded,monkeypatch,tmp_path):
++    handoff=launcher(monkeypatch).handoff(bounded.p,tmp_path,tmp_path/'receipt.json')
++    assert handoff['max_buy_price']==bounded.p.max_buy_price
++    assert handoff['quantity_ceiling']==bounded.p.quantity
++    assert handoff['entry_notional_ceiling']==bounded.p.entry_notional_ceiling
++    assert '10 bps' in handoff['execution_price_rule'] and '20 bps' in handoff['execution_price_rule']
++    assert not handoff['protection_verified'] and handoff['no_stop_will_be_submitted']
++
++
++def test_diagnostic_export_survives_failed_preflight(bounded,monkeypatch,tmp_path):
++    c=bounded;ctx,book=moved(c,'83380','83420')
++    with pytest.raises(ExchangeError):check_entry(ctx,draft(c),c.p,NOW,book,journal=c.live.journal,stage='BUILD_RUNTIME_FRESH_PREFLIGHT')
++    module=launcher(monkeypatch);monkeypatch.setattr(module,'ROOT',tmp_path)
++    destination=tmp_path/'runtime/testnet/anchorium-bot-1/qualification.sqlite'
++    destination.parent.mkdir(parents=True)
++    import sqlite3
++    db=sqlite3.connect(destination);c.live.journal.db.backup(db);db.close()
++    module.persist_price_diagnostics(tmp_path,c.p)
++    record=json.loads((tmp_path/'price_guard_diagnostics.json').read_text())
++    assert record['proposal_id']==c.p.identity and len(record['observations'])==1
++    assert record['observations'][0]['rejected_conditions']==['limit_above_current_20bps']
++
++
++def test_no_fill_cli_writes_no_whitelist_proof(bounded,monkeypatch,tmp_path):
++    module=launcher(monkeypatch);monkeypatch.setattr(module,'ROOT',tmp_path)
++    (tmp_path/'proposal.json').write_text(json.dumps(asdict(bounded.p)))
++    (tmp_path/'approval.json').write_text(json.dumps(asdict(bounded.a)))
++    runtime=SimpleNamespace(run=lambda:dict(status='NO_FILL_VERIFIED',final_flat=True,
++        whitelist_trade_proof=dict(fill_verified=False,evidence_scope='OFFLINE_FIXTURE')),
++        close=lambda:None)
++    calls=[]
++    def build(*args,**kwargs):calls.append(1);return runtime
++    monkeypatch.setattr(module,'build_runtime',build)
++    monkeypatch.setattr(module.sys,'argv',['run_emergency_qualification.py','--execute','--output-directory',str(tmp_path/'result'),
++        '--proposal-file',str(tmp_path/'proposal.json'),'--operator-approval-file',str(tmp_path/'approval.json'),
++        '--test-receipt',str(tmp_path/'receipt.json')])
++    assert module.main()==0 and calls==[1]
++    assert (tmp_path/'result/NO_FILL_VERIFICATION.json').exists()
++    assert not (tmp_path/'result/WHITELIST_TRADE_PROOF.json').exists()
++
++
++def test_expired_published_fixed_proposal_identity_not_reinterpreted():
++    root=Path(__file__).resolve().parents[1]
++    path=root/'docs/qualification_operator_2026-10-14/preparation-20261014T051415Z/proposal.json'
++    p=EmergencyProposal(**json.loads(path.read_text()))
++    assert p.identity=='876707f1612b45525795ae76ad10caf2cd36f0fb1f1b17389fd9ae63e6b9f218'
++    assert p.price_authorization_mode==FIXED_PRICE and p.max_buy_price is None
++
++
++def test_market_drop_cannot_enlarge_quantity_to_restore_order_minimum(bounded):
++    c=bounded;p=replace(c.p,quantity='.0001',quantity_ceiling='.0001',entry_limit='100010',
++        max_buy_price='100010',entry_notional_ceiling='10.0010').require()
++    ctx,book=moved(c,'83400','83440')
++    with pytest.raises(ExchangeError):calculate_bounded_entry(ctx,p,NOW,book)
++    assert p.quantity=='.0001' and not c.venue.calls
++
++
++def test_runtime_asset_mapping_cannot_be_changed_by_price_mode(bounded):
++    c=bounded;ctx,book=moved(c,'83400','83440')
++    ctx=replace(ctx,spec=replace(ctx.spec,asset_id=2670001))
++    with pytest.raises(ExchangeError,match='MAPPING'):calculate_bounded_entry(ctx,c.p,NOW,book)
++    assert not c.venue.calls

@@ -1,0 +1,47 @@
+.FFF..........F.....F................................................... [100%]
+=================================== FAILURES ===================================
+_________________ test_ioc_zero_partial_full_one_entry_only[0] _________________
+algo-trading-bot/test_emergency_qualification.py:110: in test_ioc_zero_partial_full_one_entry_only
+    assert EmergencySequence(c.live.executor,c.p,c.auth).run()['status']=='PREFLIGHT_BLOCKED'
+E   AssertionError: assert 'EMERGENCY_EXIT_REQUIRED' == 'PREFLIGHT_BLOCKED'
+E     
+E     - PREFLIGHT_BLOCKED
+E     + EMERGENCY_EXIT_REQUIRED
+________________ test_ioc_zero_partial_full_one_entry_only[.5] _________________
+algo-trading-bot/test_emergency_qualification.py:110: in test_ioc_zero_partial_full_one_entry_only
+    assert EmergencySequence(c.live.executor,c.p,c.auth).run()['status']=='PREFLIGHT_BLOCKED'
+E   AssertionError: assert 'EMERGENCY_EXIT_REQUIRED' == 'PREFLIGHT_BLOCKED'
+E     
+E     - PREFLIGHT_BLOCKED
+E     + EMERGENCY_EXIT_REQUIRED
+_________________ test_ioc_zero_partial_full_one_entry_only[1] _________________
+algo-trading-bot/test_emergency_qualification.py:110: in test_ioc_zero_partial_full_one_entry_only
+    assert EmergencySequence(c.live.executor,c.p,c.auth).run()['status']=='PREFLIGHT_BLOCKED'
+E   AssertionError: assert 'EMERGENCY_EXIT_REQUIRED' == 'PREFLIGHT_BLOCKED'
+E     
+E     - PREFLIGHT_BLOCKED
+E     + EMERGENCY_EXIT_REQUIRED
+_________ test_entry_failures_never_blindly_repeat[timeout_after_fill] _________
+algo-trading-bot/test_emergency_qualification.py:153: in test_entry_failures_never_blindly_repeat
+    assert r['status']==({'entry_rejected':'NO_FILL_VERIFIED','timeout_after_fill':'TRADE_CLOSED_RECONCILED'}.get(fail,'EMERGENCY_EXIT_REQUIRED')),r
+E   AssertionError: {'actual_exchange_proof': [{'accounting': {'accounting_window_ms': (1790942400000, 1790942400000), 'corrections': [{'c...price': Decimal('83606'), 'leverage': None, 'liquidation_price': None, 'margin_used': Decimal('10'), ...}], ...}], ...}
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'TRADE_CLOSED_RECONCILED'
+E     
+E     - TRADE_CLOSED_RECONCILED
+E     + EMERGENCY_EXIT_REQUIRED
+___________ test_partial_exit_closes_exact_residual_without_increase ___________
+algo-trading-bot/test_emergency_qualification.py:178: in test_partial_exit_closes_exact_residual_without_increase
+    assert r['status']=='TRADE_CLOSED_RECONCILED',r
+E   AssertionError: {'actual_exchange_proof': [{'accounting': {'accounting_window_ms': (1790942400000, 1790942400000), 'corrections': [{'c...price': Decimal('83606'), 'leverage': None, 'liquidation_price': None, 'margin_used': Decimal('10'), ...}], ...}], ...}
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'TRADE_CLOSED_RECONCILED'
+E     
+E     - TRADE_CLOSED_RECONCILED
+E     + EMERGENCY_EXIT_REQUIRED
+- generated xml file: /Users/adesh/Autonomous Trading Bot - Crypto /docs/qualification_emergency_2026-10-13/focused_first.xml -
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_emergency_qualification.py::test_ioc_zero_partial_full_one_entry_only[0]
+FAILED algo-trading-bot/test_emergency_qualification.py::test_ioc_zero_partial_full_one_entry_only[.5]
+FAILED algo-trading-bot/test_emergency_qualification.py::test_ioc_zero_partial_full_one_entry_only[1]
+FAILED algo-trading-bot/test_emergency_qualification.py::test_entry_failures_never_blindly_repeat[timeout_after_fill]
+FAILED algo-trading-bot/test_emergency_qualification.py::test_partial_exit_closes_exact_residual_without_increase
+5 failed, 67 passed in 96.54s (0:01:36)

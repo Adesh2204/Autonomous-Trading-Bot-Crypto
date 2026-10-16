@@ -1,0 +1,428 @@
+# TEAM ANCHORIUM — V8.9 FINAL QUALIFICATION EXECUTION RECOVERY
+
+## ENGINEERING DIRECTIVE — P0 CRITICAL
+
+**Repository:** Existing Team Anchorium autonomous crypto trading bot  
+**Venue:** Hyperliquid TESTNET `par` DEX  
+**Qualification deadline:** 16 October 2026  
+**Engineering objective:** Make the existing qualification workflow capable of identifying and acting on genuinely valid opportunities without repeated expensive preparation cycles, unnecessary false rejections or execution-state errors.
+
+**Priority: Implement, test and deliver a working operator workflow in one coordinated pass. Do not produce another analysis-only report.**
+
+---
+
+# 1. CURRENT STATE — UNDERSTAND BEFORE EDITING
+
+The system has undergone V8.1–V8.8 development.
+
+Verified recent baseline:
+
+- 1,822 passing tests.
+- Working TESTNET API connection.
+- Bounded HTTP timeouts and retries.
+- Preserved public request-budget tracking.
+- Correct account reconciliation.
+- Approved API-wallet mapping.
+- 1x CROSS.
+- Dynamic quantity calculation.
+- Frozen VWAP/EMA/ATR strategy.
+- Existing scoped small-position full-close logic.
+- One-time experimental qualification workflow.
+- Human-bound exact-proposal authorization.
+
+**The system has not submitted a genuine Team Anchorium qualification trade.**
+
+Latest Terminal rejections:
+
+```text
+par:BTC  => QUALIFICATION_NO_LOT_MEETS_OPENING_MINIMUM_WITHIN_BOUNDS
+par:ETH  => QUALIFICATION_NO_LOT_MEETS_OPENING_MINIMUM_WITHIN_BOUNDS
+par:HYPE => QUALIFICATION_NO_LOT_MEETS_OPENING_MINIMUM_WITHIN_BOUNDS
+```
+
+At previous observations, ETH and HYPE additionally lacked independently verified subminimum LONG-position SELL closing paths.
+
+The qualification system currently needs repeated expensive complete-account and three-market scans. A potential BTC opportunity previously disappeared before final proposal generation.
+
+**Critical engineering distinction:** Reproduce true defects, but do not misclassify insufficient exchange liquidity as a software bug.
+
+---
+
+# 2. ABSOLUTE SAFETY AND STRATEGY INVARIANTS
+
+Do not modify `signal_brain.py`.
+
+Preserve:
+
+- VWAP/EMA/ATR trading rules.
+- Production ATR floor 0.40%.
+- Production spread limit 15 bps.
+- 300 completed candles.
+- Top-3 rules.
+- Production PAPER/false configuration.
+- Normal exchange $10 opening minimum.
+- Correct lot-size and price precision.
+- Existing global trading emergency lockouts.
+- Risk/account/nonce checks.
+- Exact full-position reduce-only closing requirements.
+- Durable order/position identity.
+- Approval expiry.
+- Duplicate-order prevention.
+- Existing signer and wallet mapping.
+- No synthetic market data.
+
+The qualification-only experimental 50 bps spread ceiling remains a distinct risk exception requiring specific human approval.
+
+Do not automatically alter the existing 10%-of-best-book-depth rule merely to create eligibility.
+
+No transfers, leverage increases, wallet-secret exposure, margin-mode changes or automatic production activation.
+
+---
+
+# 3. P0 — BUILD A FAST, READ-ONLY LIQUIDITY WATCHER
+
+The existing full preparation may take more than two minutes because of account reads and request-budget waits.
+
+That makes fleeting order-book opportunities difficult to use.
+
+Create a separate lightweight **qualification opportunity watcher**.
+
+## Stage A — Cheap live market observation
+
+Use the official supported Hyperliquid market-data stream if it provides reliable `par:` order-book updates.
+
+Otherwise use rate-limited public REST reads.
+
+Verify any WebSocket channel and payload against actual venue support. Do not assume an unsupported subscription exists.
+
+The watcher must:
+
+1. Observe eligible practice markets.
+2. Fetch actual bid and ask prices.
+3. Read genuine executable depth.
+4. Respect timestamps and quote freshness.
+5. Track market status and lot precision.
+6. Estimate maximum legal opening quantity.
+7. Check the $10 opening minimum.
+8. Apply the 25 USDPR qualification ceiling.
+9. Enforce configured bid/ask depth limits.
+10. Report possible opportunities without signing anything.
+
+Do not perform a full account-history reconciliation on every ordinary market-data update.
+
+Keep an appropriate minimum polling interval and preserve the API safety reserve.
+
+Do not generate artificial trading volume or manipulate the book.
+
+## Stage B — Trigger full validation only when useful
+
+When the watcher finds a potentially valid market:
+
+1. Refresh the exact market quote and metadata.
+2. Recheck clock and API capacity.
+3. Run current account reconciliation.
+4. Verify current signer and team account identity.
+5. Check positions and open orders.
+6. Verify margin and 1x CROSS.
+7. Recalculate quantity using current data.
+8. Check every possible partial-fill residual.
+9. Verify supported closing paths.
+10. Apply all existing risk/authorization gates.
+
+Generate a read-only proposal only if every required condition passes.
+
+If liquidity vanishes, return to observation without creating a stale proposal.
+
+Use bounded transitions and a cooldown to avoid rapid full-preflight loops.
+
+---
+
+# 4. P1 — INVESTIGATE TRUE LIQUIDITY VERSUS OVERLY RESTRICTIVE ESTIMATION
+
+For each market, inspect the full relevant Level-2 order book.
+
+Determine whether the present top-of-book depth checks are operating as intended.
+
+Report:
+
+- Minimum valid entry quantity.
+- Minimum opening notional.
+- Bid and ask at the observation.
+- Quantity available at best bid and best ask.
+- Existing 10% depth thresholds.
+- Whether multiple executable levels exist.
+- Estimated execution cost under the permitted limit price.
+- Whether the exit side has sufficient supported liquidity.
+- Exact technical reason for market rejection.
+
+Evaluate whether the existing best-level quantity logic incorrectly ignores data that its stated policy is supposed to include.
+
+**Do not silently reinterpret a strict best-level depth rule as an aggregate-depth rule.**
+
+If aggregated Level-2 execution analysis could improve qualification, implement it as a separately tested research and proposal capability. Require an explicitly approved qualification-only policy before it can change execution eligibility.
+
+All actual submitted orders must stay within their approved limit prices, notional caps and risk restrictions.
+
+Never circumvent the exchange's normal $10 minimum.
+
+---
+
+# 5. P2 — EXPAND VALID OPPORTUNITIES, NOT UNVERIFIED RISK
+
+Currently the qualification workflow reviews BTC, ETH and HYPE.
+
+The organizers permit practice trades on any approved `par` market.
+
+Inspect the existing permitted market metadata and previous independently verified closing evidence.
+
+Potential research candidates include:
+
+- BTC LONG
+- BTC SHORT, if independently supported by the existing closing evidence and qualification direction policy
+- Other approved `par:` markets with independently supported exact closing behavior
+
+Do not assume that a historical close from another wallet guarantees current acceptance.
+
+Do not treat ETH or HYPE as fully eligible if the possible tiny residual close remains unverified.
+
+For any new direction or market:
+
+1. Verify asset ID and runtime precision.
+2. Verify the normal opening minimum.
+3. Verify actual liquidity.
+4. Verify the correct opposite-side full-position closing shape.
+5. Verify every possible partial fill and residual.
+6. Verify direction-specific protection limitations.
+7. Add tests.
+8. Require independent human approval for any new execution scope.
+
+If no supported market qualifies, report the actual condition clearly.
+
+Do not enlarge trading exposure just to escape minimum-size restrictions.
+
+---
+
+# 6. P3 — REMOVE NEEDLESS LATENCY FROM PROPOSAL PREPARATION
+
+Inspect the existing `run_testnet_qualification.py` preparation flow.
+
+Find confirmed duplicate or redundant work.
+
+Focus on:
+
+- Repeated account reads.
+- Repeated account history retrieval.
+- Excessive metadata requests.
+- Redundant market scans.
+- Journal reopening.
+- Request-budget accounting.
+- Stale snapshots.
+- Clock reference freshness.
+- Proposal-generation delay.
+
+Reuse data only when already permitted by its actual freshness and consistency requirements.
+
+Never cache positions, active orders or books beyond their permitted freshness.
+
+Keep the final authoritative account and market checks at the signing boundary.
+
+Make proposal generation promptly follow a qualified opportunity without sacrificing correctness.
+
+---
+
+# 7. P4 — DELIVER A RELIABLE TERMINAL WORKFLOW
+
+Create or improve a dedicated command-line workflow with these distinct states:
+
+```text
+MONITORING_LIQUIDITY
+POTENTIAL_OPPORTUNITY
+REFRESHING_ACCOUNT
+CHECKING_RESIDUAL_EXITS
+QUALIFICATION_PROPOSAL_READY
+AWAITING_HUMAN_APPROVAL
+PROPOSAL_EXPIRED
+ENTRY_SUBMITTED
+ENTRY_FILLED
+ENTRY_NOT_FILLED
+EXIT_RECONCILED
+EMERGENCY_EXIT_REQUIRED
+ACTUAL_PRACTICE_FILL_VERIFIED
+```
+
+The watcher must be read-only.
+
+When a proposal becomes ready, print:
+
+- Market and direction.
+- Quantity and notional.
+- Entry price limit.
+- Exit price rules.
+- Expiry in IST.
+- Current proposal hash.
+- Team and API wallet public identities.
+- The actual proposal file path.
+- The unfilled approval-template path.
+- The exact source-bound test-receipt path.
+- The exact supported next command.
+
+Never invent CLI flags.
+
+Do not make the operator repeatedly ask an AI editor which file or command to use.
+
+## Human authorization
+
+Keep the existing exact-proposal approval mechanism.
+
+Require explicit human acknowledgment of:
+
+- Wallet identities.
+- One-entry limit.
+- Exact notional/price bounds.
+- Qualification-only spread policy.
+- Absence of verified stop protection.
+- Unprotected residual exposure.
+- Possible emergency/manual recovery.
+
+Never fill the approval document automatically.
+
+Never authorize a changed or expired proposal.
+
+Do not treat this implementation directive as permission to trade.
+
+---
+
+# 8. P5 — PREPARE END-TO-END EXECUTION AND RECOVERY
+
+Once an exact fresh proposal has been separately authorized, the existing qualification workflow must be capable of:
+
+1. Revalidating current account, market, authorization and risk conditions.
+2. Sending at most one bounded TESTNET qualification entry.
+3. Recording the original client/exchange order identity.
+4. Reading actual team-wallet fills.
+5. Handling zero, partial or complete entry fills.
+6. Reconciling actual position quantity.
+7. Executing only the authorized exact reduce-only closing procedure.
+8. Handling partially filled, rejected or unknown exits.
+9. Preventing duplicate entries after timeout or restart.
+10. Preserving all unresolved exposure.
+11. Recording actual fees and funding.
+12. Verifying final account positions and orders.
+13. Producing genuine `WHITELIST_TRADE_PROOF.json`.
+
+**Protective stops remain unverified.**
+
+Do not claim IOC closing is persistent stop protection.
+
+If an experimental entry leaves unresolved exposure, stop new entries and escalate using the existing emergency procedure.
+
+Never report success merely because an API order request returned a response.
+
+---
+
+# 9. P6 — REGRESSION AND FULL-INTEGRATION TESTING
+
+Start from the V8.8 baseline of 1,822 passing tests.
+
+Add tests for:
+
+- Successful and failed liquidity monitoring.
+- Book depth disappearing between observation and proposal.
+- Quote changing between proposal and signature.
+- Thin BTC ask depth.
+- Thin BTC bid depth.
+- A valid two-lot BTC opening.
+- Minimum notional rejection.
+- Multi-level book calculations.
+- ETH/HYPE unverified residual rejection.
+- Correct opposite-side closing identity.
+- Long and short position direction rules.
+- WebSocket reconnect and stale data.
+- REST fallback and 429 response handling.
+- Request-budget exhaustion.
+- Cancellation and restart.
+- No unnecessary duplicate account calls.
+- Fresh account reconciliation.
+- Proposal expiry.
+- Approval expiry.
+- Unexpected existing positions/orders.
+- One entry only.
+- Zero-fill IOC.
+- Partial-fill IOC.
+- Tiny remainder.
+- Rejected full-position close.
+- Unknown exit.
+- Emergency recovery.
+- Actual-fill proof requirements.
+- No autonomous or production activation.
+
+Run focused tests and the entire regression suite.
+
+Do not skip failing tests or lower assertions to manufacture success.
+
+Preserve the frozen strategy hash and all Phase-0 safety guarantees.
+
+---
+
+# 10. FINAL IMPLEMENTATION CHECK
+
+After completing the corrections:
+
+1. Run the full regression suite.
+2. Verify source and policy hashes.
+3. Run one bounded read-only market observation.
+4. Verify account and signer identity.
+5. Check for genuine executable liquidity.
+6. Generate a proposal only if all constraints pass.
+7. Print exact Terminal commands and actual file paths.
+8. Explain any remaining external blockers.
+
+No signature or order should be submitted during this implementation assignment.
+
+---
+
+# 11. FINAL DELIVERABLE
+
+Return a concise report containing:
+
+**A. Root-cause verdict:** Confirm whether the latest three rejections reflect genuine missing liquidity or a reproduced software defect.
+
+**B. Code changes:** Exact edited files, methods and behaviors.
+
+**C. Watcher:** Exact Terminal command to launch read-only monitoring and its safe stop procedure.
+
+**D. Market coverage:** Eligible markets/directions and verified exit scopes.
+
+**E. Performance:** API budget use and preparation latency.
+
+**F. Regression:** Full test count, failures and frozen-strategy integrity.
+
+**G. Live read-only result:** A current eligible proposal or exact remaining blocker.
+
+**H. One-off execution handoff:** Exact existing commands, real file paths, approval mechanism and recovery steps.
+
+**I. Risks:** Any unverified exchange features, especially protective stops and residual closing.
+
+---
+
+# 12. DEFINITION OF SUCCESS
+
+Success does NOT mean falsely declaring that a market is liquid.
+
+Engineering success means:
+
+- No reproducible software defects remain in the focused qualification workflow.
+- No excessive rate-budget consumption.
+- Genuine opportunities can be detected promptly.
+- All exchange minimums and approved risk limits are respected.
+- Valid proposals can be produced without unnecessary delays.
+- The operator has understandable Terminal commands.
+- Every change passes regression and safety tests.
+- Human authorization remains mandatory.
+- No automatic entry duplication.
+- Exposure uncertainty remains visible.
+- Actual qualification evidence can be recorded truthfully.
+
+**The goal is the fastest legitimate route to one verified practice trade before October 16, without sacrificing correctness or claiming impossible guarantees.**
+
+IMPLEMENT THE FOCUSED ENGINEERING WORK NOW. DO NOT PLACE A SIGNED ORDER DURING THIS TASK.

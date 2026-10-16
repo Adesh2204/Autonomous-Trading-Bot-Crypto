@@ -310,7 +310,7 @@ def test_receive_stall_and_retry_budget_pause_without_exchange_writes(universe,m
     stream=MarketStream(engine,replace(POLICY,max_reconnect_failures=1))
     with pytest.raises(ExchangeError,match='RECONNECT_LIMIT'):
         stream.run(threading.Event())
-    assert socket.closed and engine.last_error.endswith('STREAM_HEARTBEAT_STALE')
+    assert socket.closed and engine.last_error.endswith('HOST_PROCESSING_GAP_DETECTED')
     assert not stream.poll(bot) and bot.breakers.state==RiskState.ENTRY_PAUSED
     assert len(bot.execution.orders)==0
 

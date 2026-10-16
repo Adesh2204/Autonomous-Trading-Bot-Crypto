@@ -1,0 +1,194 @@
+...........F..........F.FFFFF.FFFFEEEEEEF............................... [ 58%]
+....................................................                     [100%]
+==================================== ERRORS ====================================
+_ ERROR at setup of test_one_lot_partial_entry_can_close_but_cannot_pass_protection_certification _
+algo-trading-bot/test_exact_full_close_v8_6.py:41: in scoped_cert
+    a = replace(cert.approval, proposal_id=p.identity)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/dataclasses.py:1588: in replace
+    return obj.__class__(**changes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: CertificationApproval.__init__() got an unexpected keyword argument 'proposal_id'
+______ ERROR at setup of test_unverified_two_lot_partial_remains_blocked _______
+algo-trading-bot/test_exact_full_close_v8_6.py:41: in scoped_cert
+    a = replace(cert.approval, proposal_id=p.identity)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/dataclasses.py:1588: in replace
+    return obj.__class__(**changes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: CertificationApproval.__init__() got an unexpected keyword argument 'proposal_id'
+__ ERROR at setup of test_partial_exit_one_lot_residual_uses_actual_quantity ___
+algo-trading-bot/test_exact_full_close_v8_6.py:41: in scoped_cert
+    a = replace(cert.approval, proposal_id=p.identity)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/dataclasses.py:1588: in replace
+    return obj.__class__(**changes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: CertificationApproval.__init__() got an unexpected keyword argument 'proposal_id'
+____ ERROR at setup of test_stop_rejection_does_not_award_long_certificate _____
+algo-trading-bot/test_exact_full_close_v8_6.py:41: in scoped_cert
+    a = replace(cert.approval, proposal_id=p.identity)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/dataclasses.py:1588: in replace
+    return obj.__class__(**changes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: CertificationApproval.__init__() got an unexpected keyword argument 'proposal_id'
+__ ERROR at setup of test_offline_stop_success_never_certifies_actual_account __
+algo-trading-bot/test_exact_full_close_v8_6.py:41: in scoped_cert
+    a = replace(cert.approval, proposal_id=p.identity)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/dataclasses.py:1588: in replace
+    return obj.__class__(**changes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: CertificationApproval.__init__() got an unexpected keyword argument 'proposal_id'
+_____ ERROR at setup of test_restart_does_not_repeat_consumed_small_entry ______
+algo-trading-bot/test_exact_full_close_v8_6.py:41: in scoped_cert
+    a = replace(cert.approval, proposal_id=p.identity)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/dataclasses.py:1588: in replace
+    return obj.__class__(**changes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: CertificationApproval.__init__() got an unexpected keyword argument 'proposal_id'
+=================================== FAILURES ===================================
+________________ test_full_close_minimum_is_explicit_not_global ________________
+algo-trading-bot/test_exact_full_close_v8_6.py:91: in test_full_close_minimum_is_explicit_not_global
+    assert result.allowed and result.normalized.quantity == D('.0001')
+E   AssertionError: assert (False)
+E    +  where False = ValidationResult(allowed=False, code='SUBMINIMUM_FULL_CLOSE_SCOPE_NOT_VERIFIED', reason='SUBMINIMUM_FULL_CLOSE_SCOPE_N...4ba986cb9551', 'normalized_size': '0.0001', 'normalized_price': '100.00', 'notional': '0.010000', 'asset_id': 2670001}).allowed
+_ test_explicit_path_keeps_exact_account_guards[mapping-SUBMINIMUM_FULL_CLOSE_SCOPE_NOT_VERIFIED] _
+algo-trading-bot/test_exact_full_close_v8_6.py:122: in test_explicit_path_keeps_exact_account_guards
+    result = allowed(scoped,req,**changes)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/test_exact_full_close_v8_6.py:60: in allowed
+    ctx = l.provider.load(req)
+          ^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/exchange_rules.py:234: in load
+    self.client.validate_metadata(metadata)
+algo-trading-bot/exchange/hyperliquid_client.py:188: in validate_metadata
+    raise VenueMismatch('PAR_METADATA_CHANGED_RESTART_REQUIRED')
+E   exchange.base_exchange.VenueMismatch: PAR_METADATA_CHANGED_RESTART_REQUIRED
+___ test_scoped_close_still_checks_market_and_risk[quote-STALE_MARKET_DATA] ____
+algo-trading-bot/test_exact_full_close_v8_6.py:136: in test_scoped_close_still_checks_market_and_risk
+    assert result.code==code and not result.allowed
+E   AssertionError: assert ('SUBMINIMUM_F..._NOT_VERIFIED' == 'STALE_MARKET_DATA'
+E     
+E     - STALE_MARKET_DATA
+E     + SUBMINIMUM_FULL_CLOSE_SCOPE_NOT_VERIFIED)
+____ test_scoped_close_still_checks_market_and_risk[mark-STALE_MARKET_DATA] ____
+algo-trading-bot/test_exact_full_close_v8_6.py:136: in test_scoped_close_still_checks_market_and_risk
+    assert result.code==code and not result.allowed
+E   AssertionError: assert ('SUBMINIMUM_F..._NOT_VERIFIED' == 'STALE_MARKET_DATA'
+E     
+E     - STALE_MARKET_DATA
+E     + SUBMINIMUM_FULL_CLOSE_SCOPE_NOT_VERIFIED)
+_ test_scoped_close_still_checks_market_and_risk[permission-RISK_PERMISSION_DENIED] _
+algo-trading-bot/test_exact_full_close_v8_6.py:136: in test_scoped_close_still_checks_market_and_risk
+    assert result.code==code and not result.allowed
+E   AssertionError: assert ('SUBMINIMUM_F..._NOT_VERIFIED' == 'RISK_PERMISSION_DENIED'
+E     
+E     - RISK_PERMISSION_DENIED
+E     + SUBMINIMUM_FULL_CLOSE_SCOPE_NOT_VERIFIED)
+_ test_scoped_close_still_checks_market_and_risk[reference-PRICE_BAND_VIOLATION] _
+algo-trading-bot/test_exact_full_close_v8_6.py:136: in test_scoped_close_still_checks_market_and_risk
+    assert result.code==code and not result.allowed
+E   AssertionError: assert ('SUBMINIMUM_F..._NOT_VERIFIED' == 'PRICE_BAND_VIOLATION'
+E     
+E     - PRICE_BAND_VIOLATION
+E     + SUBMINIMUM_FULL_CLOSE_SCOPE_NOT_VERIFIED)
+____________ test_scoped_sizing_cannot_exempt_stops_or_invalid_dust ____________
+algo-trading-bot/exchange/partial_fill_safety.py:60: in scoped_exact_full_close_size
+    return exact_full_close_size(spec, position, side=side,
+algo-trading-bot/exchange/partial_fill_safety.py:53: in exact_full_close_size
+    raise ExchangeError('SUB_MINIMUM_RESIDUAL_CLOSE_NOT_VERIFIED')
+E   exchange.base_exchange.ExchangeError: SUB_MINIMUM_RESIDUAL_CLOSE_NOT_VERIFIED
+
+During handling of the above exception, another exception occurred:
+algo-trading-bot/test_exact_full_close_v8_6.py:141: in test_scoped_sizing_cannot_exempt_stops_or_invalid_dust
+    assert scoped_exact_full_close_size(spec,held,side='SELL',maximum_quantity='.2',limit_price='100')==D('.0001')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/partial_fill_safety.py:67: in scoped_exact_full_close_size
+    observed_scope(spec, side, quantity)
+algo-trading-bot/exchange/full_position_close.py:29: in observed_scope
+    raise ExchangeError('SUBMINIMUM_FULL_CLOSE_SCOPE_NOT_VERIFIED')
+E   exchange.base_exchange.ExchangeError: SUBMINIMUM_FULL_CLOSE_SCOPE_NOT_VERIFIED
+_________ test_scoped_sdk_wire_closes_exact_quantity_and_deduplicates __________
+algo-trading-bot/test_exact_full_close_v8_6.py:167: in test_scoped_sdk_wire_closes_exact_quantity_and_deduplicates
+    a=scoped.executor.close_full_position(req,permission=token)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_execution.py:264: in close_full_position
+    return self._submit(request,permission=permission,full_position_close=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_execution.py:294: in _submit
+    request, context, result, compliance = self._validated(request, permission,critical=request.reduce_only,
+algo-trading-bot/exchange/hyperliquid_execution.py:248: in _validated
+    raise ExchangeError(result.code)
+E   exchange.base_exchange.ExchangeError: SUBMINIMUM_FULL_CLOSE_SCOPE_NOT_VERIFIED
+_____________ test_position_change_at_permit_boundary_never_signs ______________
+algo-trading-bot/test_exact_full_close_v8_6.py:182: in test_position_change_at_permit_boundary_never_signs
+    outcome=scoped.executor.close_full_position(req,permission=permission(req,reason='REDUCE_ONLY_EXIT'))
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_execution.py:264: in close_full_position
+    return self._submit(request,permission=permission,full_position_close=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_execution.py:294: in _submit
+    request, context, result, compliance = self._validated(request, permission,critical=request.reduce_only,
+algo-trading-bot/exchange/hyperliquid_execution.py:248: in _validated
+    raise ExchangeError(result.code)
+E   exchange.base_exchange.ExchangeError: SUBMINIMUM_FULL_CLOSE_SCOPE_NOT_VERIFIED
+_____ test_subminimum_close_failure_stays_exposed_no_blind_retry[rejected] _____
+algo-trading-bot/test_exact_full_close_v8_6.py:192: in test_subminimum_close_failure_stays_exposed_no_blind_retry
+    first=scoped.executor.close_full_position(req,permission=token)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_execution.py:264: in close_full_position
+    return self._submit(request,permission=permission,full_position_close=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_execution.py:294: in _submit
+    request, context, result, compliance = self._validated(request, permission,critical=request.reduce_only,
+algo-trading-bot/exchange/hyperliquid_execution.py:248: in _validated
+    raise ExchangeError(result.code)
+E   exchange.base_exchange.ExchangeError: SUBMINIMUM_FULL_CLOSE_SCOPE_NOT_VERIFIED
+____ test_subminimum_close_failure_stays_exposed_no_blind_retry[uncertain] _____
+algo-trading-bot/test_exact_full_close_v8_6.py:192: in test_subminimum_close_failure_stays_exposed_no_blind_retry
+    first=scoped.executor.close_full_position(req,permission=token)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_execution.py:264: in close_full_position
+    return self._submit(request,permission=permission,full_position_close=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_execution.py:294: in _submit
+    request, context, result, compliance = self._validated(request, permission,critical=request.reduce_only,
+algo-trading-bot/exchange/hyperliquid_execution.py:248: in _validated
+    raise ExchangeError(result.code)
+E   exchange.base_exchange.ExchangeError: SUBMINIMUM_FULL_CLOSE_SCOPE_NOT_VERIFIED
+____________ test_restart_uncertain_close_preserves_original_cloid _____________
+algo-trading-bot/test_exact_full_close_v8_6.py:261: in test_restart_uncertain_close_preserves_original_cloid
+    first=scoped.executor.close_full_position(req,permission=token)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_execution.py:264: in close_full_position
+    return self._submit(request,permission=permission,full_position_close=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_execution.py:294: in _submit
+    request, context, result, compliance = self._validated(request, permission,critical=request.reduce_only,
+algo-trading-bot/exchange/hyperliquid_execution.py:248: in _validated
+    raise ExchangeError(result.code)
+E   exchange.base_exchange.ExchangeError: SUBMINIMUM_FULL_CLOSE_SCOPE_NOT_VERIFIED
+- generated xml file: /Users/adesh/Autonomous Trading Bot - Crypto /docs/certification_v8_6_2026-10-12/targeted_initial.xml -
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_exact_full_close_v8_6.py::test_full_close_minimum_is_explicit_not_global
+FAILED algo-trading-bot/test_exact_full_close_v8_6.py::test_explicit_path_keeps_exact_account_guards[mapping-SUBMINIMUM_FULL_CLOSE_SCOPE_NOT_VERIFIED]
+FAILED algo-trading-bot/test_exact_full_close_v8_6.py::test_scoped_close_still_checks_market_and_risk[quote-STALE_MARKET_DATA]
+FAILED algo-trading-bot/test_exact_full_close_v8_6.py::test_scoped_close_still_checks_market_and_risk[mark-STALE_MARKET_DATA]
+FAILED algo-trading-bot/test_exact_full_close_v8_6.py::test_scoped_close_still_checks_market_and_risk[permission-RISK_PERMISSION_DENIED]
+FAILED algo-trading-bot/test_exact_full_close_v8_6.py::test_scoped_close_still_checks_market_and_risk[reference-PRICE_BAND_VIOLATION]
+FAILED algo-trading-bot/test_exact_full_close_v8_6.py::test_scoped_sizing_cannot_exempt_stops_or_invalid_dust
+FAILED algo-trading-bot/test_exact_full_close_v8_6.py::test_scoped_sdk_wire_closes_exact_quantity_and_deduplicates
+FAILED algo-trading-bot/test_exact_full_close_v8_6.py::test_position_change_at_permit_boundary_never_signs
+FAILED algo-trading-bot/test_exact_full_close_v8_6.py::test_subminimum_close_failure_stays_exposed_no_blind_retry[rejected]
+FAILED algo-trading-bot/test_exact_full_close_v8_6.py::test_subminimum_close_failure_stays_exposed_no_blind_retry[uncertain]
+FAILED algo-trading-bot/test_exact_full_close_v8_6.py::test_restart_uncertain_close_preserves_original_cloid
+ERROR algo-trading-bot/test_exact_full_close_v8_6.py::test_one_lot_partial_entry_can_close_but_cannot_pass_protection_certification
+ERROR algo-trading-bot/test_exact_full_close_v8_6.py::test_unverified_two_lot_partial_remains_blocked
+ERROR algo-trading-bot/test_exact_full_close_v8_6.py::test_partial_exit_one_lot_residual_uses_actual_quantity
+ERROR algo-trading-bot/test_exact_full_close_v8_6.py::test_stop_rejection_does_not_award_long_certificate
+ERROR algo-trading-bot/test_exact_full_close_v8_6.py::test_offline_stop_success_never_certifies_actual_account
+ERROR algo-trading-bot/test_exact_full_close_v8_6.py::test_restart_does_not_repeat_consumed_small_entry
+12 failed, 106 passed, 6 errors in 23.78s

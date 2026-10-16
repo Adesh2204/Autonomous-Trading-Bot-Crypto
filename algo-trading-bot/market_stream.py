@@ -16,12 +16,16 @@ class MarketStream:
         self.next_recovery_ms=0
         self.last_account_recovery_ms=None
         self._pending=queue.Queue()
+        self._availability_report=None
+        self._availability_observed_ms=None
         engine.on_lifecycle=self._pending.put
 
     def run(self,stop):
         return self.engine.run(stop,max_reconnects=self.policy.max_reconnect_failures-1)
 
     def health(self,now_ms):
+        if hasattr(self.engine,'market_health'):
+            return self.engine.market_health()
         result={}
         limits={'last_tick_time':self.policy.max_data_age_ms,
                 'last_orderbook_time':self.policy.max_data_age_ms,
@@ -37,7 +41,12 @@ class MarketStream:
                 ages[name]=age
                 if age is None or not 0<=age<=limit:
                     reasons.append(name.upper()+'_STALE')
-            result[symbol]=dict(healthy=not reasons,reasons=tuple(reasons),clocks=clocks,ages_ms=ages)
+            history=self.engine.get_completed_candles(symbol)
+            if len(history)<self.engine.history_bars:reasons.append('INSUFFICIENT_HISTORY')
+            repair_error=getattr(self.engine,'recovery_errors',{}).get(symbol)
+            if repair_error:reasons.append('MARKET_REPAIR_FAILED:'+repair_error)
+            result[symbol]=dict(healthy=not reasons,reasons=tuple(reasons),clocks=clocks,ages_ms=ages,
+                data_state='HEALTHY' if not reasons else 'INSUFFICIENT_HISTORY' if 'INSUFFICIENT_HISTORY' in reasons else 'STALE_CANDLE' if 'LAST_CANDLE_TIME_STALE' in reasons else 'STALE_BOOK' if 'LAST_ORDERBOOK_TIME_STALE' in reasons else 'STALE_CONTEXT' if 'LAST_MARK_TIME_STALE' in reasons else 'UNKNOWN')
         return result
 
     def poll(self,bot):
@@ -86,9 +95,21 @@ class MarketStream:
         bot.market_snapshots=snapshots
         bot.breakers.update_symbols(health)
         bot.feed_health=health
+        if hasattr(self.engine,'availability') and (self._availability_observed_ms is None or
+                bot.clock_ms()-self._availability_observed_ms>=30000):
+            self._availability_report=self.engine.availability.snapshot()
+            self._availability_observed_ms=bot.clock_ms()
         bot.stream_report=dict(connected=self.engine.connected,reconciled=self.engine.reconciled,
             generation=self.engine.recovery_generation,accepted_generation=self.accepted_generation,
             messages=self.engine.messages,reconnections=self.engine.reconnections,
             last_receive_ms=self.engine.last_receive_ms,last_error=self.engine.last_error,
-            account_recovery=self.recovery,last_account_recovery_ms=self.last_account_recovery_ms,events=self.events)
+            account_recovery=self.recovery,last_account_recovery_ms=self.last_account_recovery_ms,events=self.events,
+            transport=self.engine.transport_health.report(),recovery_status=self.engine.recovery_status,
+            public_rate_budget=self.engine.rates.report() if self.engine.rates is not None else None,
+            market_health=self.engine.health_manager.report() if hasattr(self.engine,'health_manager') else None,
+            candle_availability=self._availability_report,
+            feed_ready=bool(self.accepted_generation==self.engine.recovery_generation and
+                self.recovery and not self.recovery['entries_paused'] and
+                self.engine.connected and self.engine.reconciled and any(s['healthy'] for s in health.values())),
+            trade_ready=False)
         return self.accepted_generation==self.engine.recovery_generation and self.engine.connected and self.engine.reconciled
