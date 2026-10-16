@@ -148,6 +148,10 @@ class LiveAccountRecovery:
         self.last_report=LiveRecoveryReport(False,(reason,),self.state.report())
         self.journal.event('ACCOUNT_ENTRY_REVOKED',self.account.client.clock_ms(),reason=reason)
 
+    def intent_rows(self):
+        """Default production view preserves every raw historical uncertainty."""
+        return self.journal.intents()
+
     def recover(self):
         verify_strategy_freeze()
         self.revoke('REST_ACCOUNT_RECONCILIATION_REQUIRED')
@@ -159,8 +163,8 @@ class LiveAccountRecovery:
                 protection_reasons.append('PROTECTION_IDENTITY_RECOVERY_REQUIRED')
                 self.journal.event('PROTECTION_IDENTITY_RECOVERY_FAILED',self.account.client.clock_ms(),
                                    error_type=type(exc).__name__)
-        self.state.tracked_order_ids={str(row['oid']) for row in self.journal.intents() if row['oid'] is not None}
-        self.state.tracked_order_ids.update(str(oid) for row in self.journal.intents()
+        self.state.tracked_order_ids={str(row['oid']) for row in self.intent_rows() if row['oid'] is not None}
+        self.state.tracked_order_ids.update(str(oid) for row in self.intent_rows()
             for oid in json.loads(row['outcome'] or '{}').get('child_order_ids',[]))
         try:
             start=self.initial_start_ms
@@ -190,7 +194,7 @@ class LiveAccountRecovery:
             for symbol,manager in self.managers.items():
                 if manager.has_open_position and symbol not in self.state.positions:
                     reasons.append('MANUAL_REVIEW_REQUIRED:'+symbol+':UNEXPLAINED_FLAT_POSITION')
-            if any(row['state'] in {'UNKNOWN','SUBMITTED','PREPARED'} for row in self.journal.intents()):
+            if any(row['state'] in {'UNKNOWN','SUBMITTED','PREPARED'} for row in self.intent_rows()):
                 reasons.append('AMBIGUOUS_DURABLE_ORDER_REQUIRES_CLOID_RECOVERY')
             if any(row['state']=='UNKNOWN' for row in self.journal.management_actions()):
                 reasons.append('AMBIGUOUS_MANAGEMENT_ACTION_REQUIRES_ACCOUNT_RECOVERY')

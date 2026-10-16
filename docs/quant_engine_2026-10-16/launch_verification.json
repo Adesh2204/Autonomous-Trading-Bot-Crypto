@@ -1,0 +1,71 @@
+{
+  "observed_ms": 1792129179449,
+  "process_identity_matches": true,
+  "commands": {
+    "worker_pid": "/Library/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python /Users/adesh/Autonomous Trading Bot - Crypto /scripts/run_quant_engine.py observe --output /Users/adesh/Autonomous Trading Bot - Crypto /docs/quant_engine_2026-10-16/daily_observation --team-wallet 0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C --markets par:BTC par:ETH par:HYPE --expires-ms 1792175220000 --source-hash 2ace81249b379132dc1693cb38f12ed1cc8857d07ab7be1a31c25ce28defa34b --scan-seconds 300",
+    "supervisor_pid": "/Library/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python docs/quant_engine_2026-10-16/launch_public_day.py",
+    "caffeinate_pid": "/usr/bin/caffeinate -i -w 29137"
+  },
+  "worker_pid": 29137,
+  "source_hash": "2ace81249b379132dc1693cb38f12ed1cc8857d07ab7be1a31c25ce28defa34b",
+  "health_age_ms": 22094,
+  "account_age_ms": 49213,
+  "status": "OBSERVING_NO_ORDER_AUTHORITY",
+  "stream_connected": true,
+  "stream_reconciled": true,
+  "feed_mode": "WEBSOCKET_WITH_RATE_CONTROLLED_REST_FALLBACK",
+  "actual_positions": [],
+  "actual_orders": [],
+  "actual_pnl": {
+    "gross_closed_pnl": "0.0794",
+    "actual_fill_fees": "0.029415",
+    "actual_funding_cashflow": "0.000527",
+    "net_after_fees_and_funding": "0.050512",
+    "scope": "ONLY_OBSERVED_ACCOUNT_EVENTS; excludes deposits/transfers and unknown historical events"
+  },
+  "signals": [
+    {
+      "symbol": "par:BTC",
+      "decision": "NO_TRADE",
+      "reasons": [
+        "ATR_BELOW_UNCHANGED_0_40_PERCENT_FLOOR",
+        "NO_FROZEN_STRATEGY_SETUP"
+      ]
+    },
+    {
+      "symbol": "par:ETH",
+      "decision": "NO_TRADE",
+      "reasons": [
+        "ATR_BELOW_UNCHANGED_0_40_PERCENT_FLOOR",
+        "NO_FROZEN_STRATEGY_SETUP"
+      ]
+    },
+    {
+      "symbol": "par:HYPE",
+      "decision": "NO_TRADE",
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ]
+    }
+  ],
+  "liquidity": {
+    "par:BTC": {
+      "long": "8.20920",
+      "short": "8.20430",
+      "observed_ms": 1792129132897
+    },
+    "par:ETH": {
+      "long": "49.86984",
+      "short": "49.84128",
+      "observed_ms": 1792129135796
+    },
+    "par:HYPE": {
+      "long": "49.4039",
+      "short": "49.3734",
+      "observed_ms": 1792129137163
+    }
+  },
+  "operator_report_sha256": "8a05c33693bcae668e088e043f34bb78c74c10176145b649443f76a89243737f",
+  "original_account_history_separate": true,
+  "order_submission_authority": "NONE"
+}

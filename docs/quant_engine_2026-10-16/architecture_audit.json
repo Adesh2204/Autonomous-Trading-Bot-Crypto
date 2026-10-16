@@ -1,0 +1,152 @@
+{
+  "created_ms": 1792126754924,
+  "before_new_code": true,
+  "baseline_source_hash": "abc36e4a6eb6b61994b3bdc22ce05700e965afe44be697f6a0345e8c5f98f8c0",
+  "components": [
+    {
+      "component": "Frozen indicators and signal state",
+      "classification": "VERIFIED",
+      "implementation": "signal_brain.py; frozen_strategy.py; crypto_strategy_state.py",
+      "evidence_scope": "Formula/state parity and offline tests; no profitability certification"
+    },
+    {
+      "component": "Dynamic par metadata and precision",
+      "classification": "VERIFIED",
+      "implementation": "exchange/hyperliquid_client.py; base_exchange.py",
+      "evidence_scope": "Actual par BTC execution plus runtime precision tests; other markets require fresh qualification"
+    },
+    {
+      "component": "Market scanner and explanations",
+      "classification": "PRESENT BUT UNVERIFIED",
+      "implementation": "market_regime_scanner.py; market_snapshot.py",
+      "evidence_scope": "Frozen UTC, 0.40% ATR, 15 bps, 300-bar, Top-3; strategy edge not established"
+    },
+    {
+      "component": "WS/REST and candle recovery",
+      "classification": "VERIFIED",
+      "implementation": "market_stream.py; exchange/hyperliquid_market_data.py; feed_transport.py; candle_availability.py",
+      "evidence_scope": "Observed public collection and offline recovery; connection loss remains possible"
+    },
+    {
+      "component": "Completed candles and warmup",
+      "classification": "VERIFIED",
+      "implementation": "candle_normalizer.py; exchange/market_health.py; candle_audit.py",
+      "evidence_scope": "UTC completion and no OHLC-derived fill conventions"
+    },
+    {
+      "component": "Actual account and collateral truth",
+      "classification": "VERIFIED",
+      "implementation": "exchange/hyperliquid_account.py; hyperliquid_reconciliation.py; live_recovery.py",
+      "evidence_scope": "Two actual BTC fills, actual fees/funding and authoritative flat readbacks; latest read must be refreshed"
+    },
+    {
+      "component": "Nonce and signer locks",
+      "classification": "VERIFIED",
+      "implementation": "exchange/execution_safety.py; single_position_guard.py",
+      "evidence_scope": "Actual durable nonce and local owner exclusion; cannot certify remote-host exclusivity"
+    },
+    {
+      "component": "Official SDK and central signed guards",
+      "classification": "VERIFIED",
+      "implementation": "exchange/sdk_transport.py; exchange_rules.py; compliance_guard.py",
+      "evidence_scope": "SDK 0.24.0 and one approved LONG round trip; no new session authority"
+    },
+    {
+      "component": "LONG entry and reduce-only exit",
+      "classification": "VERIFIED",
+      "implementation": "exchange/emergency_qualification.py; exit_recovery.py",
+      "evidence_scope": "Actual BUY 62755970305, SELL 62805581662; +0.050512 TEST USDPR"
+    },
+    {
+      "component": "UNKNOWN historical certificate repair",
+      "classification": "VERIFIED",
+      "implementation": "exchange/qualification_intent_recovery.py; qualification_protection.py",
+      "evidence_scope": "Original UNKNOWN and immutable nontransmission certificate retained; unrelated uncertainty blocked"
+    },
+    {
+      "component": "Generic SHORT open/cover",
+      "classification": "PRESENT BUT UNVERIFIED",
+      "implementation": "exchange/hyperliquid_execution.py; live_execution_session.py",
+      "evidence_scope": "Offline negative-quantity and reduce-only BUY paths; no genuine SHORT cycle"
+    },
+    {
+      "component": "Native catastrophic protection",
+      "classification": "PRESENT BUT UNVERIFIED",
+      "implementation": "exchange/position_protection.py; qualification_protection.py; protective_orders.py",
+      "evidence_scope": "Extensive offline lifecycle tests; no actual protection acceptance/trigger/cleanup proof"
+    },
+    {
+      "component": "Large unattended execution",
+      "classification": "BLOCKED",
+      "implementation": "configs/reliability_policy.json; exchange/live_runtime.py",
+      "evidence_scope": "Protection disabled/unverified, no current scoped authorization; PAPER/false remains required"
+    },
+    {
+      "component": "Existing risk and portfolio sizing",
+      "classification": "PRESENT BUT UNVERIFIED",
+      "implementation": "risk/portfolio_risk.py; position_sizer.py; exposure_manager.py; liquidation_guard.py",
+      "evidence_scope": "One position, two daily setups, 10% BBO, baseline daily loss 1%; proposed 2% is not permission to relax it"
+    },
+    {
+      "component": "L2 capital matrix 1k to 50k",
+      "classification": "MISSING",
+      "implementation": "new isolated development scope",
+      "evidence_scope": "Need both-side route-preserving capacity, risk, fees, margin and tail tests"
+    },
+    {
+      "component": "Six fee-aware exit comparisons",
+      "classification": "MISSING",
+      "implementation": "new isolated research scope",
+      "evidence_scope": "Frozen production exits remain unchanged; need prespecified OOS research"
+    },
+    {
+      "component": "Multi-timeframe research veto",
+      "classification": "MISSING",
+      "implementation": "new isolated research scope",
+      "evidence_scope": "Completed aligned higher-timeframe features; never rewrite baseline signal formulas"
+    },
+    {
+      "component": "Explicit bounded daily session mandate",
+      "classification": "MISSING",
+      "implementation": "new isolated development scope",
+      "evidence_scope": "Need scope, budgets, direction proof, expiry, source, attempts and durable state; existing general LIVE builder is locked"
+    },
+    {
+      "component": "Single-position lifecycle and recovery",
+      "classification": "VERIFIED",
+      "implementation": "exchange/order_lifecycle.py; startup_recovery.py; live_execution_session.py",
+      "evidence_scope": "Generic offline plus one actual round trip; unattended multi-trade readiness unverified"
+    },
+    {
+      "component": "Crash checkpoints and clean shutdown",
+      "classification": "PRESENT BUT UNVERIFIED",
+      "implementation": "exchange/startup_recovery.py; execution_journal.py",
+      "evidence_scope": "Integrity checks work; previous bounded worker finished/revoked without setting certified clean flag"
+    },
+    {
+      "component": "Research provenance and walk-forward",
+      "classification": "VERIFIED",
+      "implementation": "research_intelligence/evidence.py; splits.py; campaign.py; research_lab/forward_lab.py",
+      "evidence_scope": "Immutable offline data/holdout machinery; broad representative labeled sample still insufficient"
+    },
+    {
+      "component": "Daily operator report",
+      "classification": "PRESENT BUT UNVERIFIED",
+      "implementation": "live_session_results.py; session_results.py",
+      "evidence_scope": "Existing reports need capital/direction/protection readiness surface"
+    },
+    {
+      "component": "Full source-bound release",
+      "classification": "VERIFIED",
+      "implementation": "docs/profit_exit_guard_repair_2026-10-15/regression_release",
+      "evidence_scope": "2385 passing on abc36e4a...; any new code requires new receipt"
+    },
+    {
+      "component": "Competition authorization",
+      "classification": "BLOCKED",
+      "implementation": "organizer-controlled rules and whitelist",
+      "evidence_scope": "Public docs can be checked; individual whitelist and October 18 reset require organizer evidence"
+    }
+  ],
+  "scope": "Read-only architecture audit; no new exchange authority"
+}

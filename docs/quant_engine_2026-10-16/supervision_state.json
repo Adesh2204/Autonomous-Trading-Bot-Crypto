@@ -1,0 +1,113 @@
+{
+  "last_checked_ms": 1792130480422,
+  "automation_id": "monitor-oct16-public-quant-observer",
+  "status": "HEALTHY_OBSERVING_NO_ORDER_AUTHORITY",
+  "worker_pid": 29137,
+  "supervisor_pid": 29135,
+  "caffeinate_pid": 29138,
+  "process_identity_verified": true,
+  "source_hash": "2ace81249b379132dc1693cb38f12ed1cc8857d07ab7be1a31c25ce28defa34b",
+  "source_match": true,
+  "regression_tests": 2494,
+  "regression_xml_verified": true,
+  "health_updated_ms": 1792130462608,
+  "health_age_ms": 17814,
+  "account_observed_ms": 1792130331286,
+  "account_age_ms": 149136,
+  "account_scan_interval_ms": 300000,
+  "stream_connected": true,
+  "stream_reconciled": true,
+  "stream_confirmed_subscriptions": 9,
+  "stream_reconnections": 1,
+  "actual_read_failures": {},
+  "actual_positions": [],
+  "actual_orders": [],
+  "actual_observed_lifetime_net": "0.050512",
+  "new_session_orders": 0,
+  "sqlite_integrity": "ok",
+  "original_proofs_unchanged": true,
+  "original_nonce_history_unchanged": true,
+  "original_intents_and_certificate_unchanged": true,
+  "old_trading_heartbeat_status": "PAUSED",
+  "latest_scan_ms": 1792130333716,
+  "decisions": {
+    "par:BTC": "NO_TRADE",
+    "par:ETH": "NO_TRADE",
+    "par:HYPE": "NO_TRADE"
+  },
+  "no_trade_reasons": {
+    "par:BTC": [
+      "COMPLETED_CANDLE_STALE"
+    ],
+    "par:ETH": [
+      "COMPLETED_CANDLE_STALE"
+    ],
+    "par:HYPE": [
+      "COMPLETED_CANDLE_STALE"
+    ]
+  },
+  "capacity": {
+    "par:BTC": {
+      "long": "49.26000",
+      "short": "49.23000",
+      "observed_ms": 1792130332345
+    },
+    "par:ETH": {
+      "long": "49.87392",
+      "short": "49.84944",
+      "observed_ms": 1792130333257
+    },
+    "par:HYPE": {
+      "long": "49.3917",
+      "short": "49.349",
+      "observed_ms": 1792130333710
+    }
+  },
+  "qualifying_streaks": {
+    "par:BTC": 0,
+    "par:ETH": 0,
+    "par:HYPE": 0
+  },
+  "capacity_at_least_1000_streaks": {
+    "par:BTC": 0,
+    "par:ETH": 0,
+    "par:HYPE": 0
+  },
+  "last_notified_event": null,
+  "notification_sent": false,
+  "notification_reason": null,
+  "notes": [
+    "All three markets remain NO_TRADE on stale completed candles in actual public responses; book/context/pong and bounded REST collection remain active. No collector halt established.",
+    "One prior server Expired close recovered within the existing stream reconnect guard. Current nine subscriptions are confirmed with no read errors.",
+    "Both-side liquidity remains around 49 TEST USDPR, below requested 1000 tier. No repeated qualifying improvement or new account event.",
+    "No terminal result yet. This Mac/app/power/internet remain required; source/config/proofs/nonce/certificate are unchanged and signing authority is NONE."
+  ],
+  "process_commands": {
+    "worker_pid": "/Library/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python /Users/adesh/Autonomous Trading Bot - Crypto /scripts/run_quant_engine.py observe --output /Users/adesh/Autonomous Trading Bot - Crypto /docs/quant_engine_2026-10-16/daily_observation --team-wallet 0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C --markets par:BTC par:ETH par:HYPE --expires-ms 1792175220000 --source-hash 2ace81249b379132dc1693cb38f12ed1cc8857d07ab7be1a31c25ce28defa34b --scan-seconds 300",
+    "supervisor_pid": "/Library/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python docs/quant_engine_2026-10-16/launch_public_day.py",
+    "caffeinate_pid": "/usr/bin/caffeinate -i -w 29137"
+  },
+  "supervisor_source_match": true,
+  "release_receipt_matches_launch": true,
+  "last_stream_connections": [
+    {
+      "connection_id": "public-1",
+      "generation": 1,
+      "connection_started_at_ms": 1792129128688,
+      "disconnected_at_ms": 1792129807524,
+      "close_code": 1000,
+      "close_reason": "Expired",
+      "disconnect_reason": null,
+      "transport_state": "DISCONNECTED",
+      "backoff_seconds": 0.9254259509687033
+    }
+  ],
+  "stream_last_error": null,
+  "stale_completed_candle_scan_streaks": {
+    "par:BTC": 1,
+    "par:ETH": 2,
+    "par:HYPE": 2
+  },
+  "policy_hashes_match_baseline": true,
+  "paper_false_verified": true
+}

@@ -1,0 +1,13 @@
+# Organizer-rule verification — 16 October 2026
+
+Practice runs 5–18 October and is non-scored. Scored trading runs 19 October–6 November. Code and a 2–4 page report are due 6 November; jury review follows 6–9 November. No October 18 capital reset was found on the public schedule. Exact scored cutover timezone remains unconfirmed. [Official schedule](https://perpetual-alpha26.github.io/schedule)
+
+Evaluation combines final oracle-marked net return, negative daily-equity-return volatility and jury assessment. Ranking requires at least one actual scored-phase fill. One organizer-whitelisted/funded account is permitted per team, with no top-ups; entries must be algorithmic. A funded balance, the prior practice trade and this audit do not establish individual organizer whitelisting. Team-specific whitelist confirmation is **UNKNOWN**. Older local notes about a ten-day participation requirement should not be used as the current public rule. [Official competition description](https://perpetual-alpha26.github.io/about)
+
+The venue is Hyperliquid TESTNET `par`, with unified USDPR collateral. Runtime metadata determines the ten listed markets and precision. Per-market maximum leverage varies; it is not permission to exceed our preserved 1x restriction. Fee and funding values must be checked per account/fill. IOC execution can be partial; TP/SL orders are reduce-only triggers. Wash/self trading, cross-team USDPR/value transfers, coordinated trading, off-market value transfer and book/oracle manipulation are prohibited. Individual deployment approval remains separate from public venue documentation. [Official participant guide](https://perpetual-alpha26.github.io/docs/)
+
+External data is allowed and should be documented. The proposed organizer historical dataset, exact format/release and reproducibility requirements remain unconfirmed. Current sparse local L2 observations cannot substitute for a representative causal strategy dataset. [Official FAQ](https://perpetual-alpha26.github.io/faq/)
+
+Native TP/SL support in the protocol does not establish acceptance on this account. Triggers reference mark price; stop-market fills may slip and stop-limit orders may remain unfilled. Genuine account acceptance, size consistency, closing evidence and post-close cleanup are still required. [Hyperliquid TP/SL documentation](https://hyperliquid.gitbook.io/hyperliquid-docs/trading/take-profit-and-stop-loss-orders-tp-sl)
+
+No messages were sent to organizers and no organizer-only evidence was fabricated. Practice authority and consumed October 15 approvals cannot carry into scored trading.

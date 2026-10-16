@@ -27,8 +27,9 @@ POLICY=ProtectionPolicy(True,'SYNTHETIC_TEST_POLICY_ONLY',D(2),D('.01'))
 
 
 class ProtectionVenue:
-    def __init__(self,live,monkeypatch):
+    def __init__(self,live,monkeypatch,*,stop_market=True):
         self.live=live
+        self.stop_market=stop_market
         self.statuses={}
         self.oid=100
         self.fail=None
@@ -112,11 +113,11 @@ class ProtectionVenue:
                 return response({'filled':{'oid':self.oid,'totalSz':str(qty),'avgPx':wire['p']}})
             assert wire['r'] is True
             assert wire['t']['trigger']['tpsl']=='sl'
-            assert wire['t']['trigger']['isMarket'] is True
+            assert wire['t']['trigger']['isMarket'] is self.stop_market
             self.oid+=1
             order=dict(coin='par:BTC',side='B' if wire['b'] else 'A',sz=wire['s'],limitPx=wire['p'],
                 oid=self.oid,cloid=wire['c'],isTrigger=True,reduceOnly=True,
-                triggerPx=wire['t']['trigger']['triggerPx'],orderType='Stop Market',timestamp=NOW)
+                triggerPx=wire['t']['trigger']['triggerPx'],orderType='Stop Market' if self.stop_market else 'Stop Limit',timestamp=NOW)
             if self.wrong_qty:
                 order['sz']=str(D(order['sz'])/2)
             self.live.fixture.orders.append(order)
