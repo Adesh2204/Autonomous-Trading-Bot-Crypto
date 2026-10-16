@@ -1,0 +1,73 @@
+{
+  "draft_only": true,
+  "status": "BLOCKED_NOT_FOR_ACCEPTANCE",
+  "draft_identity": "65342139b3fb149188b3cfcbf8bba97265064a43ab0b84bdef0df4a7daf2238a",
+  "contract": {
+    "session_id": "anchorium-2026-10-16-PROPOSED-NOT-ACTIVE",
+    "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+    "api_wallet": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+    "markets": [
+      "par:BTC",
+      "par:ETH",
+      "par:HYPE"
+    ],
+    "directions": [
+      "LONG"
+    ],
+    "starts_ms": 1792128637173,
+    "expires_ms": 1792175220000,
+    "source_hash": "2ace81249b379132dc1693cb38f12ed1cc8857d07ab7be1a31c25ce28defa34b",
+    "signing_host": "Adeshs-MacBook-Air.local",
+    "bankroll": "20000",
+    "maximum_notional": "1000",
+    "maximum_total_exposure": "1000",
+    "maximum_cumulative_allocation": "2000",
+    "maximum_entry_attempts": 2,
+    "maximum_concurrent_positions": 1,
+    "leverage": 1,
+    "risk_fraction": "0.005",
+    "daily_loss_fraction": "0.01",
+    "network": "testnet",
+    "dex": "par",
+    "protection_required": true
+  },
+  "requested_development_starting_notional": "1000",
+  "currently_qualified_notional": "0",
+  "current_trading_authority": "NONE",
+  "submission_enabled": false,
+  "readiness": {
+    "status": "BLOCKED",
+    "reasons": [
+      "NATIVE_PROTECTION_NOT_EXCHANGE_VERIFIED",
+      "NEW_EXACT_DAILY_SESSION_APPROVAL_REQUIRED",
+      "GENERAL_LIVE_BUILDER_REMAINS_LOCKED_BY_PAPER_FALSE"
+    ],
+    "order_submission_enabled": false,
+    "note": "A readiness report does not create SDK/action authorization"
+  },
+  "blockers": [
+    "Native protective acceptance/trigger/cleanup not genuinely exchange-qualified",
+    "No currently qualified frozen-strategy setup",
+    "Captured baseline 10-percent both-best-level capacity is below 1000",
+    "Daily coordinator intentionally has no signer or permit bridge to general locked LIVE runtime",
+    "SHORT requires separate genuine SELL-open / reduce-only BUY-close qualification"
+  ],
+  "approval_procedure": "Do not accept this draft. After all prerequisites, recapture account/book/fees/funding, prepare a new exact executable contract and source-bound acceptance request, including permissible loss-making risk exits and protective-order cleanup. Genuine response time must precede its deadline. Never reuse a consumed/expired mandate.",
+  "revocation": "Source change, expiry, loss/drawdown cap, protection failure, nonce/account uncertainty or operator stop revokes new entries. An uncertain attempt is never automatically repeated. A residual exposure requires specifically scoped recovery; no next-day carry of authority.",
+  "partial_profit_taking": "RESEARCH_ONLY_DISABLED; independent residual/protection resizing and per-attempt authority required",
+  "budget_proposal": {
+    "risk_per_trade": "100",
+    "daily_loss": "200",
+    "percentage_risk": "0.5%",
+    "daily_loss_percent": "1%",
+    "margin_utilization_max": "50%",
+    "leverage": "1x CROSS",
+    "concurrent_positions": 1,
+    "max_entry_attempts": 2,
+    "baseline_best_level_participation": "10% of both sides",
+    "slippage_bps": 5
+  },
+  "supersedes_draft_only": "45146e51ad7ee0ff59cdbd67489a6e58f863afdc4f5b7a09661f41cdadf62d38",
+  "full_regression_passed": true,
+  "full_regression_tests": 2494
+}

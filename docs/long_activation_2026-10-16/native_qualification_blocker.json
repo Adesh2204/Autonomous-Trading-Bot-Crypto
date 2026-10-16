@@ -1,0 +1,71 @@
+{
+  "status": "BLOCKED_NOT_AN_APPROVABLE_MANDATE",
+  "source_hash": "b76fc8d59e8521f06b018baa258983f82166cf39f1eddeaaa341ef66c41d918c",
+  "reviewed_types": [
+    "Stop Market",
+    "Stop Limit"
+  ],
+  "trigger_reference": "mark price",
+  "side": "reduce-only SELL for actual LONG quantity",
+  "genuine_acceptance": false,
+  "genuine_trigger": false,
+  "new_order_authority": false,
+  "maximum_tiny_notional": "25",
+  "existing_stop_limit_qualification": "exchange/testnet_certification.py and exchange/qualification_protection.py",
+  "strategy_stop_market_manager": "exchange/position_protection.py",
+  "important_scope": "Daily execution uses Stop Limit with an explicit 0.5% limit. Documented Stop Market tolerance is 10%, outside the current allowance. IOC close evidence does not establish a native-stop minimum exemption",
+  "reason": "SUB_MINIMUM_PARTIAL_FILL_EXIT_NOT_VERIFIED",
+  "markets": [
+    {
+      "symbol": "par:BRENT",
+      "lot": "0.01",
+      "one_lot_at_bid": "1.0297"
+    },
+    {
+      "symbol": "par:BTC",
+      "lot": "0.0001",
+      "one_lot_at_bid": "8.17980"
+    },
+    {
+      "symbol": "par:ETH",
+      "lot": "0.0001",
+      "one_lot_at_bid": "0.24446"
+    },
+    {
+      "symbol": "par:EWJ",
+      "lot": "0.001",
+      "one_lot_at_bid": "0.096161"
+    },
+    {
+      "symbol": "par:EWY",
+      "lot": "0.001",
+      "one_lot_at_bid": "0.15538"
+    },
+    {
+      "symbol": "par:GOLD",
+      "lot": "0.0001",
+      "one_lot_at_bid": "0.41778"
+    },
+    {
+      "symbol": "par:HYPE",
+      "lot": "0.01",
+      "one_lot_at_bid": "0.81225"
+    },
+    {
+      "symbol": "par:SP500",
+      "lot": "0.001",
+      "one_lot_at_bid": "7.7385"
+    },
+    {
+      "symbol": "par:USDEUR",
+      "lot": "0.1",
+      "one_lot_at_bid": "0.11253"
+    },
+    {
+      "symbol": "par:USDJPY",
+      "lot": "0.01",
+      "one_lot_at_bid": "1.5807"
+    }
+  ],
+  "next_action": "Establish authoritative venue support for the exact small-stop behavior, or observe a market meeting the unchanged minimum guard; then prepare a separate exact tiny supervised test for human approval"
+}
