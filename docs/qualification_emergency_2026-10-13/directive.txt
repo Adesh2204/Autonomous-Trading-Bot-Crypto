@@ -1,0 +1,185 @@
+# TEAM ANCHORIUM — P0 EMERGENCY QUALIFICATION EXECUTION
+
+## GOAL
+Deliver the fastest legitimate route to one genuine Hyperliquid TESTNET `par` fill for Team Anchorium before October 16.
+
+The operator authorizes engineering preparation for a **maximum $1,000 TEST USDPR opening position at 1x leverage**.
+
+This is not an instruction to bypass exchange rules, manufacture liquidity, self-trade or submit an order without a current, exact authorization.
+
+## CURRENT PROBLEM
+The V8.9 qualification watcher ran for 300 seconds and returned:
+
+- `NO_CURRENT_QUALIFICATION_PROPOSAL`
+- `NO_SUPPORTED_CURRENT_OPPORTUNITY`
+- `actual_order_authorization_supplied=false`
+- No actual order or fill
+
+It entered account refreshing at approximately 300 seconds and checked residual exits afterward. Investigate whether this late transition caused unnecessary missed opportunities, or whether all candidate trades genuinely failed eligibility.
+
+The previous 10%-of-best-level policy routinely rejects thin books. The old $25 policy is insufficient for the operator's newly requested $1,000 execution ceiling.
+
+## MISSION 1 — IMPLEMENT AN ISOLATED $1,000 QUALIFICATION POLICY
+
+Create a separately versioned qualification-only risk policy:
+
+- Hyperliquid TESTNET `par` only
+- Registered team wallet and approved API signer
+- Maximum opening notional $1,000 TEST USDPR
+- 1x CROSS
+- Maximum one active position
+- One explicitly authorized opening order
+- No automatic order enlargement or repeated entries
+- Ordinary exchange minimum $10 remains mandatory
+- Normal autonomous production trading remains PAPER/false
+- Frozen `signal_brain.py` remains untouched
+
+The $1,000 amount is a maximum, not a required minimum fill.
+
+A smaller legitimate fill can establish practice-trade evidence.
+
+Old approvals must not authorize this new policy.
+
+## MISSION 2 — IMPLEMENT TWO EXECUTION ROUTES
+
+### Route A: Bounded taker IOC
+
+Use authentic Level-2 order-book depth.
+
+Calculate an order using genuine resting liquidity at prices within a separately approved slippage and oracle-deviation ceiling.
+
+Do not treat combined book depth as proof the previous 10% best-level rule passed.
+
+Instead, create a separate, explicit, testable qualification-only execution policy with defined price-impact limits.
+
+Require current executable price, precision, margin, exit feasibility and exact authorization.
+
+Partial fills are legitimate outcomes.
+
+### Route B: Resting GTC limit order
+
+Implement one supported, algorithmically priced GTC limit order, with an optional post-only ALO mode if appropriate.
+
+The order must:
+
+- Remain within the $1,000 opening-notional ceiling.
+- Use a reasonable price supported by genuine market and oracle data.
+- Rest on the exchange until filled, canceled or until its explicitly approved monitoring deadline.
+- Be monitored using authoritative order updates and team-wallet fills.
+- Have its unfilled portion canceled according to the approved order-lifetime policy.
+- Be tracked for partial fills and outstanding exposure.
+- Never be automatically replaced with a larger order.
+- Never self-match, spoof, wash trade or create artificial volume.
+
+Do not assume a posted order has executed.
+
+## MISSION 3 — SELECT THE BEST SUPPORTED MARKET
+
+Inspect the ten competition-approved `par` markets.
+
+For each, assess:
+
+- Current executable liquidity
+- Spread and slippage
+- Minimum valid quantity
+- Lot precision
+- Maximum $1,000 exposure
+- Fees
+- Margin
+- Correct asset mapping
+- Entry and exit order validity
+- Possible partial fills and small residuals
+- Available and independently supported closing/protection mechanisms
+
+Do not authorize ETH, HYPE or another market merely because its opening liquidity is good if its residual closing behavior is unverified.
+
+Choose a market only where the operator-approved execution and exposure-recovery policy can actually be applied.
+
+## MISSION 4 — REPAIR THE WATCHER-TO-EXECUTION HANDOFF
+
+Investigate the existing 300-second observation window.
+
+Fix actual timing or state-machine defects without allowing expired quotes or proposals.
+
+When a valid opportunity appears:
+
+1. Freeze the candidate's evidence identity.
+2. Run bounded final account reconciliation.
+3. Refresh the actual book and metadata.
+4. Recheck minimums and permitted price impact.
+5. Check partial-fill and residual handling.
+6. Generate a source-bound exact proposal.
+7. Stop for current human authorization.
+8. Upon valid authorization, execute only the permitted one-off order.
+
+Do not repeat full historical account reads on every book update.
+
+Preserve nonce ownership, rate limits, source checks, approvals and durable order records.
+
+## MISSION 5 — EXPOSURE MANAGEMENT
+
+Protective-stop support remains unverified.
+
+Do not claim that the system has an accepted stop when it does not.
+
+If an experimental no-stop route is offered, clearly disclose the possibility of an unprotected position, exchange disconnection and failed reduce-only exits.
+
+The operator must explicitly decide whether to accept that risk for the exact proposed order.
+
+After any fill:
+
+- Reconcile actual position size.
+- Manage or cancel the unfilled remainder of the original order.
+- Use only the approved reduce-only closing procedure.
+- Record fees and realized P&L.
+- Stop new entries if status becomes uncertain.
+- Preserve durable state for emergency recovery.
+
+A $1,000 opening ceiling is not a guaranteed maximum loss.
+
+## MISSION 6 — TEST AND PREPARE REAL OPERATION
+
+Start from the latest passing source baseline.
+
+Add focused regression cases for:
+
+- $1,000 policy enforcement
+- Approved execution policy versus the old 10% depth rule
+- IOC zero/partial/full fills
+- GTC resting orders
+- Genuine cancellation
+- Partial-fill exposure
+- Failed reduce-only exits
+- Order-status uncertainty
+- API disconnects
+- Rate limits
+- Proposal expiry
+- Duplicate prevention
+- Account restart recovery
+- Real fill evidence
+- Production lockouts
+- Frozen strategy integrity
+
+Run the complete regression suite and preserve the source-bound test receipt.
+
+## FINAL DELIVERABLE — MAKE THIS OPERATOR-READY
+
+Return only:
+
+1. Actual root causes and corrected files.
+2. Supported IOC/GTC execution method.
+3. Current market eligibility and why.
+4. Maximum authorized exposure and remaining protection risks.
+5. Test results and frozen strategy verification.
+6. The exact working Terminal command for preparation.
+7. The exact current proposal and required approval procedure, if eligible.
+8. The existing supported command for separately authorized execution.
+9. Real fill and position recovery verification steps.
+
+Do not invent CLI flags, prices, proposal files, market fills or signer permissions.
+
+Do not stop at a generic audit if a reproducible implementation error remains.
+
+**The immediate engineering goal is a functioning $1,000-cap qualification execution path, not another strategy upgrade.**
+
+Do not sign or submit the order until the exact current proposal and risks have been explicitly approved by the operator.

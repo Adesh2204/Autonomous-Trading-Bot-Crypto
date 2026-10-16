@@ -1,0 +1,344 @@
+--- algo-trading-bot/exchange/certification_runtime.py (V8.5)
++++ algo-trading-bot/exchange/certification_runtime.py (V8.6)
+@@ -196,7 +196,8 @@
+         CertificationProtection(executor, proposal)
+         journal.control('certification_active_identity', proposal.identity)
+         return CertificationRuntime(CertificationSequence(executor, proposal, auth,
+-                                    wait=lambda:time.sleep(.5)), client, transport, nonces, journal)
++                                    wait=lambda:time.sleep(.5), verified_full_position_closes=True),
++                                    client, transport, nonces, journal)
+     except Exception:
+         if transport is not None: transport.close()
+         if nonces is not None: nonces.close()
+@@ -214,7 +215,11 @@
+ 
+     def run(self):
+         result = self.sequence.run()
+-        if result['status'] == 'TRADE_CLOSED_RECONCILED':
++        if (result['status'] == 'TRADE_CLOSED_RECONCILED'
++                and result.get('certification_passed') is True
++                and result.get('protection_accepted') is True
++                and result.get('final_flat') is True
++                and result.get('evidence_scope') == 'ACTUAL_TESTNET_ACCOUNT'):
+             if self.sequence.p.entry_side == 'BUY':
+                 self.journal.control('long_certification_complete', self.sequence.p.identity)
+             self.journal.control('certification_active_identity', False)
+--- algo-trading-bot/exchange/compliance_guard.py (V8.5)
++++ algo-trading-bot/exchange/compliance_guard.py (V8.6)
+@@ -129,11 +129,13 @@
+             provenance=asdict(provenance) if isinstance(provenance, OrderProvenance) else None)
+         return decision
+ 
+-    def evaluate(self, request, context, permission, position, *, trigger=False, modify_oid=None):
++    def evaluate(self, request, context, permission, position, *, trigger=False, modify_oid=None,
++                 full_position_close=False):
+         now = self.clock_ms()
+         candidate = getattr(permission, 'candidate_id', None)
+         checks = dict(single_position=asdict(position), policy=asdict(self.policy),
+                       trigger_order=trigger, modifies_order_id=modify_oid,
++                      exact_full_position_close=full_position_close is True,
+                       position_generation=(self.journal.control('global_position_lock') or {}).get('generation'))
+         p = getattr(permission, 'provenance', None)
+         classification = None
+@@ -142,11 +144,17 @@
+                                           safe_data(checks), now, classification)
+             self.record(decision, request, order_id=modify_oid, provenance=p)
+             if allowed:
+-                self._approved[id(decision)] = (decision, fingerprint(asdict(request)), modify_oid, trigger)
++                self._approved[id(decision)] = (decision, fingerprint(asdict(request)), modify_oid, trigger,
++                                                full_position_close is True)
+                 if len(self._approved)>512:
+                     del self._approved[next(iter(self._approved))]
+             return decision
+         try:
++            if full_position_close:
++                from .full_position_close import normalize_exact_full_close
++                if trigger or modify_oid is not None:
++                    return finish(False, 'EXACT_FULL_CLOSE_CANNOT_BE_TRIGGER_OR_REPLACEMENT')
++                normalize_exact_full_close(context.spec, request, context, now)
+             if not isinstance(p, OrderProvenance):
+                 return finish(False, 'MISSING_STRATEGY_PROVENANCE')
+             try:
+@@ -268,7 +276,7 @@
+         approved = self._approved.pop(id(decision), None)
+         if approved is None or approved[0] is not decision or approved[1] != fingerprint(asdict(request)):
+             raise ExchangeError('COMPLIANCE_ACTION_PERMIT_REQUIRED')
+-        modify_oid, trigger = approved[2:]
++        modify_oid, trigger, full_position_close = approved[2:]
+         kind = action.get('type')
+         if kind == 'order' and modify_oid is None and len(action.get('orders', [])) == 1:
+             wire = action['orders'][0]
+@@ -290,7 +298,8 @@
+         # The executor's fixed boundary supplies nonce/clock/account/health gates;
+         # an alternate caller cannot replace them with a permissive callback.
+         callback=lambda:self.execution_owner._guard(context,decision.timestamp,
+-            critical=request.reduce_only,entry=not request.reduce_only)
++            critical=request.reduce_only,entry=not request.reduce_only,
++            exact_full_close=request if full_position_close else None)
+         self.journal.event('COMPLIANCE_ACTION_AUTHORIZED', self.clock_ms(),
+             candidate_id=decision.candidate_id, cloid=wire['c'], order_classification=decision.classification,
+             action_type=kind, order=asdict(request), context_ms=context.account_ms,
+--- algo-trading-bot/exchange/exchange_rules.py (V8.5)
++++ algo-trading-bot/exchange/exchange_rules.py (V8.6)
+@@ -70,13 +70,16 @@
+         self.client = client
+         self.policy_leverage = policy_leverage
+ 
+-    def validate(self, request, context, permission, now_ms):
++    def validate(self, request, context, permission, now_ms, *, operation='ORDER'):
+         audit = dict(symbol=getattr(request,'symbol',None),requested_size=str(getattr(request,'quantity',None)),
+                      requested_price=str(getattr(request,'price',None)),leverage=context.leverage,
+                      metadata_hash=context.metadata_hash)
+         def reject(code, reason=None):
+             return ValidationResult(False, code, reason or code, now_ms, audit=audit)
+         try:
++            from .full_position_close import FULL_POSITION_CLOSE, normalize_exact_full_close
++            if operation not in {'ORDER', FULL_POSITION_CLOSE}:
++                return reject('INVALID_EXECUTION_OPERATION')
+             if not isinstance(request, OrderRequest) or not request.symbol.startswith('par:'):
+                 return reject('INVALID_MARKET')
+             if not self.client.ready or request.symbol not in self.client.markets:
+@@ -97,7 +100,15 @@
+             notional = quantity*price
+             audit.update(normalized_size=str(quantity),normalized_price=str(price),notional=str(notional),
+                          asset_id=spec.asset_id)
+-            if notional < 10:
++            exact_close = None
++            if operation == FULL_POSITION_CLOSE:
++                try:
++                    exact_close, scope = normalize_exact_full_close(spec, request, context, now_ms)
++                except ExchangeError as exc:
++                    return reject(str(exc))
++                audit.update(exact_full_position_close=True, subminimum_close_scope=scope,
++                             closing_exception_applied=scope is not None)
++            if notional < 10 and exact_close is None:
+                 return reject('MIN_ORDER_NOTIONAL')
+             q = context.quote
+             if q.symbol != request.symbol or not context.feed_ready:
+@@ -181,7 +192,7 @@
+                     own_price=decimal(own['limitPx'],positive=True)
+                     if request.side=='BUY' and price>=own_price or request.side=='SELL' and price<=own_price:
+                         return reject('SELF_CROSS_PROHIBITED')
+-            normalized=spec.normalize_order(request.side,quantity,price,reduce_only=request.reduce_only,tif=request.tif)
++            normalized=exact_close or spec.normalize_order(request.side,quantity,price,reduce_only=request.reduce_only,tif=request.tif)
+             return ValidationResult(True,'ALLOWED','All pre-trade checks passed',now_ms,normalized,audit)
+         except ExchangeError as exc:
+             message=str(exc)
+--- algo-trading-bot/exchange/hyperliquid_execution.py (V8.5)
++++ algo-trading-bot/exchange/hyperliquid_execution.py (V8.6)
+@@ -83,7 +83,7 @@
+                 self.journal.team_address):
+             raise ExchangeError('TEAM_ACCOUNT_IDENTITY_MISMATCH')
+ 
+-    def _guard(self, context, checked_ms, *, critical=False, entry=False):
++    def _guard(self, context, checked_ms, *, critical=False, entry=False, exact_full_close=None):
+         self._require()
+         self.clock_health.require()
+         if not self.transport.nonces.healthy:
+@@ -101,6 +101,20 @@
+                 context.readiness.agent_expiry_ms <= now or
+                 (not critical and (not self.context_provider.feed_ready() or now < self.rate_limits.backoff_until))):
+             raise ExchangeError('SIGNING_READINESS_REVOKED')
++        if exact_full_close is not None:
++            # Recheck actual size immediately at every SDK permit boundary.
++            # A reduce-only server clamp is not permission to oversize a close.
++            before=self.account.get_positions()
++            after=self.account.get_positions()
++            request=exact_full_close
++            position=after.get(request.symbol)
++            if (before!=after or len(after)!=1 or position is None
++                    or abs(position.quantity)!=request.quantity
++                    or (position.quantity>0)==(request.side=='BUY')
++                    or not 0<=self.client.clock_ms()-checked_ms<=5000):
++                self.entries_paused=True
++                self.position_guard.revoke('EXACT_FULL_CLOSE_POSITION_CHANGED_BEFORE_SIGNING')
++                raise ExchangeError('EXACT_FULL_CLOSE_POSITION_CHANGED_BEFORE_SIGNING')
+         if entry:
+             # Re-read account truth at the SDK boundary as well as during the
+             # full preflight. Never substitute a local manager's flat flag.
+@@ -168,7 +182,10 @@
+                 readiness=SimpleNamespace(account_ready=bool(report and report.ready)),
+                 account_ms=state.last_window[1],reconciled=bool(report and report.ready)),self.client.clock_ms())
+ 
+-    def _validated(self, request, permission, *, critical=False, trigger=False, modify_oid=None):
++    def _validated(self, request, permission, *, critical=False, trigger=False, modify_oid=None,
++                   full_position_close=False):
++        if full_position_close and (trigger or modify_oid is not None):
++            raise ExchangeError('EXACT_FULL_CLOSE_CANNOT_BE_TRIGGER_OR_REPLACEMENT')
+         preflight_generation=(self.journal.control('global_position_lock') or {}).get('generation')
+         try:
+             context = self.context_provider.load(request,critical=True) if critical else self.context_provider.load(request)
+@@ -186,17 +203,26 @@
+                 {s:p.quantity for s,p in state.positions.items()}=={s:p.quantity for s,p in context.positions.items()} and
+                 set(state.orders)=={str(o['oid']) for o in context.open_orders})
+         spec=self.client.market(request.symbol)
++        if full_position_close and (spec.normalize_size(request.quantity)!=request.quantity or
++                spec.normalize_price(request.price,request.side)!=request.price):
++            raise ExchangeError('EXACT_FULL_CLOSE_PRECISION_MISMATCH')
+         request=replace(request,quantity=spec.normalize_size(request.quantity),
+                         price=spec.normalize_price(request.price,request.side))
+         position=self.position_guard.evaluate(request,context,self.client.clock_ms(),
+                                                expected_generation=preflight_generation)
+         decision=self.compliance_guard.evaluate(request,context,permission,position,
+-                                                trigger=trigger,modify_oid=modify_oid)
++                                                trigger=trigger,modify_oid=modify_oid,
++                                                full_position_close=full_position_close)
+         if not decision.allowed:
+             if not request.reduce_only:
+                 self.entries_paused=True
+             raise ExchangeError(decision.code)
+-        result = self.validator.validate(request, context, permission, self.client.clock_ms())
++        if full_position_close:
++            from .full_position_close import FULL_POSITION_CLOSE
++            result = self.validator.validate(request, context, permission, self.client.clock_ms(),
++                                             operation=FULL_POSITION_CLOSE)
++        else:
++            result = self.validator.validate(request, context, permission, self.client.clock_ms())
+         if result.allowed and not request.reduce_only and self.protection is not None:
+             for symbol,position in context.positions.items():
+                 state=self.protection.states.get(symbol,{})
+@@ -224,12 +250,21 @@
+         request = replace(request, quantity=result.normalized.quantity, price=result.normalized.price)
+         return request, context, result, decision
+ 
+-    def _permit(self, action, decision, request, context, checked_ms, *, entry_key=None):
++    def _permit(self, action, decision, request, context, checked_ms, *, entry_key=None,
++                full_position_close=False):
+         return self.compliance_guard.authorize(action,decision,request,context,
+             lambda:self._guard(context,checked_ms,critical=request.reduce_only,
+-                               entry=not request.reduce_only),entry_key=entry_key)
++                               entry=not request.reduce_only,
++                               exact_full_close=request if full_position_close else None),entry_key=entry_key)
+ 
+     def submit(self, request, *, permission=None):
++        return self._submit(request,permission=permission)
++
++    def close_full_position(self, request, *, permission=None):
++        """Explicit exact IOC close path; neither activation nor stop capability."""
++        return self._submit(request,permission=permission,full_position_close=True)
++
++    def _submit(self, request, *, permission=None, full_position_close=False):
+         self._require()
+         self._dependencies()
+         with self.lock:
+@@ -257,7 +292,8 @@
+             if not request.reduce_only and startup is not None and not startup.entry_ready:
+                 self.entries_paused=True
+                 raise ExchangeError('STARTUP_ENTRY_LOCK_REQUIRED')
+-            request, context, result, compliance = self._validated(request, permission,critical=request.reduce_only)
++            request, context, result, compliance = self._validated(request, permission,critical=request.reduce_only,
++                                                                  full_position_close=full_position_close)
+             if not request.reduce_only and (not self.rate_limits.entries_allowed or
+                     self.protection is not None and not self.protection.entries_allowed):
+                 self.entries_paused=True
+@@ -269,7 +305,8 @@
+                 return self._restore_order(row)
+             wire, action = self.transport.order_action(request, row['cloid'])
+             permit=self._permit(action,compliance,request,context,result.checked_ms,
+-                                entry_key=key if not request.reduce_only else None)
++                                entry_key=key if not request.reduce_only else None,
++                                full_position_close=full_position_close)
+             self._reserve_intent_action(key,creates_order=True,
+                 priority=RequestPriority.SAFETY if request.reduce_only else RequestPriority.EXECUTION,
+                 kind='strategy_exit' if request.reduce_only else 'entry')
+--- algo-trading-bot/exchange/partial_fill_safety.py (V8.5)
++++ algo-trading-bot/exchange/partial_fill_safety.py (V8.6)
+@@ -1,8 +1,9 @@
+ """Conservative certification sizing under the documented $10 order minimum.
+ 
+-No documented par exemption for a sub-minimum full close or stop was found.
+-This module grants no exemption and never enlarges a position or close size.
+-An offline fixture is not evidence of actual exchange acceptance.
++No documented general par exemption for a sub-minimum full close or stop was found.
++Only the explicitly scoped IOC helper uses independently read historical close
++evidence. The ordinary helper and all protection checks keep the $10 minimum.
++Neither helper enlarges a position. Offline fixtures are not venue acceptance.
+ """
+ from decimal import Decimal as D
+ 
+@@ -53,6 +54,20 @@
+     return quantity
+ 
+ 
++def scoped_exact_full_close_size(spec, position, *, side, maximum_quantity, limit_price):
++    """Explicit IOC closure only; the strict helper still governs protective stops."""
++    try:
++        return exact_full_close_size(spec, position, side=side,
++            maximum_quantity=maximum_quantity, limit_price=limit_price)
++    except ExchangeError as exc:
++        if str(exc) != 'SUB_MINIMUM_RESIDUAL_CLOSE_NOT_VERIFIED':
++            raise
++        from .full_position_close import observed_scope
++        quantity = abs(decimal(position.quantity))
++        observed_scope(spec, side, quantity)
++        return quantity
++
++
+ def residual_observation(spec, position, proposal, observed_ms):
+     """Durable evidence of remaining exposure, never a synthetic flattening."""
+     quantity = abs(decimal(position.quantity))
+--- algo-trading-bot/exchange/testnet_certification.py (V8.5)
++++ algo-trading-bot/exchange/testnet_certification.py (V8.6)
+@@ -24,11 +24,11 @@
+ 
+ 
+ def require_safe_partial_path(spec, proposal):
+-    """Current adapter rejects every sub-$10 order, including protective exits.
++    """Protective orders still require the ordinary $10 minimum.
+ 
+ Do not open exposure which a one-lot IOC fill could strand. An authoritative
+-venue exception and a tested narrow full-close path are needed before changing
+-this gate; a proposed risk budget or operator approval cannot override it.
++closing path alone does not verify stop acceptance. Both capabilities are
++needed before changing this gate; approval cannot override missing evidence.
+ """
+     assessment = partial_path_assessment(spec, proposal)
+     if not assessment['entry_admissible_under_documented_minimum']:
+@@ -307,14 +307,17 @@
+ 
+ class CertificationSequence:
+     """Bounded orchestration over the existing validator, journal and SDK executor."""
+-    def __init__(self, executor, proposal, authorization, *, wait=None):
++    def __init__(self, executor, proposal, authorization, *, wait=None,
++                 verified_full_position_closes=False):
+         self.e, self.p, self.auth = executor, proposal.require(), authorization
+         self.wait = wait or (lambda: None)
++        self.verified_full_position_closes = verified_full_position_closes is True
+         self.prefix = 'certification:'+proposal.identity+':'
+         self.report = dict(status='NO_ORDER_AUTHORIZED', execution_mode='TESTNET_CERTIFICATION',
+             production_mode='PAPER', strategy_signal=False, exclude_from_strategy_statistics=True,
+             proposal=asdict(proposal), actual_exchange_proof=[], realized_pnl=None,
+-            realized_pnl_status='REALIZED_PNL_NOT_CERTIFIED', practice_ready=False, live_ready=False)
++            realized_pnl_status='REALIZED_PNL_NOT_CERTIFIED', practice_ready=False, live_ready=False,
++            protection_accepted=False, certification_passed=False)
+ 
+     def observe(self):
+         self.e.recovery.recover()
+@@ -381,11 +384,14 @@
+             if (side == 'SELL' and px < decimal(self.p.exit_bound)
+                     or side == 'BUY' and px > decimal(self.p.exit_bound)):
+                 raise ExchangeError('CERTIFICATION_EXIT_PRICE_BOUND')
+-            quantity = exact_full_close_size(spec, held, side=side,
++            from .partial_fill_safety import scoped_exact_full_close_size
++            sizing = scoped_exact_full_close_size if self.verified_full_position_closes else exact_full_close_size
++            quantity = sizing(spec, held, side=side,
+                 maximum_quantity=self.p.quantity, limit_price=px)
+             req = OrderRequest(self.p.symbol, side, quantity, px, reduce_only=True,
+                 strategy_id='TESTNET_CERTIFICATION_EXIT', tif='Ioc', client_order_id=self.prefix+'exit:'+str(attempt))
+-            outcome = self.resolved(self.e.submit(req, permission=test_permission(req, self.p, now,
++            submit = self.e.close_full_position if self.verified_full_position_closes else self.e.submit
++            outcome = self.resolved(submit(req, permission=test_permission(req, self.p, now,
+                                                                  reason='CERTIFICATION_REDUCE_ONLY_EXIT')))
+             self.report.setdefault('exit_attempts', []).append(dict(attempt=attempt,
+                 requested_quantity=str(quantity), outcome=asdict(outcome)))
+@@ -469,6 +475,10 @@
+                 if abs(delta-decimal(self.report['realized_pnl']['net_realized_pnl'])) > D('.000001'):
+                     raise ExchangeError('CERTIFICATION_EQUITY_ACCOUNTING_MISMATCH')
+                 self.report['status'] = 'TRADE_CLOSED_RECONCILED'
++                self.report['certification_passed'] = self.report['protection_accepted'] is True
++                if not self.report['certification_passed']:
++                    self.report['certification_blocker'] = 'ACTUAL_POSITION_PROTECTION_NOT_VERIFIED'
++            # This is a consumed-attempt marker, not a successful qualification.
+             self.e.journal.control('certification_completed:'+self.p.identity, True)
+         except Exception as exc:
+             self.report['error'] = str(exc) if isinstance(exc, ExchangeError) else type(exc).__name__

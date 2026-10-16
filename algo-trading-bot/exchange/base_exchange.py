@@ -235,7 +235,9 @@ class AccountEquity:
     reported_account_value: Decimal
     collateral_balance: Decimal
     margin_used: Decimal
-    withdrawable: Decimal
+    # Unified account states do not report a meaningful per-DEX withdrawal
+    # balance. Unknown is distinct from zero and from per-coin trading capacity.
+    withdrawable: Decimal | None
     valuation_source: str = 'clearinghouseState.marginSummary.accountValue'
 
 

@@ -1,0 +1,488 @@
+--- a/algo-trading-bot/exchange/testnet_certification.py
++++ b/algo-trading-bot/exchange/testnet_certification.py
+@@ -16,6 +16,8 @@
+ from .order_lifecycle import OrderRequest, OrderState
+ from .position_protection import ProtectionPlan
+ from .sdk_transport import OfficialSDKTransport
++from .partial_fill_safety import (partial_path_assessment, exact_full_close_size,
++                                residual_observation)
+ 
+ TEAM = '0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C'
+ API = '0x46c9BED595770150752E7fA3806449F81E0Ec6f9'
+@@ -28,8 +30,9 @@
+ venue exception and a tested narrow full-close path are needed before changing
+ this gate; a proposed risk budget or operator approval cannot override it.
+ """
+-    if spec.size_step*min(decimal(proposal.entry_limit), decimal(proposal.stop_limit)) < 10:
+-        raise ExchangeError('SUB_MINIMUM_PARTIAL_FILL_EXIT_NOT_VERIFIED')
++    assessment = partial_path_assessment(spec, proposal)
++    if not assessment['entry_admissible_under_documented_minimum']:
++        raise ExchangeError(assessment['blocker'])
+ 
+ 
+ class ExecutionMode(str, Enum):
+@@ -279,7 +282,9 @@
+                 or abs(position.quantity) > decimal(p.quantity)):
+             raise ExchangeError('CERTIFICATION_PROTECTION_POSITION_CONFLICT')
+         side = 'SELL' if position.quantity > 0 else 'BUY'
+-        return ProtectionPlan(symbol, side, abs(position.quantity), decimal(p.stop_trigger),
++        quantity = exact_full_close_size(self.executor.client.market(symbol), position, side=side,
++            maximum_quantity=p.quantity, limit_price=p.stop_limit)
++        return ProtectionPlan(symbol, side, quantity, decimal(p.stop_trigger),
+             decimal(p.stop_limit), decimal(p.stop_trigger), 'CERTIFICATION_ONLY:'+p.identity,
+             observed_ms, position.entry_price, 'CATASTROPHIC_STOP', False)
+ 
+@@ -321,6 +326,11 @@
+         self.report['actual_exchange_proof'].append(dict(timestamp_ms=self.e.client.clock_ms(),
+             positions=[asdict(x) for x in after.values()], orders=orders,
+             accounting=self.e.recovery.state.report()))
++        residual = (residual_observation(self.e.client.market(self.p.symbol), after[self.p.symbol],
++                    self.p, self.e.client.clock_ms()) if after else None)
++        self.report['residual_position'] = residual
++        self.e.journal.control('certification_residual:'+self.p.identity,
++                               residual if residual is not None else False)
+         return after, orders
+ 
+     def resolved(self, order):
+@@ -334,7 +344,11 @@
+             raise ExchangeError('CERTIFICATION_UNCERTAIN_ORDER_URGENT_REVIEW')
+         return order
+ 
+-    def _verify_protection(self, plan, order, rows):
++    def _verify_protection(self, plan, order, rows, position):
++        quantity = exact_full_close_size(self.e.client.market(plan.symbol), position, side=plan.side,
++            maximum_quantity=self.p.quantity, limit_price=plan.limit_price)
++        if quantity != plan.quantity:
++            raise ExchangeError('CERTIFICATION_PROTECTION_POSITION_CHANGED')
+         matching = [o for o in rows if str(o['oid']) == str(order.exchange_order_id)]
+         if len(matching) != 1:
+             raise ExchangeError('CERTIFICATION_PROTECTION_NOT_CONFIRMED')
+@@ -367,10 +381,14 @@
+             if (side == 'SELL' and px < decimal(self.p.exit_bound)
+                     or side == 'BUY' and px > decimal(self.p.exit_bound)):
+                 raise ExchangeError('CERTIFICATION_EXIT_PRICE_BOUND')
+-            req = OrderRequest(self.p.symbol, side, abs(held.quantity), px, reduce_only=True,
++            quantity = exact_full_close_size(spec, held, side=side,
++                maximum_quantity=self.p.quantity, limit_price=px)
++            req = OrderRequest(self.p.symbol, side, quantity, px, reduce_only=True,
+                 strategy_id='TESTNET_CERTIFICATION_EXIT', tif='Ioc', client_order_id=self.prefix+'exit:'+str(attempt))
+             outcome = self.resolved(self.e.submit(req, permission=test_permission(req, self.p, now,
+                                                                  reason='CERTIFICATION_REDUCE_ONLY_EXIT')))
++            self.report.setdefault('exit_attempts', []).append(dict(attempt=attempt,
++                requested_quantity=str(quantity), outcome=asdict(outcome)))
+             if outcome.state == OrderState.OPEN:
+                 self.e.cancel_order(self.p.symbol, outcome.exchange_order_id, critical=True)
+                 self.resolved(self.e.recover_uncertain(outcome.intent_key))
+@@ -417,7 +435,7 @@
+                     protective = self.resolved(self.e.submit_protection(plan, self.prefix+'protection'))
+                     positions, orders = self.observe()
+                     if positions:
+-                        self._verify_protection(plan, protective, orders)
++                        self._verify_protection(plan, protective, orders, positions[self.p.symbol])
+                         self.report['status'] = 'OPEN_PROTECTED_POSITION'
+                 except Exception as exc:
+                     self.report['protection_error'] = str(exc) if isinstance(exc, ExchangeError) else type(exc).__name__
+@@ -459,6 +477,7 @@
+             else:
+                 self.report['status'] = 'PREFLIGHT_BLOCKED'
+             self.report['realized_pnl_status'] = 'REALIZED_PNL_NOT_CERTIFIED'
++            self.report['operator_action_required'] = self.report['status'] == 'EMERGENCY_EXIT_REQUIRED'
+             self.e.journal.control('certification_halted:'+self.p.identity, True)
+         finally:
+             self.e.entries_paused = True
+--- a/algo-trading-bot/exchange/certification_runtime.py
++++ b/algo-trading-bot/exchange/certification_runtime.py
+@@ -21,6 +21,8 @@
+ from .reliability_policy import load_reliability_policy
+ from .testnet_certification import (CertificationAuthorization, CertificationSDKTransport,
+     CertificationSequence, CertificationProtection, require_safe_partial_path)
++from .partial_fill_safety import TERMINAL_REJECTIONS, TERMINAL_CANCELLATIONS
++from .base_exchange import decimal
+ 
+ 
+ class CertificationContextProvider(LiveContextProvider):
+@@ -89,9 +91,27 @@
+                 req = json.loads(row['request'])
+                 if detail.get('cloid') != row['cloid'] or detail.get('coin') != req['symbol']:
+                     raise ExchangeError('CERTIFICATION_ORDER_IDENTITY_MISMATCH')
+-                if status['order']['status'] in {'canceled', 'cancelled', 'rejected'}:
+-                    self.journal.update(row['intent_key'], 'CANCELLED' if status['order']['status'] != 'rejected'
+-                                        else 'REJECTED', self.account.client.clock_ms(), oid=str(detail['oid']))
++                terminal = status['order']['status']
++                if terminal in TERMINAL_REJECTIONS | TERMINAL_CANCELLATIONS:
++                    if type(detail.get('oid')) is not int or detail['oid'] < 0:
++                        raise ExchangeError('CERTIFICATION_ORDER_IDENTITY_MISMATCH')
++                    if any(str(o['oid']) == str(detail['oid']) for o in after):
++                        reasons.append('CERTIFICATION_TERMINAL_ORDER_STILL_OPEN')
++                    else:
++                        matched = [f for f in self.state.fills.values()
++                                   if f.order_id == str(detail['oid']) and f.symbol == req['symbol']]
++                        quantity = sum((f.quantity for f in matched), decimal(0))
++                        requested = decimal(req['quantity'], positive=True)
++                        if quantity > requested or any(f.side != req['side'] for f in matched):
++                            raise ExchangeError('CERTIFICATION_RECOVERY_FILL_CONFLICT')
++                        state = ('FILLED' if quantity == requested else 'PARTIALLY_FILLED' if quantity
++                                 else 'REJECTED' if terminal in TERMINAL_REJECTIONS else 'CANCELLED')
++                        self.journal.update(row['intent_key'], state, self.account.client.clock_ms(),
++                            oid=str(detail['oid']), outcome=dict(filled_quantity=quantity,
++                                average_price=sum((f.quantity*f.price for f in matched), decimal(0))/quantity
++                                              if quantity else None,
++                                remaining_quantity=requested-quantity, remainder_cancelled=True,
++                                code='AUTHORITATIVE_TERMINAL_ACCOUNT_EVIDENCE', terminal_status=terminal))
+             if self.journal.intent(row['intent_key'])['state'] in {'UNKNOWN', 'SUBMITTED', 'PREPARED'}:
+                 reasons.append('CERTIFICATION_UNRESOLVED_ORDER')
+         if any(r['state'] == 'UNKNOWN' for r in self.journal.management_actions()):
+--- a/scripts/run_testnet_certification.py
++++ b/scripts/run_testnet_certification.py
+@@ -23,6 +23,7 @@
+ from exchange.testnet_certification import (TEAM, API, CertificationProposal, CertificationApproval,
+     propose, test_permission, require_safe_partial_path)
+ from exchange.certification_runtime import CertificationContextProvider
++from exchange.partial_fill_safety import partial_path_assessment
+ from strategy_freeze import verify_strategy_freeze
+ from venue_config import require_paper_migration
+ 
+@@ -49,6 +50,11 @@
+         r['initial_orders'] = account.get_frontend_open_orders()
+         if r['initial_positions'] or r['initial_orders']:
+             raise ExchangeError('CERTIFICATION_INITIAL_FLAT_ACCOUNT_REQUIRED')
++        r['active_asset_by_market'] = {symbol: account._query('activeAssetData', coin=symbol)
++                                     for symbol in client.markets}
++        if any(value.get('leverage') != dict(type='cross', value=1)
++               for value in r['active_asset_by_market'].values()):
++            raise ExchangeError('CERTIFICATION_ONE_X_CROSS_REQUIRED')
+         provider = CertificationContextProvider(market, account, API, clock, rates,
+             reconciliation_ready=lambda:True, feed_ready=lambda:True)
+         provider.trigger_aware = True
+@@ -80,6 +86,7 @@
+                     raise ExchangeError(validation.code)
+                 row.update(proposed=True, proposal=asdict(p), proposal_hash=p.identity,
+                     maintenance_margin_at_order=str(spec.maintenance_margin(exact.quantity*exact.price)))
++                row['partial_fill_safety'] = partial_path_assessment(spec, p)
+                 try:
+                     require_safe_partial_path(spec, p)
+                     row['partial_fill_exit_ready'] = True
+@@ -98,6 +105,15 @@
+             atomic_json(directory/'proposal.json', selected['proposal'])
+         else:
+             r['status'] = 'PREFLIGHT_BLOCKED'
++            drafts = [x for x in r['candidates'] if x['proposed']]
++            if drafts:
++                from decimal import Decimal
++                draft = min(drafts, key=lambda x:(Decimal(x['quote']['ask'])-Decimal(x['quote']['bid']))/Decimal(x['quote']['mid']))
++                r['review_only_proposal'] = dict(proposal=draft['proposal'], proposal_hash=draft['proposal_hash'],
++                    executable=False, order_authorized=False, status='PREFLIGHT_BLOCKED',
++                    blocker=draft.get('execution_blocker'), partial_fill_safety=draft['partial_fill_safety'])
++                # Wrapper deliberately cannot deserialize as CertificationProposal.
++                atomic_json(directory/'blocked_proposal.json', r['review_only_proposal'])
+         r['final_positions'] = [asdict(p) for p in account.get_positions().values()]
+         r['final_orders'] = account.get_frontend_open_orders()
+         if r['final_positions'] or r['final_orders']:
+--- /dev/null
++++ b/algo-trading-bot/exchange/partial_fill_safety.py
+@@ -0,0 +1,86 @@
++"""Conservative certification sizing under the documented $10 order minimum.
++
++No documented par exemption for a sub-minimum full close or stop was found.
++This module grants no exemption and never enlarges a position or close size.
++An offline fixture is not evidence of actual exchange acceptance.
++"""
++from decimal import Decimal as D
++
++from .base_exchange import ExchangeError, decimal
++
++MIN_NOTIONAL = D('10')
++VENUE_EXCEPTION_STATUS = 'NOT_ESTABLISHED_BY_AUTHORITATIVE_DOCUMENTATION'
++
++
++def partial_path_assessment(spec, proposal):
++    """Smallest entry fill and exit remainder are one runtime lot, not entry size."""
++    if spec.symbol != proposal.symbol or spec.asset_id != proposal.asset_id:
++        raise ExchangeError('CERTIFICATION_MARKET_MAPPING_CHANGED')
++    quantity = decimal(proposal.quantity, positive=True)
++    if quantity % spec.size_step or spec.normalize_size(quantity) != quantity:
++        raise ExchangeError('CERTIFICATION_ENTRY_SIZE_NOT_EXACT')
++    prices = {name: decimal(getattr(proposal, name), positive=True)
++              for name in ('entry_limit', 'stop_limit', 'exit_bound')}
++    notionals = {name: spec.size_step * price for name, price in prices.items()}
++    ready = all(value >= MIN_NOTIONAL for value in notionals.values())
++    return dict(symbol=spec.symbol, asset_id=spec.asset_id, size_step=str(spec.size_step),
++        minimum_order_notional=str(MIN_NOTIONAL), smallest_possible_fill=str(spec.size_step),
++        smallest_possible_exit_remainder=str(spec.size_step),
++        one_lot_notionals={name: str(value) for name, value in notionals.items()},
++        subminimum_full_close_exception=VENUE_EXCEPTION_STATUS,
++        subminimum_protection_exception=VENUE_EXCEPTION_STATUS,
++        entry_admissible_under_documented_minimum=ready,
++        blocker=None if ready else 'SUB_MINIMUM_PARTIAL_FILL_EXIT_NOT_VERIFIED',
++        scope='REVIEWED_LIMIT_PRICES_ONLY_NOT_A_FILL_OR_PROTECTION_GUARANTEE')
++
++
++def exact_full_close_size(spec, position, *, side, maximum_quantity, limit_price):
++    """Full observed remainder, with no rounding away dust or oversizing to $10."""
++    if position.symbol != spec.symbol:
++        raise ExchangeError('CERTIFICATION_RESIDUAL_MARKET_CONFLICT')
++    signed = decimal(position.quantity)
++    quantity = abs(signed)
++    if (not quantity or side not in {'BUY', 'SELL'} or
++            (signed > 0) == (side == 'BUY') or quantity > decimal(maximum_quantity, positive=True)):
++        raise ExchangeError('CERTIFICATION_RESIDUAL_DIRECTION_OR_SIZE_CONFLICT')
++    if quantity % spec.size_step or spec.normalize_size(quantity) != quantity:
++        raise ExchangeError('CERTIFICATION_RESIDUAL_PRECISION_UNREPRESENTABLE')
++    price = decimal(limit_price, positive=True)
++    if spec.normalize_price(price, side) != price:
++        raise ExchangeError('CERTIFICATION_CLOSE_PRICE_NOT_EXACT')
++    if quantity * price < MIN_NOTIONAL:
++        raise ExchangeError('SUB_MINIMUM_RESIDUAL_CLOSE_NOT_VERIFIED')
++    return quantity
++
++
++def residual_observation(spec, position, proposal, observed_ms):
++    """Durable evidence of remaining exposure, never a synthetic flattening."""
++    quantity = abs(decimal(position.quantity))
++    exact = bool(quantity and quantity % spec.size_step == 0)
++    return dict(symbol=position.symbol, signed_quantity=str(position.quantity),
++        quantity=str(quantity), observed_ms=observed_ms, size_step=str(spec.size_step),
++        lot_representable=exact,
++        protection_limit_notional=str(quantity * decimal(proposal.stop_limit)),
++        approved_exit_bound_notional=str(quantity * decimal(proposal.exit_bound)),
++        subminimum_at_reviewed_bounds=quantity * min(decimal(proposal.stop_limit),
++            decimal(proposal.exit_bound)) < MIN_NOTIONAL,
++        operator_review_required=(not exact or quantity * min(decimal(proposal.stop_limit),
++            decimal(proposal.exit_bound)) < MIN_NOTIONAL),
++        full_close_exception_status=VENUE_EXCEPTION_STATUS)
++
++
++# Explicit documented orderStatus values. Never infer rejection from unknownOid
++# or from a missing order in a current open-order list.
++TERMINAL_REJECTIONS = frozenset({
++    'rejected', 'tickRejected', 'minTradeNtlRejected', 'perpMarginRejected',
++    'reduceOnlyRejected', 'badAloPxRejected', 'iocCancelRejected',
++    'badTriggerPxRejected', 'marketOrderNoLiquidityRejected',
++    'positionIncreaseAtOpenInterestCapRejected', 'positionFlipAtOpenInterestCapRejected',
++    'tooAggressiveAtOpenInterestCapRejected', 'openInterestIncreaseRejected',
++    'insufficientSpotBalanceRejected', 'oracleRejected', 'perpMaxPositionRejected',
++})
++TERMINAL_CANCELLATIONS = frozenset({
++    'canceled', 'cancelled', 'marginCanceled', 'vaultWithdrawalCanceled',
++    'openInterestCapCanceled', 'selfTradeCanceled', 'reduceOnlyCanceled',
++    'siblingFilledCanceled', 'delistedCanceled', 'liquidatedCanceled', 'scheduledCancel',
++})
+--- /dev/null
++++ b/algo-trading-bot/test_partial_fill_safety_v8_2.py
+@@ -0,0 +1,216 @@
++"""Offline fault injection; never claims actual par subminimum acceptance."""
++from copy import deepcopy
++from dataclasses import replace
++from decimal import Decimal as D
++import json
++from types import SimpleNamespace
++
++import pytest
++
++from exchange.base_exchange import ExchangeError
++from exchange.partial_fill_safety import (
++    partial_path_assessment, exact_full_close_size, residual_observation,
++    VENUE_EXCEPTION_STATUS, TERMINAL_REJECTIONS)
++from exchange.testnet_certification import require_safe_partial_path
++from test_testnet_certification_v8 import cert, live
++from test_live_exchange_execution import response
++
++
++def test_one_lot_analysis_does_not_use_full_entry_notional(cert):
++    spec = cert.live.client.market(cert.proposal.symbol)
++    a = partial_path_assessment(spec, cert.proposal)
++    assert D(cert.proposal.quantity)*D(cert.proposal.entry_limit) >= 10
++    assert D(a['one_lot_notionals']['stop_limit']) < 10
++    assert not a['entry_admissible_under_documented_minimum']
++    assert a['subminimum_full_close_exception'] == VENUE_EXCEPTION_STATUS
++    with pytest.raises(ExchangeError, match='SUB_MINIMUM_PARTIAL_FILL_EXIT_NOT_VERIFIED'):
++        require_safe_partial_path(spec, cert.proposal)
++
++
++@pytest.mark.parametrize('field', ['symbol', 'asset_id', 'quantity'])
++def test_mapping_and_exact_entry_lots_cannot_be_bypassed(cert, field):
++    values = dict(symbol='par:ETH', asset_id=0, quantity='0.24981')
++    p = replace(cert.proposal, **{field: values[field]})
++    with pytest.raises(ExchangeError): partial_path_assessment(cert.live.client.market('par:BTC'), p)
++
++
++@pytest.mark.parametrize('signed,side', [('.2','SELL'), ('-.2','BUY')])
++def test_valid_full_close_uses_exact_observed_quantity(cert, signed, side):
++    cert.live.fixture.position(signed)
++    held = cert.live.account.get_position('par:BTC')
++    q = exact_full_close_size(cert.live.client.market('par:BTC'), held, side=side,
++                            maximum_quantity='.25', limit_price='100')
++    assert q == abs(D(signed))
++
++
++@pytest.mark.parametrize('signed,side', [('.0001','SELL'), ('-.0001','BUY')])
++def test_small_full_close_does_not_oversize_or_waive_minimum(cert, signed, side):
++    cert.live.fixture.position(signed)
++    held = cert.live.account.get_position('par:BTC'); spec = cert.live.client.market('par:BTC')
++    with pytest.raises(ExchangeError, match='SUB_MINIMUM_RESIDUAL_CLOSE_NOT_VERIFIED'):
++        exact_full_close_size(spec, held, side=side, maximum_quantity='.25', limit_price='100')
++    with pytest.raises(ExchangeError, match='ORDER_BELOW_MINIMUM_NOTIONAL'):
++        spec.normalize_order(side, abs(held.quantity), '100', reduce_only=True, tif='Ioc')
++    assert not cert.venue.calls
++
++
++@pytest.mark.parametrize('damage', ['wrong_side','oversize','flat','wrong_coin','dust','price'])
++def test_invalid_full_close_is_rejected_without_rounding(cert, damage):
++    cert.live.fixture.position('.2'); p = cert.live.account.get_position('par:BTC')
++    side, maximum, px = 'SELL', '.25', '100'
++    if damage == 'wrong_side': side = 'BUY'
++    if damage == 'oversize': maximum = '.1'
++    if damage == 'flat': p = replace(p, quantity=D(0))
++    if damage == 'wrong_coin': p = replace(p, symbol='par:ETH')
++    if damage == 'dust': p = replace(p, quantity=D('.20001'))
++    if damage == 'price': px = '100.00001'
++    with pytest.raises(ExchangeError):
++        exact_full_close_size(cert.live.client.market('par:BTC'), p, side=side,
++                             maximum_quantity=maximum, limit_price=px)
++
++
++def test_tiny_partial_persists_residual_and_operator_action(cert):
++    cert.venue.partial_entry = D('.1')
++    r = cert.sequence.run()
++    assert r['status'] == 'EMERGENCY_EXIT_REQUIRED' and r['operator_action_required']
++    residual = r['residual_position']
++    assert residual['subminimum_at_reviewed_bounds'] and residual['operator_review_required']
++    assert D(residual['signed_quantity']) == cert.live.account.get_position('par:BTC').quantity
++    assert cert.live.journal.control('certification_residual:'+cert.proposal.identity) == residual
++    assert len(cert.venue.calls) == 1  # no attempted min-size top-up or oversized exit
++    assert r['realized_pnl_status'] == 'REALIZED_PNL_NOT_CERTIFIED'
++
++
++def test_subminimum_protection_is_refused_before_transmission(cert):
++    cert.live.fixture.position('.0001')
++    with pytest.raises(ExchangeError, match='SUB_MINIMUM_RESIDUAL_CLOSE_NOT_VERIFIED'):
++        cert.live.executor.protection._plan('par:BTC', cert.live.account.get_position('par:BTC'),
++                                           None, cert.live.fixture.now)
++    assert not cert.venue.calls
++
++
++def test_unrepresentable_residual_is_reported_not_flattened(cert):
++    cert.live.fixture.position('.20001')
++    obs = residual_observation(cert.live.client.market('par:BTC'),
++        cert.live.account.get_position('par:BTC'), cert.proposal, cert.live.fixture.now)
++    assert obs['quantity'] == '0.20001' and not obs['lot_representable']
++    assert obs['operator_review_required']
++
++
++def test_protection_readback_requires_current_full_position(cert):
++    r = cert.sequence.run(); assert r['status'] == 'TRADE_CLOSED_RECONCILED'
++    plan = cert.live.executor.protection._plan
++    cert.live.fixture.position('.2')
++    p = plan('par:BTC', cert.live.account.get_position('par:BTC'), None, cert.live.fixture.now)
++    changed = replace(cert.live.account.get_position('par:BTC'), quantity=D('.15'))
++    with pytest.raises(ExchangeError, match='CERTIFICATION_PROTECTION_POSITION_CHANGED'):
++        cert.sequence._verify_protection(p, SimpleNamespace(), [], changed)
++
++
++@pytest.mark.parametrize('terminal', ['minTradeNtlRejected', 'reduceOnlyRejected',
++                                    'badTriggerPxRejected', 'marketOrderNoLiquidityRejected'])
++def test_known_terminal_rejection_recovers_original_identity_without_retry(cert, terminal):
++    req = dict(symbol='par:BTC', side='SELL', quantity='.2', price='100', reduce_only=True)
++    row, _ = cert.live.journal.reserve('recovery-exit', req, 'test', cert.live.fixture.now)
++    cert.live.journal.update('recovery-exit', 'UNKNOWN', cert.live.fixture.now)
++    detail = dict(coin='par:BTC', cloid=row['cloid'], oid=501, side='A')
++    cert.venue.statuses[row['cloid']] = dict(status='order', order=dict(order=detail, status=terminal))
++    cert.live.executor.recovery.recover()
++    recovered = cert.live.journal.intent('recovery-exit')
++    assert recovered['state'] == 'REJECTED' and recovered['oid'] == '501'
++    assert not cert.venue.calls
++
++
++@pytest.mark.parametrize('status', ['unknownOid', 'unknown', 'unrecognized'])
++def test_uncertain_order_stays_unknown_even_when_open_orders_are_empty(cert, status):
++    row, _ = cert.live.journal.reserve('uncertain-exit',
++        dict(symbol='par:BTC', side='SELL', quantity='.2', price='100', reduce_only=True),
++        'test', cert.live.fixture.now)
++    cert.live.journal.update('uncertain-exit', 'UNKNOWN', cert.live.fixture.now)
++    cert.venue.statuses[row['cloid']] = dict(status=status)
++    result = cert.live.executor.recovery.recover()
++    assert not result.ready and cert.live.journal.intent('uncertain-exit')['state'] == 'UNKNOWN'
++    assert not cert.venue.calls
++
++
++def test_partial_cancel_recovery_preserves_actual_filled_size(cert):
++    now = cert.live.fixture.now
++    req = dict(symbol='par:BTC', side='BUY', quantity='.2', price='100', reduce_only=False)
++    row, _ = cert.live.journal.reserve('partial-entry', req, 'test', now)
++    cert.live.journal.update('partial-entry', 'UNKNOWN', now)
++    cert.live.fixture.position('.12')
++    cert.live.fixture.fill('.12', side='B', price='100', oid=502, tid=502, closed='0', fee='.0108')
++    cert.venue.statuses[row['cloid']] = dict(status='order', order=dict(
++        order=dict(coin='par:BTC', cloid=row['cloid'], oid=502), status='marginCanceled'))
++    cert.live.executor.recovery.recover()
++    recovered = cert.live.journal.intent('partial-entry'); result = json.loads(recovered['outcome'])
++    assert recovered['state'] == 'PARTIALLY_FILLED'
++    assert D(result['filled_quantity']) == D('.12') and D(result['remaining_quantity']) == D('.08')
++    assert cert.live.account.get_position('par:BTC').quantity == D('.12')
++    assert not cert.venue.calls
++
++
++def test_rejected_exit_never_claims_flat_or_creates_another_entry(cert, monkeypatch):
++    original = cert.venue.transmit
++    def reject(payload):
++        a = payload['action']
++        if a['type'] == 'order' and a['orders'][0]['r'] and 'limit' in a['orders'][0]['t']:
++            cert.live.transport.check(a); cert.auth.claim_transmission(a)
++            cert.venue.calls.append(deepcopy(a))
++            return response({'error':'Reduce only order would increase position.'})
++        return original(payload)
++    monkeypatch.setattr(cert.live.transport, 'transmit', reject)
++    r = cert.sequence.run()
++    assert r['status'] == 'EMERGENCY_EXIT_REQUIRED' and not r.get('final_flat')
++    assert cert.live.account.get_position('par:BTC').quantity > 0
++    assert len(r['exit_attempts']) == cert.proposal.max_exit_attempts
++    assert sum(a['type']=='order' and not a['orders'][0]['r'] for a in cert.venue.calls) == 1
++    assert cert.auth.revoked
++
++
++def test_restart_after_partial_fill_recovers_exposure_without_new_entry(cert):
++    cert.venue.partial_entry = D('.1'); first = cert.sequence.run()
++    count = len(cert.venue.calls)
++    cert.live.executor.recovery.recover()
++    residual = cert.live.journal.control('certification_residual:'+cert.proposal.identity)
++    assert D(residual['quantity']) == abs(cert.live.account.get_position('par:BTC').quantity)
++    cert.auth.revoked = False
++    from exchange.testnet_certification import CertificationSequence
++    second = CertificationSequence(cert.live.executor, cert.proposal, cert.auth).run()
++    assert second['status'] == 'PREFLIGHT_BLOCKED' and len(cert.venue.calls) == count
++    assert first['realized_pnl_status'] == second['realized_pnl_status'] == 'REALIZED_PNL_NOT_CERTIFIED'
++
++
++@pytest.mark.parametrize('bad_leverage', [False, True])
++def test_read_only_proposal_is_explicitly_blocked_and_cannot_be_used_as_approval(cert, tmp_path, monkeypatch,
++                                                                           bad_leverage):
++    from pathlib import Path
++    import importlib.util
++    from exchange.hyperliquid_client import HyperliquidClient
++    from exchange.testnet_certification import CertificationProposal
++    path = Path(__file__).resolve().parents[1]/'scripts/run_testnet_certification.py'
++    spec = importlib.util.spec_from_file_location('v8_2_preflight_fixture', path)
++    module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
++    class ReadOnlyFixture:
++        def __call__(self, payload):
++            value = cert.venue.read(payload)
++            if bad_leverage and payload['type'] == 'activeAssetData':
++                value['leverage'] = dict(type='cross', value=20)
++            return value
++        def close(self): pass
++    client = HyperliquidClient(ReadOnlyFixture(), clock_ms=lambda:cert.live.fixture.now)
++    monkeypatch.setattr(module, 'HyperliquidClient', lambda **_: client)
++    monkeypatch.setattr(module, 'TEAM', cert.proposal.team_wallet)
++    monkeypatch.setattr(module, 'API', cert.proposal.api_wallet)
++    result = module.read_only_preflight(tmp_path/'preflight')
++    assert result['status'] == 'PREFLIGHT_BLOCKED' and result['exchange_submissions'] == 0
++    assert not result['signature_created'] and not cert.venue.calls
++    if bad_leverage:
++        assert result['blocker'] == 'CERTIFICATION_ONE_X_CROSS_REQUIRED'
++    else:
++        draft = result['review_only_proposal']
++        assert not draft['executable'] and not draft['order_authorized']
++        assert draft['blocker'] == 'SUB_MINIMUM_PARTIAL_FILL_EXIT_NOT_VERIFIED'
++        assert (tmp_path/'preflight/blocked_proposal.json').is_file()
++        assert not (tmp_path/'preflight/proposal.json').exists()
++        with pytest.raises(TypeError): CertificationProposal(**draft)

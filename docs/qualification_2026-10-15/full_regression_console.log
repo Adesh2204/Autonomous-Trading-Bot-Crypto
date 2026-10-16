@@ -1,0 +1,87 @@
+{
+  "started_unix": 1792038851.9402812,
+  "source_hash": "2806a21a449f5d18e1a0ce6cf76f194c31604ca647ac6d6db5fb7fa4b43675e7",
+  "scope": "Full offline regression; prior baseline 2244 plus four October 15 renewal/reuse/expiry regressions; production change limited to three explicit date constants; no actual exchange actions",
+  "evidence_classifier_sha256": "6d81a9912e08c37aca6ad83eb7fbefe3341c5e46af403801cb4045b5296c98f1",
+  "checks_before": {
+    "strategy_freeze": {
+      "exit_code": 0,
+      "result": {
+        "baseline": "nse-working-baseline",
+        "file_count": 1,
+        "method_count": 8,
+        "parameter_count": 32,
+        "passed": true
+      }
+    },
+    "phase0": {
+      "exit_code": 0,
+      "result": {
+        "project": "anchorium-perpetual-alpha",
+        "checks": {
+          "project_is_perpetual_alpha": true,
+          "independent_git_directory": true,
+          "migration_branch": true,
+          "testnet_venue": true,
+          "paper_execution_mode": true,
+          "migration_policy_valid": true,
+          "orders_disabled": true,
+          "angel_one_client_disabled": true,
+          "angel_one_order_boundary_disabled": true,
+          "testnet_order_boundary_disabled": true,
+          "signal_logic_present": true,
+          "signal_source_unchanged": true
+        },
+        "passed": true
+      }
+    }
+  },
+  "finished_unix": 1792039318.728607,
+  "exit_code": 0,
+  "source_hash_after": "2806a21a449f5d18e1a0ce6cf76f194c31604ca647ac6d6db5fb7fa4b43675e7",
+  "totals": {
+    "tests": 2248,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "xml_sha256": "2471ab2a3a5870cb1059d6a931f4bddc8a8dd958b1aff581bec5982163a00615",
+  "evidence_classifier_sha256_after": "6d81a9912e08c37aca6ad83eb7fbefe3341c5e46af403801cb4045b5296c98f1",
+  "previous_evidence_classifier_sha256": "9c95b59054aed2adc38a41f5f65b0a65c314ac4cb3b29ea437a88d2b6dfcf8e0",
+  "baseline_minimum": 2244,
+  "expected_minimum": 2248,
+  "checks_after": {
+    "strategy_freeze": {
+      "exit_code": 0,
+      "result": {
+        "baseline": "nse-working-baseline",
+        "file_count": 1,
+        "method_count": 8,
+        "parameter_count": 32,
+        "passed": true
+      }
+    },
+    "phase0": {
+      "exit_code": 0,
+      "result": {
+        "project": "anchorium-perpetual-alpha",
+        "checks": {
+          "project_is_perpetual_alpha": true,
+          "independent_git_directory": true,
+          "migration_branch": true,
+          "testnet_venue": true,
+          "paper_execution_mode": true,
+          "migration_policy_valid": true,
+          "orders_disabled": true,
+          "angel_one_client_disabled": true,
+          "angel_one_order_boundary_disabled": true,
+          "testnet_order_boundary_disabled": true,
+          "signal_logic_present": true,
+          "signal_source_unchanged": true
+        },
+        "passed": true
+      }
+    }
+  },
+  "passed": true
+}

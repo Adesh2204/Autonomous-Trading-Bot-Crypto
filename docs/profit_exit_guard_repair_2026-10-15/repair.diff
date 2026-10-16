@@ -1,0 +1,70 @@
+--- before/algo-trading-bot/exchange/qualification_intent_recovery.py
++++ after/algo-trading-bot/exchange/qualification_intent_recovery.py
+@@ -162,27 +162,36 @@
+     return result
+ 
+ 
+-def effective_rows(db):
++def verified_qualification_view(db):
++    """Effective isolated intents and the exact resolutions verified for this read."""
+     names=[x[1] for x in db.execute('PRAGMA table_info(intents)')]
+     raw=[dict(zip(names,tuple(r))) for r in db.execute('SELECT * FROM intents ORDER BY created_ms,intent_key')]
+-    if not db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='nontransmission_resolutions'").fetchone():return raw
++    if not db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='nontransmission_resolutions'").fetchone():
++        return dict(intents=raw,resolutions=[])
+     identity=dict(db.execute('SELECT name,value FROM identity'))
+-    certified=set()
++    certified=set();resolutions=[]
+     for key,original_hash,data,checksum in db.execute('SELECT intent_key,original_hash,proof,checksum FROM nontransmission_resolutions'):
+         try:
+             proof=json.loads(data);original=next(r for r in raw if r['intent_key']==key)
++            assessment=assess(proof)
+             if (fingerprint(proof)!=checksum or fingerprint(original)!=original_hash
+                     or proof['local']['original_row']!=original or proof['team'].lower()!=identity['team']
+                     or proof.get('mode')!='ACTUAL_READ_ONLY_ACCOUNT' and not (proof.get('mode')=='OFFLINE_FIXTURE' and identity['session'].startswith('offline:'))
+-                    or not assess(proof)['certified']):raise ValueError()
++                    or not assessment['certified']):raise ValueError()
+             # A later positive transmission for this SAME original identity
+             # invalidates its resolution; never ignore contradictory evidence.
+             row=db.execute('SELECT value FROM controls WHERE name=?',('certification_transmissions:'+ORIGINAL_PROPOSAL,)).fetchone()
+             if row and json.loads(row[0]):raise ValueError()
+             certified.add(key)
++            resolutions.append(dict(intent_key=key,cloid=original['cloid'],
++                resolution_hash=checksum,reason=assessment['reason'],
++                original_state_preserved=original['state'],effective_state=assessment['effective_state']))
+         except (ValueError,StopIteration,KeyError,TypeError,ExchangeError):
+             raise ExchangeError('NONTRANSMISSION_RESOLUTION_INVALID') from None
+-    return [r for r in raw if r['intent_key'] not in certified]
++    return dict(intents=[r for r in raw if r['intent_key'] not in certified],resolutions=resolutions)
++
++
++def effective_rows(db):return verified_qualification_view(db)['intents']
+ 
+ 
+ def qualification_intents(journal):return effective_rows(journal.db)
+--- before/algo-trading-bot/exchange/qualification_protection.py
++++ after/algo-trading-bot/exchange/qualification_protection.py
+@@ -16,15 +16,21 @@
+ from .partial_fill_safety import (MIN_NOTIONAL, TERMINAL_CANCELLATIONS,
+                                   TERMINAL_REJECTIONS, exact_full_close_size)
+ from .position_protection import ProtectionPlan
++from .qualification_intent_recovery import verified_qualification_view
+ 
+ 
+ def require_settled_exit_orders(executor, *, current_intent=None):
+-    """Read-only barrier for a new IOC close; unknown/triggered is not settled."""
++    """Exchange-read-only IOC barrier; only verified nontransmission is excluded."""
+     if executor.account.get_frontend_open_orders():
+         raise ExchangeError('QUALIFICATION_EXIT_OPEN_ORDER_RECONCILIATION_REQUIRED')
+     if any(r['state']=='UNKNOWN' for r in executor.journal.management_actions()):
+         raise ExchangeError('QUALIFICATION_EXIT_UNCERTAIN_MANAGEMENT_ACTION')
+-    for row in executor.journal.intents():
++    view = verified_qualification_view(executor.journal.db)
++    for resolution in view['resolutions']:
++        executor.journal.event('QUALIFICATION_EXIT_HISTORICAL_NONTRANSMISSION_VERIFIED',
++            executor.client.clock_ms(), **resolution, current_intent=current_intent,
++            settlement_scope='HISTORICAL_INTENT_ONLY')
++    for row in view['intents']:
+         if row['intent_key'] == current_intent:
+             continue  # The exact permitted close being checked before signing.
+         request = json.loads(row['request'])

@@ -83,7 +83,7 @@ class HyperliquidExecution:
                 self.journal.team_address):
             raise ExchangeError('TEAM_ACCOUNT_IDENTITY_MISMATCH')
 
-    def _guard(self, context, checked_ms, *, critical=False, entry=False):
+    def _guard(self, context, checked_ms, *, critical=False, entry=False, exact_full_close=None, entry_request=None):
         self._require()
         self.clock_health.require()
         if not self.transport.nonces.healthy:
@@ -101,6 +101,20 @@ class HyperliquidExecution:
                 context.readiness.agent_expiry_ms <= now or
                 (not critical and (not self.context_provider.feed_ready() or now < self.rate_limits.backoff_until))):
             raise ExchangeError('SIGNING_READINESS_REVOKED')
+        if exact_full_close is not None:
+            # Recheck actual size immediately at every SDK permit boundary.
+            # A reduce-only server clamp is not permission to oversize a close.
+            before=self.account.get_positions()
+            after=self.account.get_positions()
+            request=exact_full_close
+            position=after.get(request.symbol)
+            if (before!=after or len(after)!=1 or position is None
+                    or abs(position.quantity)!=request.quantity
+                    or (position.quantity>0)==(request.side=='BUY')
+                    or not 0<=self.client.clock_ms()-checked_ms<=5000):
+                self.entries_paused=True
+                self.position_guard.revoke('EXACT_FULL_CLOSE_POSITION_CHANGED_BEFORE_SIGNING')
+                raise ExchangeError('EXACT_FULL_CLOSE_POSITION_CHANGED_BEFORE_SIGNING')
         if entry:
             # Re-read account truth at the SDK boundary as well as during the
             # full preflight. Never substitute a local manager's flat flag.
@@ -168,7 +182,10 @@ class HyperliquidExecution:
                 readiness=SimpleNamespace(account_ready=bool(report and report.ready)),
                 account_ms=state.last_window[1],reconciled=bool(report and report.ready)),self.client.clock_ms())
 
-    def _validated(self, request, permission, *, critical=False, trigger=False, modify_oid=None):
+    def _validated(self, request, permission, *, critical=False, trigger=False, modify_oid=None,
+                   full_position_close=False):
+        if full_position_close and (trigger or modify_oid is not None):
+            raise ExchangeError('EXACT_FULL_CLOSE_CANNOT_BE_TRIGGER_OR_REPLACEMENT')
         preflight_generation=(self.journal.control('global_position_lock') or {}).get('generation')
         try:
             context = self.context_provider.load(request,critical=True) if critical else self.context_provider.load(request)
@@ -185,18 +202,30 @@ class HyperliquidExecution:
                 bool(self.recovery.last_report.ready) and
                 {s:p.quantity for s,p in state.positions.items()}=={s:p.quantity for s,p in context.positions.items()} and
                 set(state.orders)=={str(o['oid']) for o in context.open_orders})
+        # Default is identity. Only the versioned qualification executor opts
+        # into a bounded request selected from this mandatory fresh context.
+        request,permission=self._prepare_context_request(request,permission,context)
         spec=self.client.market(request.symbol)
+        if full_position_close and (spec.normalize_size(request.quantity)!=request.quantity or
+                spec.normalize_price(request.price,request.side)!=request.price):
+            raise ExchangeError('EXACT_FULL_CLOSE_PRECISION_MISMATCH')
         request=replace(request,quantity=spec.normalize_size(request.quantity),
                         price=spec.normalize_price(request.price,request.side))
         position=self.position_guard.evaluate(request,context,self.client.clock_ms(),
                                                expected_generation=preflight_generation)
         decision=self.compliance_guard.evaluate(request,context,permission,position,
-                                                trigger=trigger,modify_oid=modify_oid)
+                                                trigger=trigger,modify_oid=modify_oid,
+                                                full_position_close=full_position_close)
         if not decision.allowed:
             if not request.reduce_only:
                 self.entries_paused=True
             raise ExchangeError(decision.code)
-        result = self.validator.validate(request, context, permission, self.client.clock_ms())
+        if full_position_close:
+            from .full_position_close import FULL_POSITION_CLOSE
+            result = self.validator.validate(request, context, permission, self.client.clock_ms(),
+                                             operation=FULL_POSITION_CLOSE)
+        else:
+            result = self.validator.validate(request, context, permission, self.client.clock_ms())
         if result.allowed and not request.reduce_only and self.protection is not None:
             for symbol,position in context.positions.items():
                 state=self.protection.states.get(symbol,{})
@@ -224,12 +253,25 @@ class HyperliquidExecution:
         request = replace(request, quantity=result.normalized.quantity, price=result.normalized.price)
         return request, context, result, decision
 
-    def _permit(self, action, decision, request, context, checked_ms, *, entry_key=None):
+    def _prepare_context_request(self,request,permission,context):
+        return request,permission
+
+    def _permit(self, action, decision, request, context, checked_ms, *, entry_key=None,
+                full_position_close=False):
         return self.compliance_guard.authorize(action,decision,request,context,
             lambda:self._guard(context,checked_ms,critical=request.reduce_only,
-                               entry=not request.reduce_only),entry_key=entry_key)
+                               entry=not request.reduce_only,
+                               entry_request=request if not request.reduce_only else None,
+                               exact_full_close=request if full_position_close else None),entry_key=entry_key)
 
     def submit(self, request, *, permission=None):
+        return self._submit(request,permission=permission)
+
+    def close_full_position(self, request, *, permission=None):
+        """Explicit exact IOC close path; neither activation nor stop capability."""
+        return self._submit(request,permission=permission,full_position_close=True)
+
+    def _submit(self, request, *, permission=None, full_position_close=False):
         self._require()
         self._dependencies()
         with self.lock:
@@ -257,7 +299,8 @@ class HyperliquidExecution:
             if not request.reduce_only and startup is not None and not startup.entry_ready:
                 self.entries_paused=True
                 raise ExchangeError('STARTUP_ENTRY_LOCK_REQUIRED')
-            request, context, result, compliance = self._validated(request, permission,critical=request.reduce_only)
+            request, context, result, compliance = self._validated(request, permission,critical=request.reduce_only,
+                                                                  full_position_close=full_position_close)
             if not request.reduce_only and (not self.rate_limits.entries_allowed or
                     self.protection is not None and not self.protection.entries_allowed):
                 self.entries_paused=True
@@ -269,7 +312,8 @@ class HyperliquidExecution:
                 return self._restore_order(row)
             wire, action = self.transport.order_action(request, row['cloid'])
             permit=self._permit(action,compliance,request,context,result.checked_ms,
-                                entry_key=key if not request.reduce_only else None)
+                                entry_key=key if not request.reduce_only else None,
+                                full_position_close=full_position_close)
             self._reserve_intent_action(key,creates_order=True,
                 priority=RequestPriority.SAFETY if request.reduce_only else RequestPriority.EXECUTION,
                 kind='strategy_exit' if request.reduce_only else 'entry')
@@ -359,16 +403,20 @@ class HyperliquidExecution:
                 average = sum((f.quantity*f.price for f in matched),Decimal(0))/quantity if quantity else None
                 open_now = any(o['coin']==request.symbol and str(o['oid'])==str(oid) for o in orders)
                 terminal = record.get('status')
-                state = (OrderState.FILLED if quantity==request.quantity else
-                         OrderState.PARTIALLY_FILLED if quantity else OrderState.OPEN if open_now else
-                         OrderState.CANCELLED if terminal in {'canceled','cancelled'} else
-                         OrderState.REJECTED if terminal=='rejected' else OrderState.UNKNOWN)
-                if terminal=='filled' and not quantity:
-                    state=OrderState.UNKNOWN
+                from .partial_fill_safety import TERMINAL_CANCELLATIONS, TERMINAL_REJECTIONS
+                settled = not open_now and terminal in ({'filled'} | TERMINAL_CANCELLATIONS | TERMINAL_REJECTIONS)
+                # Missing from openOrders is not cancellation proof. In particular,
+                # 'triggered' can have a live execution child; the isolated stop
+                # reconciler must resolve that child before a competing exit.
+                state = (OrderState.FILLED if settled and quantity==request.quantity else
+                         OrderState.PARTIALLY_FILLED if quantity and (settled or open_now and terminal=='open') else
+                         OrderState.OPEN if open_now and terminal=='open' and not quantity else
+                         OrderState.CANCELLED if settled and terminal in TERMINAL_CANCELLATIONS else
+                         OrderState.REJECTED if settled and terminal in TERMINAL_REJECTIONS else OrderState.UNKNOWN)
                 self.journal.update(intent_key,state.value,self.client.clock_ms(),oid=str(oid),
                     outcome=dict(filled_quantity=quantity,average_price=average,
                                  remaining_quantity=request.quantity-quantity,
-                                 remainder_cancelled=not open_now and quantity<request.quantity,
+                                 remainder_cancelled=settled and quantity<request.quantity,
                                  code='ACCOUNT_EVIDENCE_RECOVERY'))
             self.journal.event('CLOID_RECOVERY',self.client.clock_ms(),intent_key=intent_key,
                                status=status,blind_retry=False)
@@ -459,15 +507,15 @@ class HyperliquidExecution:
             self._after_action()
             return 'CONFIRMED_BY_ACCOUNT' if confirmed else 'UNKNOWN'
 
-    def cancel_order(self, symbol, order_id):
+    def cancel_order(self, symbol, order_id, *, critical=False):
         self._require()
         self._dependencies()
         with self.lock:
             own=self._own_order(symbol,order_id)
             request=OrderRequest(symbol,'BUY' if own['side']=='B' else 'SELL',own['sz'],own['limitPx'])
-            context=self.context_provider.load(request)
+            context=self.context_provider.load(request,critical=True) if critical else self.context_provider.load(request)
             action=dict(type='cancel',cancels=[dict(a=self.client.market(symbol).asset_id,o=int(own['oid']))])
-            return self._management_action('cancel',(symbol,int(own['oid'])),action,context)
+            return self._management_action('cancel',(symbol,int(own['oid'])),action,context,critical=critical)
 
     def cancel_by_cloid(self, symbol, cloid):
         self._require()
@@ -571,7 +619,9 @@ class HyperliquidExecution:
             if modify_oid is not None:
                 self._own_order(plan.symbol,modify_oid)
             row,_=self.journal.reserve(intent_key,asdict(normalized),intent_key,self.client.clock_ms())
-            order_type={'trigger':{'triggerPx':sdk_number(plan.trigger_price),'isMarket':True,'tpsl':'sl'}}
+            if type(plan.is_market) is not bool:
+                raise ExchangeError('INVALID_PROTECTION_EXECUTION_TYPE')
+            order_type={'trigger':{'triggerPx':sdk_number(plan.trigger_price),'isMarket':plan.is_market,'tpsl':'sl'}}
             wire,action=self.transport.order_action(normalized,row['cloid'],order_type=order_type)
             method='order'
             args=(plan.symbol,wire['is_buy'],wire['sz'],wire['limit_px'],wire['order_type'])

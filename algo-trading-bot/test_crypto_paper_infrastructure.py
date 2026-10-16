@@ -715,12 +715,23 @@ def test_continuous_cli_workers_feed_scanner_and_single_ledger_owner_offline(uni
             self.reconnections=0
             self.last_receive_ms=NOW
             self.last_error=None
+            self.history_bars=kwargs['history_bars']
+            self.recovery_status='RECONCILED'
+            self.recovery_errors={}
+            self.rates=None
+            from exchange.feed_transport import FeedTransportHealth
+            self.transport_health=FeedTransportHealth(wall_ms=lambda:NOW)
+            from exchange.market_health import MarketHealthManager
+            self.health_manager=MarketHealthManager(self.symbols,history_bars=self.history_bars)
+        def publish_public_snapshot(self,*args):pass
+        def note_scanner_failure(self,*args):pass
         def run(self,stop,**kwargs):
             self.connected=self.reconciled=True
             ready.set()
             stop.wait(5)
         def get_completed_candles(self,symbol):
-            return [bar(symbol=symbol)]
+            return [replace(bar(symbol=symbol),timestamp_ms=NOW-i*60000,
+                close_timestamp_ms=NOW-(i-1)*60000-1) for i in range(self.history_bars,0,-1)]
         def get_quote(self,symbol):
             return replace(q(),symbol=symbol)
         def get_observations(self,symbol):

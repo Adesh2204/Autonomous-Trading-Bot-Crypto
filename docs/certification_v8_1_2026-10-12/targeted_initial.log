@@ -1,0 +1,445 @@
+EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE                                 [100%]
+==================================== ERRORS ====================================
+_____ ERROR at setup of test_complete_real_composition_round_trip_offline ______
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+___ ERROR at setup of test_failure_injections[entry_rejected-ORDER_REJECTED] ___
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+_ ERROR at setup of test_failure_injections[timeout_before-EMERGENCY_EXIT_REQUIRED] _
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+_ ERROR at setup of test_failure_injections[timeout_after_fill-TRADE_CLOSED_RECONCILED] _
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+_ ERROR at setup of test_failure_injections[protection_rejected-TRADE_CLOSED_RECONCILED] _
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+_ ERROR at setup of test_failure_injections[disconnect_after_fill-EMERGENCY_EXIT_REQUIRED] _
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+__________ ERROR at setup of test_partial_entry_protects_actual_size ___________
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+____ ERROR at setup of test_tiny_partial_is_explicit_blocker_never_enlarged ____
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+_____ ERROR at setup of test_partial_exit_exhausts_bound_without_reversal ______
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+___ ERROR at setup of test_cancel_uncertain_never_claims_flat_and_reconciled ___
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+_ ERROR at setup of test_missing_or_damaged_exact_approval_blocks_all_orders[operator_approval-] _
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+_ ERROR at setup of test_missing_or_damaged_exact_approval_blocks_all_orders[manually_verified_wallets-False] _
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+_ ERROR at setup of test_missing_or_damaged_exact_approval_blocks_all_orders[sole_signer_host_confirmed-False] _
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+_ ERROR at setup of test_missing_or_damaged_exact_approval_blocks_all_orders[maximum_one_entry-False] _
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+_ ERROR at setup of test_missing_or_damaged_exact_approval_blocks_all_orders[expires_ms-1790942400000] _
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+_ ERROR at setup of test_missing_or_damaged_exact_approval_blocks_all_orders[expires_ms-1790942700001] _
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+_ ERROR at setup of test_missing_or_damaged_exact_approval_blocks_all_orders[approved_ms-1790942400001] _
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+_ ERROR at setup of test_missing_or_damaged_exact_approval_blocks_all_orders[proposal_hash-wrong] _
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+__________ ERROR at setup of test_source_change_blocks_certification ___________
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+__________ ERROR at setup of test_restart_after_entry_never_reenters ___________
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+______ ERROR at setup of test_production_live_authorization_still_locked _______
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+_ ERROR at setup of test_proposal_and_wire_cannot_expand_authorization[native] _
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+_ ERROR at setup of test_proposal_and_wire_cannot_expand_authorization[mainnet] _
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+_ ERROR at setup of test_proposal_and_wire_cannot_expand_authorization[oversize] _
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+_ ERROR at setup of test_proposal_and_wire_cannot_expand_authorization[budget] _
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+__ ERROR at setup of test_proposal_and_wire_cannot_expand_authorization[tif] ___
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+_ ERROR at setup of test_proposal_and_wire_cannot_expand_authorization[opposite] _
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+_ ERROR at setup of test_proposal_and_wire_cannot_expand_authorization[leverage] _
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+________ ERROR at setup of test_book_account_and_liquidity_gates[stale] ________
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+_______ ERROR at setup of test_book_account_and_liquidity_gates[spread] ________
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+_______ ERROR at setup of test_book_account_and_liquidity_gates[oracle] ________
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+_______ ERROR at setup of test_book_account_and_liquidity_gates[margin] ________
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+________ ERROR at setup of test_book_account_and_liquidity_gates[depth] ________
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+________ ERROR at setup of test_book_account_and_liquidity_gates[held] _________
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+______ ERROR at setup of test_book_account_and_liquidity_gates[not_cross] ______
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+_ ERROR at setup of test_accounting_rejects_mismatched_or_invented_events[closed] _
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+_ ERROR at setup of test_accounting_rejects_mismatched_or_invented_events[fee] _
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+_ ERROR at setup of test_accounting_rejects_mismatched_or_invented_events[quantity] _
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+_ ERROR at setup of test_accounting_rejects_mismatched_or_invented_events[source] _
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+_ ERROR at setup of test_accounting_rejects_mismatched_or_invented_events[duplicate] _
+algo-trading-bot/test_testnet_certification_v8.py:29: in cert
+    p = propose(ctx, live.client, 'fixture-source')
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:126: in propose
+    max_notional=str(max_notional), taker_fee_rate=str(fee)).require()
+                                                             ^^^^^^^^^
+algo-trading-bot/exchange/testnet_certification.py:77: in require
+    raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
+E   exchange.base_exchange.ExchangeError: INVALID_CERTIFICATION_PROPOSAL
+- generated xml file: /Users/adesh/Autonomous Trading Bot - Crypto /docs/certification_v8_1_2026-10-12/targeted_initial.xml -
+=========================== short test summary info ============================
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_complete_real_composition_round_trip_offline
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_failure_injections[entry_rejected-ORDER_REJECTED]
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_failure_injections[timeout_before-EMERGENCY_EXIT_REQUIRED]
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_failure_injections[timeout_after_fill-TRADE_CLOSED_RECONCILED]
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_failure_injections[protection_rejected-TRADE_CLOSED_RECONCILED]
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_failure_injections[disconnect_after_fill-EMERGENCY_EXIT_REQUIRED]
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_partial_entry_protects_actual_size
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_tiny_partial_is_explicit_blocker_never_enlarged
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_partial_exit_exhausts_bound_without_reversal
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_cancel_uncertain_never_claims_flat_and_reconciled
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_missing_or_damaged_exact_approval_blocks_all_orders[operator_approval-]
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_missing_or_damaged_exact_approval_blocks_all_orders[manually_verified_wallets-False]
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_missing_or_damaged_exact_approval_blocks_all_orders[sole_signer_host_confirmed-False]
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_missing_or_damaged_exact_approval_blocks_all_orders[maximum_one_entry-False]
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_missing_or_damaged_exact_approval_blocks_all_orders[expires_ms-1790942400000]
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_missing_or_damaged_exact_approval_blocks_all_orders[expires_ms-1790942700001]
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_missing_or_damaged_exact_approval_blocks_all_orders[approved_ms-1790942400001]
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_missing_or_damaged_exact_approval_blocks_all_orders[proposal_hash-wrong]
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_source_change_blocks_certification
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_restart_after_entry_never_reenters
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_production_live_authorization_still_locked
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_proposal_and_wire_cannot_expand_authorization[native]
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_proposal_and_wire_cannot_expand_authorization[mainnet]
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_proposal_and_wire_cannot_expand_authorization[oversize]
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_proposal_and_wire_cannot_expand_authorization[budget]
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_proposal_and_wire_cannot_expand_authorization[tif]
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_proposal_and_wire_cannot_expand_authorization[opposite]
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_proposal_and_wire_cannot_expand_authorization[leverage]
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_book_account_and_liquidity_gates[stale]
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_book_account_and_liquidity_gates[spread]
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_book_account_and_liquidity_gates[oracle]
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_book_account_and_liquidity_gates[margin]
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_book_account_and_liquidity_gates[depth]
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_book_account_and_liquidity_gates[held]
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_book_account_and_liquidity_gates[not_cross]
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_accounting_rejects_mismatched_or_invented_events[closed]
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_accounting_rejects_mismatched_or_invented_events[fee]
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_accounting_rejects_mismatched_or_invented_events[quantity]
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_accounting_rejects_mismatched_or_invented_events[source]
+ERROR algo-trading-bot/test_testnet_certification_v8.py::test_accounting_rejects_mismatched_or_invented_events[duplicate]
+40 errors in 1.37s

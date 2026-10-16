@@ -1,0 +1,200 @@
+{
+  "network": "testnet",
+  "dex": "par",
+  "execution_mode": "PAPER",
+  "allow_live_orders": false,
+  "exchange_orders_submitted": 0,
+  "account_actions_submitted": 0,
+  "signer_constructed": false,
+  "scope": "REAL_PUBLIC_SOCKET_RECONNECT_ONLY; no account or order recovery certification",
+  "quote_after_reconnect": {
+    "symbol": "par:BTC",
+    "timestamp_ms": 1791344749505,
+    "bid": "84050.0",
+    "ask": "84216.0",
+    "bid_quantity": "0.0169",
+    "ask_quantity": "0.0015",
+    "mid": "84133.0",
+    "mark": "84138.0",
+    "oracle": "84138.0",
+    "hourly_funding": "0.0000125",
+    "open_interest": "0.0762",
+    "daily_notional_volume": "154050.9611",
+    "mark_timestamp_ms": 1791344750151,
+    "received_timestamp_ms": 1791344750150,
+    "processed_timestamp_ms": 1791344750228
+  },
+  "observations_after_reconnect": {
+    "last_tick_time": 1791344749505,
+    "last_candle_time": 1791344280000,
+    "last_orderbook_time": 1791344749505,
+    "last_mark_time": 1791344750151
+  },
+  "completed_bars_after_reconnect": 293,
+  "recovered_before_shutdown": true,
+  "worker_stopped": true,
+  "lifecycle_events": [
+    {
+      "phase": "CONNECTING",
+      "timestamp_ms": 1791344742812,
+      "generation": 0,
+      "exchange_ts": null,
+      "received_ts": "2026-10-07T03:45:42.812+00:00",
+      "processed_ts": "2026-10-07T03:45:42.812+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false
+    },
+    {
+      "phase": "SUBSCRIBED",
+      "timestamp_ms": 1791344744185,
+      "generation": 0,
+      "exchange_ts": null,
+      "received_ts": "2026-10-07T03:45:44.185+00:00",
+      "processed_ts": "2026-10-07T03:45:44.185+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false
+    },
+    {
+      "phase": "REST_MARKET_RECONCILED",
+      "timestamp_ms": 1791344745142,
+      "generation": 1,
+      "exchange_ts": null,
+      "received_ts": "2026-10-07T03:45:45.142+00:00",
+      "processed_ts": "2026-10-07T03:45:45.142+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false
+    },
+    {
+      "phase": "DISCONNECTED",
+      "timestamp_ms": 1791344746771,
+      "generation": 1,
+      "exchange_ts": null,
+      "received_ts": "2026-10-07T03:45:46.771+00:00",
+      "processed_ts": "2026-10-07T03:45:46.771+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false,
+      "reason": "ExchangeError:STREAM_DISCONNECTED",
+      "consecutive_failures": 1
+    },
+    {
+      "phase": "CONNECTING",
+      "timestamp_ms": 1791344747777,
+      "generation": 1,
+      "exchange_ts": null,
+      "received_ts": "2026-10-07T03:45:47.777+00:00",
+      "processed_ts": "2026-10-07T03:45:47.777+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false
+    },
+    {
+      "phase": "SUBSCRIBED",
+      "timestamp_ms": 1791344749184,
+      "generation": 1,
+      "exchange_ts": null,
+      "received_ts": "2026-10-07T03:45:49.184+00:00",
+      "processed_ts": "2026-10-07T03:45:49.184+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false
+    },
+    {
+      "phase": "REST_MARKET_RECONCILED",
+      "timestamp_ms": 1791344750150,
+      "generation": 2,
+      "exchange_ts": null,
+      "received_ts": "2026-10-07T03:45:50.150+00:00",
+      "processed_ts": "2026-10-07T03:45:50.150+00:00",
+      "timestamp_source": "LOCAL_PROCESS",
+      "exchange_to_receive_ms": null,
+      "receive_to_process_ms": 0,
+      "clock_skew_detected": false
+    }
+  ],
+  "intentional_disconnects": [
+    {
+      "source": "INTENTIONAL_LOCAL_PUBLIC_WS_CLOSE",
+      "observed_at_utc": "2026-10-07T03:45:46.470035+00:00"
+    }
+  ],
+  "errors": [],
+  "reconnections": 1,
+  "recovery_generation": 2,
+  "connection_subscriptions": [
+    [
+      {
+        "method": "subscribe",
+        "subscription": {
+          "type": "l2Book",
+          "coin": "par:BTC"
+        }
+      },
+      {
+        "method": "subscribe",
+        "subscription": {
+          "type": "candle",
+          "coin": "par:BTC",
+          "interval": "1m"
+        }
+      },
+      {
+        "method": "subscribe",
+        "subscription": {
+          "type": "activeAssetCtx",
+          "coin": "par:BTC"
+        }
+      },
+      {
+        "method": "subscribe",
+        "subscription": {
+          "type": "trades",
+          "coin": "par:BTC"
+        }
+      }
+    ],
+    [
+      {
+        "method": "subscribe",
+        "subscription": {
+          "type": "l2Book",
+          "coin": "par:BTC"
+        }
+      },
+      {
+        "method": "subscribe",
+        "subscription": {
+          "type": "candle",
+          "coin": "par:BTC",
+          "interval": "1m"
+        }
+      },
+      {
+        "method": "subscribe",
+        "subscription": {
+          "type": "activeAssetCtx",
+          "coin": "par:BTC"
+        }
+      },
+      {
+        "method": "subscribe",
+        "subscription": {
+          "type": "trades",
+          "coin": "par:BTC"
+        }
+      }
+    ]
+  ],
+  "messages": 11,
+  "passed": true,
+  "observed_at_utc": "2026-10-07T03:45:50.945108+00:00"
+}

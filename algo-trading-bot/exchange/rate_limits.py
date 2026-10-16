@@ -41,6 +41,15 @@ class HyperliquidRateLimitManager:
         self.ws_reconnects=[]
         self.last_state=None
         self.last_safety_action_ms=None
+        self.inflight_reads={}
+        self.read_counts={}
+        self.read_failures={}
+        self.coalesced_reads=0
+        self.max_read_seconds=0
+        self.read_deadline_seconds=45
+        self.read_budget_wait_seconds=0  # Qualification opts in; live feed remains fail-fast.
+        self.read_progress=None
+        self.read_failure_details=[]
         with journal.transaction():
             journal.db.execute('CREATE TABLE IF NOT EXISTS api_actions ('
                 'id INTEGER PRIMARY KEY AUTOINCREMENT,utc_day INTEGER,process INTEGER,'
@@ -64,6 +73,43 @@ class HyperliquidRateLimitManager:
         now=self.clock_ms()
         self.weights=[(t,w) for t,w in self.weights if t>now-60000]
         return sum(w for _,w in self.weights)
+
+    def read_budget_delay_ms(self,weight,priority=RequestPriority.DECISION):
+        """Grounded rolling-window estimate, including server backoff guidance."""
+        with self.lock:
+            now=self.clock_ms();usage=self._usage()
+            limit=self.ip_weight_limit-(0 if priority==RequestPriority.SAFETY else self._reserve('ip'))
+            if weight>limit:raise ExchangeError('INFO_PUBLIC_BUDGET_TOO_SMALL')
+            delay=max(0,self.backoff_until-now)
+            if usage+weight>limit:
+                for stamp,cost in sorted(self.weights):
+                    usage-=cost
+                    if usage+weight<=limit:
+                        delay=max(delay,stamp+60000-now);break
+                if usage+weight>limit:
+                    # No earlier capacity is proven: conservatively defer the
+                    # whole rolling window rather than granting admission.
+                    delay=max(delay,60000)
+            return delay
+
+    def wait_for_read_budget(self,weight,*,priority=RequestPriority.DECISION,max_wait_seconds=65,
+                             cancel_event=None,progress=None,wait_ms=None):
+        started=time.monotonic();last_notice=-1
+        while True:
+            if cancel_event is not None and cancel_event.is_set():raise ExchangeError('INFO_READ_CANCELLED')
+            delay=self.read_budget_delay_ms(weight,priority)
+            if not delay:return
+            elapsed=time.monotonic()-started
+            if progress and elapsed-last_notice>=1:
+                progress('WAITING_FOR_RATE_BUDGET',reason='ROLLING_IP_WINDOW_OR_SERVER_BACKOFF',
+                    ip_weight=self._usage(),required_weight=weight,next_retry_ms=self.clock_ms()+delay,
+                    retry_in_seconds=round(delay/1000,3),wait_elapsed_seconds=round(elapsed,3))
+                last_notice=elapsed
+            if elapsed>=max_wait_seconds or delay>(max_wait_seconds-elapsed)*1000:
+                raise ExchangeError('INFO_PUBLIC_READ_BUDGET_DEADLINE')
+            duration=min(250,delay)
+            if cancel_event is None:(wait_ms or self.wait)(duration)
+            elif cancel_event.wait(duration/1000):raise ExchangeError('INFO_READ_CANCELLED')
 
     @property
     def remaining_budget(self):
@@ -133,7 +179,7 @@ class HyperliquidRateLimitManager:
         if observed and usage+weight>self.ip_weight_limit:
             self._event('RATE_LIMIT_THROTTLED',reason='HISTORY_RESPONSE_EXCEEDED_RESERVED_WEIGHT')
 
-    def reserve_info(self,query,*,priority=None):
+    def reserve_info(self,query,*,priority=None,response_weight=0):
         priority=RequestPriority(priority) if priority is not None else (
             RequestPriority.SAFETY if query in self.SAFETY_INFO else RequestPriority.DECISION)
         with self.lock:
@@ -145,9 +191,17 @@ class HyperliquidRateLimitManager:
                 if self.clock_ms()-self.optional_times.get(query,-interval)<interval:
                     raise ExchangeError('OPTIONAL_API_THROTTLED')
                 self.optional_times[query]=self.clock_ms()
-            self._weight(2 if query in self.SMALL_INFO else 60 if query=='userRole' else 20,priority)
+            weight=(2 if query in self.SMALL_INFO else 60 if query=='userRole' else 20)+response_weight
+            try:self._weight(weight,priority)
+            except ExchangeError as exc:
+                if str(exc)=='RATE_LIMITED':
+                    self._event('INFO_RATE_BUDGET_REJECTED',query=query,weight=weight,
+                        priority=priority.value,rolling_weight=self._usage(),
+                        ip_limit=self.ip_weight_limit,reserve=self._reserve('ip'),
+                        backoff_until=self.backoff_until,source='LOCAL_RATE_GUARD; NO_HTTP_SENT')
+                raise
 
-    def observe_info(self,query,response):
+    def observe_info(self,query,response,*,reserved_response_weight=0):
         with self.lock:
             if query=='userRateLimit':
                 try:
@@ -170,7 +224,8 @@ class HyperliquidRateLimitManager:
             if query in {'openOrders','frontendOpenOrders'} and isinstance(response,list):
                 self.open_orders=len(response)
             if isinstance(response,list) and query in self.HISTORY:
-                self._weight(len(response)//(60 if query=='candleSnapshot' else 20),RequestPriority.SAFETY,observed=True)
+                extra=max(0,len(response)//(60 if query=='candleSnapshot' else 20)-reserved_response_weight)
+                if extra:self._weight(extra,RequestPriority.SAFETY,observed=True)
 
     def reserve_action(self,*,operations=1,creates_order=False,priority=None,kind='order'):
         priority=RequestPriority(priority) if priority is not None else RequestPriority.EXECUTION
@@ -216,7 +271,9 @@ class HyperliquidRateLimitManager:
             duration=min(self.policy.backoff_max_ms,self.policy.backoff_base_ms*2**min(self.recent_errors-1,10))
             duration=int(duration*(.8+.2*self.jitter()))
             if retry_after_ms is not None:
-                duration=max(duration,min(self.policy.backoff_max_ms,retry_after_ms))
+                # Never shorten venue guidance. The caller's independent wait
+                # deadline can terminate instead of retrying before this time.
+                duration=max(duration,retry_after_ms)
             self.backoff_until=self.clock_ms()+duration
             self._event('REQUEST_BACKOFF',attempt=self.recent_errors,status=status,delay_ms=duration)
             return duration
@@ -224,29 +281,92 @@ class HyperliquidRateLimitManager:
     def success(self):
         self.recent_errors=0
 
-    def read(self,query,operation,*,priority=None):
+    def read(self,query,operation,*,priority=None,request_key=None,expected_items=0,cancel_event=None):
+        """Share identical concurrent public reads; never cache a stale result."""
+        from .hyperliquid_client import DEX_QUERIES,COIN_QUERIES,ACCOUNT_QUERIES
+        if query not in DEX_QUERIES|COIN_QUERIES|ACCOUNT_QUERIES|{'perpDexs','candleSnapshot','userRole','exchangeStatus'}:
+            raise ExchangeError('PUBLIC_INFO_QUERY_NOT_ALLOWED')
+        entry=None
+        if request_key is not None:
+            with self.lock:
+                entry=self.inflight_reads.get(request_key)
+                leader=entry is None
+                if leader:
+                    entry=dict(done=threading.Event(),value=None,error=None)
+                    self.inflight_reads[request_key]=entry
+                else:self.coalesced_reads+=1
+            if not leader:
+                follower_started=time.monotonic()
+                while not entry['done'].wait(.1):
+                    if cancel_event is not None and cancel_event.is_set():
+                        raise ExchangeError('INFO_READ_CANCELLED')
+                    if time.monotonic()-follower_started>=self.read_deadline_seconds:
+                        raise ExchangeError('INFO_COALESCED_READ_DEADLINE')
+                if entry['error'] is not None:raise entry['error']
+                return entry['value']
+        started=time.monotonic()
+        try:
+            value=self._read_owned(query,operation,priority=priority,expected_items=expected_items,cancel_event=cancel_event)
+            if entry is not None:entry['value']=value
+            return value
+        except BaseException as exc:
+            code=str(exc) if isinstance(exc,ExchangeError) else 'INFO_READ_INTERRUPTED' if isinstance(exc,KeyboardInterrupt) else type(exc).__name__
+            with self.lock:self.read_failures[code]=self.read_failures.get(code,0)+1
+            if entry is not None:entry['error']=ExchangeError('INFO_READ_INTERRUPTED') if isinstance(exc,KeyboardInterrupt) else exc
+            raise
+        finally:
+            with self.lock:
+                self.max_read_seconds=max(self.max_read_seconds,time.monotonic()-started)
+                if entry is not None:
+                    self.inflight_reads.pop(request_key,None)
+                    entry['done'].set()
+
+    def _read_owned(self,query,operation,*,priority=None,expected_items=0,cancel_event=None):
         """Only idempotent /info reads; no signed operation can enter this API."""
         priority=RequestPriority(priority) if priority is not None else (
             RequestPriority.SAFETY if query in self.SAFETY_INFO else RequestPriority.DECISION)
+        started=time.monotonic()
+        def wait_delay(duration):
+            if self.read_progress:self.read_progress('WAITING_FOR_READ_BACKOFF',query=query,
+                retry_in_seconds=round(duration/1000,3),next_retry_ms=self.clock_ms()+duration)
+            if duration>(self.read_deadline_seconds-(time.monotonic()-started))*1000:
+                raise ExchangeError('INFO_READ_WAIT_DEADLINE')
+            if cancel_event is None:self.wait(duration)
+            elif cancel_event.wait(duration/1000):raise ExchangeError('INFO_READ_CANCELLED')
         for attempt in range(self.policy.read_retry_attempts):
+            if cancel_event is not None and cancel_event.is_set():raise ExchangeError('INFO_READ_CANCELLED')
+            if time.monotonic()-started>=self.read_deadline_seconds:raise ExchangeError('INFO_READ_DEADLINE')
             delay=max(0,self.backoff_until-self.clock_ms())
-            if delay and priority!=RequestPriority.SAFETY:
-                self.wait(delay)
-            self.reserve_info(query,priority=priority)
+            if delay:wait_delay(delay)
+            response_weight=expected_items//60 if query=='candleSnapshot' else 0
+            if self.read_budget_wait_seconds:
+                weight=(2 if query in self.SMALL_INFO else 60 if query=='userRole' else 20)+response_weight
+                self.wait_for_read_budget(weight,priority=priority,
+                    max_wait_seconds=min(self.read_budget_wait_seconds,self.read_deadline_seconds-(time.monotonic()-started)),
+                    cancel_event=cancel_event,progress=self.read_progress)
+            self.reserve_info(query,priority=priority,response_weight=response_weight)
+            with self.lock:self.read_counts[query]=self.read_counts.get(query,0)+1
             try:
                 value=operation()
             except Exception as exc:
                 status=getattr(exc,'status_code',None)
-                transient=(isinstance(exc,(TimeoutError,ConnectionError)) or str(exc)=='INFO_REQUEST_FAILED' or
+                transient=(getattr(exc,'retryable',None) is not False and (getattr(exc,'retryable',False) or
+                           isinstance(exc,(TimeoutError,ConnectionError)) or str(exc)=='INFO_REQUEST_FAILED' or
                            status==429 or type(status) is int and 500<=status<600)
+                           )
+                detail=dict(query=query,attempt=attempt+1,code=str(exc) if isinstance(exc,ExchangeError) else type(exc).__name__,
+                    status_code=status,retry_after_ms=getattr(exc,'retry_after_ms',None),retryable=bool(transient))
+                self.read_failure_details.append(detail)
+                if self.read_progress:self.read_progress('INFO_READ_FAILED',**detail)
                 if not transient:
                     raise
                 duration=self.error(status=status,retry_after_ms=getattr(exc,'retry_after_ms',None))
                 if attempt+1==self.policy.read_retry_attempts:
-                    raise ExchangeError('INFO_RETRY_BUDGET_EXHAUSTED') from None
-                self.wait(duration)
+                    error=ExchangeError('INFO_RETRY_BUDGET_EXHAUSTED');error.last_failure=detail
+                    raise error from None
+                wait_delay(duration)
                 continue
-            self.observe_info(query,value)
+            self.observe_info(query,value,reserved_response_weight=response_weight)
             self.success()
             return value
 
@@ -290,14 +410,23 @@ class HyperliquidRateLimitManager:
             return True
 
     def report(self):
+        with self.lock:
+            return self._report_owned()
+
+    def _report_owned(self):
         self._usage()
         self.ws_reconnects=[t for t in self.ws_reconnects if t>self.clock_ms()-60000]
         self.ws_messages=[r for r in self.ws_messages if r[0]>self.clock_ms()-60000]
         return dict(state=self.state.value,policy=asdict(self.policy),ip_weight=self._usage(),
+            public_read_blocked=bool(self.clock_ms()<self.backoff_until or
+                self._usage()>=self.ip_weight_limit-self.policy.ip_safety_reserve),
             account_requests_used=self.n_requests_used,account_requests_cap=self.n_requests_cap,
             remaining_budget=self.remaining_budget,budget_observed_ms=self.budget_observed_ms,
             daily_actions=self.daily_used(),daily_limit=self.daily_limit,entries_allowed=self.entries_allowed,
             open_orders=self.open_orders,backoff_until_ms=self.backoff_until,
             websocket=dict(connections=len(self.ws_connections),subscriptions=sum(map(len,self.ws_connections.values())),
                 outgoing_messages=len(self.ws_messages),heartbeats=sum(r[1] for r in self.ws_messages),
-                reconnects_last_minute=len(self.ws_reconnects)))
+                reconnects_last_minute=len(self.ws_reconnects)),
+            public_reads=dict(upstream_by_operation=dict(self.read_counts),failures=dict(self.read_failures),
+                pending=len(self.inflight_reads),coalesced=self.coalesced_reads,max_seconds=self.max_read_seconds,
+                failure_details=list(self.read_failure_details)))

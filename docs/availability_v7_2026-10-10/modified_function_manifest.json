@@ -1,0 +1,107 @@
+{
+  "scripts/run_crypto_paper.py": [
+    "main"
+  ],
+  "scripts/check_practice_health.py": [
+    "describe"
+  ],
+  "algo-trading-bot/venue_config.py": [
+    "require_paper_migration"
+  ],
+  "algo-trading-bot/market_stream.py": [
+    "MarketStream.__init__",
+    "MarketStream.poll"
+  ],
+  "algo-trading-bot/exchange/paper_operations.py": [
+    "PaperHealth.write"
+  ],
+  "algo-trading-bot/exchange/market_health.py": [
+    "MarketHealthManager.finish_recovery"
+  ],
+  "algo-trading-bot/exchange/hyperliquid_market_data.py": [
+    "HyperliquidMarketData.get_candles",
+    "ParMarketDataEngine.__init__",
+    "ParMarketDataEngine.reconcile_history",
+    "ParMarketDataEngine._reconcile_history",
+    "ParMarketDataEngine.ingest",
+    "ParMarketDataEngine._ingest_validated",
+    "ParMarketDataEngine.market_health",
+    "ParMarketDataEngine._run_owned"
+  ],
+  "algo-trading-bot/exchange/candle_availability.py": [
+    "sequence_lengths",
+    "distribution",
+    "CandleAvailabilityMonitor.__init__",
+    "CandleAvailabilityMonitor._require",
+    "CandleAvailabilityMonitor._row",
+    "CandleAvailabilityMonitor._prune",
+    "CandleAvailabilityMonitor.observe_candle",
+    "CandleAvailabilityMonitor.reject",
+    "CandleAvailabilityMonitor.observe_rest",
+    "CandleAvailabilityMonitor.update_cache",
+    "CandleAvailabilityMonitor.recovery_begin",
+    "CandleAvailabilityMonitor.recovery_finish",
+    "CandleAvailabilityMonitor._latency",
+    "CandleAvailabilityMonitor.retry_hint_ms",
+    "CandleAvailabilityMonitor.prioritize",
+    "CandleAvailabilityMonitor.snapshot"
+  ],
+  "algo-trading-bot/research_intelligence/external_data.py": [
+    "ResearchCandle.__post_init__",
+    "AssetMapping.validate",
+    "MarketDataSource.get_candles",
+    "RecordedMarketDataSource.__init__",
+    "RecordedMarketDataSource.get_candles",
+    "HyperliquidReferenceSource.__init__",
+    "HyperliquidReferenceSource._read",
+    "HyperliquidReferenceSource.get_candles",
+    "require_feature_history",
+    "frozen_features",
+    "compare_sources"
+  ],
+  "scripts/compare_external_data.py": [
+    "main"
+  ],
+  "algo-trading-bot/test_candle_availability_v7.py": [
+    "offline",
+    "monitor",
+    "response",
+    "test_exact_completed_reception_delay_and_left_censoring",
+    "test_empty_response_later_supplies_missing_genuine_candle",
+    "test_never_observed_interval_is_censored_not_zero_delay",
+    "test_unfinished_ws_candle_is_observed_but_not_completed_sample",
+    "test_rest_ws_duplicates_and_conflicts_keep_source_identity",
+    "test_equivalent_decimal_encodings_are_duplicates_not_conflicts",
+    "test_validator_failures_captured_and_not_accepted",
+    "test_cache_300_gate_separate_from_full_utc",
+    "test_scanner_history_gap_remains_separate_from_complete_cache",
+    "test_freshness_allowance_does_not_require_latest_expected_minute",
+    "test_out_of_order_wire_rows_are_normalized_without_inventing_rows",
+    "test_rate_deferral_and_insufficient_samples_preserve_backoff",
+    "test_adaptive_hint_is_bounded_and_requires_twenty_live_intervals",
+    "test_healthy_symbol_independent_and_genuine_gap_recovery_recorded",
+    "test_near_ready_prioritization_never_excludes_old_due_symbol",
+    "test_dashboard_has_exact_candle_reasons_and_independent_transport",
+    "test_observation_history_is_bounded_and_does_not_become_execution_interface",
+    "test_recovery_cache_repair_is_distinct_from_first_source_observation",
+    "test_future_malformed_intervals_cannot_escape_retention_bound"
+  ],
+  "algo-trading-bot/test_external_data_v7.py": [
+    "candle",
+    "mapping",
+    "offline",
+    "test_disabled_default_and_no_order_interface",
+    "test_provenance_boundaries_and_bad_data_fail",
+    "test_invalid_mapping_or_units_rejected",
+    "test_missing_or_tick_volume_cannot_enter_vwap",
+    "test_wrong_fx_direction_cannot_silently_invert",
+    "test_external_record_cannot_overwrite_native_cache_or_account_truth",
+    "test_as_of_reception_prevents_future_leakage_and_stale_signal",
+    "test_research_outage_does_not_change_native_engine",
+    "test_reference_adapter_can_only_read_allowlisted_public_metadata_and_candles",
+    "test_production_cannot_enable_external_mode_or_approve_itself",
+    "test_no_production_import_of_external_research_module",
+    "test_research_features_cannot_shorten_full_utc_contract_to_300_bars",
+    "test_native_quote_mark_context_must_also_be_fresh"
+  ]
+}

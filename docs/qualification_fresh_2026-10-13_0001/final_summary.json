@@ -1,0 +1,116 @@
+{
+  "generated_utc": "2026-10-12T18:32:58.051607+00:00",
+  "status": "EXPLICIT_EXPERIMENTAL_RISK_DECISION_REQUIRED",
+  "source_hash": "7dc796d83416fb1f68cf8c32e5d26db403c361d6470e889527bc67f617665339",
+  "source_changed": false,
+  "full_regression_reused": {
+    "tests": 1682,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "fresh_phase0_and_freeze_passed": true,
+  "sole_host_human_confirmation": {
+    "confirmed": true,
+    "api_wallet": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+    "answer": "Yes\u2014this is the only signing host",
+    "scope": "Human confirmation of sole signing host; not trade or risk approval",
+    "actual_order_authorized": false
+  },
+  "local_signer": "LOCAL_IDENTITY_AND_OWNERSHIP_VERIFIED",
+  "journal_checks": {
+    "account_check": {
+      "integrity": "ok",
+      "snapshot_count": 2,
+      "snapshot_checksums_valid": true,
+      "action_rows": {
+        "intents": 0,
+        "api_actions": 0,
+        "signed_management": 0
+      }
+    },
+    "proposal_review": {
+      "integrity": "ok",
+      "snapshot_count": 2,
+      "snapshot_checksums_valid": true,
+      "action_rows": {
+        "intents": 0,
+        "api_actions": 0,
+        "signed_management": 0
+      }
+    }
+  },
+  "exchange_submissions": 0,
+  "actual_wallet_signatures": 0,
+  "qualification_execution_authorized": false,
+  "actual_protection_ready": false,
+  "controlled_execution_ready": false,
+  "practice_ready": false,
+  "live_ready": false,
+  "whitelist_confirmed": false,
+  "account_flat_observed_ms": 1791829968796,
+  "proposal_id": "b4177ce52349b4681853ba00f0464cc2a5fa75aada7607a0ca0c6aa3bc543143",
+  "proposal": {
+    "symbol": "par:BTC",
+    "asset_id": 2670000,
+    "quantity": "0.0003",
+    "entry_side": "BUY",
+    "entry_limit": "82437",
+    "exit_bound": "81110",
+    "stop_trigger": "81517",
+    "stop_limit": "81110",
+    "reference_bid": "82340.0",
+    "reference_ask": "82396.0",
+    "reference_mark": "82360.0",
+    "reference_oracle": "82460.0",
+    "observed_ms": 1791829907098,
+    "source_hash": "7dc796d83416fb1f68cf8c32e5d26db403c361d6470e889527bc67f617665339",
+    "reliability_policy_hash": "1b8573d07a0f12f3653cf7b92f96c2120e8d61c3f210335ec850ba14ea582455",
+    "max_notional": "25",
+    "session_loss_budget": "25",
+    "entry_slippage_bps": "5",
+    "exit_slippage_bps": "20",
+    "taker_fee_rate": "0.00090",
+    "max_exit_attempts": 2,
+    "max_signed_actions": 5,
+    "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+    "api_wallet": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+    "network": "testnet",
+    "dex": "par",
+    "mode": "TESTNET_QUALIFICATION",
+    "entry_rule": "ONE_BOUNDED_LONG_THEN_IMMEDIATE_CLOSE_V1",
+    "qualification_spread_bps": "50",
+    "protection_status": "UNVERIFIED_NO_STOP_WILL_BE_SUBMITTED"
+  },
+  "approval_deadline_ist": "2026-10-13T00:06:47.098000+05:30",
+  "approval_window_open_at_report": true,
+  "entry_notional": "24.7311",
+  "fee_entry": "0.022257990",
+  "fee_immediate_exit": "0.022187520",
+  "fee_round_trip": "0.044445510",
+  "loss_at_immediate_limit": "0.122745510",
+  "loss_at_exit_floor": "0.442257690",
+  "available_long_margin": "1000000.0",
+  "residual_scope": {
+    "ready": true,
+    "possible_residual_count": 3,
+    "subminimum_residuals": [
+      {
+        "quantity": "0.0001",
+        "notional_at_floor": "8.1110",
+        "proof": {
+          "scope": "VERIFIED_EXACT_FULL_POSITION_IOC_CLOSE",
+          "historical_oid": 62228843959,
+          "evidence": "V8.5_ORIGINAL_ORDER_AND_FULL_POSITION_FILL_READBACK",
+          "evidence_sha256": "c421e3ffc251cb770c67b44395301e50ec0fbb6903146f18c51aa370a88a2764"
+        }
+      }
+    ],
+    "scope": "HISTORICAL_SHAPES_AND_APPROVED_PRICE_FLOOR_NOT_FUTURE_FILL_GUARANTEE"
+  },
+  "maximum_one_entry": true,
+  "maximum_exit_attempts": 2,
+  "maximum_signed_actions": 5,
+  "no_stop_will_be_submitted": true,
+  "hard_total_loss_cap_guaranteed": false
+}

@@ -1,0 +1,63 @@
+FFFFF                                                                    [100%]
+=================================== FAILURES ===================================
+___________ test_read_timeout_is_distinct_from_unknown_http_failure ____________
+algo-trading-bot/test_qualification_stability_v8_8.py:20: in fail
+    def fail(*args,**kwargs):raise requests.ReadTimeout('OFFLINE_HUNG_RESPONSE')
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   requests.exceptions.ReadTimeout: OFFLINE_HUNG_RESPONSE
+
+The above exception was the direct cause of the following exception:
+algo-trading-bot/test_qualification_stability_v8_8.py:24: in test_read_timeout_is_distinct_from_unknown_http_failure
+    with pytest.raises(ExchangeError,match='^INFO_READ_TIMEOUT$'):t({'type':'userAbstraction'})
+                                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_client.py:48: in __call__
+    raise ExchangeError('INFO_REQUEST_FAILED') from exc
+E   exchange.base_exchange.ExchangeError: INFO_REQUEST_FAILED
+
+During handling of the above exception, another exception occurred:
+algo-trading-bot/test_qualification_stability_v8_8.py:24: in test_read_timeout_is_distinct_from_unknown_http_failure
+    with pytest.raises(ExchangeError,match='^INFO_READ_TIMEOUT$'):t({'type':'userAbstraction'})
+E   AssertionError: 
+E   - INFO_REQUEST_FAILED
+E   + INFO_READ_TIMEOUT
+______ test_transport_has_separate_timeouts_and_an_absolute_read_deadline ______
+algo-trading-bot/test_qualification_stability_v8_8.py:32: in test_transport_has_separate_timeouts_and_an_absolute_read_deadline
+    t=RequestsInfoTransport(connect_timeout=.02,read_timeout=.02,total_timeout=.05)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: RequestsInfoTransport.__init__() got an unexpected keyword argument 'connect_timeout'
+______________ test_server_retry_after_is_not_silently_shortened _______________
+algo-trading-bot/test_qualification_stability_v8_8.py:42: in test_server_retry_after_is_not_silently_shortened
+    assert duration>=90000 and live.rate.backoff_until>=NOW+90000
+E   assert (30000 >= 90000)
+_____ test_interrupted_read_is_not_reported_as_success_to_coalesced_waiter _____
+algo-trading-bot/test_qualification_stability_v8_8.py:59: in test_interrupted_read_is_not_reported_as_success_to_coalesced_waiter
+    assert values==['INFO_READ_INTERRUPTED']
+E   AssertionError: assert [None] == ['INFO_READ_INTERRUPTED']
+E     
+E     At index 0 diff: None != 'INFO_READ_INTERRUPTED'
+E     Use -v to get more diff
+______ test_interrupt_preparation_saves_diagnostic_json_and_closes_sqlite ______
+algo-trading-bot/test_qualification_stability_v8_8.py:71: in test_interrupt_preparation_saves_diagnostic_json_and_closes_sqlite
+    try:r=mod.prepare(out)
+          ^^^^^^^^^^^^^^^^
+scripts/run_testnet_qualification.py:64: in prepare
+    client=HyperliquidClient(rate_limits=rates);client.startup()
+                                                ^^^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_stability_v8_8.py:66: in startup
+    def startup(self):raise KeyboardInterrupt()
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyboardInterrupt
+
+During handling of the above exception, another exception occurred:
+algo-trading-bot/test_qualification_stability_v8_8.py:72: in test_interrupt_preparation_saves_diagnostic_json_and_closes_sqlite
+    except KeyboardInterrupt:pytest.fail('Interrupted preparation lost final diagnostics')
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: Interrupted preparation lost final diagnostics
+- generated xml file: /Users/adesh/Autonomous Trading Bot - Crypto /docs/qualification_stability_v8_8_2026-10-13/reproduced.xml -
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_qualification_stability_v8_8.py::test_read_timeout_is_distinct_from_unknown_http_failure
+FAILED algo-trading-bot/test_qualification_stability_v8_8.py::test_transport_has_separate_timeouts_and_an_absolute_read_deadline
+FAILED algo-trading-bot/test_qualification_stability_v8_8.py::test_server_retry_after_is_not_silently_shortened
+FAILED algo-trading-bot/test_qualification_stability_v8_8.py::test_interrupted_read_is_not_reported_as_success_to_coalesced_waiter
+FAILED algo-trading-bot/test_qualification_stability_v8_8.py::test_interrupt_preparation_saves_diagnostic_json_and_closes_sqlite
+5 failed in 1.12s

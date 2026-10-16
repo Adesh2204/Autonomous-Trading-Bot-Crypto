@@ -1,0 +1,49 @@
+{
+  "started_unix": 1791479528.142765,
+  "source_hash": "2dec21b5f1ef3462812412dd8871df33262bcffe0a86dd6fe06fe3e3a733bec6",
+  "scope": "Full offline repository suite including per-market health/quarantine/recovery; no exchange submissions",
+  "checks_before": {
+    "strategy_freeze": {
+      "exit_code": 0,
+      "result": {
+        "baseline": "nse-working-baseline",
+        "file_count": 1,
+        "method_count": 8,
+        "parameter_count": 32,
+        "passed": true
+      }
+    },
+    "phase0": {
+      "exit_code": 0,
+      "result": {
+        "project": "anchorium-perpetual-alpha",
+        "checks": {
+          "project_is_perpetual_alpha": true,
+          "independent_git_directory": true,
+          "migration_branch": true,
+          "testnet_venue": true,
+          "paper_execution_mode": true,
+          "migration_policy_valid": true,
+          "orders_disabled": true,
+          "angel_one_client_disabled": true,
+          "angel_one_order_boundary_disabled": true,
+          "testnet_order_boundary_disabled": true,
+          "signal_logic_present": true,
+          "signal_source_unchanged": true
+        },
+        "passed": true
+      }
+    }
+  },
+  "finished_unix": 1791479799.364488,
+  "exit_code": 0,
+  "source_hash_after": "2dec21b5f1ef3462812412dd8871df33262bcffe0a86dd6fe06fe3e3a733bec6",
+  "totals": {
+    "tests": 1335,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "xml_sha256": "5997efe9ed20ca5c6b51fe77c97ce6cd91fe2de6fa2c73621a7bda59a30eeb0d",
+  "passed": true
+}

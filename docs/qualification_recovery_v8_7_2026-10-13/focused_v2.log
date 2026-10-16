@@ -1,0 +1,16 @@
+.......................................F................................ [ 62%]
+............................................                             [100%]
+=================================== FAILURES ===================================
+_ test_dynamic_two_lot_entry_full_partial_and_residual_exit[entry_fraction2-exit_fraction2] _
+algo-trading-bot/test_qualification_recovery_v8_7.py:191: in test_dynamic_two_lot_entry_full_partial_and_residual_exit
+    r=c.sequence.run();assert r['status']=='TRADE_CLOSED_RECONCILED',r
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: {'actual_exchange_proof': [{'accounting': {'accounting_window_ms': (1790942400000, 1790942400000), 'corrections': [{'c...0xaf484c681acc4e8d9b58612a254f03a0', 'code': None, ...}, 'entry_rule': 'ONE_BOUNDED_LONG_THEN_IMMEDIATE_CLOSE_V1', ...}
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'TRADE_CLOSED_RECONCILED'
+E     
+E     - TRADE_CLOSED_RECONCILED
+E     + EMERGENCY_EXIT_REQUIRED
+- generated xml file: /Users/adesh/Autonomous Trading Bot - Crypto /docs/qualification_recovery_v8_7_2026-10-13/focused_v2.xml -
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_qualification_recovery_v8_7.py::test_dynamic_two_lot_entry_full_partial_and_residual_exit[entry_fraction2-exit_fraction2]
+1 failed, 115 passed in 27.80s

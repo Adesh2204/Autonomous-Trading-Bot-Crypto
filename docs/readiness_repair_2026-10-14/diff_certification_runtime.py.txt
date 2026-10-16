@@ -1,0 +1,35 @@
+--- before/algo-trading-bot/exchange/certification_runtime.py
++++ algo-trading-bot/exchange/certification_runtime.py
+@@ -57,11 +57,13 @@
+ Only this isolated execution test omits strategy-management restoration. Its
+ restarts are read-only and can never resume entries or rebuild strategy stops.
+ """
++    def intent_rows(self):return self.journal.intents()
++
+     def recover(self):
+         from strategy_freeze import verify_strategy_freeze
+         verify_strategy_freeze()
+         self.revoke('CERTIFICATION_ACCOUNT_RECONCILIATION_REQUIRED')
+-        self.state.tracked_order_ids = {str(r['oid']) for r in self.journal.intents() if r['oid']}
++        self.state.tracked_order_ids = {str(r['oid']) for r in self.intent_rows() if r['oid']}
+         self.reconciler.recover_incremental(self.state, initial_start_ms=self.initial_start_ms)
+         reasons = list(self.state.reasons)
+         before = self.account.get_frontend_open_orders()
+@@ -69,7 +71,7 @@
+         after = self.account.get_frontend_open_orders()
+         if before != after or positions != self.state.positions:
+             reasons.append('CERTIFICATION_ACCOUNT_CHANGED_DURING_RECOVERY')
+-        known = {str(r['oid']): r for r in self.journal.intents() if r['oid']}
++        known = {str(r['oid']): r for r in self.intent_rows() if r['oid']}
+         if any(str(o['oid']) not in known for o in after):
+             reasons.append('UNTRACKED_EXCHANGE_FRONTEND_ORDER')
+         self.state.orders = {str(o['oid']): o for o in after}
+@@ -82,7 +84,7 @@
+         # additionally require every lifecycle uncertainty to be resolved.
+         self.account_truth_ready = not reasons
+         # Resolve terminal owned orders using original identity, never recreate.
+-        for row in self.journal.intents():
++        for row in self.intent_rows():
+             if row['state'] not in {'OPEN', 'UNKNOWN', 'SUBMITTED', 'PREPARED'}:
+                 continue
+             status = self.account._query('orderStatus', oid=row['cloid'])

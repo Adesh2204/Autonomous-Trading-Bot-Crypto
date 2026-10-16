@@ -1,0 +1,15 @@
+...................................................................FF..  [100%]
+=================================== FAILURES ===================================
+_ test_restart_history_cannot_authorize_new_candidate[certification.sqlite-UNKNOWN-PRIOR_CERTIFICATION_UNRESOLVED_REVIEW_REQUIRED] _
+algo-trading-bot/test_qualification_watcher_v8_9.py:531: in test_restart_history_cannot_authorize_new_candidate
+    journal.db.execute('INSERT INTO intents VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+E   sqlite3.OperationalError: table intents has 10 columns but 11 values were supplied
+_ test_restart_history_cannot_authorize_new_candidate[qualification.sqlite-REJECTED-QUALIFICATION_PRIOR_ATTEMPT_READ_ONLY_RECOVERY_REQUIRED] _
+algo-trading-bot/test_qualification_watcher_v8_9.py:531: in test_restart_history_cannot_authorize_new_candidate
+    journal.db.execute('INSERT INTO intents VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+E   sqlite3.OperationalError: table intents has 10 columns but 11 values were supplied
+- generated xml file: /Users/adesh/Autonomous Trading Bot - Crypto /docs/qualification_watcher_v8_9_2026-10-13/focused_fourth.xml -
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_qualification_watcher_v8_9.py::test_restart_history_cannot_authorize_new_candidate[certification.sqlite-UNKNOWN-PRIOR_CERTIFICATION_UNRESOLVED_REVIEW_REQUIRED]
+FAILED algo-trading-bot/test_qualification_watcher_v8_9.py::test_restart_history_cannot_authorize_new_candidate[qualification.sqlite-REJECTED-QUALIFICATION_PRIOR_ATTEMPT_READ_ONLY_RECOVERY_REQUIRED]
+2 failed, 69 passed in 5.70s

@@ -1,0 +1,32 @@
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+________________ test_three_lots_fail_but_two_lots_are_selected ________________
+algo-trading-bot/test_qualification_recovery_v8_7.py:24: in test_three_lots_fail_but_two_lots_are_selected
+    p=module.propose_qualification(ctx,c.live.client,'fixture-source','fixture-policy')
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+docs/qualification_recovery_v8_7_2026-10-13/source_before/testnet_qualification.py:140: in propose_qualification
+    check_entry(context,request,p,client.clock_ms())
+docs/qualification_recovery_v8_7_2026-10-13/source_before/testnet_qualification.py:107: in check_entry
+    raise ExchangeError('QUALIFICATION_BOTH_SIDES_DEPTH_EXCEEDED')
+E   exchange.base_exchange.ExchangeError: QUALIFICATION_BOTH_SIDES_DEPTH_EXCEEDED
+_________________ test_margin_bound_selects_smaller_valid_size _________________
+algo-trading-bot/test_qualification_recovery_v8_7.py:32: in test_margin_bound_selects_smaller_valid_size
+    p=module.propose_qualification(ctx,c.live.client,'fixture-source','fixture-policy')
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+docs/qualification_recovery_v8_7_2026-10-13/source_before/testnet_qualification.py:140: in propose_qualification
+    check_entry(context,request,p,client.clock_ms())
+docs/qualification_recovery_v8_7_2026-10-13/source_before/testnet_qualification.py:120: in check_entry
+    raise ExchangeError('QUALIFICATION_MARGIN_REQUIRED')
+E   exchange.base_exchange.ExchangeError: QUALIFICATION_MARGIN_REQUIRED
+___________ test_stale_clock_is_recovered_before_readiness_snapshot ____________
+algo-trading-bot/test_qualification_recovery_v8_7.py:50: in test_stale_clock_is_recovered_before_readiness_snapshot
+    assert ctx.readiness.clock_healthy and ctx.readiness.account_ready
+E   AssertionError: assert (False)
+E    +  where False = LiveReadiness(status='NOT_READY', reasons=('CLOCK_HEALTH_REQUIRED',), team_address='0x11111111111111111111111111111111...': 10000}, reconciliation_ready=True, clock_healthy=False, rate_limits_healthy=True, signed_transport_implemented=True).clock_healthy
+E    +    where LiveReadiness(status='NOT_READY', reasons=('CLOCK_HEALTH_REQUIRED',), team_address='0x11111111111111111111111111111111...': 10000}, reconciliation_ready=True, clock_healthy=False, rate_limits_healthy=True, signed_transport_implemented=True) = ValidationContext(spec=MarketSpec(symbol='par:BTC', size_decimals=4, max_leverage=10, asset_id=2670000, margin_tiers=(...ing': '.0001', 'openInterest': '10'}}, feed_ready=True, leverage=1, fills=(), reconciled=True, oracle_ms=1790942400001).readiness
+- generated xml file: /Users/adesh/Autonomous Trading Bot - Crypto /docs/qualification_recovery_v8_7_2026-10-13/reproduced_defects_v3.xml -
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_qualification_recovery_v8_7.py::test_three_lots_fail_but_two_lots_are_selected
+FAILED algo-trading-bot/test_qualification_recovery_v8_7.py::test_margin_bound_selects_smaller_valid_size
+FAILED algo-trading-bot/test_qualification_recovery_v8_7.py::test_stale_clock_is_recovered_before_readiness_snapshot
+3 failed in 1.33s

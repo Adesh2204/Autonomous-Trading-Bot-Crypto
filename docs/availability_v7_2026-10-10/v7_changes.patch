@@ -1,0 +1,1298 @@
+--- before/scripts/run_crypto_paper.py
++++ after/scripts/run_crypto_paper.py
+@@ -168,6 +168,11 @@
+     started=time.monotonic()
+     try:
+         client.startup()
++        from exchange.candle_availability import CandleAvailabilityMonitor
++        availability=CandleAvailabilityMonitor(tuple(sorted(client.markets)),clock_ms=client.clock_ms,
++            history_bars=scanner_policy.history_bars)
++        client.availability_monitor=availability
++        client.availability_role='SCANNER'
+         market=HyperliquidMarketData(client)
+         scanner=MarketRegimeScanner(market,scanner_policy)
+         execution=PaperExecution(client.markets,fees=fees,clock_ms=client.clock_ms,
+@@ -218,9 +223,12 @@
+                 client.rate_limits=HyperliquidRateLimitManager(rate_journal)
+             feed_client=HyperliquidClient(rate_limits=client.rate_limits) if client.rate_limits is not None else HyperliquidClient()
+             feed_client.candle_audit=candle_audit
++            feed_client.availability_monitor=availability
+             feed_client.startup()
+             scan_client=HyperliquidClient(rate_limits=client.rate_limits) if client.rate_limits is not None else HyperliquidClient()
+             scan_client.candle_audit=candle_audit
++            scan_client.availability_monitor=availability
++            scan_client.availability_role='SCANNER'
+             scanner=MarketRegimeScanner(HyperliquidMarketData(scan_client),scanner_policy)
+             bot.scanner=scanner
+             engine=ParMarketDataEngine(HyperliquidMarketData(feed_client),history_bars=scanner_policy.history_bars,
+@@ -363,6 +371,9 @@
+             if 'engine' in locals():
+                 bot.feed_health=engine.market_health()
+                 bot.stream_report['market_health']=engine.health_manager.report()
++                bot.stream_report['candle_availability']=availability.snapshot()
++        if 'availability' in locals():
++            atomic_json(output/'candle_availability.json',availability.snapshot(include_records=True))
+         if bot and state and state_ready:
+             state.save(bot,clean=clean)
+             state.backup(args.state_directory/'backups'/'paper-latest.sqlite')
+--- before/scripts/check_practice_health.py
++++ after/scripts/check_practice_health.py
+@@ -30,7 +30,7 @@
+ def describe(value,code,reason):
+     stream=value.get('public_stream') or {};transport=stream.get('transport') or {}
+     state='CONNECTED' if stream.get('connected') and stream.get('reconciled') else 'RECOVERING' if stream.get('connected') else 'DISCONNECTED'
+-    lines=['TEAM ANCHORIUM — PAPER HEALTH','',f'OVERALL: {value.get("overall",reason)}',
++    lines=['TEAM ANCHORIUM — CANDLE AVAILABILITY','Network: Hyperliquid Testnet; DEX: par','',f'OVERALL: {value.get("overall",reason)}',
+         f'PROCESS: {value.get("status","UNKNOWN")}',f'TRANSPORT: {state}',
+         f'SUBSCRIPTIONS: {transport.get("confirmed_count",0)} / {transport.get("desired_count",0)}',
+         f'MISSING: {len(transport.get("missing_acknowledgements",[]))}; DUPLICATES: {transport.get("duplicate_subscriptions","UNKNOWN")}',
+@@ -47,6 +47,33 @@
+         'GLOBAL BLOCKER: '+(', '.join(value.get('global_blockers',value.get('issues',[]))) or 'NONE'),
+         f'CHECK RESULT: {reason}; EXIT CODE: {code}',
+         'ACCOUNT TRUTH: local PAPER ledger; funded execution is not certified.']
++    availability=stream.get('candle_availability') or {}
++    if availability:
++        lines.append('CANDLE SNAPSHOT TIMESTAMP MS: '+str(availability.get('observed_at_ms')))
++        lines+=['','Market | Valid in latest expected window | Missing | Contiguous tail | Last close age ms | Status']
++        for symbol,r in sorted(availability.get('markets',{}).items()):
++            lines.append(f'{symbol} | {r["present"]}/{r["expected_bars"]} | {r["missing"]} | {r["contiguous_valid_tail"]} | {r["last_completed_close_age_ms"]} | {r["status"]}')
++            lines.append('  missing timestamps (first 5): '+str(r['missing_timestamps_ms'][:5]))
++            lines.append('  classifications: '+str({t:r['missing_classifications'][str(t)] for t in r['missing_timestamps_ms'][:5]}))
++            lines.append('  full UTC scanner input: '+str(r['strategy_history']))
++            rec=r['recovery']
++            lines.append(f'  recovery: pending={rec["pending"]}, attempts={rec["attempts"]}, failures={rec["failures"]}, recovered={rec["recovered_missing"]}, next={r["next_recovery_at_ms"]}, deferred={rec["deferred_reason"]}')
++            for source,stats in ((s,r['latency'][s]) for s in ('REST','WS')):
++                lines.append(f'  {source} live reception delay: n={stats["observation_count"]}, median={stats["median_ms"]}, p95={stats["p95_ms"]}, censored={stats["never_observed_intervals"]}')
++        lines.append('Delay includes network/polling; exchange publication clock is unavailable. Startup history excluded from live latency.')
++        market_report=stream.get('market_health') or {}
++        lines.append('RECOVERY QUEUE: '+str(market_report.get('pending',[])))
++        restored=[dict(symbol=e['symbol'],timestamp_ms=e['timestamp_ms']) for e in market_report.get('transitions',[])
++            if e.get('state')=='HEALTHY' and e.get('from_state') in {'QUARANTINED','RECOVERING','REST_RECOVERY_PENDING'}]
++        lines.append('RECENT RESTORATIONS (historical events): '+str(restored[-10:]))
++    lines+=['',f'TRANSPORT_READY: {bool(code in (0,2) and value.get("transport_ready"))}',
++        f'SUBSCRIPTIONS_READY: {bool(code in (0,2) and value.get("subscriptions_ready"))}',
++        f'NATIVE_FEED_READY: {feed}',
++        f'HEALTHY_MARKET_COUNT: {value.get("usable_markets",0)}',
++        f'QUARANTINED_MARKET_COUNT: {sum(bool(h.get("quarantined")) for h in value.get("market_health",{}).values())}',
++        f'SCANNER_EVALUATION_ALLOWED: {bool(code==0 and value.get("scanner_evaluation_allowed"))}',
++        f'SIGNAL_AVAILABLE: {bool(value.get("signal_available"))}',
++        'RATE BUDGET: '+str(stream.get('public_rate_budget') or 'UNKNOWN')]
+     return '\n'.join(lines)
+ 
+ 
+--- before/algo-trading-bot/venue_config.py
++++ after/algo-trading-bot/venue_config.py
+@@ -31,6 +31,9 @@
+     execution. Manual wallet verification and explicit user authorization remain
+     future prerequisites; this module implements no activation path.
+     """
++    if (os.environ.get('SIGNAL_DATA_MODE','PAR_NATIVE_ONLY')!='PAR_NATIVE_ONLY' or
++            os.environ.get('EXTERNAL_SIGNAL_LIVE_APPROVED','false').lower()!='false'):
++        raise MigrationPolicyError('MIGRATION_NATIVE_SIGNAL_SOURCE_REQUIRED')
+     if os.environ.get('HL_NETWORK', _defaults.get('HL_NETWORK') or 'testnet').strip().lower()!='testnet':
+         raise MigrationPolicyError('MIGRATION_TESTNET_REQUIRED')
+     if os.environ.get('HL_DEX', _defaults.get('HL_DEX') or 'par').strip()!='par':
+--- before/algo-trading-bot/market_stream.py
++++ after/algo-trading-bot/market_stream.py
+@@ -16,6 +16,8 @@
+         self.next_recovery_ms=0
+         self.last_account_recovery_ms=None
+         self._pending=queue.Queue()
++        self._availability_report=None
++        self._availability_observed_ms=None
+         engine.on_lifecycle=self._pending.put
+ 
+     def run(self,stop):
+@@ -93,6 +95,10 @@
+         bot.market_snapshots=snapshots
+         bot.breakers.update_symbols(health)
+         bot.feed_health=health
++        if hasattr(self.engine,'availability') and (self._availability_observed_ms is None or
++                bot.clock_ms()-self._availability_observed_ms>=30000):
++            self._availability_report=self.engine.availability.snapshot()
++            self._availability_observed_ms=bot.clock_ms()
+         bot.stream_report=dict(connected=self.engine.connected,reconciled=self.engine.reconciled,
+             generation=self.engine.recovery_generation,accepted_generation=self.accepted_generation,
+             messages=self.engine.messages,reconnections=self.engine.reconnections,
+@@ -101,6 +107,7 @@
+             transport=self.engine.transport_health.report(),recovery_status=self.engine.recovery_status,
+             public_rate_budget=self.engine.rates.report() if self.engine.rates is not None else None,
+             market_health=self.engine.health_manager.report() if hasattr(self.engine,'health_manager') else None,
++            candle_availability=self._availability_report,
+             feed_ready=bool(self.accepted_generation==self.engine.recovery_generation and
+                 self.recovery and not self.recovery['entries_paused'] and
+                 self.engine.connected and self.engine.reconciled and any(s['healthy'] for s in health.values())),
+--- before/algo-trading-bot/exchange/paper_operations.py
++++ after/algo-trading-bot/exchange/paper_operations.py
+@@ -97,6 +97,10 @@
+             feed_ready=bool(operating_feed_ready and status=='RUNNING'),
+             last_operating_feed_ready=operating_feed_ready,trade_ready=False,
+             transport_ready=transport_ready,subscriptions_ready=subscription_ready,
++            native_feed_ready=bool(operating_feed_ready and status=='RUNNING'),
++            scanner_evaluation_allowed=bool(operating_feed_ready and status=='RUNNING'),
++            signal_available=bool(scan and any(d.symbol in scan.watchlist and d.signal and
++                (d.signal.get('long') or d.signal.get('short')) for d in scan.diagnostics)),
+             reconciliation_ready=account_ready,global_blockers=issues,
+             scan_status=scan.status if scan else None,rejections={d.symbol:d.reasons for d in scan.diagnostics} if scan else {},
+             local_fills=len(bot.execution.fills),local_positions=len(bot.execution.portfolio.positions),
+--- before/algo-trading-bot/exchange/market_health.py
++++ after/algo-trading-bot/exchange/market_health.py
+@@ -122,13 +122,16 @@
+                 r.update(healthy=False,quarantined=True)
+                 self._transition(s,'RECOVERING',now_ms,tuple(r['reasons'])+('REST_RECOVERY_PENDING',))
+ 
+-    def finish_recovery(self,symbols,now_ms):
++    def finish_recovery(self,symbols,now_ms,*,delay_hints=None):
+         with self._lock:
+             for s in symbols:
+                 self.pending.discard(s)
+                 r=self.records[s]
+                 # Failed/unchanged inputs back off to at most five minutes.
+-                r['next_retry_at_ms']=now_ms+min(300000,self.retry_ms*2**min(4,max(0,r.get('consecutive_recovery_attempts',1)-1)))
++                delay=min(300000,self.retry_ms*2**min(4,max(0,r.get('consecutive_recovery_attempts',1)-1)))
++                hint=(delay_hints or {}).get(s)
++                if hint is not None:delay=min(300000,max(delay,int(hint)))
++                r['next_retry_at_ms']=now_ms+delay
+ 
+     def due(self,now_ms):
+         with self._lock:
+--- before/algo-trading-bot/exchange/hyperliquid_market_data.py
++++ after/algo-trading-bot/exchange/hyperliquid_market_data.py
+@@ -13,6 +13,7 @@
+ from .feed_transport import FeedTransportHealth
+ from .market_health import MarketHealthManager, validate_history
+ from .candle_audit import merge_candle
++from .candle_availability import CandleAvailabilityMonitor
+ 
+ INTERVAL_MS = {'1m': 60_000, '3m': 180_000, '5m': 300_000, '15m': 900_000,
+                '30m': 1_800_000, '1h': 3_600_000, '2h': 7_200_000,
+@@ -120,6 +121,11 @@
+         if not isinstance(result, list):
+             raise ExchangeError('INVALID_CANDLE_RESPONSE')
+         as_of = self.client.clock_ms() if now_ms is None else timestamp(now_ms)
++        monitor=getattr(self.client,'availability_monitor',None)
++        if monitor is not None and interval=='1m':
++            monitor.observe_rest(symbol,start_ms,end_ms,result,parse_candle,
++                self.client.last_received_ms or self.client.clock_ms(),as_of,
++                role=getattr(self.client,'availability_role',None))
+         rows=result
+         candles = {}
+         for row in result:
+@@ -192,6 +198,9 @@
+         self.health_manager=MarketHealthManager(self.symbols,history_bars=history_bars)
+         self.input_errors=defaultdict(dict)
+         self.scanner_errors={}
++        self.availability=getattr(self.client,'availability_monitor',None) or CandleAvailabilityMonitor(
++            self.symbols,clock_ms=self.client.clock_ms,history_bars=history_bars)
++        self.client.availability_monitor=self.availability
+ 
+     def _lifecycle(self,phase,**details):
+         if self.on_lifecycle:
+@@ -216,11 +225,21 @@
+     def reconcile_history(self, generation=None, symbols=None):
+         selected=self.symbols if symbols is None else tuple(symbols)
+         self.health_manager.begin_recovery(selected,self.client.clock_ms())
++        for symbol in selected:self.availability.recovery_begin(symbol,self.client.clock_ms())
++        failure=None
+         try:
+             return self._reconcile_history(generation,selected)
++        except Exception as exc:
++            failure=str(exc)
++            raise
+         finally:
+-            self.health_manager.finish_recovery(selected,self.client.clock_ms())
++            self.health_manager.finish_recovery(selected,self.client.clock_ms(),
++                delay_hints={s:self.availability.retry_hint_ms(s) for s in selected})
+             self.market_health()
++            for symbol in selected:
++                event=self.availability.recovery_finish(symbol,self.client.clock_ms(),failure or self.recovery_errors.get(symbol))
++                if getattr(self.client,'candle_audit',None) is not None:
++                    self.client.candle_audit.record('AVAILABILITY_RECOVERY',symbol=symbol,**event)
+ 
+     def _reconcile_history(self, generation=None, symbols=None):
+         selected=self.symbols if symbols is None else tuple(symbols)
+@@ -242,7 +261,14 @@
+             completed=sorted((b for b in previous if start<=b.timestamp_ms<=end),key=lambda b:b.timestamp_ms)
+             # A narrow tail repair cannot fill an older hole or warm up a short buffer.
+             if len(completed)<self.history_bars or any(b.timestamp_ms-a.timestamp_ms!=60000
+-                    for a,b in zip(completed,completed[1:])):repair_start=start
++                    for a,b in zip(completed,completed[1:])):
++                missing=sorted(set(range(start,end+1,60000))-{b.timestamp_ms for b in completed})
++                # Preserve the proven full-window repair when history is short
++                # or gapped; identify exact holes without dropping retained scope.
++                repair_start=start
++                if getattr(self.client,'candle_audit',None) is not None:
++                    self.client.candle_audit.record('AVAILABILITY_REPAIR_PLAN',symbol=symbol,
++                        missing_timestamps_ms=missing,request_start_ms=repair_start,request_end_ms=end)
+             try:
+                 fresh=self.market.get_candles(symbol,repair_start,end,now_ms=now)
+                 combined={b.timestamp_ms:b for b in previous if start<=b.timestamp_ms<=end}
+@@ -344,6 +370,8 @@
+             with self._lock:self.input_errors[symbol][component]=str(exc)
+             if message.get('channel')=='candle' and getattr(self.client,'candle_audit',None) is not None:
+                 self.client.candle_audit.record('CANDLE_REJECTED',symbol=symbol,reason=str(exc),source='WS')
++            if message.get('channel')=='candle':
++                self.availability.reject(symbol,str(exc),timestamp_ms=row.get('t'),source='WS')
+             self._lifecycle('MARKET_DATA_QUARANTINED',symbol=symbol,reason=str(exc))
+             return False
+ 
+@@ -427,6 +455,7 @@
+                                      processed_timestamp_ms=self.client.clock_ms())
+                     if candle.timestamp_ms > self.client.clock_ms():
+                         raise ExchangeError('FUTURE_STREAM_CANDLE')
++                    self.availability.observe_candle(candle,'WS',received_ms)
+                     self.candles[symbol][candle.timestamp_ms] = merge_candle(
+                         self.candles[symbol].get(candle.timestamp_ms),candle,received_ms)
+                     keys = sorted(self.candles[symbol])
+@@ -446,7 +475,9 @@
+                 self.context_times.get(s),dict(self.input_errors[s],**({'scanner_history':self.scanner_errors[s]}
+                     if s in self.scanner_errors else {}),**({'recovery':self.recovery_errors[s]}
+                     if s in self.recovery_errors else {})),self.get_observations(s)) for s in self.symbols}
+-        return {s:self.health_manager.evaluate(s,*v[:4],now,errors=v[4],observations=v[5]) for s,v in values.items()}
++        result={s:self.health_manager.evaluate(s,*v[:4],now,errors=v[4],observations=v[5]) for s,v in values.items()}
++        for s,v in values.items():self.availability.update_cache(s,v[0],now,result[s])
++        return result
+ 
+     def publish_public_snapshot(self,symbol,candles,book,context,context_ms):
+         """Share validated scanner REST facts; keep its full UTC brain lookback intact."""
+@@ -602,7 +633,8 @@
+                     if time.monotonic()>=next_health_check:
+                         self.market_health()
+                         next_health_check=time.monotonic()+1
+-                    due=self.health_manager.due(self.client.clock_ms())
++                    due=self.availability.prioritize(self.health_manager.due(self.client.clock_ms()),
++                        self.health_manager.snapshot())
+                     if due and self.reconciled and not self._recovery_worker.is_alive() and recovered.empty():
+                         self.recovery_status='RECOVERING'
+                         self._recovery_worker=threading.Thread(target=lambda selected=due:repair(selected=selected),
+--- before/algo-trading-bot/exchange/candle_availability.py
++++ after/algo-trading-bot/exchange/candle_availability.py
+@@ -0,0 +1,317 @@
++"""Native public candle observations. Measures availability, never creates bars.
++
++Reception minus close is an observation-delay estimate, not an exchange-side
++publication timestamp. Startup history is left-censored; absent live intervals
++are right-censored. Scanner decisions and the existing health gates remain truth.
++"""
++from collections import Counter
++from copy import deepcopy
++import math
++import threading
++
++from .base_exchange import ExchangeError
++from .market_health import validate_history
++
++MINUTE = 60000
++
++
++def sequence_lengths(timestamps):
++    longest = tail = 0
++    previous = None
++    for t in sorted(set(timestamps)):
++        tail = tail + 1 if previous is not None and t - previous == MINUTE else 1
++        longest = max(longest, tail)
++        previous = t
++    return longest, tail
++
++
++def distribution(values):
++    values = sorted(values)
++    def percentile(p):
++        if not values:
++            return None
++        index = (len(values) - 1) * p
++        lo, hi = math.floor(index), math.ceil(index)
++        return values[lo] + (values[hi] - values[lo]) * (index - lo)
++    return dict(observation_count=len(values), median_ms=percentile(.5),
++        p90_ms=percentile(.9), p95_ms=percentile(.95), p99_ms=percentile(.99),
++        max_ms=max(values) if values else None,
++        sufficient_for_adaptive_retry=len(values) >= 20,
++        basis='LOCAL_FIRST_COMPLETED_RECEPTION_MINUS_LOGICAL_CLOSE; NETWORK_AND_POLLING_NOT_SEPARABLE')
++
++
++class CandleAvailabilityMonitor:
++    def __init__(self, symbols, *, clock_ms, history_bars=300, retained_intervals=5000):
++        self.symbols = tuple(symbols)
++        if (not self.symbols or len(set(self.symbols)) != len(self.symbols) or
++                any(not s.startswith('par:') for s in self.symbols)):
++            raise ExchangeError('AVAILABILITY_PAR_UNIVERSE_REQUIRED')
++        self.clock_ms = clock_ms
++        self.started_ms = clock_ms()
++        self.history_bars = history_bars
++        self.retained_intervals = retained_intervals
++        if (type(history_bars) is not int or type(retained_intervals) is not int or
++                not 1<=history_bars<=retained_intervals<=5000):
++            raise ExchangeError('AVAILABILITY_RETENTION_INVALID')
++        self.lock = threading.RLock()
++        self.rows = {s: {} for s in self.symbols}
++        self.requests = {s: [] for s in self.symbols}
++        self.errors = {s: Counter() for s in self.symbols}
++        self.recoveries = {s: dict(attempts=0, failures=0, consecutive_failures=0,
++            recovered_missing=0, last_success_ms=None, pending=False, deferred_reason=None,
++            events=[]) for s in self.symbols}
++        self.strategy = {}
++        self.cache = {}
++        self.health = {}
++
++    def _require(self, symbol):
++        if symbol not in self.rows:
++            raise ExchangeError('AVAILABILITY_MARKET_IDENTITY_MISMATCH')
++
++    def _row(self, symbol, t):
++        self._require(symbol)
++        row = self.rows[symbol].setdefault(t, dict(timestamp_ms=t,
++            expected_close_ms=t + MINUTE, exchange_publication_timestamp_ms=None,
++            first_observed_at_ms=None, sources={}, rejected=[], conflict=False,
++            missing_first_observed_ms=None, rest_absent_count=0))
++        return row
++
++    def _prune(self, symbol, now):
++        cutoff = now // MINUTE * MINUTE - self.retained_intervals * MINUTE
++        self.rows[symbol] = {t:r for t,r in self.rows[symbol].items()
++            if cutoff <= t <= now // MINUTE * MINUTE}
++
++    def observe_candle(self, candle, source, received_ms):
++        if source not in {'REST', 'WS'}:
++            raise ExchangeError('NATIVE_SOURCE_REQUIRED')
++        with self.lock:
++            r = self._row(candle.symbol, candle.timestamp_ms)
++            if r['first_observed_at_ms'] is None:
++                r['first_observed_at_ms'] = received_ms
++            # Decimal equality preserves equivalent encodings such as 1/1.00.
++            facts = tuple(getattr(candle, k) for k in ('open','high','low','close','volume'))
++            complete = candle.timestamp_ms + MINUTE <= received_ms
++            old = r['sources'].get(source)
++            if old is None:
++                old = r['sources'][source] = dict(first_observed_at_ms=received_ms,
++                    first_completed_observed_at_ms=None, last_observed_at_ms=received_ms,
++                    observations=0, duplicates=0, latest_facts=None, completed_facts=None)
++            if old['latest_facts'] == facts:
++                old['duplicates'] += 1
++            if complete:
++                for other in r['sources'].values():
++                    if other['completed_facts'] is not None and other['completed_facts'] != facts:
++                        r['conflict'] = True
++                if old['first_completed_observed_at_ms'] is None:
++                    old['first_completed_observed_at_ms'] = received_ms
++                    old['completed_facts'] = facts
++                    if source == 'REST' and r['missing_first_observed_ms'] is not None:
++                        self.recoveries[candle.symbol]['recovered_missing'] += 1
++                    if r['missing_first_observed_ms'] is not None and received_ms > r['missing_first_observed_ms']:
++                        r['availability_classification']='CANDLE_PUBLICATION_DELAYED'
++            old.update(last_observed_at_ms=received_ms, latest_facts=facts,
++                observations=old['observations'] + 1)
++            self._prune(candle.symbol, received_ms)
++
++    def reject(self, symbol, reason, *, timestamp_ms=None, source=None):
++        with self.lock:
++            self._require(symbol)
++            self.errors[symbol][reason] += 1
++            if type(timestamp_ms) is int and timestamp_ms % MINUTE == 0:
++                r = self._row(symbol, timestamp_ms)
++                r['rejected'] = (r['rejected'] + [dict(reason=reason, source=source,
++                    observed_at_ms=self.clock_ms())])[-10:]
++                if 'CONFLICT' in reason:
++                    r['conflict'] = True
++                self._prune(symbol,self.clock_ms())
++
++    def observe_rest(self, symbol, start_ms, end_ms, raw, parse, received_ms, as_of_ms, *, role=None):
++        """Wire-derived observations are separate from cache/scanner acceptance."""
++        self._require(symbol)
++        valid = []; seen = set(); rejected = 0
++        if not isinstance(raw, list):
++            self.reject(symbol, 'INVALID_CANDLE_RESPONSE', source='REST')
++            return
++        for row in raw:
++            try:
++                c = parse(row, symbol, '1m')
++                if not start_ms <= c.timestamp_ms <= end_ms:
++                    raise ExchangeError('CANDLE_OUTSIDE_REQUESTED_RANGE')
++                if c.timestamp_ms > as_of_ms:
++                    raise ExchangeError('FUTURE_REST_CANDLE')
++                self.observe_candle(c, 'REST', received_ms)
++                if c.timestamp_ms + MINUTE <= as_of_ms:
++                    valid.append(c); seen.add(c.timestamp_ms)
++            except (ExchangeError, ValueError, TypeError) as exc:
++                rejected += 1
++                self.reject(symbol, str(exc), timestamp_ms=row.get('t') if isinstance(row,dict) else None, source='REST')
++        with self.lock:
++            expected = range((start_ms + MINUTE - 1) // MINUTE * MINUTE,
++                min(end_ms // MINUTE * MINUTE, as_of_ms // MINUTE * MINUTE - MINUTE) + 1, MINUTE)
++            for t in expected:
++                if t not in seen:
++                    r = self._row(symbol, t)
++                    if r['missing_first_observed_ms'] is None:
++                        r['missing_first_observed_ms'] = received_ms
++                    r['rest_absent_count'] += 1
++            self.requests[symbol] = (self.requests[symbol] + [dict(start_ms=start_ms,
++                end_ms=end_ms, received_ms=received_ms, as_of_ms=as_of_ms,
++                raw_count=len(raw), valid_completed_count=len(seen), rejected_count=rejected,
++                expected_count=len(expected), missing_count=len(expected) - len(seen), role=role)])[-40:]
++            if role == 'SCANNER':
++                reason = None
++                bars = sorted({c.timestamp_ms:c for c in valid}.values(), key=lambda c:c.timestamp_ms)
++                try:
++                    if rejected:
++                        raise ExchangeError('CANDLE_REJECTED_BY_VALIDATOR')
++                    if any(self.rows[symbol][c.timestamp_ms]['conflict'] for c in bars):
++                        raise ExchangeError('CANDLE_MERGE_CONFLICT')
++                    validate_history(symbol, bars, as_of_ms, self.history_bars)
++                    if not 0 <= as_of_ms - (bars[-1].timestamp_ms + MINUTE) <= 120000:
++                        raise ExchangeError('COMPLETED_CANDLE_STALE')
++                except (ExchangeError, ValueError, TypeError) as exc:
++                    reason = str(exc)
++                self.strategy[symbol] = dict(observed_ms=received_ms, as_of_ms=as_of_ms,
++                    requested_start_ms=start_ms, requested_end_ms=end_ms,
++                    completed_count=len(bars), requested_interval_count=len(expected),
++                    requested_window_missing_count=len(expected) - len(seen),
++                    last_close_ms=bars[-1].timestamp_ms + MINUTE if bars else None,
++                    history_gate_passed=reason is None, reason=reason,
++                    scope='ACTUAL_SCANNER_REST_INPUT; FROZEN_VALIDATION; NOT_SIGNAL_OR_ADMISSION')
++            self._prune(symbol, received_ms)
++
++    def update_cache(self, symbol, candles, now_ms, health):
++        with self.lock:
++            self._require(symbol)
++            self.cache[symbol] = sorted({c.timestamp_ms for c in candles if c.timestamp_ms + MINUTE <= now_ms})
++            self.health[symbol] = deepcopy(health)
++
++    def recovery_begin(self, symbol, now_ms):
++        with self.lock:
++            r = self.recoveries[symbol]
++            r.update(pending=True, attempts=r['attempts'] + 1, started_ms=now_ms,
++                recovered_before=r['recovered_missing'], deferred_reason=None)
++            last=now_ms//MINUTE*MINUTE-MINUTE
++            r['cache_missing_before']=sorted(set(range(last-(self.history_bars-1)*MINUTE,last+1,MINUTE))-
++                set(self.cache.get(symbol,[])))
++
++    def recovery_finish(self, symbol, now_ms, error=None):
++        with self.lock:
++            r = self.recoveries[symbol]
++            health = self.health.get(symbol, {})
++            success = not error and health.get('healthy') is True
++            r.update(pending=False, consecutive_failures=0 if success else r['consecutive_failures'] + 1)
++            if not success:
++                r['failures'] += 1
++            else:
++                r['last_success_ms'] = now_ms
++            if error and any(x in str(error).upper() for x in ('BUDGET','RATE','DEADLINE')):
++                r['deferred_reason'] = 'RATE_BUDGET_RECOVERY_DEFERRED'
++            event = dict(started_ms=r.get('started_ms'), finished_ms=now_ms, success=success,
++                error=str(error) if error else None, health_reasons=health.get('reasons',[]),
++                recovered_missing=r['recovered_missing'] - r.get('recovered_before',r['recovered_missing']))
++            event['cache_holes_filled']=len(set(r.get('cache_missing_before',[]))&set(self.cache.get(symbol,[])))
++            event['cache_holes_scope']='GENUINE_CACHE_ADMISSIONS_DURING_RECOVERY; REST_VS_WS_CAUSALITY_NOT_ASSUMED; INCLUDES_WARMUP'
++            r['events'] = (r['events'] + [event])[-40:]
++            return deepcopy(event)
++
++    def _latency(self, symbol, now):
++        rows = self.rows[symbol]
++        live = [r for t,r in rows.items() if self.started_ms < t + MINUTE <= now]
++        out = {}
++        for source in ('REST','WS'):
++            values = [r['sources'][source]['first_completed_observed_at_ms'] - r['expected_close_ms']
++                for r in live if source in r['sources'] and
++                r['sources'][source]['first_completed_observed_at_ms'] is not None]
++            out[source] = distribution(values)
++            out[source]['never_observed_intervals'] = len(live) - len(values)
++        out['left_censored_startup_intervals'] = sum(t + MINUTE <= self.started_ms for t in rows)
++        out['right_censored_live_intervals'] = sum(not any(v['first_completed_observed_at_ms'] is not None
++            for v in r['sources'].values()) for r in live)
++        out['first_observed_through_ws'] = sum(r['sources'].get('WS',{}).get('first_completed_observed_at_ms') is not None and
++            (r['sources'].get('REST',{}).get('first_completed_observed_at_ms') is None or
++             r['sources']['WS']['first_completed_observed_at_ms'] < r['sources']['REST']['first_completed_observed_at_ms']) for r in live)
++        return out
++
++    def retry_hint_ms(self, symbol):
++        with self.lock:
++            stats = self._latency(symbol, self.clock_ms())['REST']
++            if not stats['sufficient_for_adaptive_retry']:
++                return None
++            return min(300000, max(30000, int(stats['p95_ms'])))
++
++    def prioritize(self, symbols, health_records):
++        # Old due deadlines lead: near-ready preference only within a 30s cohort.
++        # Every selected symbol is still processed by the same single worker.
++        with self.lock:
++            return tuple(sorted(symbols, key=lambda s:(health_records[s]['next_retry_at_ms']//30000,
++                self.history_bars - min(self.history_bars,len(self.cache.get(s,[]))),
++                health_records[s]['next_retry_at_ms'],s)))
++
++    def snapshot(self, *, now_ms=None, include_records=False):
++        now = self.clock_ms() if now_ms is None else now_ms
++        with self.lock:
++            out = {}
++            last = now // MINUTE * MINUTE - MINUTE
++            expected = list(range(last - (self.history_bars - 1) * MINUTE, last + 1, MINUTE))
++            for s in self.symbols:
++                for t in expected:
++                    r = self._row(s,t)
++                    if not any(v['first_completed_observed_at_ms'] is not None for v in r['sources'].values()) and r['missing_first_observed_ms'] is None:
++                        r['missing_first_observed_ms'] = now
++                self._prune(s,now)
++                cache = self.cache.get(s,[]); present = set(cache) & set(expected)
++                missing = sorted(set(expected) - present)
++                reasons = {}
++                requests = self.requests[s]
++                for t in missing:
++                    r = self.rows[s][t]; classifications = []
++                    if r['conflict']: classifications.append('CANDLE_MERGE_CONFLICT')
++                    if r['rejected']: classifications.append('CANDLE_REJECTED_BY_VALIDATOR')
++                    if any(v['first_completed_observed_at_ms'] is not None for v in r['sources'].values()):
++                        classifications.append('CANDLE_CACHE_MISSING')
++                    elif r['rest_absent_count']:
++                        classifications.append('CANDLE_ABSENT_IN_COVERED_REST_RESPONSE')
++                    elif requests:
++                        classifications.append('REST_REQUEST_WINDOW_INCOMPLETE')
++                    else: classifications.append('CANDLE_NOT_YET_OBSERVED')
++                    if not r['sources']:classifications.append('CAUSE_UNDETERMINED')
++                    if self.started_ms < t + MINUTE <= now and 'WS' not in r['sources']:
++                        classifications.append('WEBSOCKET_EVENT_NOT_OBSERVED')
++                    if self.recoveries[s]['deferred_reason']:
++                        classifications.append(self.recoveries[s]['deferred_reason'])
++                    reasons[str(t)] = classifications
++                longest, tail = sequence_lengths(cache)
++                h = self.health.get(s,{})
++                strategy = deepcopy(self.strategy.get(s,{}))
++                current_strategy = bool(strategy.get('history_gate_passed') and
++                    strategy.get('last_close_ms') is not None and
++                    0 <= now - strategy['last_close_ms'] <= 120000)
++                out[s] = dict(trusted_local_timestamp_ms=now,
++                    exchange_current_timestamp_ms=None, expected_last_completed_start_ms=last,
++                    expected_last_completed_close_ms=last + MINUTE, expected_bars=self.history_bars,
++                    present=len(present), missing=len(missing), missing_timestamps_ms=missing,
++                    missing_classifications=reasons, longest_uninterrupted_sequence=longest,
++                    contiguous_valid_tail=tail, valid_completed_held=len(cache),
++                    history_classifications=[] if tail>=self.history_bars else ['INSUFFICIENT_CONTIGUOUS_HISTORY'],
++                    latest_genuine_observed_start_ms=max((t for t,r in self.rows[s].items() if r['sources']),default=None),
++                    last_completed_close_age_ms=now - (cache[-1]+MINUTE) if cache else None,
++                    strategy_history=strategy, strategy_history_current=current_strategy,
++                    eligible_for_scanner_evaluation=bool(h.get('healthy') and current_strategy),
++                    authoritative_market_healthy=h.get('healthy',False),
++                    quarantine_reason=h.get('reasons',['MARKET_HEALTH_UNKNOWN']),
++                    status=h.get('state','UNKNOWN'), next_recovery_at_ms=h.get('next_retry_at_ms'),
++                    latency=self._latency(s,now), recovery=deepcopy(self.recoveries[s]),
++                    duplicates=sum(v['duplicates'] for r in self.rows[s].values() for v in r['sources'].values()),
++                    conflicting_intervals=sum(r['conflict'] for r in self.rows[s].values()),
++                    malformed_candles=dict(self.errors[s]), rest_observation_history=deepcopy(requests),
++                    delayed_intervals=sum(r['missing_first_observed_ms'] is not None and any(
++                        v['first_completed_observed_at_ms'] is not None and v['first_completed_observed_at_ms'] > r['missing_first_observed_ms']
++                        for v in r['sources'].values()) for r in self.rows[s].values()))
++                if include_records:
++                    out[s]['interval_observations'] = deepcopy(self.rows[s])
++            return dict(provenance='NATIVE_PAR_PUBLIC_OBSERVATIONS_ONLY', network='testnet',dex='par',
++                observed_at_ms=now, observation_started_ms=self.started_ms,
++                retention_intervals=self.retained_intervals, markets=out,
++                publication_timestamp_scope='UNAVAILABLE; OBSERVATION_DELAYS_ONLY',
++                readiness_scope='MONITOR DOES NOT AUTHORIZE ORDERS OR REPLACE SCANNER DECISIONS')
+--- before/algo-trading-bot/research_intelligence/external_data.py
++++ after/algo-trading-bot/research_intelligence/external_data.py
+@@ -0,0 +1,222 @@
++"""Isolated, opt-in source comparison. No native cache, wallet or execution API.
++
++Research candles intentionally do not use par symbols or the native Candle type.
++Provider keys are not read here. All observed times remain original provenance.
++"""
++from dataclasses import dataclass, asdict
++from decimal import Decimal
++import json
++from typing import Protocol
++
++from exchange.base_exchange import ExchangeError, decimal
++
++NATIVE_UNITS={'par:BTC':'USD_PER_BTC','par:ETH':'USD_PER_ETH','par:HYPE':'USD_PER_HYPE',
++    'par:SP500':'INDEX_POINTS','par:EWY':'USD_PER_SHARE','par:EWJ':'USD_PER_SHARE',
++    'par:BRENT':'USD_PER_BARREL','par:GOLD':'USD_PER_TROY_OUNCE',
++    'par:USDEUR':'USD_PER_EUR','par:USDJPY':'JPY_PER_USD'}
++
++
++@dataclass(frozen=True)
++class ResearchCandle:
++    source_id: str
++    symbol: str
++    timestamp_ms: int
++    close_timestamp_ms: int
++    open: Decimal
++    high: Decimal
++    low: Decimal
++    close: Decimal
++    volume: Decimal | None
++    volume_units: str
++    price_units: str
++    observed_at_ms: int
++    validation_status: str = 'VALIDATED_PUBLIC_RESEARCH_RECORD'
++    interval: str = '1m'
++
++    def __post_init__(self):
++        if (not self.source_id or not self.symbol or self.symbol.startswith('par:') or
++                self.interval!='1m' or type(self.timestamp_ms) is not int or self.timestamp_ms%60000 or
++                self.close_timestamp_ms not in {self.timestamp_ms+59999,self.timestamp_ms+60000} or
++                type(self.observed_at_ms) is not int or self.observed_at_ms<self.timestamp_ms+60000 or
++                not self.price_units or not self.volume_units or
++                self.validation_status!='VALIDATED_PUBLIC_RESEARCH_RECORD'):
++            raise ExchangeError('EXTERNAL_PROVENANCE_OR_BOUNDARIES_INVALID')
++        for k in ('open','high','low','close'):
++            object.__setattr__(self,k,decimal(getattr(self,k),positive=True))
++        if self.high<max(self.open,self.low,self.close) or self.low>min(self.open,self.high,self.close):
++            raise ExchangeError('EXTERNAL_OHLC_INVALID')
++        if self.volume is not None:object.__setattr__(self,'volume',decimal(self.volume,nonnegative=True))
++
++
++@dataclass(frozen=True)
++class AssetMapping:
++    native_symbol: str
++    source_id: str
++    source_symbol: str
++    price_units: str
++    fx_direction: str | None = None
++    volume_units: str = 'UNVERIFIED'
++    comparable_volume: bool = False
++    review_reference: str | None = None
++    instrument_status: str = 'EXTERNAL_SOURCE_UNVERIFIED'
++
++    def validate(self, candle, *, for_vwap=False):
++        if (self.native_symbol not in NATIVE_UNITS or self.source_symbol.startswith('par:') or
++                candle.source_id!=self.source_id or candle.symbol!=self.source_symbol or
++                not self.review_reference or self.instrument_status not in {
++                    'EXTERNAL_SOURCE_VALIDATED_FOR_RESEARCH','EXTERNAL_SOURCE_POTENTIALLY_COMPATIBLE'}):
++            raise ExchangeError('EXTERNAL_INSTRUMENT_MAPPING_UNVERIFIED')
++        if candle.price_units!=self.price_units or self.price_units!=NATIVE_UNITS[self.native_symbol]:
++            raise ExchangeError('EXTERNAL_PRICE_UNITS_MISMATCH')
++        expected={'par:USDEUR':'USD_PER_EUR','par:USDJPY':'JPY_PER_USD'}
++        if self.native_symbol in expected and (self.fx_direction!=expected[self.native_symbol] or
++                                               self.price_units!=expected[self.native_symbol]):
++            raise ExchangeError('EXTERNAL_FX_DIRECTION_MISMATCH')
++        if for_vwap and (self.comparable_volume is not True or candle.volume is None or
++                candle.volume_units!=self.volume_units or candle.volume_units in {'TICK','UNKNOWN','UNVERIFIED','NONE'}):
++            raise ExchangeError('EXTERNAL_VOLUME_NOT_COMPARABLE_FOR_VWAP')
++
++
++class MarketDataSource(Protocol):
++    source_id: str
++    def get_candles(self, symbol: str, start_ms: int, end_ms: int) -> tuple[ResearchCandle,...]: ...
++
++
++class RecordedMarketDataSource:
++    def __init__(self, candles, *, research_enabled=False):
++        if research_enabled is not True:raise ExchangeError('EXTERNAL_RESEARCH_DISABLED')
++        self.records=tuple(candles)
++        if not self.records or len({c.source_id for c in self.records})!=1:
++            raise ExchangeError('EXTERNAL_SOURCE_ID_REQUIRED')
++        self.source_id=self.records[0].source_id
++
++    def get_candles(self, symbol, start_ms, end_ms):
++        return tuple(c for c in self.records if c.symbol==symbol and start_ms<=c.timestamp_ms<=end_ms)
++
++
++class HyperliquidReferenceSource:
++    """Bounded public mainnet reads for research; a distinct trust boundary.
++
++    Only two metadata reads plus one candle read per requested reference. Uses
++    the established weighted rate manager supplied by a research-only runner.
++    No /exchange URL, signer, account query, mutable cache or fallback exists.
++    """
++    source_id='HYPERLIQUID_MAINNET_REFERENCE'
++    URL='https://api.hyperliquid.xyz/info'
++    ALLOWED=('BTC','ETH','HYPE','xyz:SP500','xyz:EWY','xyz:EWJ','xyz:BRENTOIL','xyz:GOLD','xyz:EUR','xyz:JPY')
++
++    def __init__(self, *, rates, clock_ms, research_enabled=False, transport=None):
++        if research_enabled is not True:raise ExchangeError('EXTERNAL_RESEARCH_DISABLED')
++        self.rates=rates;self.clock_ms=clock_ms;self._transport=transport;self.reads=0
++        self.evidence=[];self.metadata={}
++
++    def _read(self, payload):
++        if payload.get('type') not in {'meta','candleSnapshot'} or self.reads>=12:
++            raise ExchangeError('EXTERNAL_PUBLIC_READ_SCOPE_OR_BUDGET')
++        self.reads+=1
++        def operation():
++            if self._transport:return self._transport(payload)
++            raise ExchangeError('EXTERNAL_PUBLIC_TRANSPORT_REQUIRED')
++        req=payload.get('req',{})
++        expected=(req.get('endTime',0)-req.get('startTime',0))//60000+1 if req else 0
++        result=self.rates.read(payload['type'],operation,request_key='external:'+json.dumps(payload,sort_keys=True),expected_items=expected)
++        self.evidence.append(dict(request=payload,response=result,observed_at_ms=self.clock_ms(),
++            source_id=self.source_id,network='mainnet',purpose='RESEARCH_ONLY'))
++        return result
++
++    def get_candles(self, symbol, start_ms, end_ms):
++        if (symbol not in self.ALLOWED or type(start_ms) is not int or type(end_ms) is not int or
++                start_ms%60000 or end_ms<start_ms or (end_ms-start_ms)//60000+1>5000):
++            raise ExchangeError('EXTERNAL_REFERENCE_RANGE_OR_SYMBOL_INVALID')
++        dex='xyz' if symbol.startswith('xyz:') else ''
++        if dex not in self.metadata:
++            meta=self._read(dict(type='meta',dex=dex))
++            if not isinstance(meta,dict) or not isinstance(meta.get('universe'),list):
++                raise ExchangeError('EXTERNAL_REFERENCE_METADATA_INVALID')
++            self.metadata[dex]={r['name']:r for r in meta['universe'] if not r.get('isDelisted')}
++        if symbol not in self.metadata[dex]:raise ExchangeError('EXTERNAL_REFERENCE_NOT_LISTED')
++        raw=self._read(dict(type='candleSnapshot',req=dict(coin=symbol,interval='1m',startTime=start_ms,endTime=end_ms)))
++        if not isinstance(raw,list):raise ExchangeError('EXTERNAL_RESPONSE_INVALID')
++        observed=self.clock_ms();bars={}
++        # Price/volume units must be independently reviewed before strategy use.
++        units={'BTC':'USD_PER_BTC','ETH':'USD_PER_ETH','HYPE':'USD_PER_HYPE',
++            'xyz:SP500':'INDEX_POINTS','xyz:EWY':'USD_PER_SHARE','xyz:EWJ':'USD_PER_SHARE',
++            'xyz:BRENTOIL':'USD_PER_BARREL','xyz:GOLD':'USD_PER_TROY_OUNCE',
++            'xyz:EUR':'USD_PER_EUR','xyz:JPY':'JPY_PER_USD'}
++        for r in raw:
++            if r.get('s')!=symbol or r.get('i')!='1m' or not start_ms<=r.get('t',-1)<=end_ms:
++                raise ExchangeError('EXTERNAL_REFERENCE_IDENTITY_INVALID')
++            if r['t']+60000>observed:continue
++            c=ResearchCandle(self.source_id,symbol,r['t'],r['T'],r['o'],r['h'],r['l'],r['c'],
++                r['v'],'REFERENCE_CONTRACT_UNITS_UNVERIFIED',units[symbol],observed)
++            prior=bars.get(c.timestamp_ms)
++            if prior is not None and prior!=c:raise ExchangeError('EXTERNAL_COMPLETED_CONFLICT')
++            bars[c.timestamp_ms]=c
++        return tuple(bars[t] for t in sorted(bars))
++
++
++def require_feature_history(candles, decision_ms):
++    """Same UTC request scope and freshness contract, never a 300-bar shortcut."""
++    from datetime import datetime,timezone
++    from session_manager import SessionManager
++    if len(candles)<300:raise ExchangeError('EXTERNAL_FEATURE_HISTORY_INSUFFICIENT')
++    end=decision_ms//60000*60000-1
++    anchor=int(SessionManager().get_vwap_anchor(datetime.fromtimestamp(decision_ms/1000,timezone.utc)).timestamp()*1000)
++    required_start=min(end+1-300*60000,anchor-14*60000)
++    if candles[0].timestamp_ms>required_start:
++        raise ExchangeError('EXTERNAL_FULL_UTC_HISTORY_INCOMPLETE')
++    if not 0<=decision_ms-(candles[-1].timestamp_ms+60000)<=120000:
++        raise ExchangeError('EXTERNAL_FEATURE_HISTORY_STALE')
++
++
++def frozen_features(candles, mapping, *, decision_ms):
++    """Only isolated research calls the frozen calculations; no strategy state."""
++    require_feature_history(candles,decision_ms)
++    for c in candles:mapping.validate(c,for_vwap=True)
++    from strategy_freeze import verify_strategy_freeze
++    from candle_normalizer import candles_to_frame
++    from signal_brain import generate_vwap_signal
++    verify_strategy_freeze()
++    return generate_vwap_signal(candles_to_frame(candles))
++
++
++def compare_sources(native, external, mapping, *, decision_ms, quote=None, max_external_age_ms=120000):
++    """An as-of comparison; late downloads cannot be inserted at earlier decisions."""
++    for c in external:mapping.validate(c)
++    n={c.timestamp_ms:c for c in native if c.symbol==mapping.native_symbol and
++        c.timestamp_ms+60000<=decision_ms and c.received_timestamp_ms is not None and c.received_timestamp_ms<=decision_ms}
++    e={c.timestamp_ms:c for c in external if c.timestamp_ms+60000<=decision_ms and c.observed_at_ms<=decision_ms}
++    times=sorted(set(n)&set(e))
++    stale=not e or not 0<=decision_ms-(max(e)+60000)<=max_external_age_ms
++    matches=[dict(timestamp_ms=t,native_close=str(n[t].close),external_close=str(e[t].close),
++        absolute_difference=str(e[t].close-n[t].close),
++        difference_bps=str((e[t].close/n[t].close-1)*10000)) for t in times]
++    indicators=None;reason='NOT ENOUGH EVIDENCE'
++    try:
++        if stale:raise ExchangeError('EXTERNAL_SOURCE_STALE_OR_UNAVAILABLE_AS_OF_DECISION')
++        if not times:raise ExchangeError('NO_AS_OF_OVERLAP')
++        last_matched=times[-1]
++        external_features=frozen_features([e[t] for t in sorted(e) if t<=last_matched],mapping,decision_ms=decision_ms)
++        from frozen_strategy import FrozenStrategy
++        native_bars=[n[t] for t in sorted(n) if t<=last_matched]
++        require_feature_history(native_bars,decision_ms)
++        native_features=FrozenStrategy(None).evaluate_candles(native_bars)
++        metrics=('VWAP','EMA_9','EMA_21','ATR_14')
++        a=native_features.iloc[-1];b=external_features.iloc[-1]
++        indicators={k:dict(native=float(a[k]),external=float(b[k]),difference=float(b[k]-a[k])) for k in metrics}
++        reason=None
++    except (ExchangeError, ValueError, KeyError, IndexError) as exc:reason=str(exc)
++    native_quote=None
++    if (quote is not None and quote.symbol==mapping.native_symbol and 0<=decision_ms-quote.timestamp_ms<=5000 and
++            quote.mark_timestamp_ms is not None and 0<=decision_ms-quote.mark_timestamp_ms<=60000):
++        native_quote={k:str(getattr(quote,k)) for k in ('bid','ask','mark','oracle')}
++    return dict(label='EXTERNAL_RESEARCH_ONLY_NO_EXECUTION',native_symbol=mapping.native_symbol,
++        external_source=mapping.source_id,external_symbol=mapping.source_symbol,decision_ms=decision_ms,
++        mapping=asdict(mapping),matched_count=len(times),native_available_count=len(n),external_available_count=len(e),
++        external_stale=stale,matched=matches,indicator_comparison=indicators,
++        reason=reason,verdict='EXTERNAL_SOURCE_POTENTIALLY_COMPATIBLE' if matches else 'EXTERNAL_SOURCE_UNVERIFIED',
++        volume_comparable=mapping.comparable_volume,live_signal_approved=False,
++        native_execution_quote=native_quote,execution_truth='NATIVE_PAR_ONLY',accounting_truth='NATIVE_EXCHANGE_ONLY',
++        hypothetical_fills=None,fees=None,funding_cashflows=None,risk_adjusted_outcomes=None,
++        signal_count=None,signal_agreement=None,signal_timing_divergence=None,
++        limitation='Reception provenance required. No retrospective replacement, inferred depth, fill or P&L. Volume-equivalence and sufficient contiguous history gate frozen-feature comparisons.')
+--- before/scripts/compare_external_data.py
++++ after/scripts/compare_external_data.py
+@@ -0,0 +1,113 @@
++"""One bounded, explicitly enabled public research capture. Never runs trading."""
++import argparse
++from dataclasses import asdict
++from datetime import datetime,timezone
++import json
++from pathlib import Path
++import sys
++import time
++
++ROOT=Path(__file__).resolve().parents[1]
++sys.path.insert(0,str(ROOT/'algo-trading-bot'))
++
++
++def main():
++    p=argparse.ArgumentParser(description=__doc__)
++    p.add_argument('--research-enabled',action='store_true')
++    p.add_argument('--output',type=Path,required=True)
++    p.add_argument('--symbols',nargs='+',default=['par:BTC','par:ETH','par:HYPE'])
++    a=p.parse_args()
++    if not a.research_enabled:p.error('Research is disabled by default; explicit --research-enabled required')
++    if a.output.exists():p.error('Use a new output directory to preserve evidence')
++    from venue_config import require_paper_migration
++    from exchange.paper_operations import PaperOwner,atomic_json,active_source_hash
++    from exchange.hyperliquid_client import HyperliquidClient
++    from exchange.hyperliquid_market_data import HyperliquidMarketData,make_quote
++    from exchange.execution_journal import ExecutionJournal
++    from exchange.rate_limits import HyperliquidRateLimitManager
++    from research_intelligence.external_data import HyperliquidReferenceSource,AssetMapping,compare_sources
++    from session_manager import SessionManager
++    require_paper_migration()
++    if json.loads((ROOT/'configs/reliability_policy.json').read_text())['protection']['enabled']:
++        p.error('Protection must remain disabled')
++    # A research capture does not run alongside an owned PAPER collector.
++    import fcntl
++    for lock in (ROOT/'runtime/paper').rglob('*owner.lock'):
++        with lock.open('r') as f:
++            try:fcntl.flock(f,fcntl.LOCK_EX|fcntl.LOCK_NB);fcntl.flock(f,fcntl.LOCK_UN)
++            except BlockingIOError:p.error('Active PAPER owner: '+str(lock))
++    mapping={'par:BTC':('BTC','USD_PER_BTC'),'par:ETH':('ETH','USD_PER_ETH'),
++        'par:HYPE':('HYPE','USD_PER_HYPE'),'par:SP500':('xyz:SP500','INDEX_POINTS'),
++        'par:EWY':('xyz:EWY','USD_PER_SHARE'),'par:EWJ':('xyz:EWJ','USD_PER_SHARE'),
++        'par:BRENT':('xyz:BRENTOIL','USD_PER_BARREL'),'par:GOLD':('xyz:GOLD','USD_PER_TROY_OUNCE'),
++        'par:USDEUR':('xyz:EUR','USD_PER_EUR'),'par:USDJPY':('xyz:JPY','JPY_PER_USD')}
++    if len(set(a.symbols))!=len(a.symbols) or not set(a.symbols)<=mapping.keys():p.error('Explicit official par symbols only')
++    a.output.mkdir(parents=True)
++    owner=PaperOwner(ROOT/'runtime/paper/external-research-owner.lock')
++    clock=lambda:time.time_ns()//1000000
++    journal=ExecutionJournal(a.output/'research_reads.sqlite',session_id='v7-external-public-research',team_address='0x'+'0'*40)
++    rates=HyperliquidRateLimitManager(journal)
++    client=HyperliquidClient(rate_limits=rates);market=HyperliquidMarketData(client)
++    def public_reference_read(payload):
++        # Research libraries cannot import a network client. This standalone
++        # public collector has a fixed read endpoint and no execution transport.
++        if payload.get('type') not in {'meta','candleSnapshot'}:
++            raise RuntimeError('EXTERNAL_PUBLIC_READ_ONLY')
++        import requests
++        from exchange.base_exchange import ExchangeError
++        try:
++            response=requests.post(HyperliquidReferenceSource.URL,json=payload,
++                timeout=(5,10),allow_redirects=False)
++            response.raise_for_status();return response.json()
++        except requests.RequestException:raise ExchangeError('EXTERNAL_PUBLIC_READ_FAILED') from None
++    reference=HyperliquidReferenceSource(rates=rates,clock_ms=clock,research_enabled=True,
++        transport=public_reference_read)
++    receipt=dict(started_ms=clock(),source_hash_before=active_source_hash(ROOT),
++        execution_mode='PAPER',allow_live_orders=False,protection_enabled=False,
++        exchange_orders_submitted=0,purpose='EXTERNAL_RESEARCH_ONLY_NO_SIGNAL_ACTIVATION')
++    atomic_json(a.output/'receipt.json',receipt)
++    results=[];native_capture=[]
++    try:
++        client.startup();contexts=market.get_asset_contexts();context_ms=clock()
++        for symbol in a.symbols:
++            now=clock();end=now//60000*60000-1
++            anchor=int(SessionManager().get_vwap_anchor(datetime.fromtimestamp(now/1000,timezone.utc)).timestamp()*1000)
++            start=min(end+1-300*60000,anchor-14*60000)
++            try:
++                bars=market.get_candles(symbol,start,end,now_ms=now)
++                book=market.get_orderbook(symbol)
++                quote=make_quote(book,contexts[symbol],clock(),mark_timestamp_ms=context_ms)
++                source_symbol,units=mapping[symbol]
++                external=reference.get_candles(source_symbol,start,end)
++                m=AssetMapping(symbol,reference.source_id,source_symbol,units,
++                    fx_direction=units if symbol in {'par:USDEUR','par:USDJPY'} else None,
++                    review_reference='docs/availability_v7_2026-10-10/external_research.md#asset-mapping',
++                    instrument_status='EXTERNAL_SOURCE_POTENTIALLY_COMPATIBLE')
++                result=compare_sources(bars,external,m,decision_ms=clock(),quote=quote)
++                expected=(end-start)//60000+1
++                result.update(expected_intervals=expected,
++                    native_missing_percent=100*(expected-len(bars))/expected,
++                    external_missing_percent=100*(expected-len(external))/expected)
++                result['candidate_units_scope']='Organizers identify reference; live unit/contract equivalence not approved. No scaling/inversion applied.'
++                results.append(result)
++                native_capture.append(dict(symbol=symbol,candles=[asdict(c) for c in bars],quote=asdict(quote),
++                    external=[asdict(c) for c in external]))
++            except Exception as exc:
++                results.append(dict(native_symbol=symbol,label='EXTERNAL_RESEARCH_ONLY_NO_EXECUTION',
++                    verdict='EXTERNAL_SOURCE_UNVERIFIED',reason=type(exc).__name__+':'+str(exc),live_signal_approved=False))
++        atomic_json(a.output/'comparison.json',dict(results=results,
++            counterfactual_verdict='NOT ENOUGH EVIDENCE; no approved volume equivalence or actual execution histories',
++            actual_exchange_orders=0))
++        atomic_json(a.output/'native_and_external_capture.json',native_capture)
++        atomic_json(a.output/'external_raw.json',reference.evidence)
++        receipt.update(finished_ms=clock(),source_hash_after=active_source_hash(ROOT),
++            public_budget=rates.report(),native_metadata=client.metadata,
++            source_unchanged=receipt['source_hash_before']==active_source_hash(ROOT),completed=True)
++        atomic_json(a.output/'receipt.json',receipt)
++        print(json.dumps(dict(output=str(a.output),compared=len(results),actual_orders=0)))
++    finally:
++        client.close();journal.close();owner.close()
++    return 0
++
++
++if __name__=='__main__':raise SystemExit(main())
+--- before/algo-trading-bot/test_candle_availability_v7.py
++++ after/algo-trading-bot/test_candle_availability_v7.py
+@@ -0,0 +1,216 @@
++"""OFFLINE_FIXTURE: measured native observations, not exchange certification."""
++from dataclasses import replace
++import json
++from pathlib import Path
++import sys
++
++import pytest
++from exchange.base_exchange import ExchangeError
++from exchange.candle_availability import CandleAvailabilityMonitor
++from exchange.hyperliquid_market_data import parse_candle
++from test_market_resilience import engine, ready
++from test_exchange_migration import NOW, candle_row
++
++sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
++from check_practice_health import describe
++
++
++@pytest.fixture(autouse=True)
++def offline(monkeypatch):
++    import requests, websocket
++    def reject(*a,**kw):raise AssertionError('V7_OFFLINE_NETWORK_FORBIDDEN')
++    monkeypatch.setattr(requests.Session,'post',reject)
++    monkeypatch.setattr(websocket,'create_connection',reject)
++
++
++def monitor():
++    time=[NOW]
++    m=CandleAvailabilityMonitor(('par:BTC','par:ETH'),clock_ms=lambda:time[0])
++    return m,time
++
++
++def response(m,time,rows,start=NOW,end=None,role=None):
++    m.observe_rest('par:BTC',start,time[0]-1 if end is None else end,rows,
++        parse_candle,time[0],time[0],role=role)
++
++
++@pytest.mark.parametrize('delay',[0,1000,180000])
++def test_exact_completed_reception_delay_and_left_censoring(delay):
++    m,time=monitor();time[0]=NOW+60000+delay
++    response(m,time,[candle_row(NOW)])
++    s=m.snapshot(include_records=True)['markets']['par:BTC']
++    assert s['latency']['REST']['median_ms']==delay
++    assert s['interval_observations'][NOW]['exchange_publication_timestamp_ms'] is None
++    assert s['latency']['REST']['observation_count']==1
++    response(m,time,[candle_row(NOW-60000)],start=NOW-60000)
++    assert m.snapshot()['markets']['par:BTC']['latency']['REST']['observation_count']==1
++
++
++def test_empty_response_later_supplies_missing_genuine_candle():
++    m,time=monitor();time[0]=NOW+60000
++    response(m,time,[])
++    s=m.snapshot()['markets']['par:BTC']
++    assert s['latency']['right_censored_live_intervals']==1
++    assert 'CANDLE_ABSENT_IN_COVERED_REST_RESPONSE' in s['missing_classifications'][str(NOW)]
++    time[0]+=30000;response(m,time,[candle_row(NOW)])
++    s=m.snapshot()['markets']['par:BTC']
++    assert s['delayed_intervals']==1 and s['recovery']['recovered_missing']==1
++    assert s['latency']['REST']['median_ms']==30000
++    # A source observation alone does not populate the native cache or admit a scanner.
++    assert s['present']==0 and not s['eligible_for_scanner_evaluation']
++
++
++def test_never_observed_interval_is_censored_not_zero_delay():
++    m,time=monitor();time[0]=NOW+180000;response(m,time,[])
++    stats=m.snapshot()['markets']['par:BTC']['latency']
++    assert stats['REST']['median_ms'] is None
++    assert stats['REST']['never_observed_intervals']==3
++    assert stats['right_censored_live_intervals']==3
++
++
++def test_unfinished_ws_candle_is_observed_but_not_completed_sample():
++    m,time=monitor();c=parse_candle(candle_row(NOW),'par:BTC','1m')
++    m.observe_candle(c,'WS',NOW+1000)
++    time[0]=NOW+60000
++    stats=m.snapshot()['markets']['par:BTC']['latency']['WS']
++    assert stats['observation_count']==0 and stats['never_observed_intervals']==1
++    m.observe_candle(c,'WS',time[0]+500)
++    assert m.snapshot()['markets']['par:BTC']['latency']['WS']['median_ms']==500
++
++
++def test_rest_ws_duplicates_and_conflicts_keep_source_identity():
++    m,time=monitor();time[0]=NOW+60000
++    c=parse_candle(candle_row(NOW),'par:BTC','1m')
++    m.observe_candle(c,'WS',time[0]);response(m,time,[candle_row(NOW)]*2)
++    s=m.snapshot()['markets']['par:BTC']
++    assert s['duplicates']==1 and s['conflicting_intervals']==0
++    m.observe_candle(replace(c,volume=c.volume+1),'WS',time[0]+1)
++    assert m.snapshot()['markets']['par:BTC']['conflicting_intervals']==1
++
++
++def test_equivalent_decimal_encodings_are_duplicates_not_conflicts():
++    m,time=monitor();time[0]=NOW+60000
++    response(m,time,[dict(candle_row(NOW),v='1.2500'),candle_row(NOW)])
++    assert m.snapshot()['markets']['par:BTC']['conflicting_intervals']==0
++
++
++@pytest.mark.parametrize('fault',['ohlc','volume','future','identity'])
++def test_validator_failures_captured_and_not_accepted(fault):
++    m,time=monitor();time[0]=NOW+60000;r=candle_row(NOW)
++    if fault=='ohlc':r['h']='1'
++    if fault=='volume':r['v']='NaN'
++    if fault=='future':r=candle_row(NOW+120000)
++    if fault=='identity':r['s']='BTC'
++    response(m,time,[r],end=NOW+180000)
++    s=m.snapshot()['markets']['par:BTC']
++    assert sum(s['malformed_candles'].values())==1
++    assert s['latency']['REST']['observation_count']==0
++
++
++@pytest.mark.parametrize('count',[299,300])
++def test_cache_300_gate_separate_from_full_utc(count):
++    m,time=monitor();bars=[parse_candle(candle_row(NOW-i*60000),'par:BTC','1m') for i in range(count,0,-1)]
++    m.update_cache('par:BTC',bars,NOW,dict(healthy=count==300,state='HEALTHY' if count==300 else 'QUARANTINED'))
++    s=m.snapshot()['markets']['par:BTC']
++    assert s['present']==count and s['missing']==300-count
++    assert s['contiguous_valid_tail']==count
++    assert s['strategy_history']=={} and not s['eligible_for_scanner_evaluation']
++
++
++def test_scanner_history_gap_remains_separate_from_complete_cache():
++    m,time=monitor();time[0]+=60000
++    bars=[candle_row(NOW-i*60000) for i in range(400,-1,-1)]
++    bars=[r for r in bars if r['t']!=NOW-350*60000]
++    response(m,time,bars,start=NOW-400*60000,role='SCANNER')
++    cache=[parse_candle(r,'par:BTC','1m') for r in bars[-300:]]
++    m.update_cache('par:BTC',cache,time[0],dict(healthy=True,state='HEALTHY'))
++    s=m.snapshot()['markets']['par:BTC']
++    assert s['present']==300 and not s['strategy_history']['history_gate_passed']
++    assert not s['eligible_for_scanner_evaluation']
++
++
++def test_freshness_allowance_does_not_require_latest_expected_minute():
++    m,time=monitor();time[0]+=60000
++    bars=[candle_row(NOW-i*60000) for i in range(300,0,-1)]
++    response(m,time,bars,start=NOW-300*60000,role='SCANNER')
++    m.update_cache('par:BTC',[parse_candle(r,'par:BTC','1m') for r in bars],time[0],dict(healthy=True,state='HEALTHY'))
++    s=m.snapshot()['markets']['par:BTC']
++    assert s['missing']==1 and s['strategy_history_current']
++    assert s['eligible_for_scanner_evaluation']
++    time[0]+=120001
++    assert not m.snapshot()['markets']['par:BTC']['strategy_history_current']
++
++
++def test_out_of_order_wire_rows_are_normalized_without_inventing_rows():
++    m,time=monitor();time[0]+=180000
++    response(m,time,[candle_row(NOW+120000),candle_row(NOW),candle_row(NOW+60000)])
++    assert m.snapshot()['markets']['par:BTC']['latency']['REST']['observation_count']==3
++    assert m.snapshot()['markets']['par:BTC']['rest_observation_history'][-1]['missing_count']==0
++
++
++def test_rate_deferral_and_insufficient_samples_preserve_backoff():
++    m,time=monitor();m.recovery_begin('par:BTC',NOW)
++    m.recovery_finish('par:BTC',NOW+100,'PUBLIC_RATE_BUDGET_DEADLINE')
++    s=m.snapshot()['markets']['par:BTC']
++    assert s['recovery']['deferred_reason']=='RATE_BUDGET_RECOVERY_DEFERRED'
++    assert m.retry_hint_ms('par:BTC') is None
++
++
++def test_adaptive_hint_is_bounded_and_requires_twenty_live_intervals():
++    m,time=monitor()
++    for i in range(20):
++        t=NOW+i*60000;time[0]=t+60000+40000
++        m.observe_candle(parse_candle(candle_row(t),'par:BTC','1m'),'REST',time[0])
++    assert m.retry_hint_ms('par:BTC')==40000
++    _,e=engine();e.health_manager.begin_recovery(['par:BTC'],NOW)
++    e.health_manager.finish_recovery(['par:BTC'],NOW,delay_hints={'par:BTC':999999})
++    assert e.health_manager.records['par:BTC']['next_retry_at_ms']==NOW+300000
++
++
++def test_healthy_symbol_independent_and_genuine_gap_recovery_recorded():
++    source,e=engine();ready(e)
++    hole=sorted(e.candles['par:BTC'])[30];del e.candles['par:BTC'][hole]
++    assert not e.market_health()['par:BTC']['healthy'] and e.market_health()['par:ETH']['healthy']
++    e.reconcile_history(symbols=['par:BTC'])
++    assert e.market_health()['par:BTC']['healthy']
++    s=e.availability.snapshot()['markets']['par:BTC']
++    assert s['recovery']['last_success_ms']==NOW and not s['recovery']['pending']
++    assert hole in e.candles['par:BTC']
++
++
++def test_near_ready_prioritization_never_excludes_old_due_symbol():
++    m,time=monitor();m.cache['par:BTC']=list(range(299));m.cache['par:ETH']=[]
++    h={'par:BTC':dict(next_retry_at_ms=NOW),'par:ETH':dict(next_retry_at_ms=NOW-60000)}
++    assert m.prioritize(('par:BTC','par:ETH'),h)==('par:ETH','par:BTC')
++
++
++def test_dashboard_has_exact_candle_reasons_and_independent_transport():
++    _,e=engine();ready(e);availability=e.availability.snapshot()
++    text=describe(dict(status='RUNNING',transport_ready=True,subscriptions_ready=True,
++        public_stream=dict(connected=True,reconciled=True,candle_availability=availability),
++        market_health=e.market_health()),2,'PAPER_DATA_OR_OPERATIONS_DEGRADED')
++    for fragment in ('CANDLE AVAILABILITY','missing timestamps','full UTC scanner input','p95=',
++                     'TRADE_READY: NO','TRANSPORT_READY: True'):
++        assert fragment in text
++
++
++def test_observation_history_is_bounded_and_does_not_become_execution_interface():
++    m,time=monitor();time[0]+=60000
++    for i in range(50):response(m,time,[])
++    assert len(m.snapshot()['markets']['par:BTC']['rest_observation_history'])==40
++    assert not hasattr(m,'place_order') and not hasattr(m,'cancel_order')
++    with pytest.raises(ExchangeError):m.observe_candle(parse_candle(candle_row(NOW),'par:BTC','1m'),'EXTERNAL',time[0])
++
++
++def test_recovery_cache_repair_is_distinct_from_first_source_observation():
++    _,e=engine();ready(e);hole=sorted(e.candles['par:BTC'])[30]
++    del e.candles['par:BTC'][hole];e.market_health()
++    e.reconcile_history(symbols=['par:BTC'])
++    event=e.availability.snapshot()['markets']['par:BTC']['recovery']['events'][-1]
++    assert event['cache_holes_filled']==1 and event['recovered_missing']==0
++
++
++def test_future_malformed_intervals_cannot_escape_retention_bound():
++    m,time=monitor()
++    for i in range(20):m.reject('par:BTC','FUTURE',timestamp_ms=NOW+(i+1)*60000,source='REST')
++    assert len(m.rows['par:BTC'])==0 and m.errors['par:BTC']['FUTURE']==20
+--- before/algo-trading-bot/test_external_data_v7.py
++++ after/algo-trading-bot/test_external_data_v7.py
+@@ -0,0 +1,138 @@
++"""OFFLINE_FIXTURE external provenance/isolation, never LIVE validation."""
++from dataclasses import replace
++from pathlib import Path
++import ast
++import pytest
++from exchange.base_exchange import ExchangeError
++from research_intelligence.external_data import (ResearchCandle,AssetMapping,RecordedMarketDataSource,
++    HyperliquidReferenceSource,compare_sources)
++from test_exchange_migration import NOW,candle_row
++from test_market_resilience import engine,ready
++
++
++def candle(**kw):
++    fields=dict(source_id='FIXTURE',symbol='BTC',timestamp_ms=NOW-60000,close_timestamp_ms=NOW-1,
++        open='50000',high='50002',low='49998',close='50000',volume='1',volume_units='BTC',
++        price_units='USD_PER_BTC',observed_at_ms=NOW)
++    return ResearchCandle(**dict(fields,**kw))
++
++
++def mapping(**kw):
++    fields=dict(native_symbol='par:BTC',source_id='FIXTURE',source_symbol='BTC',price_units='USD_PER_BTC',
++        volume_units='BTC',comparable_volume=True,review_reference='OFFLINE_FIXTURE_ONLY',
++        instrument_status='EXTERNAL_SOURCE_VALIDATED_FOR_RESEARCH')
++    return AssetMapping(**dict(fields,**kw))
++
++
++@pytest.fixture(autouse=True)
++def offline(monkeypatch):
++    import requests,websocket
++    def reject(*a,**kw):raise AssertionError('EXTERNAL_FIXTURE_NETWORK_FORBIDDEN')
++    monkeypatch.setattr(requests,'post',reject)
++    monkeypatch.setattr(requests.Session,'post',reject)
++    monkeypatch.setattr(websocket,'create_connection',reject)
++
++
++def test_disabled_default_and_no_order_interface():
++    with pytest.raises(ExchangeError,match='DISABLED'):RecordedMarketDataSource([candle()])
++    with pytest.raises(ExchangeError,match='DISABLED'):HyperliquidReferenceSource(rates=None,clock_ms=lambda:NOW)
++    source=RecordedMarketDataSource([candle()],research_enabled=True)
++    for name in ('place_order','cancel_order','get_position','get_equity','publish_public_snapshot'):
++        assert not hasattr(source,name)
++
++
++@pytest.mark.parametrize('fields',[{'source_id':''},{'symbol':'par:BTC'},{'volume_units':''},
++    {'price_units':''},{'timestamp_ms':NOW+1},{'observed_at_ms':NOW-1},{'high':'1'}])
++def test_provenance_boundaries_and_bad_data_fail(fields):
++    with pytest.raises(ExchangeError):candle(**fields)
++
++
++@pytest.mark.parametrize('fields',[{'review_reference':None},{'source_symbol':'ETH'},
++    {'price_units':'USDT_PER_BTC'},{'instrument_status':'UNVERIFIED'},{'native_symbol':'par:UNKNOWN'}])
++def test_invalid_mapping_or_units_rejected(fields):
++    with pytest.raises(ExchangeError):mapping(**fields).validate(candle())
++
++
++@pytest.mark.parametrize('fields',[{'volume':None},{'volume_units':'TICK'}])
++def test_missing_or_tick_volume_cannot_enter_vwap(fields):
++    with pytest.raises(ExchangeError,match='VOLUME'):mapping().validate(candle(**fields),for_vwap=True)
++
++
++def test_wrong_fx_direction_cannot_silently_invert():
++    c=candle(symbol='EURUSD',price_units='USD_PER_EUR')
++    m=mapping(native_symbol='par:USDEUR',source_symbol='EURUSD',price_units='USD_PER_EUR',fx_direction='EUR_PER_USD')
++    with pytest.raises(ExchangeError,match='FX_DIRECTION'):m.validate(c)
++
++
++def test_external_record_cannot_overwrite_native_cache_or_account_truth():
++    _,e=engine();ready(e);before=dict(e.candles['par:BTC'])
++    with pytest.raises(ExchangeError,match='IDENTITY'):
++        e.publish_public_snapshot('par:BTC',[candle()]*300,e.books['par:BTC'],e.contexts['par:BTC'],NOW)
++    assert e.candles['par:BTC']==before
++    result=compare_sources(e.get_completed_candles('par:BTC'),[candle()],mapping(),decision_ms=NOW)
++    assert result['execution_truth']=='NATIVE_PAR_ONLY' and result['accounting_truth']=='NATIVE_EXCHANGE_ONLY'
++    assert result['hypothetical_fills'] is None and result['risk_adjusted_outcomes'] is None
++
++
++def test_as_of_reception_prevents_future_leakage_and_stale_signal():
++    _,e=engine();ready(e)
++    c=candle(observed_at_ms=NOW+1000)
++    result=compare_sources(e.get_completed_candles('par:BTC'),[c],mapping(),decision_ms=NOW)
++    assert result['matched_count']==0 and result['external_stale']
++    result=compare_sources(e.get_completed_candles('par:BTC'),[candle()],mapping(),decision_ms=NOW+120001)
++    assert result['external_stale'] and result['indicator_comparison'] is None
++
++
++def test_research_outage_does_not_change_native_engine():
++    _,e=engine();ready(e);before=dict(e.candles['par:BTC'])
++    class Rates:
++        def read(self,q,op,**kw):return op()
++    def failure(payload):raise ExchangeError('EXTERNAL_PROVIDER_OUTAGE')
++    source=HyperliquidReferenceSource(rates=Rates(),clock_ms=lambda:NOW,research_enabled=True,transport=failure)
++    with pytest.raises(ExchangeError,match='OUTAGE'):source.get_candles('BTC',NOW-60000,NOW-1)
++    assert e.candles['par:BTC']==before and e.market_health()['par:BTC']['healthy']
++
++
++def test_reference_adapter_can_only_read_allowlisted_public_metadata_and_candles():
++    class Rates:
++        def read(self,q,op,**kw):return op()
++    calls=[]
++    def info(p):
++        calls.append(p)
++        return {'universe':[{'name':'BTC'}]} if p['type']=='meta' else [dict(candle_row(NOW-60000),s='BTC')]
++    s=HyperliquidReferenceSource(rates=Rates(),clock_ms=lambda:NOW,research_enabled=True,transport=info)
++    bars=s.get_candles('BTC',NOW-60000,NOW-1)
++    assert bars[0].symbol=='BTC' and bars[0].source_id==s.source_id
++    assert [p['type'] for p in calls]==['meta','candleSnapshot']
++    with pytest.raises(ExchangeError):s.get_candles('par:BTC',NOW-60000,NOW-1)
++    with pytest.raises(ExchangeError):s._read({'type':'order'})
++
++
++def test_production_cannot_enable_external_mode_or_approve_itself(monkeypatch):
++    from venue_config import require_paper_migration,MigrationPolicyError
++    monkeypatch.setenv('SIGNAL_DATA_MODE','EXTERNAL');
++    with pytest.raises(MigrationPolicyError,match='NATIVE_SIGNAL'):require_paper_migration()
++    monkeypatch.setenv('SIGNAL_DATA_MODE','PAR_NATIVE_ONLY');monkeypatch.setenv('EXTERNAL_SIGNAL_LIVE_APPROVED','true')
++    with pytest.raises(MigrationPolicyError,match='NATIVE_SIGNAL'):require_paper_migration()
++
++
++def test_no_production_import_of_external_research_module():
++    root=Path(__file__).parent
++    for path in list((root/'exchange').glob('*.py'))+[root/'market_regime_scanner.py',root/'crypto_paper_bot.py',root/'market_stream.py']:
++        for node in ast.walk(ast.parse(path.read_text())):
++            if isinstance(node,ast.ImportFrom):assert 'external_data' not in (node.module or '')
++            if isinstance(node,ast.Import):assert all('external_data' not in x.name for x in node.names)
++
++
++def test_research_features_cannot_shorten_full_utc_contract_to_300_bars():
++    from research_intelligence.external_data import require_feature_history
++    bars=[candle(timestamp_ms=NOW-i*60000,close_timestamp_ms=NOW-i*60000+59999)
++        for i in range(300,0,-1)]
++    with pytest.raises(ExchangeError,match='FULL_UTC'):require_feature_history(bars,NOW)
++
++
++def test_native_quote_mark_context_must_also_be_fresh():
++    _,e=engine();ready(e);q=e.get_quote('par:BTC')
++    q=replace(q,mark_timestamp_ms=NOW-60001)
++    result=compare_sources(e.get_completed_candles('par:BTC'),[candle()],mapping(),decision_ms=NOW,quote=q)
++    assert result['native_execution_quote'] is None
+--- before/configs/external_research.example.json
++++ after/configs/external_research.example.json
+@@ -0,0 +1,7 @@
++{
++  "SIGNAL_DATA_MODE": "PAR_NATIVE_ONLY",
++  "EXTERNAL_RESEARCH_ENABLED": false,
++  "EXTERNAL_SIGNAL_LIVE_APPROVED": false,
++  "provider_keys": {"DATABENTO_API_KEY": null, "TWELVEDATA_API_KEY": null},
++  "purpose": "Unloaded research placeholders only; no credentials read or stored; paid-provider setup remains future work."
++}

@@ -1,0 +1,569 @@
+{
+  "source_hash": "36324cd3891eb931801ddc2ac9d47cf1e9c47cfbbd6a5a6f9aaddbc410a52685",
+  "availability_sha256": "40081359f6e756508b975992d6a394a718a1ff1ebe5150e2bbedb4593ab82d03",
+  "markets": {
+    "par:BRENT": {
+      "intervals_absent_in_at_least_one_covered_rest": 43,
+      "those_later_observed_completed_through_rest": 0,
+      "conflicting_intervals": 0,
+      "current_missing_classifications": {
+        "CANDLE_ABSENT_IN_COVERED_REST_RESPONSE": 43,
+        "CAUSE_UNDETERMINED": 47,
+        "WEBSOCKET_EVENT_NOT_OBSERVED": 15,
+        "REST_REQUEST_WINDOW_INCOMPLETE": 4
+      },
+      "latency": {
+        "REST": {
+          "n": 0,
+          "median": null,
+          "p90": null,
+          "p95": null,
+          "p99": null,
+          "max": null
+        },
+        "WS": {
+          "n": 0,
+          "median": null,
+          "p90": null,
+          "p95": null,
+          "p99": null,
+          "max": null
+        }
+      },
+      "censoring": {
+        "REST": {
+          "observation_count": 0,
+          "median_ms": null,
+          "p90_ms": null,
+          "p95_ms": null,
+          "p99_ms": null,
+          "max_ms": null,
+          "sufficient_for_adaptive_retry": false,
+          "basis": "LOCAL_FIRST_COMPLETED_RECEPTION_MINUS_LOGICAL_CLOSE; NETWORK_AND_POLLING_NOT_SEPARABLE",
+          "never_observed_intervals": 15
+        },
+        "WS": {
+          "observation_count": 0,
+          "median_ms": null,
+          "p90_ms": null,
+          "p95_ms": null,
+          "p99_ms": null,
+          "max_ms": null,
+          "sufficient_for_adaptive_retry": false,
+          "basis": "LOCAL_FIRST_COMPLETED_RECEPTION_MINUS_LOGICAL_CLOSE; NETWORK_AND_POLLING_NOT_SEPARABLE",
+          "never_observed_intervals": 15
+        },
+        "left_censored_startup_intervals": 1090,
+        "right_censored_live_intervals": 15,
+        "first_observed_through_ws": 0
+      }
+    },
+    "par:BTC": {
+      "intervals_absent_in_at_least_one_covered_rest": 13,
+      "those_later_observed_completed_through_rest": 6,
+      "conflicting_intervals": 0,
+      "current_missing_classifications": {
+        "CANDLE_ABSENT_IN_COVERED_REST_RESPONSE": 7,
+        "CAUSE_UNDETERMINED": 8,
+        "WEBSOCKET_EVENT_NOT_OBSERVED": 8,
+        "REST_REQUEST_WINDOW_INCOMPLETE": 1
+      },
+      "latency": {
+        "REST": {
+          "n": 7,
+          "median": 203657.0,
+          "p90": 306375.0,
+          "p95": 324374.99999999994,
+          "p99": 338775.0,
+          "max": 342375
+        },
+        "WS": {
+          "n": 0,
+          "median": null,
+          "p90": null,
+          "p95": null,
+          "p99": null,
+          "max": null
+        }
+      },
+      "censoring": {
+        "REST": {
+          "observation_count": 7,
+          "median_ms": 203657.0,
+          "p90_ms": 306375.0,
+          "p95_ms": 324374.99999999994,
+          "p99_ms": 338775.0,
+          "max_ms": 342375,
+          "sufficient_for_adaptive_retry": false,
+          "basis": "LOCAL_FIRST_COMPLETED_RECEPTION_MINUS_LOGICAL_CLOSE; NETWORK_AND_POLLING_NOT_SEPARABLE",
+          "never_observed_intervals": 8
+        },
+        "WS": {
+          "observation_count": 0,
+          "median_ms": null,
+          "p90_ms": null,
+          "p95_ms": null,
+          "p99_ms": null,
+          "max_ms": null,
+          "sufficient_for_adaptive_retry": false,
+          "basis": "LOCAL_FIRST_COMPLETED_RECEPTION_MINUS_LOGICAL_CLOSE; NETWORK_AND_POLLING_NOT_SEPARABLE",
+          "never_observed_intervals": 15
+        },
+        "left_censored_startup_intervals": 1090,
+        "right_censored_live_intervals": 8,
+        "first_observed_through_ws": 0
+      }
+    },
+    "par:ETH": {
+      "intervals_absent_in_at_least_one_covered_rest": 12,
+      "those_later_observed_completed_through_rest": 0,
+      "conflicting_intervals": 0,
+      "current_missing_classifications": {
+        "CANDLE_ABSENT_IN_COVERED_REST_RESPONSE": 12,
+        "CAUSE_UNDETERMINED": 16,
+        "WEBSOCKET_EVENT_NOT_OBSERVED": 15,
+        "REST_REQUEST_WINDOW_INCOMPLETE": 4
+      },
+      "latency": {
+        "REST": {
+          "n": 0,
+          "median": null,
+          "p90": null,
+          "p95": null,
+          "p99": null,
+          "max": null
+        },
+        "WS": {
+          "n": 0,
+          "median": null,
+          "p90": null,
+          "p95": null,
+          "p99": null,
+          "max": null
+        }
+      },
+      "censoring": {
+        "REST": {
+          "observation_count": 0,
+          "median_ms": null,
+          "p90_ms": null,
+          "p95_ms": null,
+          "p99_ms": null,
+          "max_ms": null,
+          "sufficient_for_adaptive_retry": false,
+          "basis": "LOCAL_FIRST_COMPLETED_RECEPTION_MINUS_LOGICAL_CLOSE; NETWORK_AND_POLLING_NOT_SEPARABLE",
+          "never_observed_intervals": 15
+        },
+        "WS": {
+          "observation_count": 0,
+          "median_ms": null,
+          "p90_ms": null,
+          "p95_ms": null,
+          "p99_ms": null,
+          "max_ms": null,
+          "sufficient_for_adaptive_retry": false,
+          "basis": "LOCAL_FIRST_COMPLETED_RECEPTION_MINUS_LOGICAL_CLOSE; NETWORK_AND_POLLING_NOT_SEPARABLE",
+          "never_observed_intervals": 15
+        },
+        "left_censored_startup_intervals": 1090,
+        "right_censored_live_intervals": 15,
+        "first_observed_through_ws": 0
+      }
+    },
+    "par:EWJ": {
+      "intervals_absent_in_at_least_one_covered_rest": 79,
+      "those_later_observed_completed_through_rest": 0,
+      "conflicting_intervals": 0,
+      "current_missing_classifications": {
+        "CANDLE_ABSENT_IN_COVERED_REST_RESPONSE": 79,
+        "CAUSE_UNDETERMINED": 83,
+        "WEBSOCKET_EVENT_NOT_OBSERVED": 15,
+        "REST_REQUEST_WINDOW_INCOMPLETE": 4
+      },
+      "latency": {
+        "REST": {
+          "n": 0,
+          "median": null,
+          "p90": null,
+          "p95": null,
+          "p99": null,
+          "max": null
+        },
+        "WS": {
+          "n": 0,
+          "median": null,
+          "p90": null,
+          "p95": null,
+          "p99": null,
+          "max": null
+        }
+      },
+      "censoring": {
+        "REST": {
+          "observation_count": 0,
+          "median_ms": null,
+          "p90_ms": null,
+          "p95_ms": null,
+          "p99_ms": null,
+          "max_ms": null,
+          "sufficient_for_adaptive_retry": false,
+          "basis": "LOCAL_FIRST_COMPLETED_RECEPTION_MINUS_LOGICAL_CLOSE; NETWORK_AND_POLLING_NOT_SEPARABLE",
+          "never_observed_intervals": 15
+        },
+        "WS": {
+          "observation_count": 0,
+          "median_ms": null,
+          "p90_ms": null,
+          "p95_ms": null,
+          "p99_ms": null,
+          "max_ms": null,
+          "sufficient_for_adaptive_retry": false,
+          "basis": "LOCAL_FIRST_COMPLETED_RECEPTION_MINUS_LOGICAL_CLOSE; NETWORK_AND_POLLING_NOT_SEPARABLE",
+          "never_observed_intervals": 15
+        },
+        "left_censored_startup_intervals": 1090,
+        "right_censored_live_intervals": 15,
+        "first_observed_through_ws": 0
+      }
+    },
+    "par:EWY": {
+      "intervals_absent_in_at_least_one_covered_rest": 48,
+      "those_later_observed_completed_through_rest": 0,
+      "conflicting_intervals": 0,
+      "current_missing_classifications": {
+        "CANDLE_ABSENT_IN_COVERED_REST_RESPONSE": 48,
+        "CAUSE_UNDETERMINED": 52,
+        "WEBSOCKET_EVENT_NOT_OBSERVED": 15,
+        "REST_REQUEST_WINDOW_INCOMPLETE": 4
+      },
+      "latency": {
+        "REST": {
+          "n": 0,
+          "median": null,
+          "p90": null,
+          "p95": null,
+          "p99": null,
+          "max": null
+        },
+        "WS": {
+          "n": 0,
+          "median": null,
+          "p90": null,
+          "p95": null,
+          "p99": null,
+          "max": null
+        }
+      },
+      "censoring": {
+        "REST": {
+          "observation_count": 0,
+          "median_ms": null,
+          "p90_ms": null,
+          "p95_ms": null,
+          "p99_ms": null,
+          "max_ms": null,
+          "sufficient_for_adaptive_retry": false,
+          "basis": "LOCAL_FIRST_COMPLETED_RECEPTION_MINUS_LOGICAL_CLOSE; NETWORK_AND_POLLING_NOT_SEPARABLE",
+          "never_observed_intervals": 15
+        },
+        "WS": {
+          "observation_count": 0,
+          "median_ms": null,
+          "p90_ms": null,
+          "p95_ms": null,
+          "p99_ms": null,
+          "max_ms": null,
+          "sufficient_for_adaptive_retry": false,
+          "basis": "LOCAL_FIRST_COMPLETED_RECEPTION_MINUS_LOGICAL_CLOSE; NETWORK_AND_POLLING_NOT_SEPARABLE",
+          "never_observed_intervals": 15
+        },
+        "left_censored_startup_intervals": 1090,
+        "right_censored_live_intervals": 15,
+        "first_observed_through_ws": 0
+      }
+    },
+    "par:GOLD": {
+      "intervals_absent_in_at_least_one_covered_rest": 75,
+      "those_later_observed_completed_through_rest": 70,
+      "conflicting_intervals": 0,
+      "current_missing_classifications": {
+        "CANDLE_ABSENT_IN_COVERED_REST_RESPONSE": 5,
+        "CAUSE_UNDETERMINED": 8,
+        "WEBSOCKET_EVENT_NOT_OBSERVED": 8,
+        "REST_REQUEST_WINDOW_INCOMPLETE": 3
+      },
+      "latency": {
+        "REST": {
+          "n": 6,
+          "median": 124510.0,
+          "p90": 237185.0,
+          "p95": 252185.0,
+          "p99": 264185.0,
+          "max": 267185
+        },
+        "WS": {
+          "n": 0,
+          "median": null,
+          "p90": null,
+          "p95": null,
+          "p99": null,
+          "max": null
+        }
+      },
+      "censoring": {
+        "REST": {
+          "observation_count": 6,
+          "median_ms": 124510.0,
+          "p90_ms": 237185.0,
+          "p95_ms": 252185.0,
+          "p99_ms": 264185.0,
+          "max_ms": 267185,
+          "sufficient_for_adaptive_retry": false,
+          "basis": "LOCAL_FIRST_COMPLETED_RECEPTION_MINUS_LOGICAL_CLOSE; NETWORK_AND_POLLING_NOT_SEPARABLE",
+          "never_observed_intervals": 9
+        },
+        "WS": {
+          "observation_count": 0,
+          "median_ms": null,
+          "p90_ms": null,
+          "p95_ms": null,
+          "p99_ms": null,
+          "max_ms": null,
+          "sufficient_for_adaptive_retry": false,
+          "basis": "LOCAL_FIRST_COMPLETED_RECEPTION_MINUS_LOGICAL_CLOSE; NETWORK_AND_POLLING_NOT_SEPARABLE",
+          "never_observed_intervals": 15
+        },
+        "left_censored_startup_intervals": 1090,
+        "right_censored_live_intervals": 9,
+        "first_observed_through_ws": 0
+      }
+    },
+    "par:HYPE": {
+      "intervals_absent_in_at_least_one_covered_rest": 15,
+      "those_later_observed_completed_through_rest": 0,
+      "conflicting_intervals": 0,
+      "current_missing_classifications": {
+        "CANDLE_ABSENT_IN_COVERED_REST_RESPONSE": 15,
+        "CAUSE_UNDETERMINED": 19,
+        "WEBSOCKET_EVENT_NOT_OBSERVED": 15,
+        "REST_REQUEST_WINDOW_INCOMPLETE": 4
+      },
+      "latency": {
+        "REST": {
+          "n": 0,
+          "median": null,
+          "p90": null,
+          "p95": null,
+          "p99": null,
+          "max": null
+        },
+        "WS": {
+          "n": 0,
+          "median": null,
+          "p90": null,
+          "p95": null,
+          "p99": null,
+          "max": null
+        }
+      },
+      "censoring": {
+        "REST": {
+          "observation_count": 0,
+          "median_ms": null,
+          "p90_ms": null,
+          "p95_ms": null,
+          "p99_ms": null,
+          "max_ms": null,
+          "sufficient_for_adaptive_retry": false,
+          "basis": "LOCAL_FIRST_COMPLETED_RECEPTION_MINUS_LOGICAL_CLOSE; NETWORK_AND_POLLING_NOT_SEPARABLE",
+          "never_observed_intervals": 15
+        },
+        "WS": {
+          "observation_count": 0,
+          "median_ms": null,
+          "p90_ms": null,
+          "p95_ms": null,
+          "p99_ms": null,
+          "max_ms": null,
+          "sufficient_for_adaptive_retry": false,
+          "basis": "LOCAL_FIRST_COMPLETED_RECEPTION_MINUS_LOGICAL_CLOSE; NETWORK_AND_POLLING_NOT_SEPARABLE",
+          "never_observed_intervals": 15
+        },
+        "left_censored_startup_intervals": 1090,
+        "right_censored_live_intervals": 15,
+        "first_observed_through_ws": 0
+      }
+    },
+    "par:SP500": {
+      "intervals_absent_in_at_least_one_covered_rest": 7,
+      "those_later_observed_completed_through_rest": 2,
+      "conflicting_intervals": 0,
+      "current_missing_classifications": {
+        "CANDLE_ABSENT_IN_COVERED_REST_RESPONSE": 5,
+        "CAUSE_UNDETERMINED": 9,
+        "WEBSOCKET_EVENT_NOT_OBSERVED": 9,
+        "REST_REQUEST_WINDOW_INCOMPLETE": 4
+      },
+      "latency": {
+        "REST": {
+          "n": 6,
+          "median": 63281.0,
+          "p90": 178467.0,
+          "p95": 193467.0,
+          "p99": 205467.0,
+          "max": 208467
+        },
+        "WS": {
+          "n": 0,
+          "median": null,
+          "p90": null,
+          "p95": null,
+          "p99": null,
+          "max": null
+        }
+      },
+      "censoring": {
+        "REST": {
+          "observation_count": 6,
+          "median_ms": 63281.0,
+          "p90_ms": 178467.0,
+          "p95_ms": 193467.0,
+          "p99_ms": 205467.0,
+          "max_ms": 208467,
+          "sufficient_for_adaptive_retry": false,
+          "basis": "LOCAL_FIRST_COMPLETED_RECEPTION_MINUS_LOGICAL_CLOSE; NETWORK_AND_POLLING_NOT_SEPARABLE",
+          "never_observed_intervals": 9
+        },
+        "WS": {
+          "observation_count": 0,
+          "median_ms": null,
+          "p90_ms": null,
+          "p95_ms": null,
+          "p99_ms": null,
+          "max_ms": null,
+          "sufficient_for_adaptive_retry": false,
+          "basis": "LOCAL_FIRST_COMPLETED_RECEPTION_MINUS_LOGICAL_CLOSE; NETWORK_AND_POLLING_NOT_SEPARABLE",
+          "never_observed_intervals": 15
+        },
+        "left_censored_startup_intervals": 1090,
+        "right_censored_live_intervals": 9,
+        "first_observed_through_ws": 0
+      }
+    },
+    "par:USDEUR": {
+      "intervals_absent_in_at_least_one_covered_rest": 79,
+      "those_later_observed_completed_through_rest": 0,
+      "conflicting_intervals": 0,
+      "current_missing_classifications": {
+        "CANDLE_ABSENT_IN_COVERED_REST_RESPONSE": 79,
+        "CAUSE_UNDETERMINED": 83,
+        "WEBSOCKET_EVENT_NOT_OBSERVED": 15,
+        "REST_REQUEST_WINDOW_INCOMPLETE": 4
+      },
+      "latency": {
+        "REST": {
+          "n": 0,
+          "median": null,
+          "p90": null,
+          "p95": null,
+          "p99": null,
+          "max": null
+        },
+        "WS": {
+          "n": 0,
+          "median": null,
+          "p90": null,
+          "p95": null,
+          "p99": null,
+          "max": null
+        }
+      },
+      "censoring": {
+        "REST": {
+          "observation_count": 0,
+          "median_ms": null,
+          "p90_ms": null,
+          "p95_ms": null,
+          "p99_ms": null,
+          "max_ms": null,
+          "sufficient_for_adaptive_retry": false,
+          "basis": "LOCAL_FIRST_COMPLETED_RECEPTION_MINUS_LOGICAL_CLOSE; NETWORK_AND_POLLING_NOT_SEPARABLE",
+          "never_observed_intervals": 15
+        },
+        "WS": {
+          "observation_count": 0,
+          "median_ms": null,
+          "p90_ms": null,
+          "p95_ms": null,
+          "p99_ms": null,
+          "max_ms": null,
+          "sufficient_for_adaptive_retry": false,
+          "basis": "LOCAL_FIRST_COMPLETED_RECEPTION_MINUS_LOGICAL_CLOSE; NETWORK_AND_POLLING_NOT_SEPARABLE",
+          "never_observed_intervals": 15
+        },
+        "left_censored_startup_intervals": 1090,
+        "right_censored_live_intervals": 15,
+        "first_observed_through_ws": 0
+      }
+    },
+    "par:USDJPY": {
+      "intervals_absent_in_at_least_one_covered_rest": 52,
+      "those_later_observed_completed_through_rest": 0,
+      "conflicting_intervals": 0,
+      "current_missing_classifications": {
+        "CANDLE_ABSENT_IN_COVERED_REST_RESPONSE": 52,
+        "CAUSE_UNDETERMINED": 56,
+        "WEBSOCKET_EVENT_NOT_OBSERVED": 15,
+        "REST_REQUEST_WINDOW_INCOMPLETE": 4
+      },
+      "latency": {
+        "REST": {
+          "n": 0,
+          "median": null,
+          "p90": null,
+          "p95": null,
+          "p99": null,
+          "max": null
+        },
+        "WS": {
+          "n": 0,
+          "median": null,
+          "p90": null,
+          "p95": null,
+          "p99": null,
+          "max": null
+        }
+      },
+      "censoring": {
+        "REST": {
+          "observation_count": 0,
+          "median_ms": null,
+          "p90_ms": null,
+          "p95_ms": null,
+          "p99_ms": null,
+          "max_ms": null,
+          "sufficient_for_adaptive_retry": false,
+          "basis": "LOCAL_FIRST_COMPLETED_RECEPTION_MINUS_LOGICAL_CLOSE; NETWORK_AND_POLLING_NOT_SEPARABLE",
+          "never_observed_intervals": 15
+        },
+        "WS": {
+          "observation_count": 0,
+          "median_ms": null,
+          "p90_ms": null,
+          "p95_ms": null,
+          "p99_ms": null,
+          "max_ms": null,
+          "sufficient_for_adaptive_retry": false,
+          "basis": "LOCAL_FIRST_COMPLETED_RECEPTION_MINUS_LOGICAL_CLOSE; NETWORK_AND_POLLING_NOT_SEPARABLE",
+          "never_observed_intervals": 15
+        },
+        "left_censored_startup_intervals": 1090,
+        "right_censored_live_intervals": 15,
+        "first_observed_through_ws": 0
+      }
+    }
+  },
+  "distinct_interval_scope": "RETENTION_WINDOW_ACROSS_THIS_FRESH_RUN; NOT ONLY_FINAL_300",
+  "latency_scope": "LOCAL_COMPLETED_RECEPTION_MINUS_LOGICAL_CLOSE; STARTUP_EXCLUDED; NOT_EXCHANGE_PUBLICATION_TIME",
+  "missing_reason_counts_overlap": true
+}

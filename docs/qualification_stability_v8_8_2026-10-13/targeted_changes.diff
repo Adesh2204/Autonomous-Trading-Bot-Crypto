@@ -1,0 +1,599 @@
+--- V8.7/algo-trading-bot/exchange/hyperliquid_client.py
++++ V8.8/algo-trading-bot/exchange/hyperliquid_client.py
+@@ -6,6 +6,8 @@
+ from copy import deepcopy
+ import time
+ import json
++import threading
++from contextlib import contextmanager
+ 
+ from .base_exchange import ExchangeError, MarketSpec, VenueMismatch
+ 
+@@ -23,36 +25,152 @@
+ 
+ 
+ class RequestsInfoTransport:
+-    def __init__(self, timeout=10):
++    """Public reads only, with socket limits and a bounded caller deadline.
++
++    One daemon worker owns this session at a time. A stalled DNS/SSL/body read
++    cannot strand the caller or create unlimited workers. After timeout/cancel,
++    its slot stays occupied until cleanup; subsequent reads remain bounded.
++    The worker never accesses a journal, signer, nonce or /exchange.
++    """
++    def __init__(self, timeout=None, *, connect_timeout=3.05, read_timeout=5,
++                 total_timeout=12, max_response_bytes=8*1024*1024):
++        import requests, threading, math
++        if timeout is not None:
++            if isinstance(timeout,tuple) and len(timeout)==2:connect_timeout,read_timeout=timeout
++            else:connect_timeout=read_timeout=timeout
++        values=(connect_timeout,read_timeout,total_timeout)
++        if any(isinstance(v,bool) or not isinstance(v,(int,float)) or not math.isfinite(v) or v<=0 for v in values):
++            raise ExchangeError('INFO_TIMEOUT_POLICY_INVALID')
++        if type(max_response_bytes) is not int or max_response_bytes<1:
++            raise ExchangeError('INFO_RESPONSE_LIMIT_INVALID')
++        self.session=requests.Session();self.timeout=(connect_timeout,read_timeout)
++        self.total_timeout=total_timeout;self.max_response_bytes=max_response_bytes
++        self._lock=threading.Lock();self._idle=threading.Event();self._idle.set()
++        self._active=None;self._closed=False;self.last_diagnostic=None
++
++    @staticmethod
++    def _failure(code, *, retryable=False, **attributes):
++        error=ExchangeError(code);error.retryable=retryable
++        for key,value in attributes.items():setattr(error,key,value)
++        return error
++
++    @staticmethod
++    def _caused_by(exc, names=(), classes=()):
++        pending=[exc];seen=set()
++        while pending and len(seen)<40:
++            value=pending.pop()
++            if id(value) in seen:continue
++            seen.add(id(value))
++            if isinstance(value,classes) or type(value).__name__ in names:return True
++            if isinstance(value,BaseException):
++                pending.extend(x for x in (*value.args,value.__cause__,value.__context__) if isinstance(x,BaseException))
++        return False
++
++    @staticmethod
++    def _retry_after(value):
++        import math
++        from datetime import datetime,timezone
++        from email.utils import parsedate_to_datetime
++        if value is None:return None
++        try:
++            seconds=float(value)
++            if not math.isfinite(seconds):return None
++            return max(0,int(seconds*1000))
++        except (TypeError,ValueError,OverflowError):
++            try:
++                stamp=parsedate_to_datetime(value)
++                if stamp.tzinfo is None:stamp=stamp.replace(tzinfo=timezone.utc)
++                return max(0,int((stamp-datetime.now(timezone.utc)).total_seconds()*1000))
++            except (TypeError,ValueError,OverflowError):return None
++
++    def _worker(self, payload, record):
+         import requests
+-        self.session = requests.Session()
+-        self.timeout = timeout
+-
+-    def __call__(self, payload):
+-        import requests
+-        try:
+-            response = self.session.post(TESTNET_API_URL + '/info', json=payload,
+-                                         timeout=self.timeout, allow_redirects=False)
+-            if response.status_code != 200:
+-                error=ExchangeError('INFO_HTTP_' + str(response.status_code))
+-                error.status_code=response.status_code
+-                try:
+-                    error.retry_after_ms=max(0,int(float(response.headers.get('Retry-After','0'))*1000))
+-                except (TypeError,ValueError,OverflowError):
+-                    error.retry_after_ms=None
+-                raise error
+-            return response.json()
+-        except ExchangeError:
++        response=None
++        try:
++            response=self.session.post(TESTNET_API_URL+'/info',json=payload,
++                timeout=self.timeout,allow_redirects=False,stream=True)
++            if response.status_code!=200:
++                raise self._failure('INFO_HTTP_'+str(response.status_code),
++                    status_code=response.status_code,retryable=response.status_code==429 or 500<=response.status_code<600,
++                    retry_after_ms=self._retry_after(response.headers.get('Retry-After')))
++            body=bytearray()
++            for chunk in response.iter_content(chunk_size=4096):
++                if record['abort'].is_set():raise self._failure('INFO_READ_CANCELLED')
++                body.extend(chunk)
++                if len(body)>self.max_response_bytes:raise self._failure('INFO_RESPONSE_TOO_LARGE')
++            if record['abort'].is_set():raise self._failure('INFO_READ_CANCELLED')
++            record['value']=json.loads(body)
++        except requests.ConnectTimeout:record['error']=self._failure('INFO_CONNECT_TIMEOUT',retryable=True)
++        except requests.ReadTimeout:record['error']=self._failure('INFO_READ_TIMEOUT',retryable=True)
++        except requests.exceptions.SSLError:record['error']=self._failure('INFO_TLS_FAILED')
++        except requests.ConnectionError as exc:
++            import socket
++            code=('INFO_DNS_FAILED' if self._caused_by(exc,('NameResolutionError',),(socket.gaierror,)) else
++                  'INFO_READ_TIMEOUT' if self._caused_by(exc,('ReadTimeoutError',)) else 'INFO_CONNECTION_FAILED')
++            record['error']=self._failure(code,retryable=True)
++        except requests.Timeout:record['error']=self._failure('INFO_READ_TIMEOUT',retryable=True)
++        except requests.RequestException:record['error']=self._failure('INFO_REQUEST_FAILED')
++        except ExchangeError as exc:record['error']=exc
++        except (ValueError,UnicodeError):record['error']=self._failure('INFO_INVALID_JSON')
++        except BaseException as exc:record['error']=exc
++        finally:
++            try:
++                if response is not None:response.close()
++            finally:
++                with self._lock:
++                    self._active=None;self._idle.set()
++                    if self._closed:self.session.close()
++                record['done'].set()
++
++    def __call__(self,payload,*,cancel_event=None,progress=None):
++        import threading
++        started=time.monotonic();record=None;last_update=0
++        def check():
++            if cancel_event is not None and cancel_event.is_set():raise self._failure('INFO_READ_CANCELLED')
++            if time.monotonic()-started>=self.total_timeout:raise self._failure('INFO_TOTAL_TIMEOUT')
++        try:
++            while record is None:
++                check()
++                with self._lock:
++                    if self._closed:raise self._failure('INFO_TRANSPORT_CLOSED')
++                    if self._active is None:
++                        record=dict(done=threading.Event(),abort=threading.Event(),value=None,error=None)
++                        self._active=record;self._idle.clear()
++                        worker=threading.Thread(target=self._worker,args=(deepcopy(payload),record),
++                            name='anchorium-public-info',daemon=True)
++                        worker.start()
++                if record is None:
++                    self._idle.wait(.05)
++                    if progress and time.monotonic()-last_update>=1:
++                        progress('WAITING_FOR_HTTP_SLOT',query=payload.get('type'),
++                            reason='PREVIOUS_PUBLIC_READ_CLEANUP',request_elapsed_seconds=round(time.monotonic()-started,3))
++                        last_update=time.monotonic()
++            while not record['done'].wait(.05):
++                check()
++                if progress and time.monotonic()-last_update>=1:
++                    progress('WAITING_FOR_HTTP_RESPONSE',query=payload.get('type'),
++                             request_elapsed_seconds=round(time.monotonic()-started,3),
++                             remaining_deadline_seconds=round(max(0,self.total_timeout-(time.monotonic()-started)),3))
++                    last_update=time.monotonic()
++            check()
++            if record['error'] is not None:raise record['error']
++            self.last_diagnostic=dict(query=payload.get('type'),result='OK',elapsed_seconds=round(time.monotonic()-started,3))
++            return record['value']
++        except BaseException as exc:
++            if record is not None:record['abort'].set()
++            self.last_diagnostic=dict(query=payload.get('type'),result=str(exc) if isinstance(exc,ExchangeError)
++                else 'INTERRUPTED' if isinstance(exc,KeyboardInterrupt) else type(exc).__name__,
++                elapsed_seconds=round(time.monotonic()-started,3))
+             raise
+-        except (requests.RequestException, ValueError) as exc:
+-            raise ExchangeError('INFO_REQUEST_FAILED') from exc
+ 
+     def close(self):
+-        self.session.close()
+-
++        with self._lock:
++            self._closed=True
++            if self._active is not None:self._active['abort'].set()
++            else:self.session.close()
+ 
+ class HyperliquidClient:
+-    def __init__(self, transport=None, *, base_url=TESTNET_API_URL, clock_ms=None, rate_limits=None, candle_audit=None):
++    def __init__(self, transport=None, *, base_url=TESTNET_API_URL, clock_ms=None, rate_limits=None, candle_audit=None, progress=None):
+         if base_url != TESTNET_API_URL:
+             raise VenueMismatch('TESTNET_ENDPOINT_REQUIRED')
+         self.transport = transport if transport is not None else RequestsInfoTransport()
+@@ -67,6 +185,24 @@
+         self.rate_limits = rate_limits
+         self.read_cancel_event=None
+         self.candle_audit=candle_audit
++        self.progress=progress
++        self._snapshots=threading.local()
++        self.snapshot_hits=0
++
++    @contextmanager
++    def read_snapshot_scope(self,max_age_ms=1000):
++        """Qualification read-only bundle reuse, never quotes/history/positions.
++
++        Only account mode, agent list and fees may share their original response
++        within one second. Preserve original receive time; no cache survives the
++        scope or crosses a thread. Independent position/order comparisons remain.
++        """
++        if type(max_age_ms) is not int or not 0<max_age_ms<=1000:
++            raise ExchangeError('INVALID_INFO_SNAPSHOT_AGE')
++        previous=getattr(self._snapshots,'scope',None)
++        self._snapshots.scope=dict(max_age_ms=max_age_ms,values={})
++        try:yield
++        finally:self._snapshots.scope=previous
+ 
+     def post_info(self, query, *, priority=None, **parameters):
+         if {'type', 'action', 'signature', 'nonce'} & parameters.keys():
+@@ -86,16 +222,29 @@
+             if not isinstance(payload.get('req'), dict):
+                 raise ExchangeError('INVALID_CANDLE_REQUEST')
+             self._validate_coin(payload['req'].get('coin'))
++        started=time.monotonic();key=json.dumps(payload,sort_keys=True)
++        if self.progress:self.progress('INFO_READ_STARTED',query=query)
++        scope=getattr(self._snapshots,'scope',None)
++        reusable=scope is not None and query in {'userAbstraction','extraAgents','userFees'}
++        saved=scope['values'].get(key) if reusable else None
++        if saved is not None and 0<=self.clock_ms()-saved[0]<=scope['max_age_ms']:
++            self.snapshot_hits+=1;self.last_received_ms=saved[0]
++            if self.progress:self.progress('INFO_SNAPSHOT_REUSED',query=query,observed_ms=saved[0],age_ms=self.clock_ms()-saved[0])
++            return deepcopy(saved[1])
++        operation=(lambda:self.transport(payload,cancel_event=self.read_cancel_event,progress=self.progress)) \
++            if isinstance(self.transport,RequestsInfoTransport) else (lambda:self.transport(payload))
+         if self.rate_limits is not None:
+             req=payload.get('req',{})
+             from .hyperliquid_market_data import INTERVAL_MS
+             expected=(max(0,(req.get('endTime',0)-req.get('startTime',0))//INTERVAL_MS.get(req.get('interval'),60000)+1)
+                       if query=='candleSnapshot' else 0)
+-            result=self.rate_limits.read(query,lambda:self.transport(payload),priority=priority,
+-                request_key=json.dumps(payload,sort_keys=True),expected_items=expected,cancel_event=self.read_cancel_event)
++            result=self.rate_limits.read(query,operation,priority=priority,
++                request_key=key,expected_items=expected,cancel_event=self.read_cancel_event)
+         else:
+-            result = self.transport(payload)
++            result = operation()
+         self.last_received_ms = self.clock_ms()
++        if reusable:scope['values'][key]=(self.last_received_ms,deepcopy(result))
++        if self.progress:self.progress('INFO_READ_COMPLETED',query=query,request_elapsed_seconds=round(time.monotonic()-started,3))
+         if self.candle_audit is not None and query=='candleSnapshot':
+             self.candle_audit.record('RAW_REST',request=payload,response=result,
+                 received_ms=self.last_received_ms,client_id=id(self),network='testnet')
+--- V8.7/algo-trading-bot/exchange/rate_limits.py
++++ V8.8/algo-trading-bot/exchange/rate_limits.py
+@@ -46,6 +46,10 @@
+         self.read_failures={}
+         self.coalesced_reads=0
+         self.max_read_seconds=0
++        self.read_deadline_seconds=45
++        self.read_budget_wait_seconds=0  # Qualification opts in; live feed remains fail-fast.
++        self.read_progress=None
++        self.read_failure_details=[]
+         with journal.transaction():
+             journal.db.execute('CREATE TABLE IF NOT EXISTS api_actions ('
+                 'id INTEGER PRIMARY KEY AUTOINCREMENT,utc_day INTEGER,process INTEGER,'
+@@ -69,6 +73,43 @@
+         now=self.clock_ms()
+         self.weights=[(t,w) for t,w in self.weights if t>now-60000]
+         return sum(w for _,w in self.weights)
++
++    def read_budget_delay_ms(self,weight,priority=RequestPriority.DECISION):
++        """Grounded rolling-window estimate, including server backoff guidance."""
++        with self.lock:
++            now=self.clock_ms();usage=self._usage()
++            limit=self.ip_weight_limit-(0 if priority==RequestPriority.SAFETY else self._reserve('ip'))
++            if weight>limit:raise ExchangeError('INFO_PUBLIC_BUDGET_TOO_SMALL')
++            delay=max(0,self.backoff_until-now)
++            if usage+weight>limit:
++                for stamp,cost in sorted(self.weights):
++                    usage-=cost
++                    if usage+weight<=limit:
++                        delay=max(delay,stamp+60000-now);break
++                if usage+weight>limit:
++                    # No earlier capacity is proven: conservatively defer the
++                    # whole rolling window rather than granting admission.
++                    delay=max(delay,60000)
++            return delay
++
++    def wait_for_read_budget(self,weight,*,priority=RequestPriority.DECISION,max_wait_seconds=65,
++                             cancel_event=None,progress=None,wait_ms=None):
++        started=time.monotonic();last_notice=-1
++        while True:
++            if cancel_event is not None and cancel_event.is_set():raise ExchangeError('INFO_READ_CANCELLED')
++            delay=self.read_budget_delay_ms(weight,priority)
++            if not delay:return
++            elapsed=time.monotonic()-started
++            if progress and elapsed-last_notice>=1:
++                progress('WAITING_FOR_RATE_BUDGET',reason='ROLLING_IP_WINDOW_OR_SERVER_BACKOFF',
++                    ip_weight=self._usage(),required_weight=weight,next_retry_ms=self.clock_ms()+delay,
++                    retry_in_seconds=round(delay/1000,3),wait_elapsed_seconds=round(elapsed,3))
++                last_notice=elapsed
++            if elapsed>=max_wait_seconds or delay>(max_wait_seconds-elapsed)*1000:
++                raise ExchangeError('INFO_PUBLIC_READ_BUDGET_DEADLINE')
++            duration=min(250,delay)
++            if cancel_event is None:(wait_ms or self.wait)(duration)
++            elif cancel_event.wait(duration/1000):raise ExchangeError('INFO_READ_CANCELLED')
+ 
+     @property
+     def remaining_budget(self):
+@@ -222,7 +263,9 @@
+             duration=min(self.policy.backoff_max_ms,self.policy.backoff_base_ms*2**min(self.recent_errors-1,10))
+             duration=int(duration*(.8+.2*self.jitter()))
+             if retry_after_ms is not None:
+-                duration=max(duration,min(self.policy.backoff_max_ms,retry_after_ms))
++                # Never shorten venue guidance. The caller's independent wait
++                # deadline can terminate instead of retrying before this time.
++                duration=max(duration,retry_after_ms)
+             self.backoff_until=self.clock_ms()+duration
+             self._event('REQUEST_BACKOFF',attempt=self.recent_errors,status=status,delay_ms=duration)
+             return duration
+@@ -232,6 +275,9 @@
+ 
+     def read(self,query,operation,*,priority=None,request_key=None,expected_items=0,cancel_event=None):
+         """Share identical concurrent public reads; never cache a stale result."""
++        from .hyperliquid_client import DEX_QUERIES,COIN_QUERIES,ACCOUNT_QUERIES
++        if query not in DEX_QUERIES|COIN_QUERIES|ACCOUNT_QUERIES|{'perpDexs','candleSnapshot','userRole','exchangeStatus'}:
++            raise ExchangeError('PUBLIC_INFO_QUERY_NOT_ALLOWED')
+         entry=None
+         if request_key is not None:
+             with self.lock:
+@@ -242,9 +288,12 @@
+                     self.inflight_reads[request_key]=entry
+                 else:self.coalesced_reads+=1
+             if not leader:
++                follower_started=time.monotonic()
+                 while not entry['done'].wait(.1):
+                     if cancel_event is not None and cancel_event.is_set():
+                         raise ExchangeError('INFO_READ_CANCELLED')
++                    if time.monotonic()-follower_started>=self.read_deadline_seconds:
++                        raise ExchangeError('INFO_COALESCED_READ_DEADLINE')
+                 if entry['error'] is not None:raise entry['error']
+                 return entry['value']
+         started=time.monotonic()
+@@ -252,9 +301,10 @@
+             value=self._read_owned(query,operation,priority=priority,expected_items=expected_items,cancel_event=cancel_event)
+             if entry is not None:entry['value']=value
+             return value
+-        except Exception as exc:
+-            with self.lock:self.read_failures[str(exc)]=self.read_failures.get(str(exc),0)+1
+-            if entry is not None:entry['error']=exc
++        except BaseException as exc:
++            code=str(exc) if isinstance(exc,ExchangeError) else 'INFO_READ_INTERRUPTED' if isinstance(exc,KeyboardInterrupt) else type(exc).__name__
++            with self.lock:self.read_failures[code]=self.read_failures.get(code,0)+1
++            if entry is not None:entry['error']=ExchangeError('INFO_READ_INTERRUPTED') if isinstance(exc,KeyboardInterrupt) else exc
+             raise
+         finally:
+             with self.lock:
+@@ -267,28 +317,46 @@
+         """Only idempotent /info reads; no signed operation can enter this API."""
+         priority=RequestPriority(priority) if priority is not None else (
+             RequestPriority.SAFETY if query in self.SAFETY_INFO else RequestPriority.DECISION)
++        started=time.monotonic()
++        def wait_delay(duration):
++            if self.read_progress:self.read_progress('WAITING_FOR_READ_BACKOFF',query=query,
++                retry_in_seconds=round(duration/1000,3),next_retry_ms=self.clock_ms()+duration)
++            if duration>(self.read_deadline_seconds-(time.monotonic()-started))*1000:
++                raise ExchangeError('INFO_READ_WAIT_DEADLINE')
++            if cancel_event is None:self.wait(duration)
++            elif cancel_event.wait(duration/1000):raise ExchangeError('INFO_READ_CANCELLED')
+         for attempt in range(self.policy.read_retry_attempts):
+             if cancel_event is not None and cancel_event.is_set():raise ExchangeError('INFO_READ_CANCELLED')
++            if time.monotonic()-started>=self.read_deadline_seconds:raise ExchangeError('INFO_READ_DEADLINE')
+             delay=max(0,self.backoff_until-self.clock_ms())
+-            if delay and priority!=RequestPriority.SAFETY:
+-                if cancel_event is None:self.wait(delay)
+-                elif cancel_event.wait(delay/1000):raise ExchangeError('INFO_READ_CANCELLED')
++            if delay:wait_delay(delay)
+             response_weight=expected_items//60 if query=='candleSnapshot' else 0
++            if self.read_budget_wait_seconds:
++                weight=(2 if query in self.SMALL_INFO else 60 if query=='userRole' else 20)+response_weight
++                self.wait_for_read_budget(weight,priority=priority,
++                    max_wait_seconds=min(self.read_budget_wait_seconds,self.read_deadline_seconds-(time.monotonic()-started)),
++                    cancel_event=cancel_event,progress=self.read_progress)
+             self.reserve_info(query,priority=priority,response_weight=response_weight)
+             with self.lock:self.read_counts[query]=self.read_counts.get(query,0)+1
+             try:
+                 value=operation()
+             except Exception as exc:
+                 status=getattr(exc,'status_code',None)
+-                transient=(isinstance(exc,(TimeoutError,ConnectionError)) or str(exc)=='INFO_REQUEST_FAILED' or
++                transient=(getattr(exc,'retryable',None) is not False and (getattr(exc,'retryable',False) or
++                           isinstance(exc,(TimeoutError,ConnectionError)) or str(exc)=='INFO_REQUEST_FAILED' or
+                            status==429 or type(status) is int and 500<=status<600)
++                           )
++                detail=dict(query=query,attempt=attempt+1,code=str(exc) if isinstance(exc,ExchangeError) else type(exc).__name__,
++                    status_code=status,retry_after_ms=getattr(exc,'retry_after_ms',None),retryable=bool(transient))
++                self.read_failure_details.append(detail)
++                if self.read_progress:self.read_progress('INFO_READ_FAILED',**detail)
+                 if not transient:
+                     raise
+                 duration=self.error(status=status,retry_after_ms=getattr(exc,'retry_after_ms',None))
+                 if attempt+1==self.policy.read_retry_attempts:
+-                    raise ExchangeError('INFO_RETRY_BUDGET_EXHAUSTED') from None
+-                if cancel_event is None:self.wait(duration)
+-                elif cancel_event.wait(duration/1000):raise ExchangeError('INFO_READ_CANCELLED')
++                    error=ExchangeError('INFO_RETRY_BUDGET_EXHAUSTED');error.last_failure=detail
++                    raise error from None
++                wait_delay(duration)
+                 continue
+             self.observe_info(query,value,reserved_response_weight=response_weight)
+             self.success()
+@@ -352,4 +420,5 @@
+                 outgoing_messages=len(self.ws_messages),heartbeats=sum(r[1] for r in self.ws_messages),
+                 reconnects_last_minute=len(self.ws_reconnects)),
+             public_reads=dict(upstream_by_operation=dict(self.read_counts),failures=dict(self.read_failures),
+-                pending=len(self.inflight_reads),coalesced=self.coalesced_reads,max_seconds=self.max_read_seconds))
++                pending=len(self.inflight_reads),coalesced=self.coalesced_reads,max_seconds=self.max_read_seconds,
++                failure_details=list(self.read_failure_details)))
+--- V8.7/algo-trading-bot/exchange/testnet_qualification.py
++++ V8.8/algo-trading-bot/exchange/testnet_qualification.py
+@@ -41,12 +41,13 @@
+     A recovery callback is used only before assembly of the execution guard:
+     revoking that guard inside its preflight would change its generation.
+     """
+-    def __init__(self, *args, reconcile_before_load=None, wait=None, **kwargs):
++    def __init__(self, *args, reconcile_before_load=None, wait=None, progress=None, **kwargs):
+         super().__init__(*args, **kwargs)
+         self.reconcile_before_load = reconcile_before_load
+         self.wait = wait or time.sleep
+         self.observations = []
+         self.trigger_aware = True
++        self.progress=progress
+ 
+     def load(self, request, *, critical=False):
+         for attempt in range(2):
+@@ -57,12 +58,11 @@
+                 # Reserve enough room for the serial bundle; retain the central
+                 # limiter and its safety reserve. No signing or nonce is involved.
+                 reserve = 600 if self.reconcile_before_load is not None else 450
+-                started = time.monotonic()
+-                while self.rate_limits._usage()+reserve > (
+-                        self.rate_limits.ip_weight_limit-self.rate_limits._reserve('ip')):
+-                    if time.monotonic()-started > 65:
+-                        raise ExchangeError('QUALIFICATION_PUBLIC_READ_BUDGET')
+-                    self.wait(.5)
++                # The manager derives a next retry from actual rolling weights
++                # and venue guidance. Its waits are bounded and cancellable.
++                self.rate_limits.wait_for_read_budget(reserve,max_wait_seconds=65,
++                    cancel_event=self.client.read_cancel_event,progress=self.progress,
++                    wait_ms=lambda ms:self.wait(ms/1000))
+                 prime_read_only_clock(self.market, self.clock_health, request.symbol)
+                 observed['clock_synchronized'] = self.clock_health.report()
+                 if self.reconcile_before_load is not None:
+@@ -70,7 +70,11 @@
+                     if not report.ready:
+                         raise ExchangeError('QUALIFICATION_DURABLE_RECONCILIATION_REQUIRED')
+                     observed['reconciled_ms'] = self.client.clock_ms()
+-                context = super().load(request, critical=critical)
++                from contextlib import nullcontext
++                # Only preparation can share static account snapshots. Actual
++                # execution and all position/order/history/book reads stay fresh.
++                scope=self.client.read_snapshot_scope() if self.reconcile_before_load is not None else nullcontext()
++                with scope:context = super().load(request, critical=critical)
+                 now = self.client.clock_ms()
+                 observed.update(readiness=asdict(context.readiness), account_ms=context.account_ms,
+                     quote_ms=context.quote.timestamp_ms, mark_ms=context.quote.mark_timestamp_ms,
+--- V8.7/scripts/run_testnet_qualification.py
++++ V8.8/scripts/run_testnet_qualification.py
+@@ -1,5 +1,6 @@
+ """Prepare-only by default. Actual qualification requires exact separate risk approval."""
+ import argparse,json,hashlib,sys
++import time
+ from dataclasses import asdict
+ from decimal import Decimal as D
+ from pathlib import Path
+@@ -21,6 +22,7 @@
+ from exchange.testnet_qualification import (QualificationProposal,QualificationApproval,
+     find_largest_safe_qualification_quantity,build_qualification,QualificationContextProvider,
+     require_qualification_regression,RULE)
++from exchange.testnet_qualification import residual_close_assessment
+ from strategy_freeze import verify_strategy_freeze
+ from venue_config import require_paper_migration
+ 
+@@ -53,6 +55,17 @@
+         organizer_whitelisting_confirmed=False,sole_signer_host_confirmed=False,
+         candidates=[],approval_requested=False,practice_ready=False,live_ready=False)
+     client=journal=None
++    started=time.monotonic();progress_path=directory/'progress.jsonl'
++    def progress(event,**details):
++        elapsed=time.monotonic()-started
++        if elapsed>=240:raise ExchangeError('QUALIFICATION_PREPARATION_DEADLINE')
++        if event in {'CHECKING_NETWORK','CHECKING_ACCOUNT','RECONCILING_ACCOUNT','CHECKING_RATE_BUDGET',
++                     'CHECKING_BTC_BOOK','CHECKING_ETH_BOOK','CHECKING_HYPE_BOOK','VERIFYING_RESIDUAL_EXITS'}:
++            r['stage']=event
++        record=dict(event=event,stage=r.get('stage','PREPARATION_ONLY'),elapsed_seconds=round(elapsed,3),**details)
++        r['last_progress']=record
++        with progress_path.open('a') as stream:stream.write(json.dumps(record)+'\n')
++        print(json.dumps(record),flush=True)
+     try:
+         r['safety']=require_paper_migration();r['freeze']=verify_strategy_freeze()
+         r['test_receipt']=str(current_test_receipt(test_receipt,r['source_hash']))
+@@ -61,9 +74,13 @@
+         if protection.enabled:raise ExchangeError('QUALIFICATION_GLOBAL_PROTECTION_MUST_REMAIN_DISABLED')
+         journal=ExecutionJournal(directory/'read_only.sqlite',session_id='qualification-proposal',team_address=TEAM)
+         rates=HyperliquidRateLimitManager(journal,policy=rate,signer_address=API)
+-        client=HyperliquidClient(rate_limits=rates);client.startup()
++        rates.read_progress=progress;rates.read_budget_wait_seconds=65
++        client=HyperliquidClient(rate_limits=rates,progress=progress)
++        progress('CHECKING_NETWORK');client.startup()
++        progress('CHECKING_ACCOUNT')
+         account,market=HyperliquidAccount(client,TEAM),HyperliquidMarketData(client)
+         recovery=CertificationRecovery(account,journal,initial_start_ms=0)
++        progress('RECONCILING_ACCOUNT',reason='INITIAL_ACTUAL_ACCOUNT_HISTORY')
+         r['initial_reconciliation']=asdict(recovery.recover())
+         if not recovery.last_report.ready or account.get_positions() or account.get_frontend_open_orders():
+             raise ExchangeError('QUALIFICATION_INITIAL_RECONCILED_FLAT_REQUIRED')
+@@ -75,13 +92,14 @@
+         rates.journal=journal;client.rate_limits=rates
+         r['public_read_weight_after_reopen']=rates._usage()
+         recovery=CertificationRecovery(account,journal,initial_start_ms=0)
++        progress('RECONCILING_ACCOUNT',reason='VERIFY_PERSISTENT_CHECKPOINT_AFTER_REOPEN')
+         r['restored_checkpoint']=bool(recovery.saved_snapshot)
+         r['reconciliation_after_reopen']=asdict(recovery.recover())
+         if not r['restored_checkpoint'] or not recovery.last_report.ready:
+             raise ExchangeError('QUALIFICATION_DURABLE_RECONCILIATION_REQUIRED')
+         clock=ClockHealthMonitor(clock_ms=client.clock_ms,journal=journal,**cp)
+         provider=QualificationContextProvider(market,account,API,clock,rates,
+-            reconcile_before_load=recovery.recover,
++            reconcile_before_load=recovery.recover,progress=progress,
+             reconciliation_ready=lambda:recovery.account_truth_ready,feed_ready=lambda:True)
+         provider.trigger_aware=True
+         policyhash=hashlib.sha256((ROOT/'configs/reliability_policy.json').read_bytes()).hexdigest()
+@@ -89,14 +107,24 @@
+             symbol=row['symbol'];start=len(provider.observations)
+             row['eligible_for_risk_review']=False
+             try:
++                progress('CHECKING_'+symbol.split(':')[1]+'_BOOK',symbol=symbol)
++                progress('CHECKING_RATE_BUDGET',symbol=symbol)
+                 # An unsigned symbol descriptor requests actual inputs. It has
+                 # no fabricated quantity/price and can never be submitted.
+                 ctx=provider.load(SimpleNamespace(symbol=symbol,reduce_only=False))
+                 spec=client.market(symbol)
+                 row.update(quote=asdict(ctx.quote),active_asset=ctx.active_asset,readiness=asdict(ctx.readiness),
+                            observed_ms=client.clock_ms(),spec=asdict(spec),clock=clock.report())
++                progress('VERIFYING_RESIDUAL_EXITS',symbol=symbol)
+                 sizing=find_largest_safe_qualification_quantity(ctx,client,r['source_hash'],policyhash)
+                 row['sizing']=sizing
++                if 'exit_floor' in sizing:
++                    row['one_lot_close_assessment']=residual_close_assessment(spec,spec.size_step,sizing['exit_floor'])
++                if sizing.get('rejection')=='QUALIFICATION_NO_LOT_MEETS_OPENING_MINIMUM_WITHIN_BOUNDS':
++                    bounds=sizing['quantity_bounds']
++                    depth=min(D(bounds['bid_depth']),D(bounds['ask_depth']))
++                    non_depth=min(D(bounds[k]) for k in ('notional','account_size','margin'))
++                    if depth<=non_depth:row['external_blocker']='INSUFFICIENT_REAL_LIQUIDITY'
+                 if not sizing['ready']:raise ExchangeError(sizing['rejection'])
+                 p=QualificationProposal(**sizing['proposal'])
+                 row.pop('blocker',None)
+@@ -155,14 +183,26 @@
+         if r['final_positions'] or r['final_orders'] or not recovery.last_report.ready:
+             r.update(status='QUALIFICATION_LOCKED',blocker='QUALIFICATION_FINAL_ACCOUNT_RECONCILIATION_REQUIRED')
+         r['rates']=rates.report()
++    except KeyboardInterrupt:r.update(status='QUALIFICATION_LOCKED',blocker='PREPARATION_INTERRUPTED',interrupted=True,
++        qualification_state='PREPARATION_ONLY')
+     except Exception as exc:r.update(status='QUALIFICATION_LOCKED',blocker=str(exc) if isinstance(exc,ExchangeError) else type(exc).__name__)
+     finally:
+-        if client:client.close()
++        if client:
++            r['http_diagnostic']=getattr(getattr(client,'transport',None),'last_diagnostic',None)
++            r['snapshot_reuse_count']=getattr(client,'snapshot_hits',0)
++            transport=getattr(client,'transport',None)
++            r['http_timeouts']=dict(connect_read_seconds=getattr(transport,'timeout',None),total_seconds=getattr(transport,'total_timeout',None))
++            try:client.close()
++            except Exception as exc:r['cleanup_error']=type(exc).__name__
+         if journal:
+-            if 'recovery' in locals():recovery.checkpoint(clean=True)
+-            r['sqlite_integrity']=journal.db.execute('PRAGMA integrity_check').fetchone()[0]
+-            r['actual_action_rows']={t:journal.db.execute('SELECT COUNT(*) FROM '+t).fetchone()[0] for t in ('intents','api_actions','signed_management')}
+-            journal.close()
++            try:
++                if 'rates' in locals():r['rates']=rates.report()
++                if 'recovery' in locals():recovery.checkpoint(clean=True)
++                r['sqlite_integrity']=journal.db.execute('PRAGMA integrity_check').fetchone()[0]
++                r['actual_action_rows']={t:journal.db.execute('SELECT COUNT(*) FROM '+t).fetchone()[0] for t in ('intents','api_actions','signed_management')}
++            except Exception as exc:r.update(status='QUALIFICATION_LOCKED',cleanup_error=type(exc).__name__,blocker='PREPARATION_CLEANUP_EVIDENCE_FAILED')
++            finally:journal.close()
++    if r.get('cleanup_error'):r.update(status='QUALIFICATION_LOCKED')
+     r.update(finished_utc=datetime.now(timezone.utc).isoformat(),source_hash_after=active_source_hash(ROOT))
+     if r['source_hash']!=r['source_hash_after']:r.update(status='QUALIFICATION_LOCKED',blocker='SOURCE_CHANGED_DURING_PREPARATION')
+     atomic_json(directory/'readiness.json',r)
+@@ -172,6 +212,8 @@
+         fill_ids=[],executed_notional=None,timestamps_ms=[],fill_verified=False,final_flat_verified=False,
+         preflight_flat_observed=preflight_flat_proven(r),
+         account_reconciliation=r.get('final_reconciliation'),organizer_whitelisting_confirmed=False))
++    print(json.dumps(dict(event='QUALIFICATION_PROPOSAL_READY' if r['status']=='EXPLICIT_EXPERIMENTAL_RISK_DECISION_REQUIRED' else 'QUALIFICATION_LOCKED',
++        stage=r.get('stage'),elapsed_seconds=round(time.monotonic()-started,3),reason=r.get('blocker'))),flush=True)
+     return r
+ 
+ 
+@@ -228,5 +270,6 @@
+     else:print(json.dumps(dict(status=r['status'],qualification_stages=r.get('qualification_stages',[]),
+         blocker=r.get('blocker'),output_directory=str(a.output_directory.resolve()),
+         actual_order_authorization_supplied=bool(a.operator_approval_file))))
++    if r.get('interrupted'):return 130
+     return 0 if r['status'] not in {'QUALIFICATION_LOCKED','EMERGENCY_EXIT_REQUIRED'} else 1
+ if __name__=='__main__':raise SystemExit(main())

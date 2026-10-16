@@ -1,0 +1,30 @@
+--- before/algo-trading-bot/exchange/single_position_guard.py
++++ algo-trading-bot/exchange/single_position_guard.py
+@@ -112,6 +112,9 @@
+         self._store(PortfolioState.UNKNOWN, reason, entry_key=previous.get('entry_key'))
+         self.journal.event('GLOBAL_POSITION_REVOKED', self.clock_ms(), reason=reason)
+ 
++    def intent_rows(self):
++        return self.journal.intents()
++
+     def reconcile(self, context, now_ms, *, expected_generation=None):
+         with self.journal.transaction():
+             current=self.journal.control(self.CONTROL) or {}
+@@ -124,7 +127,7 @@
+         key = prior.get('entry_key')
+         positions = {s: p for s, p in context.positions.items() if decimal(p.quantity)}
+         orders = context.open_orders
+-        rows = self.journal.intents()
++        rows = self.intent_rows()
+         pending = [r for r in rows if unresolved(r)]
+         state, reason = PortfolioState.UNKNOWN, 'UNKNOWN_ACCOUNT_STATE'
+         if (context.readiness.account_ready and context.reconciled and
+@@ -198,7 +201,7 @@
+             raise ExchangeError('ACCOUNT_PREFLIGHT_INVALIDATED')
+         if (prior.get('state') != 'FLAT' or prior.get('entry_key') is not None or
+                 prior.get('observed_ms') is None or not 0 <= now_ms-prior['observed_ms'] <= 5000 or
+-                any(unresolved(r) for r in self.journal.intents())):
++                any(unresolved(r) for r in self.intent_rows())):
+             raise ExchangeError('POSITION_LIMIT')
+         self._store(PortfolioState.ENTRY_PENDING, 'DURABLE_ENTRY_RESERVED',
+                     entry_key=key, observed_ms=prior['observed_ms'], in_transaction=True)

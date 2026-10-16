@@ -1,0 +1,77 @@
+F.............FFF.................                                       [100%]
+=================================== FAILURES ===================================
+______________ test_sell_only_real_composition_closes_without_buy ______________
+algo-trading-bot/test_exit_recovery.py:51: in test_sell_only_real_composition_closes_without_buy
+    c=recovered;r,p=draft(c);order=c.e.close_full_position(r,permission=p)
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/emergency_qualification.py:506: in close_full_position
+    return super().close_full_position(request,permission=scoped)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_execution.py:272: in close_full_position
+    return self._submit(request,permission=permission,full_position_close=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_execution.py:302: in _submit
+    request, context, result, compliance = self._validated(request, permission,critical=request.reduce_only,
+algo-trading-bot/exchange/emergency_qualification.py:468: in _validated
+    result=super()._validated(request,permission,**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_execution.py:196: in _validated
+    raise ExchangeError('EXCHANGE_CONTEXT_UNAVAILABLE') from None
+E   exchange.base_exchange.ExchangeError: EXCHANGE_CONTEXT_UNAVAILABLE
+________________ test_ioc_outcome_never_creates_second_exit[0] _________________
+algo-trading-bot/test_exit_recovery.py:89: in test_ioc_outcome_never_creates_second_exit
+    c.e.close_full_position(r,permission=p)
+algo-trading-bot/exchange/emergency_qualification.py:506: in close_full_position
+    return super().close_full_position(request,permission=scoped)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_execution.py:272: in close_full_position
+    return self._submit(request,permission=permission,full_position_close=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_execution.py:302: in _submit
+    request, context, result, compliance = self._validated(request, permission,critical=request.reduce_only,
+algo-trading-bot/exchange/emergency_qualification.py:468: in _validated
+    result=super()._validated(request,permission,**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_execution.py:196: in _validated
+    raise ExchangeError('EXCHANGE_CONTEXT_UNAVAILABLE') from None
+E   exchange.base_exchange.ExchangeError: EXCHANGE_CONTEXT_UNAVAILABLE
+________________ test_ioc_outcome_never_creates_second_exit[.5] ________________
+algo-trading-bot/test_exit_recovery.py:89: in test_ioc_outcome_never_creates_second_exit
+    c.e.close_full_position(r,permission=p)
+algo-trading-bot/exchange/emergency_qualification.py:506: in close_full_position
+    return super().close_full_position(request,permission=scoped)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_execution.py:272: in close_full_position
+    return self._submit(request,permission=permission,full_position_close=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_execution.py:302: in _submit
+    request, context, result, compliance = self._validated(request, permission,critical=request.reduce_only,
+algo-trading-bot/exchange/emergency_qualification.py:468: in _validated
+    result=super()._validated(request,permission,**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_execution.py:196: in _validated
+    raise ExchangeError('EXCHANGE_CONTEXT_UNAVAILABLE') from None
+E   exchange.base_exchange.ExchangeError: EXCHANGE_CONTEXT_UNAVAILABLE
+________________ test_ioc_outcome_never_creates_second_exit[1] _________________
+algo-trading-bot/test_exit_recovery.py:89: in test_ioc_outcome_never_creates_second_exit
+    c.e.close_full_position(r,permission=p)
+algo-trading-bot/exchange/emergency_qualification.py:506: in close_full_position
+    return super().close_full_position(request,permission=scoped)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_execution.py:272: in close_full_position
+    return self._submit(request,permission=permission,full_position_close=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_execution.py:302: in _submit
+    request, context, result, compliance = self._validated(request, permission,critical=request.reduce_only,
+algo-trading-bot/exchange/emergency_qualification.py:468: in _validated
+    result=super()._validated(request,permission,**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_execution.py:196: in _validated
+    raise ExchangeError('EXCHANGE_CONTEXT_UNAVAILABLE') from None
+E   exchange.base_exchange.ExchangeError: EXCHANGE_CONTEXT_UNAVAILABLE
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_exit_recovery.py::test_sell_only_real_composition_closes_without_buy
+FAILED algo-trading-bot/test_exit_recovery.py::test_ioc_outcome_never_creates_second_exit[0]
+FAILED algo-trading-bot/test_exit_recovery.py::test_ioc_outcome_never_creates_second_exit[.5]
+FAILED algo-trading-bot/test_exit_recovery.py::test_ioc_outcome_never_creates_second_exit[1]
+4 failed, 30 passed in 10.08s

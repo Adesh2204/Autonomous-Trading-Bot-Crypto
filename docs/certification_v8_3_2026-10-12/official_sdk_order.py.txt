@@ -1,0 +1,22 @@
+    def order(
+        self,
+        name: str,
+        is_buy: bool,
+        sz: float,
+        limit_px: float,
+        order_type: OrderType,
+        reduce_only: bool = False,
+        cloid: Optional[Cloid] = None,
+        builder: Optional[BuilderInfo] = None,
+    ) -> Any:
+        order: OrderRequest = {
+            "coin": name,
+            "is_buy": is_buy,
+            "sz": sz,
+            "limit_px": limit_px,
+            "order_type": order_type,
+            "reduce_only": reduce_only,
+        }
+        if cloid:
+            order["cloid"] = cloid
+        return self.bulk_orders([order], builder)

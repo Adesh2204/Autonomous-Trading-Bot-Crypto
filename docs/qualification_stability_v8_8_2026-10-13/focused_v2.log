@@ -1,0 +1,27 @@
+...................F.....................................F.............. [ 33%]
+........................................................................ [ 67%]
+....................................................................     [100%]
+=================================== FAILURES ===================================
+__ test_public_transport_exact_endpoint_socket_limits_and_no_adapter_retries ___
+algo-trading-bot/test_qualification_stability_v8_8.py:139: in test_public_transport_exact_endpoint_socket_limits_and_no_adapter_retries
+    assert t.session.get_adapter(args[0]).max_retries.total==0 and r.closed
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/requests/sessions.py:877: in get_adapter
+    if url.lower().startswith(prefix.lower()):
+       ^^^^^^^^^
+E   AttributeError: 'Session' object has no attribute 'lower'
+_ test_interrupt_during_account_reconciliation_preserves_checkpoint_and_unknown_truth _
+algo-trading-bot/test_qualification_stability_v8_8.py:320: in test_interrupt_during_account_reconciliation_preserves_checkpoint_and_unknown_truth
+    assert recovered.saved_snapshot and recovered.saved_snapshot['clean_shutdown'] is True
+                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'clean_shutdown'
+----------------------------- Captured stdout call -----------------------------
+{"event": "CHECKING_NETWORK", "stage": "CHECKING_NETWORK", "elapsed_seconds": 0.047}
+{"event": "CHECKING_ACCOUNT", "stage": "CHECKING_ACCOUNT", "elapsed_seconds": 0.048}
+{"event": "RECONCILING_ACCOUNT", "stage": "RECONCILING_ACCOUNT", "elapsed_seconds": 0.179, "reason": "INITIAL_ACTUAL_ACCOUNT_HISTORY"}
+{"event": "QUALIFICATION_LOCKED", "stage": "RECONCILING_ACCOUNT", "elapsed_seconds": 0.252, "reason": "PREPARATION_INTERRUPTED"}
+- generated xml file: /Users/adesh/Autonomous Trading Bot - Crypto /docs/qualification_stability_v8_8_2026-10-13/focused_v2.xml -
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_qualification_stability_v8_8.py::test_public_transport_exact_endpoint_socket_limits_and_no_adapter_retries
+FAILED algo-trading-bot/test_qualification_stability_v8_8.py::test_interrupt_during_account_reconciliation_preserves_checkpoint_and_unknown_truth
+2 failed, 210 passed in 39.78s

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="3" time="1.232" timestamp="2026-10-13T09:13:58.427959+05:30" hostname="Adeshs-MacBook-Air.local"><testcase classname="algo-trading-bot.test_qualification_recovery_v8_7" name="test_three_lots_fail_but_two_lots_are_selected" time="0.468"><failure message="AttributeError: 'CertificationRecovery' object has no attribute 'account_truth_ready'">algo-trading-bot/test_qualification_recovery_v8_7.py:21: in test_three_lots_fail_but_two_lots_are_selected
+    c=qualification;ctx=context(c)
+                        ^^^^^^^^^^
+algo-trading-bot/test_qualification_recovery_v8_7.py:17: in context
+    return c.live.provider.load(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/exchange_rules.py:247: in load
+    reconciliation_ready=self.reconciliation_ready(),critical=critical)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/test_testnet_qualification.py:41: in &lt;lambda&gt;
+    live.provider.reconciliation_ready=lambda:recovery.account_truth_ready
+                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'CertificationRecovery' object has no attribute 'account_truth_ready'</failure></testcase><testcase classname="algo-trading-bot.test_qualification_recovery_v8_7" name="test_margin_bound_selects_smaller_valid_size" time="0.133"><failure message="AttributeError: 'CertificationRecovery' object has no attribute 'account_truth_ready'">algo-trading-bot/test_qualification_recovery_v8_7.py:29: in test_margin_bound_selects_smaller_valid_size
+    c=qualification;ctx=context(c)
+                        ^^^^^^^^^^
+algo-trading-bot/test_qualification_recovery_v8_7.py:17: in context
+    return c.live.provider.load(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/exchange_rules.py:247: in load
+    reconciliation_ready=self.reconciliation_ready(),critical=critical)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/test_testnet_qualification.py:41: in &lt;lambda&gt;
+    live.provider.reconciliation_ready=lambda:recovery.account_truth_ready
+                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'CertificationRecovery' object has no attribute 'account_truth_ready'</failure></testcase><testcase classname="algo-trading-bot.test_qualification_recovery_v8_7" name="test_stale_clock_is_recovered_before_readiness_snapshot" time="0.135"><failure message="AssertionError: assert (False)&#10; +  where False = LiveReadiness(status='NOT_READY', reasons=('CLOCK_HEALTH_REQUIRED',), team_address='0x11111111111111111111111111111111...': 10000}, reconciliation_ready=True, clock_healthy=False, rate_limits_healthy=True, signed_transport_implemented=True).clock_healthy&#10; +    where LiveReadiness(status='NOT_READY', reasons=('CLOCK_HEALTH_REQUIRED',), team_address='0x11111111111111111111111111111111...': 10000}, reconciliation_ready=True, clock_healthy=False, rate_limits_healthy=True, signed_transport_implemented=True) = ValidationContext(spec=MarketSpec(symbol='par:BTC', size_decimals=4, max_leverage=10, asset_id=2670000, margin_tiers=(...ing': '.0001', 'openInterest': '10'}}, feed_ready=True, leverage=1, fills=(), reconciled=True, oracle_ms=1790942400001).readiness">algo-trading-bot/test_qualification_recovery_v8_7.py:49: in test_stale_clock_is_recovered_before_readiness_snapshot
+    assert ctx.readiness.clock_healthy and ctx.readiness.account_ready
+E   AssertionError: assert (False)
+E    +  where False = LiveReadiness(status='NOT_READY', reasons=('CLOCK_HEALTH_REQUIRED',), team_address='0x11111111111111111111111111111111...': 10000}, reconciliation_ready=True, clock_healthy=False, rate_limits_healthy=True, signed_transport_implemented=True).clock_healthy
+E    +    where LiveReadiness(status='NOT_READY', reasons=('CLOCK_HEALTH_REQUIRED',), team_address='0x11111111111111111111111111111111...': 10000}, reconciliation_ready=True, clock_healthy=False, rate_limits_healthy=True, signed_transport_implemented=True) = ValidationContext(spec=MarketSpec(symbol='par:BTC', size_decimals=4, max_leverage=10, asset_id=2670000, margin_tiers=(...ing': '.0001', 'openInterest': '10'}}, feed_ready=True, leverage=1, fills=(), reconciled=True, oracle_ms=1790942400001).readiness</failure></testcase></testsuite></testsuites>

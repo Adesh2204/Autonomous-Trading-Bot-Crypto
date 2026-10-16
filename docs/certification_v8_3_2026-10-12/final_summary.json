@@ -1,0 +1,123 @@
+{
+  "status": "PREFLIGHT_BLOCKED",
+  "authorization_status": "NO_ORDER_AUTHORIZED",
+  "source_hash": "f031a8cd481f421179e653581dc05038de66d6ca3223ca2c67712a79e0adafe2",
+  "source_hash_before": "fed73ed1cc60af117fb2e36614bdb1447e588ab986431db497e2edf89340b902",
+  "root_cause": "Smallest partial fill or exit remainder is below the retained minimum; exact close and protection exemptions unverified",
+  "chosen_safe_action": "Preserve certification entry block; no verified executable approach A, B or C",
+  "eligible_markets": [],
+  "safest_eligible_market": null,
+  "selected_trade_size": null,
+  "authorization_proposal": null,
+  "venue_subminimum_close": "NOT_ESTABLISHED_BY_AUTHORITATIVE_DOCUMENTATION",
+  "venue_subminimum_protection": "NOT_ESTABLISHED_BY_AUTHORITATIVE_DOCUMENTATION",
+  "actual_exchange_order_submissions": 0,
+  "actual_wallet_signatures": 0,
+  "realized_pnl": null,
+  "realized_pnl_status": "REALIZED_PNL_NOT_CERTIFIED",
+  "flags": {
+    "PARTIAL_FILL_EXIT_READY": false,
+    "ACTUAL_PROTECTION_READY": false,
+    "CONTROLLED_EXECUTION_READY": false,
+    "LONG_CERTIFIED": false,
+    "SHORT_CERTIFIED": false,
+    "FUNDED_RECOVERY_CERTIFIED": false,
+    "PRACTICE_READY": false,
+    "LIVE_READY": false,
+    "OFFLINE_ONE_LOT_REVIEW_TESTED": true
+  },
+  "tests": {
+    "tests": 1522,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "new_tests": 35,
+  "checks_after": {
+    "strategy_freeze": {
+      "baseline": "nse-working-baseline",
+      "file_count": 1,
+      "method_count": 8,
+      "parameter_count": 32,
+      "passed": true
+    },
+    "phase0": {
+      "project": "anchorium-perpetual-alpha",
+      "checks": {
+        "project_is_perpetual_alpha": true,
+        "independent_git_directory": true,
+        "migration_branch": true,
+        "testnet_venue": true,
+        "paper_execution_mode": true,
+        "migration_policy_valid": true,
+        "orders_disabled": true,
+        "angel_one_client_disabled": true,
+        "angel_one_order_boundary_disabled": true,
+        "testnet_order_boundary_disabled": true,
+        "signal_logic_present": true,
+        "signal_source_unchanged": true
+      },
+      "passed": true
+    }
+  },
+  "modified_source_files": [
+    {
+      "path": "algo-trading-bot/exchange/certification_market_review.py",
+      "before_sha256": null,
+      "after_sha256": "dfefbd66be563b526319c8527c1434c7ed446bd3cfc4d51d6e92da53be76439c",
+      "status": "NEW"
+    },
+    {
+      "path": "algo-trading-bot/test_certification_market_review_v8_3.py",
+      "before_sha256": null,
+      "after_sha256": "8afe2b5664986aa94114c6ed729f06f40266ee572d7ca02c8f93655bcf48082c",
+      "status": "NEW"
+    },
+    {
+      "path": "scripts/inspect_certification_markets.py",
+      "before_sha256": null,
+      "after_sha256": "4e0eed4427490cc8b391d98464f6c665e278ad54597e20ebed28a52631838f18",
+      "status": "NEW"
+    }
+  ],
+  "market_preflight_started_utc": "2026-10-12T09:46:52.890867+00:00",
+  "market_preflight_finished_utc": "2026-10-12T09:47:05.696187+00:00",
+  "account_observed_ms": 1791798418816,
+  "account_readiness_reasons": [
+    "ACCOUNT_RECONCILIATION_REQUIRED"
+  ],
+  "signer_check_scope": "CURRENT_HOST_AND_OS_USER_ONLY",
+  "remote_signer_ownership_verified": false,
+  "sqlite_audit": [
+    {
+      "path": "market_preflight_sandbox/read_only.sqlite",
+      "integrity": "ok",
+      "intents": 0,
+      "api_actions": 0,
+      "signed_management": 0
+    },
+    {
+      "path": "market_preflight_verified/read_only.sqlite",
+      "integrity": "ok",
+      "intents": 0,
+      "api_actions": 0,
+      "signed_management": 0
+    },
+    {
+      "path": "public_probe_sandbox/read_only.sqlite",
+      "integrity": "ok",
+      "intents": 0,
+      "api_actions": 0,
+      "signed_management": 0
+    },
+    {
+      "path": "public_probe_verified/read_only.sqlite",
+      "integrity": "ok",
+      "intents": 0,
+      "api_actions": 0,
+      "signed_management": 0
+    }
+  ],
+  "all_v8_2_source_and_config_files_unchanged": true,
+  "next_action": "Obtain authoritative par confirmation of the full-position sub-$10 close and protective-order rules or an equivalent safe mechanism"
+}

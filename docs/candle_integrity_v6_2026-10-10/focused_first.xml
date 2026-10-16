@@ -1,0 +1,777 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="14" failures="1" skipped="0" tests="82" time="20.610" timestamp="2026-10-10T13:13:23.121682+05:30" hostname="Adeshs-MacBook-Air.local"><testcase classname="algo-trading-bot.test_candle_integrity_v6" name="test_recorded_zero_atr_is_valid_but_never_qualified[brent]" time="0.059"><error message="failed on setup with &quot;pytest.PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')&quot;">.venv/lib/python3.12/site-packages/_pytest/runner.py:344: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/runner.py:246: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/logging.py:843: in pytest_runtest_setup
+    yield
+.venv/lib/python3.12/site-packages/_pytest/capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv/lib/python3.12/site-packages/_pytest/runner.py:164: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv/lib/python3.12/site-packages/_pytest/runner.py:514: in setup
+    col.setup()
+.venv/lib/python3.12/site-packages/_pytest/python.py:1674: in setup
+    self._request._fillfixtures()
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:719: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:548: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:639: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1127: in execute
+    result = ihook.pytest_fixture_setup(fixturedef=self, request=request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1195: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:929: in call_fixture_func
+    fixture_result = fixturefunc(**kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/junitxml.py:291: in record_property
+    _warn_incompatibility_with_xunit2(request, "record_property")
+.venv/lib/python3.12/site-packages/_pytest/junitxml.py:269: in _warn_incompatibility_with_xunit2
+    request.node.warn(
+.venv/lib/python3.12/site-packages/_pytest/nodes.py:271: in warn
+    warnings.warn_explicit(
+E   pytest.PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')</error></testcase><testcase classname="algo-trading-bot.test_candle_integrity_v6" name="test_recorded_zero_atr_is_valid_but_never_qualified[ewy]" time="0.000"><error message="failed on setup with &quot;pytest.PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')&quot;">.venv/lib/python3.12/site-packages/_pytest/runner.py:344: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/runner.py:246: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/logging.py:843: in pytest_runtest_setup
+    yield
+.venv/lib/python3.12/site-packages/_pytest/capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv/lib/python3.12/site-packages/_pytest/runner.py:164: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv/lib/python3.12/site-packages/_pytest/runner.py:514: in setup
+    col.setup()
+.venv/lib/python3.12/site-packages/_pytest/python.py:1674: in setup
+    self._request._fillfixtures()
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:719: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:548: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:639: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1127: in execute
+    result = ihook.pytest_fixture_setup(fixturedef=self, request=request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1195: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:929: in call_fixture_func
+    fixture_result = fixturefunc(**kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/junitxml.py:291: in record_property
+    _warn_incompatibility_with_xunit2(request, "record_property")
+.venv/lib/python3.12/site-packages/_pytest/junitxml.py:269: in _warn_incompatibility_with_xunit2
+    request.node.warn(
+.venv/lib/python3.12/site-packages/_pytest/nodes.py:271: in warn
+    warnings.warn_explicit(
+E   pytest.PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')</error></testcase><testcase classname="algo-trading-bot.test_candle_integrity_v6" name="test_invalid_numeric_field_records_exact_operand_and_fails_closed[NaN-ATR_14-True]" time="0.000"><error message="failed on setup with &quot;pytest.PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')&quot;">.venv/lib/python3.12/site-packages/_pytest/runner.py:344: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/runner.py:246: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/logging.py:843: in pytest_runtest_setup
+    yield
+.venv/lib/python3.12/site-packages/_pytest/capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv/lib/python3.12/site-packages/_pytest/runner.py:164: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv/lib/python3.12/site-packages/_pytest/runner.py:514: in setup
+    col.setup()
+.venv/lib/python3.12/site-packages/_pytest/python.py:1674: in setup
+    self._request._fillfixtures()
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:719: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:548: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:639: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1127: in execute
+    result = ihook.pytest_fixture_setup(fixturedef=self, request=request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1195: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:929: in call_fixture_func
+    fixture_result = fixturefunc(**kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/junitxml.py:291: in record_property
+    _warn_incompatibility_with_xunit2(request, "record_property")
+.venv/lib/python3.12/site-packages/_pytest/junitxml.py:269: in _warn_incompatibility_with_xunit2
+    request.node.warn(
+.venv/lib/python3.12/site-packages/_pytest/nodes.py:271: in warn
+    warnings.warn_explicit(
+E   pytest.PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')</error></testcase><testcase classname="algo-trading-bot.test_candle_integrity_v6" name="test_invalid_numeric_field_records_exact_operand_and_fails_closed[Infinity-Close-False]" time="0.000"><error message="failed on setup with &quot;pytest.PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')&quot;">.venv/lib/python3.12/site-packages/_pytest/runner.py:344: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/runner.py:246: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/logging.py:843: in pytest_runtest_setup
+    yield
+.venv/lib/python3.12/site-packages/_pytest/capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv/lib/python3.12/site-packages/_pytest/runner.py:164: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv/lib/python3.12/site-packages/_pytest/runner.py:514: in setup
+    col.setup()
+.venv/lib/python3.12/site-packages/_pytest/python.py:1674: in setup
+    self._request._fillfixtures()
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:719: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:548: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:639: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1127: in execute
+    result = ihook.pytest_fixture_setup(fixturedef=self, request=request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1195: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:929: in call_fixture_func
+    fixture_result = fixturefunc(**kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/junitxml.py:291: in record_property
+    _warn_incompatibility_with_xunit2(request, "record_property")
+.venv/lib/python3.12/site-packages/_pytest/junitxml.py:269: in _warn_incompatibility_with_xunit2
+    request.node.warn(
+.venv/lib/python3.12/site-packages/_pytest/nodes.py:271: in warn
+    warnings.warn_explicit(
+E   pytest.PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')</error></testcase><testcase classname="algo-trading-bot.test_candle_integrity_v6" name="test_invalid_numeric_field_records_exact_operand_and_fails_closed[-1-ATR_14-True]" time="0.000"><error message="failed on setup with &quot;pytest.PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')&quot;">.venv/lib/python3.12/site-packages/_pytest/runner.py:344: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/runner.py:246: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/logging.py:843: in pytest_runtest_setup
+    yield
+.venv/lib/python3.12/site-packages/_pytest/capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv/lib/python3.12/site-packages/_pytest/runner.py:164: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv/lib/python3.12/site-packages/_pytest/runner.py:514: in setup
+    col.setup()
+.venv/lib/python3.12/site-packages/_pytest/python.py:1674: in setup
+    self._request._fillfixtures()
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:719: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:548: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:639: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1127: in execute
+    result = ihook.pytest_fixture_setup(fixturedef=self, request=request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1195: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:929: in call_fixture_func
+    fixture_result = fixturefunc(**kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/junitxml.py:291: in record_property
+    _warn_incompatibility_with_xunit2(request, "record_property")
+.venv/lib/python3.12/site-packages/_pytest/junitxml.py:269: in _warn_incompatibility_with_xunit2
+    request.node.warn(
+.venv/lib/python3.12/site-packages/_pytest/nodes.py:271: in warn
+    warnings.warn_explicit(
+E   pytest.PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')</error></testcase><testcase classname="algo-trading-bot.test_candle_integrity_v6" name="test_invalid_numeric_field_records_exact_operand_and_fails_closed[0-VWAP-False]" time="0.000"><error message="failed on setup with &quot;pytest.PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')&quot;">.venv/lib/python3.12/site-packages/_pytest/runner.py:344: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/runner.py:246: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/logging.py:843: in pytest_runtest_setup
+    yield
+.venv/lib/python3.12/site-packages/_pytest/capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv/lib/python3.12/site-packages/_pytest/runner.py:164: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv/lib/python3.12/site-packages/_pytest/runner.py:514: in setup
+    col.setup()
+.venv/lib/python3.12/site-packages/_pytest/python.py:1674: in setup
+    self._request._fillfixtures()
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:719: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:548: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:639: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1127: in execute
+    result = ihook.pytest_fixture_setup(fixturedef=self, request=request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1195: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:929: in call_fixture_func
+    fixture_result = fixturefunc(**kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/junitxml.py:291: in record_property
+    _warn_incompatibility_with_xunit2(request, "record_property")
+.venv/lib/python3.12/site-packages/_pytest/junitxml.py:269: in _warn_incompatibility_with_xunit2
+    request.node.warn(
+.venv/lib/python3.12/site-packages/_pytest/nodes.py:271: in warn
+    warnings.warn_explicit(
+E   pytest.PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')</error></testcase><testcase classname="algo-trading-bot.test_candle_integrity_v6" name="test_gapped_rest_response_can_join_retained_genuine_rows" time="0.000"><error message="failed on setup with &quot;pytest.PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')&quot;">.venv/lib/python3.12/site-packages/_pytest/runner.py:344: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/runner.py:246: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/logging.py:843: in pytest_runtest_setup
+    yield
+.venv/lib/python3.12/site-packages/_pytest/capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv/lib/python3.12/site-packages/_pytest/runner.py:164: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv/lib/python3.12/site-packages/_pytest/runner.py:514: in setup
+    col.setup()
+.venv/lib/python3.12/site-packages/_pytest/python.py:1674: in setup
+    self._request._fillfixtures()
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:719: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:548: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:639: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1127: in execute
+    result = ihook.pytest_fixture_setup(fixturedef=self, request=request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1195: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:929: in call_fixture_func
+    fixture_result = fixturefunc(**kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/junitxml.py:291: in record_property
+    _warn_incompatibility_with_xunit2(request, "record_property")
+.venv/lib/python3.12/site-packages/_pytest/junitxml.py:269: in _warn_incompatibility_with_xunit2
+    request.node.warn(
+.venv/lib/python3.12/site-packages/_pytest/nodes.py:271: in warn
+    warnings.warn_explicit(
+E   pytest.PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')</error></testcase><testcase classname="algo-trading-bot.test_candle_integrity_v6" name="test_completed_conflict_preserves_cache_and_blocks_only_affected_symbol[WS]" time="0.000"><error message="failed on setup with &quot;pytest.PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')&quot;">.venv/lib/python3.12/site-packages/_pytest/runner.py:344: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/runner.py:246: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/logging.py:843: in pytest_runtest_setup
+    yield
+.venv/lib/python3.12/site-packages/_pytest/capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv/lib/python3.12/site-packages/_pytest/runner.py:164: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv/lib/python3.12/site-packages/_pytest/runner.py:514: in setup
+    col.setup()
+.venv/lib/python3.12/site-packages/_pytest/python.py:1674: in setup
+    self._request._fillfixtures()
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:719: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:548: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:639: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1127: in execute
+    result = ihook.pytest_fixture_setup(fixturedef=self, request=request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1195: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:929: in call_fixture_func
+    fixture_result = fixturefunc(**kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/junitxml.py:291: in record_property
+    _warn_incompatibility_with_xunit2(request, "record_property")
+.venv/lib/python3.12/site-packages/_pytest/junitxml.py:269: in _warn_incompatibility_with_xunit2
+    request.node.warn(
+.venv/lib/python3.12/site-packages/_pytest/nodes.py:271: in warn
+    warnings.warn_explicit(
+E   pytest.PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')</error></testcase><testcase classname="algo-trading-bot.test_candle_integrity_v6" name="test_completed_conflict_preserves_cache_and_blocks_only_affected_symbol[REST]" time="0.000"><error message="failed on setup with &quot;pytest.PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')&quot;">.venv/lib/python3.12/site-packages/_pytest/runner.py:344: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/runner.py:246: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/logging.py:843: in pytest_runtest_setup
+    yield
+.venv/lib/python3.12/site-packages/_pytest/capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv/lib/python3.12/site-packages/_pytest/runner.py:164: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv/lib/python3.12/site-packages/_pytest/runner.py:514: in setup
+    col.setup()
+.venv/lib/python3.12/site-packages/_pytest/python.py:1674: in setup
+    self._request._fillfixtures()
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:719: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:548: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:639: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1127: in execute
+    result = ihook.pytest_fixture_setup(fixturedef=self, request=request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1195: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:929: in call_fixture_func
+    fixture_result = fixturefunc(**kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/junitxml.py:291: in record_property
+    _warn_incompatibility_with_xunit2(request, "record_property")
+.venv/lib/python3.12/site-packages/_pytest/junitxml.py:269: in _warn_incompatibility_with_xunit2
+    request.node.warn(
+.venv/lib/python3.12/site-packages/_pytest/nodes.py:271: in warn
+    warnings.warn_explicit(
+E   pytest.PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')</error></testcase><testcase classname="algo-trading-bot.test_candle_integrity_v6" name="test_completed_conflict_preserves_cache_and_blocks_only_affected_symbol[SCANNER]" time="0.000"><error message="failed on setup with &quot;pytest.PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')&quot;">.venv/lib/python3.12/site-packages/_pytest/runner.py:344: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/runner.py:246: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/logging.py:843: in pytest_runtest_setup
+    yield
+.venv/lib/python3.12/site-packages/_pytest/capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv/lib/python3.12/site-packages/_pytest/runner.py:164: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv/lib/python3.12/site-packages/_pytest/runner.py:514: in setup
+    col.setup()
+.venv/lib/python3.12/site-packages/_pytest/python.py:1674: in setup
+    self._request._fillfixtures()
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:719: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:548: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:639: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1127: in execute
+    result = ihook.pytest_fixture_setup(fixturedef=self, request=request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1195: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:929: in call_fixture_func
+    fixture_result = fixturefunc(**kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/junitxml.py:291: in record_property
+    _warn_incompatibility_with_xunit2(request, "record_property")
+.venv/lib/python3.12/site-packages/_pytest/junitxml.py:269: in _warn_incompatibility_with_xunit2
+    request.node.warn(
+.venv/lib/python3.12/site-packages/_pytest/nodes.py:271: in warn
+    warnings.warn_explicit(
+E   pytest.PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')</error></testcase><testcase classname="algo-trading-bot.test_candle_integrity_v6" name="test_open_row_can_evolve_but_cannot_replace_final_fact" time="0.000"><error message="failed on setup with &quot;pytest.PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')&quot;">.venv/lib/python3.12/site-packages/_pytest/runner.py:344: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/runner.py:246: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/logging.py:843: in pytest_runtest_setup
+    yield
+.venv/lib/python3.12/site-packages/_pytest/capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv/lib/python3.12/site-packages/_pytest/runner.py:164: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv/lib/python3.12/site-packages/_pytest/runner.py:514: in setup
+    col.setup()
+.venv/lib/python3.12/site-packages/_pytest/python.py:1674: in setup
+    self._request._fillfixtures()
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:719: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:548: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:639: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1127: in execute
+    result = ihook.pytest_fixture_setup(fixturedef=self, request=request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1195: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:929: in call_fixture_func
+    fixture_result = fixturefunc(**kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/junitxml.py:291: in record_property
+    _warn_incompatibility_with_xunit2(request, "record_property")
+.venv/lib/python3.12/site-packages/_pytest/junitxml.py:269: in _warn_incompatibility_with_xunit2
+    request.node.warn(
+.venv/lib/python3.12/site-packages/_pytest/nodes.py:271: in warn
+    warnings.warn_explicit(
+E   pytest.PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')</error></testcase><testcase classname="algo-trading-bot.test_candle_integrity_v6" name="test_audit_stages_use_same_request_and_never_capture_account_payload" time="0.004"><error message="failed on setup with &quot;pytest.PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')&quot;">.venv/lib/python3.12/site-packages/_pytest/runner.py:344: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/runner.py:246: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/logging.py:843: in pytest_runtest_setup
+    yield
+.venv/lib/python3.12/site-packages/_pytest/capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv/lib/python3.12/site-packages/_pytest/runner.py:164: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv/lib/python3.12/site-packages/_pytest/runner.py:514: in setup
+    col.setup()
+.venv/lib/python3.12/site-packages/_pytest/python.py:1674: in setup
+    self._request._fillfixtures()
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:719: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:548: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:639: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1127: in execute
+    result = ihook.pytest_fixture_setup(fixturedef=self, request=request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1195: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:929: in call_fixture_func
+    fixture_result = fixturefunc(**kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/junitxml.py:291: in record_property
+    _warn_incompatibility_with_xunit2(request, "record_property")
+.venv/lib/python3.12/site-packages/_pytest/junitxml.py:269: in _warn_incompatibility_with_xunit2
+    request.node.warn(
+.venv/lib/python3.12/site-packages/_pytest/nodes.py:271: in warn
+    warnings.warn_explicit(
+E   pytest.PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')</error></testcase><testcase classname="algo-trading-bot.test_candle_integrity_v6" name="test_audit_size_limit_fails_explicitly" time="0.001"><error message="failed on setup with &quot;pytest.PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')&quot;">.venv/lib/python3.12/site-packages/_pytest/runner.py:344: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/runner.py:246: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/logging.py:843: in pytest_runtest_setup
+    yield
+.venv/lib/python3.12/site-packages/_pytest/capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv/lib/python3.12/site-packages/_pytest/runner.py:164: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv/lib/python3.12/site-packages/_pytest/runner.py:514: in setup
+    col.setup()
+.venv/lib/python3.12/site-packages/_pytest/python.py:1674: in setup
+    self._request._fillfixtures()
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:719: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:548: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:639: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1127: in execute
+    result = ihook.pytest_fixture_setup(fixturedef=self, request=request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1195: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:929: in call_fixture_func
+    fixture_result = fixturefunc(**kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/junitxml.py:291: in record_property
+    _warn_incompatibility_with_xunit2(request, "record_property")
+.venv/lib/python3.12/site-packages/_pytest/junitxml.py:269: in _warn_incompatibility_with_xunit2
+    request.node.warn(
+.venv/lib/python3.12/site-packages/_pytest/nodes.py:271: in warn
+    warnings.warn_explicit(
+E   pytest.PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')</error></testcase><testcase classname="algo-trading-bot.test_candle_integrity_v6" name="test_public_only_config_never_reads_dotenv" time="0.000"><error message="failed on setup with &quot;pytest.PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')&quot;">.venv/lib/python3.12/site-packages/_pytest/runner.py:344: in from_call
+    result: TResult | None = func()
+                             ^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/runner.py:246: in &lt;lambda&gt;
+    lambda: runtest_hook(item=item, **kwds), when=when, reraise=reraise
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/logging.py:843: in pytest_runtest_setup
+    yield
+.venv/lib/python3.12/site-packages/_pytest/capture.py:895: in pytest_runtest_setup
+    return (yield)
+            ^^^^^
+.venv/lib/python3.12/site-packages/_pytest/runner.py:164: in pytest_runtest_setup
+    item.session._setupstate.setup(item)
+.venv/lib/python3.12/site-packages/_pytest/runner.py:514: in setup
+    col.setup()
+.venv/lib/python3.12/site-packages/_pytest/python.py:1674: in setup
+    self._request._fillfixtures()
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:719: in _fillfixtures
+    item.funcargs[argname] = self.getfixturevalue(argname)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:548: in getfixturevalue
+    fixturedef = self._get_active_fixturedef(argname)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:639: in _get_active_fixturedef
+    fixturedef.execute(request=subrequest)
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1127: in execute
+    result = ihook.pytest_fixture_setup(fixturedef=self, request=request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/pluggy/_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/setuponly.py:36: in pytest_fixture_setup
+    return (yield)
+            ^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:1195: in pytest_fixture_setup
+    result = call_fixture_func(fixturefunc, request, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/fixtures.py:929: in call_fixture_func
+    fixture_result = fixturefunc(**kwargs)
+                     ^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/_pytest/junitxml.py:291: in record_property
+    _warn_incompatibility_with_xunit2(request, "record_property")
+.venv/lib/python3.12/site-packages/_pytest/junitxml.py:269: in _warn_incompatibility_with_xunit2
+    request.node.warn(
+.venv/lib/python3.12/site-packages/_pytest/nodes.py:271: in warn
+    warnings.warn_explicit(
+E   pytest.PytestWarning: record_property is incompatible with junit_family 'xunit2' (use 'legacy' or 'xunit1')</error></testcase><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_runtime_universe_includes_new_par_markets_and_skips_delisted_nonrequired" time="0.000" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_runtime_margin_table_is_used_and_changes_revoke_registry" time="0.000" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_missing_custom_margin_table_aborts_startup" time="0.000" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_invalid_margin_tiers_rejected[tiers0]" time="0.000" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_invalid_margin_tiers_rejected[tiers1]" time="0.000" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_invalid_margin_tiers_rejected[tiers2]" time="0.000" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_invalid_margin_tiers_rejected[tiers3]" time="0.000" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_session_is_continuous_and_anchor_explicit_even_on_weekend" time="0.000" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_unvalidated_vwap_anchor_not_silently_enabled[ROLLING]" time="0.000" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_unvalidated_vwap_anchor_not_silently_enabled[NSE_OPEN]" time="0.000" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_unvalidated_vwap_anchor_not_silently_enabled[ANCHORED_OPTIMIZED]" time="0.000" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_normalizer_preserves_fractional_volume_and_utc_shape" time="0.001" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_partial_fills_consume_depth_once_and_complete_on_new_observations" time="0.001" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_ioc_partial_fill_cancels_only_unfilled_remainder" time="0.000" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_idempotent_request_cannot_duplicate_or_change_order" time="0.000" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_post_only_does_not_invent_maker_fills" time="0.000" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_pending_orders_reserve_one_shared_margin_pool" time="0.000" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_shared_ledger_realized_unrealized_fees_and_funding[BUY]" time="0.000" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_shared_ledger_realized_unrealized_fees_and_funding[SELL]" time="0.000" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_causal_funding_rejects_historical_current_position_or_future_event" time="0.000" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_stale_or_missing_marks_never_produce_equity" time="0.000" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_cost_gate_uses_oracle_for_funding_and_no_expected_credit" time="0.000" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_risk_sizes_fractionally_without_changing_stop_target_multipliers" time="0.110" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_subcent_atr_does_not_round_strategy_stop_to_zero" time="0.055" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_perpetual_risk_rejections[change0-SPREAD_TOO_WIDE]" time="0.066" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_perpetual_risk_rejections[change1-MARK_ORACLE_DIVERGENCE]" time="0.058" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_perpetual_risk_rejections[change2-NET_EDGE_OR_RR_INSUFFICIENT]" time="0.058" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_perpetual_risk_rejections[change3-ORDER_BELOW_MINIMUM_NOTIONAL]" time="0.058" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_daily_limit_and_tier_leverage_cannot_be_bypassed" time="0.112" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_request_level_ok_does_not_hide_individual_rejection_and_ioc_partial" time="0.000" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_unknown_order_results_fail_closed[status0]" time="0.000" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_unknown_order_results_fail_closed[status1]" time="0.000" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_unknown_order_results_fail_closed[success]" time="0.000" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_unknown_order_results_fail_closed[status3]" time="0.000" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_scanner_covers_entire_runtime_universe_has_comparable_units_and_stable_top_three" time="2.146" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_scanner_no_qualification_is_no_trade_without_threshold_relaxation" time="2.248" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_generic_paper_pipeline_and_direction_flip_reconcile_before_new_entry" time="0.709" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_missed_funding_boundary_pauses_entries_and_does_not_invent_payment" time="0.377" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_frozen_management_parity_target_wick_close_stop_theta_and_counters[BUY]" time="0.165" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_frozen_management_parity_target_wick_close_stop_theta_and_counters[SELL]" time="0.052" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_state_rejects_gaps_and_duplicate_close_is_idempotent" time="0.051" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_new_infrastructure_imports_no_legacy_transport_accounting_or_calendars" time="0.133" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_generic_signed_submit_is_also_locked_without_transport" time="0.000" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_independent_perpetual_gates_after_positive_edge[settings0-PORTFOLIO_EXPOSURE_LIMIT]" time="0.055" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_independent_perpetual_gates_after_positive_edge[settings1-FUNDING_COST_LIMIT]" time="0.059" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_independent_perpetual_gates_after_positive_edge[settings2-LIQUIDATION_BUFFER_INSUFFICIENT]" time="0.060" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_existing_position_can_block_shared_margin_before_new_entry" time="0.116" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_mark_growth_rejects_unfunded_fill_and_releases_reservation" time="0.000" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_open_position_spec_change_cannot_silently_change_execution" time="0.000" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_partial_exit_intent_survives_price_moving_away_from_target" time="0.442" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_midnight_funding_snapshot_is_explicit_estimate_and_deduplicated" time="0.438" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_invalid_quote_fields_rejected_before_any_accounting[changes0]" time="0.000" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_invalid_quote_fields_rejected_before_any_accounting[changes1]" time="0.000" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_invalid_quote_fields_rejected_before_any_accounting[changes2]" time="0.000" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_invalid_quote_fields_rejected_before_any_accounting[changes3]" time="0.000" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_stop_cooldown_and_short_atr_state_preserved" time="0.325" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_report_contains_only_labelled_paper_pnl_and_reproducible_source_bars" time="3.952" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_paper_cli_rejects_live_override_without_creating_output" time="0.141" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_nan_no_signal_sentinel_is_saved_as_null" time="3.982" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_paper_account_implements_generic_positions_fills_and_equity" time="0.001" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_baseline_single_position_and_setup_limits_cannot_be_silently_increased" time="0.000" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_opposite_signal_blocked_by_baseline_bias_cannot_close_position" time="0.546" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_idle_market_gap_preserves_known_cooldown_and_does_not_halt_other_markets" time="0.459" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_open_position_candle_gap_halts_entries_without_advancing_state" time="0.504" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_completed_feed_bar_stops_position_between_scans_at_current_bbo" time="0.523" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_completed_feed_and_scan_do_not_double_count_cooldown" time="0.477" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_stale_shutdown_preserves_positions_and_events_without_fabricated_equity" time="0.564" /><testcase classname="algo-trading-bot.test_crypto_paper_infrastructure" name="test_continuous_cli_workers_feed_scanner_and_single_ledger_owner_offline" time="0.112"><failure message="TypeError: test_continuous_cli_workers_feed_scanner_and_single_ledger_owner_offline.&lt;locals&gt;.client_factory() got an unexpected keyword argument 'candle_audit'">algo-trading-bot/test_crypto_paper_infrastructure.py:749: in test_continuous_cli_workers_feed_scanner_and_single_ledger_owner_offline
+    assert cli.main()==0
+           ^^^^^^^^^^
+scripts/run_crypto_paper.py:162: in main
+    if recorder else HyperliquidClient(candle_audit=candle_audit))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: test_continuous_cli_workers_feed_scanner_and_single_ledger_owner_offline.&lt;locals&gt;.client_factory() got an unexpected keyword argument 'candle_audit'</failure></testcase></testsuite></testsuites>

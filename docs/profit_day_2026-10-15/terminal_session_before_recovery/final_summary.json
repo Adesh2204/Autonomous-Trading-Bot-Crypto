@@ -1,0 +1,431 @@
+{
+  "report_type": "PROFIT_ONLY_LONG_SESSION_FINAL_READ_ONLY_SUPERVISION",
+  "generated_ms": 1792076541144,
+  "status": "RECOVERY_HALTED",
+  "error": "QUALIFICATION_EXIT_UNRESOLVED_ORDER",
+  "operator_action_required": true,
+  "mandate_id": "fbad5fe98614a88acfdd3ac079e2644f46371265cf6600a2b04f604a63deb1a5",
+  "source_hash": "62c42d3d627716b0749c933fefdc7b8d4e1c6216de90b1b563403d5a149172b6",
+  "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+  "api_signer": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+  "venue": "Hyperliquid TESTNET par",
+  "symbol": "par:BTC",
+  "authorization": {
+    "accepted_ms": 1792048732692,
+    "approval_deadline_ms": 1792048938592,
+    "session_expiry_ms": 1792088940000,
+    "closing_path_cutoff_ms": 1792088820000,
+    "closing_path_consumed": true,
+    "signing_revoked": true,
+    "finished_control_ms": 1792076206191,
+    "may_resume": false
+  },
+  "process": {
+    "worker_pid": 70469,
+    "awake_helper_pid": 70470,
+    "both_processes_absent_at_final_check": true,
+    "terminal_result_written": true,
+    "shutdown_error": null,
+    "restart_permitted": false
+  },
+  "automation": {
+    "id": "monitor-anchorium-three-hour-paper-run",
+    "status": "PAUSED",
+    "updated_at": 1792076293390
+  },
+  "root_cause": {
+    "confirmed_local_guard": "exchange/qualification_protection.py:require_settled_exit_orders iterates executor.journal.intents() raw rows",
+    "confirmed_trigger": [
+      {
+        "intent_key": "certification:3b744e33e2de25c1afd6764eac3268ba8d51ac8ef905200e62230bc4a2261ddf:entry",
+        "state": "UNKNOWN",
+        "cloid": "0x3486c3b8e88add1a77175c9c5965350f"
+      }
+    ],
+    "certificate": [
+      {
+        "intent_key": "certification:3b744e33e2de25c1afd6764eac3268ba8d51ac8ef905200e62230bc4a2261ddf:entry",
+        "original_hash": "8d6aa3f50119dad14a8e3c0e0196028b8eb2024c15052e73a95829917e14c6a4",
+        "checksum": "a6ea851efdd3c0e90b26b55587bdb60e3ba8449b782d1e39a94a01743acdd058",
+        "created_ms": 1791974932866
+      }
+    ],
+    "effective_qualification_intents": [
+      {
+        "intent_key": "certification:3e057842531f7b43ae3f46a21503350ddcee932afce369dca98a8d7d5d5b5f99:entry",
+        "state": "FILLED",
+        "order_id": "62755970305"
+      }
+    ],
+    "conclusion": "The raw UNKNOWN historical Oct14 entry is retained, but effective_rows validates its immutable nontransmission certificate and excludes it. The closing barrier does not use that effective view. This blocked the current approved close before a new intent or signed submission.",
+    "exchange_rejection": false,
+    "new_uncertain_sell": false,
+    "repair_applied": false
+  },
+  "execution": {
+    "new_entry_orders": 0,
+    "new_exit_intents": 0,
+    "signed_actions_since_acceptance": 0,
+    "exit_attempted": false,
+    "actual_sell_fills": [],
+    "position_closed": false,
+    "completed_round_trip": false
+  },
+  "account": {
+    "observed_ms": 1792076209151,
+    "positions": [
+      {
+        "symbol": "par:BTC",
+        "quantity": "0.0002",
+        "entry_price": "81512.0",
+        "unrealized_pnl": "0.09",
+        "margin_used": "16.3924",
+        "liquidation_price": null,
+        "leverage": {
+          "type": "cross",
+          "value": 1
+        }
+      }
+    ],
+    "open_orders": [],
+    "reconciliation_ready": true,
+    "reconciliation_reasons": [],
+    "actual_entry_fills": [
+      {
+        "symbol": "par:BTC",
+        "timestamp_ms": 1792039590641,
+        "trade_id": "800659111758533",
+        "order_id": "62755970305",
+        "side": "BUY",
+        "quantity": "0.0002",
+        "price": "81512.0",
+        "fee": "0.014672",
+        "fee_token": "USDPR",
+        "closed_pnl": "0.0",
+        "start_position": "0.0",
+        "source": "EXCHANGE_REPORTED_FILL",
+        "exchange_ts": "2026-10-15T04:46:30.641+00:00",
+        "received_ts": "2026-10-15T14:56:46.889+00:00",
+        "processed_ts": "2026-10-15T14:56:46.889+00:00"
+      }
+    ],
+    "actual_entry_cost": "16.30240",
+    "actual_entry_fee": "0.014672",
+    "actual_exit_fees": null,
+    "reported_funding_cashflow": "0.000937",
+    "funding_events": [
+      {
+        "symbol": "par:BTC",
+        "timestamp_ms": 1792040400069,
+        "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "cashflow": "0.000141",
+        "position_quantity": "0.0002",
+        "funding_rate": "-0.0000086424",
+        "collateral": "USDPR",
+        "source": "EXCHANGE_REPORTED_USER_FUNDING",
+        "exchange_ts": "2026-10-15T05:00:00.069+00:00",
+        "received_ts": "2026-10-15T14:56:47.058+00:00",
+        "processed_ts": "2026-10-15T14:56:47.058+00:00"
+      },
+      {
+        "symbol": "par:BTC",
+        "timestamp_ms": 1792044000094,
+        "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "cashflow": "-0.000201",
+        "position_quantity": "0.0002",
+        "funding_rate": "0.0000125",
+        "collateral": "USDPR",
+        "source": "EXCHANGE_REPORTED_USER_FUNDING",
+        "exchange_ts": "2026-10-15T06:00:00.094+00:00",
+        "received_ts": "2026-10-15T14:56:47.058+00:00",
+        "processed_ts": "2026-10-15T14:56:47.058+00:00"
+      },
+      {
+        "symbol": "par:BTC",
+        "timestamp_ms": 1792047600021,
+        "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "cashflow": "0.000279",
+        "position_quantity": "0.0002",
+        "funding_rate": "-0.0000172637",
+        "collateral": "USDPR",
+        "source": "EXCHANGE_REPORTED_USER_FUNDING",
+        "exchange_ts": "2026-10-15T07:00:00.021+00:00",
+        "received_ts": "2026-10-15T14:56:47.058+00:00",
+        "processed_ts": "2026-10-15T14:56:47.058+00:00"
+      },
+      {
+        "symbol": "par:BTC",
+        "timestamp_ms": 1792051200021,
+        "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "cashflow": "0.0002",
+        "position_quantity": "0.0002",
+        "funding_rate": "-0.0000123111",
+        "collateral": "USDPR",
+        "source": "EXCHANGE_REPORTED_USER_FUNDING",
+        "exchange_ts": "2026-10-15T08:00:00.021+00:00",
+        "received_ts": "2026-10-15T14:56:47.058+00:00",
+        "processed_ts": "2026-10-15T14:56:47.059+00:00"
+      },
+      {
+        "symbol": "par:BTC",
+        "timestamp_ms": 1792054800047,
+        "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "cashflow": "0.000178",
+        "position_quantity": "0.0002",
+        "funding_rate": "-0.0000109805",
+        "collateral": "USDPR",
+        "source": "EXCHANGE_REPORTED_USER_FUNDING",
+        "exchange_ts": "2026-10-15T09:00:00.047+00:00",
+        "received_ts": "2026-10-15T14:56:47.058+00:00",
+        "processed_ts": "2026-10-15T14:56:47.059+00:00"
+      },
+      {
+        "symbol": "par:BTC",
+        "timestamp_ms": 1792058400045,
+        "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "cashflow": "0.00038",
+        "position_quantity": "0.0002",
+        "funding_rate": "-0.000023434",
+        "collateral": "USDPR",
+        "source": "EXCHANGE_REPORTED_USER_FUNDING",
+        "exchange_ts": "2026-10-15T10:00:00.045+00:00",
+        "received_ts": "2026-10-15T14:56:47.058+00:00",
+        "processed_ts": "2026-10-15T14:56:47.059+00:00"
+      },
+      {
+        "symbol": "par:BTC",
+        "timestamp_ms": 1792062000033,
+        "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "cashflow": "0.00029",
+        "position_quantity": "0.0002",
+        "funding_rate": "-0.0000179304",
+        "collateral": "USDPR",
+        "source": "EXCHANGE_REPORTED_USER_FUNDING",
+        "exchange_ts": "2026-10-15T11:00:00.033+00:00",
+        "received_ts": "2026-10-15T14:56:47.058+00:00",
+        "processed_ts": "2026-10-15T14:56:47.059+00:00"
+      },
+      {
+        "symbol": "par:BTC",
+        "timestamp_ms": 1792065600041,
+        "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "cashflow": "0.000065",
+        "position_quantity": "0.0002",
+        "funding_rate": "-0.0000040561",
+        "collateral": "USDPR",
+        "source": "EXCHANGE_REPORTED_USER_FUNDING",
+        "exchange_ts": "2026-10-15T12:00:00.041+00:00",
+        "received_ts": "2026-10-15T14:56:47.058+00:00",
+        "processed_ts": "2026-10-15T14:56:47.059+00:00"
+      },
+      {
+        "symbol": "par:BTC",
+        "timestamp_ms": 1792069200048,
+        "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "cashflow": "-0.000195",
+        "position_quantity": "0.0002",
+        "funding_rate": "0.0000121642",
+        "collateral": "USDPR",
+        "source": "EXCHANGE_REPORTED_USER_FUNDING",
+        "exchange_ts": "2026-10-15T13:00:00.048+00:00",
+        "received_ts": "2026-10-15T14:56:47.058+00:00",
+        "processed_ts": "2026-10-15T14:56:47.059+00:00"
+      },
+      {
+        "symbol": "par:BTC",
+        "timestamp_ms": 1792072800071,
+        "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "cashflow": "-0.0002",
+        "position_quantity": "0.0002",
+        "funding_rate": "0.0000125",
+        "collateral": "USDPR",
+        "source": "EXCHANGE_REPORTED_USER_FUNDING",
+        "exchange_ts": "2026-10-15T14:00:00.071+00:00",
+        "received_ts": "2026-10-15T14:56:47.058+00:00",
+        "processed_ts": "2026-10-15T14:56:47.059+00:00"
+      }
+    ],
+    "gross_realized_closed_pnl": "0.0",
+    "reported_event_net_after_fees_and_funding": "-0.013735",
+    "closed_round_trip_net_pnl": null,
+    "position_protection_verified": false,
+    "latest_unrealized_pnl": "0.09",
+    "unrealized_is_not_closed_net_profit": true
+  },
+  "observations": {
+    "logged_rows": 23593,
+    "observer_counter": 23594,
+    "counter_difference_explanation": "The observer counts one extra fresh closing-preflight observation after the tape candidate; that preflight is not appended to observations.jsonl.",
+    "first_ms": 1792048742644,
+    "last_ms": 1792076195966,
+    "logged_candidate_count": 1,
+    "last_candidate": {
+      "at_ms": 1792076195966,
+      "bid": "81811.0",
+      "ask": "81888.0",
+      "mark": "81780.0",
+      "oracle": "81773.0",
+      "minimum_sell": "81811",
+      "proposed_limit": "81811",
+      "spread_bps": "9.407510125290930305011026335",
+      "estimated_net_at_limit": "0.001887060",
+      "estimated_net_at_bid": "0.0018870600",
+      "depth": {
+        "available_quantity": "0.0012",
+        "requested_quantity": "0.0002",
+        "covered_quantity": "0.0002",
+        "shortfall": "0.0000",
+        "cost": "16.36220",
+        "vwap": "81811.0",
+        "limit": "81811",
+        "evidence": "OBSERVED_BOOK_ESTIMATE_NOT_EXECUTION_OR_FILL"
+      }
+    },
+    "min_logged_bid": "79640.0",
+    "max_logged_bid": "81811.0",
+    "transport_rows": {
+      "WS_STARTUP_GRACE": 5,
+      "WS_ACKNOWLEDGED_REPEATED": 1605,
+      "RATE_LIMITED_REST": 20925,
+      "NO_FRESH_BOOK": 1058
+    },
+    "full_history_refreshes": 92,
+    "light_account_refreshes": 358,
+    "last_profit_floor": "81811",
+    "last_conservative_break_even": "81801.53915572044520204552291",
+    "last_exit_fee_bound": "0.00270",
+    "maximum_observation_gap_ms": 11609
+  },
+  "connection": {
+    "ws_attempts": 3,
+    "recorded_reconnects": 2,
+    "current_ws_connected": false,
+    "confirmed_subscriptions": 1,
+    "duplicate_subscriptions": 0,
+    "max_reported_ws_receiver_gap_seconds": 1.036907082889229,
+    "close_errors": [
+      {
+        "at_ms": 1792049441374,
+        "reason": "PUBLIC_SOCKET_CLOSED_WITHOUT_CODE"
+      },
+      {
+        "at_ms": 1792050052289,
+        "reason": "PUBLIC_SOCKET_CLOSED_WITHOUT_CODE"
+      },
+      {
+        "at_ms": 1792050721305,
+        "reason": "PUBLIC_SOCKET_CLOSED_WITHOUT_CODE"
+      }
+    ],
+    "lifetimes": [
+      {
+        "connection_id": "public-1",
+        "connection_started_at_ms": 1792048742948,
+        "disconnected_at_ms": 1792049441374,
+        "connection_age_seconds": 698.4076875830069,
+        "close_code": null,
+        "close_reason": null,
+        "client_exception": "PUBLIC_SOCKET_CLOSED_WITHOUT_CODE",
+        "attribution": "UNCERTAIN"
+      },
+      {
+        "connection_id": "public-2",
+        "connection_started_at_ms": 1792049442590,
+        "disconnected_at_ms": 1792050052289,
+        "connection_age_seconds": 609.6899495837279,
+        "close_code": null,
+        "close_reason": null,
+        "client_exception": "PUBLIC_SOCKET_CLOSED_WITHOUT_CODE",
+        "attribution": "UNCERTAIN"
+      },
+      {
+        "connection_id": "public-3",
+        "connection_started_at_ms": 1792050054264,
+        "disconnected_at_ms": 1792050721305,
+        "connection_age_seconds": 667.0225289580412,
+        "close_code": null,
+        "close_reason": null,
+        "client_exception": "PUBLIC_SOCKET_CLOSED_WITHOUT_CODE",
+        "attribution": "UNCERTAIN"
+      }
+    ],
+    "last_verified_ws": {
+      "par:BTC": {
+        "generation": 3,
+        "updates": 129,
+        "last_exchange_ms": 1792050720868
+      }
+    },
+    "rest_fallback_label_is_not_http429": true,
+    "http429_count": null,
+    "rate_budget_headroom": null,
+    "unknowns": [
+      "No exact global HTTP429 count or public-rate headroom is exposed by the final observation tape.",
+      "Recorded WS connection lifetimes do not establish continuous full-session socket uptime."
+    ]
+  },
+  "verification": {
+    "regression_receipt": {
+      "tests": 2363,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "regression_source_match": true,
+    "regression_receipt_sha256": "7bbc9da4108e4a2764dbc8d409401dc4123805810c8e422da1319ad7ddf9822f",
+    "regression_xml_sha256": "6c97b321fc8cb8970dc76fb9505312d4e6246cf62193b9c934545f6ca5b30402",
+    "full_regression_rerun_during_monitor": false,
+    "strategy_freeze": {
+      "baseline": "nse-working-baseline",
+      "file_count": 1,
+      "method_count": 8,
+      "parameter_count": 32,
+      "passed": true
+    },
+    "phase0_final_passed": true,
+    "production_mode": "PAPER",
+    "allow_live_orders": false,
+    "source_modified_by_supervisor": false,
+    "integrity": {
+      "qualification_sqlite": "ok",
+      "retained_snapshot_count": 2,
+      "snapshot_checksums_valid": true,
+      "snapshot_source_matches": true,
+      "account_checkpoint_matches_latest": true,
+      "last_snapshot_seq": 125,
+      "last_snapshot_checksum": "350022ff9397e9d6eaf39dcacf2a093fb416ea631e1c950503bd592c7b132c0b",
+      "last_checkpoint_ms": 1792076208534,
+      "last_clean_shutdown": false,
+      "checkpoint_error": null,
+      "nonces_sqlite": "ok",
+      "nonce_health_reasons": []
+    },
+    "original_buy_proofs_unchanged": {
+      "docs/qualification_2026-10-15/WHITELIST_TRADE_PROOF.json": true,
+      "docs/qualification_2026-10-15/session_preparation/authorized_session/WHITELIST_TRADE_PROOF.json": true
+    }
+  },
+  "artifact_sha256": {
+    "launch_receipt.json": "a5b4def1439ae3806ee917de2b67ddd35c3318759b77e6fdc698918acc418795",
+    "fresh_proposal/mandate.json": "c4d60153a2bd6fcd7cc4d4e9c327c204d7780056c56de6fa5f2163fcb193e86d",
+    "fresh_proposal/recovery_approval.json": "05e1bde7fa794c055d118b19d4720b4245cc2ff96234860bee260d31f9bc1cde",
+    "fresh_proposal/human_approval_provenance.json": "c22af5e0cf3dd51796a2d22ef42b754f06bdbe1c4a2b71d72b31cfefbc699866",
+    "authorized_session/health.json": "afbe92d8b7bd279e47c007bef5d20a8e6b88dd321b5c14d906ff4ad73c5ebac0",
+    "authorized_session/observations.jsonl": "90fd3be5f6c8b246dcfff052556eac0cf8de27ef9eb6f01ec4e7f01d249ff4a5",
+    "authorized_session/result.json": "9a7fca931a98212fc1724cb2036aafa4aee15b930995922f016048919b7cab0a",
+    "session_process.log": "9a7fca931a98212fc1724cb2036aafa4aee15b930995922f016048919b7cab0a"
+  },
+  "proof": {
+    "original_buy_qualification_proof_preserved": true,
+    "exit_recovery_proof_created": false,
+    "reason": "No genuine SELL fill and no pair of authoritative flat/zero-order snapshots exist.",
+    "organizer_whitelisting_confirmed": false
+  },
+  "next_safe_action": "Keep exchange writes stopped. A separate narrowly scoped repair must make the isolated exit barrier honor only the validated historical nontransmission certificate, without suppressing genuine unresolved orders; add regression coverage, obtain matching full-source tests and fresh account/market reconciliation, then request a new exact SELL-only authorization. Do not resume this consumed mandate.",
+  "limitations": [
+    "The position is still unprotected. A healthy watcher or elapsed monitoring window never limited market loss.",
+    "Account and prices are timestamped final worker observations, not a new exchange read by the supervisor.",
+    "The handled halt wrote a terminal result and revoked authority; the stored recovery checkpoint still says last_clean_shutdown=false and is not certified clean. Both retained checksums and both SQLite files passed.",
+    "No completed round trip, actual positive net trading profit or organizer whitelist confirmation was established."
+  ]
+}

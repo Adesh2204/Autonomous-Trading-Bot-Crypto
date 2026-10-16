@@ -1,0 +1,11 @@
+........................................................................ [ 79%]
+.....F.............                                                      [100%]
+=================================== FAILURES ===================================
+__ test_fresh_actual_preflight_constraints_independent_of_l2_policy[identity] __
+algo-trading-bot/test_emergency_qualification.py:344: in test_fresh_actual_preflight_constraints_independent_of_l2_policy
+    with pytest.raises(ExchangeError):check_entry(ctx,OrderRequest(c.p.symbol,'BUY',c.p.quantity,c.p.entry_limit,tif='Ioc'),c.p,NOW,c.live.provider.last_book)
+E   Failed: DID NOT RAISE <class 'exchange.base_exchange.ExchangeError'>
+- generated xml file: /Users/adesh/Autonomous Trading Bot - Crypto /docs/qualification_emergency_2026-10-13/focused_third.xml -
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_emergency_qualification.py::test_fresh_actual_preflight_constraints_independent_of_l2_policy[identity]
+1 failed, 90 passed in 41.12s

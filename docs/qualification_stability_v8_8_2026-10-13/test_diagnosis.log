@@ -1,0 +1,14 @@
+...................F
+=================================== FAILURES ===================================
+__ test_public_transport_exact_endpoint_socket_limits_and_no_adapter_retries ___
+algo-trading-bot/test_qualification_stability_v8_8.py:139: in test_public_transport_exact_endpoint_socket_limits_and_no_adapter_retries
+    assert t.session.get_adapter(args[0]).max_retries.total==0 and r.closed
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv/lib/python3.12/site-packages/requests/sessions.py:877: in get_adapter
+    if url.lower().startswith(prefix.lower()):
+       ^^^^^^^^^
+E   AttributeError: 'Session' object has no attribute 'lower'
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_qualification_stability_v8_8.py::test_public_transport_exact_endpoint_socket_limits_and_no_adapter_retries
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 19 passed in 0.87s

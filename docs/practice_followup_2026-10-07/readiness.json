@@ -1,0 +1,551 @@
+{
+  "created_at_ist": "2026-10-07T14:26:45.825082+05:30",
+  "scope": "AUTHORIZED_LEVERAGE_CONFIGURATION_AND_LOCKED_PAPER_FOLLOWUP",
+  "safety": {
+    "TRADING_VENUE": "HYPERLIQUID_TESTNET",
+    "EXECUTION_MODE": "PAPER",
+    "ALLOW_LIVE_ORDERS": false
+  },
+  "strategy_freeze": {
+    "baseline": "nse-working-baseline",
+    "file_count": 1,
+    "method_count": 8,
+    "parameter_count": 32,
+    "passed": true
+  },
+  "tests": {
+    "tests": 1278,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "active_source_hash": "4b24a85f9fbb2ba4ef84eefafe8b847fea893b972aaddcaeb7f765e7c3b9b07c",
+  "paper_prior_source_hash": "90ebdb94c333f18a6e75f937dd6f574a7e43d1ded4780b2b424fae21a79617fe",
+  "paper_prior_source_same_as_current": false,
+  "source_change_explanation": "Only configuration pacing/clock refresh/diagnostics and its offline regression test changed after the 15-minute run. Preserve that run and ledger under their original fingerprint.",
+  "manual_wallet_verified": true,
+  "signer_preflight": {
+    "execution_mode": "PAPER",
+    "allow_live_orders": false,
+    "signature_created": false,
+    "exchange_actions_submitted": 0,
+    "active_source_hash": "4b24a85f9fbb2ba4ef84eefafe8b847fea893b972aaddcaeb7f765e7c3b9b07c",
+    "safety_lock": {
+      "TRADING_VENUE": "HYPERLIQUID_TESTNET",
+      "EXECUTION_MODE": "PAPER",
+      "ALLOW_LIVE_ORDERS": false
+    },
+    "strategy_freeze": {
+      "baseline": "nse-working-baseline",
+      "file_count": 1,
+      "method_count": 8,
+      "parameter_count": 32,
+      "passed": true
+    },
+    "identity": {
+      "status": "MATCH",
+      "derived_public_address": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+      "expected_public_address": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+      "team_address": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+      "key_sources": [
+        "algo-trading-bot/.env"
+      ],
+      "signature_created": false,
+      "exchange_actions_submitted": 0
+    },
+    "nonce_ownership": {
+      "status": "HEALTHY_LOCAL",
+      "second_process_rejected": true,
+      "ownership_scope": "CURRENT_HOST_AND_OS_USER_ONLY",
+      "remote_ownership_verified": false,
+      "nonce_database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/testnet/anchorium-bot-1/nonces.sqlite",
+      "nonce_allocated": false,
+      "signature_created": false,
+      "exchange_actions_submitted": 0,
+      "owner_during_check": {
+        "nonce_database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/testnet/anchorium-bot-1/nonces.sqlite",
+        "pid": 77564,
+        "hostname": "Adeshs-MacBook-Air.local",
+        "started_ms": 1791363145378,
+        "api_wallet": "0x46c9bed595770150752e7fa3806449f81e0ec6f9"
+      },
+      "lease_released_after_check": true
+    },
+    "status": "LOCAL_IDENTITY_AND_OWNERSHIP_VERIFIED"
+  },
+  "configuration_actions_submitted": 10,
+  "actual_orders_submitted": 0,
+  "all_ten_settings": {
+    "par:BRENT": {
+      "type": "cross",
+      "value": 1
+    },
+    "par:BTC": {
+      "type": "cross",
+      "value": 1
+    },
+    "par:ETH": {
+      "type": "cross",
+      "value": 1
+    },
+    "par:EWJ": {
+      "type": "cross",
+      "value": 1
+    },
+    "par:EWY": {
+      "type": "cross",
+      "value": 1
+    },
+    "par:GOLD": {
+      "type": "cross",
+      "value": 1
+    },
+    "par:HYPE": {
+      "type": "cross",
+      "value": 1
+    },
+    "par:SP500": {
+      "type": "cross",
+      "value": 1
+    },
+    "par:USDEUR": {
+      "type": "cross",
+      "value": 1
+    },
+    "par:USDJPY": {
+      "type": "cross",
+      "value": 1
+    }
+  },
+  "account_observation_ist": "2026-10-07T14:19:52.130138+05:30",
+  "account_read_only": {
+    "status": "READY",
+    "reasons": [],
+    "team_address": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+    "signer_address": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+    "observed_ms": 1791362992129,
+    "agent_expiry_ms": 1806859924898,
+    "collateral": "1000000.0",
+    "account_mode": "unifiedAccount",
+    "fees": {
+      "dailyUserVlm": [
+        {
+          "date": "2026-09-23",
+          "userCross": "0.0",
+          "userAdd": "0.0",
+          "exchange": "16782252.5700000003"
+        },
+        {
+          "date": "2026-09-24",
+          "userCross": "0.0",
+          "userAdd": "0.0",
+          "exchange": "7565833.0199999996"
+        },
+        {
+          "date": "2026-09-25",
+          "userCross": "0.0",
+          "userAdd": "0.0",
+          "exchange": "11294899.0999999996"
+        },
+        {
+          "date": "2026-09-26",
+          "userCross": "0.0",
+          "userAdd": "0.0",
+          "exchange": "5102471.2999999998"
+        },
+        {
+          "date": "2026-09-27",
+          "userCross": "0.0",
+          "userAdd": "0.0",
+          "exchange": "4629490.3899999997"
+        },
+        {
+          "date": "2026-09-28",
+          "userCross": "0.0",
+          "userAdd": "0.0",
+          "exchange": "4192427.0"
+        },
+        {
+          "date": "2026-09-29",
+          "userCross": "0.0",
+          "userAdd": "0.0",
+          "exchange": "4035362.29"
+        },
+        {
+          "date": "2026-09-30",
+          "userCross": "0.0",
+          "userAdd": "0.0",
+          "exchange": "5033407.0099999998"
+        },
+        {
+          "date": "2026-10-01",
+          "userCross": "0.0",
+          "userAdd": "0.0",
+          "exchange": "6265670.4400000004"
+        },
+        {
+          "date": "2026-10-02",
+          "userCross": "0.0",
+          "userAdd": "0.0",
+          "exchange": "7303506.9500000002"
+        },
+        {
+          "date": "2026-10-03",
+          "userCross": "0.0",
+          "userAdd": "0.0",
+          "exchange": "2494978.4100000001"
+        },
+        {
+          "date": "2026-10-04",
+          "userCross": "0.0",
+          "userAdd": "0.0",
+          "exchange": "2879836.3700000001"
+        },
+        {
+          "date": "2026-10-05",
+          "userCross": "0.0",
+          "userAdd": "0.0",
+          "exchange": "4295368.6500000004"
+        },
+        {
+          "date": "2026-10-06",
+          "userCross": "0.0",
+          "userAdd": "0.0",
+          "exchange": "5789290.3600000003"
+        },
+        {
+          "date": "2026-10-07",
+          "userCross": "0.0",
+          "userAdd": "0.0",
+          "exchange": "1565677.8400000001"
+        }
+      ],
+      "feeSchedule": {
+        "cross": "0.00045",
+        "add": "0.00015",
+        "spotCross": "0.0007",
+        "spotAdd": "0.0004",
+        "tiers": {
+          "vip": [
+            {
+              "ntlCutoff": "5000000.0",
+              "cross": "0.0004",
+              "add": "0.00012",
+              "spotCross": "0.0006",
+              "spotAdd": "0.0003"
+            },
+            {
+              "ntlCutoff": "25000000.0",
+              "cross": "0.00035",
+              "add": "0.00008",
+              "spotCross": "0.0005",
+              "spotAdd": "0.0002"
+            },
+            {
+              "ntlCutoff": "100000000.0",
+              "cross": "0.0003",
+              "add": "0.00004",
+              "spotCross": "0.0004",
+              "spotAdd": "0.0001"
+            },
+            {
+              "ntlCutoff": "500000000.0",
+              "cross": "0.00028",
+              "add": "0.0",
+              "spotCross": "0.00035",
+              "spotAdd": "0.0"
+            },
+            {
+              "ntlCutoff": "2000000000.0",
+              "cross": "0.00026",
+              "add": "0.0",
+              "spotCross": "0.0003",
+              "spotAdd": "0.0"
+            },
+            {
+              "ntlCutoff": "7000000000.0",
+              "cross": "0.00024",
+              "add": "0.0",
+              "spotCross": "0.00025",
+              "spotAdd": "0.0"
+            }
+          ],
+          "mm": [
+            {
+              "makerFractionCutoff": "0.005",
+              "add": "-0.00001"
+            },
+            {
+              "makerFractionCutoff": "0.015",
+              "add": "-0.00002"
+            },
+            {
+              "makerFractionCutoff": "0.03",
+              "add": "-0.00003"
+            }
+          ]
+        },
+        "referralDiscount": "0.04",
+        "stakingDiscountTiers": [
+          {
+            "bpsOfMaxSupply": "0.0",
+            "discount": "0.0"
+          },
+          {
+            "bpsOfMaxSupply": "0.0001",
+            "discount": "0.05"
+          },
+          {
+            "bpsOfMaxSupply": "0.001",
+            "discount": "0.1"
+          },
+          {
+            "bpsOfMaxSupply": "0.01",
+            "discount": "0.15"
+          },
+          {
+            "bpsOfMaxSupply": "0.1",
+            "discount": "0.2"
+          },
+          {
+            "bpsOfMaxSupply": "1.0",
+            "discount": "0.3"
+          },
+          {
+            "bpsOfMaxSupply": "5.0",
+            "discount": "0.4"
+          }
+        ]
+      },
+      "userCrossRate": "0.00045",
+      "userAddRate": "0.00015",
+      "userSpotCrossRate": "0.0007",
+      "userSpotAddRate": "0.0004",
+      "activeReferralDiscount": "0.0",
+      "trial": null,
+      "feeTrialEscrow": "0.0",
+      "nextTrialAvailableTimestamp": null,
+      "stakingLink": null,
+      "activeStakingDiscount": {
+        "bpsOfMaxSupply": "0.0",
+        "discount": "0.0"
+      }
+    },
+    "account_budget": {
+      "cumVlm": "0.0",
+      "nRequestsUsed": 13,
+      "nRequestsCap": 10000,
+      "nRequestsSurplus": 0
+    },
+    "reconciliation_ready": true,
+    "clock_healthy": true,
+    "rate_limits_healthy": true,
+    "signed_transport_implemented": true,
+    "network": "testnet",
+    "dex": "par",
+    "market_data_ready": false,
+    "paper_ready": false,
+    "live_orders_permitted": false,
+    "controlled_execution_certified": false,
+    "live_ready": false,
+    "final_status": "LIVE_TECHNICALLY_READY_BUT_LOCKED"
+  },
+  "reported_equity": {
+    "reported_account_value": "1000000.0",
+    "collateral_balance": "1000000.0",
+    "margin_used": "0",
+    "withdrawable": null,
+    "valuation_source": "spotClearinghouseState.USDPR.total"
+  },
+  "account_positions": 0,
+  "ordinary_orders": 0,
+  "trigger_aware_orders": 0,
+  "policy": {
+    "enabled": false,
+    "approval_reference": "docs/practice_setup_2026-10-07/protection_configuration_approval.md",
+    "atr_distance_multiple": "1",
+    "execution_slippage_fraction": "0.005"
+  },
+  "completed_followup_paper": {
+    "scope": "COMPLETED_PUBLIC_PAPER_EVIDENCE_ONLY",
+    "elapsed_seconds": 902.0166189670563,
+    "requested_seconds": 900,
+    "exit_code": 0,
+    "source_unchanged": true,
+    "source_hash": "90ebdb94c333f18a6e75f937dd6f574a7e43d1ded4780b2b424fae21a79617fe",
+    "final_status": "STOPPED",
+    "heartbeat_samples": 30,
+    "any_healthy_samples": 18,
+    "healthy_counts": {
+      "par:BTC": 4,
+      "par:GOLD": 4,
+      "par:USDEUR": 8,
+      "par:BRENT": 3,
+      "par:EWY": 5,
+      "par:SP500": 3
+    },
+    "scanner_cycles": 3,
+    "scanner_qualified": 0,
+    "local_fills": 0,
+    "local_positions": 0,
+    "exchange_orders_submitted": 0,
+    "signer_constructed": false,
+    "reconnections": 1,
+    "paper_accounting_halt": null,
+    "checkpoints": {
+      "paper.sqlite": {
+        "integrity": "ok",
+        "checksum_matches": true,
+        "clean_shutdown": true,
+        "saved_source_hash": "90ebdb94c333f18a6e75f937dd6f574a7e43d1ded4780b2b424fae21a79617fe"
+      },
+      "backups/paper-latest.sqlite": {
+        "integrity": "ok",
+        "checksum_matches": true,
+        "clean_shutdown": true,
+        "saved_source_hash": "90ebdb94c333f18a6e75f937dd6f574a7e43d1ded4780b2b424fae21a79617fe"
+      }
+    },
+    "segment": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/practice_followup_2026-10-07/paper_segments/20261007T072310Z-b340f1d4",
+    "observed_at_utc": "2026-10-07T07:38:55.383457+00:00",
+    "scanner_rejection_reasons_cumulative": {
+      "INSUFFICIENT_HISTORY": 36,
+      "STALE_CANDLE": 105,
+      "ATR_BELOW_SCANNER_FLOOR": 7,
+      "INVALID_MARKET_DATA": 2
+    },
+    "scanner_rejection_reasons_this_segment": {
+      "INSUFFICIENT_HISTORY": 3,
+      "STALE_CANDLE": 24,
+      "ATR_BELOW_SCANNER_FLOOR": 2,
+      "INVALID_MARKET_DATA": 1
+    },
+    "explanation": "Scanner cycles are segment-only; stored funnel counters accumulate in the persistent ledger. Segment rejections are the difference from the prior completed hour."
+  },
+  "completed_post_configuration_paper": {
+    "elapsed_seconds": 302.6806571483612,
+    "scanner_qualified": 0,
+    "scanner_rejections": {
+      "ATR_BELOW_SCANNER_FLOOR": 1,
+      "STALE_CANDLE": 9
+    },
+    "heartbeats": 10,
+    "any_healthy_samples": 7,
+    "healthy_counts": {
+      "par:BRENT": 4,
+      "par:EWY": 3
+    },
+    "local_fills": 0,
+    "reconnections": 0,
+    "source_unchanged": true,
+    "segment": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/practice_followup_2026-10-07/paper_segments/20261007T085111Z-3fc1f196"
+  },
+  "readiness": {
+    "STRATEGY_FREEZE": "PASS",
+    "FULL_TEST_SUITE": "PASS",
+    "HUMAN_WALLET_IDENTITIES_VERIFIED": "YES",
+    "ACCOUNT_READY_READ_ONLY": "YES",
+    "API_AGENT_READY_READ_ONLY": "YES",
+    "READ_ONLY_RECONCILIATION_READY": "YES",
+    "API_SIGNER_IDENTITY_VERIFIED": "YES",
+    "NONCE_LOCAL_HEALTHY": "YES",
+    "REMOTE_SIGNER_OWNERSHIP_VERIFIED": "NO",
+    "LEVERAGE_ALIGNED": "YES",
+    "PROTECTION_CONFIGURED": "YES",
+    "PROTECTION_ENABLED": "NO",
+    "PAPER_OPERATION_VERIFIED": "YES",
+    "SUSTAINED_USABLE_SIGNAL_FEED_DEMONSTRATED": "NO",
+    "LONG_CERTIFIED": "NO",
+    "SHORT_CERTIFIED": "NO",
+    "FUNDED_RECOVERY_CERTIFIED": "NO",
+    "PRACTICE_READY": "NO",
+    "LIVE_READY": "NO"
+  },
+  "operating_checks": {
+    "scope": "LOCAL_COMPLETION_AND_DURABLE_RECORDS",
+    "active_source_hash": "4b24a85f9fbb2ba4ef84eefafe8b847fea893b972aaddcaeb7f765e7c3b9b07c",
+    "paper_owner_lease_released": true,
+    "checkpoint_integrity_ok": true,
+    "checkpoints": {
+      "paper.sqlite": {
+        "integrity": "ok",
+        "checksum_matches": true,
+        "clean_shutdown": true,
+        "source_hash": "4b24a85f9fbb2ba4ef84eefafe8b847fea893b972aaddcaeb7f765e7c3b9b07c"
+      },
+      "backups/paper-latest.sqlite": {
+        "integrity": "ok",
+        "checksum_matches": true,
+        "clean_shutdown": true,
+        "source_hash": "4b24a85f9fbb2ba4ef84eefafe8b847fea893b972aaddcaeb7f765e7c3b9b07c"
+      }
+    },
+    "counters": {
+      "configuration": {
+        "intents": 0,
+        "signed_management": 11,
+        "api_actions": 11,
+        "management_states": [
+          [
+            "ACKNOWLEDGED",
+            10
+          ],
+          [
+            "REJECTED_BEFORE_TRANSMISSION",
+            1
+          ]
+        ],
+        "configuration_nonces": 10,
+        "configuration_action_kinds": [
+          [
+            "updateLeverage",
+            11
+          ]
+        ]
+      },
+      "public_paper": {
+        "intents": 0,
+        "signed_management": 0,
+        "api_actions": 0
+      }
+    },
+    "nonce_error_latches": 0,
+    "nonce_highwater_public": [
+      [
+        "0x46c9bed595770150752e7fa3806449f81e0ec6f9",
+        1791362882462
+      ]
+    ],
+    "actual_orders_submitted": 0,
+    "actual_configuration_submissions": 10,
+    "action_reservations_explanation": "Local api_actions includes the first pre-transmission reservation. Count actual submissions from the immutable transport receipt, not reservations."
+  },
+  "evidence_sha256": {
+    "test_receipt.json": "e3a63dd5330c7581b43d41bb0b9e4fe09fd79b84ccbbbd68fa2fb3a09d0e5bc5",
+    "regression.xml": "b4a01f91e6da997b7952cadde4a629a2c71169053706fc6d5f497190ae3b2015",
+    "configuration_tests_corrected.xml": "e7721587c59840d7cedd08430198301df7f3870ed6ed79fc5aadf51af4cede28",
+    "configuration_integration_receipt.json": "fd79ebf4326a4f25edfd27fb3793e9853dcdb39228b0f90ad9a432c8afcf8fc0",
+    "leverage_applied.json": "b90c41e7da15348e9912246a0a41b33289a8c320982bc9d8b1edd32d624abed2",
+    "leverage_applied_paced.json": "b3b8d67c9f5ae3ce048e14a583614453f5e7bfb7f0e1b08d620d1ddb57ac16ad",
+    "account_check_after.json": "0973eeec525f4628bd9bbfb378f2f086db37b6ceb7cf6d8991ac84fee31abd2a",
+    "signer_preflight_after.json": "cc4aa38d7d178d6f2f54da21864bf1a2ccb68bf8a046367eeb56bbf0c97b1561",
+    "paper_completion_corrected.json": "810f7cd0a1ccbbeb3062fcd3e38f5ad9d9b2e8e2c8a6cb56f0f3958ea657cc2f",
+    "followup_paper_receipt.json": "068493adbca15a2691a032794bc56dcb94d5fcf0f0bb63f84ed14c898573a02a",
+    "followup_health_samples.jsonl": "11408a81f0189f26ea66573ebc1767f35c34ba369df0be22934350c259155ccd",
+    "post_configuration_paper_receipt.json": "f5e664f2d5b31f6cac9da96e7dffda85fba9090cad1bee2ec47b9acca1f49a4a",
+    "post_configuration_health_samples.jsonl": "40ffab78491d74c8bbc0bcc218f371c8e5564548aa174db81effb19e58e82d51",
+    "operating_checks_after.json": "7e43a7a0ec62f3a961ea6fe7719db9fe08f297afe46f20b87f860de93f42caf1",
+    "next_steps.md": "f7f75cf0ad0508f34cfb79f86054ed57297942569bf027efafbf18857b425a94"
+  },
+  "research_flags": {
+    "SESSION_ANCHOR_VALIDATED": false,
+    "ML_DATA_READY": false,
+    "ML_MODEL_VALIDATED": false,
+    "HOLDOUT_COMPLETE": false,
+    "PROMOTION_RECOMMENDED": false,
+    "PRODUCTION_CHANGED": false
+  },
+  "research_flags_scope": "Research validation/promotion only; infrastructure was changed.",
+  "git_commit": "6e4e520892b91b613bce237195ea67f5f69846b4",
+  "working_tree_dirty": true
+}

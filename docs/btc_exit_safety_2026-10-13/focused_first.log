@@ -1,0 +1,471 @@
+F...F...FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF.FFF.......................... [ 51%]
+...................................................................      [100%]
+=================================== FAILURES ===================================
+_ test_native_fixed_size_stop_wire_and_readback_never_capability_certification _
+algo-trading-bot/test_qualification_protection.py:67: in test_native_fixed_size_stop_wire_and_readback_never_capability_certification
+    c=stop;r=submit_stop(c);wire=c.venue.calls[-1]['orders'][0]
+             ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+___ test_rejected_or_uncertain_stop_not_duplicated[protection_timeout_after] ___
+algo-trading-bot/test_qualification_protection.py:93: in test_rejected_or_uncertain_stop_not_duplicated
+    assert r['status']==expected,r
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+_______ test_mismatched_stop_readback_blocks_coverage[reduceOnly-False] ________
+algo-trading-bot/test_qualification_protection.py:130: in test_mismatched_stop_readback_blocks_coverage
+    c=stop;submit_stop(c)
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+____________ test_mismatched_stop_readback_blocks_coverage[side-B] _____________
+algo-trading-bot/test_qualification_protection.py:130: in test_mismatched_stop_readback_blocks_coverage
+    c=stop;submit_stop(c)
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+___________ test_mismatched_stop_readback_blocks_coverage[origSz-1] ____________
+algo-trading-bot/test_qualification_protection.py:130: in test_mismatched_stop_readback_blocks_coverage
+    c=stop;submit_stop(c)
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+___________ test_mismatched_stop_readback_blocks_coverage[limitPx-1] ___________
+algo-trading-bot/test_qualification_protection.py:130: in test_mismatched_stop_readback_blocks_coverage
+    c=stop;submit_stop(c)
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+__________ test_mismatched_stop_readback_blocks_coverage[triggerPx-1] __________
+algo-trading-bot/test_qualification_protection.py:130: in test_mismatched_stop_readback_blocks_coverage
+    c=stop;submit_stop(c)
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+__________ test_mismatched_stop_readback_blocks_coverage[cloid-other] __________
+algo-trading-bot/test_qualification_protection.py:130: in test_mismatched_stop_readback_blocks_coverage
+    c=stop;submit_stop(c)
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+_________ test_mismatched_stop_readback_blocks_coverage[coin-par:ETH] __________
+algo-trading-bot/test_qualification_protection.py:130: in test_mismatched_stop_readback_blocks_coverage
+    c=stop;submit_stop(c)
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+_____ test_mismatched_stop_readback_blocks_coverage[orderType-Stop Market] _____
+algo-trading-bot/test_qualification_protection.py:130: in test_mismatched_stop_readback_blocks_coverage
+    c=stop;submit_stop(c)
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+____________ test_mismatched_stop_readback_blocks_coverage[oid--1] _____________
+algo-trading-bot/test_qualification_protection.py:130: in test_mismatched_stop_readback_blocks_coverage
+    c=stop;submit_stop(c)
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+__________________ test_frontend_and_order_status_must_agree ___________________
+algo-trading-bot/test_qualification_protection.py:137: in test_frontend_and_order_status_must_agree
+    c=stop;submit_stop(c)
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+_________ test_changed_position_does_not_oversize_stop_or_auto_replace _________
+algo-trading-bot/test_qualification_protection.py:144: in test_changed_position_does_not_oversize_stop_or_auto_replace
+    c=stop;submit_stop(c);count=len(c.venue.calls)
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+_ test_triggered_child_execution_and_residual_are_separate[0-open-TRIGGERED_UNSETTLED] _
+algo-trading-bot/test_qualification_protection.py:155: in test_triggered_child_execution_and_residual_are_separate
+    c=stop;submit_stop(c);trigger(c,quantity=quantity,child_state=child_state)
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+_ test_triggered_child_execution_and_residual_are_separate[.1-open-TRIGGERED_UNSETTLED] _
+algo-trading-bot/test_qualification_protection.py:155: in test_triggered_child_execution_and_residual_are_separate
+    c=stop;submit_stop(c);trigger(c,quantity=quantity,child_state=child_state)
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+_ test_triggered_child_execution_and_residual_are_separate[.1-canceled-PARTIALLY_FILLED] _
+algo-trading-bot/test_qualification_protection.py:155: in test_triggered_child_execution_and_residual_are_separate
+    c=stop;submit_stop(c);trigger(c,quantity=quantity,child_state=child_state)
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+__ test_triggered_child_execution_and_residual_are_separate[.2-filled-FILLED] __
+algo-trading-bot/test_qualification_protection.py:155: in test_triggered_child_execution_and_residual_are_separate
+    c=stop;submit_stop(c);trigger(c,quantity=quantity,child_state=child_state)
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+_ test_triggered_child_execution_and_residual_are_separate[0-rejected-CANCELLED] _
+algo-trading-bot/test_qualification_protection.py:155: in test_triggered_child_execution_and_residual_are_separate
+    c=stop;submit_stop(c);trigger(c,quantity=quantity,child_state=child_state)
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+_____ test_triggered_parent_without_child_needs_complete_fills_and_flat[0] _____
+algo-trading-bot/test_qualification_protection.py:166: in test_triggered_parent_without_child_needs_complete_fills_and_flat
+    c=stop;submit_stop(c);trigger(c,quantity=quantity,child=False)
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+____ test_triggered_parent_without_child_needs_complete_fills_and_flat[.1] _____
+algo-trading-bot/test_qualification_protection.py:166: in test_triggered_parent_without_child_needs_complete_fills_and_flat
+    c=stop;submit_stop(c);trigger(c,quantity=quantity,child=False)
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+____ test_triggered_parent_without_child_needs_complete_fills_and_flat[.2] _____
+algo-trading-bot/test_qualification_protection.py:166: in test_triggered_parent_without_child_needs_complete_fills_and_flat
+    c=stop;submit_stop(c);trigger(c,quantity=quantity,child=False)
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+_________________ test_child_unknown_never_proves_cancellation _________________
+algo-trading-bot/test_qualification_protection.py:173: in test_child_unknown_never_proves_cancellation
+    c=stop;submit_stop(c);trigger(c,child_state='canceled')
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+_________ test_bad_child_identity_blocks_stop_settlement[coin-par:ETH] _________
+algo-trading-bot/test_qualification_protection.py:182: in test_bad_child_identity_blocks_stop_settlement
+    c=stop;submit_stop(c);trigger(c,child_state='canceled')
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+_______ test_bad_child_identity_blocks_stop_settlement[reduceOnly-False] _______
+algo-trading-bot/test_qualification_protection.py:182: in test_bad_child_identity_blocks_stop_settlement
+    c=stop;submit_stop(c);trigger(c,child_state='canceled')
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+____________ test_bad_child_identity_blocks_stop_settlement[side-B] ____________
+algo-trading-bot/test_qualification_protection.py:182: in test_bad_child_identity_blocks_stop_settlement
+    c=stop;submit_stop(c);trigger(c,child_state='canceled')
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+___________ test_bad_child_identity_blocks_stop_settlement[origSz-1] ___________
+algo-trading-bot/test_qualification_protection.py:182: in test_bad_child_identity_blocks_stop_settlement
+    c=stop;submit_stop(c);trigger(c,child_state='canceled')
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+__________ test_bad_child_identity_blocks_stop_settlement[limitPx-1] ___________
+algo-trading-bot/test_qualification_protection.py:182: in test_bad_child_identity_blocks_stop_settlement
+    c=stop;submit_stop(c);trigger(c,child_state='canceled')
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+___________ test_bad_child_identity_blocks_stop_settlement[oid-998] ____________
+algo-trading-bot/test_qualification_protection.py:182: in test_bad_child_identity_blocks_stop_settlement
+    c=stop;submit_stop(c);trigger(c,child_state='canceled')
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+__ test_duplicate_child_ids_block_and_duplicate_fills_are_not_double_counted ___
+algo-trading-bot/test_qualification_protection.py:188: in test_duplicate_child_ids_block_and_duplicate_fills_are_not_double_counted
+    c=stop;submit_stop(c);parent=trigger(c,quantity='.1',child_state='canceled')
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+___________ test_filled_status_without_actual_fills_never_marks_flat ___________
+algo-trading-bot/test_qualification_protection.py:196: in test_filled_status_without_actual_fills_never_marks_flat
+    c=stop;submit_stop(c)
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+_______ test_cancel_requires_readback_and_is_one_bounded_attempt[False] ________
+algo-trading-bot/test_qualification_protection.py:205: in test_cancel_requires_readback_and_is_one_bounded_attempt
+    c=stop;submit_stop(c);c.venue.cancel_uncertain=uncertain
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+________ test_cancel_requires_readback_and_is_one_bounded_attempt[True] ________
+algo-trading-bot/test_qualification_protection.py:205: in test_cancel_requires_readback_and_is_one_bounded_attempt
+    c=stop;submit_stop(c);c.venue.cancel_uncertain=uncertain
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+_____________ test_fill_during_cancel_uses_actual_position_not_ack _____________
+algo-trading-bot/test_qualification_protection.py:217: in test_fill_during_cancel_uses_actual_position_not_ack
+    c=stop;submit_stop(c);original=c.venue.transmit
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+_________ test_disconnect_requires_rest_and_never_submits_again[False] _________
+algo-trading-bot/test_qualification_protection.py:229: in test_disconnect_requires_rest_and_never_submits_again
+    c=stop;submit_stop(c);count=len(c.venue.calls)
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+_________ test_disconnect_requires_rest_and_never_submits_again[True] __________
+algo-trading-bot/test_qualification_protection.py:229: in test_disconnect_requires_rest_and_never_submits_again
+    c=stop;submit_stop(c);count=len(c.venue.calls)
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+________ test_restart_ignores_saved_active_flag_and_reuses_original_id _________
+algo-trading-bot/test_qualification_protection.py:238: in test_restart_ignores_saved_active_flag_and_reuses_original_id
+    c=stop;submit_stop(c);count=len(c.venue.calls)
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+_____________ test_restart_source_binding_damage_blocks_readiness ______________
+algo-trading-bot/test_qualification_protection.py:257: in test_restart_source_binding_damage_blocks_readiness
+    c=stop;submit_stop(c)
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+_______ test_open_stop_blocks_competing_exit_until_verified_cancellation _______
+algo-trading-bot/test_qualification_protection.py:264: in test_open_stop_blocks_competing_exit_until_verified_cancellation
+    c=stop;submit_stop(c)
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+__ test_generic_terminal_stop_row_without_lifecycle_proof_cannot_enable_exit ___
+algo-trading-bot/test_qualification_protection.py:271: in test_generic_terminal_stop_row_without_lifecycle_proof_cannot_enable_exit
+    c=stop;submit_stop(c);c.live.fixture.orders=[]
+           ^^^^^^^^^^^^^^
+algo-trading-bot/test_qualification_protection.py:37: in submit_stop
+    assert result['status']=='READBACK_ACCEPTED',result
+E   AssertionError: {'blind_retry': False, 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'coverage_observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', ...}
+E   assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+- generated xml file: /Users/adesh/Autonomous Trading Bot - Crypto /docs/btc_exit_safety_2026-10-13/focused_first.xml -
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_qualification_protection.py::test_native_fixed_size_stop_wire_and_readback_never_capability_certification
+FAILED algo-trading-bot/test_qualification_protection.py::test_rejected_or_uncertain_stop_not_duplicated[protection_timeout_after]
+FAILED algo-trading-bot/test_qualification_protection.py::test_mismatched_stop_readback_blocks_coverage[reduceOnly-False]
+FAILED algo-trading-bot/test_qualification_protection.py::test_mismatched_stop_readback_blocks_coverage[side-B]
+FAILED algo-trading-bot/test_qualification_protection.py::test_mismatched_stop_readback_blocks_coverage[origSz-1]
+FAILED algo-trading-bot/test_qualification_protection.py::test_mismatched_stop_readback_blocks_coverage[limitPx-1]
+FAILED algo-trading-bot/test_qualification_protection.py::test_mismatched_stop_readback_blocks_coverage[triggerPx-1]
+FAILED algo-trading-bot/test_qualification_protection.py::test_mismatched_stop_readback_blocks_coverage[cloid-other]
+FAILED algo-trading-bot/test_qualification_protection.py::test_mismatched_stop_readback_blocks_coverage[coin-par:ETH]
+FAILED algo-trading-bot/test_qualification_protection.py::test_mismatched_stop_readback_blocks_coverage[orderType-Stop Market]
+FAILED algo-trading-bot/test_qualification_protection.py::test_mismatched_stop_readback_blocks_coverage[oid--1]
+FAILED algo-trading-bot/test_qualification_protection.py::test_frontend_and_order_status_must_agree
+FAILED algo-trading-bot/test_qualification_protection.py::test_changed_position_does_not_oversize_stop_or_auto_replace
+FAILED algo-trading-bot/test_qualification_protection.py::test_triggered_child_execution_and_residual_are_separate[0-open-TRIGGERED_UNSETTLED]
+FAILED algo-trading-bot/test_qualification_protection.py::test_triggered_child_execution_and_residual_are_separate[.1-open-TRIGGERED_UNSETTLED]
+FAILED algo-trading-bot/test_qualification_protection.py::test_triggered_child_execution_and_residual_are_separate[.1-canceled-PARTIALLY_FILLED]
+FAILED algo-trading-bot/test_qualification_protection.py::test_triggered_child_execution_and_residual_are_separate[.2-filled-FILLED]
+FAILED algo-trading-bot/test_qualification_protection.py::test_triggered_child_execution_and_residual_are_separate[0-rejected-CANCELLED]
+FAILED algo-trading-bot/test_qualification_protection.py::test_triggered_parent_without_child_needs_complete_fills_and_flat[0]
+FAILED algo-trading-bot/test_qualification_protection.py::test_triggered_parent_without_child_needs_complete_fills_and_flat[.1]
+FAILED algo-trading-bot/test_qualification_protection.py::test_triggered_parent_without_child_needs_complete_fills_and_flat[.2]
+FAILED algo-trading-bot/test_qualification_protection.py::test_child_unknown_never_proves_cancellation
+FAILED algo-trading-bot/test_qualification_protection.py::test_bad_child_identity_blocks_stop_settlement[coin-par:ETH]
+FAILED algo-trading-bot/test_qualification_protection.py::test_bad_child_identity_blocks_stop_settlement[reduceOnly-False]
+FAILED algo-trading-bot/test_qualification_protection.py::test_bad_child_identity_blocks_stop_settlement[side-B]
+FAILED algo-trading-bot/test_qualification_protection.py::test_bad_child_identity_blocks_stop_settlement[origSz-1]
+FAILED algo-trading-bot/test_qualification_protection.py::test_bad_child_identity_blocks_stop_settlement[limitPx-1]
+FAILED algo-trading-bot/test_qualification_protection.py::test_bad_child_identity_blocks_stop_settlement[oid-998]
+FAILED algo-trading-bot/test_qualification_protection.py::test_duplicate_child_ids_block_and_duplicate_fills_are_not_double_counted
+FAILED algo-trading-bot/test_qualification_protection.py::test_filled_status_without_actual_fills_never_marks_flat
+FAILED algo-trading-bot/test_qualification_protection.py::test_cancel_requires_readback_and_is_one_bounded_attempt[False]
+FAILED algo-trading-bot/test_qualification_protection.py::test_cancel_requires_readback_and_is_one_bounded_attempt[True]
+FAILED algo-trading-bot/test_qualification_protection.py::test_fill_during_cancel_uses_actual_position_not_ack
+FAILED algo-trading-bot/test_qualification_protection.py::test_disconnect_requires_rest_and_never_submits_again[False]
+FAILED algo-trading-bot/test_qualification_protection.py::test_disconnect_requires_rest_and_never_submits_again[True]
+FAILED algo-trading-bot/test_qualification_protection.py::test_restart_ignores_saved_active_flag_and_reuses_original_id
+FAILED algo-trading-bot/test_qualification_protection.py::test_restart_source_binding_damage_blocks_readiness
+FAILED algo-trading-bot/test_qualification_protection.py::test_open_stop_blocks_competing_exit_until_verified_cancellation
+FAILED algo-trading-bot/test_qualification_protection.py::test_generic_terminal_stop_row_without_lifecycle_proof_cannot_enable_exit
+39 failed, 100 passed in 61.15s (0:01:01)

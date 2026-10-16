@@ -1,0 +1,401 @@
+{
+  "report_type": "PROFIT_DAY_FINAL_WITH_SEPARATELY_APPROVED_EXIT_RECOVERY",
+  "status": "CLOSED_EXCHANGE_VERIFIED",
+  "generated_ms": 1792082912667,
+  "mandate_id": "5395c75090f1aa96a07c31c40e999420c58c5a82d2735536dc7ef22be3d63f05",
+  "source_hash": "abc36e4a6eb6b61994b3bdc22ce05700e965afe44be697f6a0345e8c5f98f8c0",
+  "approval": {
+    "accepted_ms": 1792082517590,
+    "expires_ms": 1792083117590,
+    "genuine_human_provenance_sha256": "c62adce467979bfb7af7626cbce97c316263b20daa27912aff6aad441e5766d3",
+    "authority_consumed_and_finished": true,
+    "restart_permitted": false
+  },
+  "execution": {
+    "buy_orders": 0,
+    "signed_sell_attempts": 1,
+    "http_posts": 1,
+    "order_id": "62805581662",
+    "fill_id": "260274449763192",
+    "cloid": "0xbb16ea7808930ef2742c1b8f91f7f27c",
+    "quantity": "0.0002",
+    "limit_price": "81828",
+    "actual_fill_price": "81909.0",
+    "actual_fill_ms": 1792082605936,
+    "automatic_retry": false
+  },
+  "accounting": {
+    "currency": "TEST USDPR",
+    "original_buy_cost": "16.30240",
+    "actual_sell_proceeds": "16.38180",
+    "gross_price_pnl": "0.07940",
+    "actual_entry_fee": "0.014672",
+    "actual_exit_fee": "0.014743",
+    "total_fill_fees": "0.029415",
+    "actual_net_funding": "0.000527",
+    "net_realized_pnl": "0.050512",
+    "formula": "actual SELL proceeds - original BUY cost - actual entry fee - actual exit fee + actual net funding"
+  },
+  "actual_entry_fills": [
+    {
+      "symbol": "par:BTC",
+      "timestamp_ms": 1792039590641,
+      "trade_id": "800659111758533",
+      "order_id": "62755970305",
+      "side": "BUY",
+      "quantity": "0.0002",
+      "price": "81512.0",
+      "fee": "0.014672",
+      "fee_token": "USDPR",
+      "closed_pnl": "0.0",
+      "start_position": "0.0",
+      "source": "EXCHANGE_REPORTED_FILL",
+      "exchange_ts": "2026-10-15T04:46:30.641+00:00",
+      "received_ts": "2026-10-15T16:44:21.167+00:00",
+      "processed_ts": "2026-10-15T16:44:21.167+00:00"
+    }
+  ],
+  "actual_exit_fills": [
+    {
+      "symbol": "par:BTC",
+      "timestamp_ms": 1792082605936,
+      "trade_id": "260274449763192",
+      "order_id": "62805581662",
+      "side": "SELL",
+      "quantity": "0.0002",
+      "price": "81909.0",
+      "fee": "0.014743",
+      "fee_token": "USDPR",
+      "closed_pnl": "0.0794",
+      "start_position": "0.0002",
+      "source": "EXCHANGE_REPORTED_FILL",
+      "exchange_ts": "2026-10-15T16:43:25.936+00:00",
+      "received_ts": "2026-10-15T16:44:21.167+00:00",
+      "processed_ts": "2026-10-15T16:44:21.167+00:00"
+    }
+  ],
+  "actual_funding_events": [
+    {
+      "symbol": "par:BTC",
+      "timestamp_ms": 1792040400069,
+      "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "cashflow": "0.000141",
+      "position_quantity": "0.0002",
+      "funding_rate": "-0.0000086424",
+      "collateral": "USDPR",
+      "source": "EXCHANGE_REPORTED_USER_FUNDING",
+      "exchange_ts": "2026-10-15T05:00:00.069+00:00",
+      "received_ts": "2026-10-15T16:44:21.417+00:00",
+      "processed_ts": "2026-10-15T16:44:21.417+00:00"
+    },
+    {
+      "symbol": "par:BTC",
+      "timestamp_ms": 1792044000094,
+      "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "cashflow": "-0.000201",
+      "position_quantity": "0.0002",
+      "funding_rate": "0.0000125",
+      "collateral": "USDPR",
+      "source": "EXCHANGE_REPORTED_USER_FUNDING",
+      "exchange_ts": "2026-10-15T06:00:00.094+00:00",
+      "received_ts": "2026-10-15T16:44:21.417+00:00",
+      "processed_ts": "2026-10-15T16:44:21.417+00:00"
+    },
+    {
+      "symbol": "par:BTC",
+      "timestamp_ms": 1792047600021,
+      "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "cashflow": "0.000279",
+      "position_quantity": "0.0002",
+      "funding_rate": "-0.0000172637",
+      "collateral": "USDPR",
+      "source": "EXCHANGE_REPORTED_USER_FUNDING",
+      "exchange_ts": "2026-10-15T07:00:00.021+00:00",
+      "received_ts": "2026-10-15T16:44:21.417+00:00",
+      "processed_ts": "2026-10-15T16:44:21.417+00:00"
+    },
+    {
+      "symbol": "par:BTC",
+      "timestamp_ms": 1792051200021,
+      "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "cashflow": "0.0002",
+      "position_quantity": "0.0002",
+      "funding_rate": "-0.0000123111",
+      "collateral": "USDPR",
+      "source": "EXCHANGE_REPORTED_USER_FUNDING",
+      "exchange_ts": "2026-10-15T08:00:00.021+00:00",
+      "received_ts": "2026-10-15T16:44:21.417+00:00",
+      "processed_ts": "2026-10-15T16:44:21.418+00:00"
+    },
+    {
+      "symbol": "par:BTC",
+      "timestamp_ms": 1792054800047,
+      "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "cashflow": "0.000178",
+      "position_quantity": "0.0002",
+      "funding_rate": "-0.0000109805",
+      "collateral": "USDPR",
+      "source": "EXCHANGE_REPORTED_USER_FUNDING",
+      "exchange_ts": "2026-10-15T09:00:00.047+00:00",
+      "received_ts": "2026-10-15T16:44:21.417+00:00",
+      "processed_ts": "2026-10-15T16:44:21.418+00:00"
+    },
+    {
+      "symbol": "par:BTC",
+      "timestamp_ms": 1792058400045,
+      "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "cashflow": "0.00038",
+      "position_quantity": "0.0002",
+      "funding_rate": "-0.000023434",
+      "collateral": "USDPR",
+      "source": "EXCHANGE_REPORTED_USER_FUNDING",
+      "exchange_ts": "2026-10-15T10:00:00.045+00:00",
+      "received_ts": "2026-10-15T16:44:21.417+00:00",
+      "processed_ts": "2026-10-15T16:44:21.418+00:00"
+    },
+    {
+      "symbol": "par:BTC",
+      "timestamp_ms": 1792062000033,
+      "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "cashflow": "0.00029",
+      "position_quantity": "0.0002",
+      "funding_rate": "-0.0000179304",
+      "collateral": "USDPR",
+      "source": "EXCHANGE_REPORTED_USER_FUNDING",
+      "exchange_ts": "2026-10-15T11:00:00.033+00:00",
+      "received_ts": "2026-10-15T16:44:21.417+00:00",
+      "processed_ts": "2026-10-15T16:44:21.418+00:00"
+    },
+    {
+      "symbol": "par:BTC",
+      "timestamp_ms": 1792065600041,
+      "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "cashflow": "0.000065",
+      "position_quantity": "0.0002",
+      "funding_rate": "-0.0000040561",
+      "collateral": "USDPR",
+      "source": "EXCHANGE_REPORTED_USER_FUNDING",
+      "exchange_ts": "2026-10-15T12:00:00.041+00:00",
+      "received_ts": "2026-10-15T16:44:21.417+00:00",
+      "processed_ts": "2026-10-15T16:44:21.418+00:00"
+    },
+    {
+      "symbol": "par:BTC",
+      "timestamp_ms": 1792069200048,
+      "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "cashflow": "-0.000195",
+      "position_quantity": "0.0002",
+      "funding_rate": "0.0000121642",
+      "collateral": "USDPR",
+      "source": "EXCHANGE_REPORTED_USER_FUNDING",
+      "exchange_ts": "2026-10-15T13:00:00.048+00:00",
+      "received_ts": "2026-10-15T16:44:21.417+00:00",
+      "processed_ts": "2026-10-15T16:44:21.418+00:00"
+    },
+    {
+      "symbol": "par:BTC",
+      "timestamp_ms": 1792072800071,
+      "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "cashflow": "-0.0002",
+      "position_quantity": "0.0002",
+      "funding_rate": "0.0000125",
+      "collateral": "USDPR",
+      "source": "EXCHANGE_REPORTED_USER_FUNDING",
+      "exchange_ts": "2026-10-15T14:00:00.071+00:00",
+      "received_ts": "2026-10-15T16:44:21.417+00:00",
+      "processed_ts": "2026-10-15T16:44:21.418+00:00"
+    },
+    {
+      "symbol": "par:BTC",
+      "timestamp_ms": 1792076400040,
+      "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "cashflow": "-0.000204",
+      "position_quantity": "0.0002",
+      "funding_rate": "0.0000125",
+      "collateral": "USDPR",
+      "source": "EXCHANGE_REPORTED_USER_FUNDING",
+      "exchange_ts": "2026-10-15T15:00:00.040+00:00",
+      "received_ts": "2026-10-15T16:44:21.417+00:00",
+      "processed_ts": "2026-10-15T16:44:21.418+00:00"
+    },
+    {
+      "symbol": "par:BTC",
+      "timestamp_ms": 1792080000000,
+      "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "cashflow": "-0.000206",
+      "position_quantity": "0.0002",
+      "funding_rate": "0.0000125",
+      "collateral": "USDPR",
+      "source": "EXCHANGE_REPORTED_USER_FUNDING",
+      "exchange_ts": "2026-10-15T16:00:00.000+00:00",
+      "received_ts": "2026-10-15T16:44:21.417+00:00",
+      "processed_ts": "2026-10-15T16:44:21.418+00:00"
+    }
+  ],
+  "final_positions": [],
+  "final_open_orders": [],
+  "completed_flat_round_trip": true,
+  "authoritative_flat_readbacks": [
+    {
+      "observed_ms": 1792082613389,
+      "positions": [],
+      "orders": [],
+      "reconciliation_ready": true
+    },
+    {
+      "observed_ms": 1792082660386,
+      "positions": [],
+      "orders": [],
+      "reconciliation_ready": true
+    }
+  ],
+  "final_authoritative_observed_ms": 1792082663818,
+  "regression": {
+    "totals": {
+      "tests": 2385,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "source_hash": "abc36e4a6eb6b61994b3bdc22ce05700e965afe44be697f6a0345e8c5f98f8c0",
+    "xml_sha256": "39e5dc3c8042575d5a401ca4b68655c04908cdbdddd8e2a6ffa76d883ac110c9",
+    "checks_before": {
+      "strategy_freeze": {
+        "exit_code": 0,
+        "result": {
+          "baseline": "nse-working-baseline",
+          "file_count": 1,
+          "method_count": 8,
+          "parameter_count": 32,
+          "passed": true
+        }
+      },
+      "phase0": {
+        "exit_code": 0,
+        "result": {
+          "project": "anchorium-perpetual-alpha",
+          "checks": {
+            "project_is_perpetual_alpha": true,
+            "independent_git_directory": true,
+            "migration_branch": true,
+            "testnet_venue": true,
+            "paper_execution_mode": true,
+            "migration_policy_valid": true,
+            "orders_disabled": true,
+            "angel_one_client_disabled": true,
+            "angel_one_order_boundary_disabled": true,
+            "testnet_order_boundary_disabled": true,
+            "signal_logic_present": true,
+            "signal_source_unchanged": true
+          },
+          "passed": true
+        }
+      }
+    },
+    "checks_after": {
+      "strategy_freeze": {
+        "exit_code": 0,
+        "result": {
+          "baseline": "nse-working-baseline",
+          "file_count": 1,
+          "method_count": 8,
+          "parameter_count": 32,
+          "passed": true
+        }
+      },
+      "phase0": {
+        "exit_code": 0,
+        "result": {
+          "project": "anchorium-perpetual-alpha",
+          "checks": {
+            "project_is_perpetual_alpha": true,
+            "independent_git_directory": true,
+            "migration_branch": true,
+            "testnet_venue": true,
+            "paper_execution_mode": true,
+            "migration_policy_valid": true,
+            "orders_disabled": true,
+            "angel_one_client_disabled": true,
+            "angel_one_order_boundary_disabled": true,
+            "testnet_order_boundary_disabled": true,
+            "signal_logic_present": true,
+            "signal_source_unchanged": true
+          },
+          "passed": true
+        }
+      }
+    }
+  },
+  "integrity": {
+    "journal": "ok",
+    "nonces": "ok",
+    "retained_checkpoints": [
+      {
+        "seq": 133,
+        "checksum": "4a15b66246a202ebd0e299d6b3b09141f071c9bcbada380cfb8ca770b5311b75",
+        "checksum_valid": true,
+        "last_clean_shutdown": false
+      },
+      {
+        "seq": 134,
+        "checksum": "4a665c035d213192d1272bfcc4fb277422fe0fd9a2dc0750523b2656ccba9a65",
+        "checksum_valid": true,
+        "last_clean_shutdown": false
+      }
+    ],
+    "original_journal_rows_preserved": true,
+    "original_buy_proofs_preserved": {
+      "algo-trading-bot/signal_brain.py": "bff940ac5ed35f71ed3dfb537ba15d20dcec35a4e62a938d2f0619c6e9309d83",
+      "docs/qualification_2026-10-15/WHITELIST_TRADE_PROOF.json": "3f9b7decb3ca92810fc0e146373c667e621db909d621210cd52cb96f7886a0ab",
+      "docs/qualification_2026-10-15/session_preparation/authorized_session/WHITELIST_TRADE_PROOF.json": "2db49793b45e88aa5e36b24a5ba3a393be874fe7cd251c19e2c23bd45e45faca"
+    }
+  },
+  "process": {
+    "worker_pid": 16284,
+    "awake_helper_pid": 16285,
+    "both_exited": true,
+    "no_restart": true
+  },
+  "heartbeat": {
+    "id": "monitor-anchorium-three-hour-paper-run",
+    "status": "PAUSED",
+    "new_heartbeat_created": false
+  },
+  "proof_file": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/profit_exit_refresh_2026-10-15_2209/EXIT_RECOVERY_PROOF.json",
+  "proof_sha256": "c9e633a018121bd349eb6716c084f71254825d1d17da7b364e338c4ca31ffd83",
+  "evidence_sha256": {
+    "docs/profit_exit_refresh_2026-10-15_2209/fresh_proposal/mandate.json": "8031e1ab4c62009d4586cee561267524b399da622a8c05875157e926c546b582",
+    "docs/profit_exit_refresh_2026-10-15_2209/fresh_proposal/recovery_approval.json": "bd477f4ff9f913053932cc5c8779c88076fdf587c36897cb582de2aea03b75fe",
+    "docs/profit_exit_refresh_2026-10-15_2209/fresh_proposal/human_approval_provenance.json": "c62adce467979bfb7af7626cbce97c316263b20daa27912aff6aad441e5766d3",
+    "docs/profit_exit_refresh_2026-10-15_2209/launch_receipt.json": "6e65429437f61e34737585868fca6b424f079ccc48cc95f9716a64ff93bb6f0c",
+    "docs/profit_exit_refresh_2026-10-15_2209/authorized_session/result.json": "076378a7ef8b97e1ae4fa856e166e3e5723704bd827df2f7cf37ca283ca7d7c2",
+    "docs/profit_exit_refresh_2026-10-15_2209/final_local_journal_evidence.json": "98e14261dc1935edebb6a30de48583f8ab0893e7503f8ec71d79b5893408ae7b",
+    "docs/profit_exit_guard_repair_2026-10-15/regression_release/test_receipt.json": "448022b9d7851bf5424e0b9c2892b0ad3175d359f597aea051e0a5e4ed3d8316",
+    "docs/profit_exit_guard_repair_2026-10-15/regression_release/regression.xml": "39e5dc3c8042575d5a401ca4b68655c04908cdbdddd8e2a6ffa76d883ac110c9"
+  },
+  "connection_and_recovery_limits": {
+    "initial_ws_observation_only": true,
+    "all_signing_checks_refreshed": true,
+    "price_floor_not_widened": true,
+    "no_uncertain_order_retry": true,
+    "supervision_dependency": "Mac/app/power/internet; bounded worker and helper are now stopped",
+    "last_health_file_is_pre_signing_observation": true,
+    "terminal_result_is_authoritative_completion_record": true
+  },
+  "unknowns": [
+    "Organizer whitelisting remains unconfirmed; exchange execution is proven, organizer approval is not.",
+    "No certified clean-shutdown flag was written by this existing runtime; explicit finished/revoked control and process exit are recorded."
+  ],
+  "protection_verified": false,
+  "production_configuration": {
+    "EXECUTION_MODE": "PAPER",
+    "ALLOW_LIVE_ORDERS": false
+  },
+  "source_changed": false,
+  "prior_consumed_long_session": "fbad5fe98614a88acfdd3ac079e2644f46371265cf6600a2b04f604a63deb1a5",
+  "prior_session_report_preserved": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/profit_day_2026-10-15/terminal_session_before_recovery",
+  "prior_report_sha256": {
+    "final_summary.json": "20de0ab6fc9ac5e928db457de5d396b9a80258069d8010d2cc26669d6293c322",
+    "final_report.md": "143444cdbb3b3133d6cf002a4f06e0d91468bde95ec33e1d7b3459be0028b198"
+  }
+}

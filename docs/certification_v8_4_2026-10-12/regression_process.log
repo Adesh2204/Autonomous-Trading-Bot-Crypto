@@ -1,0 +1,49 @@
+{
+  "started_unix": 1791800059.2309918,
+  "source_hash": "f1b66075b6769ee24b3e80e8cc3c313868db520de661b6d5deefe72135ff4ca1",
+  "scope": "Full offline repository regression; V8.4 exact-full-close minimum gates, partial-exit subminimum residuals, protection rejection, duplicate/restart containment, all existing production safeguards; prior baseline 1522; 16 additional offline containment regressions; no exchange submissions",
+  "checks_before": {
+    "strategy_freeze": {
+      "exit_code": 0,
+      "result": {
+        "baseline": "nse-working-baseline",
+        "file_count": 1,
+        "method_count": 8,
+        "parameter_count": 32,
+        "passed": true
+      }
+    },
+    "phase0": {
+      "exit_code": 0,
+      "result": {
+        "project": "anchorium-perpetual-alpha",
+        "checks": {
+          "project_is_perpetual_alpha": true,
+          "independent_git_directory": true,
+          "migration_branch": true,
+          "testnet_venue": true,
+          "paper_execution_mode": true,
+          "migration_policy_valid": true,
+          "orders_disabled": true,
+          "angel_one_client_disabled": true,
+          "angel_one_order_boundary_disabled": true,
+          "testnet_order_boundary_disabled": true,
+          "signal_logic_present": true,
+          "signal_source_unchanged": true
+        },
+        "passed": true
+      }
+    }
+  },
+  "finished_unix": 1791800369.9022772,
+  "exit_code": 0,
+  "source_hash_after": "f1b66075b6769ee24b3e80e8cc3c313868db520de661b6d5deefe72135ff4ca1",
+  "totals": {
+    "tests": 1538,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "xml_sha256": "e62d53cdb15d8ba7506a9263340bd49e8b25be8604b43b4925891fb804122ff2",
+  "passed": true
+}

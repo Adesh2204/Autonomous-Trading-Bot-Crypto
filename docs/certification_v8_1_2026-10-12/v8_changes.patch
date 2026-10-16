@@ -1,0 +1,1277 @@
+--- before/algo-trading-bot/exchange/hyperliquid_execution.py
++++ after/algo-trading-bot/exchange/hyperliquid_execution.py
+@@ -459,15 +459,15 @@
+             self._after_action()
+             return 'CONFIRMED_BY_ACCOUNT' if confirmed else 'UNKNOWN'
+ 
+-    def cancel_order(self, symbol, order_id):
++    def cancel_order(self, symbol, order_id, *, critical=False):
+         self._require()
+         self._dependencies()
+         with self.lock:
+             own=self._own_order(symbol,order_id)
+             request=OrderRequest(symbol,'BUY' if own['side']=='B' else 'SELL',own['sz'],own['limitPx'])
+-            context=self.context_provider.load(request)
++            context=self.context_provider.load(request,critical=True) if critical else self.context_provider.load(request)
+             action=dict(type='cancel',cancels=[dict(a=self.client.market(symbol).asset_id,o=int(own['oid']))])
+-            return self._management_action('cancel',(symbol,int(own['oid'])),action,context)
++            return self._management_action('cancel',(symbol,int(own['oid'])),action,context,critical=critical)
+ 
+     def cancel_by_cloid(self, symbol, cloid):
+         self._require()
+@@ -571,7 +571,9 @@
+             if modify_oid is not None:
+                 self._own_order(plan.symbol,modify_oid)
+             row,_=self.journal.reserve(intent_key,asdict(normalized),intent_key,self.client.clock_ms())
+-            order_type={'trigger':{'triggerPx':sdk_number(plan.trigger_price),'isMarket':True,'tpsl':'sl'}}
++            if type(plan.is_market) is not bool:
++                raise ExchangeError('INVALID_PROTECTION_EXECUTION_TYPE')
++            order_type={'trigger':{'triggerPx':sdk_number(plan.trigger_price),'isMarket':plan.is_market,'tpsl':'sl'}}
+             wire,action=self.transport.order_action(normalized,row['cloid'],order_type=order_type)
+             method='order'
+             args=(plan.symbol,wire['is_buy'],wire['sz'],wire['limit_px'],wire['order_type'])
+--- before/algo-trading-bot/exchange/sdk_transport.py
++++ after/algo-trading-bot/exchange/sdk_transport.py
+@@ -46,8 +46,9 @@
+             # and re-signed using the official testnet-domain signing function.
+             sink.check(action)
+             nonce=nonce_manager.next()
+-            signature=sign_l1_action(self.wallet,action,None,nonce,None,False)
+-            payload=dict(action=action,nonce=nonce,signature=signature,vaultAddress=None,expiresAfter=None)
++            expiry=getattr(sink,'action_expiry_ms',None)
++            signature=sign_l1_action(self.wallet,action,None,nonce,expiry,False)
++            payload=dict(action=action,nonce=nonce,signature=signature,vaultAddress=None,expiresAfter=expiry)
+             return sink.transmit(payload)
+ 
+         def post(self, path, payload=None):
+--- before/algo-trading-bot/exchange/position_protection.py
++++ after/algo-trading-bot/exchange/position_protection.py
+@@ -51,6 +51,7 @@
+     position_observed_ms: int
+     actual_entry_price: Decimal | None=None
+     classification: str='CATASTROPHIC_STOP'
++    is_market: bool=True
+ 
+ 
+ class ExchangeProtectionManager:
+--- /dev/null
++++ after/algo-trading-bot/exchange/testnet_certification.py
+@@ -0,0 +1,502 @@
++"""One operator-approved execution experiment. No scanner or strategy imports.
++
++PAPER configuration stays locked. Only this capability-bound SDK transport can
++write for certification; it cannot approve autonomous practice or administration.
++All prices are limits, and the exchange account supplies every accounting event.
++"""
++from dataclasses import asdict, dataclass, replace
++from decimal import Decimal as D
++from enum import Enum
++import json
++
++from .base_exchange import ExchangeError, decimal
++from .execution_journal import fingerprint
++from .exchange_rules import RiskPermission
++from .compliance_guard import OrderProvenance
++from .order_lifecycle import OrderRequest, OrderState
++from .position_protection import ProtectionPlan
++from .sdk_transport import OfficialSDKTransport
++
++TEAM = '0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C'
++API = '0x46c9BED595770150752E7fA3806449F81E0Ec6f9'
++
++
++def require_safe_partial_path(spec, proposal):
++    """Current adapter rejects every sub-$10 order, including protective exits.
++
++Do not open exposure which a one-lot IOC fill could strand. An authoritative
++venue exception and a tested narrow full-close path are needed before changing
++this gate; a proposed risk budget or operator approval cannot override it.
++"""
++    if spec.size_step*min(decimal(proposal.entry_limit), decimal(proposal.stop_limit)) < 10:
++        raise ExchangeError('SUB_MINIMUM_PARTIAL_FILL_EXIT_NOT_VERIFIED')
++
++
++class ExecutionMode(str, Enum):
++    PAPER = 'PAPER'
++    TESTNET_CERTIFICATION = 'TESTNET_CERTIFICATION'
++    TESTNET_PRACTICE = 'TESTNET_PRACTICE'
++
++
++@dataclass(frozen=True)
++class CertificationProposal:
++    symbol: str
++    asset_id: int
++    quantity: str
++    entry_side: str
++    entry_limit: str
++    exit_bound: str
++    stop_trigger: str
++    stop_limit: str
++    reference_bid: str
++    reference_ask: str
++    reference_mark: str
++    reference_oracle: str
++    observed_ms: int
++    source_hash: str
++    reliability_policy_hash: str = ''
++    max_notional: str = '25'
++    session_loss_budget: str = '10'
++    entry_slippage_bps: str = '5'
++    exit_slippage_bps: str = '20'
++    taker_fee_rate: str = '.0009'
++    max_exit_attempts: int = 2
++    max_signed_actions: int = 6
++    team_wallet: str = TEAM
++    api_wallet: str = API
++    network: str = 'testnet'
++    dex: str = 'par'
++    mode: str = 'TESTNET_CERTIFICATION'
++
++    def require(self):
++        nums = {k: decimal(getattr(self, k), positive=True) for k in
++                ('quantity', 'entry_limit', 'exit_bound', 'stop_trigger', 'stop_limit',
++                 'reference_bid', 'reference_ask', 'reference_mark', 'reference_oracle',
++                 'max_notional', 'session_loss_budget', 'entry_slippage_bps',
++                 'exit_slippage_bps', 'taker_fee_rate')}
++        if (self.network != 'testnet' or self.dex != 'par' or self.mode != 'TESTNET_CERTIFICATION'
++                or self.symbol not in {'par:BTC', 'par:ETH', 'par:HYPE'}
++                or self.team_wallet.lower() != TEAM.lower() or self.api_wallet.lower() != API.lower()
++                or self.entry_side not in {'BUY', 'SELL'} or not self.source_hash or not self.reliability_policy_hash
++                or type(self.asset_id) is not int or self.asset_id < 100000
++                or type(self.observed_ms) is not int or self.observed_ms < 0
++                or nums['max_notional'] > 25 or nums['session_loss_budget'] > 10
++                or nums['entry_slippage_bps'] > 5 or nums['exit_slippage_bps'] > 20
++                or type(self.max_exit_attempts) is not int or self.max_exit_attempts != 2
++                or type(self.max_signed_actions) is not int or self.max_signed_actions != 6
++                or nums['quantity']*nums['entry_limit'] > nums['max_notional']
++                or nums['quantity']*min(nums['entry_limit'], nums['stop_limit']) < 10):
++            raise ExchangeError('INVALID_CERTIFICATION_PROPOSAL')
++        if self.entry_side == 'BUY':
++            if not nums['stop_limit'] <= nums['exit_bound'] < nums['stop_trigger'] < nums['entry_limit']:
++                raise ExchangeError('INVALID_CERTIFICATION_GEOMETRY')
++        elif not nums['entry_limit'] < nums['stop_trigger'] < nums['exit_bound'] <= nums['stop_limit']:
++            raise ExchangeError('INVALID_CERTIFICATION_GEOMETRY')
++        planned_loss = nums['quantity']*abs(nums['entry_limit']-nums['exit_bound'])
++        planned_loss += nums['quantity']*(nums['entry_limit']+nums['exit_bound'])*nums['taker_fee_rate']
++        if planned_loss > nums['session_loss_budget']:
++            raise ExchangeError('CERTIFICATION_LOSS_BUDGET_EXCEEDED')
++        return self
++
++    @property
++    def identity(self):
++        self.require()
++        return fingerprint(asdict(self))
++
++
++def propose(context, client, source_hash, *, reliability_policy_hash, side='BUY', max_notional=D(25)):
++    """Conservative current-book proposal, never a strategy signal or permission."""
++    q, spec, now = context.quote, context.spec, client.clock_ms()
++    if (side not in {'BUY', 'SELL'} or max_notional <= 0 or max_notional > 25
++            or not context.readiness.account_ready or not context.reconciled
++            or context.positions or context.open_orders or not context.feed_ready
++            or not 0 <= now-q.timestamp_ms <= 5000
++            or q.mark_timestamp_ms is None or not 0 <= now-q.mark_timestamp_ms <= 5000
++            or q.bid <= 0 or q.ask <= q.bid or (q.ask-q.bid)/q.mid*10000 > 15
++            or abs(q.mark-q.oracle)/q.oracle*10000 > 50
++            or abs(q.mid-q.oracle)/q.oracle*10000 > 100):
++        raise ExchangeError('CERTIFICATION_FRESH_ACCOUNT_BOOK_REQUIRED')
++    lev = context.active_asset.get('leverage')
++    if lev != dict(type='cross', value=1):
++        raise ExchangeError('CERTIFICATION_ONE_X_CROSS_REQUIRED')
++    entry = spec.normalize_price(q.ask*D('1.0005') if side == 'BUY' else q.bid*D('.9995'), side)
++    qty = spec.normalize_size(max_notional/max(entry, q.mark))
++    close_side = 'SELL' if side == 'BUY' else 'BUY'
++    trigger = spec.normalize_price(q.bid*D('.99') if side == 'BUY' else q.ask*D('1.01'), close_side)
++    bound = spec.normalize_price(trigger*D('.995') if side == 'BUY' else trigger*D('1.005'), close_side)
++    depth = q.ask_quantity if side == 'BUY' else q.bid_quantity
++    exit_depth = q.bid_quantity if side == 'BUY' else q.ask_quantity
++    idx = 0 if side == 'BUY' else 1
++    fee = decimal(context.readiness.fees['userCrossRate'], positive=True)*2
++    if (qty > min(depth, exit_depth)*D('.1') or qty*entry < 10
++            or qty > decimal(context.active_asset['maxTradeSzs'][idx], nonnegative=True)
++            or qty*entry*(1+fee*4) > decimal(context.active_asset['availableToTrade'][idx], nonnegative=True)
++            or qty*entry/1 < spec.maintenance_margin(qty*entry)):
++        raise ExchangeError('CERTIFICATION_LIQUIDITY_MARGIN_MINIMUM_REQUIRED')
++    return CertificationProposal(spec.symbol, spec.asset_id, str(qty), side, str(entry), str(bound),
++        str(trigger), str(bound), str(q.bid), str(q.ask), str(q.mark), str(q.oracle), now, source_hash,
++        max_notional=str(max_notional), taker_fee_rate=str(fee), reliability_policy_hash=reliability_policy_hash,
++        team_wallet=context.readiness.team_address, api_wallet=context.readiness.signer_address).require()
++
++
++@dataclass(frozen=True)
++class CertificationApproval:
++    proposal_hash: str
++    operator_approval: str
++    approved_ms: int
++    expires_ms: int
++    manually_verified_wallets: bool = False
++    sole_signer_host_confirmed: bool = False
++    maximum_one_entry: bool = False
++
++
++class CertificationAuthorization:
++    def __init__(self, proposal, approval, journal, *, clock_ms, source_hash, policy_hash):
++        self.proposal, self.approval, self.journal = proposal, approval, journal
++        self.clock_ms, self.source_hash = clock_ms, source_hash
++        self.policy_hash = policy_hash
++        self.revoked = False
++
++    def require(self, team, signer):
++        from venue_config import require_paper_migration
++        require_paper_migration()  # Never set global LIVE flags for this experiment.
++        p, a, now = self.proposal.require(), self.approval, self.clock_ms()
++        if (self.revoked or not isinstance(a, CertificationApproval)
++                or a.proposal_hash != p.identity or not a.operator_approval.strip()
++                or a.manually_verified_wallets is not True or a.sole_signer_host_confirmed is not True
++                or a.maximum_one_entry is not True
++                or type(a.approved_ms) is not int or type(a.expires_ms) is not int
++                or not a.approved_ms <= now < a.expires_ms <= a.approved_ms+300000
++                or a.approved_ms < p.observed_ms or a.approved_ms-p.observed_ms > 300000
++                or team.lower() != p.team_wallet.lower() or signer.lower() != p.api_wallet.lower()
++                or self.source_hash() != p.source_hash
++                or self.policy_hash() != p.reliability_policy_hash
++                or self.journal.team_address != p.team_wallet.lower()):
++            raise ExchangeError('EXACT_HUMAN_CERTIFICATION_APPROVAL_REQUIRED')
++        if (self.journal.control('certification_completed:'+p.identity) or
++                self.journal.control('certification_halted:'+p.identity)):
++            raise ExchangeError('CERTIFICATION_ALREADY_FINISHED')
++
++    def check_action(self, action):
++        p = self.proposal
++        self.require(p.team_wallet, p.api_wallet)
++        if action.get('type') == 'cancel':
++            rows = action.get('cancels', [])
++            if len(rows) != 1 or rows[0].get('a') != p.asset_id:
++                raise ExchangeError('CERTIFICATION_ACTION_OUTSIDE_SCOPE')
++            own = [r for r in self.journal.intents() if str(r['oid']) == str(rows[0].get('o'))
++                   and r['intent_key'].startswith('certification:'+p.identity+':')]
++            if len(own) != 1:
++                raise ExchangeError('CERTIFICATION_OWN_ORDER_REQUIRED')
++            return
++        if action.get('type') != 'order' or len(action.get('orders', [])) != 1:
++            raise ExchangeError('CERTIFICATION_ACTION_OUTSIDE_SCOPE')
++        w = action['orders'][0]
++        row = self.journal.db.execute('SELECT * FROM intents WHERE cloid=?', (w.get('c'),)).fetchone()
++        prefix = 'certification:'+p.identity+':'
++        if (row is None or not row['intent_key'].startswith(prefix) or w.get('a') != p.asset_id
++                or type(w.get('b')) is not bool or type(w.get('r')) is not bool
++                or decimal(w.get('s'), positive=True) > decimal(p.quantity)):
++            raise ExchangeError('CERTIFICATION_ACTION_OUTSIDE_SCOPE')
++        px, qty = decimal(w.get('p'), positive=True), decimal(w['s'], positive=True)
++        if not w['r']:
++            if (row['intent_key'] != prefix+'entry' or w['b'] != (p.entry_side == 'BUY')
++                    or qty != decimal(p.quantity) or px != decimal(p.entry_limit)
++                    or qty*px > decimal(p.max_notional) or w['t'] != {'limit': {'tif': 'Ioc'}}):
++                raise ExchangeError('CERTIFICATION_ENTRY_OUTSIDE_SCOPE')
++        else:
++            if w['b'] == (p.entry_side == 'BUY'):
++                raise ExchangeError('CERTIFICATION_EXIT_DIRECTION')
++            if (p.entry_side == 'BUY' and px < decimal(p.exit_bound) or
++                    p.entry_side == 'SELL' and px > decimal(p.exit_bound)):
++                raise ExchangeError('CERTIFICATION_EXIT_PRICE_BOUND')
++            if 'trigger' in w.get('t', {}):
++                if (row['intent_key'] != prefix+'protection' or px != decimal(p.stop_limit)
++                        or w['t'] != {'trigger': {'triggerPx': p.stop_trigger.rstrip('0').rstrip('.')
++                            if '.' in p.stop_trigger else p.stop_trigger, 'isMarket': False, 'tpsl': 'sl'}}):
++                    raise ExchangeError('CERTIFICATION_PROTECTION_OUTSIDE_SCOPE')
++            elif (row['intent_key'] not in {prefix+'exit:0', prefix+'exit:1'}
++                    or w['t'] != {'limit': {'tif': 'Ioc'}}):
++                raise ExchangeError('CERTIFICATION_EXIT_OUTSIDE_SCOPE')
++
++    def claim_transmission(self, action):
++        """Persist before HTTP; failed/uncertain writes consume the attempt forever."""
++        self.check_action(action)
++        p, key = self.proposal, 'certification_transmissions:'+self.proposal.identity
++        digest = fingerprint(action)
++        with self.journal.transaction():
++            raw = self.journal.db.execute('SELECT value FROM controls WHERE name=?', (key,)).fetchone()
++            history = json.loads(raw[0]) if raw else []
++            entry = action['type'] == 'order' and action['orders'][0]['r'] is False
++            if (len(history) >= p.max_signed_actions or any(h['hash'] == digest for h in history)
++                    or entry and any(h['entry'] for h in history)):
++                raise ExchangeError('CERTIFICATION_ATTEMPT_ALREADY_CONSUMED')
++            history.append(dict(hash=digest, entry=entry, timestamp_ms=self.clock_ms()))
++            self.journal.db.execute('INSERT OR REPLACE INTO controls VALUES (?,?)',
++                                    (key, json.dumps(history)))
++
++    def revoke(self):
++        self.revoked = True
++
++
++class CertificationSDKTransport(OfficialSDKTransport):
++    def __init__(self, *args, **kwargs):
++        auth = args[4] if len(args) > 4 else kwargs.get('authorization')
++        if type(auth) is not CertificationAuthorization:
++            raise ExchangeError('CERTIFICATION_CAPABILITY_REQUIRED')
++        auth.require(auth.proposal.team_wallet, auth.proposal.api_wallet)
++        self.action_expiry_ms = auth.approval.expires_ms
++        super().__init__(*args, **kwargs)
++
++    def check(self, action):
++        super().check(action)
++        self.authorization.check_action(action)
++        if action.get('type') == 'order' and action['orders'][0]['r'] is False:
++            require_safe_partial_path(self.client.market(self.authorization.proposal.symbol),
++                                      self.authorization.proposal)
++
++    def transmit(self, payload):
++        self.check(payload['action'])
++        if payload.get('expiresAfter') != self.action_expiry_ms:
++            raise ExchangeError('CERTIFICATION_SIGNED_EXPIRY_REQUIRED')
++        self.authorization.claim_transmission(payload['action'])
++        return super().transmit(payload)
++
++
++class CertificationProtection:
++    """Approved fixed test stop, deliberately independent of VWAP/ATR geometry."""
++    def __init__(self, executor, proposal):
++        self.executor, self.proposal = executor, proposal
++        self.managers, self.states = {}, {}
++        self.running = True  # The bounded sequence drives protection explicitly.
++        self.entries_allowed = True
++        executor.protection = self
++
++    def _plan(self, symbol, position, manager, observed_ms):
++        p = self.proposal
++        if (symbol != p.symbol or not position.quantity
++                or (position.quantity > 0) != (p.entry_side == 'BUY')
++                or abs(position.quantity) > decimal(p.quantity)):
++            raise ExchangeError('CERTIFICATION_PROTECTION_POSITION_CONFLICT')
++        side = 'SELL' if position.quantity > 0 else 'BUY'
++        return ProtectionPlan(symbol, side, abs(position.quantity), decimal(p.stop_trigger),
++            decimal(p.stop_limit), decimal(p.stop_trigger), 'CERTIFICATION_ONLY:'+p.identity,
++            observed_ms, position.entry_price, 'CATASTROPHIC_STOP', False)
++
++
++def test_permission(request, proposal, now, *, reason=None):
++    """Controlled-test provenance cannot masquerade as a frozen strategy signal."""
++    key = 'certification:'+proposal.identity
++    a = dict(operator_authorization=key, objective='ONE_EXECUTION_ROUND_TRIP_NOT_A_STRATEGY_SIGNAL',
++             exit_procedure='BOUNDED_REDUCE_ONLY_IOC_AND_FLAT_RECONCILIATION', market=proposal.symbol,
++             expected_quantity=str(request.quantity), timestamp_ms=now, expires_ms=now+300000)
++    provenance = OrderProvenance(key, request.strategy_id, 'EXECUTION_CERTIFICATION', now,
++        request.symbol, request.side, reason or 'OPERATOR_APPROVED_EXECUTION_TEST',
++        dict(allowed=True, max_notional=proposal.max_notional, loss_budget=proposal.session_loss_budget),
++        dict(allowed=True, price=str(request.price), tif=request.tif),
++        classification='CONTROLLED_TEST_ORDER', action_type='CONTROLLED_TEST_ORDER',
++        source_position_id=proposal.symbol if request.reduce_only else None, test_authorization=a)
++    return RiskPermission(key, request.symbol, request.side, request.quantity, now,
++        request.reduce_only, reason, request.price, provenance)
++
++
++class CertificationSequence:
++    """Bounded orchestration over the existing validator, journal and SDK executor."""
++    def __init__(self, executor, proposal, authorization, *, wait=None):
++        self.e, self.p, self.auth = executor, proposal.require(), authorization
++        self.wait = wait or (lambda: None)
++        self.prefix = 'certification:'+proposal.identity+':'
++        self.report = dict(status='NO_ORDER_AUTHORIZED', execution_mode='TESTNET_CERTIFICATION',
++            production_mode='PAPER', strategy_signal=False, exclude_from_strategy_statistics=True,
++            proposal=asdict(proposal), actual_exchange_proof=[], realized_pnl=None,
++            realized_pnl_status='REALIZED_PNL_NOT_CERTIFIED', practice_ready=False, live_ready=False)
++
++    def observe(self):
++        self.e.recovery.recover()
++        positions = self.e.account.get_positions()
++        orders = self.e.account.get_frontend_open_orders()
++        after = self.e.account.get_positions()
++        if positions != after or len(after) > 1 or any(s != self.p.symbol for s in after):
++            raise ExchangeError('CERTIFICATION_ACCOUNT_RECONCILIATION_MISMATCH')
++        self.report['actual_exchange_proof'].append(dict(timestamp_ms=self.e.client.clock_ms(),
++            positions=[asdict(x) for x in after.values()], orders=orders,
++            accounting=self.e.recovery.state.report()))
++        return after, orders
++
++    def resolved(self, order):
++        if order.state in {OrderState.UNKNOWN, OrderState.SUBMITTED}:
++            for _ in range(3):
++                self.wait()
++                order = self.e.recover_uncertain(order.intent_key)
++                if order.state not in {OrderState.UNKNOWN, OrderState.SUBMITTED}:
++                    break
++        if order.state in {OrderState.UNKNOWN, OrderState.SUBMITTED}:
++            raise ExchangeError('CERTIFICATION_UNCERTAIN_ORDER_URGENT_REVIEW')
++        return order
++
++    def _verify_protection(self, plan, order, rows):
++        matching = [o for o in rows if str(o['oid']) == str(order.exchange_order_id)]
++        if len(matching) != 1:
++            raise ExchangeError('CERTIFICATION_PROTECTION_NOT_CONFIRMED')
++        row = matching[0]
++        detail = self.e.account._query('orderStatus', oid=order.exchange_order_id)
++        if (row.get('cloid') != order.cloid or row.get('isTrigger') is not True
++                or row.get('reduceOnly') is not True or row['side'] != ('A' if plan.side == 'SELL' else 'B')
++                or decimal(row['sz']) != plan.quantity or decimal(row['triggerPx']) != plan.trigger_price
++                or decimal(row['limitPx']) != plan.limit_price or row.get('orderType') != 'Stop Limit'
++                or detail.get('status') != 'order' or detail['order']['status'] != 'open'
++                or any(detail['order']['order'].get(k) != row.get(k) for k in
++                       ('coin','side','oid','sz','limitPx','isTrigger','reduceOnly','triggerPx','orderType'))):
++            raise ExchangeError('CERTIFICATION_PROTECTION_READBACK_MISMATCH')
++        self.report['protection_accepted'] = True
++        self.report['protection_plan'] = asdict(plan)
++
++    def close(self):
++        for attempt in range(self.p.max_exit_attempts):
++            positions, orders = self.observe()
++            if not positions:
++                return
++            held = positions[self.p.symbol]
++            q = self.e.context_provider.market.get_quote(self.p.symbol)
++            now = self.e.client.clock_ms()
++            if not 0 <= now-q.timestamp_ms <= 5000:
++                raise ExchangeError('CERTIFICATION_EXIT_STALE_BOOK')
++            side = 'SELL' if held.quantity > 0 else 'BUY'
++            spec = self.e.client.market(self.p.symbol)
++            px = spec.normalize_price(q.bid*D('.998') if side == 'SELL' else q.ask*D('1.002'), side)
++            if (side == 'SELL' and px < decimal(self.p.exit_bound)
++                    or side == 'BUY' and px > decimal(self.p.exit_bound)):
++                raise ExchangeError('CERTIFICATION_EXIT_PRICE_BOUND')
++            req = OrderRequest(self.p.symbol, side, abs(held.quantity), px, reduce_only=True,
++                strategy_id='TESTNET_CERTIFICATION_EXIT', tif='Ioc', client_order_id=self.prefix+'exit:'+str(attempt))
++            outcome = self.resolved(self.e.submit(req, permission=test_permission(req, self.p, now,
++                                                                 reason='CERTIFICATION_REDUCE_ONLY_EXIT')))
++            if outcome.state == OrderState.OPEN:
++                self.e.cancel_order(self.p.symbol, outcome.exchange_order_id, critical=True)
++                self.resolved(self.e.recover_uncertain(outcome.intent_key))
++            self.wait()
++        positions, _ = self.observe()
++        if positions:
++            raise ExchangeError('CERTIFICATION_EXIT_PARTIAL_URGENT_REVIEW')
++
++    def run(self):
++        try:
++            self.auth.require(self.p.team_wallet, self.p.api_wallet)
++            if self.e.journal.control('certification_started:'+self.p.identity):
++                raise ExchangeError('CERTIFICATION_RESTART_READ_ONLY_RECOVERY_REQUIRED')
++            positions, orders = self.observe()
++            if positions or orders or not self.e.recovery.last_report.ready:
++                raise ExchangeError('CERTIFICATION_INITIAL_FLAT_ACCOUNT_REQUIRED')
++            self.report['equity_before'] = str(self.e.recovery.state.equity.reported_account_value)
++            before_fills = set(self.e.recovery.state.fills)
++            before_funding = set(self.e.recovery.state.funding)
++            self.e.journal.control('certification_started:'+self.p.identity, True)
++            self.e.entries_paused = False
++            req = OrderRequest(self.p.symbol, self.p.entry_side, self.p.quantity, self.p.entry_limit,
++                strategy_id='TESTNET_CERTIFICATION_ENTRY', tif='Ioc', client_order_id=self.prefix+'entry')
++            self.report['status'] = 'ENTRY_SUBMISSION_PENDING'
++            order = self.resolved(self.e.submit(req, permission=test_permission(req, self.p, self.e.client.clock_ms())))
++            self.report['entry'] = asdict(order)
++            positions, orders = self.observe()
++            entry_fills = [f for f in self.e.recovery.state.fills.values()
++                           if f.order_id == str(order.exchange_order_id) and f.symbol == self.p.symbol]
++            observed_qty = sum((f.quantity for f in entry_fills), D(0))
++            if (observed_qty != order.filled_quantity or any(f.side != self.p.entry_side for f in entry_fills)
++                    or positions and observed_qty != abs(positions[self.p.symbol].quantity)):
++                raise ExchangeError('CERTIFICATION_ENTRY_FILL_POSITION_NOT_RECONCILED')
++            if orders and order.exchange_order_id is not None:
++                self.e.cancel_order(self.p.symbol, order.exchange_order_id, critical=True)
++                self.resolved(self.e.recover_uncertain(order.intent_key))
++                positions, orders = self.observe()
++            if not positions:
++                self.report['status'] = 'ORDER_REJECTED' if order.state == OrderState.REJECTED else 'NO_FILL_VERIFIED'
++            else:
++                self.report['status'] = 'PARTIAL_FILL' if order.state == OrderState.PARTIALLY_FILLED else 'FILLED_POSITION'
++                try:
++                    plan = self.e.protection._plan(self.p.symbol, positions[self.p.symbol], None, self.e.client.clock_ms())
++                    protective = self.resolved(self.e.submit_protection(plan, self.prefix+'protection'))
++                    positions, orders = self.observe()
++                    if positions:
++                        self._verify_protection(plan, protective, orders)
++                        self.report['status'] = 'OPEN_PROTECTED_POSITION'
++                except Exception as exc:
++                    self.report['protection_error'] = str(exc) if isinstance(exc, ExchangeError) else type(exc).__name__
++                    self.report['status'] = 'EMERGENCY_EXIT_REQUIRED'
++                self.close()  # Never wait for a profit.
++            positions, orders = self.observe()
++            if positions:
++                raise ExchangeError('CERTIFICATION_FINAL_POSITION_NOT_FLAT')
++            for row in orders:
++                own = [r for r in self.e.journal.intents() if str(r['oid']) == str(row['oid'])
++                       and r['intent_key'].startswith(self.prefix)]
++                if len(own) != 1:
++                    raise ExchangeError('CERTIFICATION_UNEXPECTED_ORDER')
++                self.e.cancel_order(self.p.symbol, row['oid'], critical=True)
++            positions, orders = self.observe()
++            if positions or orders or not self.e.recovery.last_report.ready:
++                raise ExchangeError('CERTIFICATION_FINAL_RECONCILIATION_REQUIRED')
++            fills = [f for k,f in self.e.recovery.state.fills.items() if k not in before_fills]
++            known = {str(r['oid']) for r in self.e.journal.intents() if r['intent_key'].startswith(self.prefix) and r['oid']}
++            if any(f.order_id not in known for f in fills):
++                raise ExchangeError('CERTIFICATION_UNEXPECTED_FILL')
++            entries = [f for f in fills if f.side == self.p.entry_side]
++            exits = [f for f in fills if f.side != self.p.entry_side]
++            self.report['final_flat'] = True
++            if entries or exits:
++                self.report.update(certify_realized(entries, exits,
++                    [f for k,f in self.e.recovery.state.funding.items() if k not in before_funding], self.p))
++                self.report['equity_after'] = str(self.e.recovery.state.equity.reported_account_value)
++                delta = decimal(self.report['equity_after'])-decimal(self.report['equity_before'])
++                self.report['equity_delta'] = str(delta)
++                if abs(delta-decimal(self.report['realized_pnl']['net_realized_pnl'])) > D('.000001'):
++                    raise ExchangeError('CERTIFICATION_EQUITY_ACCOUNTING_MISMATCH')
++                self.report['status'] = 'TRADE_CLOSED_RECONCILED'
++            self.e.journal.control('certification_completed:'+self.p.identity, True)
++        except Exception as exc:
++            self.report['error'] = str(exc) if isinstance(exc, ExchangeError) else type(exc).__name__
++            if self.report['status'] not in {'NO_ORDER_AUTHORIZED', 'NO_FILL_VERIFIED', 'ORDER_REJECTED'}:
++                self.report['status'] = 'EMERGENCY_EXIT_REQUIRED'
++            else:
++                self.report['status'] = 'PREFLIGHT_BLOCKED'
++            self.report['realized_pnl_status'] = 'REALIZED_PNL_NOT_CERTIFIED'
++            self.e.journal.control('certification_halted:'+self.p.identity, True)
++        finally:
++            self.e.entries_paused = True
++            self.auth.revoke()
++            self.e.journal.event('CERTIFICATION_RESULT', self.e.client.clock_ms(), report=self.report)
++        from .sdk_transport import OfflineSDKTransport
++        self.report['evidence_scope'] = ('OFFLINE_SIGNED_FIXTURE' if type(self.e.transport) is OfflineSDKTransport
++                                         else 'ACTUAL_TESTNET_ACCOUNT')
++        return self.report
++
++
++def certify_realized(entries, exits, funding, proposal):
++    """Exchange closedPnl is distinct from independent fill-price arithmetic."""
++    events = entries+exits
++    if (not entries or not exits or any(f.source != 'EXCHANGE_REPORTED_FILL'
++            or f.closed_pnl is None or f.fee_token != 'USDPR' or f.symbol != proposal.symbol for f in events)
++            or len({f.identity for f in events}) != len(events)
++            or any(f.source != 'EXCHANGE_REPORTED_USER_FUNDING' or f.symbol != proposal.symbol for f in funding)):
++        raise ExchangeError('REALIZED_PNL_EXCHANGE_EVENTS_REQUIRED')
++    quantity = sum((f.quantity for f in entries), D(0))
++    if quantity != sum((f.quantity for f in exits), D(0)) or quantity > decimal(proposal.quantity):
++        raise ExchangeError('REALIZED_PNL_FILL_SIZE_MISMATCH')
++    entry_notional = sum((f.quantity*f.price for f in entries), D(0))
++    exit_notional = sum((f.quantity*f.price for f in exits), D(0))
++    arithmetic = (exit_notional-entry_notional)*(1 if proposal.entry_side == 'BUY' else -1)
++    gross = sum((f.closed_pnl for f in events), D(0))
++    if abs(arithmetic-gross) > D('.000001'):
++        raise ExchangeError('REALIZED_PNL_CLOSED_FIELD_MISMATCH')
++    entry_fee, exit_fee = sum((f.fee for f in entries), D(0)), sum((f.fee for f in exits), D(0))
++    expected_fee = (entry_notional+exit_notional)*decimal(proposal.taker_fee_rate)
++    if abs(entry_fee+exit_fee-expected_fee) > max(D('.000002'), expected_fee*D('.02')):
++        raise ExchangeError('CERTIFICATION_FEE_MISMATCH')
++    cash = sum((f.cashflow for f in funding), D(0))
++    net = gross-entry_fee-exit_fee+cash
++    if net < -decimal(proposal.session_loss_budget):
++        raise ExchangeError('CERTIFICATION_OBSERVED_LOSS_BUDGET_EXCEEDED')
++    return dict(realized_pnl_status='EXCHANGE_REALIZED_PNL_CERTIFIED', realized_pnl={k:str(v) for k,v in
++        dict(quantity=quantity, entry_notional=entry_notional, actual_entry_price=entry_notional/quantity,
++             actual_exit_price=exit_notional/quantity, gross_closed_pnl=gross, fill_price_gross=arithmetic,
++             actual_entry_fee=entry_fee, actual_exit_fee=exit_fee, actual_funding=cash, net_realized_pnl=net).items()},
++        fill_proof=[asdict(f) for f in events], funding_proof=[asdict(f) for f in funding])
+--- /dev/null
++++ after/algo-trading-bot/exchange/certification_runtime.py
+@@ -0,0 +1,205 @@
++"""Explicit bounded certification assembly; no automatic practice or entry retry."""
++from dataclasses import asdict
++import json
++import hashlib
++from pathlib import Path
++import time
++
++from .base_exchange import ExchangeError
++from .execution_journal import ExecutionJournal
++from .execution_journal import fingerprint
++from .execution_safety import ClockHealthMonitor, HyperliquidRateLimitManager, NonceManager
++from .exchange_rules import LiveContextProvider, HyperliquidOrderValidator
++from .hyperliquid_client import HyperliquidClient
++from .hyperliquid_account import HyperliquidAccount
++from .hyperliquid_market_data import HyperliquidMarketData
++from .hyperliquid_execution import HyperliquidExecution
++from .live_recovery import LiveAccountRecovery, LiveRecoveryReport
++from .order_lifecycle import OrderState
++from .paper_operations import active_source_hash
++from .practice_preflight import read_api_key, api_signer
++from .reliability_policy import load_reliability_policy
++from .testnet_certification import (CertificationAuthorization, CertificationSDKTransport,
++    CertificationSequence, CertificationProtection, require_safe_partial_path)
++
++
++class CertificationContextProvider(LiveContextProvider):
++    """Refresh prices after serial account checks; all original age limits remain.
++
++The original provider and strategy runtime are unchanged. This bounded test
++uses REST and therefore needs a final book/reference read at its own boundary.
++"""
++    def load(self, request, *, critical=False):
++        from dataclasses import replace
++        from .hyperliquid_market_data import make_quote
++        context = super().load(request, critical=critical)
++        metadata, values = self.client.post_info('metaAndAssetCtxs')
++        self.client.validate_metadata(metadata)
++        if fingerprint(metadata) != context.metadata_hash or len(values) != len(metadata['universe']):
++            raise ExchangeError('CERTIFICATION_MARKET_METADATA_CHANGED')
++        contexts = {row['name']: value for row,value in zip(metadata['universe'],values)
++                    if not row.get('isDelisted')}
++        mark_observed_ms = self.client.clock_ms()
++        sent = self.client.clock_ms()
++        book = self.market.get_orderbook(request.symbol)
++        self.clock_health.observe(book.timestamp_ms, sent, self.client.clock_ms())
++        quote = make_quote(book, contexts[request.symbol], self.client.clock_ms(),
++                           mark_timestamp_ms=mark_observed_ms)
++        return replace(context, quote=quote, contexts=contexts, oracle_ms=mark_observed_ms,
++                       metadata_ms=mark_observed_ms)
++
++
++class CertificationRecovery(LiveAccountRecovery):
++    """Reuse actual account accounting/checkpoints without VWAP manager state.
++
++Only this isolated execution test omits strategy-management restoration. Its
++restarts are read-only and can never resume entries or rebuild strategy stops.
++"""
++    def recover(self):
++        from strategy_freeze import verify_strategy_freeze
++        verify_strategy_freeze()
++        self.revoke('CERTIFICATION_ACCOUNT_RECONCILIATION_REQUIRED')
++        self.state.tracked_order_ids = {str(r['oid']) for r in self.journal.intents() if r['oid']}
++        self.reconciler.recover_incremental(self.state, initial_start_ms=self.initial_start_ms)
++        reasons = list(self.state.reasons)
++        before = self.account.get_frontend_open_orders()
++        positions = self.account.get_positions()
++        after = self.account.get_frontend_open_orders()
++        if before != after or positions != self.state.positions:
++            reasons.append('CERTIFICATION_ACCOUNT_CHANGED_DURING_RECOVERY')
++        known = {str(r['oid']): r for r in self.journal.intents() if r['oid']}
++        if any(str(o['oid']) not in known for o in after):
++            reasons.append('UNTRACKED_EXCHANGE_FRONTEND_ORDER')
++        self.state.orders = {str(o['oid']): o for o in after}
++        if len(positions) > 1:
++            reasons.append('UNEXPECTED_CONCURRENT_EXPOSURE')
++        if self.checkpoint_error:
++            reasons.append(self.checkpoint_error)
++        # Safe reduction may still use verified account truth when a tracked
++        # reduce-only stop's acknowledgment is uncertain. Entry and completion
++        # additionally require every lifecycle uncertainty to be resolved.
++        self.account_truth_ready = not reasons
++        # Resolve terminal owned orders using original identity, never recreate.
++        for row in self.journal.intents():
++            if row['state'] not in {'OPEN', 'UNKNOWN', 'SUBMITTED', 'PREPARED'}:
++                continue
++            status = self.account._query('orderStatus', oid=row['cloid'])
++            if status.get('status') == 'order':
++                detail = status['order']['order']
++                req = json.loads(row['request'])
++                if detail.get('cloid') != row['cloid'] or detail.get('coin') != req['symbol']:
++                    raise ExchangeError('CERTIFICATION_ORDER_IDENTITY_MISMATCH')
++                if status['order']['status'] in {'canceled', 'cancelled', 'rejected'}:
++                    self.journal.update(row['intent_key'], 'CANCELLED' if status['order']['status'] != 'rejected'
++                                        else 'REJECTED', self.account.client.clock_ms(), oid=str(detail['oid']))
++            if self.journal.intent(row['intent_key'])['state'] in {'UNKNOWN', 'SUBMITTED', 'PREPARED'}:
++                reasons.append('CERTIFICATION_UNRESOLVED_ORDER')
++        if any(r['state'] == 'UNKNOWN' for r in self.journal.management_actions()):
++            reasons.append('CERTIFICATION_UNRESOLVED_CANCELLATION')
++        self.state.reasons = tuple(dict.fromkeys(reasons))
++        self.state.entries_paused = bool(reasons)
++        self.checkpoint()
++        self.last_report = LiveRecoveryReport(not reasons, self.state.reasons, self.state.report())
++        return self.last_report
++
++
++def build_certification(root, proposal, approval, *, state_directory, test_receipt):
++    """No key, SDK signature or HTTP exchange sink exists before authorization.
++
++Must share the real signer's existing nonce store. Source-bound successful full
++regression is mandatory; its hash includes scripts as well as core sources.
++"""
++    from strategy_freeze import verify_strategy_freeze
++    from venue_config import require_paper_migration
++    root, state = Path(root).resolve(), Path(state_directory).resolve()
++    require_paper_migration(); verify_strategy_freeze()
++    if state != root/'runtime/testnet/anchorium-bot-1':
++        raise ExchangeError('EXISTING_CERTIFICATION_NONCE_DIRECTORY_REQUIRED')
++    receipt = json.loads(Path(test_receipt).read_text())
++    current = active_source_hash(root)
++    xml = Path(test_receipt).parent/'regression.xml'
++    if (not receipt.get('passed') or receipt.get('source_hash') != current
++            or receipt.get('source_hash_after') != current
++            or receipt['totals']['failures'] or receipt['totals']['errors'] or receipt['totals']['skipped']
++            or receipt['totals']['tests'] < 1405 or not xml.is_file()
++            or hashlib.sha256(xml.read_bytes()).hexdigest() != receipt.get('xml_sha256')
++            or any(c['exit_code'] != 0 for c in receipt.get('checks_before', {}).values())
++            or set(receipt.get('checks_before', {})) != {'strategy_freeze','phase0'}):
++        raise ExchangeError('SOURCE_BOUND_FULL_REGRESSION_REQUIRED')
++    # One durable account journal across all approved attempts, including SHORT.
++    journal = ExecutionJournal(state/'certification.sqlite', session_id='anchorium-certification-v8-1',
++                               team_address=proposal.team_wallet)
++    client = nonces = transport = key = signer = None
++    try:
++        auth = CertificationAuthorization(proposal, approval, journal, clock_ms=lambda:time.time_ns()//1000000,
++            source_hash=lambda:active_source_hash(root),
++            policy_hash=lambda:hashlib.sha256((root/'configs/reliability_policy.json').read_bytes()).hexdigest())
++        auth.require(proposal.team_wallet, proposal.api_wallet)
++        if proposal.entry_side == 'SELL':
++            longs = journal.control('long_certification_complete')
++            if not longs:
++                raise ExchangeError('RECONCILED_LONG_REQUIRED_BEFORE_SHORT')
++        if journal.control('certification_active_identity') not in {None, False, proposal.identity}:
++            raise ExchangeError('CERTIFICATION_PRIOR_ATTEMPT_REVIEW_REQUIRED')
++        if journal.control('certification_started:'+proposal.identity):
++            raise ExchangeError('CERTIFICATION_RESTART_READ_ONLY_RECOVERY_REQUIRED')
++        rate, cp, _ = load_reliability_policy(root/'configs/reliability_policy.json')
++        rates = HyperliquidRateLimitManager(journal, policy=rate, signer_address=proposal.api_wallet)
++        client = HyperliquidClient(rate_limits=rates); client.startup()
++        if client.market(proposal.symbol).asset_id != proposal.asset_id:
++            raise ExchangeError('CERTIFICATION_MARKET_MAPPING_CHANGED')
++        require_safe_partial_path(client.market(proposal.symbol), proposal)
++        account, market = HyperliquidAccount(client, proposal.team_wallet), HyperliquidMarketData(client)
++        if account.get_positions() or account.get_open_orders() or account.get_frontend_open_orders():
++            raise ExchangeError('CERTIFICATION_INITIAL_FLAT_ACCOUNT_REQUIRED')
++        clock = ClockHealthMonitor(clock_ms=client.clock_ms, journal=journal, **cp)
++        origin = client.clock_ms()
++        # New account windows are only permitted after an independently flat
++        # completed prior certification. History is never reset during exposure.
++        history_key = 'certification_accounting_origin'
++        saved = journal.control(history_key)
++        if saved is not None: origin = saved
++        else: journal.control(history_key, origin)
++        recovery = CertificationRecovery(account, journal, initial_start_ms=origin)
++        if recovery.saved_snapshot and recovery.saved_snapshot['account']['initial_start_ms'] != origin:
++            raise ExchangeError('CERTIFICATION_ACCOUNTING_ORIGIN_MISMATCH')
++        provider = CertificationContextProvider(market, account, proposal.api_wallet, clock, rates,
++            reconciliation_ready=lambda:getattr(recovery,'account_truth_ready',False), feed_ready=lambda:True)
++        recovery.recover()
++        # Real key only derived after all explicit authorization checks.
++        key, _ = read_api_key(root); signer = api_signer(key, proposal.api_wallet, proposal.team_wallet); key = None
++        nonces = NonceManager(state/'nonces.sqlite', signer.address, journal=journal)
++        transport = CertificationSDKTransport(client, signer, proposal.team_wallet, nonces, auth, rate_limits=rates)
++        executor = HyperliquidExecution(client, transport=transport, account=account, journal=journal,
++            context_provider=provider, validator=HyperliquidOrderValidator(client), recovery=recovery,
++            clock_health=clock, rate_limits=rates)
++        CertificationProtection(executor, proposal)
++        journal.control('certification_active_identity', proposal.identity)
++        return CertificationRuntime(CertificationSequence(executor, proposal, auth,
++                                    wait=lambda:time.sleep(.5)), client, transport, nonces, journal)
++    except Exception:
++        if transport is not None: transport.close()
++        if nonces is not None: nonces.close()
++        if client is not None: client.transport.close()
++        journal.close()
++        raise
++    finally:
++        key = signer = None
++
++
++class CertificationRuntime:
++    def __init__(self, sequence, client, transport, nonces, journal):
++        self.sequence, self.client, self.transport = sequence, client, transport
++        self.nonces, self.journal = nonces, journal
++
++    def run(self):
++        result = self.sequence.run()
++        if result['status'] == 'TRADE_CLOSED_RECONCILED':
++            if self.sequence.p.entry_side == 'BUY':
++                self.journal.control('long_certification_complete', self.sequence.p.identity)
++            self.journal.control('certification_active_identity', False)
++        return result
++
++    def close(self):
++        self.sequence.auth.revoke()
++        self.transport.close(); self.nonces.close(); self.client.transport.close(); self.journal.close()
+--- /dev/null
++++ after/algo-trading-bot/test_testnet_certification_v8.py
+@@ -0,0 +1,349 @@
++"""OFFLINE_FIXTURE only: ephemeral SDK signatures, exchange HTTP prohibited."""
++from copy import deepcopy
++from dataclasses import replace, asdict
++from decimal import Decimal as D
++import json
++from types import SimpleNamespace
++import pytest
++
++from exchange.base_exchange import ExchangeError
++from exchange.execution_journal import ExecutionJournal
++from exchange.execution_safety import LiveAuthorization
++from exchange.certification_runtime import CertificationRecovery, CertificationContextProvider
++from exchange.order_lifecycle import OrderRequest
++from exchange.testnet_certification import (CertificationProposal, CertificationApproval,
++    CertificationAuthorization, CertificationSequence, CertificationProtection,
++    propose, test_permission as cert_permission, certify_realized, CertificationSDKTransport, require_safe_partial_path)
++from test_live_exchange_execution import live, response
++from test_exchange_migration import NOW, TEAM
++
++
++@pytest.fixture
++def cert(live, monkeypatch):
++    import exchange.testnet_certification as mod
++    monkeypatch.setattr(mod, 'TEAM', TEAM)
++    monkeypatch.setattr(mod, 'API', live.signer.address)
++    # Fixtures still derive the same real SDK wire against a synthetic venue.
++    req = OrderRequest('par:BTC', 'BUY', '.2', '100', tif='Ioc')
++    ctx = live.provider.load(req)
++    p = propose(ctx, live.client, 'fixture-source', reliability_policy_hash='fixture-policy')
++    p = replace(p, team_wallet=TEAM, api_wallet=live.signer.address).require()
++    a = CertificationApproval(p.identity, 'SYNTHETIC_OPERATOR_ONLY', NOW, NOW+300000, True, True, True)
++    auth = CertificationAuthorization(p, a, live.journal, clock_ms=lambda:live.fixture.now,
++                                      source_hash=lambda:'fixture-source', policy_hash=lambda:'fixture-policy')
++    recovery = CertificationRecovery(live.account, live.journal, initial_start_ms=NOW)
++    live.executor.recovery = recovery
++    live.provider.reconciliation_ready = lambda:getattr(recovery,'account_truth_ready',False)
++    CertificationProtection(live.executor, p)
++    v = FakeCertificationVenue(live, monkeypatch, auth)
++    return SimpleNamespace(live=live, proposal=p, approval=a, auth=auth, venue=v,
++                           sequence=CertificationSequence(live.executor, p, auth))
++
++
++class FakeCertificationVenue:
++    def __init__(self, live, monkeypatch, auth):
++        self.l, self.auth, self.statuses = live, auth, {}
++        self.oid, self.partial_entry, self.partial_exit = 100, D(1), D(1)
++        self.fail, self.cancel_uncertain, self.rest_down = None, False, False
++        self.calls = []
++        live.client.transport = self.read
++        monkeypatch.setattr(live.transport, 'transmit', self.transmit)
++
++    def read(self, payload):
++        if self.rest_down: raise TimeoutError('OFFLINE_REST_FAILURE')
++        if payload['type'] == 'orderStatus':
++            return deepcopy(self.statuses.get(str(payload['oid']), {'status':'unknownOid'}))
++        return self.l.fixture(payload)
++
++    def transmit(self, payload):
++        self.l.transport.check(payload['action'])
++        self.auth.claim_transmission(payload['action'])
++        self.l.transport.signed_payloads.append(deepcopy(payload))
++        action = payload['action']; self.calls.append(deepcopy(action))
++        if action['type'] == 'cancel':
++            oid = str(action['cancels'][0]['o'])
++            if self.cancel_uncertain: raise TimeoutError('OFFLINE_CANCEL_UNCERTAIN')
++            self.l.fixture.orders = [o for o in self.l.fixture.orders if str(o['oid']) != oid]
++            self.statuses[oid]['order']['status'] = 'canceled'
++            return response('success', 'cancel')
++        w = action['orders'][0]; self.oid += 1
++        if self.fail == 'summary_without_fill' and not w['r']:
++            return response({'filled':{'oid':self.oid,'totalSz':w['s'],'avgPx':w['p']}})
++        if self.fail == 'entry_rejected' and not w['r']:
++            return response({'error':'Order could not immediately match against any resting orders.'})
++        if self.fail == 'timeout_before' and not w['r']:
++            raise TimeoutError('OFFLINE_LOST_ACK')
++        trigger = 'trigger' in w['t']
++        if trigger and self.fail == 'protection_rejected':
++            return response({'error':'Invalid TP/SL price.'})
++        if trigger and self.fail == 'protection_timeout_before':
++            raise TimeoutError('OFFLINE_STOP_ACK_UNKNOWN')
++        qty, px = D(w['s']), D(w['p'])
++        row = dict(coin='par:BTC', side='B' if w['b'] else 'A', oid=self.oid, cloid=w['c'],
++                   sz=str(qty), origSz=str(qty), limitPx=str(px), isTrigger=trigger,
++                   reduceOnly=w['r'], timestamp=NOW)
++        if trigger:
++            assert w['t']['trigger']['isMarket'] is False
++            row.update(triggerPx=w['t']['trigger']['triggerPx'], orderType='Stop Limit')
++            self.l.fixture.orders.append(row)
++            terminal = 'open'
++        else:
++            held = self.l.account.get_position('par:BTC')
++            fraction = self.partial_exit if w['r'] else self.partial_entry
++            qty = (qty*fraction).quantize(D('.0001'))
++            if not qty: return response({'error':'Order could not immediately match against any resting orders.'})
++            if w['r']:
++                assert held and (held.quantity > 0) != w['b']
++                remaining = held.quantity+(qty if w['b'] else -qty)
++                entry = held.entry_price
++                pnl = qty*(px-entry)*(1 if held.quantity > 0 else -1)
++            else:
++                assert not held
++                entry, remaining, pnl = px, qty if w['b'] else -qty, D(0)
++            fee = qty*px*D('.0009')
++            self.l.fixture.position(remaining, str(entry))
++            self.l.fixture.fill(qty, side=row['side'], price=str(px), oid=self.oid, tid=self.oid,
++                                closed=str(pnl), fee=str(fee))
++            b = self.l.fixture.spot['balances'][0]
++            b['total'] = str(D(b['total'])+pnl-fee)
++            terminal = 'filled'; row['sz'] = '0'
++        record = dict(status='order', order=dict(order=row, status=terminal, statusTimestamp=NOW))
++        self.statuses[str(self.oid)] = record; self.statuses[w['c']] = record
++        if trigger and self.fail == 'protection_timeout_after':
++            raise TimeoutError('OFFLINE_STOP_ACCEPTED_LOST_ACK')
++        if not trigger and not w['r'] and self.fail == 'timeout_after_fill':
++            raise TimeoutError('OFFLINE_LOST_ACK_AFTER_FILL')
++        if not trigger and not w['r'] and self.fail == 'disconnect_after_fill':
++            self.rest_down = True
++            raise TimeoutError('OFFLINE_DISCONNECTED_AFTER_FILL')
++        return response({'resting':{'oid':self.oid}} if trigger else
++                        {'filled':{'oid':self.oid, 'totalSz':str(qty), 'avgPx':str(px)}})
++
++
++def test_complete_real_composition_round_trip_offline(cert):
++    r = cert.sequence.run()
++    assert r['status'] == 'TRADE_CLOSED_RECONCILED', r
++    assert r['protection_accepted'] and r['final_flat']
++    assert D(r['realized_pnl']['net_realized_pnl']) < 0
++    assert not r['strategy_signal'] and not r['practice_ready']
++    assert not cert.live.account.get_positions() and not cert.live.account.get_frontend_open_orders()
++    assert len(cert.venue.calls) == 4
++    assert cert.auth.revoked
++
++
++@pytest.mark.parametrize('failure,expected', [
++    ('entry_rejected','NO_FILL_VERIFIED'), ('timeout_before','EMERGENCY_EXIT_REQUIRED'),
++    ('timeout_after_fill','TRADE_CLOSED_RECONCILED'), ('protection_rejected','TRADE_CLOSED_RECONCILED'),
++    ('disconnect_after_fill','EMERGENCY_EXIT_REQUIRED'),
++    ('protection_timeout_after','TRADE_CLOSED_RECONCILED'),
++    ('protection_timeout_before','EMERGENCY_EXIT_REQUIRED'),
++    ('summary_without_fill','EMERGENCY_EXIT_REQUIRED')])
++def test_failure_injections(cert, failure, expected):
++    cert.venue.fail = failure
++    r = cert.sequence.run()
++    assert r['status'] == expected, r
++    entries = [a for a in cert.venue.calls if a['type'] == 'order' and not a['orders'][0]['r']]
++    assert len(entries) == 1
++    if expected == 'TRADE_CLOSED_RECONCILED': assert r['final_flat']
++    else: assert r['realized_pnl_status'] == 'REALIZED_PNL_NOT_CERTIFIED'
++
++
++def test_partial_entry_protects_actual_size(cert):
++    cert.venue.partial_entry = D('.6')
++    r = cert.sequence.run()
++    assert r['status'] == 'TRADE_CLOSED_RECONCILED', r
++    assert D(r['protection_plan']['quantity']) < D(cert.proposal.quantity)
++
++
++def test_tiny_partial_is_explicit_blocker_never_enlarged(cert):
++    cert.venue.partial_entry = D('.1')
++    r = cert.sequence.run()
++    assert r['status'] == 'EMERGENCY_EXIT_REQUIRED'
++    assert cert.live.account.get_positions()
++    assert len(cert.venue.calls) == 1
++    assert r['realized_pnl_status'] == 'REALIZED_PNL_NOT_CERTIFIED'
++
++
++def test_partial_exit_exhausts_bound_without_reversal(cert):
++    cert.venue.partial_exit = D('.6')
++    r = cert.sequence.run()
++    assert r['status'] == 'EMERGENCY_EXIT_REQUIRED'
++    assert cert.live.account.get_position('par:BTC').quantity > 0
++
++
++def test_cancel_uncertain_never_claims_flat_and_reconciled(cert):
++    cert.venue.cancel_uncertain = True
++    r = cert.sequence.run()
++    assert r['status'] == 'EMERGENCY_EXIT_REQUIRED'
++    assert r['realized_pnl_status'] == 'REALIZED_PNL_NOT_CERTIFIED'
++    assert cert.live.account.get_frontend_open_orders()
++
++
++@pytest.mark.parametrize('field,value', [('operator_approval',''), ('manually_verified_wallets',False),
++    ('sole_signer_host_confirmed',False), ('maximum_one_entry',False), ('expires_ms',NOW),
++    ('expires_ms',NOW+300001), ('approved_ms',NOW+1), ('proposal_hash','wrong')])
++def test_missing_or_damaged_exact_approval_blocks_all_orders(cert, field, value):
++    cert.auth.approval = replace(cert.approval, **{field:value})
++    r = cert.sequence.run()
++    assert r['status'] == 'PREFLIGHT_BLOCKED'
++    assert not cert.venue.calls and not cert.live.transport.signed_payloads
++
++
++def test_source_change_blocks_certification(cert):
++    cert.auth.source_hash = lambda:'changed-source'
++    assert cert.sequence.run()['status'] == 'PREFLIGHT_BLOCKED'
++    assert not cert.venue.calls
++
++
++def test_policy_change_blocks_certification(cert):
++    cert.auth.policy_hash = lambda:'changed-policy'
++    assert cert.sequence.run()['status'] == 'PREFLIGHT_BLOCKED'
++    assert not cert.venue.calls
++
++
++def test_short_fixture_is_independent_of_strategy(cert):
++    l=cert.live
++    l.executor.recovery.recover()
++    ctx=l.provider.load(OrderRequest('par:BTC','SELL','.2','100'))
++    p=propose(ctx,l.client,'fixture-source',reliability_policy_hash='fixture-policy',side='SELL')
++    a=replace(cert.approval,proposal_hash=p.identity)
++    auth=CertificationAuthorization(p,a,l.journal,clock_ms=lambda:NOW,
++        source_hash=lambda:'fixture-source',policy_hash=lambda:'fixture-policy')
++    cert.venue.auth=auth;CertificationProtection(l.executor,p)
++    r=CertificationSequence(l.executor,p,auth).run()
++    assert r['status']=='TRADE_CLOSED_RECONCILED',r
++    assert cert.venue.calls[0]['orders'][0]['b'] is False
++    assert cert.venue.calls[1]['orders'][0]['b'] is True
++    assert r['evidence_scope']=='OFFLINE_SIGNED_FIXTURE'
++
++
++def test_missing_operator_approval_refuses_before_api_key(cert, tmp_path, monkeypatch):
++    import hashlib
++    import exchange.certification_runtime as mod
++    root=tmp_path/'root';root.mkdir();(root/'configs').mkdir()
++    policy=root/'configs/reliability_policy.json';policy.write_text('{}')
++    proposal=replace(cert.proposal,reliability_policy_hash=hashlib.sha256(policy.read_bytes()).hexdigest())
++    xml=root/'regression.xml';xml.write_text('<testsuites/>')
++    receipt=root/'test_receipt.json';receipt.write_text(json.dumps(dict(passed=True,source_hash='fixture-source',
++        source_hash_after='fixture-source',totals=dict(tests=1455,failures=0,errors=0,skipped=0),
++        xml_sha256=hashlib.sha256(xml.read_bytes()).hexdigest(),
++        checks_before=dict(strategy_freeze=dict(exit_code=0),phase0=dict(exit_code=0)))))
++    monkeypatch.setattr(mod,'active_source_hash',lambda _: 'fixture-source')
++    monkeypatch.setattr(mod,'read_api_key',lambda _:pytest.fail('REAL_API_KEY_LOAD_PROHIBITED'))
++    with pytest.raises(ExchangeError,match='EXACT_HUMAN_CERTIFICATION_APPROVAL_REQUIRED'):
++        mod.build_certification(root,proposal,None,state_directory=root/'runtime/testnet/anchorium-bot-1',
++                                test_receipt=receipt)
++    assert not cert.live.transport.signed_payloads
++
++
++def test_final_book_refresh_keeps_account_age_and_limits(cert,monkeypatch):
++    from exchange.exchange_rules import LiveContextProvider
++    original=LiveContextProvider.load
++    def delayed(self,req,*,critical=False):
++        ctx=original(self,req,critical=critical)
++        cert.live.fixture.now+=4500
++        cert.live.fixture.book['time']=cert.live.fixture.now
++        return ctx
++    monkeypatch.setattr(LiveContextProvider,'load',delayed)
++    provider=CertificationContextProvider(cert.live.market,cert.live.account,cert.live.signer.address,
++        cert.live.clock,cert.live.rate,reconciliation_ready=lambda:True,feed_ready=lambda:True)
++    ctx=provider.load(OrderRequest('par:BTC','BUY','.2','100'))
++    assert ctx.quote.timestamp_ms==cert.live.fixture.now
++    assert ctx.account_ms==NOW and cert.live.fixture.now-ctx.account_ms==4500
++    assert cert.live.clock.healthy
++
++
++def test_restart_after_entry_never_reenters(cert):
++    cert.live.journal.control('certification_started:'+cert.proposal.identity, True)
++    assert cert.sequence.run()['status'] == 'PREFLIGHT_BLOCKED'
++    assert not cert.venue.calls
++
++
++def test_production_live_authorization_still_locked(cert):
++    with pytest.raises(Exception): LiveAuthorization().require(TEAM, cert.live.signer.address)
++    with pytest.raises(ExchangeError):
++        CertificationSDKTransport(cert.live.client, cert.live.signer, TEAM, cert.live.nonces,
++                                  None, rate_limits=cert.live.rate)
++
++
++def test_actual_activation_blocks_unverified_small_partial_path(cert):
++    with pytest.raises(ExchangeError, match='SUB_MINIMUM_PARTIAL_FILL_EXIT_NOT_VERIFIED'):
++        require_safe_partial_path(cert.live.client.market('par:BTC'), cert.proposal)
++    assert not cert.live.transport.signed_payloads
++
++
++def test_ephemeral_sdk_payload_has_signed_expiry_and_unique_nonce(cert):
++    cert.live.transport.action_expiry_ms = cert.approval.expires_ms
++    r = cert.sequence.run()
++    assert r['status'] == 'TRADE_CLOSED_RECONCILED'
++    assert r['evidence_scope'] == 'OFFLINE_SIGNED_FIXTURE'
++    payloads = cert.live.transport.signed_payloads
++    assert len({x['nonce'] for x in payloads}) == len(payloads)
++    assert all(x['expiresAfter'] == cert.approval.expires_ms for x in payloads)
++    assert all(x['vaultAddress'] is None for x in payloads)
++    cloids = [x['action']['orders'][0]['c'] for x in payloads if x['action']['type']=='order']
++    assert len(set(cloids)) == len(cloids)
++
++
++def test_duplicate_transmission_rejected_after_persisted_claim(cert):
++    cert.sequence.run()
++    entry = cert.venue.calls[0]
++    cert.auth.revoked = False
++    # Keep the attempt consumed even if in-memory authorization is reconstructed.
++    with cert.live.journal.transaction():
++        cert.live.journal.db.execute('DELETE FROM controls WHERE name=?',
++                                    ('certification_completed:'+cert.proposal.identity,))
++    with pytest.raises(ExchangeError, match='CERTIFICATION_ATTEMPT_ALREADY_CONSUMED'):
++        cert.auth.claim_transmission(entry)
++
++
++def test_rate_budget_exhaustion_cannot_create_exposure(cert):
++    cert.live.fixture.budget.update(nRequestsUsed=10000,nRequestsCap=10000)
++    r=cert.sequence.run()
++    assert r['status'] != 'TRADE_CLOSED_RECONCILED' and not cert.venue.calls
++
++
++def test_reconciliation_mismatch_blocks_new_entry(cert):
++    cert.live.fixture.position('.1')
++    r=cert.sequence.run()
++    assert r['status']=='PREFLIGHT_BLOCKED' and not cert.venue.calls
++
++
++@pytest.mark.parametrize('damage', ['native','mainnet','oversize','budget','tif','opposite','leverage'])
++def test_proposal_and_wire_cannot_expand_authorization(cert, damage):
++    if damage in {'native','mainnet','oversize','budget'}:
++        values = {'native':dict(symbol='BTC'), 'mainnet':dict(network='mainnet'),
++                  'oversize':dict(max_notional='50'), 'budget':dict(session_loss_budget='11')}[damage]
++        with pytest.raises(ExchangeError): replace(cert.proposal, **values).require()
++    else:
++        action = {'type':'updateLeverage'} if damage == 'leverage' else dict(type='order', orders=[
++            dict(a=cert.proposal.asset_id,b=damage!='opposite',r=False,s=cert.proposal.quantity,
++                 p=cert.proposal.entry_limit,t={'limit':{'tif':'Gtc' if damage=='tif' else 'Ioc'}},c='0x'+'0'*32)])
++        with pytest.raises(ExchangeError): cert.auth.check_action(action)
++
++
++@pytest.mark.parametrize('damage', ['stale','spread','oracle','margin','depth','held','not_cross'])
++def test_book_account_and_liquidity_gates(cert, damage):
++    l = cert.live
++    c = l.provider.load(OrderRequest('par:BTC','BUY','.2','100'))
++    if damage == 'stale': c = replace(c, quote=replace(c.quote,timestamp_ms=NOW-5001))
++    if damage == 'spread': c = replace(c, quote=replace(c.quote,ask=D(101),mid=D('100.495')))
++    if damage == 'oracle': c = replace(c, quote=replace(c.quote,oracle=D(105)))
++    if damage == 'margin': c = replace(c,active_asset=dict(c.active_asset,availableToTrade=['1','1']))
++    if damage == 'depth': c = replace(c, quote=replace(c.quote,ask_quantity=D('.1')))
++    if damage == 'held': c = replace(c, positions={'par:ETH':object()})
++    if damage == 'not_cross': c = replace(c,active_asset=dict(c.active_asset,leverage=dict(type='isolated',value=1)))
++    with pytest.raises(ExchangeError): propose(c,l.client,'fixture-source', reliability_policy_hash='fixture-policy')
++
++
++@pytest.mark.parametrize('damage', ['closed','fee','quantity','source','duplicate'])
++def test_accounting_rejects_mismatched_or_invented_events(cert,damage):
++    r = cert.sequence.run(); assert r['status']=='TRADE_CLOSED_RECONCILED'
++    fills = list(cert.live.executor.recovery.state.fills.values())
++    entry, exit = sorted(fills,key=lambda f:int(f.trade_id))
++    if damage=='closed': exit=replace(exit,closed_pnl=D(99))
++    if damage=='fee': exit=replace(exit,fee=D(1))
++    if damage=='quantity': exit=replace(exit,quantity=exit.quantity/2)
++    if damage=='source': entry=replace(entry,source='PAPER')
++    entries=[entry,entry] if damage=='duplicate' else [entry]
++    with pytest.raises(ExchangeError): certify_realized(entries,[exit],[],cert.proposal)
+--- /dev/null
++++ after/scripts/run_testnet_certification.py
+@@ -0,0 +1,153 @@
++"""Read-only proposal by default. Execution requires a separate exact human approval."""
++import argparse
++from dataclasses import asdict
++from datetime import datetime, timezone
++import json
++import hashlib
++from pathlib import Path
++import sys
++import time
++
++ROOT = Path(__file__).resolve().parents[1]
++sys.path.insert(0, str(ROOT/'algo-trading-bot'))
++from exchange.base_exchange import ExchangeError
++from exchange.execution_journal import ExecutionJournal
++from exchange.execution_safety import ClockHealthMonitor, HyperliquidRateLimitManager
++from exchange.exchange_rules import LiveContextProvider, HyperliquidOrderValidator
++from exchange.hyperliquid_client import HyperliquidClient
++from exchange.hyperliquid_account import HyperliquidAccount
++from exchange.hyperliquid_market_data import HyperliquidMarketData
++from exchange.order_lifecycle import OrderRequest
++from exchange.paper_operations import active_source_hash, atomic_json
++from exchange.reliability_policy import load_reliability_policy
++from exchange.testnet_certification import (TEAM, API, CertificationProposal, CertificationApproval,
++    propose, test_permission, require_safe_partial_path)
++from exchange.certification_runtime import CertificationContextProvider
++from strategy_freeze import verify_strategy_freeze
++from venue_config import require_paper_migration
++
++
++def read_only_preflight(directory):
++    directory = Path(directory)
++    directory.mkdir(parents=True, exist_ok=False)
++    r = dict(status='NO_ORDER_AUTHORIZED', production_mode='PAPER', allow_live_orders=False,
++             network='testnet', dex='par', team_wallet=TEAM, api_wallet=API,
++             observed_at_utc=datetime.now(timezone.utc).isoformat(), source_hash=active_source_hash(ROOT),
++             exchange_submissions=0, signature_created=False, candidates=[],
++             strategy_feed_ready=False, practice_ready=False, live_ready=False)
++    journal = client = None
++    try:
++        r['safety'] = require_paper_migration(); r['freeze'] = verify_strategy_freeze()
++        rate, cp, _ = load_reliability_policy(ROOT/'configs/reliability_policy.json')
++        journal = ExecutionJournal(directory/'read_only.sqlite', session_id='certification-preflight', team_address=TEAM)
++        rates = HyperliquidRateLimitManager(journal, policy=rate, signer_address=API)
++        client = HyperliquidClient(rate_limits=rates); client.startup()
++        market, account = HyperliquidMarketData(client), HyperliquidAccount(client, TEAM)
++        clock = ClockHealthMonitor(clock_ms=client.clock_ms, journal=journal, **cp)
++        r['metadata'] = [asdict(s) for s in client.markets.values()]
++        r['initial_positions'] = [asdict(p) for p in account.get_positions().values()]
++        r['initial_orders'] = account.get_frontend_open_orders()
++        if r['initial_positions'] or r['initial_orders']:
++            raise ExchangeError('CERTIFICATION_INITIAL_FLAT_ACCOUNT_REQUIRED')
++        provider = CertificationContextProvider(market, account, API, clock, rates,
++            reconciliation_ready=lambda:True, feed_ready=lambda:True)
++        provider.trigger_aware = True
++        # At most three candidate checks, paced before each full context request.
++        for symbol in ('par:BTC', 'par:ETH', 'par:HYPE'):
++            row = dict(symbol=symbol, proposed=False)
++            r['candidates'].append(row)
++            deadline = time.monotonic()+65
++            while rates._usage()+400 > rates.policy.ip_weight_per_minute-rates.policy.ip_safety_reserve:
++                if time.monotonic() >= deadline:
++                    raise ExchangeError('CERTIFICATION_PUBLIC_READ_BUDGET')
++                time.sleep(.5)
++            try:
++                # A seed request only asks for context; no order is submitted.
++                quote = market.get_quote(symbol)
++                spec = client.market(symbol)
++                qty = spec.normalize_size(25/quote.ask)
++                req = OrderRequest(symbol, 'BUY', qty, quote.ask, tif='Ioc', strategy_id='TESTNET_CERTIFICATION_ENTRY')
++                ctx = provider.load(req)
++                row.update(observed_ms=client.clock_ms(), quote=asdict(ctx.quote), active_asset=ctx.active_asset,
++                           readiness=asdict(ctx.readiness), clock=clock.report())
++                p = propose(ctx, client, r['source_hash'], reliability_policy_hash=
++                            hashlib.sha256((ROOT/'configs/reliability_policy.json').read_bytes()).hexdigest())
++                exact = OrderRequest(symbol, p.entry_side, p.quantity, p.entry_limit,
++                                     tif='Ioc', strategy_id='TESTNET_CERTIFICATION_ENTRY')
++                validation = HyperliquidOrderValidator(client).validate(exact, ctx, test_permission(exact, p, client.clock_ms()), client.clock_ms())
++                row['central_validation'] = asdict(validation)
++                if not validation.allowed:
++                    raise ExchangeError(validation.code)
++                row.update(proposed=True, proposal=asdict(p), proposal_hash=p.identity,
++                    maintenance_margin_at_order=str(spec.maintenance_margin(exact.quantity*exact.price)))
++                try:
++                    require_safe_partial_path(spec, p)
++                    row['partial_fill_exit_ready'] = True
++                except ExchangeError as exc:
++                    row['partial_fill_exit_ready'] = False
++                    row['execution_blocker'] = str(exc)
++            except Exception as exc:
++                row['blocker'] = str(exc) if isinstance(exc, ExchangeError) else type(exc).__name__
++        usable = [x for x in r['candidates'] if x['proposed'] and x.get('partial_fill_exit_ready')]
++        # Choose the narrowest actual spread, never an assumed favorite coin.
++        if usable:
++            from decimal import Decimal
++            selected = min(usable, key=lambda x:(Decimal(x['quote']['ask'])-Decimal(x['quote']['bid']))/Decimal(x['quote']['mid']))
++            r['selected_proposal'] = selected['proposal']
++            r['selected_proposal_hash'] = selected['proposal_hash']
++            atomic_json(directory/'proposal.json', selected['proposal'])
++        else:
++            r['status'] = 'PREFLIGHT_BLOCKED'
++        r['final_positions'] = [asdict(p) for p in account.get_positions().values()]
++        r['final_orders'] = account.get_frontend_open_orders()
++        if r['final_positions'] or r['final_orders']:
++            r['status'] = 'PREFLIGHT_BLOCKED'; r['blocker'] = 'ACCOUNT_CHANGED_DURING_PROPOSAL'
++        r['rates'] = rates.report()
++    except Exception as exc:
++        r['status'] = 'PREFLIGHT_BLOCKED'
++        r['blocker'] = str(exc) if isinstance(exc, ExchangeError) else type(exc).__name__
++    finally:
++        if client: client.transport.close()
++        if journal: journal.close()
++    atomic_json(directory/'preflight.json', r)
++    return r
++
++
++def main(argv=None):
++    p = argparse.ArgumentParser(description=__doc__)
++    p.add_argument('--mode', choices=('PAPER', 'TESTNET_CERTIFICATION', 'TESTNET_PRACTICE'), default='PAPER')
++    p.add_argument('--output-directory', type=Path, required=True)
++    p.add_argument('--proposal-file', type=Path)
++    p.add_argument('--operator-approval-file', type=Path)
++    p.add_argument('--test-receipt', type=Path)
++    args = p.parse_args(argv)
++    require_paper_migration()
++    if args.mode == 'TESTNET_PRACTICE':
++        p.error('Separate autonomous practice authorization and certifications required; not implemented by this launcher')
++    if args.mode == 'PAPER':
++        if args.operator_approval_file: p.error('PAPER cannot consume order authorization')
++        result = read_only_preflight(args.output_directory)
++    else:
++        if not all((args.proposal_file, args.operator_approval_file, args.test_receipt)):
++            p.error('Exact proposal, operator approval and successful source-bound full regression required')
++        from exchange.certification_runtime import build_certification
++        runtime = None
++        args.output_directory.mkdir(parents=True, exist_ok=False)
++        try:
++            proposal = CertificationProposal(**json.loads(args.proposal_file.read_text()))
++            approval = CertificationApproval(**json.loads(args.operator_approval_file.read_text()))
++            runtime = build_certification(ROOT, proposal, approval,
++                state_directory=ROOT/'runtime/testnet/anchorium-bot-1', test_receipt=args.test_receipt)
++            result = runtime.run()
++        except Exception as exc:
++            result = dict(status='PREFLIGHT_BLOCKED', error=str(exc) if isinstance(exc, ExchangeError) else type(exc).__name__,
++                          realized_pnl_status='REALIZED_PNL_NOT_CERTIFIED', practice_ready=False, live_ready=False)
++        finally:
++            if runtime: runtime.close()
++        atomic_json(args.output_directory/'execution_report.json', result)
++    print(json.dumps(dict(status=result['status'], output_directory=str(args.output_directory.resolve()),
++                          exchange_order_authorization_supplied=bool(args.operator_approval_file))))
++    return 0 if result['status'] not in {'PREFLIGHT_BLOCKED', 'EMERGENCY_EXIT_REQUIRED'} else 1
++
++
++if __name__ == '__main__': raise SystemExit(main())

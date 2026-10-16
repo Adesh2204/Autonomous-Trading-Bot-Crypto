@@ -1,0 +1,296 @@
+{
+  "scope": "PAR_1X_CROSS_CONFIGURATION_ONLY",
+  "execution_mode": "PAPER",
+  "allow_live_orders": false,
+  "orders_submitted": 0,
+  "configuration_actions_submitted": 0,
+  "results": [],
+  "active_source_hash": "90ebdb94c333f18a6e75f937dd6f574a7e43d1ded4780b2b424fae21a79617fe",
+  "team_address": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+  "api_wallet_address": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+  "human_wallet_verified": true,
+  "safety_lock": {
+    "TRADING_VENUE": "HYPERLIQUID_TESTNET",
+    "EXECUTION_MODE": "PAPER",
+    "ALLOW_LIVE_ORDERS": false
+  },
+  "strategy_freeze": {
+    "baseline": "nse-working-baseline",
+    "file_count": 1,
+    "method_count": 8,
+    "parameter_count": 32,
+    "passed": true
+  },
+  "approval_reference": "Human reply to wallet identity check call_8vxKplKS9TzNbgFTbEfuoq2P on 2026-10-07: I have manually verified both wallet identities; latest user request authorizes all-ten par 1x CROSS only",
+  "account_check": {
+    "account_ready": true,
+    "account_mode": "unifiedAccount",
+    "collateral": "1000000.0",
+    "approval_expiry_ms": 1806859924898,
+    "clock": {
+      "state": "HEALTHY",
+      "reason": null,
+      "offset_ms": -588,
+      "last_reference_ms": 1791358068899,
+      "fresh_confirmations": 3
+    },
+    "rate_state": {
+      "state": "CAUTION",
+      "policy": {
+        "ip_weight_per_minute": 1200,
+        "ip_safety_reserve": 120,
+        "daily_actions": 50000,
+        "daily_safety_reserve": 500,
+        "account_action_reserve": 10,
+        "max_open_orders": 1000,
+        "max_ws_connections": 10,
+        "max_ws_subscriptions": 1000,
+        "max_ws_unique_users": 10,
+        "venue_ws_connections_per_minute": 30,
+        "max_ws_messages_per_minute": 2000,
+        "ws_reconnects_per_minute": 5,
+        "budget_max_age_ms": 60000,
+        "optional_poll_interval_ms": 5000,
+        "read_retry_attempts": 3,
+        "backoff_base_ms": 1000,
+        "backoff_max_ms": 30000,
+        "exhausted_safety_action_interval_ms": 10000,
+        "caution_fraction": 0.75,
+        "throttle_fraction": 0.9
+      },
+      "ip_weight": 953,
+      "account_requests_used": 3,
+      "account_requests_cap": 10000,
+      "remaining_budget": 9996,
+      "budget_observed_ms": 1791358070600,
+      "daily_actions": 1,
+      "daily_limit": 50000,
+      "entries_allowed": true,
+      "open_orders": 0,
+      "backoff_until_ms": 0,
+      "websocket": {
+        "connections": 0,
+        "subscriptions": 0,
+        "outgoing_messages": 0,
+        "heartbeats": 0,
+        "reconnects_last_minute": 0
+      }
+    },
+    "positions": 0,
+    "ordinary_orders": 0,
+    "frontend_orders": 0,
+    "reconciliation_scope": "CURRENT_FLAT_CONFIGURATION_SNAPSHOT_ONLY",
+    "actual_execution_certified": false
+  },
+  "plan": {
+    "network": "testnet",
+    "dex": "par",
+    "execution_mode": "PAPER",
+    "allow_live_orders": false,
+    "scope": "PAR_1X_CROSS_CONFIGURATION_ONLY",
+    "rows": [
+      {
+        "symbol": "par:BRENT",
+        "asset_id": 2670006,
+        "observed_leverage": {
+          "type": "cross",
+          "value": 20
+        },
+        "desired_leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "action": {
+          "type": "updateLeverage",
+          "asset": 2670006,
+          "isCross": true,
+          "leverage": 1
+        },
+        "change_required": true
+      },
+      {
+        "symbol": "par:BTC",
+        "asset_id": 2670000,
+        "observed_leverage": {
+          "type": "cross",
+          "value": 20
+        },
+        "desired_leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "action": {
+          "type": "updateLeverage",
+          "asset": 2670000,
+          "isCross": true,
+          "leverage": 1
+        },
+        "change_required": true
+      },
+      {
+        "symbol": "par:ETH",
+        "asset_id": 2670001,
+        "observed_leverage": {
+          "type": "cross",
+          "value": 20
+        },
+        "desired_leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "action": {
+          "type": "updateLeverage",
+          "asset": 2670001,
+          "isCross": true,
+          "leverage": 1
+        },
+        "change_required": true
+      },
+      {
+        "symbol": "par:EWJ",
+        "asset_id": 2670005,
+        "observed_leverage": {
+          "type": "cross",
+          "value": 20
+        },
+        "desired_leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "action": {
+          "type": "updateLeverage",
+          "asset": 2670005,
+          "isCross": true,
+          "leverage": 1
+        },
+        "change_required": true
+      },
+      {
+        "symbol": "par:EWY",
+        "asset_id": 2670004,
+        "observed_leverage": {
+          "type": "cross",
+          "value": 20
+        },
+        "desired_leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "action": {
+          "type": "updateLeverage",
+          "asset": 2670004,
+          "isCross": true,
+          "leverage": 1
+        },
+        "change_required": true
+      },
+      {
+        "symbol": "par:GOLD",
+        "asset_id": 2670007,
+        "observed_leverage": {
+          "type": "cross",
+          "value": 20
+        },
+        "desired_leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "action": {
+          "type": "updateLeverage",
+          "asset": 2670007,
+          "isCross": true,
+          "leverage": 1
+        },
+        "change_required": true
+      },
+      {
+        "symbol": "par:HYPE",
+        "asset_id": 2670002,
+        "observed_leverage": {
+          "type": "cross",
+          "value": 10
+        },
+        "desired_leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "action": {
+          "type": "updateLeverage",
+          "asset": 2670002,
+          "isCross": true,
+          "leverage": 1
+        },
+        "change_required": true
+      },
+      {
+        "symbol": "par:SP500",
+        "asset_id": 2670003,
+        "observed_leverage": {
+          "type": "cross",
+          "value": 20
+        },
+        "desired_leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "action": {
+          "type": "updateLeverage",
+          "asset": 2670003,
+          "isCross": true,
+          "leverage": 1
+        },
+        "change_required": true
+      },
+      {
+        "symbol": "par:USDEUR",
+        "asset_id": 2670008,
+        "observed_leverage": {
+          "type": "cross",
+          "value": 20
+        },
+        "desired_leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "action": {
+          "type": "updateLeverage",
+          "asset": 2670008,
+          "isCross": true,
+          "leverage": 1
+        },
+        "change_required": true
+      },
+      {
+        "symbol": "par:USDJPY",
+        "asset_id": 2670009,
+        "observed_leverage": {
+          "type": "cross",
+          "value": 20
+        },
+        "desired_leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "action": {
+          "type": "updateLeverage",
+          "asset": 2670009,
+          "isCross": true,
+          "leverage": 1
+        },
+        "change_required": true
+      }
+    ],
+    "actual_orders_permitted": false,
+    "exchange_actions_submitted": 0
+  },
+  "uncertain_action": {
+    "symbol": "par:BRENT",
+    "action_id": 1,
+    "transmission_attempted": false,
+    "blind_retry": false
+  },
+  "status": "FAILED",
+  "error": "ACCOUNT_CONFIGURATION_READINESS_REQUIRED",
+  "last_transmission_attempted": false,
+  "observed_at_utc": "2026-10-07T07:27:53.443705+00:00"
+}

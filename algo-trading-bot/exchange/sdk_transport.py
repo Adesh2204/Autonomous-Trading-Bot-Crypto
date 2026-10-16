@@ -46,8 +46,9 @@ def build_exchange(signer,client,nonce_manager,sink,*,offline=False):
             # and re-signed using the official testnet-domain signing function.
             sink.check(action)
             nonce=nonce_manager.next()
-            signature=sign_l1_action(self.wallet,action,None,nonce,None,False)
-            payload=dict(action=action,nonce=nonce,signature=signature,vaultAddress=None,expiresAfter=None)
+            expiry=getattr(sink,'action_expiry_ms',None)
+            signature=sign_l1_action(self.wallet,action,None,nonce,expiry,False)
+            payload=dict(action=action,nonce=nonce,signature=signature,vaultAddress=None,expiresAfter=expiry)
             return sink.transmit(payload)
 
         def post(self, path, payload=None):
@@ -130,7 +131,14 @@ class OfficialSDKTransport:
     def transmit(self, payload):
         self.check(payload['action'])
         # No SDK debug logger and no automatic HTTP retries or redirects.
-        response=self._sdk.session.post(TESTNET_API_URL+'/exchange',json=payload,timeout=10,allow_redirects=False)
+        record=getattr(self,'record_transport_boundary',None)
+        if record:record('HTTP_POST_STARTED',payload)
+        try:
+            response=self._sdk.session.post(TESTNET_API_URL+'/exchange',json=payload,timeout=10,allow_redirects=False)
+        except Exception as exc:
+            if record:record('HTTP_POST_UNCERTAIN',payload,error_type=type(exc).__name__)
+            raise
+        if record:record('HTTP_POST_RESPONSE',payload,status_code=response.status_code)
         if response.status_code!=200:
             error=ExchangeError('EXCHANGE_HTTP_RESPONSE_UNCERTAIN')
             error.status_code=response.status_code

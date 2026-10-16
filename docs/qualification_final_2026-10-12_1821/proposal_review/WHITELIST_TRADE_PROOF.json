@@ -1,0 +1,83 @@
+{
+  "report_type": "WHITELIST_TRADE_PROOF",
+  "status": "NO_ACTUAL_PRACTICE_FILL_VERIFIED",
+  "registered_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+  "approved_api_wallet": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+  "network": "testnet",
+  "dex": "par",
+  "market": "par:BTC",
+  "exchange_order_id": null,
+  "fill_ids": [],
+  "executed_notional": null,
+  "timestamps_ms": [],
+  "fill_verified": false,
+  "final_flat_verified": false,
+  "preflight_flat_observed": true,
+  "account_reconciliation": {
+    "ready": true,
+    "reasons": [],
+    "accounting": {
+      "source": "EXCHANGE_REPORTED_ACCOUNT_OBSERVER",
+      "exchange_orders_submitted": 0,
+      "entries_paused": false,
+      "reasons": [],
+      "positions": [],
+      "open_orders": [],
+      "fills": [],
+      "funding_events": [],
+      "reported_account_equity": {
+        "reported_account_value": "1000000.0",
+        "collateral_balance": "1000000.0",
+        "margin_used": "0",
+        "withdrawable": null,
+        "valuation_source": "spotClearinghouseState.USDPR.total"
+      },
+      "accounting_window_ms": [
+        0,
+        1791829287083
+      ],
+      "latest_query_window_ms": [
+        0,
+        1791829287083
+      ],
+      "realized": {
+        "gross_closed_pnl": "0",
+        "actual_fill_fees": "0",
+        "actual_funding_cashflow": "0",
+        "net_after_fees_and_funding": "0",
+        "scope": "ONLY_OBSERVED_ACCOUNT_EVENTS; excludes deposits/transfers and unknown historical events"
+      },
+      "corrections": [
+        {
+          "kind": "EXCHANGE_TRUTH_ADOPTED",
+          "timestamp_ms": 1791829222203,
+          "differences": {},
+          "new_fill_count": 0,
+          "reasons": [],
+          "exchange_ts": null,
+          "received_ts": "2026-10-12T18:20:22.203+00:00",
+          "processed_ts": "2026-10-12T18:20:22.203+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        },
+        {
+          "kind": "EXCHANGE_TRUTH_ADOPTED",
+          "timestamp_ms": 1791829288612,
+          "differences": {},
+          "new_fill_count": 0,
+          "reasons": [],
+          "exchange_ts": null,
+          "received_ts": "2026-10-12T18:21:28.612+00:00",
+          "processed_ts": "2026-10-12T18:21:28.612+00:00",
+          "timestamp_source": "LOCAL_PROCESS",
+          "exchange_to_receive_ms": null,
+          "receive_to_process_ms": 0,
+          "clock_skew_detected": false
+        }
+      ]
+    }
+  },
+  "organizer_whitelisting_confirmed": false
+}

@@ -1,0 +1,53 @@
+{
+  "status": "AWAITING_EXACT_BOUNDED_APPROVAL",
+  "summary": {
+    "proposal_id": "4e705570d6fc52d3b161cac40c5d99b7ab4bada1580b77b0de535e3a4e80b6ff",
+    "price_mode": "BOUNDED_FRESH_IOC_V2",
+    "quantity": "0.0002",
+    "max_buy_price": "83664",
+    "quantity_ceiling": "0.0002",
+    "notional_ceiling": "16.7328",
+    "indicative_fresh_limit": "83581",
+    "exit_floor": "82246",
+    "reviewed_exit": "83328",
+    "fee_rate": "0.00090",
+    "round_trip_fee_bound": "0.029863800",
+    "conditional_floor_loss": "0.313463800",
+    "spread_bps": "0.4790648653827728274408354891",
+    "team": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+    "api": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+    "entry_deadline": "2026-10-14T11:50:02.817000+05:30",
+    "approval_expiry": "2026-10-14T11:51:32.817000+05:30",
+    "entry_seconds_left": 136.334,
+    "required_acknowledgments": [
+      "manually_verified_wallets",
+      "sole_signer_host_confirmed",
+      "maximum_one_entry",
+      "unverified_stop_risk_accepted",
+      "l2_and_50bps_qualification_policy_accepted",
+      "possible_manual_residual_recovery_accepted",
+      "maximum_1000_is_not_loss_guarantee_accepted",
+      "one_cancel_two_exits_and_lifetime_accepted",
+      "bounded_price_authorization_accepted"
+    ]
+  },
+  "risks": [
+    "Public depth can disappear; IOC may fill zero or partly. GTC may never fill.",
+    "Small protective stops remain UNVERIFIED. All exposure will be unprotected.",
+    "Historical exact one-lot BTC closes do not guarantee future acceptance or liquidity.",
+    "Cancellation, exits or reads can fail. Manual recovery may be needed; funding/fees and cross margin prevent a guaranteed total loss cap.",
+    "30-second GTC/ALO lifetime is a local monitoring/cancel deadline, not exchange-side auto expiry.",
+    "A programmatic practice fill is evidence only; organizer whitelist acceptance remains unconfirmed."
+  ],
+  "recovery_steps": [
+    "STOP new entries. Preserve journal, original cloid/oid, consumed attempt and source/approval files.",
+    "Query original orderStatus by cloid, team userFillsByTime, frontendOpenOrders and clearinghouseState with dex=par.",
+    "UNKNOWN is not flat. Reconcile actual fills, original unfilled order and signed-management uncertainty without resubmission.",
+    "An original resting remainder must be canceled and cancellation/terminal state confirmed before a full-position exit.",
+    "Within current exact approval: SELL reduce-only IOC for actual reconciled quantity, at fresh bid less 20 bps, never below the approved floor; at most two exits.",
+    "If halted, expired, disconnected, outside price bounds or cancellation/exits uncertain: no further writes. Obtain separate exact recovery approval or manually inspect the team account.",
+    "Claim flat only after authoritative zero par positions, zero open orders and ready durable account reconciliation."
+  ],
+  "signatures": 0,
+  "exchange_submissions": 0
+}

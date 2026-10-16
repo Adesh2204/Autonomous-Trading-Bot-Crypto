@@ -1,0 +1,12 @@
+--- before/algo-trading-bot/exchange/execution_journal.py
++++ algo-trading-bot/exchange/execution_journal.py
+@@ -35,7 +35,8 @@
+                      'seed_phrase', 'signer', 'authorization', 'secret'}
+         public_hash_fields={'metadata_hash','expected_metadata_hash','working_source_hash',
+                             'configuration_hash','strategy_source_hash','event_hash',
+-                            'scanner_policy_hash','risk_policy_hash','reliability_policy_hash'}
++                            'scanner_policy_hash','risk_policy_hash','reliability_policy_hash',
++                            'source_hash','action_hash','resolution_hash','request_hash','original_source_hash'}
+         return {k: v if k in public_hash_fields and isinstance(v,str) and re.fullmatch(r'(0x)?[0-9a-fA-F]{64}',v)
+                 else safe_data(v) for k, v in value.items() if k.lower() not in forbidden}
+     if isinstance(value, (list, tuple)):

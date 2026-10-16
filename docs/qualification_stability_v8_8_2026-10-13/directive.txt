@@ -1,0 +1,260 @@
+# TEAM ANCHORIUM — V8.8 CRITICAL QUALIFICATION STABILITY & EXECUTION READINESS
+
+## MISSION
+
+Resolve the actual remaining defects preventing Team Anchorium from preparing and executing one legitimate Hyperliquid TESTNET `par` practice qualification trade before October 16, 2026.
+
+**This is an implementation task, not another read-only audit.**
+
+Inspect the existing repository, reproduce confirmed bugs, implement targeted fixes, run regression tests, and produce an operator-ready qualification workflow.
+
+Do not promise a fill when current exchange liquidity is insufficient. Do not sign or submit orders without exact human authorization.
+
+## EXISTING BASELINE — MUST PRESERVE
+
+- V8.7: 1,760 regression tests passed
+- Dynamic valid-lot order sizing
+- Clock-readiness recovery
+- Account reconciliation
+- Rate-budget tracking across journal reopening
+- Exact reduce-only closing safeguards
+- Duplicate-order prevention
+- One-entry experimental qualification workflow
+- Frozen `signal_brain.py`
+- Existing 10%-of-best-book liquidity checks
+- Ordinary $10 minimum opening notional
+- 25 USDPR maximum experimental opening notional
+- 1x CROSS
+- PAPER / false production defaults
+- Isolated exact-proposal human authorization
+
+Do not modify production strategy thresholds, exchange identity, wallets, signer mapping or existing safety locks.
+
+## P0 — FIX THE NEW HTTP RESPONSE HANG
+
+The Terminal traceback shows an interrupted read-only Hyperliquid TESTNET POST `/info` request.
+
+Execution path:
+
+`run_testnet_qualification.py`
+
+→ `CertificationRecovery.recover()`
+
+→ `hyperliquid_reconciliation.py`
+
+→ `hyperliquid_account.get_equity()`
+
+→ `userAbstraction`
+
+→ `hyperliquid_client.py`
+
+→ `requests.Session.post()`
+
+→ SSL socket response wait
+
+→ user-triggered `KeyboardInterrupt`
+
+### Mandatory engineering work
+
+1. Inspect the actual HTTP transport and its existing timeout configuration.
+2. Determine whether connection and read timeouts are missing, ineffective or simply too long.
+3. Implement appropriately bounded, independently configurable connection and response-read timeouts where needed.
+4. Ensure read-only requests cannot wait indefinitely.
+5. Handle timeout, connection failure, DNS failure, 429 throttling and 5xx responses distinctly.
+6. Use bounded exponential backoff with jitter only where safe and consistent with the request budget.
+7. Honor server retry guidance where available.
+8. Never retry an unknown signed exchange action blindly.
+9. Preserve cancellation responsiveness, including Ctrl+C.
+10. Ensure interrupted preparation closes SQLite cleanly and retains valid diagnostic evidence.
+11. Never infer a flat account from a timed-out reconciliation request.
+12. Do not alter the SDK signer or production trading permissions.
+
+Provide deterministic offline tests simulating hung responses, read timeouts, 429s, connection resets and interrupted preparation.
+
+## P1 — IMPROVE RATE-LIMIT MANAGEMENT
+
+The previous public-read report showed 1,032/1,200 weighted units, a CAUTION state.
+
+Hyperliquid documents a weighted REST limit of 1,200 units per minute.
+
+### Required fixes
+
+- Inspect the actual rate-window accounting.
+- Verify correct weights for each `/info` request.
+- Preserve observed budget usage across internal journal reopening.
+- Avoid repeating expensive account-history queries unnecessarily.
+- Reuse valid read-only snapshots only within their existing freshness windows.
+- Coalesce identical simultaneous reads where safe.
+- Keep the existing safety reserve.
+- When throttled, wait in a bounded and cancellable way.
+- Print `WAITING_FOR_RATE_BUDGET` with the cause and a grounded next-retry estimate when available.
+- Never fake API responses or mark a stale quote as current.
+- Do not consume signing authorization while waiting indefinitely for public data.
+
+If the budget cannot safely support preparation, terminate cleanly with an actionable reason.
+
+## P2 — VALIDATE V8.7 DYNAMIC SIZING END TO END
+
+BTC, ETH and HYPE have previously failed genuine liquidity checks.
+
+V8.7 now calculates the largest whole-lot quantity satisfying all existing limits.
+
+Verify that implementation using actual saved observations and fresh read-only data.
+
+For each market, report:
+
+- Best bid and best ask
+- Bid-side and ask-side available quantities
+- Existing 10% depth caps
+- Runtime lot precision
+- Largest valid opening quantity
+- Ordinary $10 minimum-notional check
+- Spread and fees
+- Whether all possible residuals have a supported closing path
+- Exact reason for rejection
+
+Preserve the 10% BBO limit unless a distinct, explicitly human-approved qualification-only alternative risk policy is proposed. Do not silently weaken it.
+
+If current liquidity cannot support a $10 opening order, state `INSUFFICIENT_REAL_LIQUIDITY`.
+
+Do not relabel genuine liquidity failures as software defects.
+
+Do not expand to unverified ETH/HYPE subminimum closing combinations merely to increase eligibility.
+
+## P3 — MAKE TERMINAL OPERATIONS RELIABLE
+
+Improve the current launcher:
+
+`scripts/run_testnet_qualification.py`
+
+During preparation, show concise progress such as:
+
+- CHECKING_NETWORK
+- CHECKING_ACCOUNT
+- RECONCILING_ACCOUNT
+- CHECKING_RATE_BUDGET
+- CHECKING_BTC_BOOK
+- CHECKING_ETH_BOOK
+- CHECKING_HYPE_BOOK
+- VERIFYING_RESIDUAL_EXITS
+- QUALIFICATION_PROPOSAL_READY
+- QUALIFICATION_LOCKED
+
+Include the actual stage, elapsed time and reason when a wait occurs.
+
+Avoid long silent Terminal sessions.
+
+Produce clean diagnostic JSON when preparation fails.
+
+Use existing output-directory and test-receipt arguments. Do not invent CLI flags.
+
+## P4 — PRESERVE THE ONE-OFF EXECUTION PATH
+
+When a valid market is available:
+
+1. Generate a fresh proposal with exact identity, quantity, prices and limits.
+2. Print the current approval deadline.
+3. Identify the actual proposal, approval-template and test-receipt paths.
+4. Stop for explicit human review.
+5. Preserve the existing exact-proposal approval and risk acknowledgments.
+6. Upon independently verified, valid authorization, execute at most one bounded entry.
+7. Confirm entry fills under the registered team wallet, not merely the API signer.
+8. Reconcile actual exposure and follow the existing permitted reduce-only exit logic.
+9. Preserve unknown or residual exposure for supervised recovery.
+10. Generate truthful whitelist-trade evidence only from actual exchange records.
+
+Do not automatically fill an approval template.
+
+Do not bypass production PAPER/false locks.
+
+Do not automatically activate recurring orders.
+
+## P5 — HANDLE THE REMAINING PROTECTION RISK HONESTLY
+
+The qualification workflow still lacks independently verified sub-$10 protective-stop acceptance.
+
+Do not mark `ACTUAL_PROTECTION_READY` true without exchange evidence.
+
+An immediate reduce-only IOC exit is not guaranteed protection.
+
+If an approved experimental trade cannot close within its limits, halt new entries, preserve the journal, and report `EMERGENCY_EXIT_REQUIRED`.
+
+Keep the operator's emergency-recovery obligations explicit.
+
+## P6 — TEST EVERYTHING IN ONE COORDINATED PASS
+
+Begin with the existing 1,760-test V8.7 baseline.
+
+Add tests for:
+
+- Slow or hung `/info` response
+- HTTP connection timeout
+- HTTP read timeout
+- Connection reset
+- HTTP 429 / rate-budget exhaustion
+- Server-side failure
+- Cancellable backoff
+- Interrupted preparation
+- SQLite recovery after interruption
+- No false flat-account claim
+- No duplicated entry
+- No blind retries of signed orders
+- Budget accounting across journal reopening
+- Thin BTC bid and ask books
+- Two-lot BTC valid sizing
+- No whole-lot quantity satisfying the minimum
+- Expired quote/account evidence
+- Genuine clock recovery
+- Approval expiry
+- Unverified protection
+- Partial fills and residual closes
+- Honest fill-proof generation
+
+Run focused tests, complete regression tests, Phase-0 checks and strategy-freeze checks.
+
+Correct genuine failures before producing the final report.
+
+## P7 — RUN ONE FINAL READ-ONLY PREFLIGHT
+
+After fixes and regression success, run the existing preparation workflow once using a new timestamped evidence directory.
+
+Verify:
+
+- Correct Hyperliquid TESTNET API
+- Registered team account
+- Approved API signer
+- Valid account mode and 1x leverage
+- Flat actual account
+- Fresh server clock
+- Available read budget
+- Fresh order books
+- Valid minimum opening size
+- Verified residual-close scope
+- Unchanged source/test receipt
+
+If a market qualifies, generate an exact current proposal.
+
+If no market qualifies, report the actual external blocker rather than proposing another broad engineering upgrade.
+
+## REQUIRED FINAL RESPONSE
+
+Provide:
+
+1. Exact cause of the HTTP delay or the remaining uncertainty.
+2. Files and functions modified.
+3. How request timeouts and retries now behave.
+4. Updated rate-budget handling.
+5. Latest BTC/ETH/HYPE liquidity results.
+6. Final passing test count.
+7. Whether `QUALIFICATION_PROPOSAL_READY` was achieved.
+8. The exact next Terminal preparation command.
+9. The existing exact-proposal approval procedure, if applicable.
+10. Any unresolved exchange-liquidity or protective-stop limitations.
+
+**MISSION COMPLETION STANDARD**
+
+The bot must no longer silently wait indefinitely on ordinary REST reads, must correctly recognize valid market opportunities, and must preserve a fully tested, human-authorized route to one legitimate practice fill.
+
+Do not claim that software can guarantee liquidity, execution, position closure or positive P&L.
+
+Do not place a trade during this implementation task. The trade decision belongs to the human operator reviewing an exact fresh proposal.

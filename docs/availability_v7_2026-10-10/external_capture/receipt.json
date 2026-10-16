@@ -1,0 +1,158 @@
+{
+  "started_ms": 1791655896903,
+  "source_hash_before": "36324cd3891eb931801ddc2ac9d47cf1e9c47cfbbd6a5a6f9aaddbc410a52685",
+  "execution_mode": "PAPER",
+  "allow_live_orders": false,
+  "protection_enabled": false,
+  "exchange_orders_submitted": 0,
+  "purpose": "EXTERNAL_RESEARCH_ONLY_NO_SIGNAL_ACTIVATION",
+  "finished_ms": 1791655910807,
+  "source_hash_after": "36324cd3891eb931801ddc2ac9d47cf1e9c47cfbbd6a5a6f9aaddbc410a52685",
+  "public_budget": {
+    "state": "UNKNOWN",
+    "policy": {
+      "ip_weight_per_minute": 1200,
+      "ip_safety_reserve": 120,
+      "daily_actions": 50000,
+      "daily_safety_reserve": 500,
+      "account_action_reserve": 10,
+      "max_open_orders": 1000,
+      "max_ws_connections": 10,
+      "max_ws_subscriptions": 1000,
+      "max_ws_unique_users": 10,
+      "venue_ws_connections_per_minute": 30,
+      "max_ws_messages_per_minute": 2000,
+      "ws_reconnects_per_minute": 5,
+      "budget_max_age_ms": 60000,
+      "optional_poll_interval_ms": 5000,
+      "read_retry_attempts": 3,
+      "backoff_base_ms": 1000,
+      "backoff_max_ms": 30000,
+      "exhausted_safety_action_interval_ms": 10000,
+      "caution_fraction": 0.75,
+      "throttle_fraction": 0.9
+    },
+    "ip_weight": 880,
+    "public_read_blocked": false,
+    "account_requests_used": null,
+    "account_requests_cap": null,
+    "remaining_budget": null,
+    "budget_observed_ms": null,
+    "daily_actions": 0,
+    "daily_limit": 50000,
+    "entries_allowed": false,
+    "open_orders": null,
+    "backoff_until_ms": 0,
+    "websocket": {
+      "connections": 0,
+      "subscriptions": 0,
+      "outgoing_messages": 0,
+      "heartbeats": 0,
+      "reconnects_last_minute": 0
+    },
+    "public_reads": {
+      "upstream_by_operation": {
+        "perpDexs": 1,
+        "meta": 3,
+        "metaAndAssetCtxs": 1,
+        "candleSnapshot": 20,
+        "l2Book": 10
+      },
+      "failures": {},
+      "pending": 0,
+      "coalesced": 0,
+      "max_seconds": 0.7004348342306912
+    }
+  },
+  "native_metadata": {
+    "universe": [
+      {
+        "szDecimals": 4,
+        "name": "par:BTC",
+        "maxLeverage": 40,
+        "marginTableId": 40,
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 4,
+        "name": "par:ETH",
+        "maxLeverage": 25,
+        "marginTableId": 25,
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 2,
+        "name": "par:HYPE",
+        "maxLeverage": 10,
+        "marginTableId": 10,
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 3,
+        "name": "par:SP500",
+        "maxLeverage": 50,
+        "marginTableId": 50,
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 3,
+        "name": "par:EWY",
+        "maxLeverage": 20,
+        "marginTableId": 20,
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 3,
+        "name": "par:EWJ",
+        "maxLeverage": 20,
+        "marginTableId": 20,
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 2,
+        "name": "par:BRENT",
+        "maxLeverage": 20,
+        "marginTableId": 20,
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 4,
+        "name": "par:GOLD",
+        "maxLeverage": 25,
+        "marginTableId": 25,
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 1,
+        "name": "par:USDEUR",
+        "maxLeverage": 50,
+        "marginTableId": 50,
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 2,
+        "name": "par:USDJPY",
+        "maxLeverage": 50,
+        "marginTableId": 50,
+        "deployerFeeScale": "1.0"
+      }
+    ],
+    "marginTables": [
+      [
+        50,
+        {
+          "description": "",
+          "marginTiers": [
+            {
+              "lowerBound": "0.0",
+              "maxLeverage": 50
+            }
+          ]
+        }
+      ]
+    ],
+    "collateralToken": 3032
+  },
+  "source_unchanged": true,
+  "completed": true
+}

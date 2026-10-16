@@ -1,0 +1,62 @@
+{
+  "observed_ms": 1791955218921,
+  "integrity": "ok",
+  "counts": {
+    "intents": 0,
+    "api_actions": 0,
+    "signed_management": 0
+  },
+  "recovery_snapshots": [
+    {
+      "seq": 1,
+      "checksum_verified": true,
+      "data": {
+        "account": {
+          "fills": [],
+          "funding": [],
+          "initial_start_ms": 0,
+          "last_window": [
+            0,
+            1791955070871
+          ],
+          "quantities": {},
+          "quantity_evidence": {}
+        },
+        "checkpoint_error": null,
+        "execution_mode": "READ_ONLY_ACCOUNT_RECOVERY",
+        "fill_identities": [],
+        "funding_identities": [],
+        "last_checkpoint_ts": 1791955072895,
+        "last_clean_shutdown": false,
+        "lifecycle": null,
+        "management": {},
+        "metadata_hash": "b5cbc22f98b81a74bc21eb0f60afe4b74a28fc7185ae054fd69d0230ed30f114",
+        "orders": [],
+        "risk_state": null,
+        "schema_version": 1,
+        "session_id": "anchorium-one-qualification-v1",
+        "signed_management": [],
+        "source_identity": {
+          "git_commit": "33c7cfe9ec241ccc0241144a8dccfd9a06df553a",
+          "strategy_source_hash": "bff940ac5ed35f71ed3dfb537ba15d20dcec35a4e62a938d2f0619c6e9309d83",
+          "working_source_hash": "27623fd46e7bf36faa5389fc49430eb68bde310ce601fa71cae4a7634c7c8f8d"
+        },
+        "team_address": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "venue": "testnet:par"
+      }
+    }
+  ],
+  "source_hash": "90c913950d7c7f23bfa176612356e0995d9fef5976be54fc449695b8cc1bf882",
+  "freeze": {
+    "baseline": "nse-working-baseline",
+    "file_count": 1,
+    "method_count": 8,
+    "parameter_count": 32,
+    "passed": true
+  },
+  "blocker": "P0_CURRENT_PRICE_OR_CAP_REQUIRED",
+  "actual_sdk_not_constructed": true,
+  "actual_wallet_signatures": 0,
+  "exchange_submissions": 0,
+  "scope": "build_runtime check_entry raised before read_api_key, NonceManager or EmergencySDKTransport construction; no retry"
+}

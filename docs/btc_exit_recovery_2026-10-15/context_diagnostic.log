@@ -1,0 +1,19 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+___________ test_recovery_context_is_fresh_and_reports_existing_long ___________
+algo-trading-bot/test_exit_recovery.py:59: in test_recovery_context_is_fresh_and_reports_existing_long
+    c=recovered;r,_=draft(c);ctx=c.live.provider.load(r,critical=True)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/emergency_qualification.py:252: in load
+    context=super().load(request,critical=critical)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/testnet_qualification.py:69: in load
+    report = self.reconcile_before_load()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/exit_recovery.py:115: in recover
+    rates.wait_for_read_budget(500,priority=RequestPriority.SAFETY,max_wait_seconds=65,
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'NoneType' object has no attribute 'wait_for_read_budget'
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_exit_recovery.py::test_recovery_context_is_fresh_and_reports_existing_long
+1 failed in 1.21s

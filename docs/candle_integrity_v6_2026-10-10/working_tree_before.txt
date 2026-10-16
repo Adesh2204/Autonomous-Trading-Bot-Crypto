@@ -1,0 +1,204 @@
+ M algo-trading-bot/exchange/base_exchange.py
+ M algo-trading-bot/exchange/hyperliquid_account.py
+ M algo-trading-bot/exchange/hyperliquid_client.py
+ M algo-trading-bot/exchange/hyperliquid_market_data.py
+ M algo-trading-bot/exchange/paper_operations.py
+ M algo-trading-bot/exchange/rate_limits.py
+ M algo-trading-bot/market_regime_scanner.py
+ M algo-trading-bot/market_stream.py
+ M algo-trading-bot/opportunity_funnel.py
+ M algo-trading-bot/test_crypto_paper_infrastructure.py
+ M algo-trading-bot/test_crypto_recovery_safety.py
+ M algo-trading-bot/test_exchange_migration.py
+ M algo-trading-bot/test_phase0_order_lock.py
+ M algo-trading-bot/test_production_reliability.py
+ M configs/reliability_policy.json
+ M docs/legacy_dependency_inventory.csv
+ M docs/legacy_dependency_inventory.json
+ M scripts/check_practice_health.py
+ M scripts/run_crypto_paper.py
+?? algo-trading-bot/data/cache/history/00155cb57540dc58097a0aa2e5f1c16d7a0057bd90c1a8262f63062e8067cf6f.json
+?? algo-trading-bot/data/cache/history/00155cb57540dc58097a0aa2e5f1c16d7a0057bd90c1a8262f63062e8067cf6f.lock
+?? algo-trading-bot/data/cache/history/024a2c981ebd9b2584e370952b5331c7eb677c22b27f6b5d4c71e2b0e1f4108a.json
+?? algo-trading-bot/data/cache/history/024a2c981ebd9b2584e370952b5331c7eb677c22b27f6b5d4c71e2b0e1f4108a.lock
+?? algo-trading-bot/data/cache/history/04ef831dc061f23895443a28077ac9c9aa729f62192286205a74453573859b88.lock
+?? algo-trading-bot/data/cache/history/059cb3b2b60bff31077aafb2e209260bea88e26880dc23bf9d416b2ec4303899.json
+?? algo-trading-bot/data/cache/history/059cb3b2b60bff31077aafb2e209260bea88e26880dc23bf9d416b2ec4303899.lock
+?? algo-trading-bot/data/cache/history/08b210c020b5e056b1465a791cd012ab2116d29e7397eca816cafed2d089e312.json
+?? algo-trading-bot/data/cache/history/08b210c020b5e056b1465a791cd012ab2116d29e7397eca816cafed2d089e312.lock
+?? algo-trading-bot/data/cache/history/08eef7cc48b186b7f65bc8891d1cf8090429508b02ca05c0d3e3ee78ac773eae.json
+?? algo-trading-bot/data/cache/history/08eef7cc48b186b7f65bc8891d1cf8090429508b02ca05c0d3e3ee78ac773eae.lock
+?? algo-trading-bot/data/cache/history/0e1a8720a6066cfcf58c7ac8aab1486631ec7d227c7b735bef722d308df1a059.lock
+?? algo-trading-bot/data/cache/history/0e58b385519a87e62b06ed005f6eaf7829002e4cc48dfd4d2157d9cf900edeee.json
+?? algo-trading-bot/data/cache/history/0e58b385519a87e62b06ed005f6eaf7829002e4cc48dfd4d2157d9cf900edeee.lock
+?? algo-trading-bot/data/cache/history/0f5fadf33483f02102b1996d35c33abd15fba4aa0e7148814cad56d169029926.json
+?? algo-trading-bot/data/cache/history/0f5fadf33483f02102b1996d35c33abd15fba4aa0e7148814cad56d169029926.lock
+?? algo-trading-bot/data/cache/history/10748f8c7170471f50337713817635e720f2fe00d3f1c76192b0367907d0ec93.lock
+?? algo-trading-bot/data/cache/history/14504fae1f0befae8a8a01233b4ba974c4485952819c6a7b43eb8794a0768d65.lock
+?? algo-trading-bot/data/cache/history/14b83bf2f862c2dca9378118b078c4365d417c03c70e6decd5ba8022d194c939.json
+?? algo-trading-bot/data/cache/history/14b83bf2f862c2dca9378118b078c4365d417c03c70e6decd5ba8022d194c939.lock
+?? algo-trading-bot/data/cache/history/15006c7f01adac12e40304d31ad70e5847413a4bccc621a8e08f8d95f0982326.json
+?? algo-trading-bot/data/cache/history/15006c7f01adac12e40304d31ad70e5847413a4bccc621a8e08f8d95f0982326.lock
+?? algo-trading-bot/data/cache/history/160eac62b5266b5f5cccd0ed8503a2de19636c7a879ec42555621ae1d5bcb7d3.json
+?? algo-trading-bot/data/cache/history/160eac62b5266b5f5cccd0ed8503a2de19636c7a879ec42555621ae1d5bcb7d3.lock
+?? algo-trading-bot/data/cache/history/1bd972d21b28585faa96e1541a358a3141a7d758da65d7ae337cdb074444c5b0.lock
+?? algo-trading-bot/data/cache/history/1bf62646f4c2c3b41e370b5776ed1123088e4a52f37b127379997ff0bd34b94b.json
+?? algo-trading-bot/data/cache/history/1bf62646f4c2c3b41e370b5776ed1123088e4a52f37b127379997ff0bd34b94b.lock
+?? algo-trading-bot/data/cache/history/1e4750d97a767b304895150d7367e53951731a0deb9dc34e1a9042e7cc2e136a.json
+?? algo-trading-bot/data/cache/history/1e4750d97a767b304895150d7367e53951731a0deb9dc34e1a9042e7cc2e136a.lock
+?? algo-trading-bot/data/cache/history/1efd866037653b22d26b135d5f639441938da1e95fcd02bcc85ae9d0c28a523c.json
+?? algo-trading-bot/data/cache/history/1efd866037653b22d26b135d5f639441938da1e95fcd02bcc85ae9d0c28a523c.lock
+?? algo-trading-bot/data/cache/history/201257045d41e5090f33247df2335617d5db7b0cf2b99626c7bbbe8aae5fbe5e.lock
+?? algo-trading-bot/data/cache/history/248262d995e229beaf2b967bbafe4cf8956ecada669f5b5d9d4f6f7d9786fbe1.json
+?? algo-trading-bot/data/cache/history/248262d995e229beaf2b967bbafe4cf8956ecada669f5b5d9d4f6f7d9786fbe1.lock
+?? algo-trading-bot/data/cache/history/28432bc8dac136500edd2f7a07dfd08156bae7aa804b8c70dec2def8bc4b49ab.json
+?? algo-trading-bot/data/cache/history/28432bc8dac136500edd2f7a07dfd08156bae7aa804b8c70dec2def8bc4b49ab.lock
+?? algo-trading-bot/data/cache/history/28c99d81084001ff76c6f5198981c35178d73a1a97a9075a3b6cfc4c560f606c.json
+?? algo-trading-bot/data/cache/history/28c99d81084001ff76c6f5198981c35178d73a1a97a9075a3b6cfc4c560f606c.lock
+?? algo-trading-bot/data/cache/history/2d1b430045c1134363ed816d9e85b9537e27e4d6c8ca5ed1251f96a9102b28ca.json
+?? algo-trading-bot/data/cache/history/2d1b430045c1134363ed816d9e85b9537e27e4d6c8ca5ed1251f96a9102b28ca.lock
+?? algo-trading-bot/data/cache/history/2ee8c6876c77e6b6e6e155ec30cc5261704ae5929239397c409314154a4a9090.lock
+?? algo-trading-bot/data/cache/history/2ef26056a973650e55a840308d798b6851b7df05ff722186ea19e6d528c2436d.json
+?? algo-trading-bot/data/cache/history/2ef26056a973650e55a840308d798b6851b7df05ff722186ea19e6d528c2436d.lock
+?? algo-trading-bot/data/cache/history/2f6b18afa94a5f4f809afaba64f800d76004a9ff3e0cc33d3439bf534476ec74.json
+?? algo-trading-bot/data/cache/history/2f6b18afa94a5f4f809afaba64f800d76004a9ff3e0cc33d3439bf534476ec74.lock
+?? algo-trading-bot/data/cache/history/3293d433af19a14e5b4cc20191fa1f23ab843c2152364f2244d9a363d6544a19.json
+?? algo-trading-bot/data/cache/history/3293d433af19a14e5b4cc20191fa1f23ab843c2152364f2244d9a363d6544a19.lock
+?? algo-trading-bot/data/cache/history/346f937a6bbc7c8700b7e18bd75fbf475e36dfc8272f8b1fc24fc109c1724061.lock
+?? algo-trading-bot/data/cache/history/37971925ff1fd7143a512e5260a8e9442a0734dbee8d1a21fccd51dd6d448d9f.json
+?? algo-trading-bot/data/cache/history/37971925ff1fd7143a512e5260a8e9442a0734dbee8d1a21fccd51dd6d448d9f.lock
+?? algo-trading-bot/data/cache/history/3a5c9689bbbd774ba01529658d2008676a227e108da5377a2638ee9bb4baadb6.json
+?? algo-trading-bot/data/cache/history/3a5c9689bbbd774ba01529658d2008676a227e108da5377a2638ee9bb4baadb6.lock
+?? algo-trading-bot/data/cache/history/3d34369ea5d37715e0dcc51db0e960b46593e996bf04e4fa9fea8bf8b6b9fbea.json
+?? algo-trading-bot/data/cache/history/3d34369ea5d37715e0dcc51db0e960b46593e996bf04e4fa9fea8bf8b6b9fbea.lock
+?? algo-trading-bot/data/cache/history/3d9fc020266f430bebe38ca798de983ec3feb106b45ebe0bc91f6e87b1fb5402.json
+?? algo-trading-bot/data/cache/history/3d9fc020266f430bebe38ca798de983ec3feb106b45ebe0bc91f6e87b1fb5402.lock
+?? algo-trading-bot/data/cache/history/3e038c4b983a402a52ca1de3d39b20446ea68a785cd74fa947c78e651b66cc79.json
+?? algo-trading-bot/data/cache/history/3e038c4b983a402a52ca1de3d39b20446ea68a785cd74fa947c78e651b66cc79.lock
+?? algo-trading-bot/data/cache/history/421f65867af8a0758bb6fe185bd204129ac01202de3b0eaa4ce78ecc7f95cd41.json
+?? algo-trading-bot/data/cache/history/421f65867af8a0758bb6fe185bd204129ac01202de3b0eaa4ce78ecc7f95cd41.lock
+?? algo-trading-bot/data/cache/history/432ddb39d658a549a628e414d6676078db2ef15634cc2554d83f5fddafbb15b7.json
+?? algo-trading-bot/data/cache/history/432ddb39d658a549a628e414d6676078db2ef15634cc2554d83f5fddafbb15b7.lock
+?? algo-trading-bot/data/cache/history/4541ebf81fa37a67660e3e9920be23e798f4ec70429f3685bb62ee2310527f88.json
+?? algo-trading-bot/data/cache/history/4541ebf81fa37a67660e3e9920be23e798f4ec70429f3685bb62ee2310527f88.lock
+?? algo-trading-bot/data/cache/history/47ceeef2c93ef3a71273a815f491f489b0ca10301d49bfcbba9290cf1cd4ea48.json
+?? algo-trading-bot/data/cache/history/47ceeef2c93ef3a71273a815f491f489b0ca10301d49bfcbba9290cf1cd4ea48.lock
+?? algo-trading-bot/data/cache/history/4985e6d48463e187f2c56d61801636ccf10af7e171349ebd2885e9f3d28dc416.json
+?? algo-trading-bot/data/cache/history/4985e6d48463e187f2c56d61801636ccf10af7e171349ebd2885e9f3d28dc416.lock
+?? algo-trading-bot/data/cache/history/4ec9dc1fcbde2cf004e270b5ae9767727e37f08122ec13d9468dc42ca1c5b75d.json
+?? algo-trading-bot/data/cache/history/4ec9dc1fcbde2cf004e270b5ae9767727e37f08122ec13d9468dc42ca1c5b75d.lock
+?? algo-trading-bot/data/cache/history/4f2406337ded5998bb4f50e43fab8a34f56b2dbefe274fa67a78fe58ba654aa0.lock
+?? algo-trading-bot/data/cache/history/5091aa5d8896945da833d51d37fc0bbae7b109b4c811712755e4eb471984916a.json
+?? algo-trading-bot/data/cache/history/5091aa5d8896945da833d51d37fc0bbae7b109b4c811712755e4eb471984916a.lock
+?? algo-trading-bot/data/cache/history/549d44290ebc2a29cfd04dd1b782b7fcf4e40142df3eb5530ec2739bd23a1bcb.lock
+?? algo-trading-bot/data/cache/history/54f4d36fe02ded3a49e58d9c148ca7f4b31e8e7da1c1413aaa0591252b233ac0.lock
+?? algo-trading-bot/data/cache/history/596d95ce5c72fa297884a760f1cfcf6ff789c766d084d7ec010ed08ec5a77364.json
+?? algo-trading-bot/data/cache/history/596d95ce5c72fa297884a760f1cfcf6ff789c766d084d7ec010ed08ec5a77364.lock
+?? algo-trading-bot/data/cache/history/5c9bc5faf156527d3092b2f65555027ed6fabb6a495a696be3beaa4a1e8081b0.json
+?? algo-trading-bot/data/cache/history/5c9bc5faf156527d3092b2f65555027ed6fabb6a495a696be3beaa4a1e8081b0.lock
+?? algo-trading-bot/data/cache/history/5eb3cbfec1ed3874116f056e0ba6c12cbb74f1c85fd0400b12adb3c45c19fb82.json
+?? algo-trading-bot/data/cache/history/5eb3cbfec1ed3874116f056e0ba6c12cbb74f1c85fd0400b12adb3c45c19fb82.lock
+?? algo-trading-bot/data/cache/history/61213215fb9878f094be623f18441f3a36730a7f6b22d5f3270f91fcb1ae5624.json
+?? algo-trading-bot/data/cache/history/61213215fb9878f094be623f18441f3a36730a7f6b22d5f3270f91fcb1ae5624.lock
+?? algo-trading-bot/data/cache/history/6166ebd64d6109015a02a2e46fd8168b7b819ffdeedc2b83c16eab0771a85373.json
+?? algo-trading-bot/data/cache/history/6166ebd64d6109015a02a2e46fd8168b7b819ffdeedc2b83c16eab0771a85373.lock
+?? algo-trading-bot/data/cache/history/61bdf7cdaf754823205a78f3095cc25d5f539248345d35f5d380f24ae113fcd1.json
+?? algo-trading-bot/data/cache/history/61bdf7cdaf754823205a78f3095cc25d5f539248345d35f5d380f24ae113fcd1.lock
+?? algo-trading-bot/data/cache/history/641fec1f2060306b33a51238203f358a969e95d16115d04f0fb2b42783752f87.lock
+?? algo-trading-bot/data/cache/history/66c61ccc049fb17589cce66fdc8e07a1cb9b1672aa52fa1eaac1c4b092e04136.json
+?? algo-trading-bot/data/cache/history/66c61ccc049fb17589cce66fdc8e07a1cb9b1672aa52fa1eaac1c4b092e04136.lock
+?? algo-trading-bot/data/cache/history/672657ded0a4ba35b7d65bf733ecdd498f634fa6698c4877144bf17c047fceac.json
+?? algo-trading-bot/data/cache/history/672657ded0a4ba35b7d65bf733ecdd498f634fa6698c4877144bf17c047fceac.lock
+?? algo-trading-bot/data/cache/history/69cea7d8393ba202e8f889899cb9f8b5cfb9b9c66b2c94aab64d865d597116bd.lock
+?? algo-trading-bot/data/cache/history/6d10e9d5308337bb770b49708400ff1f12046ed48729896dddc5ce09fef8bd2c.json
+?? algo-trading-bot/data/cache/history/6d10e9d5308337bb770b49708400ff1f12046ed48729896dddc5ce09fef8bd2c.lock
+?? algo-trading-bot/data/cache/history/6e4f940471fccb74b81aa887ce4997d45900d3cc4b84a4054d4894acf5931486.lock
+?? algo-trading-bot/data/cache/history/70ec52ba1760a24bd1bacdd0a7dac02aaa381fb2d3fa264a3318aff435ab04bf.lock
+?? algo-trading-bot/data/cache/history/73336f6c690307b91afcdea5c1ba77dce2af6df82fc39fe1bd16478f26f45b72.lock
+?? algo-trading-bot/data/cache/history/783e5e2b92600c591ba6d041de77dd2905b0bb35c94edc11bab1498c6f59da54.json
+?? algo-trading-bot/data/cache/history/783e5e2b92600c591ba6d041de77dd2905b0bb35c94edc11bab1498c6f59da54.lock
+?? algo-trading-bot/data/cache/history/7b160ad6aac53a115a1a1e23906b6287ed2bf1bc0b96c4597f85a83f1c1b51ec.lock
+?? algo-trading-bot/data/cache/history/7d4272d2eb1db39735fc6ab6b7d8b6d23fe01d1c680db4cc18a0e7fefb165e64.json
+?? algo-trading-bot/data/cache/history/7d4272d2eb1db39735fc6ab6b7d8b6d23fe01d1c680db4cc18a0e7fefb165e64.lock
+?? algo-trading-bot/data/cache/history/7d5cff06f51aca6ebab68537cea3aee0db217f7137f838f327113442539fc9c7.lock
+?? algo-trading-bot/data/cache/history/812e74454d61c4a52e3c5c56f196ac8e5393cf9a812e721edf5ee036f0d82fc3.json
+?? algo-trading-bot/data/cache/history/812e74454d61c4a52e3c5c56f196ac8e5393cf9a812e721edf5ee036f0d82fc3.lock
+?? algo-trading-bot/data/cache/history/82c215a7f08bd70de84bbbc282057edfcfde4e24a1b53491fe1eefb104c55ed4.json
+?? algo-trading-bot/data/cache/history/82c215a7f08bd70de84bbbc282057edfcfde4e24a1b53491fe1eefb104c55ed4.lock
+?? algo-trading-bot/data/cache/history/837ccf679aea27b1f77517538a1977b3cc99bb369bdcd99928dfe59963c09f51.lock
+?? algo-trading-bot/data/cache/history/855b65fb870b1bdb4c9dcb948fef15269893e89eac1e6d4a129ad9f4a0016be5.lock
+?? algo-trading-bot/data/cache/history/886044d605dccd0a77dbb8bd4ba1eb59dfcca0daf110279b35095157be9e0cff.json
+?? algo-trading-bot/data/cache/history/886044d605dccd0a77dbb8bd4ba1eb59dfcca0daf110279b35095157be9e0cff.lock
+?? algo-trading-bot/data/cache/history/889065fba34348eb5608f9f9e19565e27cdcda42b6ea8d38de82730d676148de.lock
+?? algo-trading-bot/data/cache/history/88e3dd64aa57054d03707ef86c1957891138514684238013a3f92ca4df613704.lock
+?? algo-trading-bot/data/cache/history/91a966f63b8dfe6d9a34e00e1bb5ed304160333165360066689e631819ccf5c3.lock
+?? algo-trading-bot/data/cache/history/92b5ec889efd3095c9cebf8242dbfd40e0b79e95a293f341ffe7c382999baae5.json
+?? algo-trading-bot/data/cache/history/92b5ec889efd3095c9cebf8242dbfd40e0b79e95a293f341ffe7c382999baae5.lock
+?? algo-trading-bot/data/cache/history/9535c6c202b24169ed9c3e658bb4b97bffd7a1c52eaf30a4d2ae4b2109af594e.json
+?? algo-trading-bot/data/cache/history/9535c6c202b24169ed9c3e658bb4b97bffd7a1c52eaf30a4d2ae4b2109af594e.lock
+?? algo-trading-bot/data/cache/history/9f1f68b54d832b60c7c8f8f789cbfcadbc5a7acad4ec7d75f52881261dbfa9ed.json
+?? algo-trading-bot/data/cache/history/9f1f68b54d832b60c7c8f8f789cbfcadbc5a7acad4ec7d75f52881261dbfa9ed.lock
+?? algo-trading-bot/data/cache/history/a02c9c308767cc373c308862a4e6ed9c74c89014a1c90530f47e75627ce0e028.json
+?? algo-trading-bot/data/cache/history/a02c9c308767cc373c308862a4e6ed9c74c89014a1c90530f47e75627ce0e028.lock
+?? algo-trading-bot/data/cache/history/a3b579eada191c7c05471d890719c05faecc53d6c66c7de4a3bc96260d09e168.lock
+?? algo-trading-bot/data/cache/history/a77bffe14b98ab783dfc83e0fe7c40ceaac5ca54e68af6158e29499ab37c85fb.json
+?? algo-trading-bot/data/cache/history/a77bffe14b98ab783dfc83e0fe7c40ceaac5ca54e68af6158e29499ab37c85fb.lock
+?? algo-trading-bot/data/cache/history/a7c16ae1e9cc5e829d767dccb7d76e122986d35f725cb8aee9aadadde219cf6d.json
+?? algo-trading-bot/data/cache/history/a7c16ae1e9cc5e829d767dccb7d76e122986d35f725cb8aee9aadadde219cf6d.lock
+?? algo-trading-bot/data/cache/history/aa934ea42bd67c83299fa6891894f6eb1ee9f5abc5eb29efc9174b99b0870385.json
+?? algo-trading-bot/data/cache/history/aa934ea42bd67c83299fa6891894f6eb1ee9f5abc5eb29efc9174b99b0870385.lock
+?? algo-trading-bot/data/cache/history/aab10049775fb271aab417e24b872078fc6a7583b8d78ef492bf2e6f936dbae7.lock
+?? algo-trading-bot/data/cache/history/ab4941db81f02099c30ca61056285022096b28416534aadafd4308d0d3e27c88.json
+?? algo-trading-bot/data/cache/history/ab4941db81f02099c30ca61056285022096b28416534aadafd4308d0d3e27c88.lock
+?? algo-trading-bot/data/crypto-paper/restart-diagnostics-public-replay-verified-2026-10-03/events.jsonl
+?? algo-trading-bot/data/crypto-paper/restart-diagnostics-public-replay-verified-2026-10-03/replay_validation.json
+?? algo-trading-bot/data/crypto-paper/restart-diagnostics-public-replay-verified-2026-10-03/report.json
+?? algo-trading-bot/data/crypto-paper/restart-diagnostics-public-replay-verified-2026-10-03/results/
+?? algo-trading-bot/data/crypto-research/
+?? algo-trading-bot/data/instruments.json
+?? algo-trading-bot/data/paper/
+?? algo-trading-bot/data/research/
+?? algo-trading-bot/exchange/feed_certification.py
+?? algo-trading-bot/exchange/feed_transport.py
+?? algo-trading-bot/exchange/leverage_configuration.py
+?? algo-trading-bot/exchange/market_health.py
+?? algo-trading-bot/exchange/market_resilience_certification.py
+?? algo-trading-bot/exchange/practice_preflight.py
+?? algo-trading-bot/research_intelligence/organizer_history.py
+?? algo-trading-bot/research_intelligence/reference_price_analysis.py
+?? algo-trading-bot/test_feed_hardening.py
+?? algo-trading-bot/test_leverage_configuration_pacing.py
+?? algo-trading-bot/test_market_resilience.py
+?? algo-trading-bot/test_organizer_history.py
+?? algo-trading-bot/test_practice_preflight.py
+?? algo-trading-bot/test_unified_account_equity.py
+?? algo-trading-bot/venv/
+?? docs/candle_integrity_v6_2026-10-10/
+?? docs/feed_hardening_2026-10-07/
+?? docs/feed_hardening_2026-10-08/
+?? docs/hackathon_public_paper_2026-10-04/results/
+?? docs/hackathon_public_paper_final_2026-10-04/results/
+?? docs/hackathon_public_replay_2026-10-04/results/
+?? docs/hackathon_public_replay_certified_2026-10-04/results/
+?? docs/hackathon_public_replay_final_2026-10-04/results/
+?? docs/history_readiness_2026-10-07/
+?? docs/market_resilience_2026-10-08/
+?? docs/market_resilience_2026-10-08_retry/
+?? docs/participant_guide_public_paper_2026-10-05/results/
+?? docs/practice_followup_2026-10-07/
+?? docs/practice_improvements_2026-10-05/final_source_paper/20261005T111349Z-6912113b/results/
+?? docs/practice_improvements_2026-10-05/paper_segments/20261005T110148Z-d5143dbd/results/
+?? docs/practice_improvements_2026-10-05/paper_segments/20261005T110551Z-127c3efe/results/
+?? docs/practice_setup_2026-10-07/
+?? docs/prepractice_readiness_2026-10-07/
+?? docs/research_forward_capture_2026-10-04/public_rate_budget.sqlite
+?? docs/research_public_probe_2026-10-04/results/
+?? docs/research_public_probe_verified_2026-10-04/results/
+?? docs/single_position_compliance_synthetic_demo_2026-10-04/
+?? docs/single_position_compliance_synthetic_release_2026-10-04/
+?? scripts/check_signer_preflight.py
+?? scripts/configure_par_leverage.py
+?? scripts/feed_certification_report.py
+?? scripts/market_resilience_report.py
+?? scripts/run_feed_soak.py
+?? scripts/verify_organizer_history.py

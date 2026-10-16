@@ -1,0 +1,151 @@
+...........FFFFFF.FF.....................................F...F           [100%]
+=================================== FAILURES ===================================
+____________ test_http_status_retry_guidance_and_cleanup[429-True] _____________
+algo-trading-bot/test_qualification_stability_v8_8.py:112: in test_http_status_retry_guidance_and_cleanup
+    with pytest.raises(ExchangeError,match='^INFO_HTTP_'+str(status)+'$') as e:t({'type':'meta','dex':'par'})
+                                                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_client.py:155: in __call__
+    if record['error'] is not None:raise record['error']
+                                   ^^^^^^^^^^^^^^^^^^^^^
+E   exchange.base_exchange.ExchangeError: INFO_INVALID_JSON
+
+During handling of the above exception, another exception occurred:
+algo-trading-bot/test_qualification_stability_v8_8.py:112: in test_http_status_retry_guidance_and_cleanup
+    with pytest.raises(ExchangeError,match='^INFO_HTTP_'+str(status)+'$') as e:t({'type':'meta','dex':'par'})
+E   AssertionError: 
+E   - INFO_INVALID_JSON
+E   + INFO_HTTP_429
+____________ test_http_status_retry_guidance_and_cleanup[500-True] _____________
+algo-trading-bot/test_qualification_stability_v8_8.py:112: in test_http_status_retry_guidance_and_cleanup
+    with pytest.raises(ExchangeError,match='^INFO_HTTP_'+str(status)+'$') as e:t({'type':'meta','dex':'par'})
+                                                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_client.py:155: in __call__
+    if record['error'] is not None:raise record['error']
+                                   ^^^^^^^^^^^^^^^^^^^^^
+E   exchange.base_exchange.ExchangeError: INFO_INVALID_JSON
+
+During handling of the above exception, another exception occurred:
+algo-trading-bot/test_qualification_stability_v8_8.py:112: in test_http_status_retry_guidance_and_cleanup
+    with pytest.raises(ExchangeError,match='^INFO_HTTP_'+str(status)+'$') as e:t({'type':'meta','dex':'par'})
+E   AssertionError: 
+E   - INFO_INVALID_JSON
+E   + INFO_HTTP_500
+____________ test_http_status_retry_guidance_and_cleanup[503-True] _____________
+algo-trading-bot/test_qualification_stability_v8_8.py:112: in test_http_status_retry_guidance_and_cleanup
+    with pytest.raises(ExchangeError,match='^INFO_HTTP_'+str(status)+'$') as e:t({'type':'meta','dex':'par'})
+                                                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_client.py:155: in __call__
+    if record['error'] is not None:raise record['error']
+                                   ^^^^^^^^^^^^^^^^^^^^^
+E   exchange.base_exchange.ExchangeError: INFO_INVALID_JSON
+
+During handling of the above exception, another exception occurred:
+algo-trading-bot/test_qualification_stability_v8_8.py:112: in test_http_status_retry_guidance_and_cleanup
+    with pytest.raises(ExchangeError,match='^INFO_HTTP_'+str(status)+'$') as e:t({'type':'meta','dex':'par'})
+E   AssertionError: 
+E   - INFO_INVALID_JSON
+E   + INFO_HTTP_503
+____________ test_http_status_retry_guidance_and_cleanup[400-False] ____________
+algo-trading-bot/test_qualification_stability_v8_8.py:112: in test_http_status_retry_guidance_and_cleanup
+    with pytest.raises(ExchangeError,match='^INFO_HTTP_'+str(status)+'$') as e:t({'type':'meta','dex':'par'})
+                                                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_client.py:155: in __call__
+    if record['error'] is not None:raise record['error']
+                                   ^^^^^^^^^^^^^^^^^^^^^
+E   exchange.base_exchange.ExchangeError: INFO_INVALID_JSON
+
+During handling of the above exception, another exception occurred:
+algo-trading-bot/test_qualification_stability_v8_8.py:112: in test_http_status_retry_guidance_and_cleanup
+    with pytest.raises(ExchangeError,match='^INFO_HTTP_'+str(status)+'$') as e:t({'type':'meta','dex':'par'})
+E   AssertionError: 
+E   - INFO_INVALID_JSON
+E   + INFO_HTTP_400
+____________ test_http_status_retry_guidance_and_cleanup[403-False] ____________
+algo-trading-bot/test_qualification_stability_v8_8.py:112: in test_http_status_retry_guidance_and_cleanup
+    with pytest.raises(ExchangeError,match='^INFO_HTTP_'+str(status)+'$') as e:t({'type':'meta','dex':'par'})
+                                                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_client.py:155: in __call__
+    if record['error'] is not None:raise record['error']
+                                   ^^^^^^^^^^^^^^^^^^^^^
+E   exchange.base_exchange.ExchangeError: INFO_INVALID_JSON
+
+During handling of the above exception, another exception occurred:
+algo-trading-bot/test_qualification_stability_v8_8.py:112: in test_http_status_retry_guidance_and_cleanup
+    with pytest.raises(ExchangeError,match='^INFO_HTTP_'+str(status)+'$') as e:t({'type':'meta','dex':'par'})
+E   AssertionError: 
+E   - INFO_INVALID_JSON
+E   + INFO_HTTP_403
+____________ test_http_status_retry_guidance_and_cleanup[302-False] ____________
+algo-trading-bot/test_qualification_stability_v8_8.py:112: in test_http_status_retry_guidance_and_cleanup
+    with pytest.raises(ExchangeError,match='^INFO_HTTP_'+str(status)+'$') as e:t({'type':'meta','dex':'par'})
+                                                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_client.py:155: in __call__
+    if record['error'] is not None:raise record['error']
+                                   ^^^^^^^^^^^^^^^^^^^^^
+E   exchange.base_exchange.ExchangeError: INFO_INVALID_JSON
+
+During handling of the above exception, another exception occurred:
+algo-trading-bot/test_qualification_stability_v8_8.py:112: in test_http_status_retry_guidance_and_cleanup
+    with pytest.raises(ExchangeError,match='^INFO_HTTP_'+str(status)+'$') as e:t({'type':'meta','dex':'par'})
+E   AssertionError: 
+E   - INFO_INVALID_JSON
+E   + INFO_HTTP_302
+_ test_bad_response_never_becomes_account_truth[xxxxxxxxx-8-INFO_RESPONSE_TOO_LARGE] _
+algo-trading-bot/test_qualification_stability_v8_8.py:124: in test_bad_response_never_becomes_account_truth
+    with pytest.raises(ExchangeError,match=code) as e:t({'type':'userAbstraction'})
+                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/hyperliquid_client.py:155: in __call__
+    if record['error'] is not None:raise record['error']
+                                   ^^^^^^^^^^^^^^^^^^^^^
+E   exchange.base_exchange.ExchangeError: INFO_INVALID_JSON
+
+During handling of the above exception, another exception occurred:
+algo-trading-bot/test_qualification_stability_v8_8.py:124: in test_bad_response_never_becomes_account_truth
+    with pytest.raises(ExchangeError,match=code) as e:t({'type':'userAbstraction'})
+E   AssertionError: Regex pattern did not match.
+E    Regex: 'INFO_RESPONSE_TOO_LARGE'
+E    Input: 'INFO_INVALID_JSON'
+__ test_public_transport_exact_endpoint_socket_limits_and_no_adapter_retries ___
+algo-trading-bot/test_qualification_stability_v8_8.py:137: in test_public_transport_exact_endpoint_socket_limits_and_no_adapter_retries
+    assert args==('https://api.hyperliquid-testnet.xyz/info',)
+E   AssertionError: assert (<requests.se...net.xyz/info') == ('https://api...et.xyz/info',)
+E     
+E     At index 0 diff: <requests.sessions.Session object at 0x10b429070> != 'https://api.hyperliquid-testnet.xyz/info'
+E     Left contains one more item: 'https://api.hyperliquid-testnet.xyz/info'
+E     Use -v to get more diff
+_ test_interrupt_during_account_reconciliation_preserves_checkpoint_and_unknown_truth _
+algo-trading-bot/test_qualification_stability_v8_8.py:315: in test_interrupt_during_account_reconciliation_preserves_checkpoint_and_unknown_truth
+    journal=ExecutionJournal(out/'read_only.sqlite',session_id='OFFLINE_RECOVERY',team_address=mod.TEAM)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/execution_journal.py:84: in __init__
+    raise ExchangeError('JOURNAL_ACCOUNT_OR_SESSION_MISMATCH')
+E   exchange.base_exchange.ExchangeError: JOURNAL_ACCOUNT_OR_SESSION_MISMATCH
+----------------------------- Captured stdout call -----------------------------
+{"event": "CHECKING_NETWORK", "stage": "CHECKING_NETWORK", "elapsed_seconds": 0.074}
+{"event": "CHECKING_ACCOUNT", "stage": "CHECKING_ACCOUNT", "elapsed_seconds": 0.075}
+{"event": "RECONCILING_ACCOUNT", "stage": "RECONCILING_ACCOUNT", "elapsed_seconds": 0.217, "reason": "INITIAL_ACTUAL_ACCOUNT_HISTORY"}
+{"event": "QUALIFICATION_LOCKED", "stage": "RECONCILING_ACCOUNT", "elapsed_seconds": 0.31, "reason": "PREPARATION_INTERRUPTED"}
+__________ test_saved_v87_real_thin_books_cannot_be_relabelled_ready ___________
+algo-trading-bot/test_qualification_stability_v8_8.py:348: in test_saved_v87_real_thin_books_cannot_be_relabelled_ready
+    saved=json.loads((root/'docs/qualification_recovery_v8_7_2026-10-13/final_preflight/readiness.json').read_text())
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/pathlib.py:1027: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/pathlib.py:1013: in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: '/Users/adesh/Autonomous Trading Bot - Crypto /docs/qualification_recovery_v8_7_2026-10-13/final_preflight/readiness.json'
+- generated xml file: /Users/adesh/Autonomous Trading Bot - Crypto /docs/qualification_stability_v8_8_2026-10-13/new_tests_v1.xml -
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_qualification_stability_v8_8.py::test_http_status_retry_guidance_and_cleanup[429-True]
+FAILED algo-trading-bot/test_qualification_stability_v8_8.py::test_http_status_retry_guidance_and_cleanup[500-True]
+FAILED algo-trading-bot/test_qualification_stability_v8_8.py::test_http_status_retry_guidance_and_cleanup[503-True]
+FAILED algo-trading-bot/test_qualification_stability_v8_8.py::test_http_status_retry_guidance_and_cleanup[400-False]
+FAILED algo-trading-bot/test_qualification_stability_v8_8.py::test_http_status_retry_guidance_and_cleanup[403-False]
+FAILED algo-trading-bot/test_qualification_stability_v8_8.py::test_http_status_retry_guidance_and_cleanup[302-False]
+FAILED algo-trading-bot/test_qualification_stability_v8_8.py::test_bad_response_never_becomes_account_truth[xxxxxxxxx-8-INFO_RESPONSE_TOO_LARGE]
+FAILED algo-trading-bot/test_qualification_stability_v8_8.py::test_public_transport_exact_endpoint_socket_limits_and_no_adapter_retries
+FAILED algo-trading-bot/test_qualification_stability_v8_8.py::test_interrupt_during_account_reconciliation_preserves_checkpoint_and_unknown_truth
+FAILED algo-trading-bot/test_qualification_stability_v8_8.py::test_saved_v87_real_thin_books_cannot_be_relabelled_ready
+10 failed, 52 passed in 3.64s

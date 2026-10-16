@@ -1,0 +1,18 @@
+--- before/algo-trading-bot/exchange/sdk_transport.py
++++ algo-trading-bot/exchange/sdk_transport.py
+@@ -131,7 +131,14 @@
+     def transmit(self, payload):
+         self.check(payload['action'])
+         # No SDK debug logger and no automatic HTTP retries or redirects.
+-        response=self._sdk.session.post(TESTNET_API_URL+'/exchange',json=payload,timeout=10,allow_redirects=False)
++        record=getattr(self,'record_transport_boundary',None)
++        if record:record('HTTP_POST_STARTED',payload)
++        try:
++            response=self._sdk.session.post(TESTNET_API_URL+'/exchange',json=payload,timeout=10,allow_redirects=False)
++        except Exception as exc:
++            if record:record('HTTP_POST_UNCERTAIN',payload,error_type=type(exc).__name__)
++            raise
++        if record:record('HTTP_POST_RESPONSE',payload,status_code=response.status_code)
+         if response.status_code!=200:
+             error=ExchangeError('EXCHANGE_HTTP_RESPONSE_UNCERTAIN')
+             error.status_code=response.status_code

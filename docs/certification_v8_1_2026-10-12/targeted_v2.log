@@ -1,0 +1,36 @@
+.F.F.........................F..........                                 [100%]
+=================================== FAILURES ===================================
+____________ test_failure_injections[entry_rejected-ORDER_REJECTED] ____________
+algo-trading-bot/test_testnet_certification_v8.py:135: in test_failure_injections
+    assert r['status'] == expected, r
+E   AssertionError: {'actual_exchange_proof': [{'accounting': {'accounting_window_ms': (1790942400000, 1790942400000), 'corrections': [{'c...78f6def6810', 'code': 'IOC_NO_LIQUIDITY', ...}, 'equity_before': '1000', 'exclude_from_strategy_statistics': True, ...}
+E   assert 'NO_FILL_VERIFIED' == 'ORDER_REJECTED'
+E     
+E     - ORDER_REJECTED
+E     + NO_FILL_VERIFIED
+_____ test_failure_injections[timeout_after_fill-TRADE_CLOSED_RECONCILED] ______
+algo-trading-bot/test_testnet_certification_v8.py:135: in test_failure_injections
+    assert r['status'] == expected, r
+E   AssertionError: {'actual_exchange_proof': [{'accounting': {'accounting_window_ms': (1790942400000, 1790942400000), 'corrections': [{'c...3e9f9eb626ee2a', 'code': 'ACCOUNT_EVIDENCE_RECOVERY', ...}, 'equity_before': '1000', 'error': 'ACCOUNT_NOT_READY', ...}
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'TRADE_CLOSED_RECONCILED'
+E     
+E     - TRADE_CLOSED_RECONCILED
+E     + EMERGENCY_EXIT_REQUIRED
+________________ test_book_account_and_liquidity_gates[spread] _________________
+algo-trading-bot/test_testnet_certification_v8.py:220: in test_book_account_and_liquidity_gates
+    if damage == 'spread': c = replace(c, quote=replace(c.quote,ask=D(101)))
+                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/dataclasses.py:1588: in replace
+    return obj.__class__(**changes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+<string>:18: in __init__
+    ???
+algo-trading-bot/exchange/base_exchange.py:181: in __post_init__
+    raise ExchangeError('INVALID_QUOTE_PRICES')
+E   exchange.base_exchange.ExchangeError: INVALID_QUOTE_PRICES
+- generated xml file: /Users/adesh/Autonomous Trading Bot - Crypto /docs/certification_v8_1_2026-10-12/targeted_v2.xml -
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_testnet_certification_v8.py::test_failure_injections[entry_rejected-ORDER_REJECTED]
+FAILED algo-trading-bot/test_testnet_certification_v8.py::test_failure_injections[timeout_after_fill-TRADE_CLOSED_RECONCILED]
+FAILED algo-trading-bot/test_testnet_certification_v8.py::test_book_account_and_liquidity_gates[spread]
+3 failed, 37 passed in 12.14s

@@ -1,0 +1,123 @@
+{
+  "status": "QUALIFICATION_LOCKED",
+  "stage": "FINAL_READ_ONLY_PREFLIGHT_BEFORE_SIGNING_SDK_CONSTRUCTION",
+  "blocker": "P0_CURRENT_PRICE_OR_CAP_REQUIRED",
+  "proposal_id": "876707f1612b45525795ae76ad10caf2cd36f0fb1f1b17389fd9ae63e6b9f218",
+  "entry_submitted": false,
+  "actual_wallet_signatures": 0,
+  "exchange_submissions": 0,
+  "entry_fill_verified": false,
+  "actual_entry_order_id": null,
+  "actual_entry_fill_ids": [],
+  "actual_entry_filled_quantity": "0",
+  "actual_trade_fees": [],
+  "actual_trade_realized_pnl": null,
+  "human_approval_received": true,
+  "human_answer": "Yes",
+  "approved_ms": 1791955028934,
+  "approval_expiry_ms": 1791955193158,
+  "authorization_expired": true,
+  "source_hash": "90c913950d7c7f23bfa176612356e0995d9fef5976be54fc449695b8cc1bf882",
+  "source_bound_2046_test_receipt_valid": true,
+  "strategy_freeze": {
+    "baseline": "nse-working-baseline",
+    "file_count": 1,
+    "method_count": 8,
+    "parameter_count": 32,
+    "passed": true
+  },
+  "code_changed": false,
+  "account_flat_observed": true,
+  "account_flat_observed_ms": 1791955226413,
+  "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+  "api_signer": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+  "actual_positions": [],
+  "actual_open_orders": [],
+  "account_reconciliation_ready": true,
+  "execution_journal_verification": {
+    "observed_ms": 1791955218921,
+    "integrity": "ok",
+    "counts": {
+      "intents": 0,
+      "api_actions": 0,
+      "signed_management": 0
+    },
+    "recovery_snapshots": [
+      {
+        "seq": 1,
+        "checksum_verified": true,
+        "data": {
+          "account": {
+            "fills": [],
+            "funding": [],
+            "initial_start_ms": 0,
+            "last_window": [
+              0,
+              1791955070871
+            ],
+            "quantities": {},
+            "quantity_evidence": {}
+          },
+          "checkpoint_error": null,
+          "execution_mode": "READ_ONLY_ACCOUNT_RECOVERY",
+          "fill_identities": [],
+          "funding_identities": [],
+          "last_checkpoint_ts": 1791955072895,
+          "last_clean_shutdown": false,
+          "lifecycle": null,
+          "management": {},
+          "metadata_hash": "b5cbc22f98b81a74bc21eb0f60afe4b74a28fc7185ae054fd69d0230ed30f114",
+          "orders": [],
+          "risk_state": null,
+          "schema_version": 1,
+          "session_id": "anchorium-one-qualification-v1",
+          "signed_management": [],
+          "source_identity": {
+            "git_commit": "33c7cfe9ec241ccc0241144a8dccfd9a06df553a",
+            "strategy_source_hash": "bff940ac5ed35f71ed3dfb537ba15d20dcec35a4e62a938d2f0619c6e9309d83",
+            "working_source_hash": "27623fd46e7bf36faa5389fc49430eb68bde310ce601fa71cae4a7634c7c8f8d"
+          },
+          "team_address": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+          "venue": "testnet:par"
+        }
+      }
+    ],
+    "source_hash": "90c913950d7c7f23bfa176612356e0995d9fef5976be54fc449695b8cc1bf882",
+    "freeze": {
+      "baseline": "nse-working-baseline",
+      "file_count": 1,
+      "method_count": 8,
+      "parameter_count": 32,
+      "passed": true
+    },
+    "blocker": "P0_CURRENT_PRICE_OR_CAP_REQUIRED",
+    "actual_sdk_not_constructed": true,
+    "actual_wallet_signatures": 0,
+    "exchange_submissions": 0,
+    "scope": "build_runtime check_entry raised before read_api_key, NonceManager or EmergencySDKTransport construction; no retry"
+  },
+  "post_failure_read_only_checkpoint": {
+    "integrity": "ok",
+    "snapshots_verified": 2,
+    "checksums_verified": true,
+    "source_identity": {
+      "git_commit": "33c7cfe9ec241ccc0241144a8dccfd9a06df553a",
+      "working_source_hash": "27623fd46e7bf36faa5389fc49430eb68bde310ce601fa71cae4a7634c7c8f8d",
+      "strategy_source_hash": "bff940ac5ed35f71ed3dfb537ba15d20dcec35a4e62a938d2f0619c6e9309d83"
+    },
+    "clean": true,
+    "actions": {
+      "intents": 0,
+      "api_actions": 0,
+      "signed_management": 0
+    }
+  },
+  "whitelist_trade_proof_created": false,
+  "organizer_whitelisting_confirmed": false,
+  "qualification_entry_consumed": false,
+  "no_retry_performed": true,
+  "protection_verified": false,
+  "production_activation": false,
+  "limitation": "The failed final quote was not persisted by the existing launcher. The later account-check quote is a distinct timestamped observation and cannot establish the exact rejected bid/ask.",
+  "next_action": "Stopped. Any further attempt requires a fresh proposal and new exact human approval; no retry or price adjustment was authorized or performed."
+}

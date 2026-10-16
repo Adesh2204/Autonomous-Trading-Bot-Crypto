@@ -1,0 +1,26 @@
+    def bulk_orders(
+        self, order_requests: List[OrderRequest], builder: Optional[BuilderInfo] = None, grouping: Grouping = "na"
+    ) -> Any:
+        order_wires: List[OrderWire] = [
+            order_request_to_order_wire(order, self.info.name_to_asset(order["coin"])) for order in order_requests
+        ]
+        timestamp = get_timestamp_ms()
+
+        if builder:
+            builder["b"] = builder["b"].lower()
+        order_action = order_wires_to_order_action(order_wires, builder, grouping)
+
+        signature = sign_l1_action(
+            self.wallet,
+            order_action,
+            self.vault_address,
+            timestamp,
+            self.expires_after,
+            self.base_url == MAINNET_API_URL,
+        )
+
+        return self._post_action(
+            order_action,
+            signature,
+            timestamp,
+        )

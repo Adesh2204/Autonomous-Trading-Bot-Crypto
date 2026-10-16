@@ -1,0 +1,53 @@
+{
+  "started_unix": 1791827290.0888908,
+  "source_hash": "7dc796d83416fb1f68cf8c32e5d26db403c361d6470e889527bc67f617665339",
+  "scope": "Full offline regression; prior baseline 1633 plus 49 isolated qualification tests; no actual exchange actions",
+  "evidence_classifier_sha256": "6d81a9912e08c37aca6ad83eb7fbefe3341c5e46af403801cb4045b5296c98f1",
+  "checks_before": {
+    "strategy_freeze": {
+      "exit_code": 0,
+      "result": {
+        "baseline": "nse-working-baseline",
+        "file_count": 1,
+        "method_count": 8,
+        "parameter_count": 32,
+        "passed": true
+      }
+    },
+    "phase0": {
+      "exit_code": 0,
+      "result": {
+        "project": "anchorium-perpetual-alpha",
+        "checks": {
+          "project_is_perpetual_alpha": true,
+          "independent_git_directory": true,
+          "migration_branch": true,
+          "testnet_venue": true,
+          "paper_execution_mode": true,
+          "migration_policy_valid": true,
+          "orders_disabled": true,
+          "angel_one_client_disabled": true,
+          "angel_one_order_boundary_disabled": true,
+          "testnet_order_boundary_disabled": true,
+          "signal_logic_present": true,
+          "signal_source_unchanged": true
+        },
+        "passed": true
+      }
+    }
+  },
+  "finished_unix": 1791827650.3014772,
+  "exit_code": 0,
+  "source_hash_after": "7dc796d83416fb1f68cf8c32e5d26db403c361d6470e889527bc67f617665339",
+  "totals": {
+    "tests": 1682,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "xml_sha256": "33c8ef2731cb5d65dc0bdcc42824dfbd120420c68b35b6219072db7ba021da60",
+  "evidence_classifier_sha256_after": "6d81a9912e08c37aca6ad83eb7fbefe3341c5e46af403801cb4045b5296c98f1",
+  "previous_evidence_classifier_sha256": "9c95b59054aed2adc38a41f5f65b0a65c314ac4cb3b29ea437a88d2b6dfcf8e0",
+  "baseline_minimum": 1633,
+  "passed": true
+}

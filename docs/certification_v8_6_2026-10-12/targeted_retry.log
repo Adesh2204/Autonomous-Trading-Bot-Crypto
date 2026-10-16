@@ -1,0 +1,12 @@
+...............................F..........                               [100%]
+=================================== FAILURES ===================================
+_____________ test_position_change_at_permit_boundary_never_signs ______________
+algo-trading-bot/test_exact_full_close_v8_6.py:190: in test_position_change_at_permit_boundary_never_signs
+    assert not scoped.transport.signed_payloads
+E   AssertionError: assert not [{'action': {'grouping': 'na', 'orders': [{'a': 2670000, 'b': False, 'c': '0x7890b65e772baad63e1935587db86833', 'p': '...be25e409ff18e48dcfe2b49cb4', 's': '0x652c686a5ef5f0b20a0eee8c13c888acad776d626a2f2d063d2f7e1db818cac0', 'v': 28}, ...}]
+E    +  where [{'action': {'grouping': 'na', 'orders': [{'a': 2670000, 'b': False, 'c': '0x7890b65e772baad63e1935587db86833', 'p': '...be25e409ff18e48dcfe2b49cb4', 's': '0x652c686a5ef5f0b20a0eee8c13c888acad776d626a2f2d063d2f7e1db818cac0', 'v': 28}, ...}] = <OfflineSDKTransport no exchange network sink signer=[PRIVATE]>.signed_payloads
+E    +    where <OfflineSDKTransport no exchange network sink signer=[PRIVATE]> = namespace(fixture=<test_live_exchange_execution.LiveInfoFixture object at 0x109d273b0>, client=<exchange.hyperliquid_c...ion.HyperliquidExecution object at 0x109d4a5a0>, signer=<eth_account.signers.local.LocalAccount object at 0x109d26780>).transport
+- generated xml file: /Users/adesh/Autonomous Trading Bot - Crypto /docs/certification_v8_6_2026-10-12/targeted_retry.xml -
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_exact_full_close_v8_6.py::test_position_change_at_permit_boundary_never_signs
+1 failed, 41 passed in 4.36s

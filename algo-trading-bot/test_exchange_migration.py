@@ -50,7 +50,7 @@ class PublicInfoFixture:
         self.state = dict(assetPositions=[{'position': dict(coin='par:BTC', szi='0.1',
             entryPx='50000', unrealizedPnl='2', marginUsed='10', liquidationPx=None)}],
             marginSummary=dict(accountValue='1000', totalMarginUsed='10'), withdrawable='990')
-        self.spot = dict(balances=[dict(coin='USDPR', total='1000', hold='10')])
+        self.spot = dict(balances=[dict(coin='USDPR', token=20, total='1000', hold='10')])
         self.mode = 'unifiedAccount'
         self.orders = [dict(coin='par:BTC', oid=1)]
         self.fills = [dict(coin='par:BTC', time=NOW, tid=7, oid=1, side='B',

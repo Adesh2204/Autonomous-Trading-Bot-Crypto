@@ -1,0 +1,14 @@
+.......FF.........................                                       [100%]
+=================================== FAILURES ===================================
+_______ test_duplicate_callbacks_do_not_allocate_extra_nonces_or_entries _______
+algo-trading-bot/test_qualification_freshness_repair.py:70: in test_duplicate_callbacks_do_not_allocate_extra_nonces_or_entries
+    assert c.live.journal.db.execute("SELECT COUNT(*) FROM events WHERE kind='NONCE_GENERATED'").fetchone()[0]==2
+E   assert 0 == 2
+_ test_rejected_pre_http_after_nonce_preserves_uncertainty_and_does_not_retry __
+algo-trading-bot/test_qualification_freshness_repair.py:76: in test_rejected_pre_http_after_nonce_preserves_uncertainty_and_does_not_retry
+    assert c.live.journal.db.execute("SELECT COUNT(*) FROM events WHERE kind='NONCE_GENERATED'").fetchone()[0]==1
+E   assert 0 == 1
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_qualification_freshness_repair.py::test_duplicate_callbacks_do_not_allocate_extra_nonces_or_entries
+FAILED algo-trading-bot/test_qualification_freshness_repair.py::test_rejected_pre_http_after_nonce_preserves_uncertainty_and_does_not_retry
+2 failed, 32 passed in 6.97s

@@ -1,0 +1,15 @@
+..................................................................F..... [ 30%]
+........................................................................ [ 60%]
+........................................................................ [ 90%]
+.......................                                                  [100%]
+=================================== FAILURES ===================================
+__________ test_missing_acceptance_cannot_even_start_readiness_or_sdk __________
+algo-trading-bot/test_delegated_qualification.py:232: in test_missing_acceptance_cannot_even_start_readiness_or_sdk
+    assert result['status']=='SESSION_HALTED' and not result['authorized_entry_attempted']
+E   AssertionError: assert ('EMERGENCY_EXIT_REQUIRED' == 'SESSION_HALTED'
+E     
+E     - SESSION_HALTED
+E     + EMERGENCY_EXIT_REQUIRED)
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_delegated_qualification.py::test_missing_acceptance_cannot_even_start_readiness_or_sdk
+1 failed, 238 passed in 74.69s (0:01:14)

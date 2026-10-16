@@ -51,6 +51,7 @@ class ProtectionPlan:
     position_observed_ms: int
     actual_entry_price: Decimal | None=None
     classification: str='CATASTROPHIC_STOP'
+    is_market: bool=True
 
 
 class ExchangeProtectionManager:

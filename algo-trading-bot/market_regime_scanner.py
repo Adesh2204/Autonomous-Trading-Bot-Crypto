@@ -9,6 +9,8 @@ from exchange.base_exchange import ExchangeError, decimal
 from exchange.event_timing import timing
 from exchange.hyperliquid_market_data import make_quote
 from exchange.market_snapshot import MarketSnapshot
+from exchange.market_health import MarketHealthManager,validate_history
+from exchange.scanner_numeric import scanner_number
 from frozen_strategy import FrozenStrategy
 from session_manager import SessionManager
 from venue_config import require_paper_migration
@@ -67,6 +69,9 @@ class MarketRegimeScanner:
         self.live_authorization=live_authorization
         self.team_address=team_address
         self.signer_address=signer_address
+        self.health_manager=None
+        self.public_snapshot_sink=None
+        self.public_failure_sink=None
 
     def require_runtime(self):
         # Public scanning cannot grant an exchange-write permit. The default
@@ -83,6 +88,9 @@ class MarketRegimeScanner:
         self.require_runtime()
         self.client.startup()
         p=self.policy
+        if self.health_manager is None:
+            self.health_manager=MarketHealthManager(tuple(sorted(self.client.markets)),history_bars=p.history_bars,
+                max_candle_age_ms=p.max_candle_age_ms)
         now=self.client.clock_ms()
         end=now//60000*60000-1
         anchor=int(self.session.get_vwap_anchor(datetime.fromtimestamp(now/1000,timezone.utc)).timestamp()*1000)
@@ -115,6 +123,7 @@ class MarketRegimeScanner:
                         received_timestamp_ms=candles[-1].received_timestamp_ms)
                 if len(candles)<p.history_bars:
                     raise ExchangeError('INSUFFICIENT_COMPLETED_HISTORY')
+                validate_history(symbol,candles,now,p.history_bars)
                 if not 0<=now-(candles[-1].timestamp_ms+60000)<=p.max_candle_age_ms:
                     raise ExchangeError('COMPLETED_CANDLE_STALE')
                 if self.client.clock_ms()-context_observed>60000:
@@ -123,13 +132,22 @@ class MarketRegimeScanner:
                 d.snapshot=MarketSnapshot.from_book(book,contexts[symbol],self.client.clock_ms(),
                     mark_observed_at_ms=context_observed)
                 quote=make_quote(book,contexts[symbol],self.client.clock_ms(),mark_timestamp_ms=context_observed)
+                if self.public_snapshot_sink is not None:
+                    self.public_snapshot_sink(symbol,candles,book,contexts[symbol],context_observed)
+                health=self.health_manager.evaluate(symbol,candles,book,contexts[symbol],context_observed,
+                    self.client.clock_ms(),source='SCANNER_REST')
+                d.evidence['market_health']=health['state']
+                if not health['healthy']:
+                    raise ExchangeError(health['reasons'][0])
                 from brain_observation import observe_frozen_call
                 enriched,brain_evidence=observe_frozen_call(lambda:self.brain.evaluate_candles(candles))
                 d.evidence['brain']=brain_evidence
                 last=enriched.iloc[-1]
-                close=decimal(last['Close'],positive=True)
-                atr=decimal(last['ATR_14'],positive=True)
-                ema9,ema21,vwap=(decimal(last[name],positive=True) for name in ('EMA_9','EMA_21','VWAP'))
+                close=scanner_number(last['Close'],'Close',d.evidence)
+                # A real flat market has finite zero ATR. The unchanged floor
+                # rejects it as unqualified, rather than invalid market data.
+                atr=scanner_number(last['ATR_14'],'ATR_14',d.evidence,nonnegative=True)
+                ema9,ema21,vwap=(scanner_number(last[name],name,d.evidence) for name in ('EMA_9','EMA_21','VWAP'))
                 window=candles[-p.history_bars:]
                 notional=sum((c.volume*c.close for c in window),Decimal(0))
                 depth=min(quote.bid*quote.bid_quantity,quote.ask*quote.ask_quantity)
@@ -170,6 +188,7 @@ class MarketRegimeScanner:
                                 source="LOCAL_FROZEN_STRATEGY")
                 d.qualified=not d.reasons
             except (ExchangeError,ValueError) as exc:
+                if self.public_failure_sink is not None:self.public_failure_sink(symbol,str(exc))
                 d.reasons.append(str(exc))
                 d.timing=timing(self.client.clock_ms())
         qualified=[d for d in diagnostics if d.qualified]

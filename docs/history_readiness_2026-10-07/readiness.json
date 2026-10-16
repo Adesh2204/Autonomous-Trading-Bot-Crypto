@@ -1,0 +1,286 @@
+{
+  "report_created_at_utc": "2026-10-07T04:35:22.781827+00:00",
+  "flags": {
+    "HISTORY_DATA_READY": "NO",
+    "RESEARCH_DATA_READY": "NO",
+    "LIVE_DATA_ISOLATED": "YES",
+    "STRATEGY_FREEZE": "PASS",
+    "ACCOUNT_READY": "YES",
+    "API_WALLET_READY": "YES",
+    "PAPER_READY": "YES",
+    "CONTROLLED_LIVE_TEST": "NOT RUN",
+    "LONG_CERTIFIED": "NO",
+    "SHORT_CERTIFIED": "NO",
+    "RESTART_CERTIFIED": "NO",
+    "RECONNECT_CERTIFIED": "NO",
+    "PRACTICE_READY": "NO",
+    "LIVE_READY": "NO",
+    "MARKET_DATA_READY": "NO",
+    "CSV_STRUCTURE_VALID": "YES",
+    "PRICE_FEATURE_RESEARCH_PREPARED": "YES"
+  },
+  "flag_scope": {
+    "HISTORY_DATA_READY": "Verified official provenance, not just syntactically valid CSVs.",
+    "RESEARCH_DATA_READY": "Validated strategy/ML experiment inputs; price features alone do not establish this.",
+    "ACCOUNT_READY": "Timestamped real read-only technical check; not current signing authorization.",
+    "API_WALLET_READY": "Timestamped public agent approval and expiry only; private signer not tested.",
+    "PAPER_READY": "Guarded public-data smoke completed; feed/performance readiness is not certified.",
+    "RESTART_CERTIFIED": "Actual funded-account execution recovery; offline/PAPER results are separate.",
+    "RECONNECT_CERTIFIED": "Actual account/execution recovery; public market WebSocket recovery is separate."
+  },
+  "execution_mode": "PAPER",
+  "allow_live_orders": false,
+  "exchange_orders_submitted": 0,
+  "account_administration_actions": 0,
+  "signer_constructed": false,
+  "controlled_live_test": "NOT RUN \u2014 NOT LIVE VERIFIED",
+  "long_certification": "NOT RUN \u2014 NOT LIVE VERIFIED",
+  "short_certification": "NOT RUN \u2014 NOT LIVE VERIFIED",
+  "git_commit": "6e4e520892b91b613bce237195ea67f5f69846b4",
+  "git_dirty": true,
+  "active_source_hash": "21f68599203beaadac9bedf15eacc35c91d1340dcbd4029917cea1f0e5ac567a",
+  "account_and_suite_active_hash_match": true,
+  "history_source_hash": "20c02b2a2d0cd64c52cb8beec6d8aec46ee8400326a3aeeb18749babd63566a4",
+  "history_source_scope": "research source_identity()",
+  "paper_manifest_source_hash": "6b6230bc575024ed3819e7525716f17668f9cd475907de22cf4a483016ba92a7",
+  "paper_source_scope": "session_results.source_version()",
+  "research_and_paper_current_scoped_hashes_match": true,
+  "tests": {
+    "tests": 1249,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "strategy_freeze": {
+    "baseline": "nse-working-baseline",
+    "file_count": 1,
+    "method_count": 8,
+    "parameter_count": 32,
+    "passed": true
+  },
+  "phase0": {
+    "project": "anchorium-perpetual-alpha",
+    "checks": {
+      "project_is_perpetual_alpha": true,
+      "independent_git_directory": true,
+      "migration_branch": true,
+      "testnet_venue": true,
+      "paper_execution_mode": true,
+      "migration_policy_valid": true,
+      "orders_disabled": true,
+      "angel_one_client_disabled": true,
+      "angel_one_order_boundary_disabled": true,
+      "testnet_order_boundary_disabled": true,
+      "signal_logic_present": true,
+      "signal_source_unchanged": true
+    },
+    "passed": true
+  },
+  "history_directory": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/data/history",
+  "discovered_files": [
+    "BRENT.csv",
+    "BTC.csv",
+    "ETH.csv",
+    "EWJ.csv",
+    "EWY.csv",
+    "GOLD.csv",
+    "HYPE.csv",
+    "README.md",
+    "SP500.csv",
+    "USDEUR.csv",
+    "USDJPY.csv"
+  ],
+  "original_archive_status": "NOT_AVAILABLE",
+  "official_provenance_verified": false,
+  "csv_rows": 49831,
+  "raw_csv_hashes_unchanged": true,
+  "csv_sha256": {
+    "par:BRENT": "f064c938eceafa075c08285dcb244df066bf48a99d6b387094df5d1333a8b6da",
+    "par:BTC": "a899f02ad59ff5a3d5793da25c6aeac90b7f15777e37b1a3f15a7c81c0d7eb03",
+    "par:ETH": "88cf289f5772684397b6c5f3552c41f6a756e3e72112897ec666c9f9ecfbc3fa",
+    "par:EWJ": "ba068a980ad61fb0b706d358830cebad2c8205c5707bfb11c88c8efaab5524a9",
+    "par:EWY": "ad018efa4af5d1d1b15f692511848e8a841d72aa90694f8c9a7ae0cb85ae4a73",
+    "par:GOLD": "433e36c77b92f2d9e4a88d3158a5f85703e26a79a956d105b6f85bd96df9e023",
+    "par:HYPE": "67a7b2c8538fe705125a5677cd8ccd95a16bb7ccd16e58303c469fa89af07c29",
+    "par:SP500": "9d007dfbe90dcf500a3f41b98aea928d78a0ae78da1e1567b1039a94e4294cad",
+    "par:USDEUR": "ca6a98cb468697a73615949e5f8f958913b55d9eee3b9afb64dd4837582750d6",
+    "par:USDJPY": "63bf58782d51c82d6c49b0a7e272dc92233f9e3a17ba0b6db9030be287de6be6"
+  },
+  "feature_rows": 39821,
+  "feature_sha256": "6cc6391549ffa45034e13dac1f06ddb42ee267d9b0774774f7eda105542be8ca",
+  "feature_path": "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/data/organizer-history-research/2026-10-07/verified_price_features.jsonl",
+  "research_utc_boundaries": {
+    "validation_start_ms": 1784012400000,
+    "holdout_start_ms": 1787616000000
+  },
+  "holdout_prices_feature_evaluated": false,
+  "research_state": {
+    "SESSION_ANCHOR_VALIDATED": false,
+    "ML_DATA_READY": false,
+    "ML_MODEL_VALIDATED": false,
+    "HOLDOUT_COMPLETE": false,
+    "PROMOTION_RECOMMENDED": false,
+    "PRODUCTION_CHANGED": false
+  },
+  "account_observed_at_ist": "2026-10-07T09:53:50.635853+05:30",
+  "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+  "api_wallet": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+  "api_name": "anchorium-bot-1",
+  "api_expiry_ist": "2027-04-04T23:02:04.898000+05:30",
+  "collateral": "1000000.0",
+  "account_mode": "unifiedAccount",
+  "positions": 0,
+  "open_orders": 0,
+  "frontend_orders": 0,
+  "configured_policy_leverage": 1,
+  "observed_leverage": {
+    "par:BRENT": {
+      "type": "cross",
+      "value": 20
+    },
+    "par:BTC": {
+      "type": "cross",
+      "value": 20
+    },
+    "par:ETH": {
+      "type": "cross",
+      "value": 20
+    },
+    "par:EWJ": {
+      "type": "cross",
+      "value": 20
+    },
+    "par:EWY": {
+      "type": "cross",
+      "value": 20
+    },
+    "par:GOLD": {
+      "type": "cross",
+      "value": 20
+    },
+    "par:HYPE": {
+      "type": "cross",
+      "value": 10
+    },
+    "par:SP500": {
+      "type": "cross",
+      "value": 20
+    },
+    "par:USDEUR": {
+      "type": "cross",
+      "value": 20
+    },
+    "par:USDJPY": {
+      "type": "cross",
+      "value": 20
+    }
+  },
+  "protection": {
+    "enabled": false,
+    "approval_reference": null,
+    "atr_distance_multiple": null,
+    "execution_slippage_fraction": null
+  },
+  "clock": {
+    "state": "HEALTHY",
+    "reason": null,
+    "offset_ms": -574,
+    "last_reference_ms": 1791347028205,
+    "fresh_confirmations": 1
+  },
+  "rate_limit": {
+    "cumVlm": "0.0",
+    "nRequestsUsed": 3,
+    "nRequestsCap": 10000,
+    "nRequestsSurplus": 0
+  },
+  "account_reconciliation_scope": "Reported account events from 2026-10-05 UTC to the saved observation; no lifetime claim.",
+  "paper_observed_at_utc": "2026-10-07T04:25:49.951454+00:00",
+  "paper_result": "NO_TRADE",
+  "paper_orders": 0,
+  "paper_fills": 0,
+  "paper_rejections": {
+    "par:BRENT": [
+      "INSUFFICIENT_COMPLETED_HISTORY"
+    ],
+    "par:BTC": [
+      "INSUFFICIENT_COMPLETED_HISTORY"
+    ],
+    "par:ETH": [
+      "INSUFFICIENT_COMPLETED_HISTORY"
+    ],
+    "par:EWJ": [
+      "INSUFFICIENT_COMPLETED_HISTORY"
+    ],
+    "par:EWY": [
+      "INSUFFICIENT_COMPLETED_HISTORY"
+    ],
+    "par:GOLD": [
+      "INSUFFICIENT_COMPLETED_HISTORY"
+    ],
+    "par:HYPE": [
+      "INSUFFICIENT_COMPLETED_HISTORY"
+    ],
+    "par:SP500": [
+      "ATR_BELOW_BASELINE_SCANNER_FLOOR",
+      "SPREAD_TOO_WIDE"
+    ],
+    "par:USDEUR": [
+      "INSUFFICIENT_COMPLETED_HISTORY"
+    ],
+    "par:USDJPY": [
+      "INSUFFICIENT_COMPLETED_HISTORY"
+    ]
+  },
+  "failure_tests": {
+    "Cancel": {
+      "scope": "OFFLINE_TESTED",
+      "real_exchange_status": "NOT RUN \u2014 NOT LIVE VERIFIED",
+      "passed_test": "test_cancel_by_cloid_checks_team_order_and_exact_sdk_action"
+    },
+    "Partial fill": {
+      "scope": "OFFLINE_TESTED",
+      "real_exchange_status": "NOT RUN \u2014 NOT LIVE VERIFIED",
+      "passed_test": "test_close_partial_fill_rechecks_authoritative_position_retains_exit_intent"
+    },
+    "WebSocket account barrier": {
+      "scope": "OFFLINE_TESTED",
+      "real_exchange_status": "NOT RUN \u2014 NOT LIVE VERIFIED",
+      "passed_test": "test_websocket_disconnect_reconnect_team_subscriptions_rest_barrier"
+    },
+    "Restart": {
+      "scope": "OFFLINE_TESTED",
+      "real_exchange_status": "NOT RUN \u2014 NOT LIVE VERIFIED",
+      "passed_test": "test_restart_restores_known_partial_position_and_stop_target_cooldown"
+    },
+    "Ambiguous protection / duplicates": {
+      "scope": "OFFLINE_TESTED",
+      "real_exchange_status": "NOT RUN \u2014 NOT LIVE VERIFIED",
+      "passed_test": "test_uncertain_protection_never_duplicates_after_restart"
+    },
+    "Existing position": {
+      "scope": "OFFLINE_TESTED",
+      "real_exchange_status": "NOT RUN \u2014 NOT LIVE VERIFIED",
+      "passed_test": "test_restart_open_position_cannot_assume_flat_or_invent_stop"
+    }
+  },
+  "blockers": [
+    "Official dataset origin unverified; original ZIP and organizer download/announcement link absent.",
+    "Nine markets lack the required completed public one-minute history in this snapshot.",
+    "Independent catastrophic protection is disabled and its distance/slippage approval is absent.",
+    "Observed exchange leverage is 20x cross (10x HYPE), while the bot policy remains 1x cross.",
+    "Actual API signer and persistent nonce ownership/health have not been verified.",
+    "Human wallet verification and explicit activation after all gates pass are not recorded.",
+    "Real LONG/SHORT execution, protection, accounting and funded-account recovery certification were not performed."
+  ],
+  "evidence_sha256": {
+    "docs/history_readiness_2026-10-07/test_receipt.json": "44f343b5a597173f46175aff1bcfc11b1bf183270ae6cc317661e239a1dcd221",
+    "docs/history_readiness_2026-10-07/regression.xml": "6847ae6d506c2ce45da65b0a4aeb311139188075c2eff063bff074a30daed267",
+    "docs/history_readiness_2026-10-07/account_check.json": "afc1aa1e1b601c5e7a4669f1008a88ef04c410502ec8957ac925f7b1912af1de",
+    "docs/history_readiness_2026-10-07/history_verified/history_verification.json": "162e90da0ef14a1424653826074879e8d063a66679671b4870845f38ec9ababd",
+    "docs/history_readiness_2026-10-07/history_verified/csv_validation.json": "8368afdf27e587d0b40b2d2a42ba9ebc0a372763fb1e5819828589482123a7ae",
+    "docs/history_readiness_2026-10-07/history_verified/price_analysis.json": "310d694f5826768e40bd4e4c17277a944a1bf9e8a3a2f9e85f8812291180947b",
+    "docs/history_readiness_2026-10-07/public_paper_smoke/report.json": "fe937e5f69a6f98d7d9795287c3bc3c79c0fb405f4f75ef98e0704525a009eb3",
+    "docs/history_readiness_2026-10-07/certification_plan.md": "dc3a01b471219bb6b1c205a7e2ba2471c20139318351c24ded2358ee18dbb7c1"
+  }
+}

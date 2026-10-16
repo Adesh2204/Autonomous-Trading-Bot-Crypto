@@ -1,0 +1,58 @@
+{
+  "status": "AWAITING_HUMAN_DECISION_NO_RECOVERY_AUTHORITY",
+  "requested_ms": 1792042303286,
+  "tool_question_options": [
+    "A \u2014 Authorize bounded close and all six acknowledgments",
+    "B \u2014 Authorize profit-only window and all six acknowledgments",
+    "Do not authorize either recovery"
+  ],
+  "mandates": {
+    "immediate_close_proposal": {
+      "nonce": "14093fccb767417a9606257987bb4af3",
+      "created_ms": 1792042252329,
+      "approval_deadline_ms": 1792042552329,
+      "source_hash": "31efb87290919c495e624dfad41c426f83ec45dc21bf52dc0b4580a1185edd2f",
+      "reliability_policy_hash": "1b8573d07a0f12f3653cf7b92f96c2120e8d61c3f210335ec850ba14ea582455",
+      "envelope_hash": "df6c8a0726baf1fc5e2eed751bf45658bd22cb804af21a712cd7c81adb15c913",
+      "minimum_sell": "80780",
+      "mode": "BOUNDED_LOSS_EXIT",
+      "quantity": "0.0002",
+      "minimum_net_profit": "-0.50",
+      "window_ms": 120000,
+      "maximum_exit_fee": "0.003",
+      "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+      "api_wallet": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+      "symbol": "par:BTC",
+      "original_order_id": "62755970305",
+      "original_fill_id": "800659111758533"
+    },
+    "profit_proposal": {
+      "nonce": "2c36f8432dab40a89bed9a28995b28db",
+      "created_ms": 1792042236248,
+      "approval_deadline_ms": 1792042536248,
+      "source_hash": "31efb87290919c495e624dfad41c426f83ec45dc21bf52dc0b4580a1185edd2f",
+      "reliability_policy_hash": "1b8573d07a0f12f3653cf7b92f96c2120e8d61c3f210335ec850ba14ea582455",
+      "envelope_hash": "2bd89009fc8544463ab9835637034b179f853b1ef7752aae6f5959abe4c7f492",
+      "minimum_sell": "81811",
+      "mode": "PROFIT_ONLY_EXIT",
+      "quantity": "0.0002",
+      "minimum_net_profit": "0.001",
+      "window_ms": 600000,
+      "maximum_exit_fee": "0.003",
+      "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+      "api_wallet": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+      "symbol": "par:BTC",
+      "original_order_id": "62755970305",
+      "original_fill_id": "800659111758533"
+    }
+  },
+  "required_acknowledgments": [
+    "identities_and_sole_host",
+    "sell_only_exact_position",
+    "one_attempt_no_retry",
+    "unprotected_partial_or_failed_exit",
+    "profit_is_not_guaranteed",
+    "bounded_window_no_extension"
+  ],
+  "no_signed_action_authorized_by_preparation": true
+}

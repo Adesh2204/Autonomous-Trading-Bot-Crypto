@@ -1,0 +1,123 @@
+"""Bounded public /info-only search: three trade feeds, six public accounts.
+
+No SDK, key, signatures, /exchange, production allowlist change or permits.
+"""
+import argparse
+from datetime import datetime, timezone
+from decimal import Decimal as D
+import json, re, sys, time
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT/'algo-trading-bot'))
+from exchange.hyperliquid_client import HyperliquidClient, RequestsInfoTransport
+from exchange.paper_operations import atomic_json, active_source_hash
+from strategy_freeze import verify_strategy_freeze
+from venue_config import require_paper_migration
+from public_evidence import classify
+
+
+class BoundedRead:
+    def __init__(self, path):
+        self.transport=RequestsInfoTransport(); self.path=path; self.records=[]; self.weights=[]
+        self.started=time.monotonic()
+    def __call__(self, payload):
+        schemas={'perpDexs':{'type'},'meta':{'type','dex'},'recentTrades':{'type','coin'},
+            'historicalOrders':{'type','user'},'userFillsByTime':{'type','user','startTime','endTime','aggregateByTime'},
+            'orderStatus':{'type','user','oid'}}
+        kind=payload.get('type')
+        if kind not in schemas or set(payload)!=schemas[kind]: raise RuntimeError('READ_SCHEMA_REJECTED')
+        if kind=='meta' and payload['dex']!='par': raise RuntimeError('PAR_REQUIRED')
+        if kind=='recentTrades' and payload['coin'] not in {'par:HYPE','par:BTC','par:ETH','par:GOLD','par:SP500','par:EWY'}:
+            raise RuntimeError('BOUNDED_TRADE_SOURCE_REQUIRED')
+        if 'user' in payload and not re.fullmatch(r'0x[0-9a-fA-F]{40}',payload['user']):
+            raise RuntimeError('PUBLIC_ADDRESS_REQUIRED')
+        if len(self.records)>=40 or time.monotonic()-self.started>180:
+            raise RuntimeError('SEARCH_BOUND_REACHED')
+        now=time.monotonic(); self.weights=[w for w in self.weights if w[0]>now-60]
+        reserved=120 if kind in {'historicalOrders','recentTrades','userFillsByTime'} else 2 if kind=='orderStatus' else 20
+        if sum(w[1] for w in self.weights)+reserved>1000: raise RuntimeError('PUBLIC_BUDGET_BOUND_REACHED')
+        charge=[now,reserved]; self.weights.append(charge)
+        row=dict(request=payload,started_utc=datetime.now(timezone.utc).isoformat(),reserved_weight=reserved)
+        self.records.append(row)
+        try:
+            value=self.transport(payload); row['response']=value
+            # Release excess reservation only after a successful bounded response.
+            # HistoricalOrders keeps conservative 120 even if actual venue tariff is smaller.
+            if kind in {'recentTrades','userFillsByTime'} and isinstance(value,list) and len(value)<=2000:
+                charge[1]=20+len(value)//20
+            row['charged_weight']=charge[1]
+            return value
+        except Exception as exc: row['error']=str(exc); raise
+        finally:
+            row['finished_utc']=datetime.now(timezone.utc).isoformat()
+            atomic_json(self.path/'raw_info.json',self.records)
+    def close(self): self.transport.close()
+
+
+def main():
+    p=argparse.ArgumentParser();p.add_argument('--output-directory',type=Path,required=True);p.add_argument('--protection-search',action='store_true');a=p.parse_args()
+    a.output_directory.mkdir(exist_ok=False); transport=BoundedRead(a.output_directory)
+    report=dict(started_utc=datetime.now(timezone.utc).isoformat(),source_hash=active_source_hash(ROOT),
+        execution_mode='PAPER',allow_live_orders=False,exchange_submissions=0,signature_created=False,
+        network='testnet',dex='par',public_users=[],history_counts=[],candidates=[],verified=[],
+        general_market_scan=False,max_public_users=6,max_requests=40,max_seconds=180,
+        limitations=['Latest histories are bounded/truncated, not a census',
+            'Current lot sizes do not prove historical metadata was identical',
+            'Fill-derived flat quantity is not an independent historical account snapshot',
+            'A historical close does not establish protection or a present-day blanket exemption'])
+    try:
+        report['safety']=require_paper_migration();report['freeze']=verify_strategy_freeze()
+        client=HyperliquidClient(transport);client.startup()
+        lots={s:D(1).scaleb(-client.market(s).size_decimals) for s in client.markets}
+        report['runtime_lots']={k:str(v) for k,v in lots.items()}
+        users=[]
+        for coin in (('par:GOLD','par:SP500','par:EWY') if a.protection_search else ('par:HYPE','par:BTC','par:ETH')):
+            trades=client.post_info('recentTrades',coin=coin)
+            for trade in sorted(trades,key=lambda t:t['time'],reverse=True):
+                for u in trade.get('users',[]):
+                    if u.lower() not in [x.lower() for x in users]:users.append(u)
+        previous=json.loads((ROOT/'docs/certification_v8_5_2026-10-12/prior_history_screen.json').read_text())['public_users']
+        if a.protection_search:
+            previous += json.loads((ROOT/'docs/certification_v8_5_2026-10-12/public_search_verified/observations.json').read_text())['public_users']
+        # Prioritize newly discovered counterparties; old accounts remain valid fallbacks.
+        selected=[u for u in users if u.lower() not in previous]+[u for u in users if u.lower() in previous]
+        if a.protection_search:selected=[u for u in selected if u.lower() not in previous]
+        report['public_users']=selected[:6]
+        seen=set()
+        for user in selected[:6]:
+            rows=transport({'type':'historicalOrders','user':user})
+            if not isinstance(rows,list): raise RuntimeError('INVALID_PUBLIC_HISTORY')
+            par=[h for h in rows if h.get('order',{}).get('coin') in lots]
+            trigger=[h for h in par if h['order'].get('isTrigger') is True]
+            report['history_counts'].append(dict(user=user,event_rows=len(rows),par_event_rows=len(par),
+                par_trigger_event_rows=len(trigger),truncated_possible=len(rows)>=2000,
+                unique_par_orders=len({h['order']['oid'] for h in par})))
+            for h in par:
+                order=h['order'];identity=(user.lower(),order['oid'])
+                if identity in seen:continue
+                seen.add(identity)
+                if order.get('reduceOnly') is not True:continue
+                orig=D(order['origSz']);price=D(order['limitPx'])
+                if 0<orig*price<10 and (orig==lots[order['coin']] or order.get('isTrigger') is True):
+                    report['candidates'].append(dict(user=user,historical=h))
+        for candidate in report['candidates'][:8]:
+            user=candidate['user'];h=candidate['historical'];o=h['order']
+            detail=client.post_info('orderStatus',user=user,oid=o['oid'])
+            timestamp=h.get('statusTimestamp',o['timestamp'])
+            fills=client.post_info('userFillsByTime',user=user,startTime=min(o['timestamp'],timestamp)-1000,
+                endTime=max(o['timestamp'],timestamp)+1000,aggregateByTime=False)
+            report['verified'].append(dict(user=user,order_status=detail,raw_fills=fills,
+                classification=classify(detail,fills,coin=o['coin'],lot=lots[o['coin']])))
+        report['status']='BOUNDED_SEARCH_COMPLETE'
+    except Exception as exc:report.update(status='BOUNDED_SEARCH_INCOMPLETE',error=str(exc))
+    finally:transport.close()
+    report.update(finished_utc=datetime.now(timezone.utc).isoformat(),source_hash_after=active_source_hash(ROOT),
+        requests=len(transport.records),total_charged_weight=sum(r.get('charged_weight',r['reserved_weight']) for r in transport.records))
+    report['one_lot_full_closes_verified']=sum(v['classification']['one_lot_full_close'] for v in report['verified'])
+    report['subminimum_stops_filled_verified']=sum(v['classification']['subminimum_stop_filled'] for v in report['verified'])
+    atomic_json(a.output_directory/'observations.json',report)
+    print(json.dumps({k:report.get(k) for k in ('status','error','requests','total_charged_weight','one_lot_full_closes_verified','subminimum_stops_filled_verified','history_counts')},indent=2))
+    return 0 if report['status']=='BOUNDED_SEARCH_COMPLETE' else 1
+
+if __name__=='__main__':raise SystemExit(main())

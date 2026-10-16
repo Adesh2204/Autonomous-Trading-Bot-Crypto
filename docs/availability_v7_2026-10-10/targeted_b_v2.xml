@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="3" failures="0" skipped="0" tests="3" time="0.404" timestamp="2026-10-10T23:09:01.300984+05:30" hostname="Adeshs-MacBook-Air.local"><testcase classname="" name="algo-trading-bot.test_external_data_v7" file="algo-trading-bot/test_external_data_v7.py" time="0.000"><error message="collection failure">.venv/lib/python3.12/site-packages/_pytest/python.py:498: in importtestmodule
+    mod = import_path(
+.venv/lib/python3.12/site-packages/_pytest/pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+&lt;frozen importlib._bootstrap&gt;:1387: in _gcd_import
+    ???
+&lt;frozen importlib._bootstrap&gt;:1360: in _find_and_load
+    ???
+&lt;frozen importlib._bootstrap&gt;:1331: in _find_and_load_unlocked
+    ???
+&lt;frozen importlib._bootstrap&gt;:935: in _load_unlocked
+    ???
+.venv/lib/python3.12/site-packages/_pytest/assertion/rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+algo-trading-bot/test_external_data_v7.py:9: in &lt;module&gt;
+    from test_exchange_migration import NOW,candle_row
+&lt;frozen importlib._bootstrap&gt;:1360: in _find_and_load
+    ???
+&lt;frozen importlib._bootstrap&gt;:1331: in _find_and_load_unlocked
+    ???
+&lt;frozen importlib._bootstrap&gt;:935: in _load_unlocked
+    ???
+.venv/lib/python3.12/site-packages/_pytest/assertion/rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+algo-trading-bot/test_exchange_migration.py:18: in &lt;module&gt;
+    from exchange.hyperliquid_account import HyperliquidAccount
+algo-trading-bot/exchange/hyperliquid_account.py:7: in &lt;module&gt;
+    from .hyperliquid_market_data import timestamp
+algo-trading-bot/exchange/hyperliquid_market_data.py:16: in &lt;module&gt;
+    from .candle_availability import CandleAvailabilityMonitor
+E     File "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/candle_availability.py", line 101
+E       old['first_completed_observed_at_ms'] = received_ms
+E       ^^^
+E   IndentationError: expected an indented block after 'if' statement on line 100</error></testcase><testcase classname="" name="algo-trading-bot.test_candle_availability_v7" file="algo-trading-bot/test_candle_availability_v7.py" time="0.000"><error message="collection failure">.venv/lib/python3.12/site-packages/_pytest/python.py:498: in importtestmodule
+    mod = import_path(
+.venv/lib/python3.12/site-packages/_pytest/pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+&lt;frozen importlib._bootstrap&gt;:1387: in _gcd_import
+    ???
+&lt;frozen importlib._bootstrap&gt;:1360: in _find_and_load
+    ???
+&lt;frozen importlib._bootstrap&gt;:1331: in _find_and_load_unlocked
+    ???
+&lt;frozen importlib._bootstrap&gt;:935: in _load_unlocked
+    ???
+.venv/lib/python3.12/site-packages/_pytest/assertion/rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+algo-trading-bot/test_candle_availability_v7.py:9: in &lt;module&gt;
+    from exchange.candle_availability import CandleAvailabilityMonitor
+E     File "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/candle_availability.py", line 101
+E       old['first_completed_observed_at_ms'] = received_ms
+E       ^^^
+E   IndentationError: expected an indented block after 'if' statement on line 100</error></testcase><testcase classname="" name="algo-trading-bot.test_practice_operations" file="algo-trading-bot/test_practice_operations.py" time="0.000"><error message="collection failure">.venv/lib/python3.12/site-packages/_pytest/python.py:498: in importtestmodule
+    mod = import_path(
+.venv/lib/python3.12/site-packages/_pytest/pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+&lt;frozen importlib._bootstrap&gt;:1387: in _gcd_import
+    ???
+&lt;frozen importlib._bootstrap&gt;:1360: in _find_and_load
+    ???
+&lt;frozen importlib._bootstrap&gt;:1331: in _find_and_load_unlocked
+    ???
+&lt;frozen importlib._bootstrap&gt;:935: in _load_unlocked
+    ???
+.venv/lib/python3.12/site-packages/_pytest/assertion/rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+algo-trading-bot/test_practice_operations.py:16: in &lt;module&gt;
+    from market_regime_scanner import MarketRegimeScanner
+algo-trading-bot/market_regime_scanner.py:10: in &lt;module&gt;
+    from exchange.hyperliquid_market_data import make_quote
+algo-trading-bot/exchange/hyperliquid_market_data.py:16: in &lt;module&gt;
+    from .candle_availability import CandleAvailabilityMonitor
+E     File "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/candle_availability.py", line 101
+E       old['first_completed_observed_at_ms'] = received_ms
+E       ^^^
+E   IndentationError: expected an indented block after 'if' statement on line 100</error></testcase></testsuite></testsuites>

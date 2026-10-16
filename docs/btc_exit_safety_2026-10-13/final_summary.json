@@ -1,0 +1,132 @@
+{
+  "status": "ENGINEERING_COMPLETE_VENUE_PROTECTION_VALIDATION_BLOCKED",
+  "active_source_hash": "90c913950d7c7f23bfa176612356e0995d9fef5976be54fc449695b8cc1bf882",
+  "source_hash_before": "ba40a55df453d4e2e5557bd60c52b3337a0d5b4dde2ae62d4169f54f6ff5dbca",
+  "tests": {
+    "tests": 2046,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "new_tests": 62,
+  "baseline_tests": 1984,
+  "source_bound_regression": true,
+  "frozen_strategy_verified": {
+    "baseline": "nse-working-baseline",
+    "file_count": 1,
+    "method_count": 8,
+    "parameter_count": 32,
+    "passed": true
+  },
+  "protected_files_unchanged": [
+    "algo-trading-bot/signal_brain.py",
+    "docs/strategy_freeze.json",
+    "configs/reliability_policy.json",
+    "scripts/run_emergency_qualification.py",
+    "scripts/watch_testnet_qualification.py"
+  ],
+  "actual_wallet_signatures": 0,
+  "exchange_submissions": 0,
+  "execution_mode": "PAPER",
+  "allow_live_orders": false,
+  "files_modified": [
+    {
+      "path": "algo-trading-bot/exchange/hyperliquid_execution.py",
+      "before_sha256": "288d48343bb6eeafd61cd96eadc1c08c00c73034e3b8d7fb43aafd06e44ee136",
+      "after_sha256": "bf135c3f1a573cd8b050aee5567315d017d56a50d072fb8f2b985f4d560344bb",
+      "new": false
+    },
+    {
+      "path": "algo-trading-bot/exchange/emergency_qualification.py",
+      "before_sha256": "fa2a181c1b79695d963db0a6b38be1099ff17a52b8e7642c2c7b439e28e9d1cb",
+      "after_sha256": "03f8e3c8104581e544c0534c6b5077a63d4c1183ada87aba90936311cd4947cc",
+      "new": false
+    },
+    {
+      "path": "algo-trading-bot/exchange/qualification_protection.py",
+      "before_sha256": null,
+      "after_sha256": "04e425069b523909199c462020b89f8a8a3e9d136e166504a4b45bd41e3ae980",
+      "new": true
+    },
+    {
+      "path": "algo-trading-bot/test_qualification_protection.py",
+      "before_sha256": null,
+      "after_sha256": "6dd1ef098dc585bf7cdfb7104a1c5c556d3d146867e28e5fb0df9a166870c68b",
+      "new": true
+    }
+  ],
+  "qualification_policy": {
+    "version": "ANCHORIUM_P0_1000_V1",
+    "network": "testnet",
+    "dex": "par",
+    "max_notional": "1000",
+    "minimum_entry_notional": "10",
+    "leverage": 1,
+    "margin_mode": "cross",
+    "one_entry": true,
+    "max_exit_attempts": 2,
+    "max_cancel_attempts": 1,
+    "max_signed_actions": 4,
+    "spread_bps": "50",
+    "entry_slippage_bps": "20",
+    "exit_slippage_bps": "20",
+    "mark_oracle_bps": "50",
+    "mid_oracle_bps": "100",
+    "order_oracle_bps": "150",
+    "l2_participation": "0.5",
+    "exit_floor_factor": "0.98505",
+    "resting_lifetime_seconds": 30,
+    "approval_window_ms": 300000,
+    "entry_minimum_remaining_ms": 90000,
+    "rule": "MINIMUM_VALID_LONG_PUBLIC_L2_OR_REST_AT_BID_V1",
+    "protection": "UNVERIFIED_NO_STOP_WILL_BE_SUBMITTED"
+  },
+  "qualification_policy_hash": "7567d48bb19899fc4d164b9a4f375f9a5d5d144debde197ccd4fa41214122701",
+  "account_observed_ist": "2026-10-13T23:46:19.845000+05:30",
+  "account_ms": 1791915378707,
+  "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+  "api_wallet": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+  "positions": [],
+  "orders": [],
+  "read_only_checkpoint_verification": {
+    "integrity": "ok",
+    "snapshots_verified": 2,
+    "checksums_verified": true,
+    "source_identity": {
+      "git_commit": "33c7cfe9ec241ccc0241144a8dccfd9a06df553a",
+      "working_source_hash": "27623fd46e7bf36faa5389fc49430eb68bde310ce601fa71cae4a7634c7c8f8d",
+      "strategy_source_hash": "bff940ac5ed35f71ed3dfb537ba15d20dcec35a4e62a938d2f0619c6e9309d83"
+    },
+    "clean": true,
+    "actions": {
+      "intents": 0,
+      "api_actions": 0,
+      "signed_management": 0
+    }
+  },
+  "flags": {
+    "BTC_EXACT_RESIDUAL_CLOSE_CODE_READY": true,
+    "BTC_HISTORICAL_ONE_LOT_IOC_CLOSE_EVIDENCE": true,
+    "ISOLATED_NATIVE_STOP_LIFECYCLE_OFFLINE_TESTED": true,
+    "ONE_LOT_PROTECTIVE_STOP_ACCEPTANCE_VERIFIED": false,
+    "PROTECTION_PARTIAL_FILL_BEHAVIOR_VERIFIED": false,
+    "PARTIAL_FILL_EXIT_READY": false,
+    "ACTUAL_PROTECTION_READY": false,
+    "CONTROLLED_EXECUTION_READY": false,
+    "ACTUAL_TEAM_QUALIFICATION_FILL_VERIFIED": false,
+    "LONG_CERTIFIED": false,
+    "FUNDED_RECOVERY_CERTIFIED": false,
+    "PRACTICE_READY": false,
+    "LIVE_READY": false,
+    "PROTECTION_ENABLED": false,
+    "PRODUCTION_STRATEGY_CHANGED": false,
+    "PRODUCTION_TRADING_ACTIVATED": false
+  },
+  "remaining_blockers": [
+    "Actual one-lot stop placement/readback/trigger/partial/cancel behavior unverified",
+    "Existing emergency authorization explicitly prohibits stops; its four-action budget is unchanged",
+    "No new exact-proposal human execution approval; old source-bound proposals are unusable",
+    "IOC closure is bounded by liquidity, price, exact scope, account health and two attempts; cannot guarantee flat"
+  ],
+  "next_safe_action": "Obtain authoritative par clarification/evidence for the 0.0001 BTC reduce-only stop lifecycle; then review a separately bounded exact venue-validation proposal. No order is authorized by this report."
+}
