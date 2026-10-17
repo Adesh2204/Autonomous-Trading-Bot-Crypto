@@ -1,0 +1,13 @@
+# Signing-data freshness verification
+
+Source `135734b4269554f98a295bb245fbf79ca5576ee1c07d6aa4049a3d88007c4109` is unchanged and matches the passing full **2,753-test** release. This review reran **381 targeted tests**, zero failures/errors/skips, including nine task-local supplemental cases. Full regression was not repeated because production and source-bound test files did not change. The original XML/receipt hashes were revalidated by both release readers.
+
+The supplemental tests explicitly accept ages **4,900 ms** and **5,000 ms**, reject **5,100 ms**, and drive realistic SDK callback delays of 4,900/5,000/5,100/**5,526 ms**. They exercise genuine offline evidence reacquisition for the same immutable request, one nonce and one submission, durable duplicate-return behavior, own UNKNOWN rejection and other historical UNKNOWN blocking. All signatures use ephemeral offline fixtures; they prove software behavior only.
+
+Existing targeted cases cover changed account/orders/read failure, fees/funding, depth, price corridor, reference/metadata, source/revocation, health/lease/budget, native parent/child identity, partial aborts, unresolved cancellation, exact closes, LONG lifecycle and cross-midnight carried limits. Exact pre-HTTP error/nonce/CLOID telemetry is tested without exporting keys or signatures.
+
+The native boundary reacquires readiness when necessary, rereads positions/orders/positions and current metadata/funding/book at callbacks, reruns central validation for the same reserved wire, and preserves quantity/price/CLOID, lease generation, nonce ownership, approval/source and five-second limits. UNKNOWN and already-started transport cannot use recovery to create a replacement attempt. Mandatory pre-HTTP claims prevent a second transmission of the same action; durable submit returns the original intent.
+
+Remaining limits: exchange state can change after the last read; separate REST reads are not an atomic venue transaction. Slow network/rate waits can exhaust freshness or the cleanup/approval window and must fail closed. Trigger placement has its separate unchanged checks. Offline tests do not prove real-exchange acceptance, native triggering or uninterrupted streams. No actual signing or exchange retest was performed in this review.
+
+Full XML SHA-256: `7d1a15356230d6adec307de3714032b1c766569213b17489e6aa9a3a89a1573e`. Full receipt: `e0df19551d9b6695399cbc29416f87b618689709b88c2caa7a1e8eab6af3125b`. Targeted XML: `45fe6165dbbe06c7d0d1d1b05ebf4e5d35015e99cc32c41d6939dd4794143bce`. Fresh Phase-0 and frozen-strategy checks passed. Journal/checkpoint/nonce preservation passed.

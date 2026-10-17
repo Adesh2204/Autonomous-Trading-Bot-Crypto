@@ -1,0 +1,245 @@
+{
+  "source_hash": "3911d7226a9befe7adfda84222623ee9533a414cb4efd9ed674f3d3041401312",
+  "session_id": "b96205e97d854f77bb5c9ad232e1e73d",
+  "worker_pid": 89541,
+  "state": "STOPPED",
+  "account_status": "FLAT_VERIFIED",
+  "terminal_flat": true,
+  "terminal_readbacks": [
+    {
+      "observed_ms": 1792169611188,
+      "ready": true,
+      "positions": [],
+      "orders": [],
+      "team": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+      "source": "EXCHANGE_DIRECT_TESTNET_PAR_INFO"
+    },
+    {
+      "observed_ms": 1792169613808,
+      "ready": true,
+      "positions": [],
+      "orders": [],
+      "team": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+      "source": "EXCHANGE_DIRECT_TESTNET_PAR_INFO"
+    }
+  ],
+  "threads_stopped": true,
+  "execution_intents": 0,
+  "exchange_writes": 0,
+  "signatures": 0,
+  "journal_integrity": "ok",
+  "public_receipts": 509,
+  "actual_errors": {
+    "None:INFO_READ_CANCELLED": 1
+  },
+  "market_last_error": null,
+  "account_last_error": null,
+  "resource_samples": 43,
+  "samples_both_streams_healthy": 34,
+  "peak_memory_mb": 138.5625,
+  "late_high_watermark_growth_mb": 0.0,
+  "duration_seconds": 616.927,
+  "rate_report": {
+    "state": "UNKNOWN",
+    "policy": {
+      "ip_weight_per_minute": 1200,
+      "ip_safety_reserve": 120,
+      "daily_actions": 50000,
+      "daily_safety_reserve": 500,
+      "account_action_reserve": 10,
+      "max_open_orders": 1000,
+      "max_ws_connections": 10,
+      "max_ws_subscriptions": 1000,
+      "max_ws_unique_users": 10,
+      "venue_ws_connections_per_minute": 30,
+      "max_ws_messages_per_minute": 2000,
+      "ws_reconnects_per_minute": 5,
+      "budget_max_age_ms": 60000,
+      "optional_poll_interval_ms": 5000,
+      "read_retry_attempts": 3,
+      "backoff_base_ms": 1000,
+      "backoff_max_ms": 30000,
+      "exhausted_safety_action_interval_ms": 10000,
+      "caution_fraction": 0.75,
+      "throttle_fraction": 0.9
+    },
+    "ip_weight": 1002,
+    "public_read_blocked": false,
+    "account_requests_used": null,
+    "account_requests_cap": null,
+    "remaining_budget": null,
+    "budget_observed_ms": null,
+    "daily_actions": 0,
+    "daily_limit": 50000,
+    "entries_allowed": false,
+    "open_orders": 0,
+    "backoff_until_ms": 0,
+    "websocket": {
+      "connections": 0,
+      "subscriptions": 0,
+      "outgoing_messages": 2,
+      "heartbeats": 2,
+      "reconnects_last_minute": 0
+    },
+    "public_reads": {
+      "upstream_by_operation": {
+        "perpDexs": 2,
+        "meta": 2,
+        "clearinghouseState": 19,
+        "openOrders": 10,
+        "userFillsByTime": 5,
+        "userFunding": 5,
+        "userAbstraction": 5,
+        "spotClearinghouseState": 5,
+        "metaAndAssetCtxs": 121,
+        "userFees": 3,
+        "candleSnapshot": 159,
+        "l2Book": 71,
+        "activeAssetData": 100,
+        "frontendOpenOrders": 2
+      },
+      "failures": {
+        "INFO_READ_CANCELLED": 1
+      },
+      "pending": 0,
+      "coalesced": 0,
+      "max_seconds": 38.61909041600302,
+      "failure_details": [
+        {
+          "query": "candleSnapshot",
+          "attempt": 1,
+          "code": "INFO_READ_CANCELLED",
+          "status_code": null,
+          "retry_after_ms": null,
+          "retryable": false
+        }
+      ]
+    }
+  },
+  "terminal_recovery_steps": [
+    {
+      "phase": "ACCOUNT_HISTORY_1",
+      "start_ms": 1792169309645,
+      "known_history_overlap": true,
+      "observed_ms": 1792169598242
+    },
+    {
+      "event": "WAITING_FOR_RATE_BUDGET",
+      "observed_ms": 1792169599035,
+      "reason": "ROLLING_IP_WINDOW_OR_SERVER_BACKOFF",
+      "ip_weight": 1108,
+      "required_weight": 20,
+      "next_retry_ms": 1792169609653,
+      "retry_in_seconds": 10.618,
+      "wait_elapsed_seconds": 0.0
+    },
+    {
+      "event": "WAITING_FOR_RATE_BUDGET",
+      "observed_ms": 1792169600051,
+      "reason": "ROLLING_IP_WINDOW_OR_SERVER_BACKOFF",
+      "ip_weight": 1071,
+      "required_weight": 20,
+      "next_retry_ms": 1792169609653,
+      "retry_in_seconds": 9.602,
+      "wait_elapsed_seconds": 1.017
+    },
+    {
+      "event": "WAITING_FOR_RATE_BUDGET",
+      "observed_ms": 1792169601069,
+      "reason": "ROLLING_IP_WINDOW_OR_SERVER_BACKOFF",
+      "ip_weight": 1071,
+      "required_weight": 20,
+      "next_retry_ms": 1792169609654,
+      "retry_in_seconds": 8.585,
+      "wait_elapsed_seconds": 2.034
+    },
+    {
+      "event": "WAITING_FOR_RATE_BUDGET",
+      "observed_ms": 1792169602076,
+      "reason": "ROLLING_IP_WINDOW_OR_SERVER_BACKOFF",
+      "ip_weight": 1071,
+      "required_weight": 20,
+      "next_retry_ms": 1792169609653,
+      "retry_in_seconds": 7.577,
+      "wait_elapsed_seconds": 3.041
+    },
+    {
+      "event": "WAITING_FOR_RATE_BUDGET",
+      "observed_ms": 1792169603092,
+      "reason": "ROLLING_IP_WINDOW_OR_SERVER_BACKOFF",
+      "ip_weight": 1071,
+      "required_weight": 20,
+      "next_retry_ms": 1792169609653,
+      "retry_in_seconds": 6.561,
+      "wait_elapsed_seconds": 4.058
+    },
+    {
+      "event": "WAITING_FOR_RATE_BUDGET",
+      "observed_ms": 1792169604107,
+      "reason": "ROLLING_IP_WINDOW_OR_SERVER_BACKOFF",
+      "ip_weight": 1071,
+      "required_weight": 20,
+      "next_retry_ms": 1792169609653,
+      "retry_in_seconds": 5.546,
+      "wait_elapsed_seconds": 5.072
+    },
+    {
+      "event": "WAITING_FOR_RATE_BUDGET",
+      "observed_ms": 1792169605124,
+      "reason": "ROLLING_IP_WINDOW_OR_SERVER_BACKOFF",
+      "ip_weight": 1071,
+      "required_weight": 20,
+      "next_retry_ms": 1792169609653,
+      "retry_in_seconds": 4.529,
+      "wait_elapsed_seconds": 6.089
+    },
+    {
+      "event": "WAITING_FOR_RATE_BUDGET",
+      "observed_ms": 1792169606135,
+      "reason": "ROLLING_IP_WINDOW_OR_SERVER_BACKOFF",
+      "ip_weight": 1071,
+      "required_weight": 20,
+      "next_retry_ms": 1792169609653,
+      "retry_in_seconds": 3.518,
+      "wait_elapsed_seconds": 7.1
+    },
+    {
+      "event": "WAITING_FOR_RATE_BUDGET",
+      "observed_ms": 1792169607154,
+      "reason": "ROLLING_IP_WINDOW_OR_SERVER_BACKOFF",
+      "ip_weight": 1071,
+      "required_weight": 20,
+      "next_retry_ms": 1792169609653,
+      "retry_in_seconds": 2.499,
+      "wait_elapsed_seconds": 8.12
+    },
+    {
+      "event": "WAITING_FOR_RATE_BUDGET",
+      "observed_ms": 1792169608170,
+      "reason": "ROLLING_IP_WINDOW_OR_SERVER_BACKOFF",
+      "ip_weight": 1071,
+      "required_weight": 20,
+      "next_retry_ms": 1792169609653,
+      "retry_in_seconds": 1.483,
+      "wait_elapsed_seconds": 9.135
+    },
+    {
+      "event": "WAITING_FOR_RATE_BUDGET",
+      "observed_ms": 1792169609190,
+      "reason": "ROLLING_IP_WINDOW_OR_SERVER_BACKOFF",
+      "ip_weight": 1071,
+      "required_weight": 20,
+      "next_retry_ms": 1792169609653,
+      "retry_in_seconds": 0.463,
+      "wait_elapsed_seconds": 10.155
+    },
+    {
+      "phase": "ACCOUNT_HISTORY_2",
+      "start_ms": 1792169538686,
+      "known_history_overlap": true,
+      "observed_ms": 1792169611188
+    }
+  ],
+  "terminal_reconciliation_error": null,
+  "development_only": true
+}

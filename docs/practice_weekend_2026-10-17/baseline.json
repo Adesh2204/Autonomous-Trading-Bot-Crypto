@@ -1,0 +1,81 @@
+{
+  "created_ms": 1792215146748,
+  "source_hash": "d02d56ddced4d14679963842d4729ab06d51998b43d95dfb330fb4556fa3c5e0",
+  "baseline_tests": 2675,
+  "protected": {
+    "configs/reliability_policy.json": "1b8573d07a0f12f3653cf7b92f96c2120e8d61c3f210335ec850ba14ea582455",
+    "configs/protection_policy.proposed.json": "34c0668d5337c6cc0ccc6866ca29c791bc8aa4d048cdd1a738dcff2ad4985578",
+    "configs/practice_ops.json": "f35d72d21914874578a95280d453f857d875d0587e33a82167b8ddb446ce8be2",
+    "configs/external_research.example.json": "5314b34e2f42e67d9478a01a089d959e1c95d1dff88d5d62ec9c07d6388493bf",
+    "algo-trading-bot/signal_brain.py": "bff940ac5ed35f71ed3dfb537ba15d20dcec35a4e62a938d2f0619c6e9309d83",
+    "docs/strategy_freeze.json": "aeda15740802c1082f38f4e69f415f16a77d749a1aa050061026a99120fb9f8b",
+    "docs/qualification_2026-10-15/WHITELIST_TRADE_PROOF.json": "3f9b7decb3ca92810fc0e146373c667e621db909d621210cd52cb96f7886a0ab",
+    "docs/profit_exit_refresh_2026-10-15_2209/EXIT_RECOVERY_PROOF.json": "c9e633a018121bd349eb6716c084f71254825d1d17da7b364e338c4ca31ffd83",
+    "runtime/testnet/anchorium-bot-1/exit-recovery.lock": "176669cd42c2e4dc6f95b3d0b3555df2d7ddd7a27c6543cc6f57adcadd03de28",
+    "runtime/testnet/anchorium-bot-1/delegated-session.lock": "b89a1205a5ed223a588c95df6381e8573df3c5202e8a51a4c6c572cd8517583f"
+  },
+  "databases": {
+    "runtime/testnet/anchorium-bot-1/nonces.sqlite": {
+      "integrity": "ok",
+      "dump_sha256": "997450d92c3576905eb06b24ccca072d83eb004782f2e66e56b7de8b0cec7e10",
+      "nonces": [
+        [
+          "0x46c9bed595770150752e7fa3806449f81e0ec6f9",
+          1792082604141
+        ]
+      ]
+    },
+    "runtime/testnet/anchorium-bot-1/configuration.sqlite": {
+      "integrity": "ok",
+      "dump_sha256": "ed913029c934f8b262b3b2fe63f0c53f52d7fe5c98e6cd1dc8f05095b3c82f00"
+    },
+    "runtime/testnet/anchorium-bot-1/qualification.sqlite": {
+      "integrity": "ok",
+      "dump_sha256": "4d59a83a93304be876262c2949a1edf1f30684bd081f0501114c20573549b413",
+      "raw_intents": [
+        [
+          "certification:3b744e33e2de25c1afd6764eac3268ba8d51ac8ef905200e62230bc4a2261ddf:entry",
+          "0x3486c3b8e88add1a77175c9c5965350f",
+          "19adf528da6d6e1fba19a914e61fc3e0287fa0cab95c610b7612f825132be930",
+          "{\"client_order_id\":\"certification:3b744e33e2de25c1afd6764eac3268ba8d51ac8ef905200e62230bc4a2261ddf:entry\",\"order_type\":\"LIMIT\",\"price\":\"83513\",\"quantity\":\"0.0002\",\"reduce_only\":false,\"side\":\"BUY\",\"strategy_id\":\"TESTNET_CERTIFICATION_ENTRY\",\"symbol\":\"par:BTC\",\"tif\":\"Ioc\"}",
+          "certification:3b744e33e2de25c1afd6764eac3268ba8d51ac8ef905200e62230bc4a2261ddf",
+          "UNKNOWN",
+          null,
+          "{\"code\":\"TRANSMISSION_UNCERTAIN\",\"reason\":\"ExchangeError\"}",
+          1791964524123,
+          1791964526982
+        ],
+        [
+          "certification:3e057842531f7b43ae3f46a21503350ddcee932afce369dca98a8d7d5d5b5f99:entry",
+          "0x8e73fd40fceb5abb949215079466cb0b",
+          "951b6df702f51ddfa4fcf98be678c2d80a89c0838d7dd2aecc1a525d717cc418",
+          "{\"client_order_id\":\"certification:3e057842531f7b43ae3f46a21503350ddcee932afce369dca98a8d7d5d5b5f99:entry\",\"order_type\":\"LIMIT\",\"price\":\"81593\",\"quantity\":\"0.0002\",\"reduce_only\":false,\"side\":\"BUY\",\"strategy_id\":\"TESTNET_CERTIFICATION_ENTRY\",\"symbol\":\"par:BTC\",\"tif\":\"Ioc\"}",
+          "certification:3e057842531f7b43ae3f46a21503350ddcee932afce369dca98a8d7d5d5b5f99",
+          "FILLED",
+          "62755970305",
+          "{\"average_price\":\"81512.0\",\"code\":\"ACCOUNT_EVIDENCE_RECOVERY\",\"filled_quantity\":\"0.0002\",\"remainder_cancelled\":false,\"remaining_quantity\":\"0.0000\"}",
+          1792039588464,
+          1792039594533
+        ],
+        [
+          "certification:937d17be328acd02a98fbcafc2ed4ceedb93ef4b3832b01cb8407b372ff736bd:exit:0",
+          "0xbb16ea7808930ef2742c1b8f91f7f27c",
+          "f4dccd0bb5c8297c94f462dff500ec59cb4d4cfff409a486cdd2cca5dcaf12b8",
+          "{\"client_order_id\":\"certification:937d17be328acd02a98fbcafc2ed4ceedb93ef4b3832b01cb8407b372ff736bd:exit:0\",\"order_type\":\"LIMIT\",\"price\":\"81828\",\"quantity\":\"0.0002\",\"reduce_only\":true,\"side\":\"SELL\",\"strategy_id\":\"TESTNET_CERTIFICATION_EXIT\",\"symbol\":\"par:BTC\",\"tif\":\"Ioc\"}",
+          "certification:937d17be328acd02a98fbcafc2ed4ceedb93ef4b3832b01cb8407b372ff736bd",
+          "FILLED",
+          "62805581662",
+          "{\"average_price\":\"81909.0\",\"code\":null,\"exchange_order_id\":\"62805581662\",\"filled_quantity\":\"0.0002\",\"reason\":null,\"remainder_cancelled\":false,\"remaining_quantity\":\"0.0000\",\"result\":\"ORDER_FILLED\",\"state\":\"OrderState.FILLED\"}",
+          1792082602839,
+          1792082606325
+        ]
+      ],
+      "certificate_checksums": [
+        [
+          "a6ea851efdd3c0e90b26b55587bdb60e3ba8449b782d1e39a94a01743acdd058"
+        ]
+      ]
+    }
+  },
+  "request_sha256": "b3ca1d4b54d67790f66782165738f56baa241dac906febda2af3d1520c480d9e"
+}

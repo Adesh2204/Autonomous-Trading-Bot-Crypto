@@ -1,0 +1,21 @@
+F......................F................................................ [ 52%]
+................................................................         [100%]
+=================================== FAILURES ===================================
+_ test_previous_two_dollar_crossing_selects_one_executable_wire_inside_approved_corridor _
+algo-trading-bot/test_native_price_corridor.py:52: in test_previous_two_dollar_crossing_selects_one_executable_wire_inside_approved_corridor
+    assert r['status']=='TRADE_CLOSED_RECONCILED',r.get('error')
+E   AssertionError: CERTIFICATION_UNCERTAIN_ORDER_URGENT_REVIEW
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'TRADE_CLOSED_RECONCILED'
+E     
+E     - TRADE_CLOSED_RECONCILED
+E     + EMERGENCY_EXIT_REQUIRED
+___ test_duplicate_submit_returns_original_durable_price_and_never_reprices ____
+algo-trading-bot/test_native_price_corridor.py:137: in test_duplicate_submit_returns_original_durable_price_and_never_reprices
+    assert first.exchange_order_id==second.exchange_order_id and len(c.venue.calls)==count==1
+E   AssertionError: assert (None == None and 0 == 1)
+E    +  where None = LiveOrder(cloid='0xc62227eb7a579ff1a9b677ed58471b11', intent_key='certification:2fc1612d10d699d0c0c99d5e2d9bc1c304caa6...eason='ExchangeError', execution_mode='OFFLINE_SIGNED_FIXTURE', source='EXCHANGE_RESPONSE_SUMMARY_NOT_ACCOUNTING_FILL').exchange_order_id
+E    +  and   None = LiveOrder(cloid='0xc62227eb7a579ff1a9b677ed58471b11', intent_key='certification:2fc1612d10d699d0c0c99d5e2d9bc1c304caa6...eason='ExchangeError', execution_mode='OFFLINE_SIGNED_FIXTURE', source='EXCHANGE_RESPONSE_SUMMARY_NOT_ACCOUNTING_FILL').exchange_order_id
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_native_price_corridor.py::test_previous_two_dollar_crossing_selects_one_executable_wire_inside_approved_corridor
+FAILED algo-trading-bot/test_native_price_corridor.py::test_duplicate_submit_returns_original_durable_price_and_never_reprices
+2 failed, 134 passed in 34.27s

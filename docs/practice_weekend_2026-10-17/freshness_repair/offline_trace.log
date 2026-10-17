@@ -1,0 +1,14 @@
+OFFLINE_NATIVE_BOUNDARY_ERROR ExchangeError INVALID_SAME_ACTION_REVALIDATION
+F
+=================================== FAILURES ===================================
+_ test_previous_two_dollar_crossing_selects_one_executable_wire_inside_approved_corridor _
+algo-trading-bot/test_native_price_corridor.py:52: in test_previous_two_dollar_crossing_selects_one_executable_wire_inside_approved_corridor
+    assert r['status']=='TRADE_CLOSED_RECONCILED',r.get('error')
+E   AssertionError: CERTIFICATION_UNCERTAIN_ORDER_URGENT_REVIEW
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'TRADE_CLOSED_RECONCILED'
+E     
+E     - TRADE_CLOSED_RECONCILED
+E     + EMERGENCY_EXIT_REQUIRED
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_native_price_corridor.py::test_previous_two_dollar_crossing_selects_one_executable_wire_inside_approved_corridor
+1 failed in 1.23s

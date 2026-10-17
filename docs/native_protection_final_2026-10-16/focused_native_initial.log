@@ -1,0 +1,15 @@
+..............................................F......................... [ 44%]
+........................................................................ [ 89%]
+.................                                                        [100%]
+=================================== FAILURES ===================================
+__________ test_lost_stop_ack_is_read_back_once_without_resubmission ___________
+algo-trading-bot/test_native_qualification.py:256: in test_lost_stop_ack_is_read_back_once_without_resubmission
+    assert r['status']=='TRADE_CLOSED_RECONCILED',r.get('error')
+E   AssertionError: NATIVE_STOP_UNSETTLED_NO_COMPETING_IOC
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'TRADE_CLOSED_RECONCILED'
+E     
+E     - TRADE_CLOSED_RECONCILED
+E     + EMERGENCY_EXIT_REQUIRED
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_native_qualification.py::test_lost_stop_ack_is_read_back_once_without_resubmission
+1 failed, 160 passed in 54.96s

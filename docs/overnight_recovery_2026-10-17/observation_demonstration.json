@@ -1,0 +1,1071 @@
+{
+  "runs": [
+    {
+      "session_id": "40f89919e997491e958438688d494b59",
+      "output": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/overnight-recovery-demo/sessions/40f89919e997491e958438688d494b59",
+      "source_hash": "049bbe5d1c4e1d48d06be7643f969ada26ab35f92a189dad0963284f36c1bad2",
+      "status": "STOPPED",
+      "terminal_flat": true,
+      "threads_stopped": true,
+      "signatures": 0,
+      "exchange_writes": 0,
+      "execution_intents": 0,
+      "readbacks": [
+        {
+          "observed_ms": 1792229149803,
+          "ready": true,
+          "positions": [],
+          "orders": [],
+          "team": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+          "source": "EXCHANGE_DIRECT_TESTNET_PAR_INFO"
+        },
+        {
+          "observed_ms": 1792229152960,
+          "ready": true,
+          "positions": [],
+          "orders": [],
+          "team": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+          "source": "EXCHANGE_DIRECT_TESTNET_PAR_INFO"
+        }
+      ],
+      "requests": 137,
+      "actual_errors": {},
+      "scan_windows": 1,
+      "restart_context": {
+        "previous_session": "ccd16ee5dcdd4abaaf0c8da8d0681c62",
+        "previous_output": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/overnight-recovery-demo/sessions/ccd16ee5dcdd4abaaf0c8da8d0681c62",
+        "restored_authority": false,
+        "policy": "Fresh public reconciliation; never restore signing from a prior process"
+      },
+      "terminal_result_sha256": "def42296240f7724c1e185b88de87d440eef1b91831d37020b983813c2a28d19",
+      "latest_opportunities": [
+        {
+          "symbol": "par:EWJ",
+          "liquidity_only_quantity": "0.526",
+          "liquidity_only_notional": "49.922134",
+          "economically_viable_notional": "0",
+          "authorized_executable_notional": "0",
+          "expected_net_pnl": null,
+          "expected_return_probability": null,
+          "decision": "OBSERVE",
+          "reasons": [
+            "SIGNAL_ECONOMIC_EVIDENCE_STALE",
+            "NO_CURRENT_QUALIFIED_FROZEN_LONG_SIGNAL",
+            "EMPIRICAL_EXPECTED_EDGE_NOT_ESTABLISHED",
+            "NATIVE_RESIDUAL_PROTECTION_UNQUALIFIED",
+            "NO_EXACT_SESSION_AUTHORITY"
+          ],
+          "observed_ms": 1792229110688,
+          "quantity_bounds": {
+            "entry_bbo": "0.5269",
+            "exit_bbo": "1.0536",
+            "entry_five_bps": "4.2153",
+            "exit_five_bps": "4.2153",
+            "account": "10537.519",
+            "margin": "10479.81807439166812753576608",
+            "proposed_upper_cap": "105.3640855977831396390226427"
+          },
+          "spread_bps": "5.164173284361513208163609441",
+          "entry_capacity": "0.526",
+          "exit_capacity": "1.053",
+          "book_age_ms": 4700,
+          "fee_age_ms": 10046,
+          "funding_rate": "None",
+          "conditional_target_net": null,
+          "stressed_conditional_target_net": null
+        },
+        {
+          "symbol": "par:ETH",
+          "liquidity_only_quantity": "0.0205",
+          "liquidity_only_notional": "49.83960",
+          "economically_viable_notional": "0",
+          "authorized_executable_notional": "0",
+          "expected_net_pnl": null,
+          "expected_return_probability": null,
+          "decision": "OBSERVE",
+          "reasons": [
+            "NO_CURRENT_QUALIFIED_FROZEN_LONG_SIGNAL",
+            "EMPIRICAL_EXPECTED_EDGE_NOT_ESTABLISHED",
+            "NATIVE_RESIDUAL_PROTECTION_UNQUALIFIED",
+            "NO_EXACT_SESSION_AUTHORITY"
+          ],
+          "observed_ms": 1792229108040,
+          "quantity_bounds": {
+            "entry_bbo": "0.0205",
+            "exit_bbo": "0.04111",
+            "entry_five_bps": "0.0205",
+            "exit_five_bps": "0.16852",
+            "account": "411.3702",
+            "margin": "409.1103379493414076654705590",
+            "proposed_upper_cap": "4.113195129976966107272128990"
+          },
+          "spread_bps": "1.234034676374406120811994817",
+          "entry_capacity": "0.0205",
+          "exit_capacity": "0.0411",
+          "book_age_ms": 2052,
+          "fee_age_ms": 7398,
+          "funding_rate": "None",
+          "conditional_target_net": null,
+          "stressed_conditional_target_net": null
+        },
+        {
+          "symbol": "par:BTC",
+          "liquidity_only_quantity": "0.0006",
+          "liquidity_only_notional": "48.95940",
+          "economically_viable_notional": "0",
+          "authorized_executable_notional": "0",
+          "expected_net_pnl": null,
+          "expected_return_probability": null,
+          "decision": "OBSERVE",
+          "reasons": [
+            "NO_CURRENT_QUALIFIED_FROZEN_LONG_SIGNAL",
+            "EMPIRICAL_EXPECTED_EDGE_NOT_ESTABLISHED",
+            "NATIVE_RESIDUAL_PROTECTION_UNQUALIFIED",
+            "NO_EXACT_SESSION_AUTHORITY"
+          ],
+          "observed_ms": 1792229104648,
+          "quantity_bounds": {
+            "entry_bbo": "0.00061",
+            "exit_bbo": "0.00061",
+            "entry_five_bps": "0.01113",
+            "exit_five_bps": "0.02210",
+            "account": "12.255",
+            "margin": "12.18923091732054106442838789",
+            "proposed_upper_cap": "0.1225505214524687802546599836"
+          },
+          "spread_bps": "6.129403976757300120136317944",
+          "entry_capacity": "0.0006",
+          "exit_capacity": "0.0006",
+          "book_age_ms": 4390,
+          "fee_age_ms": 4006,
+          "funding_rate": "None",
+          "conditional_target_net": null,
+          "stressed_conditional_target_net": null
+        },
+        {
+          "symbol": "par:BRENT",
+          "liquidity_only_quantity": "0.09",
+          "liquidity_only_notional": "9.6246",
+          "economically_viable_notional": "0",
+          "authorized_executable_notional": "0",
+          "expected_net_pnl": null,
+          "expected_return_probability": null,
+          "decision": "OBSERVE",
+          "reasons": [
+            "BELOW_MINIMUM_WITHIN_BOTH_SIDE_CAPACITY",
+            "NO_CURRENT_QUALIFIED_FROZEN_LONG_SIGNAL",
+            "EMPIRICAL_EXPECTED_EDGE_NOT_ESTABLISHED",
+            "NATIVE_RESIDUAL_PROTECTION_UNQUALIFIED",
+            "NO_EXACT_SESSION_AUTHORITY"
+          ],
+          "observed_ms": 1792229102390,
+          "quantity_bounds": {
+            "entry_bbo": "0.093",
+            "exit_bbo": "0.467",
+            "entry_five_bps": "3.039",
+            "exit_five_bps": "3.833",
+            "account": "9356.28",
+            "margin": "9300.814041728434919733420825",
+            "proposed_upper_cap": "93.51037965214138769403403778"
+          },
+          "spread_bps": "5.612197175194088485642128893",
+          "entry_capacity": "0.09",
+          "exit_capacity": "0.46",
+          "book_age_ms": 2132,
+          "fee_age_ms": 1748,
+          "funding_rate": "None",
+          "conditional_target_net": null,
+          "stressed_conditional_target_net": null
+        }
+      ],
+      "latest_signals": [
+        {
+          "symbol": "par:BRENT",
+          "observed_ms": 1792229102389,
+          "decision": "NO_TRADE",
+          "reasons": [
+            "COMPLETED_CANDLE_STALE"
+          ],
+          "metrics": {},
+          "baseline_strategy_unchanged": true,
+          "order_submission_enabled": false,
+          "confidence_probability": null,
+          "data_status": "FAILED_SAFE",
+          "approved_quantity": null,
+          "execution_preflight": "NOT_AUTHORIZED",
+          "protection": "ACTUAL_NATIVE_TRIGGER_QUALIFICATION_REQUIRED"
+        },
+        {
+          "symbol": "par:BTC",
+          "observed_ms": 1792229104648,
+          "decision": "NO_TRADE",
+          "reasons": [
+            "COMPLETED_CANDLE_STALE"
+          ],
+          "metrics": {},
+          "baseline_strategy_unchanged": true,
+          "order_submission_enabled": false,
+          "confidence_probability": null,
+          "data_status": "FAILED_SAFE",
+          "approved_quantity": null,
+          "execution_preflight": "NOT_AUTHORIZED",
+          "protection": "ACTUAL_NATIVE_TRIGGER_QUALIFICATION_REQUIRED"
+        },
+        {
+          "symbol": "par:ETH",
+          "observed_ms": 1792229108040,
+          "decision": "NO_TRADE",
+          "reasons": [
+            "COMPLETED_CANDLE_STALE"
+          ],
+          "metrics": {},
+          "baseline_strategy_unchanged": true,
+          "order_submission_enabled": false,
+          "confidence_probability": null,
+          "data_status": "FAILED_SAFE",
+          "approved_quantity": null,
+          "execution_preflight": "NOT_AUTHORIZED",
+          "protection": "ACTUAL_NATIVE_TRIGGER_QUALIFICATION_REQUIRED"
+        },
+        {
+          "symbol": "par:EWJ",
+          "decision": "NO_TRADE",
+          "reasons": [
+            "INFO_READ_CANCELLED"
+          ],
+          "approved_quantity": null,
+          "execution_preflight": "NOT_AUTHORIZED",
+          "protection": "ACTUAL_NATIVE_TRIGGER_QUALIFICATION_REQUIRED"
+        }
+      ],
+      "performance": {
+        "source": "EXCHANGE_REPORTED_FILLS_FEES_FUNDING",
+        "session_started_ms": 1792229026180,
+        "initial_equity": "1000000.050512",
+        "initial_equity_observed_ms": 1792229030081,
+        "current_equity": "1000000.050512",
+        "as_of_ms": 1792229099594,
+        "actual_gross_realized": "0",
+        "actual_fees": "0",
+        "actual_funding": "0",
+        "actual_net_realized": "0",
+        "realized_net_on_initial_equity_pct": "0E+6",
+        "equity_change_pct": "0",
+        "return_basis": "First verified session equity; equity change is not cash-flow-adjusted or an official competition return",
+        "sampled_maximum_drawdown_pct": "0",
+        "fill_count": 0,
+        "funding_event_count": 0,
+        "official_score": null,
+        "daily_return_volatility": null,
+        "accounting_complete": true,
+        "unrealized_pnl_source": "See exchange-reported position fields; no synthetic valuation added"
+      },
+      "account": {
+        "source": "EXCHANGE_REPORTED_ACCOUNT_OBSERVER",
+        "exchange_orders_submitted": 0,
+        "entries_paused": false,
+        "reasons": [],
+        "positions": [],
+        "open_orders": [],
+        "fills": [
+          {
+            "symbol": "par:BTC",
+            "timestamp_ms": 1792039590641,
+            "trade_id": "800659111758533",
+            "order_id": "62755970305",
+            "side": "BUY",
+            "quantity": "0.0002",
+            "price": "81512.0",
+            "fee": "0.014672",
+            "fee_token": "USDPR",
+            "closed_pnl": "0.0",
+            "start_position": "0.0",
+            "source": "EXCHANGE_REPORTED_FILL",
+            "exchange_ts": "2026-10-15T04:46:30.641+00:00",
+            "received_ts": "2026-10-17T09:23:48.632+00:00",
+            "processed_ts": "2026-10-17T09:23:48.632+00:00"
+          },
+          {
+            "symbol": "par:BTC",
+            "timestamp_ms": 1792082605936,
+            "trade_id": "260274449763192",
+            "order_id": "62805581662",
+            "side": "SELL",
+            "quantity": "0.0002",
+            "price": "81909.0",
+            "fee": "0.014743",
+            "fee_token": "USDPR",
+            "closed_pnl": "0.0794",
+            "start_position": "0.0002",
+            "source": "EXCHANGE_REPORTED_FILL",
+            "exchange_ts": "2026-10-15T16:43:25.936+00:00",
+            "received_ts": "2026-10-17T09:23:48.632+00:00",
+            "processed_ts": "2026-10-17T09:23:48.632+00:00"
+          }
+        ],
+        "funding_events": [
+          {
+            "symbol": "par:BTC",
+            "timestamp_ms": 1792040400069,
+            "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "cashflow": "0.000141",
+            "position_quantity": "0.0002",
+            "funding_rate": "-0.0000086424",
+            "collateral": "USDPR",
+            "source": "EXCHANGE_REPORTED_USER_FUNDING",
+            "exchange_ts": "2026-10-15T05:00:00.069+00:00",
+            "received_ts": "2026-10-17T09:23:48.921+00:00",
+            "processed_ts": "2026-10-17T09:23:48.921+00:00"
+          },
+          {
+            "symbol": "par:BTC",
+            "timestamp_ms": 1792044000094,
+            "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "cashflow": "-0.000201",
+            "position_quantity": "0.0002",
+            "funding_rate": "0.0000125",
+            "collateral": "USDPR",
+            "source": "EXCHANGE_REPORTED_USER_FUNDING",
+            "exchange_ts": "2026-10-15T06:00:00.094+00:00",
+            "received_ts": "2026-10-17T09:23:48.921+00:00",
+            "processed_ts": "2026-10-17T09:23:48.921+00:00"
+          },
+          {
+            "symbol": "par:BTC",
+            "timestamp_ms": 1792047600021,
+            "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "cashflow": "0.000279",
+            "position_quantity": "0.0002",
+            "funding_rate": "-0.0000172637",
+            "collateral": "USDPR",
+            "source": "EXCHANGE_REPORTED_USER_FUNDING",
+            "exchange_ts": "2026-10-15T07:00:00.021+00:00",
+            "received_ts": "2026-10-17T09:23:48.921+00:00",
+            "processed_ts": "2026-10-17T09:23:48.921+00:00"
+          },
+          {
+            "symbol": "par:BTC",
+            "timestamp_ms": 1792051200021,
+            "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "cashflow": "0.0002",
+            "position_quantity": "0.0002",
+            "funding_rate": "-0.0000123111",
+            "collateral": "USDPR",
+            "source": "EXCHANGE_REPORTED_USER_FUNDING",
+            "exchange_ts": "2026-10-15T08:00:00.021+00:00",
+            "received_ts": "2026-10-17T09:23:48.921+00:00",
+            "processed_ts": "2026-10-17T09:23:48.921+00:00"
+          },
+          {
+            "symbol": "par:BTC",
+            "timestamp_ms": 1792054800047,
+            "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "cashflow": "0.000178",
+            "position_quantity": "0.0002",
+            "funding_rate": "-0.0000109805",
+            "collateral": "USDPR",
+            "source": "EXCHANGE_REPORTED_USER_FUNDING",
+            "exchange_ts": "2026-10-15T09:00:00.047+00:00",
+            "received_ts": "2026-10-17T09:23:48.921+00:00",
+            "processed_ts": "2026-10-17T09:23:48.921+00:00"
+          },
+          {
+            "symbol": "par:BTC",
+            "timestamp_ms": 1792058400045,
+            "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "cashflow": "0.00038",
+            "position_quantity": "0.0002",
+            "funding_rate": "-0.000023434",
+            "collateral": "USDPR",
+            "source": "EXCHANGE_REPORTED_USER_FUNDING",
+            "exchange_ts": "2026-10-15T10:00:00.045+00:00",
+            "received_ts": "2026-10-17T09:23:48.921+00:00",
+            "processed_ts": "2026-10-17T09:23:48.921+00:00"
+          },
+          {
+            "symbol": "par:BTC",
+            "timestamp_ms": 1792062000033,
+            "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "cashflow": "0.00029",
+            "position_quantity": "0.0002",
+            "funding_rate": "-0.0000179304",
+            "collateral": "USDPR",
+            "source": "EXCHANGE_REPORTED_USER_FUNDING",
+            "exchange_ts": "2026-10-15T11:00:00.033+00:00",
+            "received_ts": "2026-10-17T09:23:48.921+00:00",
+            "processed_ts": "2026-10-17T09:23:48.921+00:00"
+          },
+          {
+            "symbol": "par:BTC",
+            "timestamp_ms": 1792065600041,
+            "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "cashflow": "0.000065",
+            "position_quantity": "0.0002",
+            "funding_rate": "-0.0000040561",
+            "collateral": "USDPR",
+            "source": "EXCHANGE_REPORTED_USER_FUNDING",
+            "exchange_ts": "2026-10-15T12:00:00.041+00:00",
+            "received_ts": "2026-10-17T09:23:48.921+00:00",
+            "processed_ts": "2026-10-17T09:23:48.921+00:00"
+          },
+          {
+            "symbol": "par:BTC",
+            "timestamp_ms": 1792069200048,
+            "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "cashflow": "-0.000195",
+            "position_quantity": "0.0002",
+            "funding_rate": "0.0000121642",
+            "collateral": "USDPR",
+            "source": "EXCHANGE_REPORTED_USER_FUNDING",
+            "exchange_ts": "2026-10-15T13:00:00.048+00:00",
+            "received_ts": "2026-10-17T09:23:48.921+00:00",
+            "processed_ts": "2026-10-17T09:23:48.921+00:00"
+          },
+          {
+            "symbol": "par:BTC",
+            "timestamp_ms": 1792072800071,
+            "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "cashflow": "-0.0002",
+            "position_quantity": "0.0002",
+            "funding_rate": "0.0000125",
+            "collateral": "USDPR",
+            "source": "EXCHANGE_REPORTED_USER_FUNDING",
+            "exchange_ts": "2026-10-15T14:00:00.071+00:00",
+            "received_ts": "2026-10-17T09:23:48.921+00:00",
+            "processed_ts": "2026-10-17T09:23:48.921+00:00"
+          },
+          {
+            "symbol": "par:BTC",
+            "timestamp_ms": 1792076400040,
+            "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "cashflow": "-0.000204",
+            "position_quantity": "0.0002",
+            "funding_rate": "0.0000125",
+            "collateral": "USDPR",
+            "source": "EXCHANGE_REPORTED_USER_FUNDING",
+            "exchange_ts": "2026-10-15T15:00:00.040+00:00",
+            "received_ts": "2026-10-17T09:23:48.921+00:00",
+            "processed_ts": "2026-10-17T09:23:48.921+00:00"
+          },
+          {
+            "symbol": "par:BTC",
+            "timestamp_ms": 1792080000000,
+            "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "cashflow": "-0.000206",
+            "position_quantity": "0.0002",
+            "funding_rate": "0.0000125",
+            "collateral": "USDPR",
+            "source": "EXCHANGE_REPORTED_USER_FUNDING",
+            "exchange_ts": "2026-10-15T16:00:00.000+00:00",
+            "received_ts": "2026-10-17T09:23:48.921+00:00",
+            "processed_ts": "2026-10-17T09:23:48.921+00:00"
+          }
+        ],
+        "reported_account_equity": {
+          "reported_account_value": "1000000.050512",
+          "collateral_balance": "1000000.050512",
+          "margin_used": "0",
+          "withdrawable": null,
+          "valuation_source": "spotClearinghouseState.USDPR.total"
+        },
+        "accounting_window_ms": [
+          0,
+          1792229150149
+        ],
+        "latest_query_window_ms": [
+          1792229051354,
+          1792229150149
+        ],
+        "realized": {
+          "gross_closed_pnl": "0.0794",
+          "actual_fill_fees": "0.029415",
+          "actual_funding_cashflow": "0.000527",
+          "net_after_fees_and_funding": "0.050512",
+          "scope": "ONLY_OBSERVED_ACCOUNT_EVENTS; excludes deposits/transfers and unknown historical events"
+        },
+        "corrections": [
+          {
+            "kind": "EXCHANGE_TRUTH_ADOPTED",
+            "timestamp_ms": 1792229149133,
+            "differences": {},
+            "new_fill_count": 0,
+            "reasons": [],
+            "exchange_ts": null,
+            "received_ts": "2026-10-17T09:25:49.133+00:00",
+            "processed_ts": "2026-10-17T09:25:49.133+00:00",
+            "timestamp_source": "LOCAL_PROCESS",
+            "exchange_to_receive_ms": null,
+            "receive_to_process_ms": 0,
+            "clock_skew_detected": false
+          },
+          {
+            "kind": "EXCHANGE_TRUTH_ADOPTED",
+            "timestamp_ms": 1792229152070,
+            "differences": {},
+            "new_fill_count": 0,
+            "reasons": [],
+            "exchange_ts": null,
+            "received_ts": "2026-10-17T09:25:52.070+00:00",
+            "processed_ts": "2026-10-17T09:25:52.070+00:00",
+            "timestamp_source": "LOCAL_PROCESS",
+            "exchange_to_receive_ms": null,
+            "receive_to_process_ms": 0,
+            "clock_skew_detected": false
+          }
+        ]
+      },
+      "last_scan_ms": 1792229110689,
+      "market_ws_ever_connected": true,
+      "account_ws_ever_healthy": false
+    },
+    {
+      "session_id": "ccd16ee5dcdd4abaaf0c8da8d0681c62",
+      "output": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/overnight-recovery-demo/sessions/ccd16ee5dcdd4abaaf0c8da8d0681c62",
+      "source_hash": "049bbe5d1c4e1d48d06be7643f969ada26ab35f92a189dad0963284f36c1bad2",
+      "status": "STOPPED",
+      "terminal_flat": true,
+      "threads_stopped": true,
+      "signatures": 0,
+      "exchange_writes": 0,
+      "execution_intents": 0,
+      "readbacks": [
+        {
+          "observed_ms": 1792228986912,
+          "ready": true,
+          "positions": [],
+          "orders": [],
+          "team": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+          "source": "EXCHANGE_DIRECT_TESTNET_PAR_INFO"
+        },
+        {
+          "observed_ms": 1792228989817,
+          "ready": true,
+          "positions": [],
+          "orders": [],
+          "team": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+          "source": "EXCHANGE_DIRECT_TESTNET_PAR_INFO"
+        }
+      ],
+      "requests": 233,
+      "actual_errors": {
+        "None:INFO_READ_CANCELLED": 1
+      },
+      "scan_windows": 3,
+      "restart_context": {
+        "previous_session": null,
+        "previous_output": null,
+        "restored_authority": false,
+        "policy": "Fresh public reconciliation; never restore signing from a prior process"
+      },
+      "terminal_result_sha256": "88705e5af828cc13117653ac1de9345e2dec6128f383694f661d5bdef6883a06",
+      "latest_opportunities": [
+        {
+          "symbol": "par:EWJ",
+          "liquidity_only_quantity": "0.526",
+          "liquidity_only_notional": "49.922134",
+          "economically_viable_notional": "0",
+          "authorized_executable_notional": "0",
+          "expected_net_pnl": null,
+          "expected_return_probability": null,
+          "decision": "OBSERVE",
+          "reasons": [
+            "NO_CURRENT_QUALIFIED_FROZEN_LONG_SIGNAL",
+            "EMPIRICAL_EXPECTED_EDGE_NOT_ESTABLISHED",
+            "NATIVE_RESIDUAL_PROTECTION_UNQUALIFIED",
+            "NO_EXACT_SESSION_AUTHORITY"
+          ],
+          "observed_ms": 1792228943687,
+          "quantity_bounds": {
+            "entry_bbo": "0.5269",
+            "exit_bbo": "0.5269",
+            "entry_five_bps": "4.2154",
+            "exit_five_bps": "9.4851",
+            "account": "10537.519",
+            "margin": "10479.81807439166812753576608",
+            "proposed_upper_cap": "105.3640855977831396390226427"
+          },
+          "spread_bps": "6.112984822934232715008431703",
+          "entry_capacity": "0.526",
+          "exit_capacity": "0.526",
+          "book_age_ms": 3686,
+          "fee_age_ms": 126314,
+          "funding_rate": "None",
+          "conditional_target_net": null,
+          "stressed_conditional_target_net": null
+        },
+        {
+          "symbol": "par:ETH",
+          "liquidity_only_quantity": "0.0205",
+          "liquidity_only_notional": "49.86010",
+          "economically_viable_notional": "0",
+          "authorized_executable_notional": "0",
+          "expected_net_pnl": null,
+          "expected_return_probability": null,
+          "decision": "OBSERVE",
+          "reasons": [
+            "NO_CURRENT_QUALIFIED_FROZEN_LONG_SIGNAL",
+            "EMPIRICAL_EXPECTED_EDGE_NOT_ESTABLISHED",
+            "NATIVE_RESIDUAL_PROTECTION_UNQUALIFIED",
+            "NO_EXACT_SESSION_AUTHORITY"
+          ],
+          "observed_ms": 1792228942523,
+          "quantity_bounds": {
+            "entry_bbo": "0.0205",
+            "exit_bbo": "0.06162",
+            "entry_five_bps": "0.58397",
+            "exit_five_bps": "0.37413",
+            "account": "411.2687",
+            "margin": "408.9421320707338336963621508",
+            "proposed_upper_cap": "4.111503988158868514102458679"
+          },
+          "spread_bps": "7.403446715748776374778924855",
+          "entry_capacity": "0.0205",
+          "exit_capacity": "0.0616",
+          "book_age_ms": 2522,
+          "fee_age_ms": 125150,
+          "funding_rate": "None",
+          "conditional_target_net": null,
+          "stressed_conditional_target_net": null
+        },
+        {
+          "symbol": "par:BRENT",
+          "liquidity_only_quantity": "0.46",
+          "liquidity_only_notional": "49.1832",
+          "economically_viable_notional": "0",
+          "authorized_executable_notional": "0",
+          "expected_net_pnl": null,
+          "expected_return_probability": null,
+          "decision": "OBSERVE",
+          "reasons": [
+            "NO_CURRENT_QUALIFIED_FROZEN_LONG_SIGNAL",
+            "EMPIRICAL_EXPECTED_EDGE_NOT_ESTABLISHED",
+            "NATIVE_RESIDUAL_PROTECTION_UNQUALIFIED",
+            "NO_EXACT_SESSION_AUTHORITY"
+          ],
+          "observed_ms": 1792228940113,
+          "quantity_bounds": {
+            "entry_bbo": "0.467",
+            "exit_bbo": "3.74",
+            "entry_five_bps": "2.898",
+            "exit_five_bps": "22.540",
+            "account": "9356.28",
+            "margin": "9302.553812405900021663786224",
+            "proposed_upper_cap": "93.52787130564908342686120464"
+          },
+          "spread_bps": "7.485029940119760479041916168",
+          "entry_capacity": "0.46",
+          "exit_capacity": "3.74",
+          "book_age_ms": 624,
+          "fee_age_ms": 122740,
+          "funding_rate": "None",
+          "conditional_target_net": null,
+          "stressed_conditional_target_net": null
+        },
+        {
+          "symbol": "par:BTC",
+          "liquidity_only_quantity": "0.0003",
+          "liquidity_only_notional": "24.48060",
+          "economically_viable_notional": "0",
+          "authorized_executable_notional": "0",
+          "expected_net_pnl": null,
+          "expected_return_probability": null,
+          "decision": "OBSERVE",
+          "reasons": [
+            "NO_CURRENT_QUALIFIED_FROZEN_LONG_SIGNAL",
+            "EMPIRICAL_EXPECTED_EDGE_NOT_ESTABLISHED",
+            "NATIVE_RESIDUAL_PROTECTION_UNQUALIFIED",
+            "NO_EXACT_SESSION_AUTHORITY"
+          ],
+          "observed_ms": 1792228941315,
+          "quantity_bounds": {
+            "entry_bbo": "0.00038",
+            "exit_bbo": "0.00061",
+            "entry_five_bps": "0.01090",
+            "exit_five_bps": "0.02210",
+            "account": "12.2546",
+            "margin": "12.18878279481432845170819371",
+            "proposed_upper_cap": "0.1225460160290188965956716747"
+          },
+          "spread_bps": "6.129178567488385206614609510",
+          "entry_capacity": "0.0003",
+          "exit_capacity": "0.0006",
+          "book_age_ms": 1314,
+          "fee_age_ms": 123942,
+          "funding_rate": "None",
+          "conditional_target_net": null,
+          "stressed_conditional_target_net": null
+        }
+      ],
+      "latest_signals": [
+        {
+          "symbol": "par:BRENT",
+          "observed_ms": 1792228939953,
+          "decision": "NO_TRADE",
+          "reasons": [
+            "CAPITAL_FRESH_PAR_BOOK_REQUIRED"
+          ],
+          "metrics": {},
+          "baseline_strategy_unchanged": true,
+          "order_submission_enabled": false,
+          "confidence_probability": null,
+          "data_status": "FAILED_SAFE",
+          "approved_quantity": null,
+          "execution_preflight": "NOT_AUTHORIZED",
+          "protection": "ACTUAL_NATIVE_TRIGGER_QUALIFICATION_REQUIRED"
+        },
+        {
+          "symbol": "par:BTC",
+          "observed_ms": 1792228941315,
+          "decision": "NO_TRADE",
+          "reasons": [
+            "COMPLETED_CANDLE_STALE"
+          ],
+          "metrics": {},
+          "baseline_strategy_unchanged": true,
+          "order_submission_enabled": false,
+          "confidence_probability": null,
+          "data_status": "FAILED_SAFE",
+          "approved_quantity": null,
+          "execution_preflight": "NOT_AUTHORIZED",
+          "protection": "ACTUAL_NATIVE_TRIGGER_QUALIFICATION_REQUIRED"
+        },
+        {
+          "symbol": "par:ETH",
+          "observed_ms": 1792228942523,
+          "decision": "NO_TRADE",
+          "reasons": [
+            "COMPLETED_CANDLE_STALE"
+          ],
+          "metrics": {},
+          "baseline_strategy_unchanged": true,
+          "order_submission_enabled": false,
+          "confidence_probability": null,
+          "data_status": "FAILED_SAFE",
+          "approved_quantity": null,
+          "execution_preflight": "NOT_AUTHORIZED",
+          "protection": "ACTUAL_NATIVE_TRIGGER_QUALIFICATION_REQUIRED"
+        },
+        {
+          "symbol": "par:EWJ",
+          "observed_ms": 1792228943687,
+          "decision": "NO_TRADE",
+          "reasons": [
+            "COMPLETED_CANDLE_STALE"
+          ],
+          "metrics": {},
+          "baseline_strategy_unchanged": true,
+          "order_submission_enabled": false,
+          "confidence_probability": null,
+          "data_status": "FAILED_SAFE",
+          "approved_quantity": null,
+          "execution_preflight": "NOT_AUTHORIZED",
+          "protection": "ACTUAL_NATIVE_TRIGGER_QUALIFICATION_REQUIRED"
+        },
+        {
+          "symbol": "par:EWY",
+          "observed_ms": 1792228945272,
+          "decision": "NO_TRADE",
+          "reasons": [
+            "CAPITAL_FRESH_PAR_BOOK_REQUIRED",
+            "INFO_READ_CANCELLED"
+          ],
+          "metrics": {},
+          "baseline_strategy_unchanged": true,
+          "order_submission_enabled": false,
+          "confidence_probability": null,
+          "data_status": "FAILED_SAFE"
+        }
+      ],
+      "performance": {
+        "source": "EXCHANGE_REPORTED_FILLS_FEES_FUNDING",
+        "session_started_ms": 1792228742584,
+        "initial_equity": "1000000.050512",
+        "initial_equity_observed_ms": 1792228746742,
+        "current_equity": "1000000.050512",
+        "as_of_ms": 1792228817144,
+        "actual_gross_realized": "0",
+        "actual_fees": "0",
+        "actual_funding": "0",
+        "actual_net_realized": "0",
+        "realized_net_on_initial_equity_pct": "0E+6",
+        "equity_change_pct": "0",
+        "return_basis": "First verified session equity; equity change is not cash-flow-adjusted or an official competition return",
+        "sampled_maximum_drawdown_pct": "0",
+        "fill_count": 0,
+        "funding_event_count": 0,
+        "official_score": null,
+        "daily_return_volatility": null,
+        "accounting_complete": true,
+        "unrealized_pnl_source": "See exchange-reported position fields; no synthetic valuation added"
+      },
+      "account": {
+        "source": "EXCHANGE_REPORTED_ACCOUNT_OBSERVER",
+        "exchange_orders_submitted": 0,
+        "entries_paused": false,
+        "reasons": [],
+        "positions": [],
+        "open_orders": [],
+        "fills": [
+          {
+            "symbol": "par:BTC",
+            "timestamp_ms": 1792039590641,
+            "trade_id": "800659111758533",
+            "order_id": "62755970305",
+            "side": "BUY",
+            "quantity": "0.0002",
+            "price": "81512.0",
+            "fee": "0.014672",
+            "fee_token": "USDPR",
+            "closed_pnl": "0.0",
+            "start_position": "0.0",
+            "source": "EXCHANGE_REPORTED_FILL",
+            "exchange_ts": "2026-10-15T04:46:30.641+00:00",
+            "received_ts": "2026-10-17T09:19:05.305+00:00",
+            "processed_ts": "2026-10-17T09:19:05.305+00:00"
+          },
+          {
+            "symbol": "par:BTC",
+            "timestamp_ms": 1792082605936,
+            "trade_id": "260274449763192",
+            "order_id": "62805581662",
+            "side": "SELL",
+            "quantity": "0.0002",
+            "price": "81909.0",
+            "fee": "0.014743",
+            "fee_token": "USDPR",
+            "closed_pnl": "0.0794",
+            "start_position": "0.0002",
+            "source": "EXCHANGE_REPORTED_FILL",
+            "exchange_ts": "2026-10-15T16:43:25.936+00:00",
+            "received_ts": "2026-10-17T09:19:05.305+00:00",
+            "processed_ts": "2026-10-17T09:19:05.305+00:00"
+          }
+        ],
+        "funding_events": [
+          {
+            "symbol": "par:BTC",
+            "timestamp_ms": 1792040400069,
+            "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "cashflow": "0.000141",
+            "position_quantity": "0.0002",
+            "funding_rate": "-0.0000086424",
+            "collateral": "USDPR",
+            "source": "EXCHANGE_REPORTED_USER_FUNDING",
+            "exchange_ts": "2026-10-15T05:00:00.069+00:00",
+            "received_ts": "2026-10-17T09:19:05.620+00:00",
+            "processed_ts": "2026-10-17T09:19:05.620+00:00"
+          },
+          {
+            "symbol": "par:BTC",
+            "timestamp_ms": 1792044000094,
+            "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "cashflow": "-0.000201",
+            "position_quantity": "0.0002",
+            "funding_rate": "0.0000125",
+            "collateral": "USDPR",
+            "source": "EXCHANGE_REPORTED_USER_FUNDING",
+            "exchange_ts": "2026-10-15T06:00:00.094+00:00",
+            "received_ts": "2026-10-17T09:19:05.620+00:00",
+            "processed_ts": "2026-10-17T09:19:05.620+00:00"
+          },
+          {
+            "symbol": "par:BTC",
+            "timestamp_ms": 1792047600021,
+            "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "cashflow": "0.000279",
+            "position_quantity": "0.0002",
+            "funding_rate": "-0.0000172637",
+            "collateral": "USDPR",
+            "source": "EXCHANGE_REPORTED_USER_FUNDING",
+            "exchange_ts": "2026-10-15T07:00:00.021+00:00",
+            "received_ts": "2026-10-17T09:19:05.620+00:00",
+            "processed_ts": "2026-10-17T09:19:05.620+00:00"
+          },
+          {
+            "symbol": "par:BTC",
+            "timestamp_ms": 1792051200021,
+            "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "cashflow": "0.0002",
+            "position_quantity": "0.0002",
+            "funding_rate": "-0.0000123111",
+            "collateral": "USDPR",
+            "source": "EXCHANGE_REPORTED_USER_FUNDING",
+            "exchange_ts": "2026-10-15T08:00:00.021+00:00",
+            "received_ts": "2026-10-17T09:19:05.620+00:00",
+            "processed_ts": "2026-10-17T09:19:05.620+00:00"
+          },
+          {
+            "symbol": "par:BTC",
+            "timestamp_ms": 1792054800047,
+            "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "cashflow": "0.000178",
+            "position_quantity": "0.0002",
+            "funding_rate": "-0.0000109805",
+            "collateral": "USDPR",
+            "source": "EXCHANGE_REPORTED_USER_FUNDING",
+            "exchange_ts": "2026-10-15T09:00:00.047+00:00",
+            "received_ts": "2026-10-17T09:19:05.620+00:00",
+            "processed_ts": "2026-10-17T09:19:05.620+00:00"
+          },
+          {
+            "symbol": "par:BTC",
+            "timestamp_ms": 1792058400045,
+            "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "cashflow": "0.00038",
+            "position_quantity": "0.0002",
+            "funding_rate": "-0.000023434",
+            "collateral": "USDPR",
+            "source": "EXCHANGE_REPORTED_USER_FUNDING",
+            "exchange_ts": "2026-10-15T10:00:00.045+00:00",
+            "received_ts": "2026-10-17T09:19:05.620+00:00",
+            "processed_ts": "2026-10-17T09:19:05.620+00:00"
+          },
+          {
+            "symbol": "par:BTC",
+            "timestamp_ms": 1792062000033,
+            "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "cashflow": "0.00029",
+            "position_quantity": "0.0002",
+            "funding_rate": "-0.0000179304",
+            "collateral": "USDPR",
+            "source": "EXCHANGE_REPORTED_USER_FUNDING",
+            "exchange_ts": "2026-10-15T11:00:00.033+00:00",
+            "received_ts": "2026-10-17T09:19:05.620+00:00",
+            "processed_ts": "2026-10-17T09:19:05.620+00:00"
+          },
+          {
+            "symbol": "par:BTC",
+            "timestamp_ms": 1792065600041,
+            "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "cashflow": "0.000065",
+            "position_quantity": "0.0002",
+            "funding_rate": "-0.0000040561",
+            "collateral": "USDPR",
+            "source": "EXCHANGE_REPORTED_USER_FUNDING",
+            "exchange_ts": "2026-10-15T12:00:00.041+00:00",
+            "received_ts": "2026-10-17T09:19:05.620+00:00",
+            "processed_ts": "2026-10-17T09:19:05.620+00:00"
+          },
+          {
+            "symbol": "par:BTC",
+            "timestamp_ms": 1792069200048,
+            "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "cashflow": "-0.000195",
+            "position_quantity": "0.0002",
+            "funding_rate": "0.0000121642",
+            "collateral": "USDPR",
+            "source": "EXCHANGE_REPORTED_USER_FUNDING",
+            "exchange_ts": "2026-10-15T13:00:00.048+00:00",
+            "received_ts": "2026-10-17T09:19:05.620+00:00",
+            "processed_ts": "2026-10-17T09:19:05.620+00:00"
+          },
+          {
+            "symbol": "par:BTC",
+            "timestamp_ms": 1792072800071,
+            "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "cashflow": "-0.0002",
+            "position_quantity": "0.0002",
+            "funding_rate": "0.0000125",
+            "collateral": "USDPR",
+            "source": "EXCHANGE_REPORTED_USER_FUNDING",
+            "exchange_ts": "2026-10-15T14:00:00.071+00:00",
+            "received_ts": "2026-10-17T09:19:05.620+00:00",
+            "processed_ts": "2026-10-17T09:19:05.620+00:00"
+          },
+          {
+            "symbol": "par:BTC",
+            "timestamp_ms": 1792076400040,
+            "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "cashflow": "-0.000204",
+            "position_quantity": "0.0002",
+            "funding_rate": "0.0000125",
+            "collateral": "USDPR",
+            "source": "EXCHANGE_REPORTED_USER_FUNDING",
+            "exchange_ts": "2026-10-15T15:00:00.040+00:00",
+            "received_ts": "2026-10-17T09:19:05.620+00:00",
+            "processed_ts": "2026-10-17T09:19:05.620+00:00"
+          },
+          {
+            "symbol": "par:BTC",
+            "timestamp_ms": 1792080000000,
+            "event_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "cashflow": "-0.000206",
+            "position_quantity": "0.0002",
+            "funding_rate": "0.0000125",
+            "collateral": "USDPR",
+            "source": "EXCHANGE_REPORTED_USER_FUNDING",
+            "exchange_ts": "2026-10-15T16:00:00.000+00:00",
+            "received_ts": "2026-10-17T09:19:05.620+00:00",
+            "processed_ts": "2026-10-17T09:19:05.620+00:00"
+          }
+        ],
+        "reported_account_equity": {
+          "reported_account_value": "1000000.050512",
+          "collateral_balance": "1000000.050512",
+          "margin_used": "0",
+          "withdrawable": null,
+          "valuation_source": "spotClearinghouseState.USDPR.total"
+        },
+        "accounting_window_ms": [
+          0,
+          1792228987492
+        ],
+        "latest_query_window_ms": [
+          1792228923448,
+          1792228987492
+        ],
+        "realized": {
+          "gross_closed_pnl": "0.0794",
+          "actual_fill_fees": "0.029415",
+          "actual_funding_cashflow": "0.000527",
+          "net_after_fees_and_funding": "0.050512",
+          "scope": "ONLY_OBSERVED_ACCOUNT_EVENTS; excludes deposits/transfers and unknown historical events"
+        },
+        "corrections": [
+          {
+            "kind": "EXCHANGE_TRUTH_ADOPTED",
+            "timestamp_ms": 1792228986038,
+            "differences": {},
+            "new_fill_count": 0,
+            "reasons": [],
+            "exchange_ts": null,
+            "received_ts": "2026-10-17T09:23:06.038+00:00",
+            "processed_ts": "2026-10-17T09:23:06.038+00:00",
+            "timestamp_source": "LOCAL_PROCESS",
+            "exchange_to_receive_ms": null,
+            "receive_to_process_ms": 0,
+            "clock_skew_detected": false
+          },
+          {
+            "kind": "EXCHANGE_TRUTH_ADOPTED",
+            "timestamp_ms": 1792228989035,
+            "differences": {},
+            "new_fill_count": 0,
+            "reasons": [],
+            "exchange_ts": null,
+            "received_ts": "2026-10-17T09:23:09.035+00:00",
+            "processed_ts": "2026-10-17T09:23:09.035+00:00",
+            "timestamp_source": "LOCAL_PROCESS",
+            "exchange_to_receive_ms": null,
+            "receive_to_process_ms": 0,
+            "clock_skew_detected": false
+          }
+        ]
+      },
+      "last_scan_ms": 1792228982655,
+      "market_ws_ever_connected": true,
+      "account_ws_ever_healthy": true
+    }
+  ],
+  "duplicate_launch": {
+    "status": "FAILED_SAFE",
+    "error": "PAPER_OWNER_ALREADY_RUNNING",
+    "signing_authority": "NONE_CREATED_BY_THIS_COMMAND"
+  },
+  "stop_request": {
+    "status": "GRACEFUL_STOP_REQUESTED",
+    "session_id": "40f89919e997491e958438688d494b59",
+    "note": "No automatic cancel or close without original exact authority. Use status/report to verify final truth."
+  },
+  "no_signing_authority_restored": true
+}

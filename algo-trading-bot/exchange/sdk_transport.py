@@ -49,6 +49,13 @@ def build_exchange(signer,client,nonce_manager,sink,*,offline=False):
             expiry=getattr(sink,'action_expiry_ms',None)
             signature=sign_l1_action(self.wallet,action,None,nonce,expiry,False)
             payload=dict(action=action,nonce=nonce,signature=signature,vaultAddress=None,expiresAfter=expiry)
+            audit=getattr(sink,'audit_boundary',None)
+            if audit is not None:
+                audit('SIGNED',payload)
+            elif action.get('type')!='updateLeverage':
+                # The separately guarded, fixed-action configuration helper
+                # has no order intents. Every order sink still requires audit.
+                raise ExchangeError('SIGNED_ORDER_AUDIT_REQUIRED')
             return sink.transmit(payload)
 
         def post(self, path, payload=None):
@@ -133,17 +140,31 @@ class OfficialSDKTransport:
         # No SDK debug logger and no automatic HTTP retries or redirects.
         record=getattr(self,'record_transport_boundary',None)
         if record:record('HTTP_POST_STARTED',payload)
+        self.audit_boundary('DISPATCHED',payload)
         try:
             response=self._sdk.session.post(TESTNET_API_URL+'/exchange',json=payload,timeout=10,allow_redirects=False)
         except Exception as exc:
             if record:record('HTTP_POST_UNCERTAIN',payload,error_type=type(exc).__name__)
             raise
         if record:record('HTTP_POST_RESPONSE',payload,status_code=response.status_code)
+        self.audit_boundary('ACKNOWLEDGED',payload,http_status=response.status_code,
+                            acceptance_verified=False)
         if response.status_code!=200:
             error=ExchangeError('EXCHANGE_HTTP_RESPONSE_UNCERTAIN')
             error.status_code=response.status_code
             raise error
         return response.json()
+
+    def audit_boundary(self, stage, payload, **details):
+        journal=getattr(getattr(self,'authorization',None),'journal',None)
+        if journal is None:return
+        action=payload.get('action',{})
+        wires=action.get('orders',[])+[m['order'] for m in action.get('modifies',[]) if 'order' in m]
+        for wire in wires:
+            if wire.get('c'):
+                journal.audit_stage(wire['c'],stage,self.client.clock_ms(),source='GUARDED_SDK_TRANSPORT',
+                    nonce=payload.get('nonce'),action_hash=fingerprint(payload['action']),
+                    expires_ms=payload.get('expiresAfter'),**details)
 
     def perform(self, method, args, kwargs, expected_action, guard):
         with self._lock:

@@ -1,0 +1,12 @@
+{
+  "status": "INCOMPLETE_REQUIRES_REVIEW",
+  "error": {
+    "type": "ExchangeError",
+    "reason": "INFO_RETRY_BUDGET_EXHAUSTED",
+    "traceback": "Traceback (most recent call last):\n  File \"/Users/adesh/Autonomous Trading Bot - Crypto /docs/practice_recovery_2026-10-17/read_only_account_market_audit.py\", line 57, in <module>\n    client.startup();account=HyperliquidAccount(client,TEAM);market=HyperliquidMarketData(client);truth=ExchangeTruthState();reconciler=HyperliquidReconciliation(account)\n    ^^^^^^^^^^^^^^^^\n  File \"/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/hyperliquid_client.py\", line 305, in startup\n    dexes = self.post_info('perpDexs')\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/hyperliquid_client.py\", line 241, in post_info\n    result=self.rate_limits.read(query,operation,priority=priority,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/rate_limits.py\", line 309, in read\n    value=self._read_owned(query,operation,priority=priority,expected_items=expected_items,cancel_event=cancel_event)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/rate_limits.py\", line 366, in _read_owned\n    raise error from None\nexchange.base_exchange.ExchangeError: INFO_RETRY_BUDGET_EXHAUSTED\n"
+  },
+  "requests": 3,
+  "candidate_stop_count": null,
+  "native_records": [],
+  "terminal_flat": null
+}

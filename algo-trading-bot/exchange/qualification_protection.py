@@ -290,6 +290,14 @@ class QualificationStopManager:
                         ('coin','side','oid','cloid','sz','limitPx','reduceOnly','triggerPx','orderType'))):
                 raise ExchangeError('QUALIFICATION_STOP_READBACK_MISMATCH')
             if decimal(live_row['sz']) == plan.quantity == remaining:
+                # A lost placement ACK may leave the original row UNKNOWN.
+                # Matching fresh status+frontend+position evidence resolves
+                # that same order, without signing or replacing anything.
+                if row['state'] in {'UNKNOWN','SUBMITTED'}:
+                    self.journal.update(row['intent_key'], 'OPEN', self.executor.client.clock_ms(),
+                        oid=str(oid), outcome=dict(filled_quantity=D(0),
+                            remaining_quantity=plan.quantity, remainder_cancelled=False,
+                            code='ISOLATED_STOP_OPEN_EXACT_READBACK'))
                 return self._save('READBACK_ACCEPTED', coverage_observed=True, **base)
             return self._save('STALE_COVERAGE', operator_action_required=True, **base)
         if parent_state == 'filled' and quantity != plan.quantity:

@@ -403,6 +403,26 @@ class CertificationSequence:
         if positions:
             raise ExchangeError('CERTIFICATION_EXIT_PARTIAL_URGENT_REVIEW')
 
+    def manage_position(self, positions):
+        """Default immediate-close experiment; native qualification overrides this."""
+        try:
+            plan = self.e.protection._plan(self.p.symbol, positions[self.p.symbol], None, self.e.client.clock_ms())
+            protective = self.resolved(self.e.submit_protection(plan, self.prefix+'protection'))
+            positions, orders = self.observe()
+            if positions:
+                self._verify_protection(plan, protective, orders, positions[self.p.symbol])
+                self.report['status'] = 'OPEN_PROTECTED_POSITION'
+        except Exception as exc:
+            self.report['protection_error'] = str(exc) if isinstance(exc, ExchangeError) else type(exc).__name__
+            self.report['status'] = 'EMERGENCY_EXIT_REQUIRED'
+
+    def owned_order_ids(self):
+        return {str(r['oid']) for r in self.e.journal.intents()
+                if r['intent_key'].startswith(self.prefix) and r['oid']}
+
+    def completion_passed(self):
+        return self.report['protection_accepted'] is True
+
     def run(self):
         try:
             self.auth.require(self.p.team_wallet, self.p.api_wallet)
@@ -436,16 +456,7 @@ class CertificationSequence:
                 self.report['status'] = 'ORDER_REJECTED' if order.state == OrderState.REJECTED else 'NO_FILL_VERIFIED'
             else:
                 self.report['status'] = 'PARTIAL_FILL' if order.state == OrderState.PARTIALLY_FILLED else 'FILLED_POSITION'
-                try:
-                    plan = self.e.protection._plan(self.p.symbol, positions[self.p.symbol], None, self.e.client.clock_ms())
-                    protective = self.resolved(self.e.submit_protection(plan, self.prefix+'protection'))
-                    positions, orders = self.observe()
-                    if positions:
-                        self._verify_protection(plan, protective, orders, positions[self.p.symbol])
-                        self.report['status'] = 'OPEN_PROTECTED_POSITION'
-                except Exception as exc:
-                    self.report['protection_error'] = str(exc) if isinstance(exc, ExchangeError) else type(exc).__name__
-                    self.report['status'] = 'EMERGENCY_EXIT_REQUIRED'
+                self.manage_position(positions)
                 self.close()  # Never wait for a profit.
             positions, orders = self.observe()
             if positions:
@@ -460,7 +471,7 @@ class CertificationSequence:
             if positions or orders or not self.e.recovery.last_report.ready:
                 raise ExchangeError('CERTIFICATION_FINAL_RECONCILIATION_REQUIRED')
             fills = [f for k,f in self.e.recovery.state.fills.items() if k not in before_fills]
-            known = {str(r['oid']) for r in self.e.journal.intents() if r['intent_key'].startswith(self.prefix) and r['oid']}
+            known = self.owned_order_ids()
             if any(f.order_id not in known for f in fills):
                 raise ExchangeError('CERTIFICATION_UNEXPECTED_FILL')
             entries = [f for f in fills if f.side == self.p.entry_side]
@@ -475,7 +486,7 @@ class CertificationSequence:
                 if abs(delta-decimal(self.report['realized_pnl']['net_realized_pnl'])) > D('.000001'):
                     raise ExchangeError('CERTIFICATION_EQUITY_ACCOUNTING_MISMATCH')
                 self.report['status'] = 'TRADE_CLOSED_RECONCILED'
-                self.report['certification_passed'] = self.report['protection_accepted'] is True
+                self.report['certification_passed'] = self.completion_passed()
                 if not self.report['certification_passed']:
                     self.report['certification_blocker'] = 'ACTUAL_POSITION_PROTECTION_NOT_VERIFIED'
             # This is a consumed-attempt marker, not a successful qualification.

@@ -417,9 +417,13 @@ class LiveExecutionSession:
 
     def cycle(self, *, scan=True):
         if self.account_stream is not None:
-            if not self.account_stream.connected:
-                self.account_stream.connect()
-            self.account_stream.poll()
+            if getattr(self.account_stream,'background_receiving',False):
+                if self.account_stream.receiver_fatal:
+                    raise ExchangeError('ACCOUNT_RECEIVER_FATAL_REQUIRES_OPERATOR')
+            else:
+                if not self.account_stream.connected:
+                    self.account_stream.connect()
+                self.account_stream.poll()
             if self.account_stream.pending:
                 self.account_stream.reconcile()
         if scan:

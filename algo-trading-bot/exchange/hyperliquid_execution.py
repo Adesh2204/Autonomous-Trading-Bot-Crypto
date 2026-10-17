@@ -166,6 +166,15 @@ class HyperliquidExecution:
                 self.entries_paused |= not self.protection.entries_allowed
             self.journal.event('POST_ACTION_RECONCILIATION', self.client.clock_ms(),
                                ready=report.ready, reasons=report.reasons)
+            if report.ready:
+                for row in self.journal.intents():
+                    if row['state'] not in {'FILLED','CANCELLED','REJECTED','EXPIRED'}:continue
+                    prior=self.journal.db.execute('SELECT stage FROM intent_audit WHERE intent_key=? ORDER BY seq DESC LIMIT 1',
+                        (row['intent_key'],)).fetchone()
+                    if prior and prior[0]!='RECONCILED':
+                        self.journal.audit_stage(row['cloid'],'RECONCILED',self.client.clock_ms(),
+                            source='AUTHORITATIVE_POST_ACTION_RECOVERY',ready=True,
+                            legacy_state=row['state'],accounting_fills_separate=True)
         except Exception as exc:
             self.entries_paused = True
             self.position_guard.revoke('POST_ACTION_RECONCILIATION_FAILED')
@@ -341,13 +350,16 @@ class HyperliquidExecution:
                 else:
                     self.rate_limits.success()
             except Exception as exc:
+                from .terminal_recovery import exception_evidence
                 self.journal.update(key, 'UNKNOWN', self.client.clock_ms(),
-                                    outcome=dict(code='TRANSMISSION_UNCERTAIN',reason=type(exc).__name__))
+                                    outcome=dict(code='TRANSMISSION_UNCERTAIN',reason=type(exc).__name__,
+                                                 error_details=exception_evidence(exc)))
                 self.entries_paused = True
                 self.rate_limits.error(status=getattr(exc,'status_code',None))
                 self.journal.event('EXCHANGE_ORDER_RESULT',self.client.clock_ms(),
                     intent_key=key,cloid=row['cloid'],candidate_id=permission.candidate_id,
-                    state='UNKNOWN',code='TRANSMISSION_UNCERTAIN',error_type=type(exc).__name__)
+                    state='UNKNOWN',code='TRANSMISSION_UNCERTAIN',error_type=type(exc).__name__,
+                    error_details=exception_evidence(exc))
                 self.journal.event('AMBIGUOUS_ORDER_RESULT',self.client.clock_ms(),intent_key=key,
                                    blind_retry=False,cloid=row['cloid'])
             self._after_action()
@@ -573,8 +585,9 @@ class HyperliquidExecution:
                                     oid=outcome.exchange_order_id,outcome=asdict(outcome))
                 self.rate_limits.success()
             except Exception as exc:
+                from .terminal_recovery import exception_evidence
                 self.journal.update(key,'UNKNOWN',self.client.clock_ms(),
-                                    outcome=dict(code='TRANSMISSION_UNCERTAIN',reason=type(exc).__name__))
+                                    outcome=dict(code='TRANSMISSION_UNCERTAIN',reason=type(exc).__name__,error_details=exception_evidence(exc)))
                 self.entries_paused=True
                 self.rate_limits.error()
             self._after_action()
@@ -648,8 +661,9 @@ class HyperliquidExecution:
                 else:
                     self.rate_limits.success()
             except Exception as exc:
+                from .terminal_recovery import exception_evidence
                 self.journal.update(intent_key,'UNKNOWN',self.client.clock_ms(),
-                                    outcome=dict(code='TRANSMISSION_UNCERTAIN',reason=type(exc).__name__))
+                                    outcome=dict(code='TRANSMISSION_UNCERTAIN',reason=type(exc).__name__,error_details=exception_evidence(exc)))
                 self.rate_limits.error(status=getattr(exc,'status_code',None))
                 self.entries_paused=True
                 self.journal.event('PROTECTION_UNCERTAIN',self.client.clock_ms(),intent_key=intent_key,

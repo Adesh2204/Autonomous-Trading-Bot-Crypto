@@ -48,13 +48,16 @@ class LongMandate:
 
     def require(self):
         d=self.daily.require()
-        if (type(d) is not DailyMandate or d.directions!=('LONG',)
+        if type(self) is not LongMandate:
+            from .overnight_session import OvernightLongMandate
+            from .practice_weekend_session import PracticeWeekendLongMandate
+            if type(self) not in {OvernightLongMandate,PracticeWeekendLongMandate}:raise ExchangeError('EXACT_LONG_CONTRACT_TYPE_REQUIRED')
+        self.require_contract(d)
+        if (d.directions!=('LONG',)
                 or d.team_wallet.lower()!=TEAM.lower() or d.api_wallet.lower()!=API.lower()
-                or self.mode!='EXACT_APPROVED_STRATEGY_LONG_TESTNET_V1'
                 or type(self.created_ms) is not int or type(self.approval_deadline_ms) is not int
                 or self.approval_deadline_ms!=self.created_ms+300000
                 or not d.starts_ms<=self.created_ms<self.approval_deadline_ms<d.expires_ms
-                or not 1792089000000<=d.starts_ms<d.expires_ms<=1792175220000
                 or self.allow_loss_making_risk_exits is not True
                 or self.native_order_type!='Stop Limit'
                 or any(type(v) is not int for v in (self.maximum_close_attempts_per_cycle,self.maximum_signed_actions,
@@ -73,12 +76,30 @@ class LongMandate:
             raise ExchangeError('LONG_EVIDENCE_HASHES_REQUIRED')
         return self
 
+    def require_contract(self,d):
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        end=datetime.fromtimestamp(d.expires_ms/1000,ZoneInfo('Asia/Calcutta'))
+        start=datetime.fromtimestamp(d.starts_ms/1000,ZoneInfo('Asia/Calcutta'))
+        if (type(d) is not DailyMandate or self.mode!='EXACT_APPROVED_STRATEGY_LONG_TESTNET_V1'
+                or start.date()!=end.date() or (end.hour,end.minute,end.second,end.microsecond)>(23,57,0,0)):
+            raise ExchangeError('INVALID_EXACT_LONG_MANDATE')
+
     @property
     def identity(self):self.require();return fingerprint(asdict(self))
 
 
 def read_mandate(path):
-    data=json.loads(Path(path).read_text());data['daily']=DailyMandate(**data['daily'])
+    data=json.loads(Path(path).read_text())
+    if data.get('mode')=='EXACT_APPROVED_PRACTICE_WEEKEND_LONG_TESTNET_V1':
+        from .practice_weekend_session import PracticeWeekendLimits,PracticeWeekendLongMandate
+        data['daily']=PracticeWeekendLimits(**data['daily'])
+        return PracticeWeekendLongMandate(**data).require()
+    if data.get('mode')=='EXACT_APPROVED_OVERNIGHT_LONG_TESTNET_V1':
+        from .overnight_session import OvernightLimits,OvernightLongMandate
+        data['daily']=OvernightLimits(**data['daily'])
+        return OvernightLongMandate(**data).require()
+    data['daily']=DailyMandate(**data['daily'])
     return LongMandate(**data).require()
 
 
@@ -96,6 +117,12 @@ def require_release(root,path,expected_source,expected_sha):
             or any(r.get(stage,{}).get(check,{}).get('result',{}).get('passed') is not True
                 for stage in ('checks_before','checks_after') for check in ('strategy_freeze','phase0'))):
         raise ExchangeError('MATCHING_COMPLETE_LONG_RELEASE_REQUIRED')
+    if r.get('requirements_sha256') is not None:
+        import importlib.metadata
+        if sha(Path(root)/'algo-trading-bot/requirements.txt')!=r['requirements_sha256']:
+            raise ExchangeError('LONG_RELEASE_DEPENDENCY_FILE_CHANGED')
+        if any(importlib.metadata.version(name)!=version for name,version in r.get('runtime_versions',{}).items()):
+            raise ExchangeError('LONG_RELEASE_DEPENDENCY_VERSION_CHANGED')
 
 
 def require_native_evidence(path,daily):
@@ -158,6 +185,7 @@ class LongAuthorization:
     def __init__(self,mandate,acceptance_path,journal,*,clock_ms,source_hash,policy_hash,host=None):
         self.m=mandate.require();self.path=Path(acceptance_path);self.journal=journal
         self.clock_ms=clock_ms;self.source_hash=source_hash;self.policy_hash=policy_hash
+        self.entry_stop_event=None
         self.host=host or socket.gethostname();self.revoked=False;self.lifecycle=None
         self.key='long_authority:'+mandate.identity;self.acceptance=json.loads(self.path.read_text())
         self.data=dict(owned={},transmissions=[],closed_attempts={},protection_attempts={},cancels=0)
@@ -189,6 +217,16 @@ class LongAuthorization:
                 or team.lower()!=d.team_wallet.lower() or signer.lower()!=d.api_wallet.lower()
                 or self.host!=d.signing_host or not stable):
             raise ExchangeError('EXACT_LONG_APPROVAL_WINDOW_SOURCE_HOST_REQUIRED')
+        if m.mode=='EXACT_APPROVED_OVERNIGHT_LONG_TESTNET_V1':
+            from .overnight_session import OVERNIGHT_ACKS
+            if any(a.get(k) is not True for k in OVERNIGHT_ACKS):
+                raise ExchangeError('EXACT_OVERNIGHT_CARRYOVER_RECOVERY_ACKNOWLEDGMENTS_REQUIRED')
+        if m.mode=='EXACT_APPROVED_PRACTICE_WEEKEND_LONG_TESTNET_V1':
+            from .practice_weekend_session import PRACTICE_ACKS,IST
+            from datetime import datetime
+            if (any(a.get(k) is not True for k in PRACTICE_ACKS)
+                    or datetime.fromtimestamp(a['accepted_ms']/1000,IST).date().isoformat()!='2026-10-17'):
+                raise ExchangeError('EXACT_PRACTICE_CARRYOVER_RECOVERY_ACKNOWLEDGMENTS_REQUIRED')
 
     def bind(self,key,kind,symbol,quantity):
         self.require(self.m.daily.team_wallet,self.m.daily.api_wallet)
@@ -217,6 +255,8 @@ class LongAuthorization:
                 or decimal(wire.get('p'),positive=True)!=decimal(request['price'])):
             raise ExchangeError('LONG_EXACT_VALIDATED_WIRE_REQUIRED')
         if kind=='entry':
+            if (self.entry_stop_event is not None and self.entry_stop_event.is_set()):
+                raise ExchangeError('LONG_NEW_ENTRIES_REVOKED_BY_OPERATOR_STOP')
             if (not wire['b'] or wire['r'] or wire['t']!={'limit':{'tif':'Ioc'}}
                     or quantity*decimal(wire['p'])>decimal(self.m.daily.maximum_notional)
                     or self.clock_ms()>=self.m.daily.expires_ms-self.m.entry_cutoff_buffer_ms
@@ -558,7 +598,10 @@ class DailyLongSession(LiveExecutionSession):
     def cycle(self,*,scan=True):
         auth=self.daily_authority;executor=self.execution;daily=executor.daily
         auth.require(daily.m.team_wallet,daily.m.api_wallet);executor.reconcile_daily()
-        if self.clock_ms()>=daily.m.expires_ms-60000 and self.recovery.state.positions:
+        if self.clock_ms()>=daily.m.expires_ms-getattr(getattr(auth,'m',None),'entry_cutoff_buffer_ms',120000):
+            scan=False
+        close_buffer=getattr(getattr(auth,'m',None),'risk_close_buffer_ms',60000)
+        if self.clock_ms()>=daily.m.expires_ms-close_buffer and self.recovery.state.positions:
             for symbol in list(self.recovery.state.positions):self._close(symbol,'Authorized End Of Session Risk Exit')
             scan=False
         if daily.state in {TradeState.UNKNOWN,TradeState.RECOVERY_REQUIRED,TradeState.HALTED}:
@@ -593,6 +636,8 @@ def build_long_runtime(root,mandate_path,acceptance_path,release_path,protection
     from risk.portfolio_risk import PortfolioRisk
     from live_session_results import LiveSessionResults
     require_paper_migration();verify_strategy_freeze();root=Path(root);m=read_mandate(mandate_path)
+    from .competition_windows import require_published_window
+    require_published_window(m.daily.starts_ms,m.daily.expires_ms)
     require_release(root,release_path,m.daily.source_hash,m.release_sha256)
     if sha(protection_evidence_path)!=m.protection_evidence_sha256:raise ExchangeError('LONG_PROTECTION_PROOF_CHANGED')
     native_proof=require_native_evidence(protection_evidence_path,m.daily)
@@ -612,6 +657,8 @@ def build_long_runtime(root,mandate_path,acceptance_path,release_path,protection
         auth=LongAuthorization(m,acceptance_path,journal,clock_ms=lambda:time.time_ns()//1000000,
             source_hash=lambda:active_source_hash(root),policy_hash=lambda:sha(policy_path))
         auth.bound_evidence={str(release_path):m.release_sha256,str(protection_evidence_path):m.protection_evidence_sha256}
+        if json.loads(Path(release_path).read_text()).get('requirements_sha256'):
+            auth.bound_evidence[str(root/'algo-trading-bot/requirements.txt')]=json.loads(Path(release_path).read_text())['requirements_sha256']
         auth.bound_evidence[str(Path(release_path).parent/'regression.xml')]=json.loads(Path(release_path).read_text())['xml_sha256']
         auth.bound_evidence[str(Path(protection_evidence_path).parent/native_proof['receipt_file'])]=native_proof['receipt_sha256']
         daily=DailyLifecycle(journal,m.daily,clock_ms=auth.clock_ms,source_hash=auth.source_hash,
@@ -670,32 +717,63 @@ def build_long_runtime(root,mandate_path,acceptance_path,release_path,protection
 
             def close(self,*,clean=True):
                 from .paper_operations import atomic_json
+                from .terminal_recovery import exception_evidence
+                import threading
+                cancel=threading.Event();timer=threading.Timer(180,cancel.set)
+                previous_cancel=client.read_cancel_event;client.read_cancel_event=cancel
+                rates.read_budget_wait_seconds=65;rates.read_deadline_seconds=75;timer.start()
                 report=dict(status='STOPPED',observed_ms=client.clock_ms(),mandate_hash=m.identity,
                     source_hash=active_source_hash(root),restarted=False,signing_authority='REVOKED_ON_CLOSE')
                 try:
                     # If time and authority remain, request the same guarded risk
                     # exit. UNKNOWN orders or failed checks remain unresolved.
+                    executor.entries_paused=True
                     if recovery.state.positions:
-                        auth.require(TEAM,API)
-                        for symbol in list(recovery.state.positions):session._close(symbol,'Authorized Worker Shutdown Risk Exit')
+                        try:
+                            auth.require(TEAM,API)
+                            for symbol in list(recovery.state.positions):session._close(symbol,'Authorized Worker Shutdown Risk Exit')
+                        except Exception as exc:
+                            report['shutdown_risk_exit_error']=str(exc)
+                            report['shutdown_risk_exit_error_details']=exception_evidence(exc)
+                    # Risk actions have finished. Quiesce public collectors so
+                    # they cannot consume the terminal account-read budget.
+                    self.market_stop.set()
+                    if self.market_stream:self.market_stream._recovery_cancel.set()
+                    if self.market_thread:
+                        self.market_thread.join(12)
+                        if self.market_thread.is_alive():raise ExchangeError('LONG_MARKET_SHUTDOWN_PENDING')
+                    stream.stop_receiver()
+                    # Expired signing permission never prevents public account
+                    # reconciliation or turns cached flatness into fresh proof.
                     readings=[]
                     for _ in range(2):
-                        r=recovery.recover();readings.append(dict(observed_ms=client.clock_ms(),
-                            positions=[asdict(p) for p in account.get_positions().values()],
-                            orders=account.get_frontend_open_orders(),ready=r.ready))
+                        r=recovery.recover()
+                        before=account.get_positions();orders=account.get_frontend_open_orders();after=account.get_positions()
+                        signature=lambda positions:{s:(p.quantity,p.entry_price) for s,p in positions.items()}
+                        if signature(before)!=signature(after):raise ExchangeError('POSITION_CHANGED_DURING_TERMINAL_READBACK')
+                        readings.append(dict(observed_ms=client.clock_ms(),team=TEAM,
+                            source='EXCHANGE_DIRECT_TESTNET_PAR_INFO',positions=[asdict(p) for p in after.values()],
+                            orders=orders,ready=r.ready))
                     report.update(readbacks=readings,account=recovery.state.report(),
                         terminal_flat=all(r['ready'] and not r['positions'] and not r['orders'] for r in readings)
                             and readings[0]['observed_ms']<readings[1]['observed_ms'])
                     report.update(status='STOPPED_FLAT_VERIFIED' if report['terminal_flat'] else 'HUMAN_RECOVERY_REVIEW_REQUIRED',
                         operator_action_required=not report['terminal_flat'],daily_lifecycle=dict(daily.data),
                         session_realized_net=daily.data['realized_net'])
-                except Exception as exc:report.update(status='HUMAN_RECOVERY_REVIEW_REQUIRED',error=str(exc),terminal_flat=None)
+                except Exception as exc:report.update(status='HUMAN_RECOVERY_REVIEW_REQUIRED',error=str(exc),
+                    error_details=exception_evidence(exc),terminal_flat=None)
                 finally:
-                    report['local_dependency']='This Mac, app, power and internet; native trigger is not a guaranteed fill'
+                    timer.cancel();client.read_cancel_event=previous_cancel
+                    exposed=bool(recovery.state.positions or recovery.state.orders or any(
+                        r['positions'] or r['orders'] for r in report.get('readbacks',[])))
+                    report['account_status']='FLAT_VERIFIED' if report.get('terminal_flat') else 'EXPOSED' if exposed else 'UNKNOWN'
+                    report['residual_status']=report['account_status'] if report.get('terminal_flat') else report['account_status']+'_REQUIRES_OPERATOR'
+                    report['rate_report']=rates.report()
+                    report['local_dependency']='This Mac, Python process, power and internet; native trigger is not a guaranteed fill'
                     atomic_json(Path(mandate_path).parent/'terminal_result.json',report)
                     super().close(clean=clean and report.get('terminal_flat') is True)
         runtime=BoundedLongRuntime(session,auth,transport,nonces,journal,client.transport,engine,results)
-        runtime.start_market_stream();return runtime
+        runtime.start_market_stream();stream.start_receiver();return runtime
     except Exception:
         if transport:transport.close()
         if nonces:nonces.close()

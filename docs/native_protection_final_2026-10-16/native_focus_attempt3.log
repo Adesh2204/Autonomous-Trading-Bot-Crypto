@@ -1,0 +1,13 @@
+..........................................F............                  [100%]
+=================================== FAILURES ===================================
+___ test_trigger_child_actual_ids_reconciled_before_any_cleanup[.0001-open] ____
+algo-trading-bot/test_native_qualification.py:222: in test_trigger_child_actual_ids_reconciled_before_any_cleanup
+    assert r['status']=='TRADE_CLOSED_RECONCILED',(r.get('error'),r.get('native_stop_observations'))
+E   AssertionError: ('NATIVE_STOP_UNSETTLED_NO_COMPETING_IOC', [{'actual_fill_ids': [], 'capability_status': 'UNVERIFIED_REQUIRES_INDEPEND..._observed': False, 'evidence_scope': 'READBACK_ONLY_NOT_CAPABILITY_CERTIFICATION', 'observed_ms': 1790942401000, ...}])
+E   assert 'EMERGENCY_EXIT_REQUIRED' == 'TRADE_CLOSED_RECONCILED'
+E     
+E     - TRADE_CLOSED_RECONCILED
+E     + EMERGENCY_EXIT_REQUIRED
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_native_qualification.py::test_trigger_child_actual_ids_reconciled_before_any_cleanup[.0001-open]
+1 failed, 54 passed in 17.40s

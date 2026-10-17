@@ -1,0 +1,17 @@
+# UNKNOWN_INTENT_RESOLUTION_REPORT
+
+Reviewed 2026-10-17T13:58:56.890000+05:30. **Classification: STILL UNKNOWN. Future signing: blocked.**
+
+The exact intent is `0xac0eea156fcec80986dd67c9057b6ded`, nonce **1792217834069**, mandate `59445fe546d38a96e486140fda781d09ae8a0942f93a3614fa8abcbc34f5e7ea`. The genuine acceptance was 2026-10-17T11:45:27.523000+05:30; authority expired 2026-10-17T11:50:27.523000+05:30. Its selected wire was BUY 0.0002 BTC at 81,518, within the approved limits.
+
+The full source manifest was reconstructed from unchanged current files plus preserved pre-repair files: `88429ed4fabb3f1564b4c0bb281466e841cd6fa3e522bd3092172d78a3a7fc5f`. It matches the actual signed-source release and launch provenance. SDK 0.24.0's guarded path checks the exact action, allocates the durable nonce, signs, then enters native transmit. Native transmit checks again and must persist its claim transaction before the only HTTP sink. Raw SDK POST is blocked. No claim exists for this mandate. SQLite integrity/checkpoint checks and post-attempt database preservation pass.
+
+Those facts support a pre-HTTP stop. The recorded public receipts reconstruct readiness age of approximately 5,526 ms; source requires <=5,000 ms. However, the original native route did not record a final pre-HTTP causal reason or complete HTTP boundary telemetry. The durable result records only `ExchangeError` / `TRANSMISSION_UNCERTAIN`. We cannot promote the reconstruction into the framework's required explicit final-guard rejection record. The historical immutable certificate is deliberately restricted to its original different source/intent; it is not a generic clearance mechanism.
+
+Fresh unsigned review made **63 public requests**, with zero venue errors. The own-wallet historicalOrders response returned **4 records**, below its 2,000-row cap, all from the earlier Limit orders; no exact-CLOID match or new fill appears. Complete paginated fills/funding from time zero contain only the original October 15 events. Two readbacks at 2026-10-17T13:53:58.428000+05:30 and 2026-10-17T13:54:01.260000+05:30 show no position/order and `unknownOid` for the exact CLOID. Retained post-expiry snapshots agree. These are authoritative account snapshots, not a positive rejection/terminal order record. No continuous historical-position endpoint was available.
+
+**No certificate was appended; the UNKNOWN row, nonce, consumed invocation and old certificate remain unchanged.** The existing effective qualification view still includes this intent, so the unresolved-order barrier legitimately continues to block entry.
+
+Required proof: recover an original explicit pre-HTTP rejection tied to this nonce/action/source, or equivalent independently validated causal evidence admissible to the immutable framework; alternatively obtain an authoritative venue rejection/terminal record tied to this action. A bare not-found response, more flatness observations or a new approval does not resolve this barrier. `VENUE_OPERATOR_REVIEW_PACKET.md` contains the exact public identifiers and requested records. No message has been sent on the operator's behalf.
+
+Evidence: `original_local_evidence.json`, `original_signing_source_manifest.json`, `public_audit_with_network/info_receipts.jsonl`, `public_audit_with_network/audit.json`, `preservation_receipt.json`, and the unchanged original qualification result/provenance under `../practice_weekend_2026-10-17/`.

@@ -225,13 +225,18 @@ class ComplianceGuard:
             renewal_key=None
             if renewal is not None:
                 from .qualification_signing_boundary import QualificationSigningBoundary
+                from .native_qualification import NativeQualificationExecution
+                from .native_price_corridor import CorridorNativeProposal
+                native_renewal=(type(self.execution_owner) is NativeQualificationExecution
+                    and type(self.execution_owner.proposal) is CorridorNativeProposal
+                    and self.qualification_scope is None)
                 permit,action=renewal
                 wire=action.get('orders',[{}])[0]
                 own=self.journal.db.execute('SELECT * FROM intents WHERE cloid=?',(wire.get('c'),)).fetchone()
                 if (type(permit) is not ActionPermit or self._permits.get(id(permit)) is not permit
                         or permit.guard is not self or not permit.active or fingerprint(action)!=permit.action_hash
                         or type(getattr(self.execution_owner,'signing_boundary',None)) is not QualificationSigningBoundary
-                        or self.qualification_scope is None or own is None
+                        or (self.qualification_scope is None and not native_renewal) or own is None
                         or own['state'] not in {'PREPARED','SUBMITTED'}
                         or own['candidate']!=candidate or own['fingerprint']!=fingerprint(asdict(request))):
                     return finish(False,'INVALID_SAME_ACTION_REVALIDATION')

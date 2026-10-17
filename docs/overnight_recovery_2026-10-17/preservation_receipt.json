@@ -1,0 +1,86 @@
+{
+  "observed_ms": 1792252973536,
+  "source_hash": "4aa20fe9c1f8285788dff42e23d247eed2f225b4802bfad26347ef42afd44ac1",
+  "protected": {
+    "configs/reliability_policy.json": {
+      "matching": true,
+      "sha256": "1b8573d07a0f12f3653cf7b92f96c2120e8d61c3f210335ec850ba14ea582455"
+    },
+    "configs/protection_policy.proposed.json": {
+      "matching": true,
+      "sha256": "34c0668d5337c6cc0ccc6866ca29c791bc8aa4d048cdd1a738dcff2ad4985578"
+    },
+    "configs/practice_ops.json": {
+      "matching": true,
+      "sha256": "f35d72d21914874578a95280d453f857d875d0587e33a82167b8ddb446ce8be2"
+    },
+    "configs/external_research.example.json": {
+      "matching": true,
+      "sha256": "5314b34e2f42e67d9478a01a089d959e1c95d1dff88d5d62ec9c07d6388493bf"
+    },
+    "algo-trading-bot/signal_brain.py": {
+      "matching": true,
+      "sha256": "bff940ac5ed35f71ed3dfb537ba15d20dcec35a4e62a938d2f0619c6e9309d83"
+    },
+    "docs/strategy_freeze.json": {
+      "matching": true,
+      "sha256": "aeda15740802c1082f38f4e69f415f16a77d749a1aa050061026a99120fb9f8b"
+    },
+    "docs/qualification_2026-10-15/WHITELIST_TRADE_PROOF.json": {
+      "matching": true,
+      "sha256": "3f9b7decb3ca92810fc0e146373c667e621db909d621210cd52cb96f7886a0ab"
+    },
+    "docs/profit_exit_refresh_2026-10-15_2209/EXIT_RECOVERY_PROOF.json": {
+      "matching": true,
+      "sha256": "c9e633a018121bd349eb6716c084f71254825d1d17da7b364e338c4ca31ffd83"
+    },
+    "runtime/testnet/anchorium-bot-1/exit-recovery.lock": {
+      "matching": true,
+      "sha256": "176669cd42c2e4dc6f95b3d0b3555df2d7ddd7a27c6543cc6f57adcadd03de28"
+    },
+    "runtime/testnet/anchorium-bot-1/delegated-session.lock": {
+      "matching": true,
+      "sha256": "b89a1205a5ed223a588c95df6381e8573df3c5202e8a51a4c6c572cd8517583f"
+    }
+  },
+  "databases": {
+    "qualification": {
+      "integrity": "ok",
+      "dump_sha256": "d3f114b71e0a24765f21580a055dc9d2ed2971af5fa970fd09450d9c3d2facf0",
+      "unchanged_since_authorized_worker_stopped": true,
+      "original_raw_intents_unchanged": true,
+      "all_raw_intents_unchanged_since_stop": true,
+      "original_certificate_unchanged": true,
+      "original_resolution_valid": true,
+      "new_local_intent": {
+        "key": "certification:59445fe546d38a96e486140fda781d09ae8a0942f93a3614fa8abcbc34f5e7ea:entry",
+        "cloid": "0xac0eea156fcec80986dd67c9057b6ded",
+        "state": "UNKNOWN",
+        "oid": null
+      },
+      "new_unknown_preserved": true,
+      "checkpoint_checksum_integrity": true,
+      "recorded_transmissions": []
+    },
+    "nonces": {
+      "integrity": "ok",
+      "dump_sha256": "485b32e92b066f816f88af571d29a735409ad808738218b32fdb646042f06560",
+      "unchanged_since_authorized_worker_stopped": true,
+      "nonce_rows": [
+        [
+          "0x46c9bed595770150752e7fa3806449f81e0ec6f9",
+          1792217834069
+        ]
+      ],
+      "nonce_rows_unchanged_since_stop": true,
+      "authorized_nonce_advanced_once_to": 1792217834069,
+      "note": "Do not restore the older nonce: one authorized guarded signing attempt legitimately allocated this durable nonce."
+    },
+    "configuration": {
+      "integrity": "ok",
+      "dump_sha256": "ed913029c934f8b262b3b2fe63f0c53f52d7fe5c98e6cd1dc8f05095b3c82f00",
+      "unchanged_since_authorized_worker_stopped": true
+    }
+  },
+  "passed": true
+}

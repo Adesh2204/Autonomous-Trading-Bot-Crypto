@@ -62,7 +62,7 @@ class DailyMandate:
         object.__setattr__(self,'markets',tuple(self.markets))
         object.__setattr__(self,'directions',tuple(self.directions))
 
-    def require(self):
+    def _require_scope(self):
         import re
         if (self.network!='testnet' or self.dex!='par' or not self.session_id or not self.signing_host
                 or not re.fullmatch('[0-9a-f]{64}',self.source_hash)
@@ -77,15 +77,19 @@ class DailyMandate:
                 or self.maximum_concurrent_positions!=1 or self.leverage!=1
                 or not 1<=self.maximum_entry_attempts<=2 or self.protection_required is not True):
             raise ExchangeError('INVALID_BOUNDED_DAILY_MANDATE')
-        start=datetime.fromtimestamp(self.starts_ms/1000,ZoneInfo('Asia/Calcutta'))
-        end=datetime.fromtimestamp((self.expires_ms-1)/1000,ZoneInfo('Asia/Calcutta'))
-        if start.date()!=end.date():raise ExchangeError('DAILY_MANDATE_CANNOT_CROSS_IST_DAY')
         b,n,t,c=(decimal(x,positive=True) for x in (self.bankroll,self.maximum_notional,
             self.maximum_total_exposure,self.maximum_cumulative_allocation))
         if (n>D('10000') or n>t or t>n or c<n or c>n*self.maximum_entry_attempts or n>b
                 or not 0<decimal(self.risk_fraction)<=D('.005')
                 or not 0<decimal(self.daily_loss_fraction)<=D('.01')):
             raise ExchangeError('DAILY_MANDATE_EXCEEDS_BASELINE_RISK')
+        return self
+
+    def require(self):
+        self._require_scope()
+        start=datetime.fromtimestamp(self.starts_ms/1000,ZoneInfo('Asia/Calcutta'))
+        end=datetime.fromtimestamp((self.expires_ms-1)/1000,ZoneInfo('Asia/Calcutta'))
+        if start.date()!=end.date():raise ExchangeError('DAILY_MANDATE_CANNOT_CROSS_IST_DAY')
         return self
 
     @property

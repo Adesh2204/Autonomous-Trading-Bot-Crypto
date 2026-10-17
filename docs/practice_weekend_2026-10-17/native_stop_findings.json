@@ -1,0 +1,117 @@
+{
+  "status": "NATIVE_AND_SUBMINIMUM_PROTECTION_UNQUALIFIED",
+  "tested_network": "testnet",
+  "dex": "par",
+  "actual_exchange_writes": 0,
+  "actual_wallet_signatures": 0,
+  "private_keys_accessed": false,
+  "source_stability": {
+    "before": "47d25cfc6baeb661e12c3e959e53d889facc626325a5a91ba0e2e16b0cc5d458",
+    "after": "1fce500a15070225f65fc1057119f82e3527e76f5bac75c06ab9d00f20ba0bce",
+    "stable": false,
+    "explanation": "Unsigned public research ran concurrently with authorized local engineering. It is market/account evidence, not a stable-source native execution qualification."
+  },
+  "primary_sources": [
+    {
+      "url": "https://hyperliquid.gitbook.io/hyperliquid-docs/trading/take-profit-and-stop-loss-orders-tp-sl",
+      "finding": "Position-form default TP/SL tracks full position at trigger; explicitly sized TP/SL is fixed. Parent partial-fill cancellation can cancel children. Stop Limit can rest through a gap."
+    },
+    {
+      "url": "https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/exchange-endpoint",
+      "finding": "Wire grouping supports na/normalTpsl/positionTpsl. This schema does not establish a par subminimum Stop Limit exemption or zero-size sentinel semantics."
+    },
+    {
+      "url": "https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/error-responses",
+      "finding": "MinTradeNtl is a documented order error. No tested small-native exemption can be inferred from a historical IOC full close."
+    }
+  ],
+  "questions": [
+    {
+      "question": "Position-associated stop can cover 0.0001 BTC?",
+      "answer": "UNKNOWN on registered par; full-position tracking is documented generally, exact small Stop Limit acceptance/trigger unverified."
+    },
+    {
+      "question": "Sub-$10 native Stop Limit accepted?",
+      "answer": "UNKNOWN; no actual accepted native Stop Limit record for this account or sampled par users; minimum guard remains."
+    },
+    {
+      "question": "Triggered child closes one-lot residual?",
+      "answer": "UNKNOWN; no genuine parent/child/fill chain exists."
+    },
+    {
+      "question": "Applicable full-position minimum exception?",
+      "answer": "Only historical exact 0.0001 BTC reduce-only IOC SELL is independently established; not transferable to native triggers or other markets."
+    },
+    {
+      "question": "Dynamic protective quantity?",
+      "answer": "Generally documented for default position-form TP/SL, not explicitly fixed size. Pinned production route does not support a verified dynamic-position native wire."
+    },
+    {
+      "question": "Triggered Stop Limit can remain unfilled?",
+      "answer": "YES; market gap may leave a resting child. Limit is not a guaranteed loss cap."
+    },
+    {
+      "question": "Failed/partial child reconciliation?",
+      "answer": "Existing manager reads original parent plus exact reported child IDs, actual fills, residual position and open orders; unknown parent/child/cancel blocks a competing IOC. Offline tests only until actual evidence exists."
+    },
+    {
+      "question": "Cleanup after independent take profit?",
+      "answer": "Existing manager cancels only owned parent/identified children, verifies terminal cancellation/order state and residual position, then requires two flat/zero-order reads. Unknown cancellation blocks any competing close. No actual native cleanup proof yet."
+    }
+  ],
+  "sample": {
+    "requests": 77,
+    "errors": [],
+    "public_users": 6,
+    "histories": [
+      {
+        "total_rows": 4,
+        "par_rows": 4,
+        "native_rows": 0,
+        "coverage": "RETURNED_BOUNDED_HISTORY"
+      },
+      {
+        "total_rows": 2000,
+        "par_rows": 2000,
+        "native_rows": 0,
+        "coverage": "POSSIBLY_TRUNCATED"
+      },
+      {
+        "total_rows": 2000,
+        "par_rows": 2000,
+        "native_rows": 0,
+        "coverage": "POSSIBLY_TRUNCATED"
+      }
+    ],
+    "native_records": 0,
+    "bounds": {
+      "max_public_users": 6,
+      "max_histories": 3,
+      "max_native_statuses": 6,
+      "timeout_seconds": 240
+    },
+    "limitation": "Bounded samples, not a venue census or proof of prohibition. Two histories reached the 2000-row truncation bound."
+  },
+  "historical_exact_ioc_proof": {
+    "path": "docs/certification_v8_5_2026-10-12/independent_close_readback/one_lot_readback.json",
+    "sha256": "c421e3ffc251cb770c67b44395301e50ec0fbb6903146f18c51aa370a88a2764",
+    "order_id": "62228843959",
+    "quantity": "0.0001",
+    "scope": "Exact full-position reduce-only IOC SELL only"
+  },
+  "alternatives": {
+    "all_ten_runtime_one_lot_values_below_10": true,
+    "qualified_unattended_notional": "0",
+    "new_markets_added": false,
+    "partial_fill_guard_disabled": false
+  },
+  "next_valid_action": "New explicitly approved supervised two-lot test only; one-lot partial immediately uses exact approved IOC abort, never an unverified small native stop. No unattended promotion without both actual native-trigger and partial-residual evidence.",
+  "pinned_sdk": {
+    "version": "0.24.0",
+    "exchange_py": "/Users/adesh/Autonomous Trading Bot - Crypto /.venv/lib/python3.12/site-packages/hyperliquid/exchange.py",
+    "sha256": "0bd885c5b64fd77893db58d4982b0d24e92b5be5036d0e9d6d05c40a1812d432",
+    "order_signature": "(self, name: str, is_buy: bool, sz: float, limit_px: float, order_type: hyperliquid.utils.signing.OrderType, reduce_only: bool = False, cloid: Optional[hyperliquid.utils.types.Cloid] = None, builder: Optional[hyperliquid.utils.types.BuilderInfo] = None) -> Any",
+    "bulk_order_signature": "(self, order_requests: List[hyperliquid.utils.signing.OrderRequest], builder: Optional[hyperliquid.utils.types.BuilderInfo] = None, grouping: Union[Literal['na'], Literal['normalTpsl'], Literal['positionTpsl'], hyperliquid.utils.signing.PriorityGrouping] = 'na') -> Any",
+    "native_route": "Existing isolated fixed-size ordinary-minimum Stop Limit, grouping na; no unproved positionTpsl/zero-size override added"
+  }
+}
