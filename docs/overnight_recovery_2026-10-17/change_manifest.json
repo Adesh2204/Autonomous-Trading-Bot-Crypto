@@ -1,0 +1,74 @@
+{
+  "source_before": "135734b4269554f98a295bb245fbf79ca5576ee1c07d6aa4049a3d88007c4109",
+  "source_after": "4aa20fe9c1f8285788dff42e23d247eed2f225b4802bfad26347ef42afd44ac1",
+  "branch": "codex/overnight-recovery-2026-10-17",
+  "commit": "a9e222c6549686651c3565155ed555fa7ee04739",
+  "files": [
+    {
+      "path": "algo-trading-bot/exchange/competition_windows.py",
+      "before": null,
+      "after": "4c6dfe7037a9885c3ce623b032d5d5570aea89ef3b2bbbbc29610fd82abcc7ba",
+      "reason": "Reject actual runtime construction outside the published finite windows; no implicit Oct17\u201318 permission."
+    },
+    {
+      "path": "algo-trading-bot/exchange/execution_journal.py",
+      "before": "c43c915361af556a0e63dc4ca8c4d4563d1b713de86693307c0019d7510a0ca6",
+      "after": "d71fc74578b78361327e87d68414f105f1d808c5ad2f30cf3084b34cd607c49d",
+      "reason": "Atomically persist append-only intent audit events alongside durable reservations/state changes."
+    },
+    {
+      "path": "algo-trading-bot/exchange/hyperliquid_execution.py",
+      "before": "3948b65e4c73571d754e28ab6b9b9be7940bf5f6c80f41a2f803876d5f0b2f70",
+      "after": "c1f7dea96d1b162b32264855203a8ff601f18e03d433ad50e3332267a2c78b98",
+      "reason": "Preserve sanitized causal exceptions and link genuinely ready recovery to new terminal audit records."
+    },
+    {
+      "path": "algo-trading-bot/exchange/intent_audit.py",
+      "before": null,
+      "after": "1962cf2d8d10a8a8d5aeb9252c3d1df6fe6c3018d1469698f643a74b33101f8c",
+      "reason": "Checksum-chain append-only evidence; never backfill or resolve historical UNKNOWN."
+    },
+    {
+      "path": "algo-trading-bot/exchange/long_session.py",
+      "before": "3bd8de73e9a4f190df40e65c87510495502a7654d8e7f6339747528664c05a93",
+      "after": "471affa97d83dab2fe5c35d77d0e662a16b8bce21a7d97f7b5bab218bce008fc",
+      "reason": "Apply the published-window check before release/key/actual runtime construction."
+    },
+    {
+      "path": "algo-trading-bot/exchange/sdk_transport.py",
+      "before": "566195455500f74f1d02c369c692aad91d58c1427b86ec22ce139adf5af21500",
+      "after": "ad431b9e21c498b4c342eb1373e1376e79820d575262c34a2d789ca103f2956f",
+      "reason": "Record signed/dispatch/HTTP-response boundaries without secrets; retain the separate fixed-leverage transport."
+    },
+    {
+      "path": "algo-trading-bot/exchange/terminal_app.py",
+      "before": "8ac6792cf865a7dd8eb2451d0a8ca0eb6b308073b33f590f882680372a73c6dd",
+      "after": "dc57dd9c4e93ada899dbfbcafd32fab810af8a38f54a21029a32b02db85bb8c1",
+      "reason": "Visible local UNKNOWN and session accounting, refreshed dashboard command, read-only restart provenance, stronger proposal blockers."
+    },
+    {
+      "path": "algo-trading-bot/exchange/terminal_evidence.py",
+      "before": null,
+      "after": "11e7cd1f171e9f1dfafa3e8aacd2d78ef2d972a09043d28d7f75ebc4d4ca21e8",
+      "reason": "Unsigned exact-lot two-sided capacity, stressed conditional costs and observed-session accounting with defined bases."
+    },
+    {
+      "path": "algo-trading-bot/exchange/terminal_observer.py",
+      "before": "418818eac1c48728544f222ab87cd3c8cc110834b4b0a99f1ab7ecbadf8a2bf5",
+      "after": "4fac22ec6288c1d110b2783524a005a8fcf13157fd88ae62aa6bec2dd933a579",
+      "reason": "Refresh capacity clocks after candle recovery; publish independent capacity, counts and actual-account diagnostics."
+    },
+    {
+      "path": "algo-trading-bot/test_overnight_terminal_evidence.py",
+      "before": null,
+      "after": "ced593d3c9823d640c7dfca2d550ede8ada1ecaf8b09539ed1ea0fb1448edb6e",
+      "reason": "Adversarial/property-style capacity, accounting, immutable-audit, stale-dashboard and window tests."
+    },
+    {
+      "path": "scripts/phase0_check.py",
+      "before": "bf9d59bae648f332ef18b282ccd29452e6626d298a1c56c4f161d3c8d47a66b3",
+      "after": "6984f1800a2c884c35babfeeb0eb68d107038d0bf95f67d7b6f562f549284343",
+      "reason": "Allow the explicitly requested codex recovery branch only with migration-branch ancestry."
+    }
+  ]
+}

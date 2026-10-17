@@ -1,0 +1,20 @@
+.......................................................FF............... [ 29%]
+........................................................................ [ 59%]
+........................................................................ [ 88%]
+...........................                                              [100%]
+=================================== FAILURES ===================================
+__ test_terminal_recovery_failure_still_reports_direct_actual_exposure[False] __
+algo-trading-bot/test_native_qualification.py:324: in test_terminal_recovery_failure_still_reports_direct_actual_exposure
+    assert all(x['positions'][0]['quantity']=='0.0001' and not x['ready'] for x in r['terminal_readbacks'])
+E   assert False
+E    +  where False = all(<generator object test_terminal_recovery_failure_still_reports_direct_actual_exposure.<locals>.<genexpr> at 0x108497ac0>)
+__ test_terminal_recovery_failure_still_reports_direct_actual_exposure[True] ___
+algo-trading-bot/test_native_qualification.py:324: in test_terminal_recovery_failure_still_reports_direct_actual_exposure
+    assert all(x['positions'][0]['quantity']=='0.0001' and not x['ready'] for x in r['terminal_readbacks'])
+E   assert False
+E    +  where False = all(<generator object test_terminal_recovery_failure_still_reports_direct_actual_exposure.<locals>.<genexpr> at 0x108497850>)
+- generated xml file: /Users/adesh/Autonomous Trading Bot - Crypto /docs/native_protection_final_2026-10-16/focused_native_final.xml -
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_native_qualification.py::test_terminal_recovery_failure_still_reports_direct_actual_exposure[False]
+FAILED algo-trading-bot/test_native_qualification.py::test_terminal_recovery_failure_still_reports_direct_actual_exposure[True]
+2 failed, 241 passed in 64.31s (0:01:04)

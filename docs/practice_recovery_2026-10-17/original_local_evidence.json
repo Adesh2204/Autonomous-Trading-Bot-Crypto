@@ -1,0 +1,510 @@
+{
+  "original_row": {
+    "intent_key": "certification:59445fe546d38a96e486140fda781d09ae8a0942f93a3614fa8abcbc34f5e7ea:entry",
+    "cloid": "0xac0eea156fcec80986dd67c9057b6ded",
+    "fingerprint": "efc18b3a319c40edd7165878db06d67628d1f533c9cddbe40d5fbac47189b28e",
+    "request": "{\"client_order_id\":\"certification:59445fe546d38a96e486140fda781d09ae8a0942f93a3614fa8abcbc34f5e7ea:entry\",\"order_type\":\"LIMIT\",\"price\":\"81518\",\"quantity\":\"0.0002\",\"reduce_only\":false,\"side\":\"BUY\",\"strategy_id\":\"TESTNET_CERTIFICATION_ENTRY\",\"symbol\":\"par:BTC\",\"tif\":\"Ioc\"}",
+    "candidate": "certification:59445fe546d38a96e486140fda781d09ae8a0942f93a3614fa8abcbc34f5e7ea",
+    "state": "UNKNOWN",
+    "oid": null,
+    "outcome": "{\"code\":\"TRANSMISSION_UNCERTAIN\",\"reason\":\"ExchangeError\"}",
+    "created_ms": 1792217831637,
+    "updated_ms": 1792217835092
+  },
+  "events": [
+    {
+      "seq": 571,
+      "timestamp_ms": 1792217831579,
+      "kind": "NATIVE_CORRIDOR_PRICE_SELECTED",
+      "data": {
+        "approved_maximum": "81605",
+        "candidate_id": null,
+        "clock_skew_detected": false,
+        "current_ask": "81478.0",
+        "event_type": "NATIVE_CORRIDOR_PRICE_SELECTED",
+        "exchange_to_receive_ms": null,
+        "exchange_ts": null,
+        "mandate_id": "[REDACTED]",
+        "price_frozen_before_intent": true,
+        "processed_ts": "2026-10-17T06:17:11.579+00:00",
+        "quantity": "0.0002",
+        "receive_to_process_ms": 0,
+        "received_ts": "2026-10-17T06:17:11.579+00:00",
+        "selected_price": "81518",
+        "session_id": "anchorium-one-qualification-v1",
+        "symbol": null,
+        "timestamp_source": "LOCAL_PROCESS"
+      }
+    },
+    {
+      "seq": 572,
+      "timestamp_ms": 1792217831580,
+      "kind": "GLOBAL_POSITION_RECONCILED",
+      "data": {
+        "actual_position_count": 0,
+        "candidate_id": null,
+        "clock_skew_detected": false,
+        "event_type": "GLOBAL_POSITION_RECONCILED",
+        "exchange_to_receive_ms": null,
+        "exchange_ts": null,
+        "max_global_positions": 1,
+        "open_order_count": 0,
+        "processed_ts": "2026-10-17T06:17:11.580+00:00",
+        "reason": "AUTHORITATIVE_FLAT_RECONCILED",
+        "receive_to_process_ms": 0,
+        "received_ts": "2026-10-17T06:17:11.580+00:00",
+        "session_id": "anchorium-one-qualification-v1",
+        "state": "FLAT",
+        "symbol": null,
+        "timestamp_source": "LOCAL_PROCESS"
+      }
+    },
+    {
+      "seq": 573,
+      "timestamp_ms": 1792217831624,
+      "kind": "COMPLIANCE_DECISION",
+      "data": {
+        "candidate_id": "certification:[REDACTED]",
+        "checks": {
+          "deviations_bps": {
+            "ask": "4.909300670119541471317410835",
+            "bid": "11.05270914181853907746721030",
+            "mark": "4.909300670119541471317410835",
+            "mid": "7.980062121714362884117220974",
+            "oracle": "7.232430709636294543805239222"
+          },
+          "duplicate_order": "PASS",
+          "exact_full_position_close": false,
+          "exchange_writes": "SEPARATE_AUTHORIZATION_STILL_REQUIRED",
+          "executable_depth": "0.0061",
+          "liquidity": "PASS",
+          "mark_oracle_bps": "12.13577356362700270909692683",
+          "modifies_order_id": null,
+          "order_size": "0.0002",
+          "participation": "0.03278688524590163934426229508",
+          "performance_statistics": "EXCLUDE_CONTROLLED_TEST",
+          "policy": {
+            "depth_participation": "0.1",
+            "max_book_age_ms": 5000,
+            "max_mark_oracle_bps": "50",
+            "max_order_book_bps": "100",
+            "max_order_oracle_bps": "150",
+            "max_reference_age_ms": 60000
+          },
+          "position_generation": 14,
+          "provenance": "PASS",
+          "reference_prices": {
+            "ask": "81478.0",
+            "bid": "81428.0",
+            "mark": "81478.0",
+            "mid": "81453.0",
+            "oracle": "81577.0"
+          },
+          "self_cross": "PASS",
+          "single_position": {
+            "allowed": true,
+            "code": "SINGLE_POSITION_PASS",
+            "reason": "AUTHORITATIVE_FLAT_RECONCILED",
+            "state": "FLAT",
+            "timestamp": 1792217831580
+          },
+          "trigger_order": false
+        },
+        "clock_skew_detected": false,
+        "cloid": null,
+        "code": "COMPLIANCE_PASS",
+        "event_type": "COMPLIANCE_DECISION",
+        "exchange_to_receive_ms": null,
+        "exchange_ts": null,
+        "execution_mode": "LIVE_TESTNET",
+        "order_classification": "CONTROLLED_TEST_ORDER",
+        "order_id": null,
+        "outcome": "PASS",
+        "processed_ts": "2026-10-17T06:17:11.624+00:00",
+        "provenance": {
+          "action_type": "CONTROLLED_TEST_ORDER",
+          "candidate_id": "certification:[REDACTED]",
+          "classification": "CONTROLLED_TEST_ORDER",
+          "direction": "BUY",
+          "execution_decision": {
+            "allowed": true,
+            "price": "81518",
+            "tif": "Ioc"
+          },
+          "input_source": "OWN_STRATEGY_PUBLIC_MARKET",
+          "reason": "OPERATOR_APPROVED_EXECUTION_TEST",
+          "risk_decision": {
+            "allowed": true,
+            "loss_budget": "10",
+            "max_notional": "25"
+          },
+          "setup_type": "EXECUTION_CERTIFICATION",
+          "signal_timestamp_ms": 1792217831579,
+          "source_market": "par:BTC",
+          "source_position_id": null,
+          "strategy_id": "TESTNET_CERTIFICATION_ENTRY",
+          "test_authorization": {
+            "exit_procedure": "BOUNDED_REDUCE_ONLY_IOC_AND_FLAT_RECONCILIATION",
+            "expected_quantity": "0.0002",
+            "expires_ms": 1792218131579,
+            "market": "par:BTC",
+            "objective": "ONE_EXECUTION_ROUND_TRIP_NOT_A_STRATEGY_SIGNAL",
+            "operator_authorization": "certification:[REDACTED]",
+            "timestamp_ms": 1792217831579
+          }
+        },
+        "reason": "COMPLIANCE_PASS",
+        "receive_to_process_ms": 0,
+        "received_ts": "2026-10-17T06:17:11.624+00:00",
+        "request": {
+          "client_order_id": "certification:[REDACTED]:entry",
+          "order_type": "LIMIT",
+          "price": "81518",
+          "quantity": "0.0002",
+          "reduce_only": false,
+          "side": "BUY",
+          "strategy_id": "TESTNET_CERTIFICATION_ENTRY",
+          "symbol": "par:BTC",
+          "tif": "Ioc"
+        },
+        "session_id": "anchorium-one-qualification-v1",
+        "side": "BUY",
+        "symbol": "par:BTC",
+        "timestamp_source": "LOCAL_PROCESS"
+      }
+    },
+    {
+      "seq": 574,
+      "timestamp_ms": 1792217831637,
+      "kind": "EXCHANGE_VALIDATION",
+      "data": {
+        "candidate_id": "certification:[REDACTED]",
+        "clock_skew_detected": false,
+        "event_type": "EXCHANGE_VALIDATION",
+        "exchange_to_receive_ms": null,
+        "exchange_ts": null,
+        "processed_ts": "2026-10-17T06:17:11.637+00:00",
+        "receive_to_process_ms": 0,
+        "received_ts": "2026-10-17T06:17:11.637+00:00",
+        "request": {
+          "client_order_id": "certification:[REDACTED]:entry",
+          "order_type": "LIMIT",
+          "price": "81518",
+          "quantity": "0.0002",
+          "reduce_only": false,
+          "side": "BUY",
+          "strategy_id": "TESTNET_CERTIFICATION_ENTRY",
+          "symbol": "par:BTC",
+          "tif": "Ioc"
+        },
+        "session_id": "anchorium-one-qualification-v1",
+        "symbol": "par:BTC",
+        "timestamp_source": "LOCAL_PROCESS",
+        "validation": {
+          "allowed": true,
+          "audit": {
+            "asset_id": 2670000,
+            "candidate_id": "certification:[REDACTED]",
+            "current_open_interest_notional": "716914.99140",
+            "deviation_percentage": "0.04909300670119541471317410835",
+            "leverage": 1,
+            "metadata_hash": "b5cbc22f98b81a74bc21eb0f60afe4b74a28fc7185ae054fd69d0230ed30f114",
+            "normalized_price": "81518",
+            "normalized_size": "0.0002",
+            "notional": "16.3036",
+            "open_interest_cap": "500000000.0",
+            "oracle_price": "81577.0",
+            "proposed_exposure_increase": "16.31540",
+            "reduce_only": false,
+            "reference_price_source": "markPx",
+            "relevant_reference_price": "81478.0",
+            "requested_price": "81518",
+            "requested_size": "0.0002",
+            "side": "BUY",
+            "strategy_setup": "TESTNET_CERTIFICATION_ENTRY",
+            "symbol": "par:BTC"
+          },
+          "checked_ms": 1792217831637,
+          "code": "ALLOWED",
+          "normalized": {
+            "asset_id": 2670000,
+            "price": "81518",
+            "quantity": "0.0002",
+            "reduce_only": false,
+            "side": "BUY",
+            "symbol": "par:BTC",
+            "tif": "Ioc"
+          },
+          "reason": "All pre-trade checks passed"
+        }
+      }
+    },
+    {
+      "seq": 575,
+      "timestamp_ms": 1792217831637,
+      "kind": "RATE_STATE_CHANGE",
+      "data": {
+        "candidate_id": null,
+        "clock_skew_detected": false,
+        "event_type": "RATE_STATE_CHANGE",
+        "exchange_to_receive_ms": null,
+        "exchange_ts": null,
+        "processed_ts": "2026-10-17T06:17:11.637+00:00",
+        "receive_to_process_ms": 0,
+        "received_ts": "2026-10-17T06:17:11.637+00:00",
+        "session_id": "anchorium-one-qualification-v1",
+        "state": "HEALTHY",
+        "symbol": null,
+        "timestamp_source": "LOCAL_PROCESS"
+      }
+    },
+    {
+      "seq": 576,
+      "timestamp_ms": 1792217831648,
+      "kind": "COMPLIANCE_ACTION_AUTHORIZED",
+      "data": {
+        "action_type": "order",
+        "candidate_id": "certification:[REDACTED]",
+        "clock_skew_detected": false,
+        "cloid": "0xac0eea156fcec80986dd67c9057b6ded",
+        "context_ms": 1792217830838,
+        "decision_timestamp": 1792217831624,
+        "event_type": "COMPLIANCE_ACTION_AUTHORIZED",
+        "exchange_to_receive_ms": null,
+        "exchange_ts": null,
+        "execution_mode": "LIVE_TESTNET",
+        "order": {
+          "client_order_id": "certification:[REDACTED]:entry",
+          "order_type": "LIMIT",
+          "price": "81518",
+          "quantity": "0.0002",
+          "reduce_only": false,
+          "side": "BUY",
+          "strategy_id": "TESTNET_CERTIFICATION_ENTRY",
+          "symbol": "par:BTC",
+          "tif": "Ioc"
+        },
+        "order_classification": "CONTROLLED_TEST_ORDER",
+        "processed_ts": "2026-10-17T06:17:11.648+00:00",
+        "receive_to_process_ms": 0,
+        "received_ts": "2026-10-17T06:17:11.648+00:00",
+        "session_id": "anchorium-one-qualification-v1",
+        "symbol": null,
+        "timestamp_source": "LOCAL_PROCESS"
+      }
+    },
+    {
+      "seq": 577,
+      "timestamp_ms": 1792217831648,
+      "kind": "SIGNED_ATTEMPT",
+      "data": {
+        "candidate_id": "certification:[REDACTED]",
+        "clock_skew_detected": false,
+        "cloid": "0xac0eea156fcec80986dd67c9057b6ded",
+        "event_type": "SIGNED_ATTEMPT",
+        "exchange_to_receive_ms": null,
+        "exchange_ts": null,
+        "intent_key": "certification:[REDACTED]:entry",
+        "processed_ts": "2026-10-17T06:17:11.648+00:00",
+        "receive_to_process_ms": 0,
+        "received_ts": "2026-10-17T06:17:11.648+00:00",
+        "risk_permission": {
+          "candidate_id": "certification:[REDACTED]",
+          "issued_ms": 1792217777821,
+          "limit_price": "81605",
+          "maximum_quantity": "0.0002",
+          "provenance": {
+            "action_type": "CONTROLLED_TEST_ORDER",
+            "candidate_id": "certification:[REDACTED]",
+            "classification": "CONTROLLED_TEST_ORDER",
+            "direction": "BUY",
+            "execution_decision": {
+              "allowed": true,
+              "price": "81605",
+              "tif": "Ioc"
+            },
+            "input_source": "OWN_STRATEGY_PUBLIC_MARKET",
+            "reason": "OPERATOR_APPROVED_EXECUTION_TEST",
+            "risk_decision": {
+              "allowed": true,
+              "loss_budget": "10",
+              "max_notional": "25"
+            },
+            "setup_type": "EXECUTION_CERTIFICATION",
+            "signal_timestamp_ms": 1792217777821,
+            "source_market": "par:BTC",
+            "source_position_id": null,
+            "strategy_id": "TESTNET_CERTIFICATION_ENTRY",
+            "test_authorization": {
+              "exit_procedure": "BOUNDED_REDUCE_ONLY_IOC_AND_FLAT_RECONCILIATION",
+              "expected_quantity": "0.0002",
+              "expires_ms": 1792218077821,
+              "market": "par:BTC",
+              "objective": "ONE_EXECUTION_ROUND_TRIP_NOT_A_STRATEGY_SIGNAL",
+              "operator_authorization": "certification:[REDACTED]",
+              "timestamp_ms": 1792217777821
+            }
+          },
+          "reason": null,
+          "reduce_only": false,
+          "side": "BUY",
+          "symbol": "par:BTC"
+        },
+        "session_id": "anchorium-one-qualification-v1",
+        "symbol": null,
+        "timestamp_source": "LOCAL_PROCESS",
+        "validation": {
+          "asset_id": 2670000,
+          "candidate_id": "certification:[REDACTED]",
+          "current_open_interest_notional": "716914.99140",
+          "deviation_percentage": "0.04909300670119541471317410835",
+          "leverage": 1,
+          "metadata_hash": "b5cbc22f98b81a74bc21eb0f60afe4b74a28fc7185ae054fd69d0230ed30f114",
+          "normalized_price": "81518",
+          "normalized_size": "0.0002",
+          "notional": "16.3036",
+          "open_interest_cap": "500000000.0",
+          "oracle_price": "81577.0",
+          "proposed_exposure_increase": "16.31540",
+          "reduce_only": false,
+          "reference_price_source": "markPx",
+          "relevant_reference_price": "81478.0",
+          "requested_price": "81518",
+          "requested_size": "0.0002",
+          "side": "BUY",
+          "strategy_setup": "TESTNET_CERTIFICATION_ENTRY",
+          "symbol": "par:BTC"
+        }
+      }
+    },
+    {
+      "seq": 578,
+      "timestamp_ms": 1792217834069,
+      "kind": "NONCE_GENERATED",
+      "data": {
+        "api_wallet": "0x46c9bed595770150752e7fa3806449f81e0ec6f9",
+        "candidate_id": null,
+        "clock_skew_detected": false,
+        "event_type": "NONCE_GENERATED",
+        "exchange_to_receive_ms": null,
+        "exchange_ts": null,
+        "nonce": 1792217834069,
+        "pid": 20311,
+        "processed_ts": "2026-10-17T06:17:14.069+00:00",
+        "receive_to_process_ms": 0,
+        "received_ts": "2026-10-17T06:17:14.069+00:00",
+        "session_id": "anchorium-one-qualification-v1",
+        "symbol": null,
+        "timestamp_source": "LOCAL_PROCESS"
+      }
+    },
+    {
+      "seq": 579,
+      "timestamp_ms": 1792217835092,
+      "kind": "REQUEST_BACKOFF",
+      "data": {
+        "attempt": 1,
+        "candidate_id": null,
+        "clock_skew_detected": false,
+        "delay_ms": 940,
+        "event_type": "REQUEST_BACKOFF",
+        "exchange_to_receive_ms": null,
+        "exchange_ts": null,
+        "processed_ts": "2026-10-17T06:17:15.092+00:00",
+        "receive_to_process_ms": 0,
+        "received_ts": "2026-10-17T06:17:15.092+00:00",
+        "session_id": "anchorium-one-qualification-v1",
+        "status": null,
+        "symbol": null,
+        "timestamp_source": "LOCAL_PROCESS"
+      }
+    },
+    {
+      "seq": 580,
+      "timestamp_ms": 1792217835093,
+      "kind": "EXCHANGE_ORDER_RESULT",
+      "data": {
+        "candidate_id": "certification:[REDACTED]",
+        "clock_skew_detected": false,
+        "cloid": "0xac0eea156fcec80986dd67c9057b6ded",
+        "code": "TRANSMISSION_UNCERTAIN",
+        "error_type": "ExchangeError",
+        "event_type": "EXCHANGE_ORDER_RESULT",
+        "exchange_to_receive_ms": null,
+        "exchange_ts": null,
+        "intent_key": "certification:[REDACTED]:entry",
+        "processed_ts": "2026-10-17T06:17:15.093+00:00",
+        "receive_to_process_ms": 0,
+        "received_ts": "2026-10-17T06:17:15.093+00:00",
+        "session_id": "anchorium-one-qualification-v1",
+        "state": "UNKNOWN",
+        "symbol": null,
+        "timestamp_source": "LOCAL_PROCESS"
+      }
+    },
+    {
+      "seq": 581,
+      "timestamp_ms": 1792217835093,
+      "kind": "AMBIGUOUS_ORDER_RESULT",
+      "data": {
+        "blind_retry": false,
+        "candidate_id": null,
+        "clock_skew_detected": false,
+        "cloid": "0xac0eea156fcec80986dd67c9057b6ded",
+        "event_type": "AMBIGUOUS_ORDER_RESULT",
+        "exchange_to_receive_ms": null,
+        "exchange_ts": null,
+        "intent_key": "certification:[REDACTED]:entry",
+        "processed_ts": "2026-10-17T06:17:15.093+00:00",
+        "receive_to_process_ms": 0,
+        "received_ts": "2026-10-17T06:17:15.093+00:00",
+        "session_id": "anchorium-one-qualification-v1",
+        "symbol": null,
+        "timestamp_source": "LOCAL_PROCESS"
+      }
+    },
+    {
+      "seq": 582,
+      "timestamp_ms": 1792217835170,
+      "kind": "ACCOUNT_ENTRY_REVOKED",
+      "data": {
+        "candidate_id": null,
+        "clock_skew_detected": false,
+        "event_type": "ACCOUNT_ENTRY_REVOKED",
+        "exchange_to_receive_ms": null,
+        "exchange_ts": null,
+        "processed_ts": "2026-10-17T06:17:15.170+00:00",
+        "reason": "CERTIFICATION_ACCOUNT_RECONCILIATION_REQUIRED",
+        "receive_to_process_ms": 0,
+        "received_ts": "2026-10-17T06:17:15.170+00:00",
+        "session_id": "anchorium-one-qualification-v1",
+        "symbol": null,
+        "timestamp_source": "LOCAL_PROCESS"
+      }
+    }
+  ],
+  "relevant_controls": {
+    "native_qualification_attempted": "[REDACTED]",
+    "certification_started:59445fe546d38a96e486140fda781d09ae8a0942f93a3614fa8abcbc34f5e7ea": true,
+    "certification_halted:59445fe546d38a96e486140fda781d09ae8a0942f93a3614fa8abcbc34f5e7ea": true,
+    "native_qualification_invocation:59445fe546d38a96e486140fda781d09ae8a0942f93a3614fa8abcbc34f5e7ea": {
+      "do_not_restart": true,
+      "result_status": "EMERGENCY_EXIT_REQUIRED",
+      "status": "TERMINAL",
+      "stopped_ms": 1792217896551,
+      "two_terminal_flat_readbacks": false
+    }
+  },
+  "existing_verified_resolutions": [
+    {
+      "intent_key": "certification:3b744e33e2de25c1afd6764eac3268ba8d51ac8ef905200e62230bc4a2261ddf:entry",
+      "cloid": "0x3486c3b8e88add1a77175c9c5965350f",
+      "resolution_hash": "a6ea851efdd3c0e90b26b55587bdb60e3ba8449b782d1e39a94a01743acdd058",
+      "reason": "Verified original mandatory pre-HTTP claim path, explicit final guard failure, no claim/HTTP record, matching nonce and two complete fresh account histories",
+      "original_state_preserved": "UNKNOWN",
+      "effective_state": "PROVEN_NOT_TRANSMITTED"
+    }
+  ],
+  "new_intent_in_effective_unresolved_view": true,
+  "sqlite_integrity": "ok"
+}

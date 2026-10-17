@@ -215,7 +215,10 @@ class LiveAccountRecovery:
             return self.last_report
         except Exception as exc:
             self.revoke('ACCOUNT_RECOVERY_FAILED:'+type(exc).__name__)
-            raise ExchangeError('ACCOUNT_RECOVERY_FAILED:'+type(exc).__name__) from None
+            from .terminal_recovery import exception_evidence
+            self.journal.event('ACCOUNT_RECOVERY_EXCEPTION',self.account.client.clock_ms(),
+                               exception_details=exception_evidence(exc))
+            raise ExchangeError('ACCOUNT_RECOVERY_FAILED:'+type(exc).__name__) from exc
 
 
 # All restart, reconnect, ambiguous-action and verification callers reuse this

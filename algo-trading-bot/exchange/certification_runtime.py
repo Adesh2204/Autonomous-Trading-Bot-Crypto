@@ -66,11 +66,14 @@ restarts are read-only and can never resume entries or rebuild strategy stops.
 """
     def intent_rows(self):return self.journal.intents()
 
+    def known_order_ids(self):
+        return {str(r['oid']) for r in self.intent_rows() if r['oid']}
+
     def recover(self):
         from strategy_freeze import verify_strategy_freeze
         verify_strategy_freeze()
         self.revoke('CERTIFICATION_ACCOUNT_RECONCILIATION_REQUIRED')
-        self.state.tracked_order_ids = {str(r['oid']) for r in self.intent_rows() if r['oid']}
+        self.state.tracked_order_ids = self.known_order_ids()
         self.reconciler.recover_incremental(self.state, initial_start_ms=self.initial_start_ms)
         reasons = list(self.state.reasons)
         before = self.account.get_frontend_open_orders()
@@ -78,7 +81,7 @@ restarts are read-only and can never resume entries or rebuild strategy stops.
         after = self.account.get_frontend_open_orders()
         if before != after or not same_position_exposure(positions,self.state.positions):
             reasons.append('CERTIFICATION_ACCOUNT_CHANGED_DURING_RECOVERY')
-        known = {str(r['oid']): r for r in self.intent_rows() if r['oid']}
+        known = self.known_order_ids()
         if any(str(o['oid']) not in known for o in after):
             reasons.append('UNTRACKED_EXCHANGE_FRONTEND_ORDER')
         self.state.orders = {str(o['oid']): o for o in after}

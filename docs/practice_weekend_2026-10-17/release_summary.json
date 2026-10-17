@@ -1,0 +1,448 @@
+{
+  "status": "REPAIRED_OFFLINE_ACTUAL_QUALIFICATION_INCOMPLETE_ENTRY_LOCKED",
+  "generated_ms": 1792221008582,
+  "execution_mode": "PAPER",
+  "allow_live_orders": false,
+  "source_hash": "135734b4269554f98a295bb245fbf79ca5576ee1c07d6aa4049a3d88007c4109",
+  "source_hash_after": "135734b4269554f98a295bb245fbf79ca5576ee1c07d6aa4049a3d88007c4109",
+  "regression": {
+    "passed": true,
+    "totals": {
+      "tests": 2753,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "receipt": "freshness_repair_regression_release/test_receipt.json",
+    "receipt_sha256": "e0df19551d9b6695399cbc29416f87b618689709b88c2caa7a1e8eab6af3125b",
+    "xml_sha256": "7d1a15356230d6adec307de3714032b1c766569213b17489e6aa9a3a89a1573e",
+    "checks_before": {
+      "strategy_freeze": {
+        "exit_code": 0,
+        "result": {
+          "baseline": "nse-working-baseline",
+          "file_count": 1,
+          "method_count": 8,
+          "parameter_count": 32,
+          "passed": true
+        }
+      },
+      "phase0": {
+        "exit_code": 0,
+        "result": {
+          "project": "anchorium-perpetual-alpha",
+          "checks": {
+            "project_is_perpetual_alpha": true,
+            "independent_git_directory": true,
+            "migration_branch": true,
+            "testnet_venue": true,
+            "paper_execution_mode": true,
+            "migration_policy_valid": true,
+            "orders_disabled": true,
+            "angel_one_client_disabled": true,
+            "angel_one_order_boundary_disabled": true,
+            "testnet_order_boundary_disabled": true,
+            "signal_logic_present": true,
+            "signal_source_unchanged": true
+          },
+          "passed": true
+        }
+      }
+    },
+    "checks_after": {
+      "strategy_freeze": {
+        "exit_code": 0,
+        "result": {
+          "baseline": "nse-working-baseline",
+          "file_count": 1,
+          "method_count": 8,
+          "parameter_count": 32,
+          "passed": true
+        }
+      },
+      "phase0": {
+        "exit_code": 0,
+        "result": {
+          "project": "anchorium-perpetual-alpha",
+          "checks": {
+            "project_is_perpetual_alpha": true,
+            "independent_git_directory": true,
+            "migration_branch": true,
+            "testnet_venue": true,
+            "paper_execution_mode": true,
+            "migration_policy_valid": true,
+            "orders_disabled": true,
+            "angel_one_client_disabled": true,
+            "angel_one_order_boundary_disabled": true,
+            "testnet_order_boundary_disabled": true,
+            "signal_logic_present": true,
+            "signal_source_unchanged": true
+          },
+          "passed": true
+        }
+      }
+    },
+    "requirements_sha256": "db76f769d0aae03197e922f579ce6db9aa6aced9587da93e11b4bba409774b4d",
+    "runtime_versions": {
+      "numpy": "2.5.2",
+      "pandas": "3.0.5",
+      "python-dateutil": "2.9.0.post0",
+      "python-dotenv": "1.2.3",
+      "pytest": "8.4.1",
+      "requests": "2.34.2",
+      "tzdata": "2026.3",
+      "websocket-client": "1.9.0",
+      "hyperliquid-python-sdk": "0.24.0"
+    }
+  },
+  "preserved": true,
+  "preservation_receipt_sha256": "5e2864ef9586a6f422c843062980afb906459d2880276a57cd58846095839256",
+  "pricing": {
+    "mode": "NATIVE_CURRENT_ASK_CORRIDOR_IOC_V2",
+    "reference_relative_adverse_bps": "10",
+    "adverse_absolute_cap": "100",
+    "reference_relative_favourable_bps": "10",
+    "favourable_absolute_cap": "100",
+    "per_wire_slippage_bps": "5",
+    "quantity": "0.0002",
+    "mandate_mutation_allowed": false,
+    "failed_preflight_consumes_invocation": true,
+    "unknown_retry_allowed": false
+  },
+  "native_protection": {
+    "qualified": false,
+    "small_native_stop_verified": false,
+    "position_tpsl_par_subminimum": "UNKNOWN",
+    "actual_stop_submission_this_task": false,
+    "partial_fill_guard_unchanged": true,
+    "report": "native_stop_findings.json"
+  },
+  "observed_capacity": [
+    {
+      "symbol": "par:BRENT",
+      "observed_ms": 1792220668804,
+      "one_lot_mark_notional": "1.0679",
+      "liquidity_only_quantity": "0.46",
+      "liquidity_only_notional": "49.1372",
+      "qualified_unattended_notional": "0"
+    },
+    {
+      "symbol": "par:BTC",
+      "observed_ms": 1792220669589,
+      "one_lot_mark_notional": "8.14990",
+      "liquidity_only_quantity": "0.0006",
+      "liquidity_only_notional": "48.90000",
+      "qualified_unattended_notional": "0"
+    },
+    {
+      "symbol": "par:ETH",
+      "observed_ms": 1792220669927,
+      "one_lot_mark_notional": "0.24293",
+      "liquidity_only_quantity": "0.0205",
+      "liquidity_only_notional": "49.80475",
+      "qualified_unattended_notional": "0"
+    },
+    {
+      "symbol": "par:EWJ",
+      "observed_ms": 1792220670425,
+      "one_lot_mark_notional": "0.094832",
+      "liquidity_only_quantity": "0.527",
+      "liquidity_only_notional": "49.988585",
+      "qualified_unattended_notional": "0"
+    },
+    {
+      "symbol": "par:EWY",
+      "observed_ms": 1792220671019,
+      "one_lot_mark_notional": "0.15091",
+      "liquidity_only_quantity": "0.331",
+      "liquidity_only_notional": "49.96445",
+      "qualified_unattended_notional": "0"
+    },
+    {
+      "symbol": "par:GOLD",
+      "observed_ms": 1792220671359,
+      "one_lot_mark_notional": "0.41656",
+      "liquidity_only_quantity": "0.0024",
+      "liquidity_only_notional": "10.00056",
+      "qualified_unattended_notional": "0"
+    },
+    {
+      "symbol": "par:HYPE",
+      "observed_ms": 1792220671701,
+      "one_lot_mark_notional": "0.79927",
+      "liquidity_only_quantity": "0.62",
+      "liquidity_only_notional": "49.5752",
+      "qualified_unattended_notional": "0"
+    },
+    {
+      "symbol": "par:SP500",
+      "observed_ms": 1792220672228,
+      "one_lot_mark_notional": "7.6329",
+      "liquidity_only_quantity": "0.013",
+      "liquidity_only_notional": "99.2641",
+      "qualified_unattended_notional": "0"
+    },
+    {
+      "symbol": "par:USDEUR",
+      "observed_ms": 1792220672571,
+      "one_lot_mark_notional": "0.1124",
+      "liquidity_only_quantity": "44.4",
+      "liquidity_only_notional": "49.91004",
+      "qualified_unattended_notional": "0"
+    },
+    {
+      "symbol": "par:USDJPY",
+      "observed_ms": 1792220672916,
+      "one_lot_mark_notional": "1.5821",
+      "liquidity_only_quantity": "0.31",
+      "liquidity_only_notional": "49.0606",
+      "qualified_unattended_notional": "0"
+    }
+  ],
+  "current_actual_account": {
+    "as_of_ms": 1792220678133,
+    "positions": [],
+    "open_orders": [],
+    "two_authoritative_flat_zero_order_reads": [
+      {
+        "observed_ms": 1792220675566,
+        "source": "EXCHANGE_DIRECT_TESTNET_PAR_INFO",
+        "team": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+        "positions": [],
+        "orders": [],
+        "ready": true
+      },
+      {
+        "observed_ms": 1792220678133,
+        "source": "EXCHANGE_DIRECT_TESTNET_PAR_INFO",
+        "team": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+        "positions": [],
+        "orders": [],
+        "ready": true
+      }
+    ],
+    "currentness": "Timestamped exchange snapshots; no future signing may rely on cached flatness",
+    "reported_equity": {
+      "reported_account_value": "1000000.050512",
+      "collateral_balance": "1000000.050512",
+      "margin_used": "0",
+      "withdrawable": null,
+      "valuation_source": "spotClearinghouseState.USDPR.total"
+    }
+  },
+  "practice_contract": {
+    "implemented": true,
+    "mode": "EXACT_APPROVED_PRACTICE_WEEKEND_LONG_TESTNET_V1",
+    "session_id": null,
+    "mandate_id": null,
+    "approval_deadline_ms": null,
+    "acceptance_created": false,
+    "network": "testnet",
+    "dex": "par",
+    "directions": [
+      "LONG"
+    ],
+    "maximum_signing_duration_ms": 86400000,
+    "latest_possible_expiry_ist": "2026-10-18T23:57:00+05:30",
+    "maximum_entry_attempts": 2,
+    "maximum_global_positions": 1,
+    "leverage": 1,
+    "proposed_bankroll": "20000",
+    "authorized_bankroll": null,
+    "session_loss_fraction": ".01",
+    "per_trade_risk_fraction": ".005",
+    "signed_actions_maximum": 12,
+    "owned_cancellation_rounds_maximum": 2,
+    "entry_cutoff_before_expiry_ms": 900000,
+    "scheduled_risk_close_before_expiry_ms": 300000,
+    "midnight_resets": false,
+    "automatic_renewal": false,
+    "native_and_partial_evidence_required": true,
+    "short_authorized": false
+  },
+  "worker": {
+    "status": "STOPPED_UNKNOWN_REQUIRES_REVIEW",
+    "pid": 20311,
+    "caffeinate_pid": 20312,
+    "currently_running": false,
+    "stop_confirmed_by_process_read": true,
+    "accepted_ms": 1792217727523,
+    "expiry_ms": 1792218027523,
+    "signed_attempts": 1,
+    "actual_signature_created": true,
+    "exact_signature_count": null,
+    "guarded_nonce": 1792217834069,
+    "key_accessed_by_approved_runtime": true,
+    "recorded_http_submission_claims": 0,
+    "confirmed_exchange_orders": 0,
+    "http_boundary_telemetry_available_for_original_attempt": false,
+    "blind_retry": false,
+    "actual_new_fills": [],
+    "native_stop_submitted": false,
+    "native_protection_qualified": false,
+    "old_oct15_heartbeat": "PAUSED",
+    "old_oct16_heartbeat": "PAUSED",
+    "dependency": "Local Mac, process, power and internet; no remote failover or automatic restart"
+  },
+  "actual_task_accounting": {
+    "window_start_ms": 1792217727523,
+    "window_end_ms": 1792220678135,
+    "buy_fills": [],
+    "sell_fills": [],
+    "completed_round_trips": 0,
+    "gross_pnl": "0",
+    "fees": "0",
+    "funding": "0",
+    "net_observed_cashflow": "0",
+    "qualification_realized_pnl_certified": false,
+    "max_session_drawdown": null,
+    "remaining_authorized_budget": null,
+    "source": "Actual exchange-reported account events during the approved attempt window; no new fills or funding"
+  },
+  "prior_actual_oct15": {
+    "buy_order": "62755970305",
+    "buy_fill": "800659111758533",
+    "buy_quantity": "0.0002",
+    "buy_price": "81512",
+    "entry_fee": "0.014672",
+    "sell_order": "62805581662",
+    "sell_fill": "260274449763192",
+    "sell_quantity": "0.0002",
+    "sell_price": "81909",
+    "exit_fee": "0.014743",
+    "gross": "0.0794",
+    "total_fees": "0.029415",
+    "funding": "0.000527",
+    "net": "0.050512",
+    "collateral": "TEST USDPR",
+    "organizer_whitelist_or_reset_evidence": false
+  },
+  "prior_qualification_response": {
+    "status": "RESPONSE_OBSERVED_AFTER_LATEST_POSSIBLE_EXECUTION_EXPIRY",
+    "mandate_id": "206517755e77aafd6c989f0129b5fd14bd784cafed50c95a48324d150f94e977",
+    "response_observed_ms": 1792217652421,
+    "approval_deadline_ms": 1792216609423,
+    "latest_possible_execution_expiry_ms": 1792216909423,
+    "actual_click_time_available": false,
+    "answer": "Approve this exact supervised qualification exception and all acknowledgments",
+    "question_item_id": "[\"request_user_input_async\",\"call_eff22b83208b4862ab24ae4b1bc66145\",0]",
+    "genuine_human_response": true,
+    "backdated": false,
+    "acceptance_created": false,
+    "execution_invoked": false,
+    "private_keys_accessed": false,
+    "signatures": 0,
+    "orders_submitted": 0,
+    "source_hash": "88429ed4fabb3f1564b4c0bb281466e841cd6fa3e522bd3092172d78a3a7fc5f",
+    "reason": "Current execution time is past the latest possible authority even if acceptance had occurred within the allowed decision window. Preserve response; never revive the mandate."
+  },
+  "qualification": {
+    "status": "CONSUMED_LOCAL_UNKNOWN_NO_RETRY",
+    "mandate_id": "59445fe546d38a96e486140fda781d09ae8a0942f93a3614fa8abcbc34f5e7ea",
+    "proposal": {
+      "symbol": "par:BTC",
+      "asset_id": 2670000,
+      "quantity": "0.0002",
+      "entry_side": "BUY",
+      "entry_limit": "81605",
+      "exit_bound": "80217",
+      "stop_trigger": "80620",
+      "stop_limit": "80217",
+      "reference_bid": "81434.0",
+      "reference_ask": "81484.0",
+      "reference_mark": "81484.0",
+      "reference_oracle": "81567.0",
+      "observed_ms": 1792217667799,
+      "source_hash": "88429ed4fabb3f1564b4c0bb281466e841cd6fa3e522bd3092172d78a3a7fc5f",
+      "reliability_policy_hash": "1b8573d07a0f12f3653cf7b92f96c2120e8d61c3f210335ec850ba14ea582455",
+      "max_notional": "25",
+      "session_loss_budget": "10",
+      "entry_slippage_bps": "5",
+      "exit_slippage_bps": "20",
+      "taker_fee_rate": "0.00090",
+      "max_exit_attempts": 2,
+      "max_signed_actions": 6,
+      "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+      "api_wallet": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+      "network": "testnet",
+      "dex": "par",
+      "mode": "TESTNET_CERTIFICATION",
+      "purpose": "TWO_LOT_BTC_NATIVE_STOP_WITH_ONE_LOT_ABORT_V1",
+      "close_evidence_sha256": "c421e3ffc251cb770c67b44395301e50ec0fbb6903146f18c51aa370a88a2764",
+      "trigger_wait_seconds": 120,
+      "pricing_mode": "NATIVE_CURRENT_ASK_CORRIDOR_IOC_V2",
+      "minimum_ask": "81403",
+      "maximum_ask": "81565",
+      "maximum_buy_price": "81605",
+      "maximum_adverse_movement_bps": "10",
+      "maximum_adverse_movement_absolute": "100",
+      "maximum_favourable_movement_bps": "10",
+      "maximum_favourable_movement_absolute": "100",
+      "reference_funding_rate": "-0.0000994553",
+      "maximum_abs_funding_rate": "0.0001989106"
+    },
+    "approval_created": true,
+    "accepted_ms": 1792217727523,
+    "expiry_ms": 1792218027523,
+    "human_approval_provenance_sha256": "0c0963fd7e0bc37b3dd2d8ed1cf001abc9b9acaadee909203149192400242373",
+    "result_sha256": "924bec6dbf8b61a5d138007dffa699b27a1a6811550d1e8f639f836f1e96d732",
+    "raw_receipts_sha256": "415a4c2f98ab665adc4d6320765756bf490c1586d5853f16695910552f32a830",
+    "worker_result_status": "EMERGENCY_EXIT_REQUIRED",
+    "worker_realized_pnl": null,
+    "worker_realized_pnl_status": "REALIZED_PNL_NOT_CERTIFIED",
+    "worker_final_flat": false,
+    "worker_two_terminal_flat_readbacks": false,
+    "independent_post_expiry_account_flat": true,
+    "independent_post_expiry_readbacks": [
+      {
+        "observed_ms": 1792218409899,
+        "source": "EXCHANGE_DIRECT_TESTNET_PAR_INFO",
+        "original_order_status": {
+          "status": "unknownOid"
+        },
+        "positions": [],
+        "orders": [],
+        "ready": true
+      },
+      {
+        "observed_ms": 1792218412631,
+        "source": "EXCHANGE_DIRECT_TESTNET_PAR_INFO",
+        "original_order_status": {
+          "status": "unknownOid"
+        },
+        "positions": [],
+        "orders": [],
+        "ready": true
+      }
+    ],
+    "original_cloid": "0xac0eea156fcec80986dd67c9057b6ded",
+    "local_intent_state": "UNKNOWN",
+    "unknown_resolution_written": false,
+    "completion_or_native_proof_created": false
+  },
+  "blockers": [
+    "NEW_LOCAL_UNKNOWN_INTENT_REQUIRES_FORMAL_REVIEW",
+    "ACTUAL_NATIVE_TRIGGER_AND_CLOSING_PROOF_NOT_QUALIFIED",
+    "SUBMINIMUM_NATIVE_RESIDUAL_SUPPORT_UNVERIFIED",
+    "CONSUMED_MANDATE_NO_RETRY_AND_NO_AUTONOMOUS_SESSION_APPROVAL"
+  ],
+  "no_guarantee": "Offline tests cannot guarantee a venue fill, a loss cap, a profitable trade or uninterrupted operation.",
+  "approved_attempt_source_hash": "88429ed4fabb3f1564b4c0bb281466e841cd6fa3e522bd3092172d78a3a7fc5f",
+  "preservation_receipt": "post_attempt_preservation_receipt.json",
+  "freshness_repair": {
+    "implemented": true,
+    "actual_maximum_age_ms": 5000,
+    "genuine_reacquisition_without_retimestamping": true,
+    "immutable_wire_revalidated": true,
+    "native_typed_scope_only": true,
+    "pre_http_error_and_transport_boundary_logging": true,
+    "additional_tests": 27,
+    "focused_passes": 163,
+    "actual_exchange_retest": false
+  },
+  "capacity_audit": {
+    "path": "final_capacity_audit/audit.json",
+    "source_hash": "135734b4269554f98a295bb245fbf79ca5576ee1c07d6aa4049a3d88007c4109",
+    "source_hash_after": "135734b4269554f98a295bb245fbf79ca5576ee1c07d6aa4049a3d88007c4109"
+  }
+}

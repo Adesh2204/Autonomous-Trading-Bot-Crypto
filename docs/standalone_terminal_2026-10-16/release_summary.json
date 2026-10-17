@@ -1,0 +1,530 @@
+{
+  "status": "STANDALONE_ENGINEERING_VALIDATED_GENUINE_ACTIVATION_BLOCKED",
+  "source_hash": "d254b0b1eb6bd7a08312ff5ff40d509a0485bf2b36b74d9e51412dd4ef86902f",
+  "receipt": "regression_release_final/test_receipt.json",
+  "receipt_sha256": "ee14e96962a0b1d29208745903a4e048ba3ca92a8b40e9e4e20bbced96574957",
+  "regression": {
+    "tests": 2574,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "xml_sha256": "796bf6d1cb303aa51159f7d5479bde976167f1fa6d004a34af7533c72ea2eef4",
+  "soak": {
+    "status": "STOPPED",
+    "duration_seconds": 902.027,
+    "shutdown_reconciliation_error": "ExchangeError",
+    "sample_count": 59,
+    "healthy_both_stream_samples": 49,
+    "memory_high_watermark_mb": 139.5625,
+    "late_high_watermark_growth_mb": 0.0,
+    "public_info_requests": 723,
+    "actual_errors": {},
+    "account_stream_last_error": "ACCOUNT_WEBSOCKET_DISCONNECTED",
+    "market_stream_last_error": null,
+    "terminal_flat": false,
+    "terminal_readbacks": [],
+    "execution_intents": 0,
+    "journal_integrity": "ok",
+    "threads_stopped": true,
+    "final_log_bytes": 33444247,
+    "receipt_rotations": 2,
+    "source_hash": "d254b0b1eb6bd7a08312ff5ff40d509a0485bf2b36b74d9e51412dd4ef86902f"
+  },
+  "original_evidence_preserved": true,
+  "observer_requires_codex": false,
+  "ordinary_runtime_llm_calls": 0,
+  "new_session_approved": false,
+  "new_actual_orders": 0,
+  "genuine_long_cycles_historical": 1,
+  "genuine_strategy_generated_long_cycles_qualified": 0,
+  "approved_new_entry_attempts": 0,
+  "proposed_limits": {
+    "bankroll": "20000",
+    "target_notional": [
+      "1000",
+      "2500",
+      "5000",
+      "10000"
+    ],
+    "stress_only": [
+      "25000",
+      "50000"
+    ],
+    "leverage": 1,
+    "positions": 1,
+    "attempts": 2,
+    "daily_loss_fraction": ".01"
+  },
+  "genuine_qualified_unattended_notional": "0",
+  "commit": "a9e222c6549686651c3565155ed555fa7ee04739",
+  "native_stop": "BLOCKED_SUBMINIMUM_PARTIAL_PATH_AND_NO_ACTUAL_TRIGGER_PROOF",
+  "final_flat_verified": true,
+  "post_stop_authoritative_readbacks": [
+    {
+      "source": "EXCHANGE_DIRECT_TESTNET_PAR_INFO",
+      "observed_ms": 1792165454756,
+      "positions": [],
+      "orders": [],
+      "ready": true
+    },
+    {
+      "source": "EXCHANGE_DIRECT_TESTNET_PAR_INFO",
+      "observed_ms": 1792165457792,
+      "positions": [],
+      "orders": [],
+      "ready": true
+    }
+  ],
+  "final_account_receipt_sha256": "ee6c8211465fc3cf47cf662d9419540220207eb8e62a44fe5e80218431b40af4",
+  "final_positions": [],
+  "final_open_orders": [],
+  "today": {
+    "actual_fills": 0,
+    "gross": "0",
+    "fees": "0",
+    "funding": "0",
+    "net": "0"
+  },
+  "historical_oct15_verified_net": "0.050512",
+  "liquidity": {
+    "par:BRENT": {
+      "quantity": "0.09",
+      "notional": "9.3141",
+      "bid": "103.43",
+      "ask": "103.49",
+      "book_ms": 1792165285214,
+      "observed_ms": 1792165289612,
+      "active_asset_ms": 1792165289787,
+      "context_ms": 1792165289612,
+      "size_step": "0.01",
+      "one_lot_bid_notional": "1.0343",
+      "partial_protection_qualified": false,
+      "partial_path": {
+        "entry_admissible_under_documented_minimum": false,
+        "blocker": "FROZEN_STOP_PLAN_UNAVAILABLE"
+      },
+      "targets": {
+        "1000": false,
+        "2500": false,
+        "5000": false,
+        "10000": false,
+        "25000": false,
+        "50000": false
+      },
+      "qualified_unattended_notional": "0",
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "par:BRENT",
+        "leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "maxTradeSzs": [
+          "9664.63",
+          "9664.63"
+        ],
+        "availableToTrade": [
+          "1000000.050512",
+          "1000000.050512"
+        ],
+        "markPx": "103.47"
+      }
+    },
+    "par:BTC": {
+      "quantity": "0.0006",
+      "notional": "48.93120",
+      "bid": "81503.0",
+      "ask": "81552.0",
+      "book_ms": 1792165290443,
+      "observed_ms": 1792165290880,
+      "active_asset_ms": 1792165291057,
+      "context_ms": 1792165290880,
+      "size_step": "0.0001",
+      "one_lot_bid_notional": "8.15030",
+      "partial_protection_qualified": false,
+      "partial_path": {
+        "entry_admissible_under_documented_minimum": false,
+        "blocker": "FROZEN_STOP_PLAN_UNAVAILABLE"
+      },
+      "targets": {
+        "1000": false,
+        "2500": false,
+        "5000": false,
+        "10000": false,
+        "25000": false,
+        "50000": false
+      },
+      "qualified_unattended_notional": "0",
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "par:BTC",
+        "leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "maxTradeSzs": [
+          "12.2648",
+          "12.2648"
+        ],
+        "availableToTrade": [
+          "1000000.050512",
+          "1000000.050512"
+        ],
+        "markPx": "81534.0"
+      }
+    },
+    "par:ETH": {
+      "quantity": "0.0204",
+      "notional": "49.78008",
+      "bid": "2438.6",
+      "ask": "2440.2",
+      "book_ms": 1792165290443,
+      "observed_ms": 1792165291939,
+      "active_asset_ms": 1792165292115,
+      "context_ms": 1792165291939,
+      "size_step": "0.0001",
+      "one_lot_bid_notional": "0.24386",
+      "partial_protection_qualified": false,
+      "partial_path": {
+        "entry_admissible_under_documented_minimum": false,
+        "blocker": "FROZEN_STOP_PLAN_UNAVAILABLE"
+      },
+      "targets": {
+        "1000": false,
+        "2500": false,
+        "5000": false,
+        "10000": false,
+        "25000": false,
+        "50000": false
+      },
+      "qualified_unattended_notional": "0",
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "par:ETH",
+        "leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "maxTradeSzs": [
+          "409.8024",
+          "409.8024"
+        ],
+        "availableToTrade": [
+          "1000000.050512",
+          "1000000.050512"
+        ],
+        "markPx": "2440.2"
+      }
+    },
+    "par:EWJ": {
+      "quantity": "0.521",
+      "notional": "49.937329",
+      "bid": "95.817",
+      "ask": "95.849",
+      "book_ms": 1792165290443,
+      "observed_ms": 1792165293006,
+      "active_asset_ms": 1792165293183,
+      "context_ms": 1792165293006,
+      "size_step": "0.001",
+      "one_lot_bid_notional": "0.095817",
+      "partial_protection_qualified": false,
+      "partial_path": {
+        "entry_admissible_under_documented_minimum": false,
+        "blocker": "FROZEN_STOP_PLAN_UNAVAILABLE"
+      },
+      "targets": {
+        "1000": false,
+        "2500": false,
+        "5000": false,
+        "10000": false,
+        "25000": false,
+        "50000": false
+      },
+      "qualified_unattended_notional": "0",
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "par:EWJ",
+        "leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "maxTradeSzs": [
+          "10433.077",
+          "10433.077"
+        ],
+        "availableToTrade": [
+          "1000000.050512",
+          "1000000.050512"
+        ],
+        "markPx": "95.849"
+      }
+    },
+    "par:EWY": {
+      "quantity": "0.325",
+      "notional": "49.94600",
+      "bid": "153.59",
+      "ask": "153.68",
+      "book_ms": 1792165290443,
+      "observed_ms": 1792165293861,
+      "active_asset_ms": 1792165294037,
+      "context_ms": 1792165293861,
+      "size_step": "0.001",
+      "one_lot_bid_notional": "0.15359",
+      "partial_protection_qualified": false,
+      "partial_path": {
+        "entry_admissible_under_documented_minimum": false,
+        "blocker": "FROZEN_STOP_PLAN_UNAVAILABLE"
+      },
+      "targets": {
+        "1000": false,
+        "2500": false,
+        "5000": false,
+        "10000": false,
+        "25000": false,
+        "50000": false
+      },
+      "qualified_unattended_notional": "0",
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "par:EWY",
+        "leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "maxTradeSzs": [
+          "6507.874",
+          "6507.874"
+        ],
+        "availableToTrade": [
+          "1000000.050512",
+          "1000000.050512"
+        ],
+        "markPx": "153.66"
+      }
+    },
+    "par:GOLD": {
+      "quantity": "0.0047",
+      "notional": "19.65258",
+      "bid": "4178.7",
+      "ask": "4181.4",
+      "book_ms": 1792165290443,
+      "observed_ms": 1792165295038,
+      "active_asset_ms": 1792165295373,
+      "context_ms": 1792165295038,
+      "size_step": "0.0001",
+      "one_lot_bid_notional": "0.41787",
+      "partial_protection_qualified": false,
+      "partial_path": {
+        "entry_admissible_under_documented_minimum": false,
+        "blocker": "FROZEN_STOP_PLAN_UNAVAILABLE"
+      },
+      "targets": {
+        "1000": false,
+        "2500": false,
+        "5000": false,
+        "10000": false,
+        "25000": false,
+        "50000": false
+      },
+      "qualified_unattended_notional": "0",
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "par:GOLD",
+        "leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "maxTradeSzs": [
+          "239.2344",
+          "239.2344"
+        ],
+        "availableToTrade": [
+          "1000000.050512",
+          "1000000.050512"
+        ],
+        "markPx": "4180.0"
+      }
+    },
+    "par:HYPE": {
+      "quantity": "0.63",
+      "notional": "49.7889",
+      "bid": "78.98",
+      "ask": "79.03",
+      "book_ms": 1792165295564,
+      "observed_ms": 1792165296275,
+      "active_asset_ms": 1792165296619,
+      "context_ms": 1792165296275,
+      "size_step": "0.01",
+      "one_lot_bid_notional": "0.7898",
+      "partial_protection_qualified": false,
+      "partial_path": {
+        "entry_admissible_under_documented_minimum": false,
+        "blocker": "FROZEN_STOP_PLAN_UNAVAILABLE"
+      },
+      "targets": {
+        "1000": false,
+        "2500": false,
+        "5000": false,
+        "10000": false,
+        "25000": false,
+        "50000": false
+      },
+      "qualified_unattended_notional": "0",
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "par:HYPE",
+        "leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "maxTradeSzs": [
+          "12653.42",
+          "12653.42"
+        ],
+        "availableToTrade": [
+          "1000000.050512",
+          "1000000.050512"
+        ],
+        "markPx": "79.03"
+      }
+    },
+    "par:SP500": {
+      "quantity": "0.001",
+      "notional": "7.6996",
+      "bid": "7695.1",
+      "ask": "7699.6",
+      "book_ms": 1792165295564,
+      "observed_ms": 1792165297909,
+      "active_asset_ms": 1792165298240,
+      "context_ms": 1792165297909,
+      "size_step": "0.001",
+      "one_lot_bid_notional": "7.6951",
+      "partial_protection_qualified": false,
+      "partial_path": {
+        "entry_admissible_under_documented_minimum": false,
+        "blocker": "FROZEN_STOP_PLAN_UNAVAILABLE"
+      },
+      "targets": {
+        "1000": false,
+        "2500": false,
+        "5000": false,
+        "10000": false,
+        "25000": false,
+        "50000": false
+      },
+      "qualified_unattended_notional": "0",
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "par:SP500",
+        "leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "maxTradeSzs": [
+          "129.952",
+          "129.952"
+        ],
+        "availableToTrade": [
+          "1000000.050512",
+          "1000000.050512"
+        ],
+        "markPx": "7695.1"
+      }
+    },
+    "par:USDEUR": {
+      "quantity": "8.8",
+      "notional": "9.89912",
+      "bid": "1.1243",
+      "ask": "1.1249",
+      "book_ms": 1792165295564,
+      "observed_ms": 1792165299405,
+      "active_asset_ms": 1792165299583,
+      "context_ms": 1792165299405,
+      "size_step": "0.1",
+      "one_lot_bid_notional": "0.11243",
+      "partial_protection_qualified": false,
+      "partial_path": {
+        "entry_admissible_under_documented_minimum": false,
+        "blocker": "FROZEN_STOP_PLAN_UNAVAILABLE"
+      },
+      "targets": {
+        "1000": false,
+        "2500": false,
+        "5000": false,
+        "10000": false,
+        "25000": false,
+        "50000": false
+      },
+      "qualified_unattended_notional": "0",
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "par:USDEUR",
+        "leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "maxTradeSzs": [
+          "889126.0",
+          "889126.0"
+        ],
+        "availableToTrade": [
+          "1000000.050512",
+          "1000000.050512"
+        ],
+        "markPx": "1.1247"
+      }
+    },
+    "par:USDJPY": {
+      "quantity": "0.31",
+      "notional": "49.0234",
+      "bid": "158.03",
+      "ask": "158.14",
+      "book_ms": 1792165300781,
+      "observed_ms": 1792165301552,
+      "active_asset_ms": 1792165301728,
+      "context_ms": 1792165301552,
+      "size_step": "0.01",
+      "one_lot_bid_notional": "1.5803",
+      "partial_protection_qualified": false,
+      "partial_path": {
+        "entry_admissible_under_documented_minimum": false,
+        "blocker": "FROZEN_STOP_PLAN_UNAVAILABLE"
+      },
+      "targets": {
+        "1000": false,
+        "2500": false,
+        "5000": false,
+        "10000": false,
+        "25000": false,
+        "50000": false
+      },
+      "qualified_unattended_notional": "0",
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "par:USDJPY",
+        "leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "maxTradeSzs": [
+          "6326.71",
+          "6326.71"
+        ],
+        "availableToTrade": [
+          "1000000.050512",
+          "1000000.050512"
+        ],
+        "markPx": "158.06"
+      }
+    }
+  },
+  "limitations": [
+    "No new genuine trading or protection qualification was authorized or executed",
+    "Development soak is not multi-day host-outage or long-session trading qualification",
+    "Actual SHORT and all six alternate research exits remain unpromoted",
+    "STOP cannot create closure authority; expired signing leaves residual exposure for human review",
+    "A Stop Limit may remain unfilled after a gap; Mac/Python/power/internet required for local management",
+    "No organizer whitelist/reset evidence"
+  ]
+}

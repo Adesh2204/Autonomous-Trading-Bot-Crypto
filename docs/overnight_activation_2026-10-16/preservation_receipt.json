@@ -1,0 +1,136 @@
+{
+  "observed_ms": 1792169226887,
+  "preserved": {
+    "configs/reliability_policy.json": {
+      "expected": "1b8573d07a0f12f3653cf7b92f96c2120e8d61c3f210335ec850ba14ea582455",
+      "actual": "1b8573d07a0f12f3653cf7b92f96c2120e8d61c3f210335ec850ba14ea582455",
+      "matching": true
+    },
+    "configs/protection_policy.proposed.json": {
+      "expected": "34c0668d5337c6cc0ccc6866ca29c791bc8aa4d048cdd1a738dcff2ad4985578",
+      "actual": "34c0668d5337c6cc0ccc6866ca29c791bc8aa4d048cdd1a738dcff2ad4985578",
+      "matching": true
+    },
+    "configs/practice_ops.json": {
+      "expected": "f35d72d21914874578a95280d453f857d875d0587e33a82167b8ddb446ce8be2",
+      "actual": "f35d72d21914874578a95280d453f857d875d0587e33a82167b8ddb446ce8be2",
+      "matching": true
+    },
+    "configs/external_research.example.json": {
+      "expected": "5314b34e2f42e67d9478a01a089d959e1c95d1dff88d5d62ec9c07d6388493bf",
+      "actual": "5314b34e2f42e67d9478a01a089d959e1c95d1dff88d5d62ec9c07d6388493bf",
+      "matching": true
+    },
+    "algo-trading-bot/signal_brain.py": {
+      "expected": "bff940ac5ed35f71ed3dfb537ba15d20dcec35a4e62a938d2f0619c6e9309d83",
+      "actual": "bff940ac5ed35f71ed3dfb537ba15d20dcec35a4e62a938d2f0619c6e9309d83",
+      "matching": true
+    },
+    "docs/strategy_freeze.json": {
+      "expected": "aeda15740802c1082f38f4e69f415f16a77d749a1aa050061026a99120fb9f8b",
+      "actual": "aeda15740802c1082f38f4e69f415f16a77d749a1aa050061026a99120fb9f8b",
+      "matching": true
+    },
+    "docs/qualification_2026-10-15/WHITELIST_TRADE_PROOF.json": {
+      "expected": "3f9b7decb3ca92810fc0e146373c667e621db909d621210cd52cb96f7886a0ab",
+      "actual": "3f9b7decb3ca92810fc0e146373c667e621db909d621210cd52cb96f7886a0ab",
+      "matching": true
+    },
+    "docs/profit_exit_refresh_2026-10-15_2209/EXIT_RECOVERY_PROOF.json": {
+      "expected": "c9e633a018121bd349eb6716c084f71254825d1d17da7b364e338c4ca31ffd83",
+      "actual": "c9e633a018121bd349eb6716c084f71254825d1d17da7b364e338c4ca31ffd83",
+      "matching": true
+    },
+    "runtime/testnet/anchorium-bot-1/exit-recovery.lock": {
+      "expected": "176669cd42c2e4dc6f95b3d0b3555df2d7ddd7a27c6543cc6f57adcadd03de28",
+      "actual": "176669cd42c2e4dc6f95b3d0b3555df2d7ddd7a27c6543cc6f57adcadd03de28",
+      "matching": true
+    },
+    "runtime/testnet/anchorium-bot-1/delegated-session.lock": {
+      "expected": "b89a1205a5ed223a588c95df6381e8573df3c5202e8a51a4c6c572cd8517583f",
+      "actual": "b89a1205a5ed223a588c95df6381e8573df3c5202e8a51a4c6c572cd8517583f",
+      "matching": true
+    }
+  },
+  "databases": {
+    "runtime/testnet/anchorium-bot-1/nonces.sqlite": {
+      "integrity": "ok",
+      "dump_sha256": "997450d92c3576905eb06b24ccca072d83eb004782f2e66e56b7de8b0cec7e10",
+      "matching": true
+    },
+    "runtime/testnet/anchorium-bot-1/configuration.sqlite": {
+      "integrity": "ok",
+      "dump_sha256": "ed913029c934f8b262b3b2fe63f0c53f52d7fe5c98e6cd1dc8f05095b3c82f00",
+      "matching": true
+    },
+    "runtime/testnet/anchorium-bot-1/qualification.sqlite": {
+      "integrity": "ok",
+      "dump_sha256": "485d2953a3766865880832a214d08daee10349e313062e541a3d77aa18f35f6f",
+      "matching": true
+    }
+  },
+  "changed_source_since_baseline": [
+    {
+      "path": "algo-trading-bot/exchange/bounded_daily_session.py",
+      "before": "369052b2506948eea06d8949c81184f09758530b181a40378abb1091459a417f",
+      "after": "bfdbcf8c123b0da8be0f593e34148dcf86afd92aa1dfe5c62fb50dcd4fffa301"
+    },
+    {
+      "path": "algo-trading-bot/exchange/live_account_stream.py",
+      "before": "3d6d529f122a2f1a5909372a1e58e1ae8aa19853b8877352c0111cc9b3ac7229",
+      "after": "eba418b19322109955655d33809dd3889d7034d7ac1a26cae16f82c6a2ddffcb"
+    },
+    {
+      "path": "algo-trading-bot/exchange/live_recovery.py",
+      "before": "da3071a5592eb0c99299ee9f112e6e35ce33a0e057e07fa44be2f7cff253df34",
+      "after": "9c71af70c267e994b42bf47a2679aaebb66456bfaeb1696bc5bb7370ecb5045b"
+    },
+    {
+      "path": "algo-trading-bot/exchange/live_runtime.py",
+      "before": "de5c87dfea9bf065ad8fadc68c26e6b1d1d1ce74f1a34f2230e3980896d09e4b",
+      "after": "d74c02d84f2d548feb31637ea396c290bce5424c5748dc482aa37c763cc525c6"
+    },
+    {
+      "path": "algo-trading-bot/exchange/long_session.py",
+      "before": "cb27422b8147936bbfd13277df81233d97d4779e350d980ce92af8ffd5ebdc34",
+      "after": "de6ee7593fb582f8c2ba478399d85e9df6bd94282652d4a9bb412b95ea0796ea"
+    },
+    {
+      "path": "algo-trading-bot/exchange/overnight_session.py",
+      "before": null,
+      "after": "6531206a4ced9c88f10147329242b229ccadb555a41ac2988fa3d4d5bd3008cf"
+    },
+    {
+      "path": "algo-trading-bot/exchange/terminal_app.py",
+      "before": "2d2cd5d28ba623638960dd9d8f8b1ff602638f9080b29a6bc5a044d439417894",
+      "after": "937ed7b4483af8412f531747b7b328abe3999d5d2e900580a7ff1b194767bab5"
+    },
+    {
+      "path": "algo-trading-bot/exchange/terminal_observer.py",
+      "before": "9d488551293ba96d7b705649d1d5728f4d74eae73bc7458dd0f7b2edf123ae72",
+      "after": "418818eac1c48728544f222ab87cd3c8cc110834b4b0a99f1ab7ecbadf8a2bf5"
+    },
+    {
+      "path": "algo-trading-bot/exchange/terminal_recovery.py",
+      "before": null,
+      "after": "41c51d94f7f555a6634858c037e9d0f61064fa6d0a9a0e72077fb086e9251dda"
+    },
+    {
+      "path": "algo-trading-bot/live_execution_session.py",
+      "before": "b419f402780135b8e639f2ba0565a28942da7877e1af8d62a826133f0e6fee30",
+      "after": "f72f25e911daeeae4b98893074c14becf15d83987c36f92c825b19a32046124c"
+    },
+    {
+      "path": "algo-trading-bot/test_overnight_session.py",
+      "before": null,
+      "after": "d94cb3ad2567fc6032b01e81133015f2047c9a617520ccc3679bcad127b2ca99"
+    }
+  ],
+  "git_commit": "a9e222c6549686651c3565155ed555fa7ee04739",
+  "all_preserved": true,
+  "final_verified_ms": 1792169911319,
+  "heartbeat_statuses": {
+    "monitor-anchorium-three-hour-paper-run": "PAUSED",
+    "monitor-oct16-public-quant-observer": "PAUSED"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "status": "INCOMPLETE_REQUIRES_REVIEW",
+  "error": {
+    "type": "ValueError",
+    "reason": "'DECISION' is not a valid RequestPriority",
+    "traceback": "Traceback (most recent call last):\n  File \"/Users/adesh/Autonomous Trading Bot - Crypto /docs/native_protection_final_2026-10-16/read_native_evidence.py\", line 84, in <module>\n    rows=history(user);par=[r for r in rows if r.get('order',{}).get('coin') in client.markets]\n         ^^^^^^^^^^^^^\n  File \"/Users/adesh/Autonomous Trading Bot - Crypto /docs/native_protection_final_2026-10-16/read_native_evidence.py\", line 48, in history\n    try:rates.reserve_info('historicalOrders',priority='DECISION',response_weight=100);break\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/rate_limits.py\", line 183, in reserve_info\n    priority=RequestPriority(priority) if priority is not None else (\n             ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/enum.py\", line 757, in __call__\n    return cls.__new__(cls, value)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/enum.py\", line 1171, in __new__\n    raise ve_exc\nValueError: 'DECISION' is not a valid RequestPriority\n"
+  },
+  "requests": 46,
+  "candidate_stop_count": 5,
+  "native_records": [],
+  "terminal_flat": null
+}

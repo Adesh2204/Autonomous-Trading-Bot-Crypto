@@ -73,7 +73,7 @@ class LiveRuntime:
         import signal
         stop=stop_event or threading.Event()
         previous=None
-        if threading.current_thread() is threading.main_thread():
+        if threading.current_thread() is threading.main_thread() and not getattr(self,'external_signal_owner',False):
             previous=signal.getsignal(signal.SIGTERM)
             signal.signal(signal.SIGTERM,lambda *_:stop.set())
         clean=False
@@ -118,6 +118,8 @@ class LiveRuntime:
                 self.close(clean=clean)
 
     def close(self,*,clean=True):
+        receiver=getattr(getattr(self.session,'account_stream',None),'stop_receiver',None)
+        if receiver:receiver()
         self.deactivate()
         self.market_stop.set()
         if self.market_thread is not None:

@@ -1,0 +1,40 @@
+{
+  "status": "SOURCE_AND_RECORDED_TIMESTAMP_DIAGNOSIS_NOT_A_NONTRANSMISSION_CERTIFICATE",
+  "source_at_attempt": "88429ed4fabb3f1564b4c0bb281466e841cd6fa3e522bd3092172d78a3a7fc5f",
+  "raw_receipts_sha256": "415a4c2f98ab665adc4d6320765756bf490c1586d5853f16695910552f32a830",
+  "wire": {
+    "quantity": "0.0002",
+    "price": "81518",
+    "maximum_price": "81605",
+    "cloid": "0xac0eea156fcec80986dd67c9057b6ded"
+  },
+  "readiness_time_derived_from_source_and_serial_receipts_ms": 1792217829566,
+  "validation_ms": 1792217831637,
+  "guard_books": [
+    {
+      "received_ms": 1792217832691,
+      "ask": "81478",
+      "readiness_age_ms": 3125
+    },
+    {
+      "received_ms": 1792217834015,
+      "ask": "81478",
+      "readiness_age_ms": 4449
+    },
+    {
+      "received_ms": 1792217835092,
+      "ask": "81478",
+      "readiness_age_ms": 5526
+    }
+  ],
+  "nonce_allocated_ms": 1792217834069,
+  "maximum_age_ms": 5000,
+  "final_guard_readiness_age_ms": 5526,
+  "actual_original_exception_detail": "Only ExchangeError was persisted by the original executor, not its exact final guard code.",
+  "diagnosis": "The native path retained the original readiness timestamp through repeated SDK callbacks. Recorded unchanged prices remain inside the corridor; the last callback necessarily finds the original readiness older than five seconds and fails closed. The repair genuinely reacquires and revalidates the same wire, retaining the five-second limit.",
+  "raw_info_error_count": 0,
+  "http429_evidence_in_info_receipts": false,
+  "transport_claims_for_mandate": [],
+  "no_unknown_resolution_written": true,
+  "known_native_qualification": false
+}

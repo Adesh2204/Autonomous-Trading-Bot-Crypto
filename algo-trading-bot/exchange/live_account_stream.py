@@ -26,11 +26,49 @@ class LiveAccountStream:
         self.pong_pending_ms=None
         self.subscribed=set()
         self.pending=True
+        self.event_sequence=0
         self.lock=threading.RLock()
         self.reconnect_failures=0
         self.retry_after_ms=0
         self.rates=getattr(executor,'rate_limits',None)
         self.budget_identity='account:'+str(id(self))
+        self.receiver_thread=None
+        self.receiver_stop=threading.Event()
+        self.receiver_fatal=None
+        self.last_error=None
+
+    @property
+    def background_receiving(self):
+        return self.receiver_thread is not None
+
+    def start_receiver(self):
+        if self.receiver_thread is not None:raise ExchangeError('ACCOUNT_RECEIVER_ALREADY_STARTED')
+        def receive():
+            try:
+                while not self.receiver_stop.is_set():
+                    try:
+                        if not self.connected:
+                            if self.clock_ms()<self.retry_after_ms:
+                                self.receiver_stop.wait(.25);continue
+                            self.connect()
+                        self.poll()
+                    except ExchangeError as exc:
+                        self.last_error=str(exc)
+                        self.recovery.journal.event('ACCOUNT_RECEIVER_RECOVERY',self.clock_ms(),reason=self.last_error)
+                        if self.reconnect_failures>=5:raise ExchangeError('ACCOUNT_RECEIVER_RECONNECT_LIMIT')
+                        self.receiver_stop.wait(.25)
+            except Exception as exc:
+                from .execution_journal import safe_reason
+                self.receiver_fatal=safe_reason(exc)
+                self._pause('ACCOUNT_RECEIVER_FATAL')
+        self.receiver_thread=threading.Thread(target=receive,name='account-notification-receiver',daemon=True)
+        self.receiver_thread.start()
+
+    def stop_receiver(self):
+        self.receiver_stop.set();self.disconnect('ACCOUNT_RECEIVER_STOPPED')
+        if self.receiver_thread:
+            self.receiver_thread.join(12)
+            if self.receiver_thread.is_alive():raise ExchangeError('ACCOUNT_RECEIVER_SHUTDOWN_PENDING')
 
     def _pause(self, reason):
         self.ready=False
@@ -65,8 +103,12 @@ class LiveAccountStream:
                 raise ExchangeError('ACCOUNT_RECONNECT_BACKOFF')
             connector=self.connector
             if connector is None:
+                import ssl
+                import requests
                 from websocket import create_connection
-                connector=create_connection
+                def connector(url,**kwargs):
+                    return create_connection(url,sslopt={'ca_certs':requests.certs.where(),
+                        'cert_reqs':ssl.CERT_REQUIRED,'check_hostname':True},**kwargs)
             try:
                 if self.rates is not None:
                     self.rates.ws_open(self.budget_identity)
@@ -108,6 +150,7 @@ class LiveAccountStream:
                     # A stream message wakes stable REST reconciliation; it never
                     # invents missing closedPnl, fee or funding fields.
                     self.pending=True
+                    self.event_sequence+=1
                     self._pause('ACCOUNT_EVENT_REQUIRES_RECONCILIATION')
                     self.recovery.journal.event('ACCOUNT_STREAM_EVENT',self.clock_ms(),
                                                 channel=channel,generation=self.generation)
@@ -150,23 +193,31 @@ class LiveAccountStream:
         """Run on the strategy owner thread after every reconnect or account event."""
         with self.lock:
             generation=self.generation
+            sequence=self.event_sequence
             if not self.connected or self.subscribed!=set(self.CHANNELS):
                 self._pause('ACCOUNT_SUBSCRIPTIONS_NOT_ACKNOWLEDGED')
                 return False
-            coordinator=getattr(self.recovery,'startup_coordinator',None)
-            recovered=coordinator.after_stream(generation) if coordinator is not None else self.recovery.recover().ready
-            if not self.connected or generation!=self.generation or not recovered:
+        # Never hold the receiver lock across REST/rate waits. Notifications
+        # continue to revoke readiness; only an unchanged sequence can clear it.
+        coordinator=getattr(self.recovery,'startup_coordinator',None)
+        recovered=coordinator.after_stream(generation) if coordinator is not None else self.recovery.recover().ready
+        with self.lock:
+            if not self.connected or generation!=self.generation or sequence!=self.event_sequence or not recovered:
                 self._pause('ACCOUNT_RECONCILIATION_NOT_READY')
                 return False
             self.pending=False
             self.ready=True
             self.reconciled_generation=generation
             self.executor.entries_paused=False
-            protection=getattr(self.executor,'protection',None)
-            if protection is not None:
-                protection.ensure_all()
+        protection=getattr(self.executor,'protection',None)
+        if protection is not None:
+            protection.ensure_all()
+            with self.lock:
+                if generation!=self.generation or sequence!=self.event_sequence or not self.connected:
+                    self._pause('ACCOUNT_CHANGED_DURING_PROTECTION_VERIFICATION')
+                    return False
                 self.executor.entries_paused=not protection.entries_allowed
-            return True
+        return True
 
     @property
     def healthy(self):

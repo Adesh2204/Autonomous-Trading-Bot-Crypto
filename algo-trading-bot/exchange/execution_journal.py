@@ -78,6 +78,8 @@ class ExecutionJournal:
           seq INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT NOT NULL, checksum TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS opportunity_traces (candidate TEXT PRIMARY KEY,data TEXT NOT NULL);
         ''')
+        from .intent_audit import install
+        install(self.db)
         with self.transaction():
             identity = dict(self.db.execute('SELECT name,value FROM identity'))
             expected = {'session': session_id, 'team': self.team_address, 'venue': 'testnet:par'}
@@ -114,6 +116,8 @@ class ExecutionJournal:
             self.db.execute('INSERT INTO intents VALUES (?,?,?,?,?,?,?,?,?,?)',
                 (intent_key, cloid, fp, canonical(request), candidate, 'PREPARED', None,
                  None, now_ms, now_ms))
+            from .intent_audit import append
+            append(self.db,intent_key,'PERSISTED',now_ms,dict(source='DURABLE_LOCAL_RESERVATION',previous_stage='CREATED'))
         return self.intent(intent_key), True
 
     def intent(self, key):
@@ -131,6 +135,18 @@ class ExecutionJournal:
                                'WHERE intent_key=?', (state, oid, canonical(safe_data(outcome)) if outcome else None,
                                                      now_ms, key)).rowcount != 1:
                 raise ExchangeError('UNKNOWN_DURABLE_INTENT')
+            from .intent_audit import append
+            stage={'SUBMITTED':'SIGNING_ATTEMPT','OPEN':'ACCEPTED','CANCELLED':'CANCELED'}.get(state,state)
+            if stage in {'SIGNING_ATTEMPT','ACCEPTED','PARTIALLY_FILLED','FILLED','CANCELED','REJECTED','EXPIRED','UNKNOWN'}:
+                append(self.db,key,stage,now_ms,dict(source='LOCAL_STATE_UPDATE',legacy_state=state,
+                    oid=oid,outcome=outcome,exchange_fill_accounting_proof=False))
+
+    def audit_stage(self, cloid, stage, now_ms, **evidence):
+        with self.transaction():
+            row=self.db.execute('SELECT intent_key FROM intents WHERE cloid=?',(cloid,)).fetchone()
+            if row is None:raise ExchangeError('UNKNOWN_DURABLE_INTENT')
+            from .intent_audit import append
+            append(self.db,row[0],stage,now_ms,evidence)
 
     def event(self, kind, now_ms, **data):
         from .event_timing import timing

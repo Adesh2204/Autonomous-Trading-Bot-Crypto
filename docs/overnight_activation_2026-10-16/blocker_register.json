@@ -1,0 +1,127 @@
+[
+  {
+    "id": "A1",
+    "classification": "A",
+    "status": "REPAIRED_REAL_PUBLIC_SHUTDOWN_VERIFIED",
+    "file": "algo-trading-bot/exchange/terminal_recovery.py",
+    "function": "terminal_reconcile",
+    "failure": "Prior observer shutdown allowed only 5 seconds local budget wait and 40-second outer deadline; disconnect permission revocation caused full-history fallback.",
+    "evidence": "Previous raw terminal_result retained UNKNOWN/ExchangeError with no message. Offline rolling-window budget reproduction fails old 5-second path; new bounded wait succeeds without changing caps/reserves.",
+    "repair": "Quiesce streams, allow 65-second budget wait/75-second query/180-second total, use known history with 60-second overlap; unresolved histories remain blocked. Two stable distinct authoritative readbacks required.",
+    "limits": "Original old exception message was lost, so its exact cause cannot be retrospectively proved. No HTTP429 inferred."
+  },
+  {
+    "id": "A2",
+    "classification": "A",
+    "status": "REPAIRED",
+    "file": "algo-trading-bot/exchange/live_recovery.py",
+    "function": "LiveAccountRecovery.recover",
+    "failure": "Exception wrapper discarded original cause; terminal output retained type only.",
+    "repair": "Persist sanitized original exception and stack, preserve chained cause; observer and authorized shutdown expose evidence.",
+    "evidence": "test_live_recovery_retains_original_cause_and_sanitized_trace plus terminal UNKNOWN fault tests"
+  },
+  {
+    "id": "A3",
+    "classification": "A",
+    "status": "REPAIRED",
+    "file": "algo-trading-bot/exchange/live_account_stream.py",
+    "function": "start_receiver/reconcile",
+    "failure": "Owner-thread scans and REST/rate waits delayed account polling; reconcile held receiver lock during network work.",
+    "repair": "Shared independent notification receiver for observer and authorized route; release lock across REST/protection, compare generation+event_sequence before clearing pending state; bounded receiver shutdown.",
+    "evidence": "Concurrent-notification, duplicate-receiver, 60-second heartbeat-gap tests; real soak pending. Final public soak records stream health and zero order intents. Final public soak records stream health and zero order intents. Final public soak records stream health and zero order intents."
+  },
+  {
+    "id": "A4",
+    "classification": "A",
+    "status": "REPAIRED",
+    "file": "algo-trading-bot/exchange/live_runtime.py",
+    "function": "LiveRuntime.run and terminal_app.run_authorized",
+    "failure": "Inner SIGTERM handler could end signing while the outer CLI continued observation.",
+    "repair": "Outer CLI owns signals for the whole application; standalone runtime keeps original signal handling by default.",
+    "evidence": "Two signal-ownership unit cases plus actual public Ctrl+C/SIGTERM diagnostics; no signer."
+  },
+  {
+    "id": "B1",
+    "classification": "B",
+    "status": "IMPLEMENTED_REQUIRES_EXACT_APPROVAL",
+    "file": "algo-trading-bot/exchange/overnight_session.py",
+    "function": "OvernightLimits/OvernightLongMandate",
+    "failure": "Original DailyMandate is single IST day; no cross-midnight signing contract.",
+    "repair": "Dedicated Oct16\u201317 LONG-only type, Oct17 noon maximum expiry, 18-hour maximum, extra human acknowledgments; no reset of attempts/allocation/P&L/peak/drawdown; original single-day contract remains strict.",
+    "evidence": "43 overnight/shutdown tests including midnight win/loss coordinator+SDK fixture"
+  },
+  {
+    "id": "C1",
+    "classification": "C",
+    "status": "EXTERNAL_UNVERIFIED",
+    "file": "algo-trading-bot/exchange/long_session.py",
+    "function": "require_native_evidence",
+    "failure": "No actual native Stop Limit trigger/linked child SELL/fill/funding/two-flat proof for the proposed markets.",
+    "repair": "No bypass. Obtain genuine independently evidenced stop qualification under separately accepted, minimum-compliant exact scope.",
+    "evidence": "Historical BTC IOC round trip proves controlled IOC closure only. Actual native trigger and child fill remain unverified."
+  },
+  {
+    "id": "C2_D1",
+    "classification": [
+      "C",
+      "D"
+    ],
+    "status": "BLOCKED_UNCHANGED_GUARD",
+    "file": "algo-trading-bot/exchange/partial_fill_safety.py",
+    "function": "partial_path_assessment",
+    "failure": "All 30 fresh samples have one-lot protective notional below 10 TEST USDPR; larger entry cannot eliminate possible one-lot fills/residuals.",
+    "repair": "Retain ordinary and protective minimum. Only historically scoped exact IOC full-close helper permits its observed exception. No documented general native exemption established.",
+    "evidence": "fresh_liquidity/audit.json and all_market_capacity.json",
+    "qualification_feasibility": "No currently minimum-compliant candidate can enter dedicated unattended native qualification under unchanged partial guard."
+  },
+  {
+    "id": "C3",
+    "classification": "C",
+    "status": "REAL_AUTONOMOUS_CYCLES_UNVERIFIED",
+    "file": "algo-trading-bot/exchange/long_session.py",
+    "function": "DailyLongExecution/DailyLongSession",
+    "failure": "No new real frozen-strategy-driven autonomous multi-cycle run.",
+    "repair": "Existing route integrated; offline actual SDK fixtures prove two cycles across midnight and block third. Genuine run requires native qualification, fresh eligible setup, exact approval.",
+    "evidence": "Original Oct15 controlled BTC round trip remains one genuine cycle; no new actual orders."
+  },
+  {
+    "id": "D2",
+    "classification": "D",
+    "status": "VALID_RISK_REJECTION",
+    "file": "algo-trading-bot/exchange/long_session.py",
+    "function": "AllocatedLongRisk.assess/_prepare_context_request",
+    "failure": "Fresh displayed both-side liquidity and 10% participation cap sampled capacity about 4\u2013100 TEST USDPR, below 1k/2.5k/5k/10k targets.",
+    "repair": "No restriction removed, no splitting, no forced notional. Recompute size and both-side capacity before every future signing.",
+    "evidence": "30 all-market snapshots; target flags false; qualified unattended notional zero."
+  },
+  {
+    "id": "D3",
+    "classification": "D",
+    "status": "VALID_FROZEN_LIMIT",
+    "file": "algo-trading-bot/exchange/bounded_daily_session.py",
+    "function": "DailyLifecycle.reserve_entry",
+    "failure": "Frozen two-entry-attempt and one-global-position limits prevent unlimited cycles.",
+    "repair": "Keep two attempts TOTAL across midnight, one position including partial/uncertain exposure; loss budget carries.",
+    "evidence": "Third-entry fixture rejection; no strategy/source policy tuning."
+  },
+  {
+    "id": "E1",
+    "classification": "E",
+    "status": "FRESH_CHECK_REQUIRED_FOR_EVERY_ENTRY",
+    "file": "algo-trading-bot/exchange/long_session.py",
+    "function": "_prepare_context_request",
+    "failure": "Stale/absent completed bars, funding/fee/account/metadata data cannot support entry.",
+    "repair": "Fresh reads and preserved signal rules; record NO TRADE. No synthetic candles/price or stale signal reuse.",
+    "evidence": "Fresh sample decisions/reasons preserved in all_market_capacity.json; final wire revalidation unchanged."
+  },
+  {
+    "id": "F1",
+    "classification": "F",
+    "status": "NO_CURRENT_ACCEPTANCE",
+    "file": "algo-trading-bot/exchange/terminal_app.py",
+    "function": "prepare/approve/start",
+    "failure": "Previous single-day mandates expired; development directive is not exact operator acceptance.",
+    "repair": "Prepare blocked exact descriptor now; after genuine protection/partial feasibility, generate fresh source-bound mandate and request human acceptance within 5 minutes. No acceptance or signer created.",
+    "evidence": "Blocked proposal only, no executable mandate.json/acceptance.json."
+  }
+]

@@ -1,0 +1,2192 @@
+{
+  "status": "BLOCKED_UNKNOWN_AND_NATIVE_VENUE_EVIDENCE_REQUIRED",
+  "updated_ms": 1792225736890,
+  "source_hash": "135734b4269554f98a295bb245fbf79ca5576ee1c07d6aa4049a3d88007c4109",
+  "source_modified": false,
+  "execution_mode": "PAPER",
+  "allow_live_orders": false,
+  "unknown": {
+    "classification": "STILL_UNRESOLVED_UNKNOWN",
+    "formally_resolved": false,
+    "cloid": "0xac0eea156fcec80986dd67c9057b6ded",
+    "nonce": 1792217834069,
+    "mandate_id": "59445fe546d38a96e486140fda781d09ae8a0942f93a3614fa8abcbc34f5e7ea",
+    "signing_source": "88429ed4fabb3f1564b4c0bb281466e841cd6fa3e522bd3092172d78a3a7fc5f",
+    "source_reconstructed_against_complete_manifest": true,
+    "accepted_ms": 1792217727523,
+    "expired_ms": 1792218027523,
+    "quantity": "0.0002",
+    "selected_buy_price": "81518",
+    "local_state": "UNKNOWN",
+    "exchange_oid": null,
+    "causal_diagnosis": "Source/receipt chronology reconstructs 5526ms readiness age against 5000ms. This is an inference, not a recorded final-guard reason.",
+    "original_exception": "ExchangeError only; TRANSMISSION_UNCERTAIN wrapper",
+    "guarded_signature_created_in_original_attempt": true,
+    "exact_signature_count": null,
+    "recorded_transmission_claims": 0,
+    "explicit_original_pre_http_failure_record": false,
+    "original_native_http_boundary_telemetry": false,
+    "mandatory_claim_path_verified": true,
+    "proof_limit": "Mandatory pre-HTTP claim source and absent claim support the diagnosis; the existing exact certificate requires additional explicit causal evidence. No absence-only certificate is created.",
+    "new_immutable_certificate_appended": false,
+    "raw_row_deleted_or_changed": false,
+    "nonce_reset": false,
+    "future_signing_permitted": false,
+    "exchange_readbacks": [
+      {
+        "observed_ms": 1792225438428,
+        "source": "EXCHANGE_DIRECT_TESTNET_PAR_INFO",
+        "team": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+        "original_order_status": {
+          "status": "unknownOid"
+        },
+        "positions": [],
+        "orders": [],
+        "ready": true
+      },
+      {
+        "observed_ms": 1792225441260,
+        "source": "EXCHANGE_DIRECT_TESTNET_PAR_INFO",
+        "team": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+        "original_order_status": {
+          "status": "unknownOid"
+        },
+        "positions": [],
+        "orders": [],
+        "ready": true
+      }
+    ],
+    "history_rows": 4,
+    "history_possibly_truncated": false,
+    "matched_cloid_history_rows": 0,
+    "new_fills": [],
+    "new_funding": [],
+    "authoritative_historical_position_endpoint_available": false,
+    "position_history_limit": "Retained authoritative snapshots and reported fills are available; no continuous historical position feed or new terminal order record was recovered.",
+    "existing_certificate_scope": "Only the original historical 3b744e33... intent; not this CLOID or mandate.",
+    "missing_evidence": [
+      "Original explicit final pre-HTTP rejection tied to this action/nonce and validated source, or equivalent independently verified causal evidence admissible to the immutable framework.",
+      "Alternatively an authoritative venue rejection/terminal record identifying this original action; a bare unknownOid or not-found response is insufficient."
+    ],
+    "no_new_signatures_or_exchange_writes_in_this_review": true
+  },
+  "native": {
+    "status": "NATIVE_AND_SUBMINIMUM_QUALIFICATION_INCOMPLETE",
+    "source_hash": "135734b4269554f98a295bb245fbf79ca5576ee1c07d6aa4049a3d88007c4109",
+    "documented": [
+      "TP/SL uses mark-price triggers. Default position-form sizing follows the full position; explicit sizing is fixed.",
+      "Parent-associated children may be canceled on partial-parent cancellation.",
+      "A Stop Limit can trigger and remain unfilled through a gap.",
+      "The API exposes positionTpsl grouping and an ordinary minimum-notional error."
+    ],
+    "exchange_verified": [
+      "Historical exact 0.0001 BTC full-position reduce-only IOC close, order 62228843959; narrowly scoped evidence only.",
+      "Current own order history contains four records, all non-trigger Limit orders; no native trigger/child proof.",
+      "Two current authoritative account readbacks are flat with no open orders."
+    ],
+    "unknown": [
+      "Registered par accepts position-associated subminimum native Stop Limit and its exact supported wire/size semantics.",
+      "Actual native parent acceptance, natural trigger, child identity, closing fills and owned cleanup.",
+      "Native protection of an actual one-lot residual and all residual closure behavior."
+    ],
+    "venue_prohibition_proven": false,
+    "all_sampled_one_lot_mark_values_below_10": true,
+    "current_qualified_unattended_notional": "0",
+    "partial_fill_guard_changed": false,
+    "lot_precision_changed": false,
+    "production_source_changed": false,
+    "next_steps": [
+      "Resolve this UNKNOWN through admissible identity-bound evidence; preserve original intent, nonce and consumed mandate.",
+      "Obtain authoritative registered-par guidance or genuine records for full-position/subminimum Stop Limit semantics. Do not invent a zero-size sentinel or reuse IOC evidence for native triggers.",
+      "Only after the barrier permits signing, prepare a fresh source-bound supervised qualification with exact human approval and bounded cleanup.",
+      "A full-size order above minimum can establish full-size native acceptance; any natural one-lot partial uses only separately approved scoped IOC abort. It does not establish small native protection.",
+      "Wait only within approved bounds for a natural trigger. Reconcile exact parent/children/fills and residuals; verify owned cancellation and two flat/zero-order readbacks.",
+      "If no natural trigger or small-residual evidence exists, remain INCOMPLETE and do not launch unattended trading."
+    ],
+    "sources": [
+      "https://hyperliquid.gitbook.io/hyperliquid-docs/trading/take-profit-and-stop-loss-orders-tp-sl",
+      "https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/exchange-endpoint",
+      "https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/error-responses"
+    ]
+  },
+  "verification": {
+    "observed_ms": 1792225625524,
+    "source_hash_before": "135734b4269554f98a295bb245fbf79ca5576ee1c07d6aa4049a3d88007c4109",
+    "source_hash_after": "135734b4269554f98a295bb245fbf79ca5576ee1c07d6aa4049a3d88007c4109",
+    "source_changed": false,
+    "full_release_valid": true,
+    "full_regression_rerun_this_review": false,
+    "full_release_tests": {
+      "tests": 2753,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "full_xml_sha256": "7d1a15356230d6adec307de3714032b1c766569213b17489e6aa9a3a89a1573e",
+    "full_receipt_sha256": "e0df19551d9b6695399cbc29416f87b618689709b88c2caa7a1e8eab6af3125b",
+    "focused": {
+      "tests": 381,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "focused_xml_sha256": "45fe6165dbbe06c7d0d1d1b05ebf4e5d35015e99cc32c41d6939dd4794143bce",
+    "supplemental_requested_boundary_cases": 9,
+    "checks": {
+      "phase0": {
+        "project": "anchorium-perpetual-alpha",
+        "checks": {
+          "project_is_perpetual_alpha": true,
+          "independent_git_directory": true,
+          "migration_branch": true,
+          "testnet_venue": true,
+          "paper_execution_mode": true,
+          "migration_policy_valid": true,
+          "orders_disabled": true,
+          "angel_one_client_disabled": true,
+          "angel_one_order_boundary_disabled": true,
+          "testnet_order_boundary_disabled": true,
+          "signal_logic_present": true,
+          "signal_source_unchanged": true
+        },
+        "passed": true
+      },
+      "strategy_freeze": {
+        "baseline": "nse-working-baseline",
+        "file_count": 1,
+        "method_count": 8,
+        "parameter_count": 32,
+        "passed": true
+      }
+    }
+  },
+  "account": {
+    "as_of_ms": 1792225441260,
+    "readbacks": [
+      {
+        "observed_ms": 1792225438428,
+        "source": "EXCHANGE_DIRECT_TESTNET_PAR_INFO",
+        "team": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+        "original_order_status": {
+          "status": "unknownOid"
+        },
+        "positions": [],
+        "orders": [],
+        "ready": true
+      },
+      {
+        "observed_ms": 1792225441260,
+        "source": "EXCHANGE_DIRECT_TESTNET_PAR_INFO",
+        "team": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+        "original_order_status": {
+          "status": "unknownOid"
+        },
+        "positions": [],
+        "orders": [],
+        "ready": true
+      }
+    ],
+    "positions": [],
+    "open_orders": [],
+    "equity": {
+      "reported_account_value": "1000000.050512",
+      "collateral_balance": "1000000.050512",
+      "margin_used": "0",
+      "withdrawable": null,
+      "valuation_source": "spotClearinghouseState.USDPR.total"
+    }
+  },
+  "current_eligible_executable_long_notional": "0",
+  "current_qualified_unattended_notional": "0",
+  "liquidity_only_snapshots": [
+    {
+      "symbol": "par:BRENT",
+      "spec": {
+        "symbol": "par:BRENT",
+        "size_decimals": 2,
+        "max_leverage": 20,
+        "asset_id": 2670006,
+        "margin_tiers": [
+          [
+            "0",
+            20
+          ]
+        ]
+      },
+      "observed_ms": 1792225431791,
+      "book": {
+        "symbol": "par:BRENT",
+        "timestamp_ms": 1792225431221,
+        "bids": [
+          {
+            "price": "106.84",
+            "quantity": "0.94"
+          },
+          {
+            "price": "106.82",
+            "quantity": "0.93"
+          },
+          {
+            "price": "106.81",
+            "quantity": "14.02"
+          },
+          {
+            "price": "106.78",
+            "quantity": "70.21"
+          },
+          {
+            "price": "106.76",
+            "quantity": "46.79"
+          },
+          {
+            "price": "106.73",
+            "quantity": "140.38"
+          },
+          {
+            "price": "106.71",
+            "quantity": "327.57"
+          },
+          {
+            "price": "106.65",
+            "quantity": "2.56"
+          },
+          {
+            "price": "106.63",
+            "quantity": "468.05"
+          },
+          {
+            "price": "106.51",
+            "quantity": "2.56"
+          },
+          {
+            "price": "106.44",
+            "quantity": "93.94"
+          },
+          {
+            "price": "105.97",
+            "quantity": "188.73"
+          },
+          {
+            "price": "105.45",
+            "quantity": "284.49"
+          },
+          {
+            "price": "104.6",
+            "quantity": "382.4"
+          },
+          {
+            "price": "103.31",
+            "quantity": "435.58"
+          },
+          {
+            "price": "101.17",
+            "quantity": "494.21"
+          },
+          {
+            "price": "94.152",
+            "quantity": "0.13"
+          }
+        ],
+        "asks": [
+          {
+            "price": "106.88",
+            "quantity": "4.67"
+          },
+          {
+            "price": "106.91",
+            "quantity": "23.39"
+          },
+          {
+            "price": "106.94",
+            "quantity": "47.72"
+          },
+          {
+            "price": "106.95",
+            "quantity": "0.94"
+          },
+          {
+            "price": "106.96",
+            "quantity": "140.38"
+          },
+          {
+            "price": "106.97",
+            "quantity": "9.35"
+          },
+          {
+            "price": "106.98",
+            "quantity": "327.57"
+          },
+          {
+            "price": "107.05",
+            "quantity": "470.75"
+          },
+          {
+            "price": "107.2",
+            "quantity": "2.36"
+          },
+          {
+            "price": "107.28",
+            "quantity": "2.35"
+          },
+          {
+            "price": "107.64",
+            "quantity": "41.66"
+          },
+          {
+            "price": "107.98",
+            "quantity": "83.07"
+          },
+          {
+            "price": "108.37",
+            "quantity": "165.52"
+          },
+          {
+            "price": "108.88",
+            "quantity": "247.12"
+          },
+          {
+            "price": "109.74",
+            "quantity": "326.91"
+          },
+          {
+            "price": "111.03",
+            "quantity": "363.5"
+          },
+          {
+            "price": "113.17",
+            "quantity": "396.25"
+          }
+        ],
+        "received_timestamp_ms": 1792225431611,
+        "processed_timestamp_ms": 1792225431611
+      },
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "par:BRENT",
+        "leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "maxTradeSzs": [
+          "9358.03",
+          "9358.03"
+        ],
+        "availableToTrade": [
+          "1000000.050512",
+          "1000000.050512"
+        ],
+        "markPx": "106.86"
+      },
+      "context": {
+        "funding": "-0.0000274541",
+        "openInterest": "2501.46",
+        "prevDayPx": "102.6",
+        "dayNtlVlm": "441176.8689",
+        "premium": "-0.0008807854",
+        "oraclePx": "106.95",
+        "markPx": "106.86",
+        "midPx": "106.86",
+        "impactPxs": [
+          "106.7891",
+          "106.9225"
+        ],
+        "dayBaseVlm": "4150.18"
+      },
+      "one_lot_mark_notional": "1.0686",
+      "minimum_eligible_mark_exclusive": "1.0E+3",
+      "all_correct_long_stop_limits_below_minimum": true,
+      "reason": "SELL stop trigger below current mark and execution limit below trigger implies one-lot stop value strictly below one-lot mark value",
+      "liquidity_only_quantity": "0.09",
+      "liquidity_only_notional": "9.6192",
+      "qualified_unattended_notional": "0"
+    },
+    {
+      "symbol": "par:BTC",
+      "spec": {
+        "symbol": "par:BTC",
+        "size_decimals": 4,
+        "max_leverage": 40,
+        "asset_id": 2670000,
+        "margin_tiers": [
+          [
+            "0",
+            40
+          ]
+        ]
+      },
+      "observed_ms": 1792225432149,
+      "book": {
+        "symbol": "par:BTC",
+        "timestamp_ms": 1792225431221,
+        "bids": [
+          {
+            "price": "81554.0",
+            "quantity": "0.0061"
+          },
+          {
+            "price": "81526.0",
+            "quantity": "0.0306"
+          },
+          {
+            "price": "81522.0",
+            "quantity": "0.0012"
+          },
+          {
+            "price": "81519.0",
+            "quantity": "0.0005"
+          },
+          {
+            "price": "81516.0",
+            "quantity": "0.1838"
+          },
+          {
+            "price": "81509.0",
+            "quantity": "0.0612"
+          },
+          {
+            "price": "81502.0",
+            "quantity": "0.0012"
+          },
+          {
+            "price": "81477.0",
+            "quantity": "0.429"
+          },
+          {
+            "price": "81438.0",
+            "quantity": "0.6128"
+          },
+          {
+            "price": "81341.0",
+            "quantity": "0.0507"
+          },
+          {
+            "price": "81273.0",
+            "quantity": "0.0005"
+          },
+          {
+            "price": "81146.0",
+            "quantity": "0.1018"
+          },
+          {
+            "price": "80981.0",
+            "quantity": "0.204"
+          },
+          {
+            "price": "80589.0",
+            "quantity": "0.3075"
+          },
+          {
+            "price": "80001.0",
+            "quantity": "0.4131"
+          },
+          {
+            "price": "79022.0",
+            "quantity": "0.4704"
+          },
+          {
+            "price": "78385.0",
+            "quantity": "0.0025"
+          },
+          {
+            "price": "77716.0",
+            "quantity": "0.5315"
+          },
+          {
+            "price": "74730.0",
+            "quantity": "0.0002"
+          }
+        ],
+        "asks": [
+          {
+            "price": "81604.0",
+            "quantity": "0.0061"
+          },
+          {
+            "price": "81625.0",
+            "quantity": "0.0306"
+          },
+          {
+            "price": "81627.0",
+            "quantity": "0.0122"
+          },
+          {
+            "price": "81633.0",
+            "quantity": "0.0012"
+          },
+          {
+            "price": "81641.0",
+            "quantity": "0.0612"
+          },
+          {
+            "price": "81662.0",
+            "quantity": "0.0012"
+          },
+          {
+            "price": "81674.0",
+            "quantity": "0.429"
+          },
+          {
+            "price": "81681.0",
+            "quantity": "0.1838"
+          },
+          {
+            "price": "81733.0",
+            "quantity": "0.0611"
+          },
+          {
+            "price": "81736.0",
+            "quantity": "0.6128"
+          },
+          {
+            "price": "81753.0",
+            "quantity": "0.0079"
+          },
+          {
+            "price": "81829.0",
+            "quantity": "0.0046"
+          },
+          {
+            "price": "81928.0",
+            "quantity": "0.122"
+          },
+          {
+            "price": "82287.0",
+            "quantity": "0.243"
+          },
+          {
+            "price": "82679.0",
+            "quantity": "0.3628"
+          },
+          {
+            "price": "83267.0",
+            "quantity": "0.4803"
+          },
+          {
+            "price": "84246.0",
+            "quantity": "0.5341"
+          },
+          {
+            "price": "85553.0",
+            "quantity": "0.5844"
+          }
+        ],
+        "received_timestamp_ms": 1792225431970,
+        "processed_timestamp_ms": 1792225431970
+      },
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "par:BTC",
+        "leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "maxTradeSzs": [
+          "12.2543",
+          "12.2543"
+        ],
+        "availableToTrade": [
+          "1000000.050512",
+          "1000000.050512"
+        ],
+        "markPx": "81604.0"
+      },
+      "context": {
+        "funding": "-0.0001195042",
+        "openInterest": "8.7228",
+        "prevDayPx": "82076.0",
+        "dayNtlVlm": "789596.0470999999",
+        "premium": "-0.0013818262",
+        "oraclePx": "81689.0",
+        "markPx": "81604.0",
+        "midPx": "81579.0",
+        "impactPxs": [
+          "81523.43",
+          "81628.81"
+        ],
+        "dayBaseVlm": "9.6333"
+      },
+      "one_lot_mark_notional": "8.16040",
+      "minimum_eligible_mark_exclusive": "1.0E+5",
+      "all_correct_long_stop_limits_below_minimum": true,
+      "reason": "SELL stop trigger below current mark and execution limit below trigger implies one-lot stop value strictly below one-lot mark value",
+      "liquidity_only_quantity": "0.0006",
+      "liquidity_only_notional": "48.96240",
+      "qualified_unattended_notional": "0"
+    },
+    {
+      "symbol": "par:ETH",
+      "spec": {
+        "symbol": "par:ETH",
+        "size_decimals": 4,
+        "max_leverage": 25,
+        "asset_id": 2670001,
+        "margin_tiers": [
+          [
+            "0",
+            25
+          ]
+        ]
+      },
+      "observed_ms": 1792225432643,
+      "book": {
+        "symbol": "par:ETH",
+        "timestamp_ms": 1792225431782,
+        "bids": [
+          {
+            "price": "2430.3",
+            "quantity": "0.205"
+          },
+          {
+            "price": "2430.2",
+            "quantity": "0.4113"
+          },
+          {
+            "price": "2430.1",
+            "quantity": "1.028"
+          },
+          {
+            "price": "2429.6",
+            "quantity": "2.056"
+          },
+          {
+            "price": "2429.4",
+            "quantity": "0.0411"
+          },
+          {
+            "price": "2428.3",
+            "quantity": "20.565"
+          },
+          {
+            "price": "2426.6",
+            "quantity": "0.0412"
+          },
+          {
+            "price": "2426.2",
+            "quantity": "20.57"
+          },
+          {
+            "price": "2423.3",
+            "quantity": "1.5556"
+          },
+          {
+            "price": "2417.5",
+            "quantity": "3.1188"
+          },
+          {
+            "price": "2400.7",
+            "quantity": "6.2914"
+          },
+          {
+            "price": "2389.1",
+            "quantity": "9.483"
+          },
+          {
+            "price": "2371.7",
+            "quantity": "12.7367"
+          },
+          {
+            "price": "2342.7",
+            "quantity": "14.5062"
+          },
+          {
+            "price": "2303.9",
+            "quantity": "16.3894"
+          }
+        ],
+        "asks": [
+          {
+            "price": "2431.4",
+            "quantity": "0.205"
+          },
+          {
+            "price": "2432.2",
+            "quantity": "0.4113"
+          },
+          {
+            "price": "2432.9",
+            "quantity": "0.0411"
+          },
+          {
+            "price": "2433.1",
+            "quantity": "1.028"
+          },
+          {
+            "price": "2433.3",
+            "quantity": "0.041"
+          },
+          {
+            "price": "2433.6",
+            "quantity": "2.056"
+          },
+          {
+            "price": "2433.8",
+            "quantity": "6.169"
+          },
+          {
+            "price": "2434.5",
+            "quantity": "0.2564"
+          },
+          {
+            "price": "2434.6",
+            "quantity": "14.393"
+          },
+          {
+            "price": "2435.0",
+            "quantity": "2.2448"
+          },
+          {
+            "price": "2435.7",
+            "quantity": "0.1915"
+          },
+          {
+            "price": "2436.6",
+            "quantity": "20.558"
+          },
+          {
+            "price": "2439.5",
+            "quantity": "8.1984"
+          },
+          {
+            "price": "2440.8",
+            "quantity": "4.097"
+          },
+          {
+            "price": "2451.1",
+            "quantity": "12.2394"
+          },
+          {
+            "price": "2468.5",
+            "quantity": "16.2041"
+          },
+          {
+            "price": "2497.5",
+            "quantity": "18.018"
+          },
+          {
+            "price": "2536.3",
+            "quantity": "19.7137"
+          }
+        ],
+        "received_timestamp_ms": 1792225432315,
+        "processed_timestamp_ms": 1792225432315
+      },
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "par:ETH",
+        "leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "maxTradeSzs": [
+          "411.3872",
+          "411.3872"
+        ],
+        "availableToTrade": [
+          "1000000.050512",
+          "1000000.050512"
+        ],
+        "markPx": "2430.8"
+      },
+      "context": {
+        "funding": "-0.000098861",
+        "openInterest": "334.7954",
+        "prevDayPx": "2450.6",
+        "dayNtlVlm": "869590.5755299999",
+        "premium": "-0.0009635138",
+        "oraclePx": "2433.8",
+        "markPx": "2430.8",
+        "midPx": "2430.85",
+        "impactPxs": [
+          "2429.96",
+          "2432.95"
+        ],
+        "dayBaseVlm": "355.1558"
+      },
+      "one_lot_mark_notional": "0.24308",
+      "minimum_eligible_mark_exclusive": "1.0E+5",
+      "all_correct_long_stop_limits_below_minimum": true,
+      "reason": "SELL stop trigger below current mark and execution limit below trigger implies one-lot stop value strictly below one-lot mark value",
+      "liquidity_only_quantity": "0.0205",
+      "liquidity_only_notional": "49.84370",
+      "qualified_unattended_notional": "0"
+    },
+    {
+      "symbol": "par:EWJ",
+      "spec": {
+        "symbol": "par:EWJ",
+        "size_decimals": 3,
+        "max_leverage": 20,
+        "asset_id": 2670005,
+        "margin_tiers": [
+          [
+            "0",
+            20
+          ]
+        ]
+      },
+      "observed_ms": 1792225433019,
+      "book": {
+        "symbol": "par:EWJ",
+        "timestamp_ms": 1792225431782,
+        "bids": [
+          {
+            "price": "94.841",
+            "quantity": "5.27"
+          },
+          {
+            "price": "94.826",
+            "quantity": "10.54"
+          },
+          {
+            "price": "94.824",
+            "quantity": "26.348"
+          },
+          {
+            "price": "94.805",
+            "quantity": "52.697"
+          },
+          {
+            "price": "94.775",
+            "quantity": "158.11"
+          },
+          {
+            "price": "94.767",
+            "quantity": "368.882"
+          },
+          {
+            "price": "94.722",
+            "quantity": "526.908"
+          },
+          {
+            "price": "94.712",
+            "quantity": "1.75"
+          },
+          {
+            "price": "94.631",
+            "quantity": "1.751"
+          },
+          {
+            "price": "94.584",
+            "quantity": "52.338"
+          },
+          {
+            "price": "94.28",
+            "quantity": "105.014"
+          },
+          {
+            "price": "93.735",
+            "quantity": "211.253"
+          },
+          {
+            "price": "93.28",
+            "quantity": "318.426"
+          },
+          {
+            "price": "92.521",
+            "quantity": "428.051"
+          },
+          {
+            "price": "92.493",
+            "quantity": "0.125"
+          },
+          {
+            "price": "91.384",
+            "quantity": "487.549"
+          },
+          {
+            "price": "89.488",
+            "quantity": "553.199"
+          }
+        ],
+        "asks": [
+          {
+            "price": "94.899",
+            "quantity": "5.27"
+          },
+          {
+            "price": "94.921",
+            "quantity": "10.54"
+          },
+          {
+            "price": "94.939",
+            "quantity": "26.348"
+          },
+          {
+            "price": "94.958",
+            "quantity": "52.697"
+          },
+          {
+            "price": "94.966",
+            "quantity": "158.11"
+          },
+          {
+            "price": "94.996",
+            "quantity": "368.882"
+          },
+          {
+            "price": "95.015",
+            "quantity": "7.005"
+          },
+          {
+            "price": "95.035",
+            "quantity": "1.829"
+          },
+          {
+            "price": "95.064",
+            "quantity": "526.908"
+          },
+          {
+            "price": "95.107",
+            "quantity": "1.827"
+          },
+          {
+            "price": "95.344",
+            "quantity": "52.441"
+          },
+          {
+            "price": "95.648",
+            "quantity": "104.55"
+          },
+          {
+            "price": "95.858",
+            "quantity": "208.641"
+          },
+          {
+            "price": "96.313",
+            "quantity": "311.484"
+          },
+          {
+            "price": "97.072",
+            "quantity": "412.065"
+          },
+          {
+            "price": "98.209",
+            "quantity": "458.206"
+          },
+          {
+            "price": "100.11",
+            "quantity": "499.45"
+          }
+        ],
+        "received_timestamp_ms": 1792225432811,
+        "processed_timestamp_ms": 1792225432811
+      },
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "par:EWJ",
+        "leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "maxTradeSzs": [
+          "10542.407",
+          "10542.407"
+        ],
+        "availableToTrade": [
+          "1000000.050512",
+          "1000000.050512"
+        ],
+        "markPx": "94.855"
+      },
+      "context": {
+        "funding": "0.00000625",
+        "openInterest": "2506.656",
+        "prevDayPx": "96.158",
+        "dayNtlVlm": "262769.410779",
+        "premium": "0.0000158099",
+        "oraclePx": "94.877",
+        "markPx": "94.855",
+        "midPx": "94.87",
+        "impactPxs": [
+          "94.819",
+          "94.938"
+        ],
+        "dayBaseVlm": "2759.251"
+      },
+      "one_lot_mark_notional": "0.094855",
+      "minimum_eligible_mark_exclusive": "1.0E+4",
+      "all_correct_long_stop_limits_below_minimum": true,
+      "reason": "SELL stop trigger below current mark and execution limit below trigger implies one-lot stop value strictly below one-lot mark value",
+      "liquidity_only_quantity": "0.527",
+      "liquidity_only_notional": "50.011773",
+      "qualified_unattended_notional": "0"
+    },
+    {
+      "symbol": "par:EWY",
+      "spec": {
+        "symbol": "par:EWY",
+        "size_decimals": 3,
+        "max_leverage": 20,
+        "asset_id": 2670004,
+        "margin_tiers": [
+          [
+            "0",
+            20
+          ]
+        ]
+      },
+      "observed_ms": 1792225433410,
+      "book": {
+        "symbol": "par:EWY",
+        "timestamp_ms": 1792225432398,
+        "bids": [
+          {
+            "price": "150.51",
+            "quantity": "3.32"
+          },
+          {
+            "price": "150.45",
+            "quantity": "16.6"
+          },
+          {
+            "price": "150.42",
+            "quantity": "33.21"
+          },
+          {
+            "price": "150.4",
+            "quantity": "99.63"
+          },
+          {
+            "price": "150.36",
+            "quantity": "232.48"
+          },
+          {
+            "price": "150.31",
+            "quantity": "1.544"
+          },
+          {
+            "price": "150.21",
+            "quantity": "332.24"
+          },
+          {
+            "price": "149.93",
+            "quantity": "31.804"
+          },
+          {
+            "price": "149.45",
+            "quantity": "63.814"
+          },
+          {
+            "price": "148.49",
+            "quantity": "128.468"
+          },
+          {
+            "price": "147.77",
+            "quantity": "193.642"
+          },
+          {
+            "price": "146.57",
+            "quantity": "260.303"
+          },
+          {
+            "price": "144.77",
+            "quantity": "296.482"
+          },
+          {
+            "price": "141.76",
+            "quantity": "336.419"
+          }
+        ],
+        "asks": [
+          {
+            "price": "150.6",
+            "quantity": "6.643"
+          },
+          {
+            "price": "150.61",
+            "quantity": "3.32"
+          },
+          {
+            "price": "150.65",
+            "quantity": "16.6"
+          },
+          {
+            "price": "150.68",
+            "quantity": "33.21"
+          },
+          {
+            "price": "150.71",
+            "quantity": "99.63"
+          },
+          {
+            "price": "150.74",
+            "quantity": "232.48"
+          },
+          {
+            "price": "150.77",
+            "quantity": "332.24"
+          },
+          {
+            "price": "150.79",
+            "quantity": "1.992"
+          },
+          {
+            "price": "150.8",
+            "quantity": "1.604"
+          },
+          {
+            "price": "151.08",
+            "quantity": "1.611"
+          },
+          {
+            "price": "151.14",
+            "quantity": "33.081"
+          },
+          {
+            "price": "151.62",
+            "quantity": "65.954"
+          },
+          {
+            "price": "151.85",
+            "quantity": "131.708"
+          },
+          {
+            "price": "152.57",
+            "quantity": "196.631"
+          },
+          {
+            "price": "153.78",
+            "quantity": "260.111"
+          },
+          {
+            "price": "155.58",
+            "quantity": "289.24"
+          },
+          {
+            "price": "158.58",
+            "quantity": "315.298"
+          }
+        ],
+        "received_timestamp_ms": 1792225433190,
+        "processed_timestamp_ms": 1792225433190
+      },
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "par:EWY",
+        "leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "maxTradeSzs": [
+          "6641.429",
+          "6641.429"
+        ],
+        "availableToTrade": [
+          "1000000.050512",
+          "1000000.050512"
+        ],
+        "markPx": "150.57"
+      },
+      "context": {
+        "funding": "-0.0000018031",
+        "openInterest": "1753.97",
+        "prevDayPx": "155.34",
+        "dayNtlVlm": "156838.96673",
+        "premium": "-0.0001759979",
+        "oraclePx": "150.57",
+        "markPx": "150.57",
+        "midPx": "150.555",
+        "impactPxs": [
+          "150.439",
+          "150.648"
+        ],
+        "dayBaseVlm": "1034.719"
+      },
+      "one_lot_mark_notional": "0.15057",
+      "minimum_eligible_mark_exclusive": "1.0E+4",
+      "all_correct_long_stop_limits_below_minimum": true,
+      "reason": "SELL stop trigger below current mark and execution limit below trigger implies one-lot stop value strictly below one-lot mark value",
+      "liquidity_only_quantity": "0.332",
+      "liquidity_only_notional": "49.9992",
+      "qualified_unattended_notional": "0"
+    },
+    {
+      "symbol": "par:GOLD",
+      "spec": {
+        "symbol": "par:GOLD",
+        "size_decimals": 4,
+        "max_leverage": 25,
+        "asset_id": 2670007,
+        "margin_tiers": [
+          [
+            "0",
+            25
+          ]
+        ]
+      },
+      "observed_ms": 1792225433821,
+      "book": {
+        "symbol": "par:GOLD",
+        "timestamp_ms": 1792225432906,
+        "bids": [
+          {
+            "price": "4164.4",
+            "quantity": "0.024"
+          },
+          {
+            "price": "4164.0",
+            "quantity": "0.24"
+          },
+          {
+            "price": "4163.8",
+            "quantity": "0.12"
+          },
+          {
+            "price": "4163.0",
+            "quantity": "0.6001"
+          },
+          {
+            "price": "4162.2",
+            "quantity": "1.2003"
+          },
+          {
+            "price": "4161.4",
+            "quantity": "3.6009"
+          },
+          {
+            "price": "4161.2",
+            "quantity": "0.0977"
+          },
+          {
+            "price": "4160.5",
+            "quantity": "8.4022"
+          },
+          {
+            "price": "4159.2",
+            "quantity": "0.0974"
+          },
+          {
+            "price": "4158.0",
+            "quantity": "12.0031"
+          },
+          {
+            "price": "4155.3",
+            "quantity": "1.168"
+          },
+          {
+            "price": "4145.3",
+            "quantity": "2.3417"
+          },
+          {
+            "price": "4135.7",
+            "quantity": "4.6942"
+          },
+          {
+            "price": "4115.6",
+            "quantity": "7.0758"
+          },
+          {
+            "price": "4085.6",
+            "quantity": "9.5036"
+          },
+          {
+            "price": "4053.5",
+            "quantity": "0.0029"
+          },
+          {
+            "price": "4035.6",
+            "quantity": "10.8241"
+          },
+          {
+            "price": "3968.9",
+            "quantity": "12.2289"
+          }
+        ],
+        "asks": [
+          {
+            "price": "4166.4",
+            "quantity": "0.0711"
+          },
+          {
+            "price": "4167.7",
+            "quantity": "0.6002"
+          },
+          {
+            "price": "4167.8",
+            "quantity": "0.24"
+          },
+          {
+            "price": "4168.5",
+            "quantity": "1.2004"
+          },
+          {
+            "price": "4168.7",
+            "quantity": "0.072"
+          },
+          {
+            "price": "4168.8",
+            "quantity": "0.0701"
+          },
+          {
+            "price": "4169.1",
+            "quantity": "0.024"
+          },
+          {
+            "price": "4169.8",
+            "quantity": "3.6009"
+          },
+          {
+            "price": "4170.5",
+            "quantity": "0.0698"
+          },
+          {
+            "price": "4170.6",
+            "quantity": "8.4022"
+          },
+          {
+            "price": "4173.1",
+            "quantity": "12.0031"
+          },
+          {
+            "price": "4175.3",
+            "quantity": "1.1975"
+          },
+          {
+            "price": "4185.3",
+            "quantity": "2.3893"
+          },
+          {
+            "price": "4202.4",
+            "quantity": "4.7591"
+          },
+          {
+            "price": "4222.4",
+            "quantity": "7.1049"
+          },
+          {
+            "price": "4252.4",
+            "quantity": "9.4064"
+          },
+          {
+            "price": "4302.4",
+            "quantity": "10.4592"
+          },
+          {
+            "price": "4369.1",
+            "quantity": "11.444"
+          }
+        ],
+        "received_timestamp_ms": 1792225433583,
+        "processed_timestamp_ms": 1792225433583
+      },
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "par:GOLD",
+        "leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "maxTradeSzs": [
+          "240.0614",
+          "240.0614"
+        ],
+        "availableToTrade": [
+          "1000000.050512",
+          "1000000.050512"
+        ],
+        "markPx": "4165.6"
+      },
+      "context": {
+        "funding": "0.00000625",
+        "openInterest": "45.644",
+        "prevDayPx": "4182.1",
+        "dayNtlVlm": "192937.8852",
+        "premium": "-0.000031208",
+        "oraclePx": "4165.6",
+        "markPx": "4165.6",
+        "midPx": "4165.4",
+        "impactPxs": [
+          "4163.0",
+          "4167.94"
+        ],
+        "dayBaseVlm": "46.2525"
+      },
+      "one_lot_mark_notional": "0.41656",
+      "minimum_eligible_mark_exclusive": "1.0E+5",
+      "all_correct_long_stop_limits_below_minimum": true,
+      "reason": "SELL stop trigger below current mark and execution limit below trigger implies one-lot stop value strictly below one-lot mark value",
+      "liquidity_only_quantity": "0.0024",
+      "liquidity_only_notional": "9.99936",
+      "qualified_unattended_notional": "0"
+    },
+    {
+      "symbol": "par:HYPE",
+      "spec": {
+        "symbol": "par:HYPE",
+        "size_decimals": 2,
+        "max_leverage": 10,
+        "asset_id": 2670002,
+        "margin_tiers": [
+          [
+            "0",
+            10
+          ]
+        ]
+      },
+      "observed_ms": 1792225434159,
+      "book": {
+        "symbol": "par:HYPE",
+        "timestamp_ms": 1792225433424,
+        "bids": [
+          {
+            "price": "80.03",
+            "quantity": "6.24"
+          },
+          {
+            "price": "80.01",
+            "quantity": "62.44"
+          },
+          {
+            "price": "79.99",
+            "quantity": "218.55"
+          },
+          {
+            "price": "79.968",
+            "quantity": "1.25"
+          },
+          {
+            "price": "79.95",
+            "quantity": "437.19"
+          },
+          {
+            "price": "79.94",
+            "quantity": "624.31"
+          },
+          {
+            "price": "79.873",
+            "quantity": "1.25"
+          },
+          {
+            "price": "79.7",
+            "quantity": "54.23"
+          },
+          {
+            "price": "79.444",
+            "quantity": "108.82"
+          },
+          {
+            "price": "79.127",
+            "quantity": "218.52"
+          },
+          {
+            "price": "78.743",
+            "quantity": "329.39"
+          },
+          {
+            "price": "78.102",
+            "quantity": "442.79"
+          },
+          {
+            "price": "77.142",
+            "quantity": "504.34"
+          },
+          {
+            "price": "75.542",
+            "quantity": "572.25"
+          }
+        ],
+        "asks": [
+          {
+            "price": "80.08",
+            "quantity": "6.24"
+          },
+          {
+            "price": "80.126",
+            "quantity": "1.24"
+          },
+          {
+            "price": "80.127",
+            "quantity": "12.48"
+          },
+          {
+            "price": "80.13",
+            "quantity": "31.22"
+          },
+          {
+            "price": "80.134",
+            "quantity": "1.24"
+          },
+          {
+            "price": "80.16",
+            "quantity": "249.75"
+          },
+          {
+            "price": "80.19",
+            "quantity": "437.01"
+          },
+          {
+            "price": "80.233",
+            "quantity": "7.87"
+          },
+          {
+            "price": "80.24",
+            "quantity": "624.31"
+          },
+          {
+            "price": "80.299",
+            "quantity": "4.6"
+          },
+          {
+            "price": "80.34",
+            "quantity": "62.23"
+          },
+          {
+            "price": "80.346",
+            "quantity": "4.64"
+          },
+          {
+            "price": "80.596",
+            "quantity": "124.07"
+          },
+          {
+            "price": "80.919",
+            "quantity": "247.16"
+          },
+          {
+            "price": "81.303",
+            "quantity": "368.99"
+          },
+          {
+            "price": "81.943",
+            "quantity": "488.14"
+          },
+          {
+            "price": "82.904",
+            "quantity": "542.79"
+          },
+          {
+            "price": "84.504",
+            "quantity": "591.68"
+          }
+        ],
+        "received_timestamp_ms": 1792225433987,
+        "processed_timestamp_ms": 1792225433987
+      },
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "par:HYPE",
+        "leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "maxTradeSzs": [
+          "12487.51",
+          "12487.51"
+        ],
+        "availableToTrade": [
+          "1000000.050512",
+          "1000000.050512"
+        ],
+        "markPx": "80.08"
+      },
+      "context": {
+        "funding": "-0.0000934293",
+        "openInterest": "6178.08",
+        "prevDayPx": "81.096",
+        "dayNtlVlm": "486615.1123899999",
+        "premium": "-0.0010591714",
+        "oraclePx": "80.157",
+        "markPx": "80.08",
+        "midPx": "80.055",
+        "impactPxs": [
+          "80.0099",
+          "80.1343"
+        ],
+        "dayBaseVlm": "6038.54"
+      },
+      "one_lot_mark_notional": "0.8008",
+      "minimum_eligible_mark_exclusive": "1.0E+3",
+      "all_correct_long_stop_limits_below_minimum": true,
+      "reason": "SELL stop trigger below current mark and execution limit below trigger implies one-lot stop value strictly below one-lot mark value",
+      "liquidity_only_quantity": "0.62",
+      "liquidity_only_notional": "49.6496",
+      "qualified_unattended_notional": "0"
+    },
+    {
+      "symbol": "par:SP500",
+      "spec": {
+        "symbol": "par:SP500",
+        "size_decimals": 3,
+        "max_leverage": 50,
+        "asset_id": 2670003,
+        "margin_tiers": [
+          [
+            "0.0",
+            50
+          ]
+        ]
+      },
+      "observed_ms": 1792225434664,
+      "book": {
+        "symbol": "par:SP500",
+        "timestamp_ms": 1792225433986,
+        "bids": [
+          {
+            "price": "7628.2",
+            "quantity": "0.013"
+          },
+          {
+            "price": "7628.1",
+            "quantity": "0.131"
+          },
+          {
+            "price": "7626.5",
+            "quantity": "0.3"
+          },
+          {
+            "price": "7624.9",
+            "quantity": "0.6"
+          },
+          {
+            "price": "7623.4",
+            "quantity": "1.9"
+          },
+          {
+            "price": "7621.9",
+            "quantity": "4.5"
+          },
+          {
+            "price": "7617.3",
+            "quantity": "6.5"
+          },
+          {
+            "price": "7609.9",
+            "quantity": "0.16"
+          },
+          {
+            "price": "7591.6",
+            "quantity": "0.321"
+          },
+          {
+            "price": "7569.3",
+            "quantity": "0.645"
+          },
+          {
+            "price": "7532.7",
+            "quantity": "0.972"
+          },
+          {
+            "price": "7477.7",
+            "quantity": "1.306"
+          },
+          {
+            "price": "7386.1",
+            "quantity": "1.488"
+          },
+          {
+            "price": "7315.3",
+            "quantity": "0.002"
+          },
+          {
+            "price": "7264.1",
+            "quantity": "1.681"
+          }
+        ],
+        "asks": [
+          {
+            "price": "7634.3",
+            "quantity": "0.131"
+          },
+          {
+            "price": "7635.7",
+            "quantity": "0.248"
+          },
+          {
+            "price": "7636.7",
+            "quantity": "0.013"
+          },
+          {
+            "price": "7637.2",
+            "quantity": "0.6"
+          },
+          {
+            "price": "7638.8",
+            "quantity": "1.9"
+          },
+          {
+            "price": "7640.3",
+            "quantity": "4.5"
+          },
+          {
+            "price": "7644.9",
+            "quantity": "6.5"
+          },
+          {
+            "price": "7646.5",
+            "quantity": "0.653"
+          },
+          {
+            "price": "7652.9",
+            "quantity": "0.061"
+          },
+          {
+            "price": "7653.7",
+            "quantity": "0.076"
+          },
+          {
+            "price": "7655.1",
+            "quantity": "0.059"
+          },
+          {
+            "price": "7664.8",
+            "quantity": "1.304"
+          },
+          {
+            "price": "7691.4",
+            "quantity": "2.6"
+          },
+          {
+            "price": "7728.0",
+            "quantity": "3.881"
+          },
+          {
+            "price": "7782.9",
+            "quantity": "5.139"
+          },
+          {
+            "price": "7874.5",
+            "quantity": "5.714"
+          },
+          {
+            "price": "7996.6",
+            "quantity": "6.252"
+          }
+        ],
+        "received_timestamp_ms": 1792225434492,
+        "processed_timestamp_ms": 1792225434492
+      },
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "par:SP500",
+        "leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "maxTradeSzs": [
+          "131.037",
+          "131.037"
+        ],
+        "availableToTrade": [
+          "1000000.050512",
+          "1000000.050512"
+        ],
+        "markPx": "7631.4"
+      },
+      "context": {
+        "funding": "-0.0001401656",
+        "openInterest": "252.508",
+        "prevDayPx": "7737.7",
+        "dayNtlVlm": "1610788.9695000006",
+        "premium": "-0.0025532958",
+        "oraclePx": "7650.7",
+        "markPx": "7631.4",
+        "midPx": "7631.25",
+        "impactPxs": [
+          "7626.098",
+          "7636.233"
+        ],
+        "dayBaseVlm": "209.403"
+      },
+      "one_lot_mark_notional": "7.6314",
+      "minimum_eligible_mark_exclusive": "1.0E+4",
+      "all_correct_long_stop_limits_below_minimum": true,
+      "reason": "SELL stop trigger below current mark and execution limit below trigger implies one-lot stop value strictly below one-lot mark value",
+      "liquidity_only_quantity": "0.001",
+      "liquidity_only_notional": "7.6343",
+      "qualified_unattended_notional": "0"
+    },
+    {
+      "symbol": "par:USDEUR",
+      "spec": {
+        "symbol": "par:USDEUR",
+        "size_decimals": 1,
+        "max_leverage": 50,
+        "asset_id": 2670008,
+        "margin_tiers": [
+          [
+            "0.0",
+            50
+          ]
+        ]
+      },
+      "observed_ms": 1792225435234,
+      "book": {
+        "symbol": "par:USDEUR",
+        "timestamp_ms": 1792225434547,
+        "bids": [
+          {
+            "price": "1.1232",
+            "quantity": "889.9"
+          },
+          {
+            "price": "1.1231",
+            "quantity": "445.0"
+          },
+          {
+            "price": "1.1229",
+            "quantity": "2312.9"
+          },
+          {
+            "price": "1.1227",
+            "quantity": "4449.0"
+          },
+          {
+            "price": "1.1225",
+            "quantity": "13348.0"
+          },
+          {
+            "price": "1.122",
+            "quantity": "31155.0"
+          },
+          {
+            "price": "1.1215",
+            "quantity": "44500.0"
+          },
+          {
+            "price": "1.1213",
+            "quantity": "4250.6"
+          },
+          {
+            "price": "1.1186",
+            "quantity": "8521.7"
+          },
+          {
+            "price": "1.1149",
+            "quantity": "17100.1"
+          },
+          {
+            "price": "1.1095",
+            "quantity": "25775.0"
+          },
+          {
+            "price": "1.1014",
+            "quantity": "34619.4"
+          },
+          {
+            "price": "1.0879",
+            "quantity": "39430.1"
+          },
+          {
+            "price": "1.0835",
+            "quantity": "10.7"
+          },
+          {
+            "price": "1.07",
+            "quantity": "44544.2"
+          }
+        ],
+        "asks": [
+          {
+            "price": "1.1241",
+            "quantity": "444.0"
+          },
+          {
+            "price": "1.1242",
+            "quantity": "978.8"
+          },
+          {
+            "price": "1.1246",
+            "quantity": "2224.0"
+          },
+          {
+            "price": "1.1248",
+            "quantity": "35604.0"
+          },
+          {
+            "price": "1.125",
+            "quantity": "13347.0"
+          },
+          {
+            "price": "1.1251",
+            "quantity": "444.4"
+          },
+          {
+            "price": "1.1253",
+            "quantity": "1091.5"
+          },
+          {
+            "price": "1.1256",
+            "quantity": "44500.0"
+          },
+          {
+            "price": "1.1267",
+            "quantity": "4437.7"
+          },
+          {
+            "price": "1.1294",
+            "quantity": "8854.2"
+          },
+          {
+            "price": "1.1329",
+            "quantity": "17653.8"
+          },
+          {
+            "price": "1.1383",
+            "quantity": "26355.0"
+          },
+          {
+            "price": "1.1464",
+            "quantity": "34891.8"
+          },
+          {
+            "price": "1.1599",
+            "quantity": "38796.4"
+          },
+          {
+            "price": "1.1779",
+            "quantity": "42448.4"
+          }
+        ],
+        "received_timestamp_ms": 1792225435060,
+        "processed_timestamp_ms": 1792225435060
+      },
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "par:USDEUR",
+        "leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "maxTradeSzs": [
+          "889917.2",
+          "889917.2"
+        ],
+        "availableToTrade": [
+          "1000000.050512",
+          "1000000.050512"
+        ],
+        "markPx": "1.1237"
+      },
+      "context": {
+        "funding": "-0.0000232598",
+        "openInterest": "216044.2",
+        "prevDayPx": "1.1237",
+        "dayNtlVlm": "155216.28864",
+        "premium": "-0.0006936416",
+        "oraclePx": "1.1245",
+        "markPx": "1.1237",
+        "midPx": "1.12365",
+        "impactPxs": [
+          "1.1229",
+          "1.12454"
+        ],
+        "dayBaseVlm": "137965.4"
+      },
+      "one_lot_mark_notional": "0.11237",
+      "minimum_eligible_mark_exclusive": "1.0E+2",
+      "all_correct_long_stop_limits_below_minimum": true,
+      "reason": "SELL stop trigger below current mark and execution limit below trigger implies one-lot stop value strictly below one-lot mark value",
+      "liquidity_only_quantity": "44.4",
+      "liquidity_only_notional": "49.91004",
+      "qualified_unattended_notional": "0"
+    },
+    {
+      "symbol": "par:USDJPY",
+      "spec": {
+        "symbol": "par:USDJPY",
+        "size_decimals": 2,
+        "max_leverage": 50,
+        "asset_id": 2670009,
+        "margin_tiers": [
+          [
+            "0.0",
+            50
+          ]
+        ]
+      },
+      "observed_ms": 1792225435640,
+      "book": {
+        "symbol": "par:USDJPY",
+        "timestamp_ms": 1792225434547,
+        "bids": [
+          {
+            "price": "158.17",
+            "quantity": "1.87"
+          },
+          {
+            "price": "158.11",
+            "quantity": "14.21"
+          },
+          {
+            "price": "158.08",
+            "quantity": "31.6"
+          },
+          {
+            "price": "158.05",
+            "quantity": "94.8"
+          },
+          {
+            "price": "158.01",
+            "quantity": "221.22"
+          },
+          {
+            "price": "157.98",
+            "quantity": "31.64"
+          },
+          {
+            "price": "157.95",
+            "quantity": "4.7"
+          },
+          {
+            "price": "157.93",
+            "quantity": "316.01"
+          },
+          {
+            "price": "157.9",
+            "quantity": "3.16"
+          },
+          {
+            "price": "157.86",
+            "quantity": "3.16"
+          },
+          {
+            "price": "157.6",
+            "quantity": "63.45"
+          },
+          {
+            "price": "157.07",
+            "quantity": "127.33"
+          },
+          {
+            "price": "156.31",
+            "quantity": "191.92"
+          },
+          {
+            "price": "155.17",
+            "quantity": "257.78"
+          },
+          {
+            "price": "153.27",
+            "quantity": "293.59"
+          },
+          {
+            "price": "150.74",
+            "quantity": "331.69"
+          },
+          {
+            "price": "149.25",
+            "quantity": "0.08"
+          }
+        ],
+        "asks": [
+          {
+            "price": "158.26",
+            "quantity": "1.28"
+          },
+          {
+            "price": "158.31",
+            "quantity": "14.89"
+          },
+          {
+            "price": "158.34",
+            "quantity": "31.6"
+          },
+          {
+            "price": "158.37",
+            "quantity": "94.81"
+          },
+          {
+            "price": "158.4",
+            "quantity": "221.22"
+          },
+          {
+            "price": "158.51",
+            "quantity": "316.01"
+          },
+          {
+            "price": "158.74",
+            "quantity": "22.35"
+          },
+          {
+            "price": "159.12",
+            "quantity": "44.6"
+          },
+          {
+            "price": "159.6",
+            "quantity": "88.93"
+          },
+          {
+            "price": "160.36",
+            "quantity": "132.77"
+          },
+          {
+            "price": "161.5",
+            "quantity": "175.77"
+          },
+          {
+            "price": "163.4",
+            "quantity": "195.44"
+          },
+          {
+            "price": "165.94",
+            "quantity": "213.84"
+          }
+        ],
+        "received_timestamp_ms": 1792225435406,
+        "processed_timestamp_ms": 1792225435406
+      },
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "par:USDJPY",
+        "leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "maxTradeSzs": [
+          "6322.31",
+          "6322.31"
+        ],
+        "availableToTrade": [
+          "1000000.050512",
+          "1000000.050512"
+        ],
+        "markPx": "158.17"
+      },
+      "context": {
+        "funding": "0.0000800158",
+        "openInterest": "4112.6",
+        "prevDayPx": "157.95",
+        "dayNtlVlm": "400543.7070000001",
+        "premium": "0.0015227575",
+        "oraclePx": "157.97",
+        "markPx": "158.17",
+        "midPx": "158.215",
+        "impactPxs": [
+          "158.0956",
+          "158.3255"
+        ],
+        "dayBaseVlm": "2533.25"
+      },
+      "one_lot_mark_notional": "1.5817",
+      "minimum_eligible_mark_exclusive": "1.0E+3",
+      "all_correct_long_stop_limits_below_minimum": true,
+      "reason": "SELL stop trigger below current mark and execution limit below trigger implies one-lot stop value strictly below one-lot mark value",
+      "liquidity_only_quantity": "0.12",
+      "liquidity_only_notional": "18.9912",
+      "qualified_unattended_notional": "0"
+    }
+  ],
+  "greatest_liquidity_only_estimate": {
+    "symbol": "par:EWJ",
+    "quantity": "0.527",
+    "notional": "50.011773"
+  },
+  "qualification_proposal_created": false,
+  "autonomous_mandate_created": false,
+  "approval_requested": false,
+  "signer_or_worker_launched": false,
+  "actual_new_fills": [],
+  "actual_new_fees": "0",
+  "actual_new_funding": "0",
+  "actual_new_observed_cashflow": "0",
+  "qualification_realized_pnl_certified": false,
+  "historical_oct15_net": "0.050512",
+  "collateral": "TEST USDPR",
+  "preservation_passed": true,
+  "actual_order_or_nonce_database_modified": false,
+  "public_requests": 63,
+  "actual_public_errors": [],
+  "sandbox_dns_attempt_preserved": true,
+  "initial_failure": "INFO_DNS_FAILED; no HTTP status or 429",
+  "mac_dependency": "No worker is running. Future local operation depends on this Mac, process/app, power and internet; no remote failover or automatic renewal."
+}

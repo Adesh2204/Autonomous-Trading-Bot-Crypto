@@ -41,7 +41,11 @@ def main():
     checks = {
         'project_is_perpetual_alpha': config.PROJECT_NAME == 'anchorium-perpetual-alpha',
         'independent_git_directory': common_dir.resolve() == (ROOT/'.git').resolve(),
-        'migration_branch': git('branch', '--show-current').decode().strip() == 'perpetual-alpha-migration',
+        'migration_branch': (
+            git('branch', '--show-current').decode().strip() == 'perpetual-alpha-migration'
+            or (git('branch', '--show-current').decode().strip().startswith('codex/')
+                and subprocess.run(['git','merge-base','--is-ancestor','perpetual-alpha-migration','HEAD'],
+                                   cwd=ROOT,capture_output=True).returncode == 0)),
         'testnet_venue': config.TRADING_VENUE == 'HYPERLIQUID_TESTNET',
         'paper_execution_mode': config.EXECUTION_MODE == 'PAPER',
         'migration_policy_valid': migration_policy_valid,

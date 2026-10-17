@@ -1,0 +1,25 @@
+TEAM ANCHORIUM — QUANT ENGINE
+MODE: TESTNET OBSERVATION | STATUS: STOPPED
+TESTNET par | Team: 0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C
+Source: 3ba3590b122f47009607027c51c6cb74884b0ac8ec035777756519f548c7a321
+Local: 2026-10-16T20:53:20.810393+05:30 | Exchange time: None (null means unavailable)
+Actual collateral: 1000000.050512 | Available/withdrawable: None
+Proposed bankroll: 20000 | Approved bankroll: None | Approved notional: None
+Positions: [] | Open orders: []
+Observed account net: 0.050512 | Fees: 0.029415 | Funding: 0.000527
+Account age ms: 56195 | Fee age ms: 55256
+Market WS: True | Account WS: False | Authority: NONE
+Risk/remaining attempts: None / None | Residual: FLAT_VERIFIED
+[NO_TRADE] par:BRENT | ATR_BELOW_UNCHANGED_0_40_PERCENT_FLOOR, NO_FROZEN_STRATEGY_SETUP | bid/ask 103.23/103.27 | capacity 9.2943 | SL/TP None/None | approved size None
+[NO_TRADE] par:BTC | ATR_BELOW_UNCHANGED_0_40_PERCENT_FLOOR, NO_FROZEN_STRATEGY_SETUP | bid/ask 81414.0/81424.0 | capacity 8.14240 | SL/TP None/None | approved size None
+[NO_TRADE] par:ETH | COMPLETED_CANDLE_STALE | bid/ask 2433.6/2435.2 | capacity 49.92160 | SL/TP None/None | approved size None
+[NO_TRADE] par:EWJ | CAPITAL_FRESH_PAR_BOOK_REQUIRED | bid/ask 95.779/95.834 | capacity 49.929514 | SL/TP None/None | approved size None
+[NO_TRADE] par:EWY | COMPLETED_CANDLE_STALE | bid/ask 152.82/152.92 | capacity 50.00484 | SL/TP None/None | approved size None
+[NO_TRADE] par:GOLD | COMPLETED_CANDLE_STALE | bid/ask 4178.7/4181.0 | capacity 19.65070 | SL/TP None/None | approved size None
+[NO_TRADE] par:HYPE | CAPITAL_FRESH_PAR_BOOK_REQUIRED | bid/ask 78.87/78.93 | capacity 34.7292 | SL/TP None/None | approved size None
+[NO_TRADE] par:SP500 | ATR_BELOW_UNCHANGED_0_40_PERCENT_FLOOR, NO_FROZEN_STRATEGY_SETUP | bid/ask 7693.5/7697.9 | capacity 7.6979 | SL/TP None/None | approved size None
+[EXCHANGE_FILL] BUY par:BTC | oid 62755970305 | quantity 0.0002 | price 81512.0 | fee 0.014672
+[EXCHANGE_FILL] SELL par:BTC | oid 62805581662 | quantity 0.0002 | price 81909.0 | fee 0.014743
+Terminal flat: True | Simulated net: N/A
+Actual account events and synthetic results are separate. No native stop or SHORT qualification is implied.
+This Mac, Python process, power and internet. Codex and its app may be closed.

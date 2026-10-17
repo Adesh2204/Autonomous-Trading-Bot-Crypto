@@ -1,0 +1,65 @@
+{
+  "classification": "STILL_UNRESOLVED_UNKNOWN",
+  "formally_resolved": false,
+  "cloid": "0xac0eea156fcec80986dd67c9057b6ded",
+  "nonce": 1792217834069,
+  "mandate_id": "59445fe546d38a96e486140fda781d09ae8a0942f93a3614fa8abcbc34f5e7ea",
+  "signing_source": "88429ed4fabb3f1564b4c0bb281466e841cd6fa3e522bd3092172d78a3a7fc5f",
+  "source_reconstructed_against_complete_manifest": true,
+  "accepted_ms": 1792217727523,
+  "expired_ms": 1792218027523,
+  "quantity": "0.0002",
+  "selected_buy_price": "81518",
+  "local_state": "UNKNOWN",
+  "exchange_oid": null,
+  "causal_diagnosis": "Source/receipt chronology reconstructs 5526ms readiness age against 5000ms. This is an inference, not a recorded final-guard reason.",
+  "original_exception": "ExchangeError only; TRANSMISSION_UNCERTAIN wrapper",
+  "guarded_signature_created_in_original_attempt": true,
+  "exact_signature_count": null,
+  "recorded_transmission_claims": 0,
+  "explicit_original_pre_http_failure_record": false,
+  "original_native_http_boundary_telemetry": false,
+  "mandatory_claim_path_verified": true,
+  "proof_limit": "Mandatory pre-HTTP claim source and absent claim support the diagnosis; the existing exact certificate requires additional explicit causal evidence. No absence-only certificate is created.",
+  "new_immutable_certificate_appended": false,
+  "raw_row_deleted_or_changed": false,
+  "nonce_reset": false,
+  "future_signing_permitted": false,
+  "exchange_readbacks": [
+    {
+      "observed_ms": 1792225438428,
+      "source": "EXCHANGE_DIRECT_TESTNET_PAR_INFO",
+      "team": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+      "original_order_status": {
+        "status": "unknownOid"
+      },
+      "positions": [],
+      "orders": [],
+      "ready": true
+    },
+    {
+      "observed_ms": 1792225441260,
+      "source": "EXCHANGE_DIRECT_TESTNET_PAR_INFO",
+      "team": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+      "original_order_status": {
+        "status": "unknownOid"
+      },
+      "positions": [],
+      "orders": [],
+      "ready": true
+    }
+  ],
+  "history_rows": 4,
+  "history_possibly_truncated": false,
+  "matched_cloid_history_rows": 0,
+  "new_fills": [],
+  "new_funding": [],
+  "authoritative_historical_position_endpoint_available": false,
+  "position_history_limit": "Retained authoritative snapshots and reported fills are available; no continuous historical position feed or new terminal order record was recovered.",
+  "existing_certificate_scope": "Only the original historical 3b744e33... intent; not this CLOID or mandate.",
+  "missing_evidence": [
+    "Original explicit final pre-HTTP rejection tied to this action/nonce and validated source, or equivalent independently verified causal evidence admissible to the immutable framework.",
+    "Alternatively an authoritative venue rejection/terminal record identifying this original action; a bare unknownOid or not-found response is insufficient."
+  ],
+  "no_new_signatures_or_exchange_writes_in_this_review": true
+}
