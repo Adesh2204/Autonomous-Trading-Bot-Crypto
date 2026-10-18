@@ -439,7 +439,7 @@ class LiveExecutionSession:
         if self.portfolio is not None:
             now=self.clock_ms()
             if self.portfolio.account_observed_ms is None or now-self.portfolio.account_observed_ms>=3000:
-                symbol=next(iter(self.recovery.state.positions),'par:BTC')
+                symbol=next(iter(self.recovery.state.positions),self.market.client.api_market)
                 from exchange.reliability_policy import RequestPriority
                 active=self.recovery.account._query('activeAssetData',coin=symbol,priority=RequestPriority.SAFETY)
                 self.portfolio.observe_buying_power(active,self.clock_ms())
