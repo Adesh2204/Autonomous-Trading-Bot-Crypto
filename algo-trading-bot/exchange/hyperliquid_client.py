@@ -317,6 +317,11 @@ class HyperliquidClient:
         self.metadata = None
         self.discovery = None
 
+    def canonical_market_name(self, raw_name):
+        if not self.competition_mode:
+            raise VenueMismatch('PAS_COMPETITION_MAPPING_REQUIRED')
+        return canonical_api_market(self.api_dex, raw_name)
+
     def _parse_specs(self, metadata, dex_index):
         if self.competition_mode:
             return self._parse_pas_specs(metadata, dex_index)
