@@ -21,7 +21,7 @@ class PositionState(str, Enum):
 
 # This state machine is evidence-only: transitions never submit exchange actions.
 _ALLOWED = {
-    PositionState.UNKNOWN: {PositionState.FLAT, PositionState.MANAGING,
+    PositionState.UNKNOWN: {PositionState.FLAT, PositionState.PROTECTED, PositionState.MANAGING,
                             PositionState.PROTECTION_PENDING, PositionState.FLAT_RECONCILED},
     PositionState.FLAT: {PositionState.SIGNAL_DETECTED, PositionState.FLAT_RECONCILED},
     PositionState.FLAT_RECONCILED: {PositionState.FLAT, PositionState.SIGNAL_DETECTED,
@@ -82,7 +82,7 @@ class PositionStateJournal:
             raise ExchangeError("POSITION_STATE_CANNOT_REENTER_UNKNOWN")
         if prior == PositionState.UNKNOWN:
             if not reconciled or target not in {
-                PositionState.FLAT, PositionState.MANAGING,
+                PositionState.FLAT, PositionState.PROTECTED, PositionState.MANAGING,
                 PositionState.PROTECTION_PENDING, PositionState.FLAT_RECONCILED,
             }:
                 raise ExchangeError("POSITION_STATE_RECONCILIATION_REQUIRED")

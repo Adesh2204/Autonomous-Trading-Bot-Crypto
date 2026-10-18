@@ -99,3 +99,17 @@ def test_position_state_requires_authoritative_reconciliation_before_live_state(
     machine.transition(PositionState.MANAGING, "protected")
     assert machine.report()["state"] == "MANAGING"
     assert journal.events[-1][0] == "BTC_POSITION_STATE"
+
+
+def test_restarted_position_can_become_protected_only_after_reconciliation():
+    from exchange.position_states import PositionState, PositionStateJournal
+    class Journal:
+        def control(self, key, value): pass
+        def event(self, kind, ts, **data): pass
+    machine = PositionStateJournal(Journal(), lambda: 2000, market="pas:BTC")
+    with pytest.raises(Exception, match="POSITION_STATE_RECONCILIATION_REQUIRED"):
+        machine.transition(PositionState.PROTECTED, "unverified")
+    machine.transition(PositionState.PROTECTED, "position and stop verified", reconciled=True,
+                       evidence={"protection_verified": True})
+    machine.transition(PositionState.MANAGING, "manage", evidence={"protection_verified": True})
+    assert machine.report()["state"] == "MANAGING"
