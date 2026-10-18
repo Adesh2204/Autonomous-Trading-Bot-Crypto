@@ -127,8 +127,18 @@ class LiveExecutionSession:
         if current == target:
             return
         if current == PositionState.UNKNOWN:
-            self.position_state.transition(target, 'AUTHORITATIVE_BTC_POSITION_RECONCILIATION',
-                                           evidence=evidence, reconciled=True)
+            if target == PositionState.MANAGING:
+                self.position_state.transition(PositionState.PROTECTED, 'STARTUP_PROTECTIVE_ORDER_VERIFIED',
+                                               evidence=evidence, reconciled=True)
+                self.position_state.transition(PositionState.MANAGING, 'AUTHORITATIVE_BTC_POSITION_RECONCILIATION',
+                                               evidence=evidence)
+            else:
+                self.position_state.transition(target, 'AUTHORITATIVE_BTC_POSITION_RECONCILIATION',
+                                               evidence=evidence, reconciled=True)
+        elif current in {PositionState.FLAT, PositionState.FLAT_RECONCILED,
+                         PositionState.SIGNAL_DETECTED, PositionState.ORDER_SUBMITTED}:
+            self.execution.entries_paused=True
+            raise ExchangeError('UNEXPECTED_BTC_POSITION_WITHOUT_CONFIRMED_ENTRY_FILL')
         elif target == PositionState.PROTECTION_PENDING:
             if current != PositionState.PROTECTION_PENDING:
                 self.position_state.transition(target, 'PROTECTION_NOT_VERIFIED', evidence=evidence)
@@ -138,8 +148,8 @@ class LiveExecutionSession:
                                            evidence=evidence)
             self.position_state.transition(PositionState.MANAGING, 'POSITION_PROTECTED_AND_MANAGED',
                                            evidence=evidence)
-        elif current in {PositionState.FILLED, PositionState.PROTECTED}:
-            if current == PositionState.FILLED:
+        elif current in {PositionState.FILLED, PositionState.PARTIALLY_FILLED, PositionState.PROTECTED}:
+            if current in {PositionState.FILLED, PositionState.PARTIALLY_FILLED}:
                 self.position_state.transition(PositionState.PROTECTION_PENDING,
                                                'POST_FILL_PROTECTION_CHECK', evidence=evidence)
             self.position_state.transition(PositionState.PROTECTED, 'PROTECTIVE_ORDER_VERIFIED',
@@ -485,7 +495,7 @@ class LiveExecutionSession:
             try:
                 self.funnel.event('EXECUTION_DECISION',candidate,{},self.clock_ms())
                 self.funnel.event('ENTRY_ORDER_ATTEMPTED',candidate,{},self.clock_ms())
-                self.position_state.transition(PositionState.ORDER_SUBMITTED, 'ENTRY_ORDER_SUBMITTED_TO_EXECUTION_ADAPTER', evidence={'candidate_id':candidate,'quantity':str(decision.quantity),'side':side})
+                self.position_state.transition(PositionState.ORDER_SUBMITTED, 'ENTRY_ORDER_SUBMISSION_ATTEMPTED_FILL_MUST_BE_RECONCILED', evidence={'candidate_id':candidate,'quantity':str(decision.quantity),'side':side})
                 result=self.execution.submit(request,permission=permission)
                 self.breakers.order_result(result.state not in {OrderState.UNKNOWN,OrderState.REJECTED})
             except ExchangeError as exc:
