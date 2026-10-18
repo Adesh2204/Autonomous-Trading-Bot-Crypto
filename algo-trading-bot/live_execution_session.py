@@ -11,6 +11,7 @@ from exchange.live_portfolio import ExchangePortfolioView
 from exchange.order_lifecycle import OrderRequest, OrderState
 from risk.circuit_breakers import CircuitBreakers
 from strategy_freeze import verify_strategy_freeze
+from exchange.position_states import PositionState, PositionStateJournal
 
 
 class LiveExecutionSession:
@@ -25,6 +26,7 @@ class LiveExecutionSession:
         self.recovery.position_guard=execution.position_guard
         self.journal=execution.journal
         self.clock_ms=market.client.clock_ms
+        self.position_state=PositionStateJournal(self.journal,self.clock_ms,market=market.client.api_market)
         self.managers=self.recovery.managers
         self.quotes={}
         self.breakers=CircuitBreakers(risk.policy)
@@ -89,6 +91,66 @@ class LiveExecutionSession:
             day_start_equity=self.day_start_equity,peak_equity=self.peak_equity,
             max_drawdown=self.max_drawdown,starting_equity=self.starting_equity)
 
+    def _sync_position_state(self):
+        """Reconstruct lifecycle from verified account truth and current protection."""
+        if (not self.recovery.last_report.ready or
+                self.startup_recovery.state.value != 'READY'):
+            self.execution.entries_paused = True
+            return
+        symbol = self.market.client.api_market
+        positions = self.recovery.state.positions
+        other = [name for name,p in positions.items() if p.quantity and name != symbol]
+        if other:
+            self.execution.entries_paused = True
+            raise ExchangeError('UNEXPECTED_NON_BTC_POSITION')
+        held = positions.get(symbol)
+        if held is None or not held.quantity:
+            target = (PositionState.FLAT_RECONCILED
+                      if self.position_state.state in {PositionState.EXIT_REQUESTED, PositionState.EXIT_PARTIAL}
+                      else PositionState.FLAT)
+            if self.position_state.state != target:
+                self.position_state.transition(target, 'AUTHORITATIVE_BTC_FLAT_RECONCILIATION',
+                    evidence={'open_positions': 0, 'reconciliation_ready': True}, reconciled=True)
+            return
+        protection = self.execution.protection
+        status = protection.states.get(symbol,{}) if protection is not None else {}
+        is_protected = (status.get('status') == 'ACTIVE' and
+            str(status.get('actual_quantity')) == str(abs(held.quantity)) and
+            status.get('position_side') == ('LONG' if held.quantity > 0 else 'SHORT'))
+        evidence = {'actual_quantity':str(held.quantity),
+                    'position_side':'LONG' if held.quantity > 0 else 'SHORT',
+                    'protection_status':status.get('status'),
+                    'protection_verified':bool(is_protected),
+                    'reconciliation_ready':True}
+        target = PositionState.MANAGING if is_protected else PositionState.PROTECTION_PENDING
+        current = self.position_state.state
+        if current == target:
+            return
+        if current == PositionState.UNKNOWN:
+            self.position_state.transition(target, 'AUTHORITATIVE_BTC_POSITION_RECONCILIATION',
+                                           evidence=evidence, reconciled=True)
+        elif target == PositionState.PROTECTION_PENDING:
+            if current != PositionState.PROTECTION_PENDING:
+                self.position_state.transition(target, 'PROTECTION_NOT_VERIFIED', evidence=evidence)
+            self.execution.entries_paused = True
+        elif current == PositionState.PROTECTION_PENDING:
+            self.position_state.transition(PositionState.PROTECTED, 'PROTECTIVE_ORDER_VERIFIED',
+                                           evidence=evidence)
+            self.position_state.transition(PositionState.MANAGING, 'POSITION_PROTECTED_AND_MANAGED',
+                                           evidence=evidence)
+        elif current in {PositionState.FILLED, PositionState.PROTECTED}:
+            if current == PositionState.FILLED:
+                self.position_state.transition(PositionState.PROTECTION_PENDING,
+                                               'POST_FILL_PROTECTION_CHECK', evidence=evidence)
+            self.position_state.transition(PositionState.PROTECTED, 'PROTECTIVE_ORDER_VERIFIED',
+                                           evidence=evidence)
+            self.position_state.transition(PositionState.MANAGING, 'POSITION_PROTECTED_AND_MANAGED',
+                                           evidence=evidence)
+        elif current not in {PositionState.EXIT_REQUESTED, PositionState.EXIT_PARTIAL}:
+            if current != PositionState.MANAGING:
+                self.position_state.transition(PositionState.MANAGING,
+                                               'RECONCILED_POSITION_MANAGEMENT', evidence=evidence)
+
     def _save_controls(self):
         from exchange.execution_journal import canonical
         if self.day is not None:
@@ -127,6 +189,8 @@ class LiveExecutionSession:
             if request.symbol!=fill.symbol or request.side!=fill.side:
                 raise ExchangeError('STRATEGY_FILL_LINK_CONFLICT')
             manager=self._manager(fill.symbol)
+            filled_for_intent=sum((f.quantity for f in state.fills.values()
+                if f.order_id in {str(intent['oid']), *map(str, json.loads(intent['outcome'] or '{}').get('child_order_ids', []))}), Decimal(0))
             if request.reduce_only:
                 reason=('Catastrophic Protection' if request.strategy_id=='CATASTROPHIC_STOP'
                         else self.exit_reasons.get(fill.symbol))
@@ -134,10 +198,17 @@ class LiveExecutionSession:
                     raise ExchangeError('EXIT_MANAGEMENT_EVIDENCE_MISSING')
                 manager.confirm_exit(fill,reason)
                 if not manager.has_open_position:
+                    if self.position_state.state != PositionState.FLAT_RECONCILED:
+                        if self.position_state.state in {PositionState.EXIT_REQUESTED, PositionState.EXIT_PARTIAL, PositionState.PROTECTION_PENDING, PositionState.MANAGING}:
+                            self.position_state.transition(PositionState.FLAT_RECONCILED, 'EXCHANGE_REPORTED_FLAT_AFTER_EXIT', evidence={'fill_id':fill.identity})
                     self.exit_reasons.pop(fill.symbol,None)
                     self.position_candidates.pop(fill.symbol,None)
             else:
                 entry=self.pending_entries.get(fill.symbol)
+                if self.position_state.state in {PositionState.ORDER_SUBMITTED, PositionState.PARTIALLY_FILLED}:
+                    next_state = PositionState.FILLED if filled_for_intent >= request.quantity else PositionState.PARTIALLY_FILLED
+                    if self.position_state.state != next_state:
+                        self.position_state.transition(next_state, 'EXCHANGE_REPORTED_ENTRY_FILL', evidence={'fill_id':fill.identity,'requested_quantity':str(request.quantity),'observed_quantity_for_order':str(filled_for_intent)})
                 if entry is None or entry['candidate_id']!=intent['candidate']:
                     raise ExchangeError('ENTRY_MANAGEMENT_EVIDENCE_MISSING')
                 decision=SimpleNamespace(stop=Decimal(entry['stop']),target=Decimal(entry['target']))
@@ -156,6 +227,8 @@ class LiveExecutionSession:
                     position['average_entry_price']=float(average)
                     position['tranches']=[dict(entry_price=float(average))]
                 self.position_candidates[fill.symbol]=intent['candidate']
+                if self.position_state.state in {PositionState.FILLED, PositionState.PARTIALLY_FILLED}:
+                    self.position_state.transition(PositionState.PROTECTION_PENDING, 'ENTRY_FILL_REQUIRES_PROTECTION', evidence={'fill_id':fill.identity,'actual_quantity':str(state.positions.get(fill.symbol).quantity if state.positions.get(fill.symbol) else 0)})
                 self.direction_flip_intents.pop(fill.symbol,None)
             self.processed_fill_ids.add(fill.identity)
             self.funnel.event('TRADE_PNL' if request.reduce_only and not manager.has_open_position else
@@ -192,6 +265,7 @@ class LiveExecutionSession:
             self.startup_recovery.after_stream(0)
         self.execution.entries_paused=self.startup_recovery.state.value!='READY'
         self._protection_barrier(allow_actions=report.ready)
+        self._sync_position_state()
         return report
 
     def _protection_barrier(self,*,allow_actions=True):
@@ -235,6 +309,7 @@ class LiveExecutionSession:
                 0<=now-window[1]<=self.execution.rate_limits.policy.budget_max_age_ms else self.recovery.recover())
         self.execution.entries_paused=not report.ready
         self.execution.entries_paused |= self.startup_recovery.state.value!='READY'
+        self._sync_position_state()
         self._protection_barrier(allow_actions=report.ready)
         if not report.ready:
             raise ExchangeError('ACCOUNT_RECONCILIATION_NOT_READY')
@@ -267,6 +342,8 @@ class LiveExecutionSession:
         if not candidate:
             raise ExchangeError('EXIT_CANDIDATE_LINK_REQUIRED')
         self.exit_reasons[symbol]=reason
+        if self.position_state.state not in {PositionState.EXIT_REQUESTED, PositionState.EXIT_PARTIAL}:
+            self.position_state.transition(PositionState.EXIT_REQUESTED, str(reason), evidence={'actual_quantity':str(held.quantity),'reduce_only':True})
         self._persist(symbol)
         permission=RiskPermission(candidate,symbol,side,abs(held.quantity),self.clock_ms(),
                                   True,reason,price)
@@ -400,6 +477,7 @@ class LiveExecutionSession:
                 tif='Ioc',strategy_id=str(signal.get('signal_type') or 'VWAP_BASELINE'),client_order_id=key)
             permission=RiskPermission.from_decision(decision,request,candidate,self.clock_ms(),
                 signal_timestamp_ms=signal['timestamp_ms'],setup_type=signal.get('signal_type'))
+            self.position_state.transition(PositionState.SIGNAL_DETECTED, 'VALIDATED_BTC_SIGNAL', evidence={'candidate_id':candidate,'side':side,'signal_timestamp_ms':signal['timestamp_ms']})
             self.pending_entries[symbol]=dict(candidate_id=candidate,stop=str(decision.stop),target=str(decision.target),
                 setup_type=str(signal.get('signal_type') or 'VWAP_BASELINE'),reference_vwap=str(signal['reference']),
                 atr=str(signal['atr']),signal_timestamp_ms=signal['timestamp_ms'])
@@ -407,12 +485,15 @@ class LiveExecutionSession:
             try:
                 self.funnel.event('EXECUTION_DECISION',candidate,{},self.clock_ms())
                 self.funnel.event('ENTRY_ORDER_ATTEMPTED',candidate,{},self.clock_ms())
+                self.position_state.transition(PositionState.ORDER_SUBMITTED, 'ENTRY_ORDER_SUBMITTED_TO_EXECUTION_ADAPTER', evidence={'candidate_id':candidate,'quantity':str(decision.quantity),'side':side})
                 result=self.execution.submit(request,permission=permission)
                 self.breakers.order_result(result.state not in {OrderState.UNKNOWN,OrderState.REJECTED})
             except ExchangeError as exc:
                 self.breakers.order_result(False)
                 self.journal.event('ENTRY_REJECTED',self.clock_ms(),candidate_id=candidate,reason=str(exc))
                 self.funnel.event('ENTRY_REJECTED',candidate,dict(reason=str(exc)),self.clock_ms())
+                if self.position_state.state == PositionState.SIGNAL_DETECTED:
+                    self.position_state.transition(PositionState.FLAT, 'ENTRY_NOT_SUBMITTED', evidence={'reason':str(exc)})
             self._persist(symbol)
 
     def cycle(self, *, scan=True):
@@ -444,3 +525,4 @@ class LiveExecutionSession:
                 active=self.recovery.account._query('activeAssetData',coin=symbol,priority=RequestPriority.SAFETY)
                 self.portfolio.observe_buying_power(active,self.clock_ms())
             self._performance(self.portfolio.snapshot(self.quotes,self.clock_ms()))
+        self._sync_position_state()

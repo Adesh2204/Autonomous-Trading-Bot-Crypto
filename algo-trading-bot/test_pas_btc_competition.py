@@ -74,3 +74,28 @@ def test_scored_phase_window_is_utc_half_open():
     assert is_scored_phase(SCORING_START_MS)
     assert is_scored_phase(SCORING_END_MS - 1)
     assert not is_scored_phase(SCORING_END_MS)
+
+
+def test_position_state_requires_authoritative_reconciliation_before_live_state():
+    from exchange.position_states import PositionState, PositionStateJournal
+    class Journal:
+        def __init__(self):
+            self.controls = {}
+            self.events = []
+        def control(self, key, value):
+            self.controls[key] = value
+        def event(self, kind, ts, **data):
+            self.events.append((kind, ts, data))
+    journal = Journal()
+    machine = PositionStateJournal(journal, lambda: 1000, market="pas:BTC")
+    with pytest.raises(Exception, match="POSITION_STATE_RECONCILIATION_REQUIRED"):
+        machine.transition(PositionState.FLAT, "not reconciled")
+    machine.transition(PositionState.FLAT, "account read confirmed flat", reconciled=True)
+    machine.transition(PositionState.SIGNAL_DETECTED, "signal")
+    machine.transition(PositionState.ORDER_SUBMITTED, "order")
+    machine.transition(PositionState.PARTIALLY_FILLED, "partial fill")
+    machine.transition(PositionState.PROTECTION_PENDING, "protection pending")
+    machine.transition(PositionState.PROTECTED, "stop verified")
+    machine.transition(PositionState.MANAGING, "protected")
+    assert machine.report()["state"] == "MANAGING"
+    assert journal.events[-1][0] == "BTC_POSITION_STATE"
