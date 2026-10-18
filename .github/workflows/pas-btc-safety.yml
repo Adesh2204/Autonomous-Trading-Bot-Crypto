@@ -38,5 +38,13 @@ jobs:
       - name: Run PAS discovery, BTC-only registry, risk profile and snapshot tests
         working-directory: algo-trading-bot
         run: python -m pytest -q test_pas_btc_competition.py
+      - name: Verify PAR qualification and recovery compatibility
+        working-directory: algo-trading-bot
+        run: >-
+          python -m pytest -q
+          test_native_qualification.py
+          test_long_session.py
+          test_par_native_workflow_repair.py
+          test_production_reliability.py
       - name: Verify frozen baseline
         run: python scripts/check_strategy_freeze.py
