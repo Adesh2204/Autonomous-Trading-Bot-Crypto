@@ -182,6 +182,12 @@ class HyperliquidClient:
         self.competition_market = COMPETITION_MARKET
         self.api_dex = None
         self.api_market = None
+        self.market_mapping = {
+            "competition_market": self.competition_market,
+            "api_dex": None,
+            "api_market": None,
+            "verification": "UNVERIFIED",
+        }
         self.dex_identity = None
         self.dex_total_oi_notional = None
         self.dex_oi_observed_ms = None
@@ -276,6 +282,12 @@ class HyperliquidClient:
         self.collateral_token_name = None
         self.api_dex = None
         self.api_market = None
+        self.market_mapping = {
+            "competition_market": self.competition_market,
+            "api_dex": None,
+            "api_market": None,
+            "verification": "UNVERIFIED",
+        }
         self.dex_identity = None
         self.dex_total_oi_notional = None
         self.dex_oi_observed_ms = None
@@ -352,6 +364,14 @@ class HyperliquidClient:
         self.markets = MappingProxyType(specifications)
         self.metadata = self._canonical_metadata(metadata, api_dex)
         self.metadata_timestamp_ms = self.clock_ms()
+        self.market_mapping = {
+            "competition_market": self.competition_market,
+            "api_dex": self.api_dex,
+            "api_market": self.api_market,
+            "collateral_token_name": self.collateral_token_name,
+            "metadata_timestamp_ms": self.metadata_timestamp_ms,
+            "verification": "VERIFIED_FROM_LIVE_PERP_DEX_AND_MARKET_METADATA",
+        }
         self.ready = True
         return self.markets
 

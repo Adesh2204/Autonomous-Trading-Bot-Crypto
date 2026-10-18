@@ -41,6 +41,9 @@ class CompetitionSnapshotRecorder:
         key = self._day_key(day)
         prior = self.journal.control(key)
         if prior is not None:
+            # A missed/failed snapshot remains a durable entry pause after restart.
+            if prior.get("status") != "RECORDED":
+                self.session.execution.entries_paused = True
             return prior
 
         end_day = datetime.fromtimestamp(SCORING_END_MS / 1000, timezone.utc).date()

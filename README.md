@@ -474,3 +474,10 @@ funded-account readiness. `LIVE_READY` remains false pending real certification.
 The [single-position/compliance report](docs/single_position_compliance_report_2026-10-04.md)
 explains the audit, policy, tests, limits and future roadmap. `MAX_GLOBAL_POSITIONS=1`,
 `EXECUTION_MODE=PAPER` and `ALLOW_LIVE_ORDERS=false` remain enforced.
+
+
+## PAS BTC release hardening
+
+The production profile loader now enforces risk ceilings even if the example JSON is edited: risk per trade, daily loss, gross exposure, margin utilization, funding cost, spread, slippage, depth participation, drawdown and the competition OI caps cannot be relaxed above the reviewed profile limits. The example starting equity remains a reference only; account-reported equity and available margin determine live sizing.
+
+The opt-in `deploy/anchorium-pas-btc.service` systemd unit restarts a crashed process, persists state outside the repository and uses restrictive filesystem settings. Install and enable it only after controlled testnet order/fill/exit and protection certification. A restart is not permission to trade: startup still reconciles account state and verifies protection before entries can resume. The unit is not enabled automatically. No certification artifact is included in this branch, and the system remains blocked from scored-phase readiness until every required gate is evidenced.

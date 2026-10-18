@@ -53,11 +53,12 @@ def write_report(path, report):
 
 
 def load_profile(path):
+    """Load and bound the production risk profile; examples are not permissions."""
     try:
         profile = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
         raise ExchangeError("PAS_BTC_PROFILE_UNAVAILABLE") from exc
-    if (not isinstance(profile, dict) or profile.get("competition_market") != "pas" or
+    if (not isinstance(profile, dict) or profile.get("competition_market") != COMPETITION_MARKET or
             profile.get("base_asset") != "BTC" or profile.get("network") != "testnet"):
         raise ExchangeError("PAS_BTC_PROFILE_IDENTITY_INVALID")
     if set(profile.get("risk", {})) != set(RiskPolicy.__dataclass_fields__):
@@ -68,8 +69,40 @@ def load_profile(path):
     scanner = ScannerPolicy(**profile["scanner"])
     if risk.leverage != 1 or risk.max_positions != 1 or scanner.top_n != 1:
         raise ExchangeError("PAS_BTC_SINGLE_POSITION_1X_PROFILE_REQUIRED")
-    return profile, risk, scanner
 
+    # Enforce internal risk ceilings even if an operator edits the JSON profile.
+    ceilings = {
+        "risk_fraction": "0.0025",
+        "max_daily_loss_fraction": "0.005",
+        "max_gross_equity_multiple": "0.25",
+        "max_margin_utilization": "0.25",
+        "max_funding_cost_fraction": "0.001",
+        "max_mark_oracle_bps": "50",
+        "max_spread_bps": "15",
+        "depth_participation": "0.05",
+        "slippage_bps": "5",
+        "max_drawdown_fraction": "0.03",
+        "max_symbol_equity_multiple": "0.25",
+        "max_net_equity_multiple": "0.25",
+        "max_directional_equity_multiple": "0.25",
+    }
+    for name, ceiling in ceilings.items():
+        if getattr(risk, name) > decimal(ceiling, nonnegative=True):
+            raise ExchangeError("PAS_BTC_RISK_CEILING_EXCEEDED:" + name)
+    if risk.max_daily_setups > 2 or scanner.history_bars < 300:
+        raise ExchangeError("PAS_BTC_ACTIVITY_OR_HISTORY_POLICY_INVALID")
+    if (scanner.min_atr_fraction < decimal("0.004") or
+            scanner.max_spread_bps > decimal("15") or
+            scanner.min_bbo_notional < decimal("10")):
+        raise ExchangeError("PAS_BTC_SCANNER_FLOOR_INVALID")
+    if decimal(profile.get("target_starting_equity_usd"), positive=True) != decimal("100000"):
+        raise ExchangeError("PAS_BTC_COMPETITION_EQUITY_REFERENCE_INVALID")
+    oi_caps = profile.get("production_oi_caps_usd")
+    if (not isinstance(oi_caps, dict) or
+            decimal(oi_caps.get("btc"), positive=True) != decimal("10000000") or
+            decimal(oi_caps.get("dex_total"), positive=True) != decimal("50000000")):
+        raise ExchangeError("PAS_BTC_COMPETITION_OI_CAPS_INVALID")
+    return profile, risk, scanner
 
 def verify_certification(path, api_dex, api_market):
     if not path or not path.is_file():
