@@ -1,10 +1,53 @@
 # Anchorium — Perpetual Alpha
 
+## Current Scored Phase target — PAS BTC only (18 October 2026)
+
+The current competition build is separate from the historical PAR multi-market migration notes below. Those notes and their artifacts are not PAS readiness evidence.
+
+- Competition-facing market: \`pas\`. Hyperliquid Testnet API DEX and coin are resolved from current venue metadata at every startup; the production market registry must contain exactly one BTC instrument. Any ambiguous mapping, missing collateral mapping, or stale market metadata means \`SAFE_HALT\`. The implementation does not fall back to \`par\` or native BTC.
+- Network: Hyperliquid Testnet only. The collateral token is resolved from the live DEX and spot metadata; no \`USDPR\`/ \`USDP\` assumption is used to select collateral.
+- Strategy: the frozen baseline is retained. \`signal_brain.py\` and \`docs/strategy_freeze.json\` are not modified; BTC-only runtime filtering occurs in the input/venue layers.
+- Risk: one BTC position at 1x leverage, single candidate, fixed low per-trade risk and a maximum gross exposure of 25% of actual reported equity in the example profile. The competition caps of $10 million per BTC market and $50 million per DEX are hard upper bounds, not objectives.
+- Continuous operation: no exchange-session open, entry cutoff, or clock-triggered end-of-day liquidation. Existing account/position/order recovery and protective management must pass before new entries are allowed.
+- Scoring: 19 October 2026 12:00 UTC through 6 November 2026 12:00 UTC. New entries are rejected outside that half-open window. The owner loop records an auditable daily snapshot at 12:00 UTC; missing or unreconciled snapshots block new entries rather than substituting estimates.
+- The $100,000 value is a target and a paper-profile reference only. Live sizing and readiness use the account's reported equity, available margin, positions, orders, fills, fees and funding.
+
+### PAS BTC preflight
+
+Install core dependencies and verify the frozen baseline:
+
+\`\`\`sh
+python -m pip install -r algo-trading-bot/requirements.txt
+python scripts/check_strategy_freeze.py
+\`\`\`
+
+Run the default read-only startup probe (it never loads the private key or sends orders):
+
+\`\`\`sh
+python scripts/run_pas_btc.py --output /tmp/pas-btc-preflight.json
+\`\`\`
+
+The probe deliberately returns \`BLOCKED\` until live account reconciliation, API-wallet approval, controlled fill/exit tests, protective-order verification, restart recovery and supervisor tests are certified. \`SAFE_HALT\` means the read-only venue/data probe failed. It never prints wallet secrets.
+
+The live mode requires a separate operator invocation with \`--run-live --confirm-live-testnet\`, explicit Testnet environment settings, a manually verified and unexpired approval, matching current DEX fee-scale evidence, and a certification report for all 20 critical tests whose commit and PAS BTC mapping match the running source. The existing \`configs/reliability_policy.json\` keeps protection disabled by default; the live path refuses to start until a separately controlled protective-order policy is explicitly enabled and verified. No certification artifact is included in this branch, and this PR does not claim \`READY_FOR_SCORED_PHASE\`.
+
+The new offline PAS safety suite can be run with:
+
+\`\`\`sh
+cd algo-trading-bot
+python -m pytest -q test_pas_btc_competition.py
+cd ..
+python scripts/check_strategy_freeze.py
+\`\`\`
+
+These offline checks do not certify a funded team wallet or substitute for the controlled Testnet lifecycle and protection tests.
+
+
 This is Team Anchorium's isolated Hyperliquid testnet migration repository.
 The existing cloned directory is the project root; the original NSE repository
 is not used or modified by this project.
 
-## Final engineering audit — 4 October 2026
+## Historical engineering audit — 4 October 2026 (superseded for the PAS BTC scored phase)
 
 The current verdict is **ACCOUNT_SETUP_REQUIRED**. PAPER/false remains enforced.
 Passing unit tests and public-data probes do not certify a funded account,
@@ -64,7 +107,7 @@ The original `signal_brain.py` is preserved byte for byte. A separate public dat
 runner now feeds completed UTC crypto candles into that unchanged brain. Existing
 NSE research modules remain as classified legacy references.
 
-## Phases 1–5: frozen strategy and public par data
+## Historical multi-market migration notes — PAR (not the current production route)
 
 The [strategy manifest](docs/strategy_freeze.json) locks the signal file, eight
 strategy methods and 32 parameters to the tagged baseline. Verification runs

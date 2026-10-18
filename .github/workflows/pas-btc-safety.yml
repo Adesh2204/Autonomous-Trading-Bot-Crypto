@@ -1,0 +1,39 @@
+name: PAS BTC safety checks
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "algo-trading-bot/**"
+      - "scripts/run_pas_btc.py"
+      - "configs/pas_btc_production.example.json"
+      - ".github/workflows/pas-btc-safety.yml"
+  push:
+    branches: [pas-btc-scored-phase]
+    paths:
+      - "algo-trading-bot/**"
+      - "scripts/run_pas_btc.py"
+      - "configs/pas_btc_production.example.json"
+      - ".github/workflows/pas-btc-safety.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  offline-safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: algo-trading-bot/requirements.txt
+      - name: Install core dependencies
+        run: python -m pip install -r algo-trading-bot/requirements.txt
+      - name: Run PAS-to-API mapping and position-state tests
+        working-directory: algo-trading-bot
+        run: python -m pytest -q test_pas_btc_competition.py
+      - name: Verify frozen baseline
+        run: python scripts/check_strategy_freeze.py

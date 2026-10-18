@@ -1,5 +1,27 @@
 # Anchorium Perpetual Alpha migration
 
+## Current PAS BTC scored-phase directive (supersedes legacy PAR routing notes below)
+
+The active production target for the October 2026 Scored Phase is Hyperliquid Testnet,
+competition market \`pas\`, BTC only. Older references below to DEX \`par\`, ten-market
+universes, and all-PAR runtime validation describe historical work and must not be
+used to configure the active production route.
+
+Resolve the internal API DEX and canonical BTC coin from current \`perpDexs\` and
+\`meta\`/asset-context metadata at every startup. The registry and strategy scanner
+must expose exactly that verified BTC instrument; never fallback to \`par:BTC\` or
+native BTC. Resolve collateral and deployer fee scale from current metadata. Use
+the $10,000,000 BTC and $50,000,000 DEX caps as hard maxima, with a materially lower
+internal risk budget. Keep the validated signal baseline and its freeze manifest
+unchanged.
+
+The operator launcher defaults to read-only preflight. All actual exchange writes,
+including entries, exits and protective orders, remain blocked until the human
+operator separately verifies the funded team/API wallet, fee schedule, recovery,
+protective-order policy and every critical certification check. Do not claim
+\`READY_FOR_SCORED_PHASE\` from offline tests or public data alone.
+
+
 - Work only in this cloned repository. Keep the original NSE repository untouched.
 - This is an exchange/market infrastructure migration, never a strategy rewrite.
 - Enforce `EXECUTION_MODE=PAPER` and `ALLOW_LIVE_ORDERS=false` throughout migration.
