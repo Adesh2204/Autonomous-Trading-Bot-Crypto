@@ -1,0 +1,70 @@
+{
+  "observed_ms": 1792295854325,
+  "source_hash": "d37a392acc0c080400d3bd466d10e3be10bb2c1605e7641a7fc1ef733b9ae8c7",
+  "protected": {
+    "docs/overnight_recovery_2026-10-17/regression_release/test_receipt.json": {
+      "sha256": "56510bbef476613a31c2b967a884d59ec29a7dd19b686102b5e1dd03e1c011df",
+      "matching": true
+    },
+    "docs/overnight_recovery_2026-10-17/regression_release/regression.xml": {
+      "sha256": "725d6673d3760964c1637d674c2979ebed57807dae602d048fbb22ca24389c0c",
+      "matching": true
+    },
+    "docs/overnight_recovery_2026-10-17/requested_boundary_final.xml": {
+      "sha256": "43553f33a09d320d72c6015b1f2bcac99ab8ecbe1b28313e5d5839c30dd992b5",
+      "matching": true
+    },
+    "docs/strategy_freeze.json": {
+      "sha256": "aeda15740802c1082f38f4e69f415f16a77d749a1aa050061026a99120fb9f8b",
+      "matching": true
+    },
+    "docs/qualification_2026-10-15/WHITELIST_TRADE_PROOF.json": {
+      "sha256": "3f9b7decb3ca92810fc0e146373c667e621db909d621210cd52cb96f7886a0ab",
+      "matching": true
+    },
+    "docs/profit_exit_refresh_2026-10-15_2209/EXIT_RECOVERY_PROOF.json": {
+      "sha256": "c9e633a018121bd349eb6716c084f71254825d1d17da7b364e338c4ca31ffd83",
+      "matching": true
+    }
+  },
+  "databases": {
+    "qualification": {
+      "integrity": "ok",
+      "dump_sha256": "d3f114b71e0a24765f21580a055dc9d2ed2971af5fa970fd09450d9c3d2facf0",
+      "unchanged": true,
+      "original_unknown": [
+        {
+          "intent_key": "certification:59445fe546d38a96e486140fda781d09ae8a0942f93a3614fa8abcbc34f5e7ea:entry",
+          "cloid": "0xac0eea156fcec80986dd67c9057b6ded",
+          "fingerprint": "efc18b3a319c40edd7165878db06d67628d1f533c9cddbe40d5fbac47189b28e",
+          "request": "{\"client_order_id\":\"certification:59445fe546d38a96e486140fda781d09ae8a0942f93a3614fa8abcbc34f5e7ea:entry\",\"order_type\":\"LIMIT\",\"price\":\"81518\",\"quantity\":\"0.0002\",\"reduce_only\":false,\"side\":\"BUY\",\"strategy_id\":\"TESTNET_CERTIFICATION_ENTRY\",\"symbol\":\"par:BTC\",\"tif\":\"Ioc\"}",
+          "candidate": "certification:59445fe546d38a96e486140fda781d09ae8a0942f93a3614fa8abcbc34f5e7ea",
+          "state": "UNKNOWN",
+          "oid": null,
+          "outcome": "{\"code\":\"TRANSMISSION_UNCERTAIN\",\"reason\":\"ExchangeError\"}",
+          "created_ms": 1792217831637,
+          "updated_ms": 1792217835092
+        }
+      ],
+      "checkpoint_integrity": true,
+      "unknown_preserved": true
+    },
+    "nonces": {
+      "integrity": "ok",
+      "dump_sha256": "485b32e92b066f816f88af571d29a735409ad808738218b32fdb646042f06560",
+      "unchanged": true,
+      "nonce_rows": [
+        [
+          "0x46c9bed595770150752e7fa3806449f81e0ec6f9",
+          1792217834069
+        ]
+      ]
+    },
+    "configuration": {
+      "integrity": "ok",
+      "dump_sha256": "ed913029c934f8b262b3b2fe63f0c53f52d7fe5c98e6cd1dc8f05095b3c82f00",
+      "unchanged": true
+    }
+  },
+  "passed": true
+}

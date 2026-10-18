@@ -21,7 +21,7 @@ from .capital_allocation import floor_quantity,depth_capacity
 READ_QUERIES=frozenset({'perpDexs','meta','metaAndAssetCtxs','l2Book','candleSnapshot',
     'clearinghouseState','spotClearinghouseState','frontendOpenOrders','openOrders',
     'userFillsByTime','userFunding','userFees','activeAssetData','userAbstraction','extraAgents',
-    'orderStatus','perpDexLimits','userRateLimit'})
+    'orderStatus','perpDexLimits','userRateLimit','spotMeta','perpDexStatus','exchangeStatus','allPerpMetas'})
 
 
 class SerializedPublicClient(HyperliquidClient):

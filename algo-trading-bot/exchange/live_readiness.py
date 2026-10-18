@@ -77,7 +77,7 @@ def verify_live_account_readiness(account, signer_address, *, clock_health, rate
     now = client.clock_ms()
     reasons = []
     expiry = collateral = mode = fees = budget = None
-    if (client.api_dex is None or client.api_market is None or
+    if client.competition_mode and (client.api_dex is None or client.api_market is None or
             set(client.markets) != {client.api_market} or not client.api_market.endswith(':BTC')):
         reasons.append('PAS_BTC_MARKET_MAPPING_UNVERIFIED')
     if not valid_address(account.team_address) or not valid_address(signer_address):
@@ -92,7 +92,7 @@ def verify_live_account_readiness(account, signer_address, *, clock_health, rate
                              collateral_token_name=client.collateral_token_name)
     try:
         mode = account._query('userAbstraction')
-        if mode != 'unifiedAccount':
+        if mode != 'unifiedAccount' and not (getattr(client,'competition_mode',False) and mode=='disabled'):
             reasons.append('UNIFIED_ACCOUNT_REQUIRED')
         agents = account._query('extraAgents')
         if not isinstance(agents, list):
@@ -118,7 +118,7 @@ def verify_live_account_readiness(account, signer_address, *, clock_health, rate
                 lifecycle='VERIFIED'
             with rate_limits.journal.transaction():
                 rate_limits.journal.db.execute('INSERT OR REPLACE INTO controls VALUES (?,?)',(lifecycle_key,lifecycle))
-        if mode == 'unifiedAccount':
+        if mode == 'unifiedAccount' or getattr(client,'dex','par')=='pas' and mode=='disabled':
             eq = account.get_equity()
             collateral = str(eq.collateral_balance)
             if eq.collateral_balance <= 0 or eq.reported_account_value <= 0:

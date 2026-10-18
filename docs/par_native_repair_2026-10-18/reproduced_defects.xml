@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="6" time="2.612" timestamp="2026-10-18T10:54:24.373487+05:30" hostname="Adeshs-MacBook-Air.local"><testcase classname="algo-trading-bot.test_par_native_workflow_repair" name="test_native_proof_export_supplies_explicit_practice_venue" time="0.009"><failure message="AssertionError: {'native_proof_error': 'AttributeError', 'native_protection_qualified': False}&#10;assert False">algo-trading-bot/test_par_native_workflow_repair.py:45: in test_native_proof_export_supplies_explicit_practice_venue
+    assert result['native_protection_qualified'],result
+E   AssertionError: {'native_proof_error': 'AttributeError', 'native_protection_qualified': False}
+E   assert False</failure></testcase><testcase classname="algo-trading-bot.test_par_native_workflow_repair" name="test_mark_valuation_movement_does_not_change_native_position_identity[prepare]" time="0.610"><failure message="exchange.base_exchange.ExchangeError: QUALIFICATION_STOP_ACCOUNT_BARRIER">algo-trading-bot/test_par_native_workflow_repair.py:61: in test_mark_valuation_movement_does_not_change_native_position_identity
+    if stage=='prepare':assert c.manager.prepare().quantity==D(c.proposal.quantity)
+                               ^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/qualification_protection.py:116: in prepare
+    raise ExchangeError('QUALIFICATION_STOP_ACCOUNT_BARRIER')
+E   exchange.base_exchange.ExchangeError: QUALIFICATION_STOP_ACCOUNT_BARRIER</failure></testcase><testcase classname="algo-trading-bot.test_par_native_workflow_repair" name="test_mark_valuation_movement_does_not_change_native_position_identity[armed]" time="0.347"><failure message="AssertionError: assert 'UNKNOWN' == 'READBACK_ACCEPTED'&#10;  &#10;  - READBACK_ACCEPTED&#10;  + UNKNOWN">algo-trading-bot/test_par_native_workflow_repair.py:62: in test_mark_valuation_movement_does_not_change_native_position_identity
+    elif stage=='armed':assert c.manager.reconcile()['status']=='READBACK_ACCEPTED'
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN</failure></testcase><testcase classname="algo-trading-bot.test_par_native_workflow_repair" name="test_mark_valuation_movement_does_not_change_native_position_identity[rejected]" time="0.305"><failure message="exchange.base_exchange.ExchangeError: QUALIFICATION_STOP_ACCOUNT_BARRIER">algo-trading-bot/test_par_native_workflow_repair.py:63: in test_mark_valuation_movement_does_not_change_native_position_identity
+    else:assert c.manager.submit(c.stop_key)['status']=='REJECTED'
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/qualification_protection.py:130: in submit
+    plan = self.prepare()
+           ^^^^^^^^^^^^^^
+algo-trading-bot/exchange/qualification_protection.py:116: in prepare
+    raise ExchangeError('QUALIFICATION_STOP_ACCOUNT_BARRIER')
+E   exchange.base_exchange.ExchangeError: QUALIFICATION_STOP_ACCOUNT_BARRIER</failure></testcase><testcase classname="algo-trading-bot.test_par_native_workflow_repair" name="test_linked_fill_below_approved_stop_limit_cannot_settle_or_qualify" time="0.367"><failure message="AssertionError: {'actual_fill_ids': [['par:BTC', 1790942400000, '1234', '999']], 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'child_order_ids': ['999'], 'cloid': '0x662682eb2fff502b8b5383a4c64a3c91', ...}&#10;assert ('FILLED' == 'UNKNOWN'&#10;  &#10;  - UNKNOWN&#10;  + FILLED)">algo-trading-bot/test_par_native_workflow_repair.py:70: in test_linked_fill_below_approved_stop_limit_cannot_settle_or_qualify
+    assert result['status']=='UNKNOWN' and not result['protection_verified'],result
+E   AssertionError: {'actual_fill_ids': [['par:BTC', 1790942400000, '1234', '999']], 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'child_order_ids': ['999'], 'cloid': '0x662682eb2fff502b8b5383a4c64a3c91', ...}
+E   assert ('FILLED' == 'UNKNOWN'
+E     
+E     - UNKNOWN
+E     + FILLED)</failure></testcase><testcase classname="algo-trading-bot.test_par_native_workflow_repair" name="test_position_tpsl_readback_does_not_qualify_fixed_size_native_wire" time="0.390"><failure message="AssertionError: assert 'READBACK_ACCEPTED' == 'UNKNOWN'&#10;  &#10;  - UNKNOWN&#10;  + READBACK_ACCEPTED">algo-trading-bot/test_par_native_workflow_repair.py:77: in test_position_tpsl_readback_does_not_qualify_fixed_size_native_wire
+    assert c.manager.reconcile()['status']=='UNKNOWN'
+E   AssertionError: assert 'READBACK_ACCEPTED' == 'UNKNOWN'
+E     
+E     - UNKNOWN
+E     + READBACK_ACCEPTED</failure></testcase></testsuite></testsuites>

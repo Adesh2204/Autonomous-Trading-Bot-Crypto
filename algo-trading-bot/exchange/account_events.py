@@ -19,9 +19,10 @@ class AccountFunding:
     processed_ts: str | None=field(default=None,compare=False)
 
     def __post_init__(self):
-        if (not isinstance(self.symbol,str) or not self.symbol.startswith('par:') or
+        if (not isinstance(self.symbol,str) or not self.symbol.startswith(('par:', 'pas:')) or
                 type(self.timestamp_ms) is not int or self.timestamp_ms<0 or
-                not isinstance(self.event_hash,str) or not self.event_hash or self.collateral!='USDPR'):
+                not isinstance(self.event_hash,str) or not self.event_hash or
+                (self.symbol.split(':')[0],self.collateral) not in {('par','USDPR'),('pas','USDP')}):
             raise ExchangeError('INVALID_ACCOUNT_FUNDING')
         for name in ('cashflow','position_quantity','funding_rate'):
             object.__setattr__(self,name,decimal(getattr(self,name)))

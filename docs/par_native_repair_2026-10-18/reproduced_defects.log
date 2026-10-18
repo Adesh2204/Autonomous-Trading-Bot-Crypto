@@ -1,0 +1,56 @@
+FFFFFF                                                                   [100%]
+=================================== FAILURES ===================================
+__________ test_native_proof_export_supplies_explicit_practice_venue ___________
+algo-trading-bot/test_par_native_workflow_repair.py:45: in test_native_proof_export_supplies_explicit_practice_venue
+    assert result['native_protection_qualified'],result
+E   AssertionError: {'native_proof_error': 'AttributeError', 'native_protection_qualified': False}
+E   assert False
+_ test_mark_valuation_movement_does_not_change_native_position_identity[prepare] _
+algo-trading-bot/test_par_native_workflow_repair.py:61: in test_mark_valuation_movement_does_not_change_native_position_identity
+    if stage=='prepare':assert c.manager.prepare().quantity==D(c.proposal.quantity)
+                               ^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/qualification_protection.py:116: in prepare
+    raise ExchangeError('QUALIFICATION_STOP_ACCOUNT_BARRIER')
+E   exchange.base_exchange.ExchangeError: QUALIFICATION_STOP_ACCOUNT_BARRIER
+_ test_mark_valuation_movement_does_not_change_native_position_identity[armed] _
+algo-trading-bot/test_par_native_workflow_repair.py:62: in test_mark_valuation_movement_does_not_change_native_position_identity
+    elif stage=='armed':assert c.manager.reconcile()['status']=='READBACK_ACCEPTED'
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: assert 'UNKNOWN' == 'READBACK_ACCEPTED'
+E     
+E     - READBACK_ACCEPTED
+E     + UNKNOWN
+_ test_mark_valuation_movement_does_not_change_native_position_identity[rejected] _
+algo-trading-bot/test_par_native_workflow_repair.py:63: in test_mark_valuation_movement_does_not_change_native_position_identity
+    else:assert c.manager.submit(c.stop_key)['status']=='REJECTED'
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/qualification_protection.py:130: in submit
+    plan = self.prepare()
+           ^^^^^^^^^^^^^^
+algo-trading-bot/exchange/qualification_protection.py:116: in prepare
+    raise ExchangeError('QUALIFICATION_STOP_ACCOUNT_BARRIER')
+E   exchange.base_exchange.ExchangeError: QUALIFICATION_STOP_ACCOUNT_BARRIER
+_____ test_linked_fill_below_approved_stop_limit_cannot_settle_or_qualify ______
+algo-trading-bot/test_par_native_workflow_repair.py:70: in test_linked_fill_below_approved_stop_limit_cannot_settle_or_qualify
+    assert result['status']=='UNKNOWN' and not result['protection_verified'],result
+E   AssertionError: {'actual_fill_ids': [['par:BTC', 1790942400000, '1234', '999']], 'capability_status': 'UNVERIFIED_REQUIRES_INDEPENDENT_EXCHANGE_EVIDENCE', 'child_order_ids': ['999'], 'cloid': '0x662682eb2fff502b8b5383a4c64a3c91', ...}
+E   assert ('FILLED' == 'UNKNOWN'
+E     
+E     - UNKNOWN
+E     + FILLED)
+_____ test_position_tpsl_readback_does_not_qualify_fixed_size_native_wire ______
+algo-trading-bot/test_par_native_workflow_repair.py:77: in test_position_tpsl_readback_does_not_qualify_fixed_size_native_wire
+    assert c.manager.reconcile()['status']=='UNKNOWN'
+E   AssertionError: assert 'READBACK_ACCEPTED' == 'UNKNOWN'
+E     
+E     - UNKNOWN
+E     + READBACK_ACCEPTED
+- generated xml file: /Users/adesh/Autonomous Trading Bot - Crypto /docs/par_native_repair_2026-10-18/reproduced_defects.xml -
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_par_native_workflow_repair.py::test_native_proof_export_supplies_explicit_practice_venue
+FAILED algo-trading-bot/test_par_native_workflow_repair.py::test_mark_valuation_movement_does_not_change_native_position_identity[prepare]
+FAILED algo-trading-bot/test_par_native_workflow_repair.py::test_mark_valuation_movement_does_not_change_native_position_identity[armed]
+FAILED algo-trading-bot/test_par_native_workflow_repair.py::test_mark_valuation_movement_does_not_change_native_position_identity[rejected]
+FAILED algo-trading-bot/test_par_native_workflow_repair.py::test_linked_fill_below_approved_stop_limit_cannot_settle_or_qualify
+FAILED algo-trading-bot/test_par_native_workflow_repair.py::test_position_tpsl_readback_does_not_qualify_fixed_size_native_wire
+6 failed in 2.61s

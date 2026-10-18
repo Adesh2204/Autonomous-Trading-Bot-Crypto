@@ -40,7 +40,7 @@ def floor_quantity(spec, value):
 
 def validate_book(book, now_ms, *, maximum_age_ms=5000):
     if (type(now_ms) is not int or not 0<=now_ms-book.timestamp_ms<=maximum_age_ms
-            or not book.symbol.startswith('par:') or not book.bids or not book.asks):
+            or not book.symbol.startswith(('par:', 'pas:')) or not book.bids or not book.asks):
         raise ExchangeError('CAPITAL_FRESH_PAR_BOOK_REQUIRED')
     for levels,reverse in ((book.bids,True),(book.asks,False)):
         prices=[decimal(x.price,positive=True) for x in levels]

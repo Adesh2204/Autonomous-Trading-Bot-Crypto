@@ -6,6 +6,7 @@ from .event_timing import timing
 from .base_exchange import AccountEquity, ExchangeError, Fill, Position, VenueMismatch, decimal
 from .hyperliquid_market_data import timestamp
 from .account_events import AccountFunding
+from .venue_profiles import venue_profile
 
 
 def event_id(value):
@@ -25,10 +26,11 @@ class HyperliquidAccount:
             raise ExchangeError('ACCOUNT_NOT_CONFIGURED')
         self.client = client
         self.team_address = team_address
+        self.venue = venue_profile('pas' if getattr(client,'competition_mode',False) else getattr(client,'dex','par'))
 
     def _query(self, query, **parameters):
         if not self.client.ready:
-            raise VenueMismatch('PAR_STARTUP_CHECK_REQUIRED')
+            raise VenueMismatch('PAS_STARTUP_CHECK_REQUIRED' if getattr(self.client,'competition_mode',False) else self.client.dex.upper()+'_STARTUP_CHECK_REQUIRED')
         return self.client.post_info(query, user=self.team_address, **parameters)
 
     def get_positions(self):
@@ -102,7 +104,10 @@ class HyperliquidAccount:
                 # userFills spans venues and has no dex argument. Filter explicitly.
                 if not isinstance(symbol, str):
                     raise ExchangeError('INVALID_ACCOUNT_FILLS')
-                if symbol != self.client.api_market:
+                if getattr(self.client,'competition_mode',False):
+                    if symbol != self.client.api_market:
+                        continue
+                elif not symbol.startswith(self.venue.prefix):
                     continue
                 self.client.market(symbol)
                 if row['side'] not in {'B', 'A'} or row['feeToken'] != self.client.collateral_token_name:
@@ -173,7 +178,7 @@ class HyperliquidAccount:
                     raise ExchangeError('INVALID_ACCOUNT_FUNDING')
                 # The protocol calls the collateral amount "usdc" even for
                 # HIP-3 collateral. Use the reported signed amount verbatim.
-                event=AccountFunding(symbol,row['time'],row['hash'],delta['usdc'],delta['szi'],delta['fundingRate'])
+                event=AccountFunding(symbol,row['time'],row['hash'],delta['usdc'],delta['szi'],delta['fundingRate'],self.client.collateral_token_name)
                 clocks=timing(self.client.clock_ms(),exchange_ms=event.timestamp_ms,received_ms=self.client.last_received_ms,source='EXCHANGE_REPORTED_USER_FUNDING')
                 event=replace(event,**{k:clocks[k] for k in ('exchange_ts','received_ts','processed_ts')})
                 prior=events.get(event.identity)
@@ -218,7 +223,17 @@ class HyperliquidAccount:
                                       'FUNDING_HISTORY_PAGE_LIMIT_REQUIRES_PAGINATION')
 
     def get_equity(self):
-        if self._query('userAbstraction') != 'unifiedAccount':
+        mode = self._query('userAbstraction')
+        if getattr(self.client,'competition_mode',False) and mode == 'disabled':
+            state = self._query('clearinghouseState')
+            try:
+                margin = state['marginSummary']
+                return AccountEquity(decimal(margin['accountValue']),decimal(margin['totalRawUsd']),
+                    decimal(margin['totalMarginUsed'],nonnegative=True),decimal(state['withdrawable'],nonnegative=True),
+                    'STANDARD:clearinghouseState.pas.marginSummary.accountValue; includes reported unrealized PnL once')
+            except (KeyError,TypeError) as exc:
+                raise ExchangeError('STANDARD_ACCOUNT_EQUITY_UNAVAILABLE') from exc
+        if mode != 'unifiedAccount':
             raise ExchangeError('UNIFIED_ACCOUNT_REQUIRED')
         state = self._query('clearinghouseState')
         spot = self._query('spotClearinghouseState')

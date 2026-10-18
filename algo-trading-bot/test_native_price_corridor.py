@@ -181,6 +181,7 @@ def test_failed_fresh_preflight_consumes_corridor_invocation_before_key_and_bloc
     a=replace(c.a,proposal_hash=p.identity)
     monkeypatch.setattr(rt,'active_source_hash',lambda _:p.source_hash)
     monkeypatch.setattr(rt,'require_qualification_regression',lambda *_:None)
+    monkeypatch.setattr(rt,'practice_permission',lambda *a,**k:dict(starts_ms=NOW-1,expires_ms=NOW+300001,files={}))
     monkeypatch.setattr(rt,'time',SimpleNamespace(time_ns=lambda:NOW*1000000))
     monkeypatch.setattr(rt,'ReadOnlyReceipts',lambda transport,path:transport)
     clients=[]

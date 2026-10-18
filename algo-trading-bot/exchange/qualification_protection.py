@@ -17,6 +17,7 @@ from .partial_fill_safety import (MIN_NOTIONAL, TERMINAL_CANCELLATIONS,
                                   TERMINAL_REJECTIONS, exact_full_close_size)
 from .position_protection import ProtectionPlan
 from .qualification_intent_recovery import verified_qualification_view
+from .certification_runtime import same_position_exposure
 
 
 def require_settled_exit_orders(executor, *, current_intent=None):
@@ -112,7 +113,7 @@ class QualificationStopManager:
         before = self.account.get_positions()
         orders = self.account.get_frontend_open_orders()
         after = self.account.get_positions()
-        if before != after or len(after) != 1 or self.proposal.symbol not in after or orders:
+        if not same_position_exposure(before,after) or len(after) != 1 or self.proposal.symbol not in after or orders:
             raise ExchangeError('QUALIFICATION_STOP_ACCOUNT_BARRIER')
         if not self.executor.recovery.last_report.ready:
             raise ExchangeError('QUALIFICATION_STOP_ACCOUNT_UNRECONCILED')
@@ -206,7 +207,7 @@ class QualificationStopManager:
             # A definite SDK error response is distinct from a lost response.
             # No accepted OID was returned. Never use missing openOrders alone.
             after = self.account.get_positions()
-            if (before != after or orders or self.account.get_frontend_open_orders()
+            if (not same_position_exposure(before,after) or orders or self.account.get_frontend_open_orders()
                     or not 0 <= self.executor.client.clock_ms()-started_ms <= 5000
                     or len(after)>1 or any(s!=plan.symbol for s in after)):
                 raise ExchangeError('QUALIFICATION_STOP_REJECTION_ACCOUNT_CHANGED')
@@ -228,6 +229,7 @@ class QualificationStopManager:
                 or decimal(detail['origSz']) != plan.quantity
                 or decimal(detail['limitPx']) != plan.limit_price
                 or decimal(detail['triggerPx']) != plan.trigger_price
+                or detail.get('isPositionTpsl') is True
                 or detail.get('orderType') != 'Stop Limit'):
             raise ExchangeError('QUALIFICATION_STOP_READBACK_MISMATCH')
         children = detail.get('children', [])
@@ -250,7 +252,7 @@ class QualificationStopManager:
         after = self.account.get_positions()
         orders_after = self.account.get_frontend_open_orders()
         if (not 0 <= self.executor.client.clock_ms()-started_ms <= 5000
-                or before != after or orders != orders_after or len(after) > 1
+                or not same_position_exposure(before,after) or orders != orders_after or len(after) > 1
                 or any(s != plan.symbol for s in after)):
             raise ExchangeError('QUALIFICATION_STOP_SNAPSHOT_CHANGED')
         if any(str(o['oid']) not in records for o in orders):
@@ -265,6 +267,8 @@ class QualificationStopManager:
         quantity = sum((f.quantity for f in matched.values()), D(0))
         if quantity > plan.quantity or any(f.side != plan.side for f in matched.values()):
             raise ExchangeError('QUALIFICATION_STOP_FILL_CONFLICT')
+        if any(f.price<plan.limit_price if plan.side=='SELL' else f.price>plan.limit_price for f in matched.values()):
+            raise ExchangeError('QUALIFICATION_STOP_FILL_PRICE_CONFLICT')
         held = after.get(plan.symbol)
         remaining = abs(held.quantity) if held else D(0)
         if held and ((held.quantity > 0) != (plan.side == 'SELL') or remaining > plan.quantity-quantity):

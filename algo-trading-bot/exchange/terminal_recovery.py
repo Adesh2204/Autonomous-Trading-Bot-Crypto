@@ -51,7 +51,7 @@ def terminal_reconcile(account,reconciler,truth,client,rates,clock,*,timeout_sec
                 raise ExchangeError('DISTINCT_TERMINAL_READBACK_CLOCK_REQUIRED')
             report['terminal_readbacks'].append(dict(observed_ms=at,ready=truth.initialized and not truth.reasons,
                 positions=[asdict(p) for p in after.values()],orders=orders,team=account.team_address,
-                source='EXCHANGE_DIRECT_TESTNET_PAR_INFO'))
+                source='EXCHANGE_DIRECT_TESTNET_'+getattr(client,'dex','par').upper()+'_INFO'))
     except Exception as exc:
         report.update(terminal_reconciliation_error=exception_evidence(exc),terminal_reconciliation_failed_phase=phase)
     finally:

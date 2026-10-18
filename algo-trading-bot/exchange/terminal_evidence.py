@@ -11,7 +11,7 @@ def local_execution_state(root):
     """Read the real intent barrier without opening/migrating a trading journal."""
     result=dict(status='UNKNOWN',unresolved=[],native_protection='UNQUALIFIED',signing_authority='NONE')
     try:
-        for name in ('certification','qualification'):
+        for name in ('certification','qualification','pas'):
             p=Path(root)/'runtime/testnet/anchorium-bot-1'/(name+'.sqlite')
             if not p.exists():continue
             with sqlite3.connect(p.resolve().as_uri()+'?mode=ro',uri=True) as db:
@@ -43,6 +43,7 @@ def opportunity_capacity(spec,book,active,row,*,now_ms,active_ms,fee_rate,fee_ms
         economically_viable_notional='0',authorized_executable_notional='0',expected_net_pnl=None,
         expected_return_probability=None,decision='OBSERVE',reasons=[],observed_ms=now_ms)
     try:
+        if book.symbol!=spec.symbol:raise ExchangeError('CAPACITY_VENUE_MARKET_IDENTITY_MISMATCH')
         validate_book(book,now_ms)
         if not 0<=now_ms-active_ms<=5000:raise ExchangeError('ACTIVE_ACCOUNT_LIMITS_STALE')
         if fee_ms is None or not 0<=now_ms-fee_ms<=360000:raise ExchangeError('FEE_OBSERVATION_STALE')

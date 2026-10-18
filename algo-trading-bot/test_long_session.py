@@ -103,7 +103,7 @@ def test_boolean_native_certificate_cannot_qualify_any_account(tmp_path):
     with pytest.raises((ExchangeError,KeyError)):require_native_evidence(p,mandate().daily)
 
 
-def frozen_long(now):
+def frozen_long(now,symbol='par:BTC'):
     """Deterministic input candles; no edited indicator or signal flags."""
     from frozen_strategy import FrozenStrategy
     from signal_brain import detect_daily_bias
@@ -111,15 +111,15 @@ def frozen_long(now):
     rows=[]
     for i in range(300):
         p=D(100)+D(max(0,i-270))*D('.1');t=now-300*60000+i*60000
-        rows.append(Candle('par:BTC','1m',t,t+59999,p,p+D('.5'),p-D('.5'),p,D(100)))
+        rows.append(Candle(symbol,'1m',t,t+59999,p,p+D('.5'),p-D('.5'),p,D(100)))
     frame=FrozenStrategy(None).evaluate_candles(rows);v=D(str(frame.iloc[-2].VWAP));p=v+D('.01');t=now-60000
-    rows[-1]=Candle('par:BTC','1m',t,t+59999,p,p+D('.5'),v-D('.2'),p,D(100))
+    rows[-1]=Candle(symbol,'1m',t,t+59999,p,p+D('.5'),v-D('.2'),p,D(100))
     frame=FrozenStrategy(None).evaluate_candles(rows);last=frame.iloc[-1]
     assert bool(last.Buy_Signal or last.Breakout_Signal) and not bool(last.Sell_Signal or last.Breakdown_Sell_Signal)
-    signal=dict(symbol='par:BTC',timestamp_ms=t,reference=D(str(last.VWAP)),atr=D(str(last.ATR_14)),
+    signal=dict(symbol=symbol,timestamp_ms=t,reference=D(str(last.VWAP)),atr=D(str(last.ATR_14)),
         bias=detect_daily_bias(frame),long=bool(last.Buy_Signal or last.Breakout_Signal),
         short=bool(last.Sell_Signal or last.Breakdown_Sell_Signal),signal_type=last.Signal_Type)
-    return ScanResult(now,[MarketDiagnostic('par:BTC',True,signal=signal,candles=rows)],['par:BTC'],'ACTIVE')
+    return ScanResult(now,[MarketDiagnostic(symbol,True,signal=signal,candles=rows)],[symbol],'ACTIVE')
 
 
 @pytest.fixture
@@ -127,20 +127,24 @@ def bridge(live,monkeypatch):
     from live_execution_session import LiveExecutionSession
     from risk.portfolio_risk import PortfolioRisk
     from test_crypto_paper_infrastructure import POLICY,FEES
+    symbol=live.fixture.active['coin']
     # A synthetic venue whose ONE runtime lot exceeds $10 at the planned stop.
     # Actual par lot sizes are never modified by the runtime or this fixture.
     for row in live.fixture.metadata['universe']:
-        if row['name']=='par:BTC':row['szDecimals']=0
+        if row['name']==symbol:row['szDecimals']=0
     live.client.startup()
     live.provider.metadata_hash=fingerprint(live.client.metadata)
-    live.transport._sdk.info.asset_to_sz_decimals[live.client.market('par:BTC').asset_id]=0
-    venue=ProtectionVenue(live,monkeypatch,stop_market=False);venue.partial_entry_fraction=D(1)
+    live.transport._sdk.info.asset_to_sz_decimals[live.client.market(symbol).asset_id]=0
+    venue=ProtectionVenue(live,monkeypatch,stop_market=False,symbol=symbol);venue.partial_entry_fraction=D(1)
     recovery=LongAccountRecovery(live.account,live.journal,initial_start_ms=NOW-60000)
     live.executor.__class__=DailyLongExecution;live.executor.recovery=recovery
     policy=ProtectionPolicy(True,'SYNTHETIC_ONLY',D(1),D('.005'))
     DailyLimitProtection(live.executor,policy=policy,managers=recovery.managers)
-    d=DailyMandate('offline:two-cycles',live.account.team_address,live.signer.address,('par:BTC',),('LONG',),
-        NOW-1000,NOW+3600000,'a'*64,'fixture','1000','1000','1000','2000')
+    from exchange.scored_session import ScoredLimits
+    contract=ScoredLimits if symbol.startswith('pas:') else DailyMandate
+    now=live.fixture.now
+    d=contract('offline:two-cycles',live.account.team_address,live.signer.address,(symbol,),('LONG',),
+        now-1000,now+3600000,'a'*64,'fixture','1000','1000','1000','2000')
     daily=DailyLifecycle(live.journal,d,clock_ms=live.client.clock_ms,source_hash=lambda:'a'*64,mode='OFFLINE_FIXTURE')
     risk=AllocatedLongRisk(PortfolioRisk(POLICY,FEES),live.market,live.account,daily)
     auth=OfflineDailyAuthority(daily);live.executor.attach_daily(daily,auth,risk)
@@ -159,11 +163,11 @@ def bridge(live,monkeypatch):
     def positions():
         live.fixture.now+=1;return original_positions()
     monkeypatch.setattr(live.account,'get_positions',positions)
-    return SimpleNamespace(live=live,venue=venue,recovery=recovery,daily=daily,risk=risk,session=session)
+    return SimpleNamespace(symbol=symbol,live=live,venue=venue,recovery=recovery,daily=daily,risk=risk,session=session)
 
 
 def enter(b):
-    v=b.live;scan=frozen_long(v.fixture.now//60000*60000)
+    v=b.live;scan=frozen_long(v.fixture.now//60000*60000,b.symbol)
     price=D(str(scan.diagnostics[0].candles[-1].close))
     v.fixture.book.update(time=v.fixture.now,levels=[[dict(px=str(price-D('.01')),sz='100')],[dict(px=str(price+D('.01')),sz='100')]])
     v.fixture.contexts=[dict(markPx=str(price),oraclePx=str(price),funding='.0001',openInterest='10') for _ in v.fixture.contexts]

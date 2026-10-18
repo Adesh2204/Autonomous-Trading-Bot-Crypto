@@ -1,0 +1,104 @@
+{
+  "status": "DISCOVERY_INCOMPLETE",
+  "network": "testnet",
+  "dex": "pas",
+  "collateral": "USDP",
+  "venue_identity": "7562c7f16a800fae8d3f9ed4afd76c2d2a8597e5814a1626ef9553346789b493",
+  "started_ms": 1792258845761,
+  "source_hash": "99efa37d06e3dce0322a9f87cea5ef6e00ced0f9882f80b80c5d39cf0042f6e5",
+  "signatures_created": 0,
+  "exchange_writes": 0,
+  "signing_authority": "NONE",
+  "markets": [],
+  "errors": [
+    "INFO_RETRY_BUDGET_EXHAUSTED"
+  ],
+  "error": {
+    "type": "ExchangeError",
+    "reason": "INFO_RETRY_BUDGET_EXHAUSTED",
+    "traceback": "Traceback (most recent call last):\n  File \"/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/venue_discovery.py\", line 36, in discover\n    client.startup();account=HyperliquidAccount(client,TEAM);market=HyperliquidMarketData(client)\n    ^^^^^^^^^^^^^^^^\n  File \"/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/public_quant_operator.py\", line 31, in startup\n    with self.request_lock:return super().startup()\n                                  ^^^^^^^^^^^^^^^^^\n  File \"/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/hyperliquid_client.py\", line 313, in startup\n    dexes = self.post_info('perpDexs')\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/public_quant_operator.py\", line 33, in post_info\n    with self.request_lock:return super().post_info(*args,**kwargs)\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/hyperliquid_client.py\", line 248, in post_info\n    result=self.rate_limits.read(query,operation,priority=priority,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/rate_limits.py\", line 309, in read\n    value=self._read_owned(query,operation,priority=priority,expected_items=expected_items,cancel_event=cancel_event)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/rate_limits.py\", line 366, in _read_owned\n    raise error from None\nexchange.base_exchange.ExchangeError: INFO_RETRY_BUDGET_EXHAUSTED\n"
+  },
+  "finished_ms": 1792258848468,
+  "source_hash_after": "99efa37d06e3dce0322a9f87cea5ef6e00ced0f9882f80b80c5d39cf0042f6e5",
+  "journal_integrity": "ok",
+  "rate_report": {
+    "state": "THROTTLED",
+    "policy": {
+      "ip_weight_per_minute": 1200,
+      "ip_safety_reserve": 120,
+      "daily_actions": 50000,
+      "daily_safety_reserve": 500,
+      "account_action_reserve": 10,
+      "max_open_orders": 1000,
+      "max_ws_connections": 10,
+      "max_ws_subscriptions": 1000,
+      "max_ws_unique_users": 10,
+      "venue_ws_connections_per_minute": 30,
+      "max_ws_messages_per_minute": 2000,
+      "ws_reconnects_per_minute": 5,
+      "budget_max_age_ms": 60000,
+      "optional_poll_interval_ms": 5000,
+      "read_retry_attempts": 3,
+      "backoff_base_ms": 1000,
+      "backoff_max_ms": 30000,
+      "exhausted_safety_action_interval_ms": 10000,
+      "caution_fraction": 0.75,
+      "throttle_fraction": 0.9
+    },
+    "ip_weight": 60,
+    "public_read_blocked": true,
+    "account_requests_used": null,
+    "account_requests_cap": null,
+    "remaining_budget": null,
+    "budget_observed_ms": null,
+    "daily_actions": 0,
+    "daily_limit": 50000,
+    "entries_allowed": false,
+    "open_orders": null,
+    "backoff_until_ms": 1792258851708,
+    "websocket": {
+      "connections": 0,
+      "subscriptions": 0,
+      "outgoing_messages": 0,
+      "heartbeats": 0,
+      "reconnects_last_minute": 0
+    },
+    "public_reads": {
+      "upstream_by_operation": {
+        "perpDexs": 3
+      },
+      "failures": {
+        "INFO_RETRY_BUDGET_EXHAUSTED": 1
+      },
+      "pending": 0,
+      "coalesced": 0,
+      "max_seconds": 2.6687194583937526,
+      "failure_details": [
+        {
+          "query": "perpDexs",
+          "attempt": 1,
+          "code": "INFO_DNS_FAILED",
+          "status_code": null,
+          "retry_after_ms": null,
+          "retryable": true
+        },
+        {
+          "query": "perpDexs",
+          "attempt": 2,
+          "code": "INFO_DNS_FAILED",
+          "status_code": null,
+          "retry_after_ms": null,
+          "retryable": true
+        },
+        {
+          "query": "perpDexs",
+          "attempt": 3,
+          "code": "INFO_DNS_FAILED",
+          "status_code": null,
+          "retry_after_ms": null,
+          "retryable": true
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,1514 @@
+{
+  "verdict": "NO_GO_FOR_TRADING",
+  "software_release": "OFFLINE_VERIFIED",
+  "source_hash": "5ff45dbbafa905e4eda58d3cd50152df2fe739dd0b41b9853de74315f4a54a6d",
+  "starting_source": "40c70c40d4e4b4e30b2bc03af30fda1d928e76fb75df4fc82e4de65c6976c0f1",
+  "totals": {
+    "tests": 2927,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "xml_sha256": "f20c2a92db1613031c078bb19660f592adb1492714a1538cb9b3ff36dc6e976f",
+  "release_path": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/scored_opening_2026-10-18/regression_release_final/test_receipt.json",
+  "exact_scored_window": {
+    "starts_utc": "2026-10-19T12:00:00Z",
+    "expires_utc": "2026-11-06T12:00:00Z",
+    "practice_exception_applied": false
+  },
+  "source_changes": [
+    "algo-trading-bot/exchange/competition_windows.py",
+    "algo-trading-bot/exchange/long_session.py",
+    "algo-trading-bot/exchange/pas_configuration_plan.py",
+    "algo-trading-bot/exchange/position_protection.py",
+    "algo-trading-bot/exchange/scored_prepare.py",
+    "algo-trading-bot/exchange/scored_session.py",
+    "algo-trading-bot/exchange/startup_recovery.py",
+    "algo-trading-bot/exchange/terminal_observer.py",
+    "algo-trading-bot/exchange/venue_discovery.py",
+    "algo-trading-bot/test_long_session.py",
+    "algo-trading-bot/test_pas_execution_faults.py",
+    "algo-trading-bot/test_pas_migration.py",
+    "algo-trading-bot/test_production_reliability.py",
+    "algo-trading-bot/test_scored_opening_release.py"
+  ],
+  "original_preservation": true,
+  "original_journals_unchanged": true,
+  "native_repairs_preserved": {
+    "algo-trading-bot/exchange/native_qualification.py": true,
+    "algo-trading-bot/exchange/native_qualification_runtime.py": true,
+    "algo-trading-bot/exchange/qualification_protection.py": true,
+    "algo-trading-bot/exchange/native_qualification_permissions.py": true,
+    "scripts/run_native_qualification.py": true
+  },
+  "execution_mode": "PAPER",
+  "allow_live_orders": false,
+  "actual_wallet_signatures": 0,
+  "exchange_writes": 0,
+  "approval_created": false,
+  "trading_launched": false,
+  "unified_account_mode": "unifiedAccount",
+  "usdp_balance": "0",
+  "organizer_credit_amount": null,
+  "organizer_credit_status": "NOT_ESTABLISHED_FROM_ORIGINAL_ORGANIZER_RECORD",
+  "configuration_plan": {
+    "status": "UNSIGNED_CONFIGURATION_PLAN_ONLY",
+    "network": "testnet",
+    "dex": "pas",
+    "collateral": "USDP",
+    "source_hash": "5ff45dbbafa905e4eda58d3cd50152df2fe739dd0b41b9853de74315f4a54a6d",
+    "observed_ms": 1792345800181,
+    "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+    "discovery_hash": "85b7f0cacf07f64a77fb8d802dd850a08ddeb408b045defea8ba87b2300165f8",
+    "changes": [
+      {
+        "symbol": "pas:BRENT",
+        "observed_ms": 1792345791324,
+        "before": {
+          "type": "cross",
+          "value": 20
+        },
+        "requested_action": {
+          "type": "updateLeverage",
+          "asset": 2810006,
+          "isCross": true,
+          "leverage": 1
+        }
+      },
+      {
+        "symbol": "pas:BTC",
+        "observed_ms": 1792345791660,
+        "before": {
+          "type": "cross",
+          "value": 20
+        },
+        "requested_action": {
+          "type": "updateLeverage",
+          "asset": 2810000,
+          "isCross": true,
+          "leverage": 1
+        }
+      },
+      {
+        "symbol": "pas:ETH",
+        "observed_ms": 1792345792151,
+        "before": {
+          "type": "cross",
+          "value": 20
+        },
+        "requested_action": {
+          "type": "updateLeverage",
+          "asset": 2810001,
+          "isCross": true,
+          "leverage": 1
+        }
+      },
+      {
+        "symbol": "pas:EWJ",
+        "observed_ms": 1792345792493,
+        "before": {
+          "type": "cross",
+          "value": 20
+        },
+        "requested_action": {
+          "type": "updateLeverage",
+          "asset": 2810005,
+          "isCross": true,
+          "leverage": 1
+        }
+      },
+      {
+        "symbol": "pas:EWY",
+        "observed_ms": 1792345792978,
+        "before": {
+          "type": "cross",
+          "value": 20
+        },
+        "requested_action": {
+          "type": "updateLeverage",
+          "asset": 2810004,
+          "isCross": true,
+          "leverage": 1
+        }
+      },
+      {
+        "symbol": "pas:GOLD",
+        "observed_ms": 1792345793361,
+        "before": {
+          "type": "cross",
+          "value": 20
+        },
+        "requested_action": {
+          "type": "updateLeverage",
+          "asset": 2810007,
+          "isCross": true,
+          "leverage": 1
+        }
+      },
+      {
+        "symbol": "pas:HYPE",
+        "observed_ms": 1792345793708,
+        "before": {
+          "type": "cross",
+          "value": 10
+        },
+        "requested_action": {
+          "type": "updateLeverage",
+          "asset": 2810002,
+          "isCross": true,
+          "leverage": 1
+        }
+      },
+      {
+        "symbol": "pas:SP500",
+        "observed_ms": 1792345794053,
+        "before": {
+          "type": "cross",
+          "value": 20
+        },
+        "requested_action": {
+          "type": "updateLeverage",
+          "asset": 2810003,
+          "isCross": true,
+          "leverage": 1
+        }
+      },
+      {
+        "symbol": "pas:USDEUR",
+        "observed_ms": 1792345794541,
+        "before": {
+          "type": "cross",
+          "value": 20
+        },
+        "requested_action": {
+          "type": "updateLeverage",
+          "asset": 2810008,
+          "isCross": true,
+          "leverage": 1
+        }
+      },
+      {
+        "symbol": "pas:USDJPY",
+        "observed_ms": 1792345794931,
+        "before": {
+          "type": "cross",
+          "value": 20
+        },
+        "requested_action": {
+          "type": "updateLeverage",
+          "asset": 2810009,
+          "isCross": true,
+          "leverage": 1
+        }
+      }
+    ],
+    "already_one_x_cross": [],
+    "collateral_balance": "0",
+    "organizer_credit_amount": null,
+    "organizer_credit_status": "ORIGINAL_ORGANIZER_CREDIT_RECORD_REQUIRED; balance is not funding provenance",
+    "blockers": [
+      "SEPARATE_EXACT_OPERATOR_CONFIGURATION_APPROVAL_REQUIRED",
+      "PAS_USDP_FUNDING_REQUIRED_BEFORE_CONFIGURATION",
+      "SHARED_UNKNOWN_AND_CONSUMED_INVOCATION_REVIEW_REQUIRED"
+    ],
+    "signing_authority": "NONE",
+    "signatures_created": 0,
+    "exchange_writes": 0,
+    "transfers_allowed": false,
+    "configuration_approval_created": false,
+    "required_before_execution": [
+      "Fresh funded Unified account/agent/identity checks",
+      "Prior UNKNOWN/invocation review",
+      "Exact new configuration-only approval",
+      "Shared sole host/signer/nonce ownership",
+      "Per-action exact permit and durable uncertainty",
+      "Fresh readback of every requested 1x CROSS value"
+    ],
+    "note": "This release prepares actions only. Existing par configuration approval does not authorize PAS. No configuration execution command is added.",
+    "plan_hash": "3c4406a77e48cdb27a602f6fec4cc8f61c5ee70741d287855859567d22f479a0"
+  },
+  "markets": [
+    {
+      "symbol": "pas:BRENT",
+      "asset_id": 2810006,
+      "bid": "106.83",
+      "ask": "106.91",
+      "observed_ms": 1792345791324,
+      "book_ms": 1792345790413,
+      "spread_bps": "7.485730326564985496397492280",
+      "ten_percent_bbo_quantity": "0.46",
+      "ten_percent_five_bps_quantity": "0.46",
+      "displayed_book_only_quantity": "0.46",
+      "displayed_book_only_notional": "49.1786",
+      "active_leverage": {
+        "type": "cross",
+        "value": 20
+      },
+      "account_capacity": "0",
+      "account_capacity_reasons": [
+        "ONE_X_CROSS_REQUIRED"
+      ],
+      "funding": "-0.0000075358",
+      "maximum_observed_completed_snapshot_bars": 0,
+      "frozen_signal": "NO_TRADE",
+      "signal_reasons": [
+        "BASELINE_300_BAR_WARMUP_REQUIRED"
+      ],
+      "native_protection_qualified": false,
+      "authorized_executable_notional": "0"
+    },
+    {
+      "symbol": "pas:BTC",
+      "asset_id": 2810000,
+      "bid": "80949.0",
+      "ask": "80998.0",
+      "observed_ms": 1792345791660,
+      "book_ms": 1792345790942,
+      "spread_bps": "6.051362482787578652275127048",
+      "ten_percent_bbo_quantity": "0.00061",
+      "ten_percent_five_bps_quantity": "0.00061",
+      "displayed_book_only_quantity": "0.00061",
+      "displayed_book_only_notional": "49.408780",
+      "active_leverage": {
+        "type": "cross",
+        "value": 20
+      },
+      "account_capacity": "0",
+      "account_capacity_reasons": [
+        "ONE_X_CROSS_REQUIRED"
+      ],
+      "funding": "-0.0001017475",
+      "maximum_observed_completed_snapshot_bars": 6,
+      "frozen_signal": "NO_TRADE",
+      "signal_reasons": [
+        "BASELINE_300_BAR_WARMUP_REQUIRED"
+      ],
+      "native_protection_qualified": false,
+      "authorized_executable_notional": "0"
+    },
+    {
+      "symbol": "pas:ETH",
+      "asset_id": 2810001,
+      "bid": "2363.1",
+      "ask": "2364.6",
+      "observed_ms": 1792345792151,
+      "book_ms": 1792345791453,
+      "spread_bps": "6.345580303318738498635700235",
+      "ten_percent_bbo_quantity": "0.0211",
+      "ten_percent_five_bps_quantity": "0.1268",
+      "displayed_book_only_quantity": "0.0211",
+      "displayed_book_only_notional": "49.89306",
+      "active_leverage": {
+        "type": "cross",
+        "value": 20
+      },
+      "account_capacity": "0",
+      "account_capacity_reasons": [
+        "ONE_X_CROSS_REQUIRED"
+      ],
+      "funding": "-0.000083339",
+      "maximum_observed_completed_snapshot_bars": 60,
+      "frozen_signal": "NO_TRADE",
+      "signal_reasons": [
+        "BASELINE_300_BAR_WARMUP_REQUIRED"
+      ],
+      "native_protection_qualified": false,
+      "authorized_executable_notional": "0"
+    },
+    {
+      "symbol": "pas:EWJ",
+      "asset_id": 2810005,
+      "bid": "94.439",
+      "ask": "94.496",
+      "observed_ms": 1792345792493,
+      "book_ms": 1792345791967,
+      "spread_bps": "6.033821155423823007912774235",
+      "ten_percent_bbo_quantity": "0.529",
+      "ten_percent_five_bps_quantity": "0.529",
+      "displayed_book_only_quantity": "0.529",
+      "displayed_book_only_notional": "49.988384",
+      "active_leverage": {
+        "type": "cross",
+        "value": 20
+      },
+      "account_capacity": "0",
+      "account_capacity_reasons": [
+        "ONE_X_CROSS_REQUIRED"
+      ],
+      "funding": "-0.0000221853",
+      "maximum_observed_completed_snapshot_bars": 0,
+      "frozen_signal": "NO_TRADE",
+      "signal_reasons": [
+        "BASELINE_300_BAR_WARMUP_REQUIRED"
+      ],
+      "native_protection_qualified": false,
+      "authorized_executable_notional": "0"
+    },
+    {
+      "symbol": "pas:EWY",
+      "asset_id": 2810004,
+      "bid": "147.67",
+      "ask": "147.77",
+      "observed_ms": 1792345792978,
+      "book_ms": 1792345792481,
+      "spread_bps": "6.769564040075819117248849174",
+      "ten_percent_bbo_quantity": "0.338",
+      "ten_percent_five_bps_quantity": "2.030",
+      "displayed_book_only_quantity": "0.338",
+      "displayed_book_only_notional": "49.94626",
+      "active_leverage": {
+        "type": "cross",
+        "value": 20
+      },
+      "account_capacity": "0",
+      "account_capacity_reasons": [
+        "ONE_X_CROSS_REQUIRED"
+      ],
+      "funding": "0.00000625",
+      "maximum_observed_completed_snapshot_bars": 951,
+      "frozen_signal": "NO_TRADE",
+      "signal_reasons": [
+        "CAPITAL_FRESH_PAR_BOOK_REQUIRED"
+      ],
+      "native_protection_qualified": false,
+      "authorized_executable_notional": "0"
+    },
+    {
+      "symbol": "pas:GOLD",
+      "asset_id": 2810007,
+      "bid": "4155.7",
+      "ask": "4158.3",
+      "observed_ms": 1792345793361,
+      "book_ms": 1792345792481,
+      "spread_bps": "6.254510464277122925186432523",
+      "ten_percent_bbo_quantity": "0.0120",
+      "ten_percent_five_bps_quantity": "0.0120",
+      "displayed_book_only_quantity": "0.0120",
+      "displayed_book_only_notional": "49.89960",
+      "active_leverage": {
+        "type": "cross",
+        "value": 20
+      },
+      "account_capacity": "0",
+      "account_capacity_reasons": [
+        "ONE_X_CROSS_REQUIRED"
+      ],
+      "funding": "-0.0000066395",
+      "maximum_observed_completed_snapshot_bars": 0,
+      "frozen_signal": "NO_TRADE",
+      "signal_reasons": [
+        "BASELINE_300_BAR_WARMUP_REQUIRED"
+      ],
+      "native_protection_qualified": false,
+      "authorized_executable_notional": "0"
+    },
+    {
+      "symbol": "pas:HYPE",
+      "asset_id": 2810002,
+      "bid": "77.22",
+      "ask": "77.28",
+      "observed_ms": 1792345793708,
+      "book_ms": 1792345792992,
+      "spread_bps": "7.766990291262135922330097087",
+      "ten_percent_bbo_quantity": "0.64",
+      "ten_percent_five_bps_quantity": "0.64",
+      "displayed_book_only_quantity": "0.64",
+      "displayed_book_only_notional": "49.4592",
+      "active_leverage": {
+        "type": "cross",
+        "value": 10
+      },
+      "account_capacity": "0",
+      "account_capacity_reasons": [
+        "ONE_X_CROSS_REQUIRED"
+      ],
+      "funding": "-0.0000804982",
+      "maximum_observed_completed_snapshot_bars": 6,
+      "frozen_signal": "NO_TRADE",
+      "signal_reasons": [
+        "BASELINE_300_BAR_WARMUP_REQUIRED"
+      ],
+      "native_protection_qualified": false,
+      "authorized_executable_notional": "0"
+    },
+    {
+      "symbol": "pas:SP500",
+      "asset_id": 2810003,
+      "bid": "7612.1",
+      "ask": "7612.6",
+      "observed_ms": 1792345794053,
+      "book_ms": 1792345792992,
+      "spread_bps": "0.6568273923295697123752848989",
+      "ten_percent_bbo_quantity": "0.030",
+      "ten_percent_five_bps_quantity": "0.044",
+      "displayed_book_only_quantity": "0.030",
+      "displayed_book_only_notional": "228.3780",
+      "active_leverage": {
+        "type": "cross",
+        "value": 20
+      },
+      "account_capacity": "0",
+      "account_capacity_reasons": [
+        "ONE_X_CROSS_REQUIRED"
+      ],
+      "funding": "-0.0000773973",
+      "maximum_observed_completed_snapshot_bars": 1,
+      "frozen_signal": "NO_TRADE",
+      "signal_reasons": [
+        "BASELINE_300_BAR_WARMUP_REQUIRED"
+      ],
+      "native_protection_qualified": false,
+      "authorized_executable_notional": "0"
+    },
+    {
+      "symbol": "pas:USDEUR",
+      "asset_id": 2810008,
+      "bid": "1.1225",
+      "ask": "1.1231",
+      "observed_ms": 1792345794541,
+      "book_ms": 1792345793528,
+      "spread_bps": "5.343783398646241539009618810",
+      "ten_percent_bbo_quantity": "44.5",
+      "ten_percent_five_bps_quantity": "267.1",
+      "displayed_book_only_quantity": "44.5",
+      "displayed_book_only_notional": "49.97795",
+      "active_leverage": {
+        "type": "cross",
+        "value": 20
+      },
+      "account_capacity": "0",
+      "account_capacity_reasons": [
+        "ONE_X_CROSS_REQUIRED"
+      ],
+      "funding": "-0.0000011687",
+      "maximum_observed_completed_snapshot_bars": 0,
+      "frozen_signal": "NO_TRADE",
+      "signal_reasons": [
+        "CAPITAL_FRESH_PAR_BOOK_REQUIRED"
+      ],
+      "native_protection_qualified": false,
+      "authorized_executable_notional": "0"
+    },
+    {
+      "symbol": "pas:USDJPY",
+      "asset_id": 2810009,
+      "bid": "158.13",
+      "ask": "158.23",
+      "observed_ms": 1792345794931,
+      "book_ms": 1792345794118,
+      "spread_bps": "6.321911746112024276141105070",
+      "ten_percent_bbo_quantity": "0.31",
+      "ten_percent_five_bps_quantity": "0.52",
+      "displayed_book_only_quantity": "0.31",
+      "displayed_book_only_notional": "49.0513",
+      "active_leverage": {
+        "type": "cross",
+        "value": 20
+      },
+      "account_capacity": "0",
+      "account_capacity_reasons": [
+        "ONE_X_CROSS_REQUIRED"
+      ],
+      "funding": "0.0000935273",
+      "maximum_observed_completed_snapshot_bars": 6,
+      "frozen_signal": "NO_TRADE",
+      "signal_reasons": [
+        "BASELINE_300_BAR_WARMUP_REQUIRED"
+      ],
+      "native_protection_qualified": false,
+      "authorized_executable_notional": "0"
+    }
+  ],
+  "preopening_proposal_status": "BLOCKED_NOT_AUTHORIZATION",
+  "blockers": [
+    "ACTUAL_PAS_NATIVE_AND_RESIDUAL_PROTECTION_REQUIRED",
+    "ACTUAL_PAS_NATIVE_TRIGGER_CLOSING_FILL_REQUIRED",
+    "ENTRY_AND_EXIT_CAPACITY_REQUIRED",
+    "ORIGINAL_REVIEWED_PAS_ORGANIZER_CONFIRMATION_REQUIRED",
+    "PAS_ONE_X_CROSS_REQUIRED",
+    "PAS_USDP_COLLATERAL_REQUIRED",
+    "SCORED_PHASE_NOT_OPEN",
+    "SHARED_ACCOUNT_UNKNOWN_UNRESOLVED"
+  ],
+  "historical_unknown": [
+    [
+      "0xac0eea156fcec80986dd67c9057b6ded",
+      "UNKNOWN",
+      null,
+      "{\"code\":\"TRANSMISSION_UNCERTAIN\",\"reason\":\"ExchangeError\"}"
+    ]
+  ],
+  "unknown_disposition": "PRESERVED_UNRESOLVED_NO_PAS_ISOLATION_AUTHORIZED",
+  "consumed_native_review_required": true,
+  "original_order_readbacks": [
+    {
+      "observed_ms": 1792345625061,
+      "source": "EXCHANGE_DIRECT_TESTNET_PAR_INFO",
+      "order_status": {
+        "status": "unknownOid"
+      },
+      "positions": [],
+      "orders": [],
+      "stable": true
+    },
+    {
+      "observed_ms": 1792345625937,
+      "source": "EXCHANGE_DIRECT_TESTNET_PAR_INFO",
+      "order_status": {
+        "status": "unknownOid"
+      },
+      "positions": [],
+      "orders": [],
+      "stable": true
+    }
+  ],
+  "native_protection_qualified": false,
+  "native_subminimum_residual_qualified": false,
+  "observer": {
+    "output": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/scored_opening_2026-10-18/final_pas_observer/sessions/b494e6a69ae44db4a98deecebe5ad80e",
+    "source_hash": "5ff45dbbafa905e4eda58d3cd50152df2fe739dd0b41b9853de74315f4a54a6d",
+    "status": "STOPPED",
+    "threads_stopped": true,
+    "terminal_flat": true,
+    "terminal_readbacks": [
+      {
+        "observed_ms": 1792345591507,
+        "ready": true,
+        "positions": [],
+        "orders": [],
+        "team": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+        "source": "EXCHANGE_DIRECT_TESTNET_PAS_INFO"
+      },
+      {
+        "observed_ms": 1792345599892,
+        "ready": true,
+        "positions": [],
+        "orders": [],
+        "team": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+        "source": "EXCHANGE_DIRECT_TESTNET_PAS_INFO"
+      }
+    ],
+    "complete_scan_count": 6,
+    "complete_scan_times": [
+      1792345236075,
+      1792345296684,
+      1792345357507,
+      1792345415176,
+      1792345471679,
+      1792345539205
+    ],
+    "actual_errors": {},
+    "rate_report": {
+      "state": "UNKNOWN",
+      "policy": {
+        "ip_weight_per_minute": 1200,
+        "ip_safety_reserve": 120,
+        "daily_actions": 50000,
+        "daily_safety_reserve": 500,
+        "account_action_reserve": 10,
+        "max_open_orders": 1000,
+        "max_ws_connections": 10,
+        "max_ws_subscriptions": 1000,
+        "max_ws_unique_users": 10,
+        "venue_ws_connections_per_minute": 30,
+        "max_ws_messages_per_minute": 2000,
+        "ws_reconnects_per_minute": 5,
+        "budget_max_age_ms": 60000,
+        "optional_poll_interval_ms": 5000,
+        "read_retry_attempts": 3,
+        "backoff_base_ms": 1000,
+        "backoff_max_ms": 30000,
+        "exhausted_safety_action_interval_ms": 10000,
+        "caution_fraction": 0.75,
+        "throttle_fraction": 0.9
+      },
+      "ip_weight": 1008,
+      "public_read_blocked": false,
+      "account_requests_used": null,
+      "account_requests_cap": null,
+      "remaining_budget": null,
+      "budget_observed_ms": null,
+      "daily_actions": 0,
+      "daily_limit": 50000,
+      "entries_allowed": false,
+      "open_orders": 0,
+      "backoff_until_ms": 0,
+      "websocket": {
+        "connections": 0,
+        "subscriptions": 0,
+        "outgoing_messages": 2,
+        "heartbeats": 2,
+        "reconnects_last_minute": 0
+      },
+      "public_reads": {
+        "upstream_by_operation": {
+          "perpDexs": 2,
+          "meta": 2,
+          "spotMeta": 2,
+          "clearinghouseState": 19,
+          "openOrders": 10,
+          "userFillsByTime": 5,
+          "userFunding": 5,
+          "userAbstraction": 5,
+          "spotClearinghouseState": 5,
+          "metaAndAssetCtxs": 73,
+          "userFees": 3,
+          "candleSnapshot": 108,
+          "l2Book": 54,
+          "activeAssetData": 73,
+          "frontendOpenOrders": 2
+        },
+        "failures": {
+          "INFO_READ_CANCELLED": 2
+        },
+        "pending": 0,
+        "coalesced": 0,
+        "max_seconds": 46.34483479196206,
+        "failure_details": []
+      }
+    },
+    "session_performance": {
+      "source": "EXCHANGE_REPORTED_FILLS_FEES_FUNDING",
+      "session_started_ms": 1792345168042,
+      "initial_equity": null,
+      "initial_equity_observed_ms": null,
+      "current_equity": "0",
+      "as_of_ms": 1792345599892,
+      "actual_gross_realized": "0",
+      "actual_fees": "0",
+      "actual_funding": "0",
+      "actual_net_realized": "0",
+      "realized_net_on_initial_equity_pct": null,
+      "equity_change_pct": null,
+      "return_basis": "First verified session equity; equity change is not cash-flow-adjusted or an official competition return",
+      "sampled_maximum_drawdown_pct": null,
+      "fill_count": 0,
+      "funding_event_count": 0,
+      "official_score": null,
+      "daily_return_volatility": null,
+      "accounting_complete": true,
+      "unrealized_pnl_source": "See exchange-reported position fields; no synthetic valuation added"
+    },
+    "account_age_ms": 47428,
+    "fee_age_ms": 47051
+  },
+  "history_observations": [
+    {
+      "symbol": "pas:BRENT",
+      "completed_bars": 0,
+      "received_ms": 1792345173302
+    },
+    {
+      "symbol": "pas:BTC",
+      "completed_bars": 6,
+      "received_ms": 1792345174175
+    },
+    {
+      "symbol": "pas:BRENT",
+      "completed_bars": 0,
+      "received_ms": 1792345174351
+    },
+    {
+      "symbol": "pas:ETH",
+      "completed_bars": 60,
+      "received_ms": 1792345174529
+    },
+    {
+      "symbol": "pas:EWJ",
+      "completed_bars": 0,
+      "received_ms": 1792345175047
+    },
+    {
+      "symbol": "pas:EWY",
+      "completed_bars": 778,
+      "received_ms": 1792345175860
+    },
+    {
+      "symbol": "pas:BTC",
+      "completed_bars": 6,
+      "received_ms": 1792345176218
+    },
+    {
+      "symbol": "pas:GOLD",
+      "completed_bars": 0,
+      "received_ms": 1792345176545
+    },
+    {
+      "symbol": "pas:HYPE",
+      "completed_bars": 6,
+      "received_ms": 1792345177144
+    },
+    {
+      "symbol": "pas:SP500",
+      "completed_bars": 1,
+      "received_ms": 1792345177491
+    },
+    {
+      "symbol": "pas:ETH",
+      "completed_bars": 60,
+      "received_ms": 1792345177820
+    },
+    {
+      "symbol": "pas:USDEUR",
+      "completed_bars": 0,
+      "received_ms": 1792345177998
+    },
+    {
+      "symbol": "pas:USDJPY",
+      "completed_bars": 6,
+      "received_ms": 1792345178717
+    },
+    {
+      "symbol": "pas:EWJ",
+      "completed_bars": 0,
+      "received_ms": 1792345181165
+    },
+    {
+      "symbol": "pas:EWY",
+      "completed_bars": 951,
+      "received_ms": 1792345182158
+    },
+    {
+      "symbol": "pas:GOLD",
+      "completed_bars": 0,
+      "received_ms": 1792345228938
+    },
+    {
+      "symbol": "pas:EWY",
+      "completed_bars": 777,
+      "received_ms": 1792345230640
+    },
+    {
+      "symbol": "pas:ETH",
+      "completed_bars": 60,
+      "received_ms": 1792345231481
+    },
+    {
+      "symbol": "pas:HYPE",
+      "completed_bars": 6,
+      "received_ms": 1792345232597
+    },
+    {
+      "symbol": "pas:BTC",
+      "completed_bars": 6,
+      "received_ms": 1792345233130
+    },
+    {
+      "symbol": "pas:SP500",
+      "completed_bars": 1,
+      "received_ms": 1792345233815
+    },
+    {
+      "symbol": "pas:HYPE",
+      "completed_bars": 6,
+      "received_ms": 1792345234180
+    },
+    {
+      "symbol": "pas:USDJPY",
+      "completed_bars": 6,
+      "received_ms": 1792345234354
+    },
+    {
+      "symbol": "pas:USDEUR",
+      "completed_bars": 0,
+      "received_ms": 1792345234879
+    },
+    {
+      "symbol": "pas:SP500",
+      "completed_bars": 1,
+      "received_ms": 1792345235054
+    },
+    {
+      "symbol": "pas:USDJPY",
+      "completed_bars": 6,
+      "received_ms": 1792345236072
+    },
+    {
+      "symbol": "pas:BRENT",
+      "completed_bars": 0,
+      "received_ms": 1792345236399
+    },
+    {
+      "symbol": "pas:EWJ",
+      "completed_bars": 0,
+      "received_ms": 1792345238727
+    },
+    {
+      "symbol": "pas:GOLD",
+      "completed_bars": 0,
+      "received_ms": 1792345239078
+    },
+    {
+      "symbol": "pas:BRENT",
+      "completed_bars": 0,
+      "received_ms": 1792345240784
+    },
+    {
+      "symbol": "pas:USDEUR",
+      "completed_bars": 0,
+      "received_ms": 1792345241323
+    },
+    {
+      "symbol": "pas:BTC",
+      "completed_bars": 6,
+      "received_ms": 1792345243735
+    },
+    {
+      "symbol": "pas:ETH",
+      "completed_bars": 60,
+      "received_ms": 1792345288988
+    },
+    {
+      "symbol": "pas:EWJ",
+      "completed_bars": 0,
+      "received_ms": 1792345291327
+    },
+    {
+      "symbol": "pas:EWY",
+      "completed_bars": 951,
+      "received_ms": 1792345293151
+    },
+    {
+      "symbol": "pas:GOLD",
+      "completed_bars": 0,
+      "received_ms": 1792345293889
+    },
+    {
+      "symbol": "pas:HYPE",
+      "completed_bars": 6,
+      "received_ms": 1792345294585
+    },
+    {
+      "symbol": "pas:SP500",
+      "completed_bars": 1,
+      "received_ms": 1792345295111
+    },
+    {
+      "symbol": "pas:USDEUR",
+      "completed_bars": 0,
+      "received_ms": 1792345295793
+    },
+    {
+      "symbol": "pas:USDJPY",
+      "completed_bars": 6,
+      "received_ms": 1792345296510
+    },
+    {
+      "symbol": "pas:BRENT",
+      "completed_bars": 0,
+      "received_ms": 1792345297729
+    },
+    {
+      "symbol": "pas:BTC",
+      "completed_bars": 6,
+      "received_ms": 1792345298579
+    },
+    {
+      "symbol": "pas:ETH",
+      "completed_bars": 60,
+      "received_ms": 1792345299406
+    },
+    {
+      "symbol": "pas:EWJ",
+      "completed_bars": 0,
+      "received_ms": 1792345301172
+    },
+    {
+      "symbol": "pas:EWY",
+      "completed_bars": 951,
+      "received_ms": 1792345304025
+    },
+    {
+      "symbol": "pas:EWY",
+      "completed_bars": 776,
+      "received_ms": 1792345304945
+    },
+    {
+      "symbol": "pas:ETH",
+      "completed_bars": 60,
+      "received_ms": 1792345349118
+    },
+    {
+      "symbol": "pas:GOLD",
+      "completed_bars": 0,
+      "received_ms": 1792345350186
+    },
+    {
+      "symbol": "pas:BTC",
+      "completed_bars": 6,
+      "received_ms": 1792345351377
+    },
+    {
+      "symbol": "pas:HYPE",
+      "completed_bars": 6,
+      "received_ms": 1792345351732
+    },
+    {
+      "symbol": "pas:USDJPY",
+      "completed_bars": 6,
+      "received_ms": 1792345353495
+    },
+    {
+      "symbol": "pas:HYPE",
+      "completed_bars": 6,
+      "received_ms": 1792345353897
+    },
+    {
+      "symbol": "pas:SP500",
+      "completed_bars": 1,
+      "received_ms": 1792345354070
+    },
+    {
+      "symbol": "pas:SP500",
+      "completed_bars": 1,
+      "received_ms": 1792345354914
+    },
+    {
+      "symbol": "pas:BRENT",
+      "completed_bars": 0,
+      "received_ms": 1792345355244
+    },
+    {
+      "symbol": "pas:USDEUR",
+      "completed_bars": 0,
+      "received_ms": 1792345355927
+    },
+    {
+      "symbol": "pas:EWJ",
+      "completed_bars": 0,
+      "received_ms": 1792345356100
+    },
+    {
+      "symbol": "pas:GOLD",
+      "completed_bars": 0,
+      "received_ms": 1792345356511
+    },
+    {
+      "symbol": "pas:USDJPY",
+      "completed_bars": 6,
+      "received_ms": 1792345357502
+    },
+    {
+      "symbol": "pas:USDEUR",
+      "completed_bars": 0,
+      "received_ms": 1792345357678
+    },
+    {
+      "symbol": "pas:BRENT",
+      "completed_bars": 0,
+      "received_ms": 1792345360648
+    },
+    {
+      "symbol": "pas:BTC",
+      "completed_bars": 6,
+      "received_ms": 1792345361484
+    },
+    {
+      "symbol": "pas:ETH",
+      "completed_bars": 60,
+      "received_ms": 1792345362048
+    },
+    {
+      "symbol": "pas:EWJ",
+      "completed_bars": 0,
+      "received_ms": 1792345364315
+    },
+    {
+      "symbol": "pas:EWY",
+      "completed_bars": 951,
+      "received_ms": 1792345409410
+    },
+    {
+      "symbol": "pas:GOLD",
+      "completed_bars": 0,
+      "received_ms": 1792345411331
+    },
+    {
+      "symbol": "pas:HYPE",
+      "completed_bars": 6,
+      "received_ms": 1792345412614
+    },
+    {
+      "symbol": "pas:SP500",
+      "completed_bars": 1,
+      "received_ms": 1792345414008
+    },
+    {
+      "symbol": "pas:USDEUR",
+      "completed_bars": 0,
+      "received_ms": 1792345414647
+    },
+    {
+      "symbol": "pas:USDJPY",
+      "completed_bars": 6,
+      "received_ms": 1792345415172
+    },
+    {
+      "symbol": "pas:BRENT",
+      "completed_bars": 0,
+      "received_ms": 1792345418531
+    },
+    {
+      "symbol": "pas:BTC",
+      "completed_bars": 6,
+      "received_ms": 1792345419058
+    },
+    {
+      "symbol": "pas:ETH",
+      "completed_bars": 60,
+      "received_ms": 1792345419589
+    },
+    {
+      "symbol": "pas:EWJ",
+      "completed_bars": 0,
+      "received_ms": 1792345420304
+    },
+    {
+      "symbol": "pas:EWY",
+      "completed_bars": 951,
+      "received_ms": 1792345421609
+    },
+    {
+      "symbol": "pas:GOLD",
+      "completed_bars": 0,
+      "received_ms": 1792345422409
+    },
+    {
+      "symbol": "pas:HYPE",
+      "completed_bars": 6,
+      "received_ms": 1792345423561
+    },
+    {
+      "symbol": "pas:SP500",
+      "completed_bars": 1,
+      "received_ms": 1792345424832
+    },
+    {
+      "symbol": "pas:USDEUR",
+      "completed_bars": 0,
+      "received_ms": 1792345469872
+    },
+    {
+      "symbol": "pas:USDJPY",
+      "completed_bars": 6,
+      "received_ms": 1792345471511
+    },
+    {
+      "symbol": "pas:BRENT",
+      "completed_bars": 0,
+      "received_ms": 1792345478611
+    },
+    {
+      "symbol": "pas:BTC",
+      "completed_bars": 6,
+      "received_ms": 1792345479134
+    },
+    {
+      "symbol": "pas:ETH",
+      "completed_bars": 60,
+      "received_ms": 1792345479785
+    },
+    {
+      "symbol": "pas:EWJ",
+      "completed_bars": 0,
+      "received_ms": 1792345480514
+    },
+    {
+      "symbol": "pas:EWY",
+      "completed_bars": 773,
+      "received_ms": 1792345481871
+    },
+    {
+      "symbol": "pas:EWY",
+      "completed_bars": 951,
+      "received_ms": 1792345482586
+    },
+    {
+      "symbol": "pas:ETH",
+      "completed_bars": 60,
+      "received_ms": 1792345482845
+    },
+    {
+      "symbol": "pas:BTC",
+      "completed_bars": 6,
+      "received_ms": 1792345483024
+    },
+    {
+      "symbol": "pas:HYPE",
+      "completed_bars": 6,
+      "received_ms": 1792345483547
+    },
+    {
+      "symbol": "pas:GOLD",
+      "completed_bars": 0,
+      "received_ms": 1792345483724
+    },
+    {
+      "symbol": "pas:USDJPY",
+      "completed_bars": 6,
+      "received_ms": 1792345483902
+    },
+    {
+      "symbol": "pas:HYPE",
+      "completed_bars": 6,
+      "received_ms": 1792345484582
+    },
+    {
+      "symbol": "pas:SP500",
+      "completed_bars": 1,
+      "received_ms": 1792345484759
+    },
+    {
+      "symbol": "pas:SP500",
+      "completed_bars": 1,
+      "received_ms": 1792345485276
+    },
+    {
+      "symbol": "pas:BRENT",
+      "completed_bars": 0,
+      "received_ms": 1792345485598
+    },
+    {
+      "symbol": "pas:EWJ",
+      "completed_bars": 0,
+      "received_ms": 1792345528952
+    },
+    {
+      "symbol": "pas:GOLD",
+      "completed_bars": 0,
+      "received_ms": 1792345529880
+    },
+    {
+      "symbol": "pas:USDEUR",
+      "completed_bars": 0,
+      "received_ms": 1792345530204
+    },
+    {
+      "symbol": "pas:USDEUR",
+      "completed_bars": 0,
+      "received_ms": 1792345538108
+    },
+    {
+      "symbol": "pas:USDJPY",
+      "completed_bars": 6,
+      "received_ms": 1792345539202
+    },
+    {
+      "symbol": "pas:BRENT",
+      "completed_bars": 0,
+      "received_ms": 1792345542085
+    },
+    {
+      "symbol": "pas:BTC",
+      "completed_bars": 6,
+      "received_ms": 1792345542767
+    },
+    {
+      "symbol": "pas:ETH",
+      "completed_bars": 60,
+      "received_ms": 1792345543293
+    },
+    {
+      "symbol": "pas:EWJ",
+      "completed_bars": 0,
+      "received_ms": 1792345543820
+    },
+    {
+      "symbol": "pas:EWY",
+      "completed_bars": 951,
+      "received_ms": 1792345544824
+    },
+    {
+      "symbol": "pas:GOLD",
+      "completed_bars": 0,
+      "received_ms": 1792345545592
+    },
+    {
+      "symbol": "pas:HYPE",
+      "completed_bars": 6,
+      "received_ms": 1792345546274
+    },
+    {
+      "symbol": "pas:SP500",
+      "completed_bars": 1,
+      "received_ms": 1792345546965
+    },
+    {
+      "symbol": "pas:BRENT",
+      "completed_bars": 0,
+      "received_ms": 1792345805245
+    },
+    {
+      "symbol": "pas:BTC",
+      "completed_bars": 6,
+      "received_ms": 1792345805947
+    },
+    {
+      "symbol": "pas:BRENT",
+      "completed_bars": 0,
+      "received_ms": 1792345806121
+    },
+    {
+      "symbol": "pas:ETH",
+      "completed_bars": 60,
+      "received_ms": 1792345806297
+    },
+    {
+      "symbol": "pas:EWJ",
+      "completed_bars": 0,
+      "received_ms": 1792345806650
+    },
+    {
+      "symbol": "pas:EWY",
+      "completed_bars": 767,
+      "received_ms": 1792345807607
+    },
+    {
+      "symbol": "pas:GOLD",
+      "completed_bars": 0,
+      "received_ms": 1792345807864
+    },
+    {
+      "symbol": "pas:HYPE",
+      "completed_bars": 6,
+      "received_ms": 1792345808391
+    },
+    {
+      "symbol": "pas:BTC",
+      "completed_bars": 6,
+      "received_ms": 1792345808566
+    },
+    {
+      "symbol": "pas:SP500",
+      "completed_bars": 1,
+      "received_ms": 1792345808744
+    },
+    {
+      "symbol": "pas:USDEUR",
+      "completed_bars": 0,
+      "received_ms": 1792345809092
+    },
+    {
+      "symbol": "pas:USDJPY",
+      "completed_bars": 6,
+      "received_ms": 1792345809756
+    },
+    {
+      "symbol": "pas:ETH",
+      "completed_bars": 60,
+      "received_ms": 1792345810085
+    },
+    {
+      "symbol": "pas:EWJ",
+      "completed_bars": 0,
+      "received_ms": 1792345812937
+    },
+    {
+      "symbol": "pas:EWY",
+      "completed_bars": 951,
+      "received_ms": 1792345814241
+    },
+    {
+      "symbol": "pas:GOLD",
+      "completed_bars": 0,
+      "received_ms": 1792345861154
+    },
+    {
+      "symbol": "pas:EWY",
+      "completed_bars": 767,
+      "received_ms": 1792345862636
+    },
+    {
+      "symbol": "pas:ETH",
+      "completed_bars": 60,
+      "received_ms": 1792345863089
+    },
+    {
+      "symbol": "pas:BTC",
+      "completed_bars": 6,
+      "received_ms": 1792345863864
+    },
+    {
+      "symbol": "pas:HYPE",
+      "completed_bars": 6,
+      "received_ms": 1792345864733
+    },
+    {
+      "symbol": "pas:USDJPY",
+      "completed_bars": 6,
+      "received_ms": 1792345865249
+    },
+    {
+      "symbol": "pas:HYPE",
+      "completed_bars": 6,
+      "received_ms": 1792345865767
+    },
+    {
+      "symbol": "pas:SP500",
+      "completed_bars": 1,
+      "received_ms": 1792345866102
+    },
+    {
+      "symbol": "pas:BRENT",
+      "completed_bars": 0,
+      "received_ms": 1792345866448
+    },
+    {
+      "symbol": "pas:EWJ",
+      "completed_bars": 0,
+      "received_ms": 1792345866624
+    },
+    {
+      "symbol": "pas:GOLD",
+      "completed_bars": 0,
+      "received_ms": 1792345867017
+    },
+    {
+      "symbol": "pas:USDEUR",
+      "completed_bars": 0,
+      "received_ms": 1792345867517
+    },
+    {
+      "symbol": "pas:SP500",
+      "completed_bars": 1,
+      "received_ms": 1792345869731
+    },
+    {
+      "symbol": "pas:USDEUR",
+      "completed_bars": 0,
+      "received_ms": 1792345870435
+    },
+    {
+      "symbol": "pas:USDJPY",
+      "completed_bars": 6,
+      "received_ms": 1792345870968
+    }
+  ],
+  "actual_pas_accounting": {
+    "gross_closed_pnl": "0",
+    "actual_fill_fees": "0",
+    "actual_funding_cashflow": "0",
+    "net_after_fees_and_funding": "0",
+    "scope": "ONLY_OBSERVED_ACCOUNT_EVENTS; excludes deposits/transfers and unknown historical events"
+  },
+  "actual_pas_fills": [],
+  "historical_par_net": "0.050512 TEST USDPR on October 15; not PAS or official competition P&L",
+  "external_request_sent": false,
+  "generated_ms": 1792345926953,
+  "artifact_sha256": {
+    "regression_release_final/test_receipt.json": "d955336758233fe5f6c755647f8d92e803aa4f9ec8d953138aed4b580a1d299b",
+    "regression_release_final/regression.xml": "f20c2a92db1613031c078bb19660f592adb1492714a1538cb9b3ff36dc6e976f",
+    "final_preopening_proposal/proposal.json": "1bf3d405d0a0c0610f89d1d587485a7332efc0a5c47c7a0bcdb731c2d63af399",
+    "final_preopening_proposal/fresh_discovery/discovery.json": "c28b76ba6128bc4b789c645762d6fa842be3d2f48f9716f2e8a32e2f8b5f7941",
+    "final_preopening_proposal/fresh_discovery/account_configuration_plan.json": "d3bf506e5313c02edc45340d9fa686524e6fbf28b81fb8d90155766a21e6e7d2",
+    "preservation_receipt.json": "b3df7d06ae36768819db686deadb0744ea21a5646f039ef53df1037061a1eba7",
+    "source_changes.json": "862b7fd5ef967b6d904b1f1fc2d86f7da93304dd61da3c8cb422ab671013afd3",
+    "stale_receipts.json": "53b7cbfe32cbd57e0359a641cfc38f22b7b0c835d54ce3edbea8715c6c04496e",
+    "official_reference_review.json": "660ee69e54f9f7fa634ba84a4d4c4505b82fb6631597156ab38de070feafd97a",
+    "original_order_audit/readback.json": "89bdc597d31253ee7286e125e5b68e24324c2fdf50c308e0ff6534ef519c13de",
+    "additional_pas_simulation.json": "9f10e402c6174f652278cd3db75a336b289f3a572ab5552f325e98c539179296",
+    "pas_reproduced_conflicts.xml": "21129647a114c842b6d7e6dbff66357d2bc822058bde528123001cc3a83fa5dc",
+    "pas_faults_final.xml": "d6e609cf1ee4fbbc9946ee2dee4788af6cea0d8e97392ffb2325db5f1f21b925",
+    "opening_controls.xml": "568fb495dabb7ff669331320220fab54214c0f250ef7f94c719e1d826a7b15df",
+    "OPERATOR_RUNBOOK.md": "c9cf6a0e1d34f84c2fb9fcead014c10a53eb88b63944df8758b281ecd9a7e3a4",
+    "EXTERNAL_EVIDENCE_REQUEST.md": "634f9e8bfd717ea6bee8d5d027abab4519a97973ea2f5b6ca5c0dc87edf1061d",
+    "FINAL_RELEASE_REPORT.md": "2a4d5398b96b668e486db6a97eddcef6e1a8f015e87bae492f2443b02811219c",
+    "market_capacity.json": "980f6a14b6398caeabcc575fc6fcde7f7e9e08f0b4ba79ac51082c69572671ab"
+  },
+  "additional_offline_simulation": {
+    "source": "OFFLINE_EPHEMERAL_FIXTURE_ONLY",
+    "results": [
+      {
+        "scenario": "invalid_fractional_lot_partial_entry",
+        "status": "OFFLINE_FAILED_SAFE_AS_REQUIRED",
+        "remaining_quantity": "0.5000",
+        "state": "UNPROTECTED_EXPOSURE",
+        "native_qualification": false,
+        "actual_wallet_signatures": 0,
+        "exchange_writes": 0
+      },
+      {
+        "scenario": "two_noninteractive_cycles",
+        "status": "OFFLINE_PASSED",
+        "cycles": 2,
+        "synthetic_signed_actions": 8,
+        "synthetic_fills": [
+          {
+            "symbol": "pas:BTC",
+            "timestamp_ms": 1792414800014,
+            "trade_id": "101",
+            "order_id": "101",
+            "side": "BUY",
+            "quantity": "1.0000",
+            "price": "100.15",
+            "fee": "0.1",
+            "fee_token": "USDP",
+            "closed_pnl": "0",
+            "start_position": "0",
+            "source": "EXCHANGE_REPORTED_FILL",
+            "exchange_ts": "2026-10-19T13:00:00.014+00:00",
+            "received_ts": "2026-10-19T13:01:00.021+00:00",
+            "processed_ts": "2026-10-19T13:01:00.021+00:00"
+          },
+          {
+            "symbol": "pas:BTC",
+            "timestamp_ms": 1792414800031,
+            "trade_id": "103",
+            "order_id": "103",
+            "side": "SELL",
+            "quantity": "1.0000",
+            "price": "105",
+            "fee": "0.1",
+            "fee_token": "USDP",
+            "closed_pnl": "4.850000",
+            "start_position": "0",
+            "source": "EXCHANGE_REPORTED_FILL",
+            "exchange_ts": "2026-10-19T13:00:00.031+00:00",
+            "received_ts": "2026-10-19T13:01:00.037+00:00",
+            "processed_ts": "2026-10-19T13:01:00.037+00:00"
+          },
+          {
+            "symbol": "pas:BTC",
+            "timestamp_ms": 1792414860013,
+            "trade_id": "104",
+            "order_id": "104",
+            "side": "BUY",
+            "quantity": "1.0000",
+            "price": "100.15",
+            "fee": "0.1",
+            "fee_token": "USDP",
+            "closed_pnl": "0",
+            "start_position": "0",
+            "source": "EXCHANGE_REPORTED_FILL",
+            "exchange_ts": "2026-10-19T13:01:00.013+00:00",
+            "received_ts": "2026-10-19T13:01:00.037+00:00",
+            "processed_ts": "2026-10-19T13:01:00.037+00:00"
+          },
+          {
+            "symbol": "pas:BTC",
+            "timestamp_ms": 1792414860030,
+            "trade_id": "106",
+            "order_id": "106",
+            "side": "SELL",
+            "quantity": "1.0000",
+            "price": "97",
+            "fee": "0.1",
+            "fee_token": "USDP",
+            "closed_pnl": "-3.150000",
+            "start_position": "0",
+            "source": "EXCHANGE_REPORTED_FILL",
+            "exchange_ts": "2026-10-19T13:01:00.030+00:00",
+            "received_ts": "2026-10-19T13:01:00.037+00:00",
+            "processed_ts": "2026-10-19T13:01:00.037+00:00"
+          }
+        ],
+        "synthetic_net": "1.300000",
+        "actual_venue_qualified": false,
+        "actual_wallet_signatures": 0,
+        "exchange_writes": 0
+      }
+    ],
+    "actual_pnl": null,
+    "native_qualification": false
+  }
+}

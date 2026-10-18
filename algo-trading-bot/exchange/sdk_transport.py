@@ -77,26 +77,38 @@ def build_exchange(signer,client,nonce_manager,sink,*,offline=False):
         exchange.info=info
         exchange.expires_after=None
     else:
+        dexes = [client.api_dex] if getattr(client, 'competition_mode', False) else [getattr(client, 'dex', 'par')]
+        if not dexes[0]:
+            raise ExchangeError('PAS_BTC_RUNTIME_MAPPING_REQUIRED')
         exchange=GuardedExchange(signer,TESTNET_API_URL,account_address=sink.team_address,
-                                 spot_meta={'universe':[],'tokens':[]},perp_dexs=[client.api_dex],timeout=10)
-    if client.api_dex is None or client.api_market is None or set(client.markets) != {client.api_market}:
-        raise ExchangeError('PAS_BTC_RUNTIME_MAPPING_REQUIRED')
-    spec = client.market(client.api_market)
-    if (exchange.info.name_to_asset(client.api_market)!=spec.asset_id or
-            exchange.info.asset_to_sz_decimals.get(spec.asset_id)!=spec.size_decimals):
-        raise ExchangeError('SDK_MARKET_MAPPING_MISMATCH')
-    # Trim SDK aliases as well: the signed execution path sees one canonical coin.
-    exchange.info.coin_to_asset = {client.api_market: spec.asset_id}
-    exchange.info.name_to_coin = {client.api_market: client.api_market}
-    exchange.info.asset_to_sz_decimals = {spec.asset_id: spec.size_decimals}
-    if set(exchange.info.coin_to_asset) != {client.api_market}:
-        raise ExchangeError('SDK_NON_BTC_MARKET_MAPPING')
-    return exchange
+                                 spot_meta={'universe':[],'tokens':[]},perp_dexs=dexes,timeout=10)
 
+    if getattr(client, 'competition_mode', False):
+        if client.api_dex is None or client.api_market is None or set(client.markets) != {client.api_market}:
+            raise ExchangeError('PAS_BTC_RUNTIME_MAPPING_REQUIRED')
+        spec = client.market(client.api_market)
+        if (exchange.info.name_to_asset(client.api_market)!=spec.asset_id or
+                exchange.info.asset_to_sz_decimals.get(spec.asset_id)!=spec.size_decimals):
+            raise ExchangeError('SDK_MARKET_MAPPING_MISMATCH')
+        # The signed competition route exposes only the verified BTC instrument.
+        exchange.info.coin_to_asset = {client.api_market: spec.asset_id}
+        exchange.info.name_to_coin = {client.api_market: client.api_market}
+        exchange.info.asset_to_sz_decimals = {spec.asset_id: spec.size_decimals}
+        if set(exchange.info.coin_to_asset) != {client.api_market}:
+            raise ExchangeError('SDK_NON_BTC_MARKET_MAPPING')
+    else:
+        for name,spec in client.markets.items():
+            if (exchange.info.name_to_asset(name)!=spec.asset_id or
+                    exchange.info.asset_to_sz_decimals.get(spec.asset_id)!=spec.size_decimals):
+                raise ExchangeError('SDK_MARKET_MAPPING_MISMATCH')
+        if any(not name.startswith(client.venue.prefix) for name in exchange.info.coin_to_asset):
+            raise ExchangeError('SDK_NATIVE_MARKETS_PROHIBITED')
+    return exchange
 
 class OfficialSDKTransport:
     is_offline=False
     def __init__(self,client,signer,team_address,nonce_manager,authorization,*,rate_limits):
+        self._require_venue(client,authorization)
         from .live_readiness import valid_address
         from eth_account.signers.local import LocalAccount
         if not isinstance(signer,LocalAccount):
@@ -127,9 +139,10 @@ class OfficialSDKTransport:
             raise
 
     def __repr__(self):
-        return '<OfficialSDKTransport testnet:verified-PAS-BTC signer=[PRIVATE]>'
+        return '<OfficialSDKTransport testnet:' + ('verified-PAS-BTC' if getattr(self.client,'competition_mode',False) else self.client.dex) + ' signer=[PRIVATE]>'
 
     def check(self, action):
+        self._require_venue(self.client,self.authorization)
         if self._expected is None or self._guard is None or fingerprint(action)!=self._expected:
             raise ExchangeError('UNVALIDATED_SIGNED_ACTION')
         if action.get('type') not in {'order','cancel','cancelByCloid','batchModify','updateLeverage'}:

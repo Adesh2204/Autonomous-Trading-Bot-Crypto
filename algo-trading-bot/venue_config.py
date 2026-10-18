@@ -25,14 +25,16 @@ class MigrationPolicyError(SafetyError):
     pass
 
 
-def require_paper_migration():
+def require_paper_migration(venue='par'):
     """Fail on contradictory settings before the migration runner or simulator.
 
     Runtime environment changes can revoke paper execution, never enable live
     execution. Manual wallet verification and explicit user authorization remain
     future prerequisites; this module implements no activation path.
     """
-    if (os.environ.get('SIGNAL_DATA_MODE','PAR_NATIVE_ONLY')!='PAR_NATIVE_ONLY' or
+    from exchange.venue_profiles import venue_profile
+    profile=venue_profile(venue)
+    if (os.environ.get('SIGNAL_DATA_MODE',profile.dex.upper()+'_NATIVE_ONLY')!=profile.dex.upper()+'_NATIVE_ONLY' or
             os.environ.get('EXTERNAL_SIGNAL_LIVE_APPROVED','false').lower()!='false'):
         raise MigrationPolicyError('MIGRATION_NATIVE_SIGNAL_SOURCE_REQUIRED')
     if os.environ.get('HL_NETWORK', _defaults.get('HL_NETWORK') or 'testnet').strip().lower()!='testnet':
