@@ -101,18 +101,29 @@ class HyperliquidMarketData:
         if not isinstance(contexts, list) or len(contexts) != len(metadata['universe']):
             raise ExchangeError('INVALID_ASSET_CONTEXTS')
         btc_contexts = {}
-        # The venue returns its full DEX context vector; only the verified BTC
-        # context is admitted into Anchorium's strategy/data path.
+        dex_total_oi = decimal(0)
+        # Only BTC enters the signal/strategy path. The aggregate OI sum below
+        # is a safety calculation for the competition-wide DEX cap, not a scan.
         for i, row in enumerate(metadata['universe']):
-            if not isinstance(row, dict) or not isinstance(row.get('name'), str):
+            if not isinstance(row, dict) or not isinstance(row.get('name'), str) or not isinstance(contexts[i], dict):
                 raise ExchangeError('INVALID_ASSET_CONTEXTS')
             symbol = self.client.canonical_market_name(row['name'])
+            try:
+                oi = decimal(contexts[i]['openInterest'], nonnegative=True)
+                oracle = decimal(contexts[i]['oraclePx'], positive=True)
+            except (KeyError, TypeError, ValueError) as exc:
+                raise ExchangeError('DEX_OI_AGGREGATE_UNVERIFIABLE') from exc
+            if not row.get('isDelisted'):
+                dex_total_oi += oi * oracle
             if symbol == self.client.api_market:
-                if symbol in btc_contexts or not isinstance(contexts[i], dict):
+                if symbol in btc_contexts:
                     raise ExchangeError('AMBIGUOUS_BTC_ASSET_CONTEXT')
                 btc_contexts[symbol] = contexts[i]
         if set(btc_contexts) != {self.client.api_market}:
             raise ExchangeError('PAS_BTC_ASSET_CONTEXT_UNAVAILABLE')
+        self.client.dex_total_oi_notional = dex_total_oi
+        self.client.dex_oi_observed_ms = self.client.clock_ms()
+        self.client.dex_oi_market_count = len(metadata['universe'])
         return btc_contexts
 
     def get_quote(self, symbol):

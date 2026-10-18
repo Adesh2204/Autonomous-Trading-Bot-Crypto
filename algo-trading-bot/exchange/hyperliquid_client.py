@@ -1,4 +1,4 @@
-"""Public testnet /info transport and mandatory par venue discovery.
+"""Public testnet /info transport and mandatory PAS BTC venue discovery.
 
 No private keys, signing SDK, or /exchange HTTP transport exists in this module.
 """
@@ -182,6 +182,9 @@ class HyperliquidClient:
         self.api_dex = None
         self.api_market = None
         self.dex_identity = None
+        self.dex_total_oi_notional = None
+        self.dex_oi_observed_ms = None
+        self.dex_oi_market_count = None
         self.metadata_timestamp_ms = None
         self.last_received_ms = None
         self.metadata = None
@@ -273,6 +276,9 @@ class HyperliquidClient:
         self.api_dex = None
         self.api_market = None
         self.dex_identity = None
+        self.dex_total_oi_notional = None
+        self.dex_oi_observed_ms = None
+        self.dex_oi_market_count = None
         self.metadata_timestamp_ms = None
         self.last_received_ms = None
         self.metadata = None

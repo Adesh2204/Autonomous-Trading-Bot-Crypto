@@ -5,6 +5,7 @@ from decimal import Decimal
 from .base_exchange import ExchangeError, decimal
 from .execution_journal import fingerprint
 from .order_lifecycle import OrderRequest
+from .competition_market import COMPETITION_BTC_OI_CAP_USD, COMPETITION_DEX_OI_CAP_USD
 
 
 @dataclass(frozen=True)
@@ -53,6 +54,8 @@ class ValidationContext:
     fills: tuple = ()
     reconciled: bool = True
     oracle_ms: int | None = None
+    dex_total_oi_notional: Decimal | None = None
+    dex_oi_observed_ms: int | None = None
 
 
 @dataclass(frozen=True)
@@ -173,13 +176,19 @@ class HyperliquidOrderValidator:
                 caps=dict(limits['coinToOiCap'])
                 # The raw limits schema names coins with or without the DEX prefix.
                 cap=decimal(caps.get(request.symbol,caps.get(request.symbol.split(':')[1])),positive=True)
+                cap=min(cap,Decimal(COMPETITION_BTC_OI_CAP_USD))
                 current=decimal(context.contexts[request.symbol]['openInterest'],nonnegative=True)
                 size_cap=decimal(limits['oiSzCapPerPerp'],positive=True)
-                total_cap=decimal(limits['totalOiCap'],positive=True)
-                total=sum((decimal(c['openInterest'],nonnegative=True)*decimal(c['oraclePx'],positive=True)
-                           for c in context.contexts.values()),Decimal(0))
+                api_total_cap=decimal(limits['totalOiCap'],positive=True)
+                total_cap=min(api_total_cap,Decimal(COMPETITION_DEX_OI_CAP_USD))
+                if (context.dex_total_oi_notional is None or context.dex_oi_observed_ms is None or
+                        not 0<=now_ms-context.dex_oi_observed_ms<=5000):
+                    return reject('DEX_OI_AGGREGATE_STALE_OR_UNVERIFIED')
+                total=decimal(context.dex_total_oi_notional,nonnegative=True)
                 audit.update(current_open_interest_notional=str(current*oracle_reference),
-                             open_interest_cap=str(cap),proposed_exposure_increase=str(increase*oracle_reference))
+                             open_interest_cap=str(cap),dex_open_interest_notional=str(total),
+                             dex_open_interest_cap=str(total_cap),
+                             proposed_exposure_increase=str(increase*oracle_reference))
                 if increase and (current+increase>size_cap or (current+increase)*oracle_reference>cap or
                                  total+increase*oracle_reference>total_cap):
                     return reject('OPEN_INTEREST_CAPACITY')
@@ -239,8 +248,28 @@ class LiveContextProvider:
         self.client.metadata_timestamp_ms=self.client.clock_ms()
         if len(values)!=len(metadata['universe']):
             raise ExchangeError('ASSET_CONTEXT_COUNT_MISMATCH')
-        contexts={row['name']:value for row,value in zip(metadata['universe'],values)
-                  if not row.get('isDelisted')}
+        contexts={}
+        dex_total_oi=decimal(0)
+        for row,value in zip(metadata['universe'],values):
+            if not isinstance(row,dict) or not isinstance(value,dict):
+                raise ExchangeError('ASSET_CONTEXT_INVALID')
+            symbol=self.client.canonical_market_name(row['name'])
+            try:
+                oi=decimal(value['openInterest'],nonnegative=True)
+                oracle=decimal(value['oraclePx'],positive=True)
+            except (KeyError,TypeError,ValueError) as exc:
+                raise ExchangeError('DEX_OI_AGGREGATE_UNVERIFIABLE') from exc
+            if not row.get('isDelisted'):
+                dex_total_oi+=oi*oracle
+                if symbol==self.client.api_market:
+                    if symbol in contexts:raise ExchangeError('AMBIGUOUS_BTC_ASSET_CONTEXT')
+                    contexts[symbol]=value
+        if set(contexts)!={self.client.api_market}:
+            raise ExchangeError('PAS_BTC_ASSET_CONTEXT_UNAVAILABLE')
+        oi_observed=self.client.clock_ms()
+        self.client.dex_total_oi_notional=dex_total_oi
+        self.client.dex_oi_observed_ms=oi_observed
+        self.client.dex_oi_market_count=len(metadata['universe'])
         quote=make_quote(book,contexts[request.symbol],self.client.clock_ms(),
                          mark_timestamp_ms=self.client.clock_ms())
         readiness=verify_live_account_readiness(self.account,self.signer_address,
@@ -264,4 +293,4 @@ class LiveContextProvider:
         return ValidationContext(self.client.market(request.symbol),current_hash,self.metadata_hash,
             self.client.metadata_timestamp_ms,quote,readiness,positions,orders,active,account_ms,
             limits,contexts,bool(self.feed_ready()) or critical,self.policy_leverage,fills,
-            bool(self.reconciliation_ready()),quote.mark_timestamp_ms)
+            bool(self.reconciliation_ready()),quote.mark_timestamp_ms,dex_total_oi,oi_observed)

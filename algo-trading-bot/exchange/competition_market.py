@@ -9,6 +9,8 @@ from .base_exchange import VenueMismatch
 
 COMPETITION_MARKET = "pas"
 COMPETITION_BASE_ASSET = "BTC"
+COMPETITION_BTC_OI_CAP_USD = 10_000_000
+COMPETITION_DEX_OI_CAP_USD = 50_000_000
 
 
 def _normalize(value):
