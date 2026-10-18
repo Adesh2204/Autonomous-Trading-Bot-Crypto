@@ -26,10 +26,10 @@ class LiveExecutionSession:
         self.recovery.position_guard=execution.position_guard
         self.journal=execution.journal
         self.clock_ms=market.client.clock_ms
-        self.position_state=PositionStateJournal(
-            self.journal, self.clock_ms,
-            market=(market.client.api_market if getattr(market.client,'competition_mode',False)
-                    else market.client.venue.prefix+'BTC'))
+        self.competition_mode=bool(getattr(market.client,'competition_mode',False))
+        self.primary_market=(market.client.api_market if self.competition_mode
+            else market.client.venue.prefix+'BTC')
+        self.position_state=PositionStateJournal(self.journal, self.clock_ms, market=self.primary_market)
         self.managers=self.recovery.managers
         self.quotes={}
         self.breakers=CircuitBreakers(risk.policy)
@@ -95,7 +95,10 @@ class LiveExecutionSession:
             max_drawdown=self.max_drawdown,starting_equity=self.starting_equity)
 
     def _sync_position_state(self):
-        """Reconstruct lifecycle from verified account truth and current protection."""
+        """Reconstruct the PAS lifecycle from verified account truth and protection."""
+        # PAR qualification keeps the existing mainline lifecycle owner.
+        if not self.competition_mode:
+            return
         if (not self.recovery.last_report.ready or
                 self.startup_recovery.state.value != 'READY'):
             self.execution.entries_paused = True
@@ -223,14 +226,14 @@ class LiveExecutionSession:
                     raise ExchangeError('EXIT_MANAGEMENT_EVIDENCE_MISSING')
                 manager.confirm_exit(fill,reason)
                 if not manager.has_open_position:
-                    if self.position_state.state != PositionState.FLAT_RECONCILED:
+                    if self.competition_mode and self.position_state.state != PositionState.FLAT_RECONCILED:
                         if self.position_state.state in {PositionState.EXIT_REQUESTED, PositionState.EXIT_PARTIAL, PositionState.PROTECTION_PENDING, PositionState.PROTECTED, PositionState.MANAGING}:
                             self.position_state.transition(PositionState.FLAT_RECONCILED, 'EXCHANGE_REPORTED_FLAT_AFTER_EXIT', evidence={'fill_id':fill.identity})
                     self.exit_reasons.pop(fill.symbol,None)
                     self.position_candidates.pop(fill.symbol,None)
             else:
                 entry=self.pending_entries.get(fill.symbol)
-                if self.position_state.state in {PositionState.ORDER_SUBMITTED, PositionState.PARTIALLY_FILLED}:
+                if self.competition_mode and self.position_state.state in {PositionState.ORDER_SUBMITTED, PositionState.PARTIALLY_FILLED}:
                     next_state = PositionState.FILLED if filled_for_intent >= request.quantity else PositionState.PARTIALLY_FILLED
                     if self.position_state.state != next_state:
                         self.position_state.transition(next_state, 'EXCHANGE_REPORTED_ENTRY_FILL', evidence={'fill_id':fill.identity,'requested_quantity':str(request.quantity),'observed_quantity_for_order':str(filled_for_intent)})
@@ -252,7 +255,7 @@ class LiveExecutionSession:
                     position['average_entry_price']=float(average)
                     position['tranches']=[dict(entry_price=float(average))]
                 self.position_candidates[fill.symbol]=intent['candidate']
-                if self.position_state.state in {PositionState.FILLED, PositionState.PARTIALLY_FILLED}:
+                if self.competition_mode and self.position_state.state in {PositionState.FILLED, PositionState.PARTIALLY_FILLED}:
                     self.position_state.transition(PositionState.PROTECTION_PENDING, 'ENTRY_FILL_REQUIRES_PROTECTION', evidence={'fill_id':fill.identity,'actual_quantity':str(state.positions.get(fill.symbol).quantity if state.positions.get(fill.symbol) else 0)})
                 self.direction_flip_intents.pop(fill.symbol,None)
             self.processed_fill_ids.add(fill.identity)
@@ -300,7 +303,7 @@ class LiveExecutionSession:
             # A fresh REST book supplies an exchange timestamp; cached market
             # timestamps are never presented as a new clock observation.
             from exchange.hyperliquid_market_data import HyperliquidMarketData
-            book=HyperliquidMarketData(self.market.client).get_orderbook(self.position_state.market)
+            book=HyperliquidMarketData(self.market.client).get_orderbook(self.primary_market)
             self.execution.clock_health.observe(book.timestamp_ms,sent,self.clock_ms())
             readiness=verify_live_account_readiness(self.recovery.account,self.execution.transport.signer_address,
                 clock_health=self.execution.clock_health,rate_limits=self.execution.rate_limits,
@@ -367,7 +370,7 @@ class LiveExecutionSession:
         if not candidate:
             raise ExchangeError('EXIT_CANDIDATE_LINK_REQUIRED')
         self.exit_reasons[symbol]=reason
-        if self.position_state.state not in {PositionState.EXIT_REQUESTED, PositionState.EXIT_PARTIAL}:
+        if self.competition_mode and self.position_state.state not in {PositionState.EXIT_REQUESTED, PositionState.EXIT_PARTIAL}:
             self.position_state.transition(PositionState.EXIT_REQUESTED, str(reason), evidence={'actual_quantity':str(held.quantity),'reduce_only':True})
         self._persist(symbol)
         permission=RiskPermission(candidate,symbol,side,abs(held.quantity),self.clock_ms(),
@@ -502,7 +505,8 @@ class LiveExecutionSession:
                 tif='Ioc',strategy_id=str(signal.get('signal_type') or 'VWAP_BASELINE'),client_order_id=key)
             permission=RiskPermission.from_decision(decision,request,candidate,self.clock_ms(),
                 signal_timestamp_ms=signal['timestamp_ms'],setup_type=signal.get('signal_type'))
-            self.position_state.transition(PositionState.SIGNAL_DETECTED, 'VALIDATED_BTC_SIGNAL', evidence={'candidate_id':candidate,'side':side,'signal_timestamp_ms':signal['timestamp_ms']})
+            if self.competition_mode:
+                self.position_state.transition(PositionState.SIGNAL_DETECTED, 'VALIDATED_BTC_SIGNAL', evidence={'candidate_id':candidate,'side':side,'signal_timestamp_ms':signal['timestamp_ms']})
             self.pending_entries[symbol]=dict(candidate_id=candidate,stop=str(decision.stop),target=str(decision.target),
                 setup_type=str(signal.get('signal_type') or 'VWAP_BASELINE'),reference_vwap=str(signal['reference']),
                 atr=str(signal['atr']),signal_timestamp_ms=signal['timestamp_ms'])
@@ -510,14 +514,15 @@ class LiveExecutionSession:
             try:
                 self.funnel.event('EXECUTION_DECISION',candidate,{},self.clock_ms())
                 self.funnel.event('ENTRY_ORDER_ATTEMPTED',candidate,{},self.clock_ms())
-                self.position_state.transition(PositionState.ORDER_SUBMITTED, 'ENTRY_ORDER_SUBMISSION_ATTEMPTED_FILL_MUST_BE_RECONCILED', evidence={'candidate_id':candidate,'quantity':str(decision.quantity),'side':side})
+                if self.competition_mode:
+                    self.position_state.transition(PositionState.ORDER_SUBMITTED, 'ENTRY_ORDER_SUBMISSION_ATTEMPTED_FILL_MUST_BE_RECONCILED', evidence={'candidate_id':candidate,'quantity':str(decision.quantity),'side':side})
                 result=self.execution.submit(request,permission=permission)
                 self.breakers.order_result(result.state not in {OrderState.UNKNOWN,OrderState.REJECTED})
             except ExchangeError as exc:
                 self.breakers.order_result(False)
                 self.journal.event('ENTRY_REJECTED',self.clock_ms(),candidate_id=candidate,reason=str(exc))
                 self.funnel.event('ENTRY_REJECTED',candidate,dict(reason=str(exc)),self.clock_ms())
-                if self.position_state.state == PositionState.SIGNAL_DETECTED:
+                if self.competition_mode and self.position_state.state == PositionState.SIGNAL_DETECTED:
                     self.position_state.transition(PositionState.FLAT, 'ENTRY_NOT_SUBMITTED', evidence={'reason':str(exc)})
             self._persist(symbol)
 
@@ -545,7 +550,7 @@ class LiveExecutionSession:
         if self.portfolio is not None:
             now=self.clock_ms()
             if self.portfolio.account_observed_ms is None or now-self.portfolio.account_observed_ms>=3000:
-                symbol=next(iter(self.recovery.state.positions),self.position_state.market)
+                symbol=next(iter(self.recovery.state.positions),self.primary_market)
                 from exchange.reliability_policy import RequestPriority
                 active=self.recovery.account._query('activeAssetData',coin=symbol,priority=RequestPriority.SAFETY)
                 self.portfolio.observe_buying_power(active,self.clock_ms())
