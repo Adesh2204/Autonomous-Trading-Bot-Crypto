@@ -171,6 +171,7 @@ class HyperliquidClient:
     def __init__(self, transport=None, *, base_url=TESTNET_API_URL, clock_ms=None, rate_limits=None, candle_audit=None, progress=None):
         if base_url != TESTNET_API_URL:
             raise VenueMismatch('TESTNET_ENDPOINT_REQUIRED')
+        self.base_url = base_url
         self.transport = transport if transport is not None else RequestsInfoTransport()
         self.clock_ms = clock_ms or (lambda: time.time_ns() // 1_000_000)
         self.ready = False
