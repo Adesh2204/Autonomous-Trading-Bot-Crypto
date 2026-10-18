@@ -5,7 +5,8 @@ from decimal import Decimal
 from .base_exchange import ExchangeError, decimal
 from .execution_journal import fingerprint
 from .order_lifecycle import OrderRequest
-from .competition_market import COMPETITION_BTC_OI_CAP_USD, COMPETITION_DEX_OI_CAP_USD
+from .competition_market import (COMPETITION_BTC_OI_CAP_USD, COMPETITION_DEX_OI_CAP_USD,
+                                is_scored_phase)
 
 
 @dataclass(frozen=True)
@@ -93,6 +94,8 @@ class HyperliquidOrderValidator:
                 return reject('MARKET_METADATA_CHANGED')
             if not 0 <= now_ms-context.metadata_ms <= 60000:
                 return reject('STALE_METADATA')
+            if not request.reduce_only and getattr(self.client, 'api_dex', None) is not None and not is_scored_phase(now_ms):
+                return reject('OUTSIDE_SCORED_PHASE')
             if request.side not in {'BUY','SELL'}:
                 return reject('INVALID_SIDE')
             if request.order_type != 'LIMIT' or request.tif not in {'Gtc','Ioc','Alo'}:

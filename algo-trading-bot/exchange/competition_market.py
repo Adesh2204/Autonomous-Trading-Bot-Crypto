@@ -4,6 +4,7 @@ The competition key is not an API alias. Discover the DEX and coin from current
 Testnet metadata on each startup; fail closed if identity is ambiguous.
 """
 import re
+from datetime import datetime, timezone
 
 from .base_exchange import VenueMismatch
 
@@ -11,6 +12,12 @@ COMPETITION_MARKET = "pas"
 COMPETITION_BASE_ASSET = "BTC"
 COMPETITION_BTC_OI_CAP_USD = 10_000_000
 COMPETITION_DEX_OI_CAP_USD = 50_000_000
+SCORING_START_MS = int(datetime(2026, 10, 19, 12, 0, tzinfo=timezone.utc).timestamp() * 1000)
+SCORING_END_MS = int(datetime(2026, 11, 6, 12, 0, tzinfo=timezone.utc).timestamp() * 1000)
+
+
+def is_scored_phase(timestamp_ms):
+    return type(timestamp_ms) is int and SCORING_START_MS <= timestamp_ms < SCORING_END_MS
 
 
 def _normalize(value):

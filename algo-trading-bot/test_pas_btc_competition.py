@@ -5,6 +5,7 @@ from exchange.base_exchange import VenueMismatch
 from exchange.competition_market import (
     canonical_api_market,
     resolve_collateral_token,
+    is_scored_phase, SCORING_START_MS, SCORING_END_MS,
     resolve_competition_dex,
 )
 from exchange.hyperliquid_client import HyperliquidClient
@@ -66,4 +67,10 @@ def test_market_registry_exposes_only_btc_even_when_dex_lists_other_markets():
     specs = client._parse_specs(metadata, 271)
     assert list(specs) == ["pas:BTC"]
     assert specs["pas:BTC"].asset_id == 2_810_000
-    client.transport.close()
+
+
+def test_scored_phase_window_is_utc_half_open():
+    assert not is_scored_phase(SCORING_START_MS - 1)
+    assert is_scored_phase(SCORING_START_MS)
+    assert is_scored_phase(SCORING_END_MS - 1)
+    assert not is_scored_phase(SCORING_END_MS)

@@ -21,6 +21,7 @@ from .stream_first import StreamFirstMarketData
 import threading
 import time
 from .runtime_schedule import RuntimeSchedule
+from .competition_snapshot import CompetitionSnapshotRecorder
 
 
 class LiveRuntime:
@@ -37,6 +38,7 @@ class LiveRuntime:
         self.results=results
         self.schedule=schedule or RuntimeSchedule()
         self.monotonic=monotonic or time.monotonic
+        self.snapshot_recorder=CompetitionSnapshotRecorder(session)
 
     def save_results(self):
         if self.results is None:
@@ -81,6 +83,7 @@ class LiveRuntime:
         try:
             while not stop.is_set():
                 try:
+                    self.snapshot_recorder.observe()
                     now=self.monotonic()
                     due=now>=next_scan
                     if due:
