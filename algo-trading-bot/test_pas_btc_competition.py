@@ -31,7 +31,8 @@ def test_different_api_alias_requires_explicit_competition_metadata():
     [None, {"name": "par", "fullName": "Perpetual Alpha"}],
 ])
 def test_unverified_or_ambiguous_mapping_fails_closed(dexes):
-    with pytest.raises(VenueMismatch, match="PAS_DEX_MAPPING_UNVERIFIED"):
+    expected = "PAS_DEX_DISCOVERY_UNAVAILABLE" if not dexes else "PAS_DEX_MAPPING_UNVERIFIED"
+    with pytest.raises(VenueMismatch, match=expected):
         resolve_competition_dex(dexes)
 
 
