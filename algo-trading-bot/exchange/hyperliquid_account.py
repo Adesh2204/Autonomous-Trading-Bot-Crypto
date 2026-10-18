@@ -171,7 +171,10 @@ class HyperliquidAccount:
                 symbol=delta['coin']
                 if not isinstance(symbol,str):
                     raise ExchangeError('INVALID_ACCOUNT_FUNDING')
-                if symbol != self.client.api_market:
+                if getattr(self.client,'competition_mode',False):
+                    if symbol != self.client.api_market:
+                        continue
+                elif not symbol.startswith(self.venue.prefix):
                     continue
                 self.client.market(symbol)
                 if delta['type']!='funding' or not start_ms<=timestamp(row['time'])<=end_ms:

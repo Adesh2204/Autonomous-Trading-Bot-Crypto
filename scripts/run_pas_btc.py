@@ -149,7 +149,7 @@ def read_only_preflight(profile_path, team_address=None, api_wallet_address=None
             "note": "Target only. Live sizing uses account-reported equity.",
         }
         report["checks"]["strategy_freeze"] = verify_strategy_freeze()
-        client = HyperliquidClient()
+        client = HyperliquidClient(venue='pas')
         client.startup()
         if set(client.markets) != {client.api_market} or not client.api_market.endswith(":BTC"):
             raise ExchangeError("BTC_ONLY_MARKET_REGISTRY_REQUIRED")

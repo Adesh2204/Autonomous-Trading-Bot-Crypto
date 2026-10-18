@@ -54,7 +54,7 @@ def test_collateral_token_name_is_resolved_from_runtime_spot_metadata():
 
 
 def test_market_registry_exposes_only_btc_even_when_dex_lists_other_markets():
-    client = HyperliquidClient(transport=lambda payload: {})
+    client = HyperliquidClient(venue='pas', transport=lambda payload: {})
     client.api_dex = "pas"
     metadata = {
         "universe": [
@@ -134,7 +134,7 @@ def test_full_startup_resolves_runtime_api_coin_from_competition_dex_metadata():
             return {"tokens": [{"index": 7, "name": "USDPR"}]}
         raise AssertionError("unexpected query: " + query)
 
-    client = HyperliquidClient(transport=transport)
+    client = HyperliquidClient(venue='pas', transport=transport)
     client.startup()
     assert client.competition_market == "pas"
     assert client.api_dex == "runtime-x"
@@ -150,7 +150,7 @@ def test_startup_never_falls_back_to_par_when_pas_identity_is_missing():
             return [None, {"name": "par", "fullName": "Perpetual Alpha"}]
         raise AssertionError("metadata should not be requested for an unverified DEX")
 
-    client = HyperliquidClient(transport=transport)
+    client = HyperliquidClient(venue='pas', transport=transport)
     with pytest.raises(VenueMismatch, match="PAS_DEX_MAPPING_UNVERIFIED"):
         client.startup()
     assert client.ready is False
