@@ -24,6 +24,7 @@ from exchange.competition_market import (
 from exchange.hyperliquid_client import HyperliquidClient
 from exchange.hyperliquid_market_data import HyperliquidMarketData
 from exchange.hyperliquid_account import HyperliquidAccount
+from exchange.market_health import validate_history
 from exchange.live_readiness import valid_address
 from market_regime_scanner import ScannerPolicy
 from risk.models import RiskPolicy
@@ -79,7 +80,9 @@ def verify_certification(path, api_dex, api_market):
                                           cwd=ROOT, text=True).strip()
     except Exception as exc:
         raise ExchangeError("CERTIFICATION_EVIDENCE_UNREADABLE") from exc
-    checks = evidence.get("checks") if isinstance(evidence, dict) else None
+    if not isinstance(evidence, dict):
+        raise ExchangeError("CRITICAL_CERTIFICATION_REPORT_INVALID")
+    checks = evidence.get("checks")
     if (evidence.get("status") != "READY_FOR_SCORED_PHASE" or
             evidence.get("competition_market") != COMPETITION_MARKET or
             evidence.get("api_dex") != api_dex or evidence.get("api_market") != api_market or
@@ -133,6 +136,7 @@ def read_only_preflight(profile_path, team_address=None, api_wallet_address=None
         end_ms = client.clock_ms() // 60_000 * 60_000 - 1
         start_ms = end_ms - (scanner.history_bars + 2) * 60_000
         candles = market.get_candles(client.api_market, start_ms, end_ms, now_ms=client.clock_ms())
+        validate_history(client.api_market, candles, client.clock_ms(), scanner.history_bars)
         market.get_asset_contexts()
         now = client.clock_ms()
         spread_bps = (quote.ask - quote.bid) / quote.mid * 10_000
@@ -162,10 +166,12 @@ def read_only_preflight(profile_path, team_address=None, api_wallet_address=None
         }
         if client.dex_total_oi_notional is None:
             raise ExchangeError("DEX_OI_TOTAL_UNAVAILABLE")
+        network_ok = client.base_url == "https://api.hyperliquid-testnet.xyz"
         report["checks"]["network_and_venue"] = {
-            "passed": client.base_url == "https://api.hyperliquid-testnet.xyz",
-            "venue": "HYPERLIQUID_TESTNET", "network": "testnet",
+            "passed": network_ok, "venue": "HYPERLIQUID_TESTNET", "network": "testnet",
         }
+        if not network_ok:
+            raise ExchangeError("HYPERLIQUID_TESTNET_ENDPOINT_REQUIRED")
 
         if not valid_address(team_address):
             report["checks"]["account_read_only"] = {"passed": False, "reason": "TEAM_WALLET_ADDRESS_REQUIRED"}
