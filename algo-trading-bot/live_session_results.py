@@ -64,7 +64,9 @@ class LiveSessionResults:
                     csv.DictWriter(stream,fieldnames=fields).writeheader()
         scanner_policy=getattr(session.scanner,'policy',None)
         configuration=dict(network='testnet',competition_market=session.market.client.competition_market,
-            dex=session.market.client.api_dex,api_market=session.market.client.api_market,
+            dex=(session.market.client.api_dex if getattr(session.market.client,'competition_mode',False) else session.market.client.dex),
+            api_market=(session.market.client.api_market if getattr(session.market.client,'competition_mode',False)
+                        else session.market.client.venue.prefix+'BTC'),
             collateral_token=session.market.client.collateral_token_name,execution_mode=self.mode,
             risk_policy=asdict(session.risk.policy),scanner_policy=asdict(scanner_policy) if scanner_policy is not None else None,
             vwap_policy='UTC_MIDNIGHT_BASELINE',model_version=None,
@@ -72,7 +74,9 @@ class LiveSessionResults:
             rate_policy=asdict(session.execution.rate_limits.policy))
         data=dict(schema_version=3,execution_mode=self.mode,source=self.source,
                   competition_market=session.market.client.competition_market,
-                  api_dex=session.market.client.api_dex,api_market=session.market.client.api_market,
+                  api_dex=(session.market.client.api_dex if getattr(session.market.client,'competition_mode',False) else session.market.client.dex),
+            api_market=(session.market.client.api_market if getattr(session.market.client,'competition_mode',False)
+                        else session.market.client.venue.prefix+'BTC'),
                   collateral_token=session.market.client.collateral_token_name,
                   team_wallet=session.execution.account.team_address,
                   api_wallet=session.execution.transport.signer_address,network='testnet',

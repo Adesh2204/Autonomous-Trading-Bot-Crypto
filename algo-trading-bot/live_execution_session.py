@@ -26,7 +26,10 @@ class LiveExecutionSession:
         self.recovery.position_guard=execution.position_guard
         self.journal=execution.journal
         self.clock_ms=market.client.clock_ms
-        self.position_state=PositionStateJournal(self.journal,self.clock_ms,market=market.client.api_market)
+        self.position_state=PositionStateJournal(
+            self.journal, self.clock_ms,
+            market=(market.client.api_market if getattr(market.client,'competition_mode',False)
+                    else market.client.venue.prefix+'BTC'))
         self.managers=self.recovery.managers
         self.quotes={}
         self.breakers=CircuitBreakers(risk.policy)
@@ -97,7 +100,7 @@ class LiveExecutionSession:
                 self.startup_recovery.state.value != 'READY'):
             self.execution.entries_paused = True
             return
-        symbol = self.market.client.api_market
+        symbol = self.position_state.market
         positions = self.recovery.state.positions
         other = [name for name,p in positions.items() if p.quantity and name != symbol]
         if other:
@@ -297,7 +300,7 @@ class LiveExecutionSession:
             # A fresh REST book supplies an exchange timestamp; cached market
             # timestamps are never presented as a new clock observation.
             from exchange.hyperliquid_market_data import HyperliquidMarketData
-            book=HyperliquidMarketData(self.market.client).get_orderbook(self.market.client.api_market)
+            book=HyperliquidMarketData(self.market.client).get_orderbook(self.position_state.market)
             self.execution.clock_health.observe(book.timestamp_ms,sent,self.clock_ms())
             readiness=verify_live_account_readiness(self.recovery.account,self.execution.transport.signer_address,
                 clock_health=self.execution.clock_health,rate_limits=self.execution.rate_limits,
@@ -542,7 +545,7 @@ class LiveExecutionSession:
         if self.portfolio is not None:
             now=self.clock_ms()
             if self.portfolio.account_observed_ms is None or now-self.portfolio.account_observed_ms>=3000:
-                symbol=next(iter(self.recovery.state.positions),self.market.client.api_market)
+                symbol=next(iter(self.recovery.state.positions),self.position_state.market)
                 from exchange.reliability_policy import RequestPriority
                 active=self.recovery.account._query('activeAssetData',coin=symbol,priority=RequestPriority.SAFETY)
                 self.portfolio.observe_buying_power(active,self.clock_ms())

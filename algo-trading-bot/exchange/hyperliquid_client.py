@@ -318,9 +318,9 @@ class HyperliquidClient:
         self.discovery = None
 
     def canonical_market_name(self, raw_name):
-        if not self.competition_mode:
-            raise VenueMismatch('PAS_COMPETITION_MAPPING_REQUIRED')
-        return canonical_api_market(self.api_dex, raw_name)
+        # PAS mode uses the runtime-discovered alias; profile mode uses its
+        # explicit venue namespace for compatibility with existing PAR tools.
+        return canonical_api_market(self.api_dex or self.dex, raw_name)
 
     def _parse_specs(self, metadata, dex_index):
         if self.competition_mode:

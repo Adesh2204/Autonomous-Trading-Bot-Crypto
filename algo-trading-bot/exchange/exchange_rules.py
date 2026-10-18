@@ -98,7 +98,7 @@ class HyperliquidOrderValidator:
                 return reject('MARKET_METADATA_CHANGED')
             if not 0 <= now_ms-context.metadata_ms <= 60000:
                 return reject('STALE_METADATA')
-            if not request.reduce_only and getattr(self.client, 'api_dex', None) is not None and not is_scored_phase(now_ms):
+            if not request.reduce_only and getattr(self.client, 'competition_mode', False) and not is_scored_phase(now_ms):
                 return reject('OUTSIDE_SCORED_PHASE')
             if request.side not in {'BUY','SELL'}:
                 return reject('INVALID_SIDE')
@@ -249,7 +249,7 @@ class LiveContextProvider:
             self.clock_health.observe(reference.timestamp_ms,sent,self.client.clock_ms())
         metadata,values=self.client.post_info('metaAndAssetCtxs')
         self.client.validate_metadata(metadata)
-        metadata=self.client._canonical_metadata(metadata,self.client.api_dex)
+        metadata=self.client._canonical_metadata(metadata, self.client.api_dex or getattr(self.client, 'dex', 'par'))
         current_hash=fingerprint(metadata)
         if current_hash!=self.metadata_hash:
             raise ExchangeError('MARKET_METADATA_CHANGED')
@@ -263,7 +263,8 @@ class LiveContextProvider:
                 raise ExchangeError('ASSET_CONTEXT_INVALID')
             symbol=row['name']
             if row.get('isDelisted'):
-                if symbol==self.client.api_market:raise ExchangeError('PAS_BTC_DELISTED')
+                if getattr(self.client, 'competition_mode', False) and symbol==self.client.api_market:raise ExchangeError('PAS_BTC_DELISTED')
+                if not getattr(self.client, 'competition_mode', False) and symbol==request.symbol:raise ExchangeError('MARKET_DELISTED')
                 continue
             try:
                 oi=decimal(value['openInterest'],nonnegative=True)
@@ -271,11 +272,18 @@ class LiveContextProvider:
             except (KeyError,TypeError,ValueError) as exc:
                 raise ExchangeError('DEX_OI_AGGREGATE_UNVERIFIABLE') from exc
             dex_total_oi+=oi*oracle
-            if symbol==self.client.api_market:
-                if symbol in contexts:raise ExchangeError('AMBIGUOUS_BTC_ASSET_CONTEXT')
+            if getattr(self.client, 'competition_mode', False):
+                if symbol==self.client.api_market:
+                    if symbol in contexts:raise ExchangeError('AMBIGUOUS_BTC_ASSET_CONTEXT')
+                    contexts[symbol]=value
+            elif symbol==request.symbol:
+                if symbol in contexts:raise ExchangeError('AMBIGUOUS_ASSET_CONTEXT')
                 contexts[symbol]=value
-        if set(contexts)!={self.client.api_market}:
-            raise ExchangeError('PAS_BTC_ASSET_CONTEXT_UNAVAILABLE')
+        if getattr(self.client, 'competition_mode', False):
+            if set(contexts)!={self.client.api_market}:
+                raise ExchangeError('PAS_BTC_ASSET_CONTEXT_UNAVAILABLE')
+        elif set(contexts)!={request.symbol}:
+            raise ExchangeError('ASSET_CONTEXT_UNAVAILABLE')
         oi_observed=self.client.clock_ms()
         self.client.dex_total_oi_notional=dex_total_oi
         self.client.dex_oi_observed_ms=oi_observed
