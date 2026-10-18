@@ -92,7 +92,7 @@ class HyperliquidMarketData:
 
     def get_asset_contexts(self):
         if not self.client.ready:
-            raise VenueMismatch('PAR_STARTUP_CHECK_REQUIRED')
+            raise VenueMismatch('PAS_STARTUP_CHECK_REQUIRED' if getattr(self.client, 'competition_mode', False) else self.client.dex.upper()+'_STARTUP_CHECK_REQUIRED')
         result = self.client.post_info('metaAndAssetCtxs')
         if not isinstance(result, list) or len(result) != 2:
             raise ExchangeError('INVALID_ASSET_CONTEXTS')
@@ -100,6 +100,9 @@ class HyperliquidMarketData:
         self.client.validate_metadata(metadata)
         if not isinstance(contexts, list) or len(contexts) != len(metadata['universe']):
             raise ExchangeError('INVALID_ASSET_CONTEXTS')
+        if not getattr(self.client, 'competition_mode', False):
+            return {row['name']: contexts[i] for i, row in enumerate(metadata['universe'])
+                    if isinstance(row, dict) and row.get('name') in self.client.markets}
         btc_contexts = {}
         dex_total_oi = decimal(0)
         # Only BTC enters the signal/strategy path. The aggregate OI sum below
