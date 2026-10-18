@@ -105,12 +105,24 @@ class LiveExecutionSession:
             raise ExchangeError('UNEXPECTED_NON_BTC_POSITION')
         held = positions.get(symbol)
         if held is None or not held.quantity:
-            target = (PositionState.FLAT_RECONCILED
-                      if self.position_state.state in {PositionState.EXIT_REQUESTED, PositionState.EXIT_PARTIAL}
-                      else PositionState.FLAT)
-            if self.position_state.state != target:
+            current = self.position_state.state
+            # A flat position with a still-open entry/exit/trigger order is not flat
+            # for execution purposes. Do not clear the state until authoritative
+            # order reconciliation confirms that every BTC order is resolved.
+            if current != PositionState.FLAT:
+                open_orders = self.recovery.account.get_frontend_open_orders()
+                if open_orders:
+                    self.execution.entries_paused = True
+                    self.journal.event('POSITION_STATE_WAITING_FOR_ORDER_RECONCILIATION',
+                        self.clock_ms(), symbol=symbol, open_order_count=len(open_orders))
+                    return
+            target = (PositionState.FLAT if current in {PositionState.UNKNOWN, PositionState.FLAT,
+                                                        PositionState.FLAT_RECONCILED}
+                      else PositionState.FLAT_RECONCILED)
+            if current != target:
                 self.position_state.transition(target, 'AUTHORITATIVE_BTC_FLAT_RECONCILIATION',
-                    evidence={'open_positions': 0, 'reconciliation_ready': True}, reconciled=True)
+                    evidence={'open_positions': 0, 'open_orders': 0, 'reconciliation_ready': True},
+                    reconciled=True)
             return
         protection = self.execution.protection
         status = protection.states.get(symbol,{}) if protection is not None else {}
