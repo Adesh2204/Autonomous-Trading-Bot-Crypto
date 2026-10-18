@@ -84,16 +84,21 @@ class LiveRuntime:
         try:
             while not stop.is_set():
                 try:
-                    self.snapshot_recorder.observe()
+                    snapshot = self.snapshot_recorder.observe()
+                    snapshot_blocked = (isinstance(snapshot, dict) and
+                                        snapshot.get('status') != 'RECORDED')
                     now=self.monotonic()
                     due=now>=next_scan
                     if due:
-                        # Failed scans also consume their scheduling slot.
+                        # Failed or blocked scans also consume their scheduling slot.
                         next_scan=now+self.schedule.scan_interval_seconds
-                    if due:
-                        self.session.cycle()
-                    else:
-                        self.session.cycle(scan=False)
+                    # Continue risk/position management, but never evaluate fresh entries
+                    # after a missed or unreconciled scoring snapshot.
+                    self.session.cycle(scan=bool(due and not snapshot_blocked))
+                    if snapshot_blocked:
+                        # Account reconciliation may recompute the general pause flag.
+                        # Re-latch snapshot failure after the cycle has completed.
+                        self.session.execution.entries_paused=True
                     if now>=next_export:
                         self.save_results()
                         next_export=now+self.schedule.export_interval_seconds

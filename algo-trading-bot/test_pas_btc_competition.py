@@ -207,3 +207,47 @@ def test_snapshot_failure_latch_survives_a_process_restart():
     second = recorder.observe()
     assert second["status"] == "SKIPPED"
     assert session.execution.entries_paused is True
+
+
+def test_runtime_snapshot_failure_skips_scan_and_reasserts_pause():
+    from types import SimpleNamespace
+    from exchange.live_runtime import LiveRuntime
+
+    class StopOnce:
+        def __init__(self):
+            self.calls = 0
+        def is_set(self):
+            self.calls += 1
+            return self.calls > 1
+        def wait(self, _seconds):
+            pass
+
+    class Closable:
+        def close(self):
+            pass
+
+    class Journal:
+        def event(self, kind, timestamp, **values):
+            pass
+        def close(self):
+            pass
+
+    cycles = []
+    execution = SimpleNamespace(entries_paused=False)
+    journal = Journal()
+    session = SimpleNamespace(
+        execution=execution,
+        recovery=SimpleNamespace(revoke=lambda _reason: None, state=SimpleNamespace(positions={})),
+        account_stream=None,
+        startup_recovery=SimpleNamespace(clean_shutdown=lambda: None),
+        journal=journal,
+        cycle=lambda *, scan=True: (cycles.append(scan), setattr(execution, "entries_paused", False)),
+        clock_ms=lambda: 1000,
+    )
+    runtime = LiveRuntime(session, SimpleNamespace(revoke=lambda: None), Closable(), Closable(),
+                          journal, Closable())
+    runtime.snapshot_recorder = SimpleNamespace(
+        observe=lambda: {"status": "SKIPPED", "reason": "SNAPSHOT_WINDOW_MISSED"})
+    runtime.run(StopOnce())
+    assert cycles == [False]
+    assert execution.entries_paused is True
