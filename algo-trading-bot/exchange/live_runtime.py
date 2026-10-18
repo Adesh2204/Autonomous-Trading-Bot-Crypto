@@ -145,8 +145,8 @@ def build_live_runtime(*,team_address,approval,session_id,initial_start_ms,risk_
 
     PAPER/false stops before reading a key or opening an exchange client.
     The team key is never accepted. Account administration stays outside this API.
-    fee_scale_verified is a manually verified venue fee-scale observation, not a
-    profitability setting. It must currently equal the venue's published scale 1.
+    fee_scale_verified is manually checked against the current DEX deployerFeeScale;
+    it is not a profitability setting and cannot override venue-reported rates.
     """
     from eth_account import Account
     from market_regime_scanner import MarketRegimeScanner

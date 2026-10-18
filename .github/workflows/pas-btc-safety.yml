@@ -32,6 +32,8 @@ jobs:
           cache-dependency-path: algo-trading-bot/requirements.txt
       - name: Install core dependencies
         run: python -m pip install -r algo-trading-bot/requirements.txt
+      - name: Static import test
+        run: python -c "import sys; sys.path.insert(0, 'algo-trading-bot'); sys.path.insert(0, 'scripts'); import exchange.live_runtime; import live_execution_session; import run_pas_btc"
       - name: Run PAS-to-API mapping and position-state tests
         working-directory: algo-trading-bot
         run: python -m pytest -q test_pas_btc_competition.py

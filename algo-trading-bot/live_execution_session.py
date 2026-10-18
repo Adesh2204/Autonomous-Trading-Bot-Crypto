@@ -221,7 +221,7 @@ class LiveExecutionSession:
                 manager.confirm_exit(fill,reason)
                 if not manager.has_open_position:
                     if self.position_state.state != PositionState.FLAT_RECONCILED:
-                        if self.position_state.state in {PositionState.EXIT_REQUESTED, PositionState.EXIT_PARTIAL, PositionState.PROTECTION_PENDING, PositionState.MANAGING}:
+                        if self.position_state.state in {PositionState.EXIT_REQUESTED, PositionState.EXIT_PARTIAL, PositionState.PROTECTION_PENDING, PositionState.PROTECTED, PositionState.MANAGING}:
                             self.position_state.transition(PositionState.FLAT_RECONCILED, 'EXCHANGE_REPORTED_FLAT_AFTER_EXIT', evidence={'fill_id':fill.identity})
                     self.exit_reasons.pop(fill.symbol,None)
                     self.position_candidates.pop(fill.symbol,None)
