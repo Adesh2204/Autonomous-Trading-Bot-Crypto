@@ -194,7 +194,7 @@ def test_real_frozen_signal_reaches_existing_protected_sdk_and_two_complete_cycl
                          'reasons': v.executor.recovery.last_report.reasons},
             'events': [(row['kind'], row['data']) for row in v.journal.db.execute(
                 "SELECT kind,data FROM events WHERE kind IN "
-                "('RECONCILIATION_FAILED','POST_ACTION_RECONCILIATION',"
+                "('RECONCILIATION_FAILED','POST_ACTION_RECONCILIATION','ACCOUNT_RECOVERY_EXCEPTION',"
                 "'PROTECTION_ERROR','PROTECTION_MISSING','PROTECTION_ACTIVE')")],
         })
         assert v.fixture.orders, (
@@ -202,7 +202,7 @@ def test_real_frozen_signal_reaches_existing_protected_sdk_and_two_complete_cycl
             v.executor.protection.report(),
             [tuple(r) for r in v.journal.db.execute(
                 "SELECT kind,data FROM events WHERE kind IN "
-                "('RECONCILIATION_FAILED','POST_ACTION_RECONCILIATION',"
+                "('RECONCILIATION_FAILED','POST_ACTION_RECONCILIATION','ACCOUNT_RECOVERY_EXCEPTION',"
                 "'PROTECTION_ERROR','PROTECTION_MISSING','PROTECTION_ACTIVE')")],
             [dict((k,row.get(k)) for k in ('symbol','side','quantity','status','reason'))
              for row in v.executor.protection.states.values()])
