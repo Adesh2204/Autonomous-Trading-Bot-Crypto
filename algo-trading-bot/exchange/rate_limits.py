@@ -284,7 +284,7 @@ class HyperliquidRateLimitManager:
     def read(self,query,operation,*,priority=None,request_key=None,expected_items=0,cancel_event=None):
         """Share identical concurrent public reads; never cache a stale result."""
         from .hyperliquid_client import DEX_QUERIES,COIN_QUERIES,ACCOUNT_QUERIES
-        if query not in DEX_QUERIES|COIN_QUERIES|ACCOUNT_QUERIES|{'perpDexs','candleSnapshot','userRole','exchangeStatus'}:
+        if query not in DEX_QUERIES|COIN_QUERIES|ACCOUNT_QUERIES|{'perpDexs','candleSnapshot','userRole','exchangeStatus','spotMeta','allPerpMetas'}:
             raise ExchangeError('PUBLIC_INFO_QUERY_NOT_ALLOWED')
         entry=None
         if request_key is not None:

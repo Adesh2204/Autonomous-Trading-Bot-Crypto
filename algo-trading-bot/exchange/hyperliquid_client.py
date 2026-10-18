@@ -10,6 +10,7 @@ import threading
 from contextlib import contextmanager
 
 from .base_exchange import ExchangeError, MarketSpec, VenueMismatch
+from .venue_profiles import venue_profile
 
 TESTNET_API_URL = 'https://api.hyperliquid-testnet.xyz'
 TESTNET_WS_URL = 'wss://api.hyperliquid-testnet.xyz/ws'
@@ -17,7 +18,7 @@ DEX = 'par'
 EXPECTED_MARKETS = frozenset('par:' + name for name in (
     'BTC', 'ETH', 'HYPE', 'SP500', 'EWY', 'EWJ', 'BRENT', 'GOLD', 'USDEUR', 'USDJPY'))
 DEX_QUERIES = frozenset({'meta', 'metaAndAssetCtxs', 'allMids', 'clearinghouseState',
-                         'openOrders', 'frontendOpenOrders', 'perpDexLimits'})
+                         'openOrders', 'frontendOpenOrders', 'perpDexLimits', 'perpDexStatus'})
 COIN_QUERIES = frozenset({'l2Book', 'recentTrades', 'fundingHistory', 'activeAssetData'})
 ACCOUNT_QUERIES = frozenset({'spotClearinghouseState', 'userFills', 'userFillsByTime',
                             'userFunding', 'userAbstraction', 'extraAgents', 'userFees', 'userRateLimit',
@@ -170,9 +171,15 @@ class RequestsInfoTransport:
             else:self.session.close()
 
 class HyperliquidClient:
-    def __init__(self, transport=None, *, base_url=TESTNET_API_URL, clock_ms=None, rate_limits=None, candle_audit=None, progress=None):
+    def __init__(self, transport=None, *, base_url=TESTNET_API_URL, clock_ms=None, rate_limits=None, candle_audit=None, progress=None, venue='par'):
         if base_url != TESTNET_API_URL:
             raise VenueMismatch('TESTNET_ENDPOINT_REQUIRED')
+        self.venue = venue_profile(venue)
+        self.dex = self.venue.dex
+        self.collateral = self.venue.collateral
+        self.venue_identity = self.venue.identity
+        self.expected_markets = self.venue.markets
+        self.discovery = None
         self.transport = transport if transport is not None else RequestsInfoTransport()
         self.clock_ms = clock_ms or (lambda: time.time_ns() // 1_000_000)
         self.ready = False
@@ -207,13 +214,13 @@ class HyperliquidClient:
     def post_info(self, query, *, priority=None, **parameters):
         if {'type', 'action', 'signature', 'nonce'} & parameters.keys():
             raise ExchangeError('INVALID_PUBLIC_INFO_PARAMETERS')
-        if query not in DEX_QUERIES | COIN_QUERIES | ACCOUNT_QUERIES | {'perpDexs', 'candleSnapshot'}:
+        if query not in DEX_QUERIES | COIN_QUERIES | ACCOUNT_QUERIES | {'perpDexs', 'candleSnapshot', 'spotMeta', 'exchangeStatus', 'allPerpMetas'}:
             raise ExchangeError('PUBLIC_INFO_QUERY_NOT_ALLOWED')
         payload = {'type': query, **parameters}
         if query in DEX_QUERIES:
-            if payload.get('dex', DEX) != DEX:
-                raise VenueMismatch('PAR_DEX_REQUIRED')
-            payload['dex'] = DEX
+            if payload.get('dex', self.dex) != self.dex:
+                raise VenueMismatch(self.dex.upper()+'_DEX_REQUIRED')
+            payload['dex'] = self.dex
         elif 'dex' in payload:
             raise ExchangeError('UNEXPECTED_DEX_PARAMETER')
         if query in COIN_QUERIES:
@@ -251,8 +258,8 @@ class HyperliquidClient:
         return result
 
     def _validate_coin(self, symbol):
-        if not isinstance(symbol, str) or not symbol.startswith('par:'):
-            raise VenueMismatch('EXPECTED_PAR_MARKET_REQUIRED')
+        if not isinstance(symbol, str) or not symbol.startswith(self.venue.prefix):
+            raise VenueMismatch('EXPECTED_'+self.dex.upper()+'_MARKET_REQUIRED')
         self.market(symbol)
 
     def invalidate(self):
@@ -263,6 +270,7 @@ class HyperliquidClient:
         self.metadata_timestamp_ms = None
         self.last_received_ms = None
         self.metadata = None
+        self.discovery = None
 
     def _parse_specs(self, metadata, dex_index):
         if not isinstance(metadata, dict) or not isinstance(metadata.get('universe'), list):
@@ -277,11 +285,11 @@ class HyperliquidClient:
             if not isinstance(row, dict) or not isinstance(row.get('name'), str):
                 raise VenueMismatch('INVALID_PAR_METADATA')
             name = row['name']
-            if (not name.startswith('par:') or name.count(':')!=1 or len(name)<=4 or
+            if (not name.startswith(self.venue.prefix) or name.count(':')!=1 or len(name)<=len(self.venue.prefix) or
                     name.strip()!=name or name in seen):
                 raise VenueMismatch('INVALID_PAR_MARKET_NAMESPACE')
             seen.add(name)
-            if row.get('isDelisted') and name in EXPECTED_MARKETS:
+            if row.get('isDelisted') and name in self.expected_markets:
                 raise VenueMismatch('EXPECTED_PAR_MARKET_DELISTED')
             if row.get('isDelisted'):
                 continue
@@ -296,8 +304,8 @@ class HyperliquidClient:
                                           100000 + 10000 * dex_index + index,tiers)
             except (KeyError, TypeError, ValueError) as exc:
                 raise VenueMismatch('INVALID_PAR_MARKET_SPEC') from exc
-        if not EXPECTED_MARKETS <= result.keys():
-            raise VenueMismatch("FATAL: Expected Perpetual Alpha DEX 'par' not detected. Trading disabled.")
+        if not self.expected_markets <= result.keys():
+            raise VenueMismatch("FATAL: Expected Perpetual Alpha DEX '"+self.dex+"' not detected. Trading disabled.")
         return {name: result[name] for name in sorted(result)}
 
     def startup(self):
@@ -306,13 +314,24 @@ class HyperliquidClient:
         if not isinstance(dexes, list):
             raise VenueMismatch('INVALID_DEX_LIST')
         matches = [i for i, row in enumerate(dexes)
-                   if isinstance(row, dict) and row.get('name') == DEX]
+                   if isinstance(row, dict) and row.get('name') == self.dex]
         if len(matches) != 1 or matches[0] < 1:
-            raise VenueMismatch("FATAL: Expected Perpetual Alpha DEX 'par' not detected. Trading disabled.")
+            raise VenueMismatch("FATAL: Expected Perpetual Alpha DEX '"+self.dex+"' not detected. Trading disabled.")
         metadata = self.post_info('meta')
         specifications = self._parse_specs(metadata, matches[0])
         self.dex_index = matches[0]
         self.collateral_token_id = metadata.get('collateralToken')
+        self.discovery = deepcopy(dexes[matches[0]])
+        if self.dex == 'pas':
+            tokens = self.post_info('spotMeta')
+            token = self.collateral_token_id
+            if (type(token) is not int or token < 0 or not isinstance(tokens,dict)
+                    or not isinstance(tokens.get('tokens'),list)):
+                raise VenueMismatch('PAS_COLLATERAL_METADATA_REQUIRED')
+            matching = [x for x in tokens['tokens'] if x.get('index') == token]
+            named = [x for x in tokens['tokens'] if x.get('name') == self.collateral]
+            if len(matching) != 1 or len(named) != 1 or matching[0] != named[0]:
+                raise VenueMismatch('PAS_USDP_COLLATERAL_IDENTITY_MISMATCH')
         self.markets = MappingProxyType(specifications)
         self.metadata = deepcopy(metadata)
         self.metadata_timestamp_ms = self.clock_ms()

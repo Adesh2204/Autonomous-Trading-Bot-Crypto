@@ -52,25 +52,29 @@ class RotatingReceipts(ReadOnlyReceipts):
             super()._record(record)
 
 
-def observe(root, output, stop, publish, *, markets=(), scan_seconds=60, account_seconds=300, once=False):
+def observe(root, output, stop, publish, *, markets=(), scan_seconds=60, account_seconds=300, once=False, venue='par'):
     """Reuse stream, rate and account reconciliation infrastructure indefinitely.
 
     STOP/deadline belongs to the outer local application. No mandate is renewed.
     An exposed account remains visible and never obtains write authority here.
     """
     root, output = Path(root), Path(output)
+    from .venue_profiles import venue_profile
+    profile = venue_profile(venue)
     source = active_source_hash(root)
     clock = lambda: time.time_ns() // 1_000_000
     journal = ExecutionJournal(output/'public.sqlite', session_id='public:terminal', team_address=TEAM)
     policy, _, _ = load_reliability_policy(root/'configs/reliability_policy.json')
     rates = HyperliquidRateLimitManager(journal, policy=policy, clock_ms=clock)
     rates.read_budget_wait_seconds = 65
+    rates.read_deadline_seconds = 75
     transport = RotatingReceipts(RequestsInfoTransport(), output/'info_receipts.jsonl')
-    client = SerializedPublicClient(transport, rate_limits=rates, clock_ms=clock)
+    client = SerializedPublicClient(transport, rate_limits=rates, clock_ms=clock, venue=profile)
     client.read_cancel_event = stop
     stream = account_stream = thread = account_thread = None
     result = dict(mode='TESTNET OBSERVATION', status='CONNECTING', source_hash=source,
-        team_wallet=TEAM, network='testnet', dex='par', approved_bankroll=None,
+        team_wallet=TEAM, network='testnet', dex=profile.dex, collateral=profile.collateral,
+        venue_identity=profile.identity, phase=profile.phase, approved_bankroll=None,
         approved_maximum_notional=None, proposed_bankroll='20000', signing_authority='NONE',
         exchange_writes=0, signatures_created=0, exchange_time_ms=None, signals=[], liquidity={})
     started_ms=clock()
@@ -177,7 +181,9 @@ def observe(root, output, stop, publish, *, markets=(), scan_seconds=60, account
                             bid=str(book.bids[0].price), ask=str(book.asks[0].price), book_ms=book.timestamp_ms,
                             observed_ms=at, active_asset_ms=active_ms, context_ms=context_ms,
                             size_step=str(spec.size_step), one_lot_bid_notional=str(spec.size_step*book.bids[0].price),
-                            partial_protection_qualified=partial['entry_admissible_under_documented_minimum'],partial_path=partial,
+                            partial_minimum_admissible=partial['entry_admissible_under_documented_minimum'],
+                            partial_protection_qualified=partial['entry_admissible_under_documented_minimum'] if profile.dex=='par' else False,
+                            native_protection_qualified=False,partial_path=partial,
                             targets={str(t):q*a['best_price']>=t for t in (1000,2500,5000,10000,25000,50000)},
                             qualified_unattended_notional='0', active_asset=active)
                         capacity[symbol]['evidence_evaluation']=opportunity

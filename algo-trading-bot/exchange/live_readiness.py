@@ -27,6 +27,8 @@ class LiveReadiness:
     clock_healthy: bool = False
     rate_limits_healthy: bool = False
     signed_transport_implemented: bool = True
+    dex: str = 'par'
+    collateral_token_name: str = 'USDPR'
 
     @property
     def account_ready(self):
@@ -55,7 +57,7 @@ class LiveReadiness:
             except Exception:
                 pass
         result = asdict(self)
-        result.update(network='testnet', dex='par', market_data_ready=bool(market_ready),
+        result.update(network='testnet', dex=self.dex, market_data_ready=bool(market_ready),
                       paper_ready=bool(market_ready), live_orders_permitted=bool(live_permitted),
                       controlled_execution_certified=False,
                       live_ready=False,
@@ -79,10 +81,11 @@ def verify_live_account_readiness(account, signer_address, *, clock_health, rate
         reasons.append('MARKET_METADATA_NOT_READY')
     if reasons:
         return LiveReadiness('NOT_READY', tuple(reasons), account.team_address,
-                             signer_address, now)
+                             signer_address, now,dex=getattr(client,'dex','par'),
+                             collateral_token_name=getattr(client,'collateral','USDPR'))
     try:
         mode = account._query('userAbstraction')
-        if mode != 'unifiedAccount':
+        if mode != 'unifiedAccount' and not (getattr(client,'dex','par')=='pas' and mode=='disabled'):
             reasons.append('UNIFIED_ACCOUNT_REQUIRED')
         agents = account._query('extraAgents')
         if not isinstance(agents, list):
@@ -108,7 +111,7 @@ def verify_live_account_readiness(account, signer_address, *, clock_health, rate
                 lifecycle='VERIFIED'
             with rate_limits.journal.transaction():
                 rate_limits.journal.db.execute('INSERT OR REPLACE INTO controls VALUES (?,?)',(lifecycle_key,lifecycle))
-        if mode == 'unifiedAccount':
+        if mode == 'unifiedAccount' or getattr(client,'dex','par')=='pas' and mode=='disabled':
             eq = account.get_equity()
             collateral = str(eq.collateral_balance)
             if eq.collateral_balance <= 0 or eq.reported_account_value <= 0:
@@ -134,4 +137,5 @@ def verify_live_account_readiness(account, signer_address, *, clock_health, rate
     return LiveReadiness('NOT_READY' if reasons else 'READY', tuple(reasons),
                          account.team_address, signer_address, client.clock_ms(), expiry,
                          collateral, mode, fees, budget, bool(reconciliation_ready),
-                         clock_health.healthy, rate_limits.safety_ready if critical else rate_limits.healthy)
+                         clock_health.healthy, rate_limits.safety_ready if critical else rate_limits.healthy,
+                         dex=getattr(client,'dex','par'),collateral_token_name=getattr(client,'collateral','USDPR'))

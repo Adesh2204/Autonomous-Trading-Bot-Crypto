@@ -1,0 +1,41 @@
+............................................................F........... [ 46%]
+........................................................................ [ 93%]
+.........F                                                               [100%]
+=================================== FAILURES ===================================
+______ test_runtime_wiring_reaches_mocked_key_only_after_fresh_preflight _______
+algo-trading-bot/test_native_qualification.py:305: in test_runtime_wiring_reaches_mocked_key_only_after_fresh_preflight
+    rt.build_native_qualification(tmp_path,p,a,test_receipt=tmp_path/'unused',output=tmp_path)
+algo-trading-bot/exchange/native_qualification_runtime.py:100: in build_native_qualification
+    auth.practice_permission_binding=practice_permission(proposal.team_wallet,approval.approved_ms,
+algo-trading-bot/exchange/native_qualification_permissions.py:24: in practice_permission
+    if path is None:raise ExchangeError('ORGANIZER_PRACTICE_QUALIFICATION_PERMISSION_REQUIRED')
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   exchange.base_exchange.ExchangeError: ORGANIZER_PRACTICE_QUALIFICATION_PERMISSION_REQUIRED
+
+During handling of the above exception, another exception occurred:
+algo-trading-bot/test_native_qualification.py:304: in test_runtime_wiring_reaches_mocked_key_only_after_fresh_preflight
+    with pytest.raises(ExchangeError,match='MOCK_KEY_BOUNDARY_REACHED'):
+E   AssertionError: Regex pattern did not match.
+E    Regex: 'MOCK_KEY_BOUNDARY_REACHED'
+E    Input: 'ORGANIZER_PRACTICE_QUALIFICATION_PERMISSION_REQUIRED'
+_ test_failed_fresh_preflight_consumes_corridor_invocation_before_key_and_blocks_restart _
+algo-trading-bot/test_native_price_corridor.py:194: in test_failed_fresh_preflight_consumes_corridor_invocation_before_key_and_blocks_restart
+    rt.build_native_qualification(tmp_path,p,a,test_receipt=tmp_path/'unused',output=tmp_path/'first')
+algo-trading-bot/exchange/native_qualification_runtime.py:100: in build_native_qualification
+    auth.practice_permission_binding=practice_permission(proposal.team_wallet,approval.approved_ms,
+algo-trading-bot/exchange/native_qualification_permissions.py:24: in practice_permission
+    if path is None:raise ExchangeError('ORGANIZER_PRACTICE_QUALIFICATION_PERMISSION_REQUIRED')
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   exchange.base_exchange.ExchangeError: ORGANIZER_PRACTICE_QUALIFICATION_PERMISSION_REQUIRED
+
+During handling of the above exception, another exception occurred:
+algo-trading-bot/test_native_price_corridor.py:193: in test_failed_fresh_preflight_consumes_corridor_invocation_before_key_and_blocks_restart
+    with pytest.raises(ExchangeError,match='OUTSIDE_APPROVED_CORRIDOR'):
+E   AssertionError: Regex pattern did not match.
+E    Regex: 'OUTSIDE_APPROVED_CORRIDOR'
+E    Input: 'ORGANIZER_PRACTICE_QUALIFICATION_PERMISSION_REQUIRED'
+- generated xml file: /Users/adesh/Autonomous Trading Bot - Crypto /docs/par_native_repair_2026-10-18/focused_first.xml -
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_native_qualification.py::test_runtime_wiring_reaches_mocked_key_only_after_fresh_preflight
+FAILED algo-trading-bot/test_native_price_corridor.py::test_failed_fresh_preflight_consumes_corridor_invocation_before_key_and_blocks_restart
+2 failed, 152 passed in 46.80s

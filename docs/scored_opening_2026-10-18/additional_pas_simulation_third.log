@@ -1,0 +1,31 @@
+partial_entry 0 TradeState.POSITION_MANAGED Position(symbol='pas:BTC', quantity=Decimal('1.0000'), entry_price=Decimal('100.15'), unrealized_pnl=Decimal('0'), margin_used=Decimal('10'), liquidation_price=None, leverage=None)
+two_noninteractive_cycles 0 TradeState.POSITION_MANAGED Position(symbol='pas:BTC', quantity=Decimal('1.0000'), entry_price=Decimal('100.15'), unrealized_pnl=Decimal('0'), margin_used=Decimal('10'), liquidation_price=None, leverage=None)
+two_noninteractive_cycles 1 TradeState.POSITION_MANAGED Position(symbol='pas:BTC', quantity=Decimal('1.0000'), entry_price=Decimal('100.15'), unrealized_pnl=Decimal('0'), margin_used=Decimal('10'), liquidation_price=None, leverage=None)
+Traceback (most recent call last):
+  File "/Users/adesh/Autonomous Trading Bot - Crypto /docs/scored_opening_2026-10-18/additional_pas_simulation.py", line 39, in <module>
+    (O/'additional_pas_simulation.json').write_text(json.dumps(dict(source='OFFLINE_EPHEMERAL_FIXTURE_ONLY',results=rows,actual_pnl=None,native_qualification=False),indent=2)+'\n')
+                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/json/__init__.py", line 238, in dumps
+    **kw).encode(obj)
+          ^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/json/encoder.py", line 202, in encode
+    chunks = list(chunks)
+             ^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/json/encoder.py", line 432, in _iterencode
+    yield from _iterencode_dict(o, _current_indent_level)
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/json/encoder.py", line 406, in _iterencode_dict
+    yield from chunks
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/json/encoder.py", line 326, in _iterencode_list
+    yield from chunks
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/json/encoder.py", line 406, in _iterencode_dict
+    yield from chunks
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/json/encoder.py", line 326, in _iterencode_list
+    yield from chunks
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/json/encoder.py", line 406, in _iterencode_dict
+    yield from chunks
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/json/encoder.py", line 439, in _iterencode
+    o = _default(o)
+        ^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/json/encoder.py", line 180, in default
+    raise TypeError(f'Object of type {o.__class__.__name__} '
+TypeError: Object of type Decimal is not JSON serializable

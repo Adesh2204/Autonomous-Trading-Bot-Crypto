@@ -1,0 +1,189 @@
+..................EEEEEEEEEEEEE......................................... [ 48%]
+........................................................................ [ 96%]
+.....                                                                    [100%]
+==================================== ERRORS ====================================
+_ ERROR at setup of test_pas_frozen_signal_sdk_protection_close_and_realized_accounting _
+algo-trading-bot/test_pas_execution_faults.py:71: in pas_bridge
+    try:yield bridge.__wrapped__(v,monkeypatch)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/test_long_session.py:153: in bridge
+    assert session.startup().ready
+           ^^^^^^^^^^^^^^^^^
+algo-trading-bot/live_execution_session.py:177: in startup
+    report=self.startup_recovery.reconcile()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/startup_recovery.py:175: in reconcile
+    raise ExchangeError('STARTUP_RECOVERY_FAILED:'+type(exc).__name__) from None
+E   exchange.base_exchange.ExchangeError: STARTUP_RECOVERY_FAILED:VenueMismatch
+_____ ERROR at setup of test_pas_uncertain_entry_is_never_repeated[reject] _____
+algo-trading-bot/test_pas_execution_faults.py:71: in pas_bridge
+    try:yield bridge.__wrapped__(v,monkeypatch)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/test_long_session.py:153: in bridge
+    assert session.startup().ready
+           ^^^^^^^^^^^^^^^^^
+algo-trading-bot/live_execution_session.py:177: in startup
+    report=self.startup_recovery.reconcile()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/startup_recovery.py:175: in reconcile
+    raise ExchangeError('STARTUP_RECOVERY_FAILED:'+type(exc).__name__) from None
+E   exchange.base_exchange.ExchangeError: STARTUP_RECOVERY_FAILED:VenueMismatch
+_ ERROR at setup of test_pas_uncertain_entry_is_never_repeated[timeout_before] _
+algo-trading-bot/test_pas_execution_faults.py:71: in pas_bridge
+    try:yield bridge.__wrapped__(v,monkeypatch)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/test_long_session.py:153: in bridge
+    assert session.startup().ready
+           ^^^^^^^^^^^^^^^^^
+algo-trading-bot/live_execution_session.py:177: in startup
+    report=self.startup_recovery.reconcile()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/startup_recovery.py:175: in reconcile
+    raise ExchangeError('STARTUP_RECOVERY_FAILED:'+type(exc).__name__) from None
+E   exchange.base_exchange.ExchangeError: STARTUP_RECOVERY_FAILED:VenueMismatch
+_ ERROR at setup of test_pas_uncertain_entry_is_never_repeated[entry_internet_after_fill] _
+algo-trading-bot/test_pas_execution_faults.py:71: in pas_bridge
+    try:yield bridge.__wrapped__(v,monkeypatch)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/test_long_session.py:153: in bridge
+    assert session.startup().ready
+           ^^^^^^^^^^^^^^^^^
+algo-trading-bot/live_execution_session.py:177: in startup
+    report=self.startup_recovery.reconcile()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/startup_recovery.py:175: in reconcile
+    raise ExchangeError('STARTUP_RECOVERY_FAILED:'+type(exc).__name__) from None
+E   exchange.base_exchange.ExchangeError: STARTUP_RECOVERY_FAILED:VenueMismatch
+_ ERROR at setup of test_pas_failed_native_stop_does_not_rearm_or_hide_exposure[reject] _
+algo-trading-bot/test_pas_execution_faults.py:71: in pas_bridge
+    try:yield bridge.__wrapped__(v,monkeypatch)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/test_long_session.py:153: in bridge
+    assert session.startup().ready
+           ^^^^^^^^^^^^^^^^^
+algo-trading-bot/live_execution_session.py:177: in startup
+    report=self.startup_recovery.reconcile()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/startup_recovery.py:175: in reconcile
+    raise ExchangeError('STARTUP_RECOVERY_FAILED:'+type(exc).__name__) from None
+E   exchange.base_exchange.ExchangeError: STARTUP_RECOVERY_FAILED:VenueMismatch
+_ ERROR at setup of test_pas_failed_native_stop_does_not_rearm_or_hide_exposure[timeout_before] _
+algo-trading-bot/test_pas_execution_faults.py:71: in pas_bridge
+    try:yield bridge.__wrapped__(v,monkeypatch)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/test_long_session.py:153: in bridge
+    assert session.startup().ready
+           ^^^^^^^^^^^^^^^^^
+algo-trading-bot/live_execution_session.py:177: in startup
+    report=self.startup_recovery.reconcile()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/startup_recovery.py:175: in reconcile
+    raise ExchangeError('STARTUP_RECOVERY_FAILED:'+type(exc).__name__) from None
+E   exchange.base_exchange.ExchangeError: STARTUP_RECOVERY_FAILED:VenueMismatch
+_ ERROR at setup of test_pas_failed_native_stop_does_not_rearm_or_hide_exposure[wrong_quantity] _
+algo-trading-bot/test_pas_execution_faults.py:71: in pas_bridge
+    try:yield bridge.__wrapped__(v,monkeypatch)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/test_long_session.py:153: in bridge
+    assert session.startup().ready
+           ^^^^^^^^^^^^^^^^^
+algo-trading-bot/live_execution_session.py:177: in startup
+    report=self.startup_recovery.reconcile()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/startup_recovery.py:175: in reconcile
+    raise ExchangeError('STARTUP_RECOVERY_FAILED:'+type(exc).__name__) from None
+E   exchange.base_exchange.ExchangeError: STARTUP_RECOVERY_FAILED:VenueMismatch
+_ ERROR at setup of test_pas_partial_or_full_native_closing_fill_uses_actual_remaining_position[.5] _
+algo-trading-bot/test_pas_execution_faults.py:71: in pas_bridge
+    try:yield bridge.__wrapped__(v,monkeypatch)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/test_long_session.py:153: in bridge
+    assert session.startup().ready
+           ^^^^^^^^^^^^^^^^^
+algo-trading-bot/live_execution_session.py:177: in startup
+    report=self.startup_recovery.reconcile()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/startup_recovery.py:175: in reconcile
+    raise ExchangeError('STARTUP_RECOVERY_FAILED:'+type(exc).__name__) from None
+E   exchange.base_exchange.ExchangeError: STARTUP_RECOVERY_FAILED:VenueMismatch
+_ ERROR at setup of test_pas_partial_or_full_native_closing_fill_uses_actual_remaining_position[1] _
+algo-trading-bot/test_pas_execution_faults.py:71: in pas_bridge
+    try:yield bridge.__wrapped__(v,monkeypatch)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/test_long_session.py:153: in bridge
+    assert session.startup().ready
+           ^^^^^^^^^^^^^^^^^
+algo-trading-bot/live_execution_session.py:177: in startup
+    report=self.startup_recovery.reconcile()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/startup_recovery.py:175: in reconcile
+    raise ExchangeError('STARTUP_RECOVERY_FAILED:'+type(exc).__name__) from None
+E   exchange.base_exchange.ExchangeError: STARTUP_RECOVERY_FAILED:VenueMismatch
+_______ ERROR at setup of test_pas_partial_close_retains_global_exposure _______
+algo-trading-bot/test_pas_execution_faults.py:71: in pas_bridge
+    try:yield bridge.__wrapped__(v,monkeypatch)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/test_long_session.py:153: in bridge
+    assert session.startup().ready
+           ^^^^^^^^^^^^^^^^^
+algo-trading-bot/live_execution_session.py:177: in startup
+    report=self.startup_recovery.reconcile()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/startup_recovery.py:175: in reconcile
+    raise ExchangeError('STARTUP_RECOVERY_FAILED:'+type(exc).__name__) from None
+E   exchange.base_exchange.ExchangeError: STARTUP_RECOVERY_FAILED:VenueMismatch
+____ ERROR at setup of test_pas_subminimum_partial_is_blocked_before_entry _____
+algo-trading-bot/test_pas_execution_faults.py:71: in pas_bridge
+    try:yield bridge.__wrapped__(v,monkeypatch)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/test_long_session.py:153: in bridge
+    assert session.startup().ready
+           ^^^^^^^^^^^^^^^^^
+algo-trading-bot/live_execution_session.py:177: in startup
+    report=self.startup_recovery.reconcile()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/startup_recovery.py:175: in reconcile
+    raise ExchangeError('STARTUP_RECOVERY_FAILED:'+type(exc).__name__) from None
+E   exchange.base_exchange.ExchangeError: STARTUP_RECOVERY_FAILED:VenueMismatch
+_____ ERROR at setup of test_pas_gap_with_unfilled_stop_never_reports_flat _____
+algo-trading-bot/test_pas_execution_faults.py:71: in pas_bridge
+    try:yield bridge.__wrapped__(v,monkeypatch)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/test_long_session.py:153: in bridge
+    assert session.startup().ready
+           ^^^^^^^^^^^^^^^^^
+algo-trading-bot/live_execution_session.py:177: in startup
+    report=self.startup_recovery.reconcile()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/startup_recovery.py:175: in reconcile
+    raise ExchangeError('STARTUP_RECOVERY_FAILED:'+type(exc).__name__) from None
+E   exchange.base_exchange.ExchangeError: STARTUP_RECOVERY_FAILED:VenueMismatch
+_ ERROR at setup of test_pas_disconnect_with_stop_keeps_exposure_and_no_retry __
+algo-trading-bot/test_pas_execution_faults.py:71: in pas_bridge
+    try:yield bridge.__wrapped__(v,monkeypatch)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/test_long_session.py:153: in bridge
+    assert session.startup().ready
+           ^^^^^^^^^^^^^^^^^
+algo-trading-bot/live_execution_session.py:177: in startup
+    report=self.startup_recovery.reconcile()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/startup_recovery.py:175: in reconcile
+    raise ExchangeError('STARTUP_RECOVERY_FAILED:'+type(exc).__name__) from None
+E   exchange.base_exchange.ExchangeError: STARTUP_RECOVERY_FAILED:VenueMismatch
+- generated xml file: /Users/adesh/Autonomous Trading Bot - Crypto /docs/scored_opening_2026-10-18/focused_first.xml -
+=========================== short test summary info ============================
+ERROR algo-trading-bot/test_pas_execution_faults.py::test_pas_frozen_signal_sdk_protection_close_and_realized_accounting
+ERROR algo-trading-bot/test_pas_execution_faults.py::test_pas_uncertain_entry_is_never_repeated[reject]
+ERROR algo-trading-bot/test_pas_execution_faults.py::test_pas_uncertain_entry_is_never_repeated[timeout_before]
+ERROR algo-trading-bot/test_pas_execution_faults.py::test_pas_uncertain_entry_is_never_repeated[entry_internet_after_fill]
+ERROR algo-trading-bot/test_pas_execution_faults.py::test_pas_failed_native_stop_does_not_rearm_or_hide_exposure[reject]
+ERROR algo-trading-bot/test_pas_execution_faults.py::test_pas_failed_native_stop_does_not_rearm_or_hide_exposure[timeout_before]
+ERROR algo-trading-bot/test_pas_execution_faults.py::test_pas_failed_native_stop_does_not_rearm_or_hide_exposure[wrong_quantity]
+ERROR algo-trading-bot/test_pas_execution_faults.py::test_pas_partial_or_full_native_closing_fill_uses_actual_remaining_position[.5]
+ERROR algo-trading-bot/test_pas_execution_faults.py::test_pas_partial_or_full_native_closing_fill_uses_actual_remaining_position[1]
+ERROR algo-trading-bot/test_pas_execution_faults.py::test_pas_partial_close_retains_global_exposure
+ERROR algo-trading-bot/test_pas_execution_faults.py::test_pas_subminimum_partial_is_blocked_before_entry
+ERROR algo-trading-bot/test_pas_execution_faults.py::test_pas_gap_with_unfilled_stop_never_reports_flat
+ERROR algo-trading-bot/test_pas_execution_faults.py::test_pas_disconnect_with_stop_keeps_exposure_and_no_retry
+136 passed, 13 errors in 21.74s

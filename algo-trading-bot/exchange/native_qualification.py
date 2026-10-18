@@ -147,6 +147,10 @@ class NativeQualificationAuthorization(CertificationAuthorization):
 
     def require(self, team, signer):
         super().require(team, signer)
+        binding=getattr(self,'practice_permission_binding',None)
+        if binding is not None:
+            from .native_qualification_permissions import require_bound_permission
+            require_bound_permission(binding,self.clock_ms())
         a = self.approval
         from .native_price_corridor import CorridorNativeProposal, CorridorNativeApproval
         bounded = type(self.proposal) is CorridorNativeProposal
@@ -241,10 +245,24 @@ class NativeQualificationTransport(OfficialSDKTransport):
             self._http_started_nonce = payload.get('nonce')
         from .execution_journal import fingerprint
         orders = payload['action'].get('orders', [])
-        self.authorization.journal.event('QUALIFICATION_TRANSPORT_BOUNDARY', self.client.clock_ms(),
-            stage=stage, cloid=orders[0].get('c') if len(orders) == 1 else None,
+        cloid=orders[0].get('c') if len(orders)==1 else None
+        p=self.authorization.proposal;at=self.client.clock_ms()
+        try:working_source=self.authorization.source_hash()
+        except Exception:working_source=None
+        self.authorization.journal.event('QUALIFICATION_TRANSPORT_BOUNDARY', at,
+            stage=stage, cloid=cloid,working_source_hash=working_source,
+            original_source_hash=p.source_hash,configuration_hash=p.identity,
+            team=p.team_wallet,api_wallet=p.api_wallet,
             action_hash=fingerprint(payload['action']), nonce=payload.get('nonce'),
             expires_ms=payload.get('expiresAfter'), network='testnet', dex='par', **details)
+        # Forward-only causal evidence: never backfill an older UNKNOWN event.
+        if stage=='PRE_HTTP_REJECTED' and cloid and self.authorization.journal.db.execute(
+                'SELECT 1 FROM intents WHERE cloid=?',(cloid,)).fetchone():
+            self.authorization.journal.audit_stage(cloid,'PRE_HTTP_REJECTED',at,
+                source='NATIVE_QUALIFICATION_TRANSPORT',working_source_hash=working_source,
+                original_source_hash=p.source_hash,
+                configuration_hash=p.identity,action_hash=fingerprint(payload['action']),
+                nonce=payload.get('nonce'),expires_ms=payload.get('expiresAfter'),**details)
 
 
 class NativeQualificationContextProvider(EmergencyContextProvider):

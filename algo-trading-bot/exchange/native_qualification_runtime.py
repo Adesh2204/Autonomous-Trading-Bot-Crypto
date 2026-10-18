@@ -30,6 +30,49 @@ from .native_qualification import (NativeQualificationProposal, NativeQualificat
     NativeQualificationExecution, NativeQualificationSequence, NativeQualificationContextProvider,
     require_partial_abort_path, check_entry)
 from .native_price_corridor import CorridorNativeProposal, CorridorNativeApproval
+from .native_qualification_permissions import practice_permission
+
+
+def prior_qualification_state(state):
+    """Read real practice journals without schema migrations or row changes."""
+    from .qualification_intent_recovery import effective_rows
+    from .single_position_guard import unresolved
+    result=dict(status='NO_PRIOR_UNRESOLVED_INTENT',unresolved=[],journals={},blockers=[],prior_native_invocations=[])
+    try:
+        for name in ('certification','qualification'):
+            path=Path(state)/(name+'.sqlite')
+            if not path.exists():continue
+            with sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True) as db:
+                integrity=db.execute('PRAGMA integrity_check').fetchone()[0]
+                if integrity!='ok':raise ExchangeError('PRIOR_QUALIFICATION_JOURNAL_INTEGRITY_FAILED')
+                names=[r[1] for r in db.execute('PRAGMA table_info(intents)')]
+                rows=effective_rows(db) if name=='qualification' else [dict(zip(names,r)) for r in db.execute('SELECT * FROM intents')]
+                result['journals'][name]=dict(integrity=integrity)
+                if db.execute("SELECT 1 FROM sqlite_master WHERE name='recovery_snapshots'").fetchone():
+                    from .execution_journal import fingerprint
+                    if any(fingerprint(json.loads(data))!=checksum for data,checksum in db.execute('SELECT data,checksum FROM recovery_snapshots')):
+                        raise ExchangeError('PRIOR_QUALIFICATION_CHECKPOINT_INTEGRITY_FAILED')
+                result['unresolved'] += [dict(journal=name,intent_key=r['intent_key'],cloid=r['cloid'],state=r['state']) for r in rows if unresolved(r)]
+                if db.execute("SELECT 1 FROM sqlite_master WHERE name='signed_management'").fetchone():
+                    result['unresolved'] += [dict(journal=name,management_id=i,state=s) for i,s in db.execute("SELECT id,state FROM signed_management WHERE state='UNKNOWN'")]
+                if name=='qualification' and db.execute("SELECT 1 FROM sqlite_master WHERE name='controls'").fetchone():
+                    attempted=db.execute("SELECT value FROM controls WHERE name='native_qualification_attempted'").fetchone()
+                    result['native_attempt_consumed']=bool(attempted and json.loads(attempted[0]))
+                    result['prior_native_invocations']=[dict(control=k,record=json.loads(v)) for k,v in db.execute(
+                        "SELECT name,value FROM controls WHERE name LIKE 'native_qualification_invocation:%'")]
+        if result['unresolved']:result['blockers'].append('PRIOR_QUALIFICATION_UNRESOLVED_REVIEW_REQUIRED')
+        if result.get('native_attempt_consumed'):result['blockers'].append('NATIVE_QUALIFICATION_RESTART_REQUIRES_READ_ONLY_REVIEW')
+        if result['blockers']:result['status']=result['blockers'][0]
+    except (OSError,sqlite3.Error,ExchangeError,ValueError,KeyError) as exc:
+        result.update(status='PRIOR_QUALIFICATION_EVIDENCE_REVIEW_REQUIRED',
+            error=str(exc) if isinstance(exc,ExchangeError) else type(exc).__name__)
+    return result
+
+
+def require_prior_qualification_settled(state):
+    result=prior_qualification_state(state)
+    if result['status']!='NO_PRIOR_UNRESOLVED_INTENT':raise ExchangeError(result['status'])
+    return result
 
 
 def require_prior_certification_settled(state):
@@ -43,7 +86,7 @@ def require_prior_certification_settled(state):
             raise ExchangeError('PRIOR_CERTIFICATION_UNRESOLVED_REVIEW_REQUIRED')
 
 
-def build_native_qualification(root, proposal, approval, *, test_receipt, output):
+def build_native_qualification(root, proposal, approval, *, test_receipt, output,organizer_permission=None):
     """No private key or nonce allocation until exact consent and all fresh gates."""
     from strategy_freeze import verify_strategy_freeze
     from venue_config import require_paper_migration
@@ -55,6 +98,7 @@ def build_native_qualification(root, proposal, approval, *, test_receipt, output
     require_qualification_regression(root, test_receipt)
     state = root/'runtime/testnet/anchorium-bot-1'
     require_prior_certification_settled(state)
+    require_prior_qualification_settled(state)
     journal = ExecutionJournal(state/'qualification.sqlite',
         session_id='anchorium-one-qualification-v1', team_address=proposal.team_wallet)
     client = transport = nonces = key = signer = None
@@ -65,6 +109,8 @@ def build_native_qualification(root, proposal, approval, *, test_receipt, output
             clock_ms=lambda:time.time_ns()//1000000, source_hash=lambda:active_source_hash(root),
             policy_hash=lambda:hashlib.sha256((root/'configs/reliability_policy.json').read_bytes()).hexdigest())
         auth.require(proposal.team_wallet, proposal.api_wallet)
+        auth.practice_permission_binding=practice_permission(proposal.team_wallet,approval.approved_ms,
+            approval.expires_ms,path=organizer_permission)
         if journal.control('native_qualification_attempted'):
             raise ExchangeError('NATIVE_QUALIFICATION_RESTART_REQUIRES_READ_ONLY_REVIEW')
         if type(proposal) is CorridorNativeProposal:
@@ -233,7 +279,7 @@ class NativeQualificationRuntime:
         path = self.output/'native_proof_candidate.json'; atomic_json(path, candidate)
         try:
             require_native_evidence(path, SimpleNamespace(team_wallet=p.team_wallet,
-                api_wallet=p.api_wallet, markets=(p.symbol,)))
+                api_wallet=p.api_wallet, markets=(p.symbol,),dex='par'))
         except Exception as exc:
             result['native_proof_error'] = str(exc) if isinstance(exc, ExchangeError) else type(exc).__name__
             return

@@ -1,0 +1,18 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+______ test_pas_dynamic_position_stop_readback_cannot_qualify_fixed_route ______
+algo-trading-bot/test_pas_execution_faults.py:161: in test_pas_dynamic_position_stop_readback_cannot_qualify_fixed_route
+    assert b.live.executor.protection.states['pas:BTC']['status']!='ACTIVE'
+E   AssertionError: assert 'ACTIVE' != 'ACTIVE'
+_________ test_pas_native_fill_outside_fixed_stop_limit_is_a_conflict __________
+algo-trading-bot/test_pas_execution_faults.py:170: in test_pas_native_fill_outside_fixed_stop_limit_is_a_conflict
+    assert b.daily.state!=TradeState.FLAT_VERIFIED
+E   AssertionError: assert <TradeState.FLAT_VERIFIED: 'FLAT_VERIFIED'> != <TradeState.FLAT_VERIFIED: 'FLAT_VERIFIED'>
+E    +  where <TradeState.FLAT_VERIFIED: 'FLAT_VERIFIED'> = <exchange.bounded_daily_session.DailyLifecycle object at 0x1242a3890>.state
+E    +    where <exchange.bounded_daily_session.DailyLifecycle object at 0x1242a3890> = namespace(symbol='pas:BTC', live=namespace(fixture=<test_pas_execution_faults.PasLiveFixture object at 0x1236f9070>, c...ssion.AllocatedLongRisk object at 0x1242a3740>, session=<exchange.long_session.DailyLongSession object at 0x1231c7b00>).daily
+E    +  and   <TradeState.FLAT_VERIFIED: 'FLAT_VERIFIED'> = TradeState.FLAT_VERIFIED
+- generated xml file: /Users/adesh/Autonomous Trading Bot - Crypto /docs/scored_opening_2026-10-18/pas_reproduced_conflicts.xml -
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_pas_execution_faults.py::test_pas_dynamic_position_stop_readback_cannot_qualify_fixed_route
+FAILED algo-trading-bot/test_pas_execution_faults.py::test_pas_native_fill_outside_fixed_stop_limit_is_a_conflict
+2 failed, 13 deselected in 2.67s

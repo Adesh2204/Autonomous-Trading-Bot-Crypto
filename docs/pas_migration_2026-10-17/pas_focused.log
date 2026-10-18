@@ -1,0 +1,105 @@
+.......................................FFFFFFFFFF                        [100%]
+=================================== FAILURES ===================================
+_ test_subminimum_full_residual_planner_keeps_exact_lots_without_claiming_venue_proof[1] _
+algo-trading-bot/test_pas_migration.py:155: in test_subminimum_full_residual_planner_keeps_exact_lots_without_claiming_venue_proof
+    r=OrderRequest(s.symbol,'SELL',q,D(100),reduce_only=True,tif='Ioc')
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<string>:12: in __init__
+    ???
+algo-trading-bot/exchange/order_lifecycle.py:42: in __post_init__
+    raise ExchangeError('INVALID_ORDER_REQUEST')
+E   exchange.base_exchange.ExchangeError: INVALID_ORDER_REQUEST
+_ test_subminimum_full_residual_planner_keeps_exact_lots_without_claiming_venue_proof[2] _
+algo-trading-bot/test_pas_migration.py:155: in test_subminimum_full_residual_planner_keeps_exact_lots_without_claiming_venue_proof
+    r=OrderRequest(s.symbol,'SELL',q,D(100),reduce_only=True,tif='Ioc')
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<string>:12: in __init__
+    ???
+algo-trading-bot/exchange/order_lifecycle.py:42: in __post_init__
+    raise ExchangeError('INVALID_ORDER_REQUEST')
+E   exchange.base_exchange.ExchangeError: INVALID_ORDER_REQUEST
+_ test_subminimum_full_residual_planner_keeps_exact_lots_without_claiming_venue_proof[9] _
+algo-trading-bot/test_pas_migration.py:155: in test_subminimum_full_residual_planner_keeps_exact_lots_without_claiming_venue_proof
+    r=OrderRequest(s.symbol,'SELL',q,D(100),reduce_only=True,tif='Ioc')
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<string>:12: in __init__
+    ???
+algo-trading-bot/exchange/order_lifecycle.py:42: in __post_init__
+    raise ExchangeError('INVALID_ORDER_REQUEST')
+E   exchange.base_exchange.ExchangeError: INVALID_ORDER_REQUEST
+_ test_residual_exception_never_authorizes_entry_partial_rounding_or_native_route[partial] _
+algo-trading-bot/test_pas_migration.py:163: in test_residual_exception_never_authorizes_entry_partial_rounding_or_native_route
+    r=OrderRequest(s.symbol,'SELL',p.quantity,D(100),reduce_only=True,tif='Ioc');at=NOW
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<string>:12: in __init__
+    ???
+algo-trading-bot/exchange/order_lifecycle.py:42: in __post_init__
+    raise ExchangeError('INVALID_ORDER_REQUEST')
+E   exchange.base_exchange.ExchangeError: INVALID_ORDER_REQUEST
+_ test_residual_exception_never_authorizes_entry_partial_rounding_or_native_route[wrong_direction] _
+algo-trading-bot/test_pas_migration.py:163: in test_residual_exception_never_authorizes_entry_partial_rounding_or_native_route
+    r=OrderRequest(s.symbol,'SELL',p.quantity,D(100),reduce_only=True,tif='Ioc');at=NOW
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<string>:12: in __init__
+    ???
+algo-trading-bot/exchange/order_lifecycle.py:42: in __post_init__
+    raise ExchangeError('INVALID_ORDER_REQUEST')
+E   exchange.base_exchange.ExchangeError: INVALID_ORDER_REQUEST
+_ test_residual_exception_never_authorizes_entry_partial_rounding_or_native_route[not_reduce_only] _
+algo-trading-bot/test_pas_migration.py:163: in test_residual_exception_never_authorizes_entry_partial_rounding_or_native_route
+    r=OrderRequest(s.symbol,'SELL',p.quantity,D(100),reduce_only=True,tif='Ioc');at=NOW
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<string>:12: in __init__
+    ???
+algo-trading-bot/exchange/order_lifecycle.py:42: in __post_init__
+    raise ExchangeError('INVALID_ORDER_REQUEST')
+E   exchange.base_exchange.ExchangeError: INVALID_ORDER_REQUEST
+_ test_residual_exception_never_authorizes_entry_partial_rounding_or_native_route[dust] _
+algo-trading-bot/test_pas_migration.py:163: in test_residual_exception_never_authorizes_entry_partial_rounding_or_native_route
+    r=OrderRequest(s.symbol,'SELL',p.quantity,D(100),reduce_only=True,tif='Ioc');at=NOW
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<string>:12: in __init__
+    ???
+algo-trading-bot/exchange/order_lifecycle.py:42: in __post_init__
+    raise ExchangeError('INVALID_ORDER_REQUEST')
+E   exchange.base_exchange.ExchangeError: INVALID_ORDER_REQUEST
+_ test_residual_exception_never_authorizes_entry_partial_rounding_or_native_route[stale] _
+algo-trading-bot/test_pas_migration.py:163: in test_residual_exception_never_authorizes_entry_partial_rounding_or_native_route
+    r=OrderRequest(s.symbol,'SELL',p.quantity,D(100),reduce_only=True,tif='Ioc');at=NOW
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<string>:12: in __init__
+    ???
+algo-trading-bot/exchange/order_lifecycle.py:42: in __post_init__
+    raise ExchangeError('INVALID_ORDER_REQUEST')
+E   exchange.base_exchange.ExchangeError: INVALID_ORDER_REQUEST
+_ test_residual_exception_never_authorizes_entry_partial_rounding_or_native_route[native] _
+algo-trading-bot/test_pas_migration.py:163: in test_residual_exception_never_authorizes_entry_partial_rounding_or_native_route
+    r=OrderRequest(s.symbol,'SELL',p.quantity,D(100),reduce_only=True,tif='Ioc');at=NOW
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<string>:12: in __init__
+    ???
+algo-trading-bot/exchange/order_lifecycle.py:42: in __post_init__
+    raise ExchangeError('INVALID_ORDER_REQUEST')
+E   exchange.base_exchange.ExchangeError: INVALID_ORDER_REQUEST
+_ test_residual_exception_never_authorizes_entry_partial_rounding_or_native_route[oversized] _
+algo-trading-bot/test_pas_migration.py:163: in test_residual_exception_never_authorizes_entry_partial_rounding_or_native_route
+    r=OrderRequest(s.symbol,'SELL',p.quantity,D(100),reduce_only=True,tif='Ioc');at=NOW
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<string>:12: in __init__
+    ???
+algo-trading-bot/exchange/order_lifecycle.py:42: in __post_init__
+    raise ExchangeError('INVALID_ORDER_REQUEST')
+E   exchange.base_exchange.ExchangeError: INVALID_ORDER_REQUEST
+- generated xml file: /Users/adesh/Autonomous Trading Bot - Crypto /docs/pas_migration_2026-10-17/pas_focused.xml -
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_pas_migration.py::test_subminimum_full_residual_planner_keeps_exact_lots_without_claiming_venue_proof[1]
+FAILED algo-trading-bot/test_pas_migration.py::test_subminimum_full_residual_planner_keeps_exact_lots_without_claiming_venue_proof[2]
+FAILED algo-trading-bot/test_pas_migration.py::test_subminimum_full_residual_planner_keeps_exact_lots_without_claiming_venue_proof[9]
+FAILED algo-trading-bot/test_pas_migration.py::test_residual_exception_never_authorizes_entry_partial_rounding_or_native_route[partial]
+FAILED algo-trading-bot/test_pas_migration.py::test_residual_exception_never_authorizes_entry_partial_rounding_or_native_route[wrong_direction]
+FAILED algo-trading-bot/test_pas_migration.py::test_residual_exception_never_authorizes_entry_partial_rounding_or_native_route[not_reduce_only]
+FAILED algo-trading-bot/test_pas_migration.py::test_residual_exception_never_authorizes_entry_partial_rounding_or_native_route[dust]
+FAILED algo-trading-bot/test_pas_migration.py::test_residual_exception_never_authorizes_entry_partial_rounding_or_native_route[stale]
+FAILED algo-trading-bot/test_pas_migration.py::test_residual_exception_never_authorizes_entry_partial_rounding_or_native_route[native]
+FAILED algo-trading-bot/test_pas_migration.py::test_residual_exception_never_authorizes_entry_partial_rounding_or_native_route[oversized]
+10 failed, 39 passed in 0.48s

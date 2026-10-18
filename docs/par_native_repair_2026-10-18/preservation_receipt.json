@@ -1,0 +1,110 @@
+{
+  "observed_ms": 1792302115128,
+  "source_hash": "40c70c40d4e4b4e30b2bc03af30fda1d928e76fb75df4fc82e4de65c6976c0f1",
+  "baseline_source": "d37a392acc0c080400d3bd466d10e3be10bb2c1605e7641a7fc1ef733b9ae8c7",
+  "changes": [
+    {
+      "path": "scripts/run_native_qualification.py",
+      "previous_sha256": "ffa2023d74e21d555a140bf5267ae904175694c7521407933ec655c72517655d",
+      "sha256": "bc278d59d03632ce3415f6fb9986722594816364ffdd9223bbd5dff375a08cbb"
+    },
+    {
+      "path": "algo-trading-bot/test_par_native_workflow_repair.py",
+      "previous_sha256": null,
+      "sha256": "43a84e5838bbd1cd982424415d5fafc999bfba0eb3bd7516cd6585587d22e0ea"
+    },
+    {
+      "path": "algo-trading-bot/test_native_qualification.py",
+      "previous_sha256": "c2f69a29ca69b17d0ddb2996a7c537498b625641780a8514fc2b2caa5839aa53",
+      "sha256": "b7a49069194075c88e57a5c1f58083aa65b2fb72634190c0ba3a4de894f8163b"
+    },
+    {
+      "path": "algo-trading-bot/test_native_price_corridor.py",
+      "previous_sha256": "f33e760a051afdb6672a11f3d4d0397a41dc5acf980c94a3bd387ae0d3f6f496",
+      "sha256": "2608fbc82e07de2c108225bafaae00b36c0e1d684f7aa3fdb8f4e80f114955b7"
+    },
+    {
+      "path": "algo-trading-bot/exchange/native_qualification.py",
+      "previous_sha256": "1e28d6afbc6c0eaaacdc63fa8864cb7853ac49aeb9a9e90e93c5bd9e74ca7b7b",
+      "sha256": "adfd0ba70b64c87ccc7101e40257db0120f0a21cb7a8718871f59b77a72edaf1"
+    },
+    {
+      "path": "algo-trading-bot/exchange/native_qualification_permissions.py",
+      "previous_sha256": null,
+      "sha256": "6e461aef8cce3f483f9783c2841cc12773cbfb5f93ecdc573002a37b76dc412c"
+    },
+    {
+      "path": "algo-trading-bot/exchange/native_qualification_runtime.py",
+      "previous_sha256": "43466f9a39c1791832ad13d70645f897da128916b5e1e834a3bb73e409039495",
+      "sha256": "f55125e1548b071bca90abfe8423ed9ec178a340c8945695d7b1d8d9d086b236"
+    },
+    {
+      "path": "algo-trading-bot/exchange/qualification_protection.py",
+      "previous_sha256": "8735fab65ed08de3e6c34d25452b735d07b715b2dd5b4c32ccc36081bd5a28c0",
+      "sha256": "808c0bb01bee32ef9ac9d919003e0191668f458ab5419e903dfade3370a53c03"
+    }
+  ],
+  "scope_violations": [],
+  "protected": {
+    "docs/pas_migration_2026-10-17/regression_release_v2/test_receipt.json": {
+      "matching": true,
+      "sha256": "97021f0da0e9181def6e4bd1374b855949cc11a148359f3a437d75b0217ed475"
+    },
+    "docs/pas_migration_2026-10-17/regression_release_v2/regression.xml": {
+      "matching": true,
+      "sha256": "6078c7a576ecac28d3900128de52efaa9f41abf316de49a16e671227f7a3c117"
+    },
+    "docs/strategy_freeze.json": {
+      "matching": true,
+      "sha256": "aeda15740802c1082f38f4e69f415f16a77d749a1aa050061026a99120fb9f8b"
+    },
+    "docs/qualification_2026-10-15/WHITELIST_TRADE_PROOF.json": {
+      "matching": true,
+      "sha256": "3f9b7decb3ca92810fc0e146373c667e621db909d621210cd52cb96f7886a0ab"
+    },
+    "docs/profit_exit_refresh_2026-10-15_2209/EXIT_RECOVERY_PROOF.json": {
+      "matching": true,
+      "sha256": "c9e633a018121bd349eb6716c084f71254825d1d17da7b364e338c4ca31ffd83"
+    }
+  },
+  "databases": {
+    "qualification": {
+      "integrity": "ok",
+      "dump_sha256": "d3f114b71e0a24765f21580a055dc9d2ed2971af5fa970fd09450d9c3d2facf0",
+      "unchanged": true,
+      "original_unknown": [
+        [
+          "0xac0eea156fcec80986dd67c9057b6ded",
+          "UNKNOWN",
+          null,
+          "{\"client_order_id\":\"certification:59445fe546d38a96e486140fda781d09ae8a0942f93a3614fa8abcbc34f5e7ea:entry\",\"order_type\":\"LIMIT\",\"price\":\"81518\",\"quantity\":\"0.0002\",\"reduce_only\":false,\"side\":\"BUY\",\"strategy_id\":\"TESTNET_CERTIFICATION_ENTRY\",\"symbol\":\"par:BTC\",\"tif\":\"Ioc\"}"
+        ]
+      ],
+      "certificate_checksums": [
+        [
+          "certification:3b744e33e2de25c1afd6764eac3268ba8d51ac8ef905200e62230bc4a2261ddf:entry",
+          "a6ea851efdd3c0e90b26b55587bdb60e3ba8449b782d1e39a94a01743acdd058"
+        ]
+      ],
+      "checkpoint_integrity": true
+    },
+    "nonces": {
+      "integrity": "ok",
+      "dump_sha256": "485b32e92b066f816f88af571d29a735409ad808738218b32fdb646042f06560",
+      "unchanged": true,
+      "nonce_rows": [
+        [
+          "0x46c9bed595770150752e7fa3806449f81e0ec6f9",
+          1792217834069
+        ]
+      ]
+    },
+    "configuration": {
+      "integrity": "ok",
+      "dump_sha256": "ed913029c934f8b262b3b2fe63f0c53f52d7fe5c98e6cd1dc8f05095b3c82f00",
+      "unchanged": true
+    }
+  },
+  "passed": true,
+  "pas_strategy_capital_authorization_limits_unchanged": true
+}

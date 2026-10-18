@@ -46,10 +46,10 @@ def locked(path):
     return False
 
 
-def validate_safe():
+def validate_safe(venue='par'):
     from venue_config import require_paper_migration
     from strategy_freeze import verify_strategy_freeze
-    require_paper_migration();verify_strategy_freeze()
+    require_paper_migration(venue);verify_strategy_freeze()
 
 
 class Reporter:
@@ -104,7 +104,7 @@ def render(v):
     eq = account.get('reported_account_equity') or {}
     realized = account.get('realized') or {}
     lines = ['TEAM ANCHORIUM — QUANT ENGINE', f"MODE: {v.get('mode')} | STATUS: {v.get('status')}",
-        f"TESTNET par | Team: {v.get('team_wallet',TEAM)}", f"Source: {v.get('source_hash')}",
+        f"TESTNET {v.get('dex','par')} | Collateral: {v.get('collateral','USDPR')} | Team: {v.get('team_wallet',TEAM)}", f"Source: {v.get('source_hash')}",
         f"Local: {v.get('local_time')} | Exchange time: {v.get('exchange_time_ms')} (null means unavailable)",
         f"Actual collateral: {eq.get('collateral_balance')} | Available/withdrawable: {eq.get('withdrawable')}",
         f"Proposed bankroll: 20000 | Approved bankroll: {v.get('approved_bankroll')} | Approved notional: {v.get('approved_maximum_notional')}",
@@ -144,8 +144,8 @@ def render(v):
     return '\n'.join(lines)
 
 
-def doctor(root, online=False):
-    validate_safe()
+def doctor(root, online=False, venue='par'):
+    validate_safe(venue)
     dependencies = {}
     for line in (root/'algo-trading-bot/requirements.txt').read_text().splitlines():
         if '==' not in line:continue
@@ -158,12 +158,15 @@ def doctor(root, online=False):
         native_protection='BLOCKED_REQUIRES_ACTUAL_QUALIFICATION', short='DISABLED',
         llm_runtime_dependencies=[], llm_api_calls=0, exchange_time_ms=None,
         team_wallet=TEAM, api_wallet=API, observer_requires_codex=False)
+    from .venue_profiles import venue_profile
+    profile=venue_profile(venue)
+    result.update(dex=profile.dex,collateral=profile.collateral,venue_identity=profile.identity)
     from .overnight_session import OVERNIGHT_MAX_EXPIRY_MS
     result['overnight_contract']=dict(implemented=True,requires_new_exact_approval=True,
         hard_expiry_ms=OVERNIGHT_MAX_EXPIRY_MS,midnight_counters_reset=False)
     if online:
         from .hyperliquid_client import HyperliquidClient
-        client = HyperliquidClient()
+        client = HyperliquidClient(venue=profile)
         try:client.startup();result.update(exchange_connectivity='PUBLIC_METADATA_CONFIRMED', markets=sorted(client.markets))
         finally:client.close()
     print(json.dumps(result, indent=2));return 0 if all(x['matching'] for x in dependencies.values()) else 1
@@ -171,6 +174,9 @@ def doctor(root, online=False):
 
 def prepare(root, args):
     """Fresh public proposal, never an acceptance or signing capability."""
+    if getattr(args,'venue','par')=='pas':
+        from .scored_prepare import prepare_scored
+        return prepare_scored(root,args)
     from .terminal_observer import observe
     output = Path(args.output).resolve();output.mkdir(parents=True, exist_ok=False)
     report = observe(root, output, threading.Event(), lambda v:atomic_json(output/'snapshot.json', v),
@@ -249,6 +255,7 @@ def run_authorized(root, args, stop, publish):
     from market_regime_scanner import ScannerPolicy
     from risk.models import RiskPolicy
     m = read_mandate(args.mandate)
+    if getattr(args,'venue','par')!=m.daily.dex:raise ExchangeError('CLI_MANDATE_VENUE_MISMATCH')
     scanner = ScannerPolicy(D('.004'), D(m.maximum_spread_bps), D(0), D(10), history_bars=300, top_n=3)
     risk = RiskPolicy(D(m.daily.risk_fraction), D(m.daily.daily_loss_fraction),D(1),D('.5'),D(2),D('.001'),D(50),
         D(m.maximum_spread_bps),D(m.depth_participation),D(m.execution_slippage_bps),D(1),1)
@@ -265,6 +272,7 @@ def run_authorized(root, args, stop, publish):
         finally:
             d=runtime.session.execution.daily
             publish(dict(mode='AUTHORIZED TESTNET TRADING', status=d.state.value, team_wallet=TEAM,
+                dex=m.daily.dex,collateral=getattr(m,'collateral','USDPR'),venue_identity=runtime.authorization.venue_identity,
                 source_hash=m.daily.source_hash, mandate_hash=m.identity, expires_ms=m.daily.expires_ms,
                 signing_authority='EXACT_BOUNDED_LONG_MANDATE', approved_bankroll=m.daily.bankroll,
                 approved_maximum_notional=m.daily.maximum_notional, daily_lifecycle=dict(d.data),
@@ -297,7 +305,7 @@ def run_authorized(root, args, stop, publish):
 def approve(root,args):
     """Human terminal acceptance only; no noninteractive auto-approval switch."""
     from .long_session import read_mandate,require_release,require_native_evidence,ACKS
-    validate_safe();m=read_mandate(args.mandate)
+    m=read_mandate(args.mandate);validate_safe(m.daily.dex)
     require_release(root,args.release,m.daily.source_hash,m.release_sha256)
     if sha(args.native_protection_evidence)!=m.protection_evidence_sha256:
         raise ExchangeError('LONG_PROTECTION_PROOF_CHANGED')
@@ -308,6 +316,11 @@ def approve(root,args):
     print('Mandate ID: '+m.identity)
     print('Approval confirms the named wallets and this sole signing host, LONG-only bounded scope, permitted loss-making risk exits, no blind retries after partial/unknown outcomes, stop-limit gap/outage risk, and no extension. No verified fill is implied. SHORT stays disabled.')
     extra_acks=()
+    if m.daily.dex=='pas':
+        from .scored_session import SCORED_ACKS,require_scored_evidence
+        require_scored_evidence(m,Path(args.mandate).parent)
+        extra_acks=SCORED_ACKS
+        print('PAS/USDP approval binds reviewed organizer provenance, shared UNKNOWN/nonce checks, actual PAS native/residual qualification, finite scored window and no automatic renewal. Practice evidence cannot qualify PAS.')
     if m.mode=='EXACT_APPROVED_OVERNIGHT_LONG_TESTNET_V1':
         from .overnight_session import OVERNIGHT_ACKS
         extra_acks=OVERNIGHT_ACKS
@@ -331,10 +344,21 @@ def approve(root,args):
 
 
 def start(root, args):
-    validate_safe()
+    venue=getattr(args,'venue','par')
+    validate_safe(venue)
+    if venue=='pas' and Path(args.state).resolve()==(root/'runtime/terminal').resolve():
+        args.state=str(root/'runtime/terminal-pas')
     state=Path(args.state).resolve();state.mkdir(parents=True,exist_ok=True,mode=0o700)
+    binding=state/'venue.json'
+    if binding.exists() and read_json(binding).get('dex')!=venue:
+        raise ExchangeError('TERMINAL_STATE_VENUE_MISMATCH')
+    old=read_json(state/'current.json') if (state/'current.json').exists() else None
+    old_status=Path(old['output'])/'status.json' if old and old.get('output') else None
+    if old_status and old_status.exists() and read_json(old_status).get('dex','par')!=venue:
+        raise ExchangeError('TERMINAL_STATE_VENUE_MISMATCH')
     # One local application owner across all output directories/modes.
     owner=PaperOwner(state/'owner.lock')
+    atomic_json(binding,dict(network='testnet',dex=venue))
     prior=read_json(state/'current.json') if (state/'current.json').exists() else None
     session=uuid.uuid4().hex;output=state/'sessions'/session;output.mkdir(parents=True,mode=0o700)
     publish=Reporter(root,state,output,session);stop=threading.Event();done=threading.Event()
@@ -366,17 +390,20 @@ def start(root, args):
                     signing_authority='REVOKED',previous_trading_result=result))
         if not stop.is_set():
             from .terminal_observer import observe
-            result=observe(root,output,stop,publish,markets=args.markets,scan_seconds=args.scan_seconds)
+            scope={'venue':venue} if venue!='par' else {}
+            result=observe(root,output,stop,publish,markets=args.markets,scan_seconds=args.scan_seconds,**scope)
         elif args.authorized:
             result=dict(result,mode='AUTHORIZED TESTNET TRADING',signing_authority='REVOKED')
             publish(result)
         else:
-            result=dict(mode='TESTNET OBSERVATION',status='STOPPED',source_hash=source,signing_authority='NONE',terminal_flat=None)
+            result=dict(mode='TESTNET OBSERVATION',status='STOPPED',source_hash=source,signing_authority='NONE',terminal_flat=None,
+                dex=venue,collateral='USDP' if venue=='pas' else 'USDPR')
             publish(result)
         atomic_json(output/'terminal_result.json',result)
         return 1 if result.get('status')=='HALTED' or result.get('threads_stopped') is False else 0
     except Exception as exc:
         publish(dict(mode='TESTNET OBSERVATION',status='HALTED_BEFORE_OR_DURING_START',source_hash=source,
+            dex=venue,collateral='USDP' if venue=='pas' else 'USDPR',
             signing_authority='NONE',error=str(exc) if isinstance(exc,ExchangeError) else type(exc).__name__,terminal_flat=None))
         return 1
     finally:
@@ -389,9 +416,13 @@ def main(root):
     root=Path(root)
     p=argparse.ArgumentParser(description=__doc__);sub=p.add_subparsers(dest='command',required=True)
     doctor_p=sub.add_parser('doctor');doctor_p.add_argument('--online',action='store_true')
+    doctor_p.add_argument('--venue',choices=('par','pas'),default='par')
+    discovery=sub.add_parser('discover');discovery.add_argument('--venue',choices=('par','pas'),default='pas');discovery.add_argument('--output',required=True)
     research=sub.add_parser('research');research.add_argument('--snapshot',required=True);research.add_argument('--output',required=True)
     sim=sub.add_parser('simulate');sim.add_argument('--output',required=True)
     prep=sub.add_parser('prepare');prep.add_argument('--output',required=True);prep.add_argument('--markets',nargs='*',default=[])
+    prep.add_argument('--venue',choices=('par','pas'),default='par')
+    prep.add_argument('--organizer-confirmation',help='Reviewed organizer provenance JSON with retained original record; PAS only')
     prep.add_argument('--minutes',type=int,default=60);prep.add_argument('--maximum-notional',default='1000')
     prep.add_argument('--release');prep.add_argument('--native-protection-evidence')
     contract=prep.add_mutually_exclusive_group()
@@ -400,6 +431,7 @@ def main(root):
     accept=sub.add_parser('approve',help='Interactive exact human acceptance; never auto-approve')
     for name in ('mandate','release','native-protection-evidence'):accept.add_argument('--'+name,required=True)
     launch=sub.add_parser('start');launch.add_argument('--authorized',action='store_true');launch.add_argument('--state',default=str(root/'runtime/terminal'))
+    launch.add_argument('--venue',choices=('par','pas'),default='par',help='Explicit isolated practice or scored profile; grants no signing authority')
     launch.add_argument('--markets',nargs='*',default=[]);launch.add_argument('--scan-seconds',type=int,default=60)
     launch.add_argument('--duration',type=int,help='Optional bounded read-only development soak; signing expiry is unchanged')
     for name in ('mandate','acceptance','release','native-protection-evidence'):launch.add_argument('--'+name)
@@ -409,7 +441,11 @@ def main(root):
             q.add_argument('--refresh',type=int,default=5);q.add_argument('--once',action='store_true')
     args=p.parse_args()
     try:
-        if args.command=='doctor':return doctor(root,args.online)
+        if args.command=='doctor':return doctor(root,args.online,args.venue)
+        if args.command=='discover':
+            from .venue_discovery import discover
+            r=discover(root,args.output,venue=args.venue)
+            print(json.dumps(r,indent=2,default=str));return 0 if r['status']=='READ_ONLY_DISCOVERY_COMPLETE' else 1
         if args.command=='research':
             validate_safe()
             from research_lab.quant_campaign import run_campaign
@@ -419,7 +455,7 @@ def main(root):
             from .terminal_simulation import simulate
             result=simulate(root,args.output);print(json.dumps(result,indent=2,default=str));return 0
         if args.command=='prepare':
-            validate_safe()
+            validate_safe(args.venue)
             if not 10<=args.minutes<=720 or not D(10)<=D(args.maximum_notional)<=10000:raise ExchangeError('BOUNDED_PROPOSAL_LIMITS_REQUIRED')
             return prepare(root,args)
         if args.command=='approve':return approve(root,args)

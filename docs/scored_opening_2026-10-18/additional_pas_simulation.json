@@ -1,0 +1,96 @@
+{
+  "source": "OFFLINE_EPHEMERAL_FIXTURE_ONLY",
+  "results": [
+    {
+      "scenario": "invalid_fractional_lot_partial_entry",
+      "status": "OFFLINE_FAILED_SAFE_AS_REQUIRED",
+      "remaining_quantity": "0.5000",
+      "state": "UNPROTECTED_EXPOSURE",
+      "native_qualification": false,
+      "actual_wallet_signatures": 0,
+      "exchange_writes": 0
+    },
+    {
+      "scenario": "two_noninteractive_cycles",
+      "status": "OFFLINE_PASSED",
+      "cycles": 2,
+      "synthetic_signed_actions": 8,
+      "synthetic_fills": [
+        {
+          "symbol": "pas:BTC",
+          "timestamp_ms": 1792414800014,
+          "trade_id": "101",
+          "order_id": "101",
+          "side": "BUY",
+          "quantity": "1.0000",
+          "price": "100.15",
+          "fee": "0.1",
+          "fee_token": "USDP",
+          "closed_pnl": "0",
+          "start_position": "0",
+          "source": "EXCHANGE_REPORTED_FILL",
+          "exchange_ts": "2026-10-19T13:00:00.014+00:00",
+          "received_ts": "2026-10-19T13:01:00.021+00:00",
+          "processed_ts": "2026-10-19T13:01:00.021+00:00"
+        },
+        {
+          "symbol": "pas:BTC",
+          "timestamp_ms": 1792414800031,
+          "trade_id": "103",
+          "order_id": "103",
+          "side": "SELL",
+          "quantity": "1.0000",
+          "price": "105",
+          "fee": "0.1",
+          "fee_token": "USDP",
+          "closed_pnl": "4.850000",
+          "start_position": "0",
+          "source": "EXCHANGE_REPORTED_FILL",
+          "exchange_ts": "2026-10-19T13:00:00.031+00:00",
+          "received_ts": "2026-10-19T13:01:00.037+00:00",
+          "processed_ts": "2026-10-19T13:01:00.037+00:00"
+        },
+        {
+          "symbol": "pas:BTC",
+          "timestamp_ms": 1792414860013,
+          "trade_id": "104",
+          "order_id": "104",
+          "side": "BUY",
+          "quantity": "1.0000",
+          "price": "100.15",
+          "fee": "0.1",
+          "fee_token": "USDP",
+          "closed_pnl": "0",
+          "start_position": "0",
+          "source": "EXCHANGE_REPORTED_FILL",
+          "exchange_ts": "2026-10-19T13:01:00.013+00:00",
+          "received_ts": "2026-10-19T13:01:00.037+00:00",
+          "processed_ts": "2026-10-19T13:01:00.037+00:00"
+        },
+        {
+          "symbol": "pas:BTC",
+          "timestamp_ms": 1792414860030,
+          "trade_id": "106",
+          "order_id": "106",
+          "side": "SELL",
+          "quantity": "1.0000",
+          "price": "97",
+          "fee": "0.1",
+          "fee_token": "USDP",
+          "closed_pnl": "-3.150000",
+          "start_position": "0",
+          "source": "EXCHANGE_REPORTED_FILL",
+          "exchange_ts": "2026-10-19T13:01:00.030+00:00",
+          "received_ts": "2026-10-19T13:01:00.037+00:00",
+          "processed_ts": "2026-10-19T13:01:00.037+00:00"
+        }
+      ],
+      "synthetic_net": "1.300000",
+      "actual_venue_qualified": false,
+      "actual_wallet_signatures": 0,
+      "exchange_writes": 0
+    }
+  ],
+  "actual_pnl": null,
+  "native_qualification": false
+}
