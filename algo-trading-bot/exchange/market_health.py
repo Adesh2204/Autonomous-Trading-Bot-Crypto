@@ -8,7 +8,7 @@ from .base_exchange import ExchangeError, decimal
 
 def validate_history(symbol, candles, now_ms, required):
     """Validate actual completed UTC bars before they can reach the frozen brain."""
-    if not symbol.startswith('par:'):
+    if not isinstance(symbol,str) or symbol.count(':') != 1:
         raise ExchangeError('MARKET_IDENTITY_INVALID')
     for c in candles:
         if c.symbol != symbol or c.interval != '1m':
@@ -35,7 +35,7 @@ class MarketHealthManager:
     def __init__(self,symbols,*,history_bars=300,max_candle_age_ms=120000,
                  max_book_age_ms=5000,max_context_age_ms=60000,retry_ms=30000):
         self.symbols=tuple(symbols)
-        if not self.symbols or any(not s.startswith('par:') for s in self.symbols):
+        if not self.symbols or any(not isinstance(s,str) or s.count(':') != 1 for s in self.symbols):
             raise ExchangeError('MARKET_IDENTITY_INVALID')
         self.history_bars=history_bars
         self.max_candle_age_ms=max_candle_age_ms

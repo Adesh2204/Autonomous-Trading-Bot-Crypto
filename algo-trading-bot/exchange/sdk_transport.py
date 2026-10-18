@@ -31,7 +31,7 @@ def sdk_number(value):
 def build_exchange(signer,client,nonce_manager,sink,*,offline=False):
     """Offline construction reproduces inspected SDK fields without a REST request.
 
-    The production branch invokes Exchange's official constructor with par only.
+    The production branch invokes Exchange with the runtime-verified DEX.
     Both branches execute the same official order/cancel/modify/leverage methods.
     """
     verify_sdk()
@@ -78,13 +78,19 @@ def build_exchange(signer,client,nonce_manager,sink,*,offline=False):
         exchange.expires_after=None
     else:
         exchange=GuardedExchange(signer,TESTNET_API_URL,account_address=sink.team_address,
-                                 spot_meta={'universe':[],'tokens':[]},perp_dexs=['par'],timeout=10)
-    for name,spec in client.markets.items():
-        if (exchange.info.name_to_asset(name)!=spec.asset_id or
-                exchange.info.asset_to_sz_decimals[spec.asset_id]!=spec.size_decimals):
-            raise ExchangeError('SDK_MARKET_MAPPING_MISMATCH')
-    if any(not name.startswith('par:') for name in exchange.info.coin_to_asset):
-        raise ExchangeError('SDK_NATIVE_MARKETS_PROHIBITED')
+                                 spot_meta={'universe':[],'tokens':[]},perp_dexs=[client.api_dex],timeout=10)
+    if client.api_dex is None or client.api_market is None or set(client.markets) != {client.api_market}:
+        raise ExchangeError('PAS_BTC_RUNTIME_MAPPING_REQUIRED')
+    spec = client.market(client.api_market)
+    if (exchange.info.name_to_asset(client.api_market)!=spec.asset_id or
+            exchange.info.asset_to_sz_decimals.get(spec.asset_id)!=spec.size_decimals):
+        raise ExchangeError('SDK_MARKET_MAPPING_MISMATCH')
+    # Trim SDK aliases as well: the signed execution path sees one canonical coin.
+    exchange.info.coin_to_asset = {client.api_market: spec.asset_id}
+    exchange.info.name_to_coin = {client.api_market: client.api_market}
+    exchange.info.asset_to_sz_decimals = {spec.asset_id: spec.size_decimals}
+    if set(exchange.info.coin_to_asset) != {client.api_market}:
+        raise ExchangeError('SDK_NON_BTC_MARKET_MAPPING')
     return exchange
 
 
@@ -121,7 +127,7 @@ class OfficialSDKTransport:
             raise
 
     def __repr__(self):
-        return '<OfficialSDKTransport testnet:par signer=[PRIVATE]>'
+        return '<OfficialSDKTransport testnet:verified-PAS-BTC signer=[PRIVATE]>'
 
     def check(self, action):
         if self._expected is None or self._guard is None or fingerprint(action)!=self._expected:
