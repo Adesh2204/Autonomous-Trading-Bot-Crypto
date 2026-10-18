@@ -65,7 +65,7 @@ class StartupRecovery:
         from .hyperliquid_market_data import HyperliquidMarketData
         ex=self.session.execution
         sent=self.clock()
-        book=HyperliquidMarketData(self.session.market.client).get_orderbook('par:BTC')
+        book=HyperliquidMarketData(self.session.market.client).get_orderbook(self.session.market.client.api_market)
         ex.clock_health.observe(book.timestamp_ms,sent,self.clock())
         result=verify_live_account_readiness(self.recovery.account,ex.transport.signer_address,
             clock_health=ex.clock_health,rate_limits=ex.rate_limits,

@@ -1,4 +1,4 @@
-"""Read-only par readiness; no key loading or /exchange actions."""
+"""Read-only PAS BTC readiness; no key loading or /exchange actions."""
 import argparse
 from dataclasses import asdict
 import json
@@ -33,7 +33,7 @@ def main(argv=None):
     rate_policy,clock_policy,protection_policy=load_reliability_policy(args.safety_policy)
     freeze=verify_strategy_freeze()
     sdk=verify_sdk()
-    result=dict(network='testnet',dex='par',market_data_ready=False,paper_ready=False,
+    result=dict(network='testnet',competition_market='pas',dex=None,api_market=None,collateral=None,market_data_ready=False,paper_ready=False,
         signed_transport_implemented=True,sdk_version=sdk,account_ready=False,live_ready=False,
         live_orders_permitted=False,execution_mode='PAPER',allow_live_orders=False,
         team_wallet_configured=valid_address(args.team_wallet),api_wallet_configured=valid_address(args.api_wallet_address),
@@ -47,11 +47,12 @@ def main(argv=None):
         market=HyperliquidMarketData(client)
         clock=ClockHealthMonitor(clock_ms=client.clock_ms,**clock_policy)
         sent=client.clock_ms()
-        book=market.get_orderbook('par:BTC')
+        book=market.get_orderbook(client.api_market)
         clock.observe(book.timestamp_ms,sent,client.clock_ms())
         client.post_info('perpDexLimits')
         result.update(market_data_ready=True,paper_ready=True,market_rules_loaded=True,
-            metadata=[asdict(s) for s in client.markets.values()],dex_index=client.dex_index,
+            competition_market=client.competition_market,dex=client.api_dex,api_market=client.api_market,
+            collateral=client.collateral_token_name,metadata=[asdict(s) for s in client.markets.values()],dex_index=client.dex_index,
             observed_ms=client.clock_ms(),clock_healthy=clock.healthy,account_reconciliation_ready=False)
         result['production_safety']=production_safety_report(clock=clock)
         if valid_address(args.team_wallet) and valid_address(args.api_wallet_address):

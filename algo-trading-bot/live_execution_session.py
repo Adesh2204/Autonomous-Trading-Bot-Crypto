@@ -201,7 +201,7 @@ class LiveExecutionSession:
             # A fresh REST book supplies an exchange timestamp; cached market
             # timestamps are never presented as a new clock observation.
             from exchange.hyperliquid_market_data import HyperliquidMarketData
-            book=HyperliquidMarketData(self.market.client).get_orderbook('par:BTC')
+            book=HyperliquidMarketData(self.market.client).get_orderbook(self.market.client.api_market)
             self.execution.clock_health.observe(book.timestamp_ms,sent,self.clock_ms())
             readiness=verify_live_account_readiness(self.recovery.account,self.execution.transport.signer_address,
                 clock_health=self.execution.clock_health,rate_limits=self.execution.rate_limits,

@@ -27,6 +27,10 @@ class LiveReadiness:
     clock_healthy: bool = False
     rate_limits_healthy: bool = False
     signed_transport_implemented: bool = True
+    competition_market: str = 'pas'
+    api_dex: str | None = None
+    api_market: str | None = None
+    collateral_token_name: str | None = None
 
     @property
     def account_ready(self):
@@ -55,7 +59,9 @@ class LiveReadiness:
             except Exception:
                 pass
         result = asdict(self)
-        result.update(network='testnet', dex='par', market_data_ready=bool(market_ready),
+        result.update(network='testnet', competition_market=self.competition_market,
+                      dex=self.api_dex, api_market=self.api_market,
+                      collateral=self.collateral_token_name, market_data_ready=bool(market_ready),
                       paper_ready=bool(market_ready), live_orders_permitted=bool(live_permitted),
                       controlled_execution_certified=False,
                       live_ready=False,
@@ -71,6 +77,9 @@ def verify_live_account_readiness(account, signer_address, *, clock_health, rate
     now = client.clock_ms()
     reasons = []
     expiry = collateral = mode = fees = budget = None
+    if (client.api_dex is None or client.api_market is None or
+            set(client.markets) != {client.api_market} or not client.api_market.endswith(':BTC')):
+        reasons.append('PAS_BTC_MARKET_MAPPING_UNVERIFIED')
     if not valid_address(account.team_address) or not valid_address(signer_address):
         reasons.append('TEAM_AND_API_WALLET_REQUIRED')
     elif account.team_address.lower() == signer_address.lower():
@@ -79,7 +88,8 @@ def verify_live_account_readiness(account, signer_address, *, clock_health, rate
         reasons.append('MARKET_METADATA_NOT_READY')
     if reasons:
         return LiveReadiness('NOT_READY', tuple(reasons), account.team_address,
-                             signer_address, now)
+                             signer_address, now, api_dex=client.api_dex, api_market=client.api_market,
+                             collateral_token_name=client.collateral_token_name)
     try:
         mode = account._query('userAbstraction')
         if mode != 'unifiedAccount':
@@ -134,4 +144,6 @@ def verify_live_account_readiness(account, signer_address, *, clock_health, rate
     return LiveReadiness('NOT_READY' if reasons else 'READY', tuple(reasons),
                          account.team_address, signer_address, client.clock_ms(), expiry,
                          collateral, mode, fees, budget, bool(reconciliation_ready),
-                         clock_health.healthy, rate_limits.safety_ready if critical else rate_limits.healthy)
+                         clock_health.healthy, rate_limits.safety_ready if critical else rate_limits.healthy,
+                         competition_market='pas', api_dex=client.api_dex, api_market=client.api_market,
+                         collateral_token_name=client.collateral_token_name)

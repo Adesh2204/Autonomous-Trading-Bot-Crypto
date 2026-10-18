@@ -242,6 +242,7 @@ class LiveContextProvider:
             self.clock_health.observe(reference.timestamp_ms,sent,self.client.clock_ms())
         metadata,values=self.client.post_info('metaAndAssetCtxs')
         self.client.validate_metadata(metadata)
+        metadata=self.client._canonical_metadata(metadata,self.client.api_dex)
         current_hash=fingerprint(metadata)
         if current_hash!=self.metadata_hash:
             raise ExchangeError('MARKET_METADATA_CHANGED')
@@ -253,17 +254,19 @@ class LiveContextProvider:
         for row,value in zip(metadata['universe'],values):
             if not isinstance(row,dict) or not isinstance(value,dict):
                 raise ExchangeError('ASSET_CONTEXT_INVALID')
-            symbol=self.client.canonical_market_name(row['name'])
+            symbol=row['name']
+            if row.get('isDelisted'):
+                if symbol==self.client.api_market:raise ExchangeError('PAS_BTC_DELISTED')
+                continue
             try:
                 oi=decimal(value['openInterest'],nonnegative=True)
                 oracle=decimal(value['oraclePx'],positive=True)
             except (KeyError,TypeError,ValueError) as exc:
                 raise ExchangeError('DEX_OI_AGGREGATE_UNVERIFIABLE') from exc
-            if not row.get('isDelisted'):
-                dex_total_oi+=oi*oracle
-                if symbol==self.client.api_market:
-                    if symbol in contexts:raise ExchangeError('AMBIGUOUS_BTC_ASSET_CONTEXT')
-                    contexts[symbol]=value
+            dex_total_oi+=oi*oracle
+            if symbol==self.client.api_market:
+                if symbol in contexts:raise ExchangeError('AMBIGUOUS_BTC_ASSET_CONTEXT')
+                contexts[symbol]=value
         if set(contexts)!={self.client.api_market}:
             raise ExchangeError('PAS_BTC_ASSET_CONTEXT_UNAVAILABLE')
         oi_observed=self.client.clock_ms()
