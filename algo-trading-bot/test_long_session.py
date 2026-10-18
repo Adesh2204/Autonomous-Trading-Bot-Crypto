@@ -187,6 +187,16 @@ def test_real_frozen_signal_reaches_existing_protected_sdk_and_two_complete_cycl
             b.session.daily_setups,b.session.managers['par:BTC'].__dict__,
             [tuple(r) for r in v.journal.db.execute("SELECT kind,data FROM events WHERE kind IN ('LIVE_RISK_DECISION','ENTRY_REJECTED')")])
         assert b.session.managers['par:BTC'].has_open_position
+        print('MISSING_PROTECTIVE_ORDER_DEBUG', {
+            'protection': v.executor.protection.report(),
+            'positions': v.account.get_positions(),
+            'recovery': {'ready': v.executor.recovery.last_report.ready,
+                         'reasons': v.executor.recovery.last_report.reasons},
+            'events': [(row['kind'], row['data']) for row in v.journal.db.execute(
+                "SELECT kind,data FROM events WHERE kind IN "
+                "('RECONCILIATION_FAILED','POST_ACTION_RECONCILIATION',"
+                "'PROTECTION_ERROR','PROTECTION_MISSING','PROTECTION_ACTIVE')")],
+        })
         assert v.fixture.orders, (
             'MISSING_PROTECTIVE_ORDER',
             v.executor.protection.report(),
