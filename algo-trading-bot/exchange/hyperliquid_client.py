@@ -10,12 +10,10 @@ import threading
 from contextlib import contextmanager
 
 from .base_exchange import ExchangeError, MarketSpec, VenueMismatch
+from .competition_market import (COMPETITION_MARKET, COMPETITION_BASE_ASSET, canonical_api_market, resolve_competition_dex, resolve_collateral_token)
 
 TESTNET_API_URL = 'https://api.hyperliquid-testnet.xyz'
 TESTNET_WS_URL = 'wss://api.hyperliquid-testnet.xyz/ws'
-DEX = 'par'
-EXPECTED_MARKETS = frozenset('par:' + name for name in (
-    'BTC', 'ETH', 'HYPE', 'SP500', 'EWY', 'EWJ', 'BRENT', 'GOLD', 'USDEUR', 'USDJPY'))
 DEX_QUERIES = frozenset({'meta', 'metaAndAssetCtxs', 'allMids', 'clearinghouseState',
                          'openOrders', 'frontendOpenOrders', 'perpDexLimits'})
 COIN_QUERIES = frozenset({'l2Book', 'recentTrades', 'fundingHistory', 'activeAssetData'})
@@ -179,6 +177,11 @@ class HyperliquidClient:
         self.markets = MappingProxyType({})
         self.dex_index = None
         self.collateral_token_id = None
+        self.collateral_token_name = None
+        self.competition_market = COMPETITION_MARKET
+        self.api_dex = None
+        self.api_market = None
+        self.dex_identity = None
         self.metadata_timestamp_ms = None
         self.last_received_ms = None
         self.metadata = None
@@ -211,9 +214,12 @@ class HyperliquidClient:
             raise ExchangeError('PUBLIC_INFO_QUERY_NOT_ALLOWED')
         payload = {'type': query, **parameters}
         if query in DEX_QUERIES:
-            if payload.get('dex', DEX) != DEX:
-                raise VenueMismatch('PAR_DEX_REQUIRED')
-            payload['dex'] = DEX
+            if self.api_dex is None:
+                raise VenueMismatch('PAS_DEX_DISCOVERY_REQUIRED')
+            requested = payload.get('dex', self.api_dex)
+            if requested != self.api_dex:
+                raise VenueMismatch('COMPETITION_DEX_MISMATCH')
+            payload['dex'] = self.api_dex
         elif 'dex' in payload:
             raise ExchangeError('UNEXPECTED_DEX_PARAMETER')
         if query in COIN_QUERIES:
@@ -251,90 +257,114 @@ class HyperliquidClient:
         return result
 
     def _validate_coin(self, symbol):
-        if not isinstance(symbol, str) or not symbol.startswith('par:'):
-            raise VenueMismatch('EXPECTED_PAR_MARKET_REQUIRED')
+        if not isinstance(symbol, str) or self.api_market is None or symbol != self.api_market:
+            raise VenueMismatch('PAS_BTC_MARKET_REQUIRED')
         self.market(symbol)
+
+    def canonical_market_name(self, raw_name):
+        return canonical_api_market(self.api_dex, raw_name)
 
     def invalidate(self):
         self.ready = False
         self.markets = MappingProxyType({})
         self.dex_index = None
         self.collateral_token_id = None
+        self.collateral_token_name = None
+        self.api_dex = None
+        self.api_market = None
+        self.dex_identity = None
         self.metadata_timestamp_ms = None
         self.last_received_ms = None
         self.metadata = None
 
     def _parse_specs(self, metadata, dex_index):
         if not isinstance(metadata, dict) or not isinstance(metadata.get('universe'), list):
-            raise VenueMismatch('INVALID_PAR_METADATA')
+            raise VenueMismatch('INVALID_PAS_METADATA')
+        if not isinstance(self.api_dex, str) or not self.api_dex or type(dex_index) is not int or dex_index < 1:
+            raise VenueMismatch('PAS_DEX_MAPPING_UNVERIFIED')
         result = {}
-        seen=set()
+        seen = set()
         try:
-            tables={table_id:table['marginTiers'] for table_id,table in metadata.get('marginTables',[])}
-        except (TypeError,KeyError,ValueError) as exc:
+            tables = {table_id: table['marginTiers'] for table_id, table in metadata.get('marginTables', [])}
+        except (TypeError, KeyError, ValueError) as exc:
             raise VenueMismatch('INVALID_MARGIN_TABLES') from exc
+        btc_found = False
         for index, row in enumerate(metadata['universe']):
             if not isinstance(row, dict) or not isinstance(row.get('name'), str):
-                raise VenueMismatch('INVALID_PAR_METADATA')
-            name = row['name']
-            if (not name.startswith('par:') or name.count(':')!=1 or len(name)<=4 or
-                    name.strip()!=name or name in seen):
-                raise VenueMismatch('INVALID_PAR_MARKET_NAMESPACE')
+                raise VenueMismatch('INVALID_PAS_METADATA')
+            name = self.canonical_market_name(row['name'])
+            if name in seen:
+                raise VenueMismatch('DUPLICATE_MARKET_METADATA')
             seen.add(name)
-            if row.get('isDelisted') and name in EXPECTED_MARKETS:
-                raise VenueMismatch('EXPECTED_PAR_MARKET_DELISTED')
-            if row.get('isDelisted'):
+            base = name.split(':', 1)[1]
+            if base != COMPETITION_BASE_ASSET:
+                # Non-BTC metadata is never admitted to the production market registry.
                 continue
+            btc_found = True
+            if row.get('isDelisted'):
+                raise VenueMismatch('PAS_BTC_DELISTED')
             try:
-                table_id=row.get('marginTableId')
-                if table_id is not None and (type(table_id) is not int or table_id<1):
+                table_id = row.get('marginTableId')
+                if table_id is not None and (type(table_id) is not int or table_id < 1):
                     raise VenueMismatch('INVALID_MARGIN_TABLE_ID')
-                if table_id is not None and table_id>=50 and table_id not in tables:
+                if table_id is not None and table_id >= 50 and table_id not in tables:
                     raise VenueMismatch('MISSING_RUNTIME_MARGIN_TABLE')
-                tiers=tuple((tier['lowerBound'],tier['maxLeverage']) for tier in tables[table_id]) if table_id in tables else ()
+                tiers = tuple((tier['lowerBound'], tier['maxLeverage']) for tier in tables[table_id]) if table_id in tables else ()
                 result[name] = MarketSpec(name, row['szDecimals'], row['maxLeverage'],
-                                          100000 + 10000 * dex_index + index,tiers)
+                    100000 + 10000 * dex_index + index, tiers)
             except (KeyError, TypeError, ValueError) as exc:
-                raise VenueMismatch('INVALID_PAR_MARKET_SPEC') from exc
-        if not EXPECTED_MARKETS <= result.keys():
-            raise VenueMismatch("FATAL: Expected Perpetual Alpha DEX 'par' not detected. Trading disabled.")
-        return {name: result[name] for name in sorted(result)}
+                raise VenueMismatch('INVALID_PAS_BTC_MARKET_SPEC') from exc
+        if not btc_found or len(result) != 1:
+            raise VenueMismatch('PAS_BTC_MAPPING_UNVERIFIED')
+        return result
+
+    @staticmethod
+    def _canonical_metadata(metadata, api_dex):
+        from copy import deepcopy
+        normalized = deepcopy(metadata)
+        for row in normalized.get('universe', []):
+            if isinstance(row, dict) and isinstance(row.get('name'), str):
+                row['name'] = canonical_api_market(api_dex, row['name'])
+        return normalized
 
     def startup(self):
         self.invalidate()
         dexes = self.post_info('perpDexs')
-        if not isinstance(dexes, list):
-            raise VenueMismatch('INVALID_DEX_LIST')
-        matches = [i for i, row in enumerate(dexes)
-                   if isinstance(row, dict) and row.get('name') == DEX]
-        if len(matches) != 1 or matches[0] < 1:
-            raise VenueMismatch("FATAL: Expected Perpetual Alpha DEX 'par' not detected. Trading disabled.")
-        metadata = self.post_info('meta')
-        specifications = self._parse_specs(metadata, matches[0])
-        self.dex_index = matches[0]
+        api_dex, dex_index, identity = resolve_competition_dex(dexes)
+        self.api_dex = api_dex
+        self.dex_index = dex_index
+        self.dex_identity = identity
+        metadata = self.post_info('meta', dex=api_dex)
+        specifications = self._parse_specs(metadata, dex_index)
+        self.api_market = next(iter(specifications))
         self.collateral_token_id = metadata.get('collateralToken')
+        spot_metadata = self.post_info('spotMeta')
+        self.collateral_token_name = resolve_collateral_token(self.collateral_token_id, spot_metadata)
+        if not isinstance(self.collateral_token_name, str) or not self.collateral_token_name:
+            raise VenueMismatch('PAS_COLLATERAL_MAPPING_UNVERIFIED')
         self.markets = MappingProxyType(specifications)
-        self.metadata = deepcopy(metadata)
+        self.metadata = self._canonical_metadata(metadata, api_dex)
         self.metadata_timestamp_ms = self.clock_ms()
         self.ready = True
         return self.markets
 
     def market(self, symbol):
         if not self.ready:
-            raise VenueMismatch('PAR_STARTUP_CHECK_REQUIRED')
+            raise VenueMismatch('PAS_STARTUP_CHECK_REQUIRED')
+        if symbol != self.api_market:
+            raise VenueMismatch('PAS_BTC_MARKET_REQUIRED')
         try:
             return self.markets[symbol]
         except KeyError as exc:
-            raise VenueMismatch('EXPECTED_PAR_MARKET_REQUIRED') from exc
+            raise VenueMismatch('PAS_BTC_MARKET_REQUIRED') from exc
 
     def validate_metadata(self, metadata):
         if not self.ready:
-            raise VenueMismatch('PAR_STARTUP_CHECK_REQUIRED')
+            raise VenueMismatch('PAS_STARTUP_CHECK_REQUIRED')
         try:
             incoming = self._parse_specs(metadata, self.dex_index)
-            if (incoming != dict(self.markets) or
-                    metadata.get('collateralToken') != self.collateral_token_id):
-                raise VenueMismatch('PAR_METADATA_CHANGED_RESTART_REQUIRED')
+            if (incoming != dict(self.markets) or metadata.get('collateralToken') != self.collateral_token_id):
+                raise VenueMismatch('PAS_METADATA_CHANGED_RESTART_REQUIRED')
         except ExchangeError:
             self.invalidate()
             raise

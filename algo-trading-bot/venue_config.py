@@ -5,6 +5,7 @@ from dotenv import dotenv_values
 from safety_errors import SafetyError
 
 PROJECT_NAME = 'anchorium-perpetual-alpha'
+COMPETITION_MARKET = 'pas'
 # Public evidence collectors need no wallet settings. An explicit public-only
 # process skips dotenv entirely; the same PAPER/network/order checks still apply.
 _defaults = ({} if os.environ.get('ANCHORIUM_PUBLIC_ONLY')=='true'
@@ -36,8 +37,10 @@ def require_paper_migration():
         raise MigrationPolicyError('MIGRATION_NATIVE_SIGNAL_SOURCE_REQUIRED')
     if os.environ.get('HL_NETWORK', _defaults.get('HL_NETWORK') or 'testnet').strip().lower()!='testnet':
         raise MigrationPolicyError('MIGRATION_TESTNET_REQUIRED')
-    if os.environ.get('HL_DEX', _defaults.get('HL_DEX') or 'par').strip()!='par':
-        raise MigrationPolicyError('MIGRATION_PAR_DEX_REQUIRED')
+    if os.environ.get('HL_COMPETITION_MARKET', _defaults.get('HL_COMPETITION_MARKET') or 'pas').strip().lower()!='pas':
+        raise MigrationPolicyError('MIGRATION_COMPETITION_MARKET_REQUIRED')
+    # HL_DEX is deliberately not read here; the API DEX alias is discovered
+    # and verified from current Testnet metadata at startup.
     if (TRADING_VENUE != 'HYPERLIQUID_TESTNET' or
             os.environ.get('TRADING_VENUE', TRADING_VENUE).strip().upper()
             != 'HYPERLIQUID_TESTNET'):

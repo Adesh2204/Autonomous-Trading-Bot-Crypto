@@ -257,7 +257,7 @@ class LiveAuthorization:
                 venue_config.ALLOW_LIVE_ORDERS is not True or
                 os.environ.get('EXECUTION_MODE','')!='HYPERLIQUID_TESTNET_LIVE' or
                 os.environ.get('ALLOW_LIVE_ORDERS','').lower()!='true' or
-                os.environ.get('HL_NETWORK','testnet')!='testnet' or os.environ.get('HL_DEX','par')!='par' or
+                os.environ.get('HL_NETWORK','testnet')!='testnet' or os.environ.get('HL_COMPETITION_MARKET','pas').lower()!='pas' or
                 os.environ.get('TRADING_VENUE','HYPERLIQUID_TESTNET')!='HYPERLIQUID_TESTNET'):
             raise OrderRoutingBlocked('LIVE_RUNTIME_CONFIGURATION_REQUIRED')
 
