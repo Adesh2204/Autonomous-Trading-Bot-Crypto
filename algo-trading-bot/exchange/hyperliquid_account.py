@@ -102,10 +102,10 @@ class HyperliquidAccount:
                 # userFills spans venues and has no dex argument. Filter explicitly.
                 if not isinstance(symbol, str):
                     raise ExchangeError('INVALID_ACCOUNT_FILLS')
-                if not symbol.startswith('par:'):
+                if symbol != self.client.api_market:
                     continue
                 self.client.market(symbol)
-                if row['side'] not in {'B', 'A'} or row['feeToken'] != 'USDPR':
+                if row['side'] not in {'B', 'A'} or row['feeToken'] != self.client.collateral_token_name:
                     raise ExchangeError('INVALID_ACCOUNT_FILLS')
                 fill = Fill(symbol, timestamp(row['time']), event_id(row['tid']), event_id(row['oid']),
                             'BUY' if row['side'] == 'B' else 'SELL',
@@ -226,7 +226,7 @@ class HyperliquidAccount:
             token = self.client.collateral_token_id
             if type(token) is not int or token < 0:
                 raise ExchangeError('COLLATERAL_TOKEN_MAPPING_REQUIRED')
-            balances = [row for row in spot['balances'] if row['coin'] == 'USDPR']
+            balances = [row for row in spot['balances'] if row.get('coin') == self.client.collateral_token_name]
             if len(balances) > 1:
                 raise ExchangeError('AMBIGUOUS_COLLATERAL_BALANCE')
             token_balances = [row for row in spot['balances'] if row.get('token') == token]
@@ -236,11 +236,9 @@ class HyperliquidAccount:
             if not balances and token_balances:
                 raise ExchangeError('COLLATERAL_TOKEN_MISMATCH')
             collateral = decimal(balances[0]['total'], nonnegative=True) if balances else decimal(0)
-            # Hyperliquid unified balances/holds live in spotClearinghouseState;
-            # per-DEX marginSummary/accountValue and withdrawable are not
-            # meaningful. Preserve the reported USDPR balance once, without
-            # adding per-DEX equity or unrealized P&L to it. Trading capacity
-            # still comes separately from activeAssetData for the exact side.
+            # Unified collateral lives in spotClearinghouseState. Use the token
+            # symbol resolved from live metadata; never assume USDPR/USDP.
+            # Trading capacity still comes separately from activeAssetData.
             margin = decimal(0)
             seen = set()
             for row in state['assetPositions']:
@@ -253,12 +251,12 @@ class HyperliquidAccount:
                 if decimal(position['szi']):
                     margin += decimal(position['marginUsed'], nonnegative=True)
             return AccountEquity(collateral, collateral, margin, None,
-                                 'spotClearinghouseState.USDPR.total')
+                                 'spotClearinghouseState.' + str(self.client.collateral_token_name) + '.total')
         except (KeyError, TypeError) as exc:
             raise ExchangeError('ACCOUNT_EQUITY_UNAVAILABLE') from exc
 
     def get_balance(self):
-        """Reported USDPR collateral; never inferred free margin."""
+        """Reported runtime-discovered PAS collateral; never inferred free margin."""
         return self.get_equity().collateral_balance
 
     def get_funding_history(self, start_ms, end_ms=None):

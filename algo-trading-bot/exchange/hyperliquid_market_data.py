@@ -100,8 +100,20 @@ class HyperliquidMarketData:
         self.client.validate_metadata(metadata)
         if not isinstance(contexts, list) or len(contexts) != len(metadata['universe']):
             raise ExchangeError('INVALID_ASSET_CONTEXTS')
-        return {row['name']: contexts[i] for i, row in enumerate(metadata['universe'])
-                if row['name'] in self.client.markets}
+        btc_contexts = {}
+        # The venue returns its full DEX context vector; only the verified BTC
+        # context is admitted into Anchorium's strategy/data path.
+        for i, row in enumerate(metadata['universe']):
+            if not isinstance(row, dict) or not isinstance(row.get('name'), str):
+                raise ExchangeError('INVALID_ASSET_CONTEXTS')
+            symbol = self.client.canonical_market_name(row['name'])
+            if symbol == self.client.api_market:
+                if symbol in btc_contexts or not isinstance(contexts[i], dict):
+                    raise ExchangeError('AMBIGUOUS_BTC_ASSET_CONTEXT')
+                btc_contexts[symbol] = contexts[i]
+        if set(btc_contexts) != {self.client.api_market}:
+            raise ExchangeError('PAS_BTC_ASSET_CONTEXT_UNAVAILABLE')
+        return btc_contexts
 
     def get_quote(self, symbol):
         self.client.market(symbol)

@@ -210,7 +210,7 @@ class HyperliquidClient:
     def post_info(self, query, *, priority=None, **parameters):
         if {'type', 'action', 'signature', 'nonce'} & parameters.keys():
             raise ExchangeError('INVALID_PUBLIC_INFO_PARAMETERS')
-        if query not in DEX_QUERIES | COIN_QUERIES | ACCOUNT_QUERIES | {'perpDexs', 'candleSnapshot'}:
+        if query not in DEX_QUERIES | COIN_QUERIES | ACCOUNT_QUERIES | {'perpDexs', 'candleSnapshot', 'spotMeta'}:
             raise ExchangeError('PUBLIC_INFO_QUERY_NOT_ALLOWED')
         payload = {'type': query, **parameters}
         if query in DEX_QUERIES:
