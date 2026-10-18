@@ -27,8 +27,9 @@ POLICY=ProtectionPolicy(True,'SYNTHETIC_TEST_POLICY_ONLY',D(2),D('.01'))
 
 
 class ProtectionVenue:
-    def __init__(self,live,monkeypatch,*,stop_market=True):
+    def __init__(self,live,monkeypatch,*,stop_market=True,symbol='par:BTC'):
         self.live=live
+        self.symbol=symbol
         self.stop_market=stop_market
         self.statuses={}
         self.oid=100
@@ -86,7 +87,7 @@ class ProtectionVenue:
             if 'trigger' not in wire['t']:
                 self.oid+=1
                 requested=D(wire['s'])
-                held=self.live.account.get_position('par:BTC')
+                held=self.live.account.get_position(self.symbol)
                 if wire['r']:
                     assert held is not None
                     qty=(requested*self.close_fraction).quantize(D('.0001'))
@@ -102,7 +103,7 @@ class ProtectionVenue:
                 self.live.fixture.position(remaining,entry=str(entry))
                 self.live.fixture.fill(qty,side='B' if wire['b'] else 'A',price=wire['p'],
                     oid=self.oid,tid=self.oid,closed=str(closed))
-                detail=dict(coin='par:BTC',side='B' if wire['b'] else 'A',oid=self.oid,cloid=wire['c'],
+                detail=dict(coin=self.symbol,side='B' if wire['b'] else 'A',oid=self.oid,cloid=wire['c'],
                     sz='0',origSz=str(requested),isTrigger=False,reduceOnly=wire['r'],limitPx=wire['p'])
                 status=dict(status='order',order=dict(order=detail,status='filled',statusTimestamp=NOW))
                 self.statuses[str(self.oid)]=status
@@ -115,7 +116,7 @@ class ProtectionVenue:
             assert wire['t']['trigger']['tpsl']=='sl'
             assert wire['t']['trigger']['isMarket'] is self.stop_market
             self.oid+=1
-            order=dict(coin='par:BTC',side='B' if wire['b'] else 'A',sz=wire['s'],limitPx=wire['p'],
+            order=dict(coin=self.symbol,side='B' if wire['b'] else 'A',sz=wire['s'],limitPx=wire['p'],
                 oid=self.oid,cloid=wire['c'],isTrigger=True,reduceOnly=True,
                 triggerPx=wire['t']['trigger']['triggerPx'],orderType='Stop Market' if self.stop_market else 'Stop Limit',timestamp=NOW)
             if self.wrong_qty:
@@ -132,7 +133,7 @@ class ProtectionVenue:
     def fill_protection(self,quantity,*,partial=False):
         order=self.live.fixture.orders[0]
         qty=D(quantity)
-        held=self.live.account.get_position('par:BTC').quantity
+        held=self.live.account.get_position(self.symbol).quantity
         new=held-qty if held>0 else held+qty
         self.live.fixture.position(new)
         self.live.fixture.fill(qty,side=order['side'],price=order['triggerPx'],oid=order['oid'])

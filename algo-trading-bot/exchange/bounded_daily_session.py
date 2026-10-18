@@ -62,14 +62,16 @@ class DailyMandate:
         object.__setattr__(self,'markets',tuple(self.markets))
         object.__setattr__(self,'directions',tuple(self.directions))
 
+    def expected_dex(self): return 'par'
+
     def _require_scope(self):
         import re
-        if (self.network!='testnet' or self.dex!='par' or not self.session_id or not self.signing_host
+        if (self.network!='testnet' or self.dex!=self.expected_dex() or not self.session_id or not self.signing_host
                 or not re.fullmatch('[0-9a-f]{64}',self.source_hash)
                 or any(not isinstance(x,str) or not re.fullmatch('0x[0-9a-fA-F]{40}',x) or int(x[2:],16)==0 for x in (self.team_wallet,self.api_wallet))
                 or self.team_wallet.lower()==self.api_wallet.lower()
                 or not self.markets or len(set(self.markets))!=len(self.markets)
-                or any(not str(s).startswith('par:') for s in self.markets)
+                or any(not str(s).startswith(self.expected_dex()+':') for s in self.markets)
                 or not self.directions or len(set(self.directions))!=len(self.directions)
                 or set(self.directions)-{'LONG','SHORT'}
                 or any(type(x) is not int for x in (self.starts_ms,self.expires_ms,self.maximum_entry_attempts,self.maximum_concurrent_positions,self.leverage))

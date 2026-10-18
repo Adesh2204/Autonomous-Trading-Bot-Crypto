@@ -78,6 +78,10 @@ class ExchangeProtectionManager:
                 self.journal.db.execute('SELECT * FROM protection_intents ORDER BY rowid')]
         return [r for r in result if symbol is None or r['symbol']==symbol]
 
+    def _fixed_limit_price(self,intent_key):
+        record=next((r for r in self.records() if r['intent_key']==intent_key),None)
+        return decimal(record['limit_price'],positive=True) if record and record.get('is_market') is False else None
+
     def _status(self,symbol,status,reason=None,**values):
         record=dict(status=status.value,reason=safe_reason(reason) if reason else None,
                     observed_ms=self.clock_ms(),**values)
@@ -146,6 +150,9 @@ class ExchangeProtectionManager:
                 unknown.append(order)
                 continue
             request=json.loads(intent['request'])
+            if self._fixed_limit_price(intent['intent_key']) is not None and (
+                    detail.get('isPositionTpsl') is True or order.get('isPositionTpsl') is True):
+                raise ExchangeError('FIXED_STOP_POSITION_TPSL_CONFLICT')
             if detail.get('coin')!=order['coin'] or request['symbol']!=order['coin'] or str(detail.get('oid'))!=str(order['oid']):
                 raise ExchangeError('PROTECTION_ORDER_IDENTITY_CONFLICT')
             owned.setdefault(order['coin'],[]).append(dict(order,intent_key=intent['intent_key'],cloid=intent['cloid']))
@@ -210,6 +217,9 @@ class ExchangeProtectionManager:
                 requested=decimal(request['quantity'])
                 if any(f.side!=request['side'] for f in matched) or quantity>requested:
                     raise ExchangeError('PROTECTION_FILL_EVIDENCE_CONFLICT')
+                limit=self._fixed_limit_price(row['intent_key'])
+                if limit is not None and any(f.price<limit if request['side']=='SELL' else f.price>limit for f in matched):
+                    raise ExchangeError('PROTECTION_FIXED_LIMIT_FILL_CONFLICT')
                 if quantity<requested and (terminal=='filled' or not child_ids):
                     raise ExchangeError('PROTECTION_FILL_EVIDENCE_REQUIRED')
                 self.journal.update(row['intent_key'],'FILLED' if quantity==requested else 'PARTIALLY_FILLED',

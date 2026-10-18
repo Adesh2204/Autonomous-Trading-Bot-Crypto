@@ -295,6 +295,8 @@ def test_runtime_wiring_reaches_mocked_key_only_after_fresh_preflight(native,tmp
     a=replace(c.a,proposal_hash=p.identity)
     monkeypatch.setattr(rt,'active_source_hash',lambda _:p.source_hash)
     monkeypatch.setattr(rt,'require_qualification_regression',lambda *_:None)
+    # Independent calendar/provenance cases live in test_par_native_workflow_repair.
+    monkeypatch.setattr(rt,'practice_permission',lambda *a,**k:dict(starts_ms=NOW-1,expires_ms=NOW+300001,files={}))
     monkeypatch.setattr(rt,'time',SimpleNamespace(time_ns=lambda:NOW*1000000))
     monkeypatch.setattr(rt,'ReadOnlyReceipts',lambda transport,path:transport)
     monkeypatch.setattr(rt,'HyperliquidClient',lambda *_,**__:c.live.client)

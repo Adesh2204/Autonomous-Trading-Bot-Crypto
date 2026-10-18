@@ -1,0 +1,15 @@
+........................................................................ [ 29%]
+........................................................................ [ 59%]
+........................................................................ [ 88%]
+.........................F..                                             [100%]
+=================================== FAILURES ===================================
+________ test_actual_runtime_gap_check_precedes_release_and_key_access _________
+algo-trading-bot/test_overnight_terminal_evidence.py:152: in test_actual_runtime_gap_check_precedes_release_and_key_access
+    module.build_long_runtime(ROOT,'not-loaded','absent','absent','absent',scanner_policy=None,risk_policy=None)
+algo-trading-bot/exchange/long_session.py:654: in build_long_runtime
+    profile=venue_profile(m.daily.dex)
+                          ^^^^^^^^^^^
+E   AttributeError: 'types.SimpleNamespace' object has no attribute 'dex'
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_overnight_terminal_evidence.py::test_actual_runtime_gap_check_precedes_release_and_key_access
+1 failed, 243 passed in 24.58s

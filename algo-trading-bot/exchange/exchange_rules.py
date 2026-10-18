@@ -80,7 +80,7 @@ class HyperliquidOrderValidator:
             from .full_position_close import FULL_POSITION_CLOSE, normalize_exact_full_close
             if operation not in {'ORDER', FULL_POSITION_CLOSE}:
                 return reject('INVALID_EXECUTION_OPERATION')
-            if not isinstance(request, OrderRequest) or not request.symbol.startswith('par:'):
+            if not isinstance(request, OrderRequest) or not request.symbol.startswith(getattr(self.client,'dex','par')+':'):
                 return reject('INVALID_MARKET')
             if not self.client.ready or request.symbol not in self.client.markets:
                 return reject('INVALID_MARKET')

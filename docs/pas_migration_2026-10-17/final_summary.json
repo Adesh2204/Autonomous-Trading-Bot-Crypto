@@ -1,0 +1,194 @@
+{
+  "verdict": "BLOCKED_EXTERNAL_EVIDENCE",
+  "updated_ms": 1792295854587,
+  "updated_ist": "2026-10-18T09:27:34.587000+05:30",
+  "branch": "codex/pas-migration-2026-10-17",
+  "baseline_head": "6fdcca2569c3ca7360bc6ef7e53666b545be27c2",
+  "baseline_source": "4aa20fe9c1f8285788dff42e23d247eed2f225b4802bfad26347ef42afd44ac1",
+  "source_hash": "d37a392acc0c080400d3bd466d10e3be10bb2c1605e7641a7fc1ef733b9ae8c7",
+  "regression": {
+    "started_unix": 1792295269.7485938,
+    "source_hash": "d37a392acc0c080400d3bd466d10e3be10bb2c1605e7641a7fc1ef733b9ae8c7",
+    "scope": "Full final-source PAS migration regression; 2783 preserved baseline plus 67 PAS namespace/accounting/finite-approval/residual/shared-scope tests; offline ephemeral signatures only, no actual-wallet signatures or exchange actions",
+    "evidence_classifier_sha256": "6d81a9912e08c37aca6ad83eb7fbefe3341c5e46af403801cb4045b5296c98f1",
+    "checks_before": {
+      "strategy_freeze": {
+        "exit_code": 0,
+        "result": {
+          "baseline": "nse-working-baseline",
+          "file_count": 1,
+          "method_count": 8,
+          "parameter_count": 32,
+          "passed": true
+        }
+      },
+      "phase0": {
+        "exit_code": 0,
+        "result": {
+          "project": "anchorium-perpetual-alpha",
+          "checks": {
+            "project_is_perpetual_alpha": true,
+            "independent_git_directory": true,
+            "migration_branch": true,
+            "testnet_venue": true,
+            "paper_execution_mode": true,
+            "migration_policy_valid": true,
+            "orders_disabled": true,
+            "angel_one_client_disabled": true,
+            "angel_one_order_boundary_disabled": true,
+            "testnet_order_boundary_disabled": true,
+            "signal_logic_present": true,
+            "signal_source_unchanged": true
+          },
+          "passed": true
+        }
+      }
+    },
+    "finished_unix": 1792295834.884917,
+    "exit_code": 0,
+    "source_hash_after": "d37a392acc0c080400d3bd466d10e3be10bb2c1605e7641a7fc1ef733b9ae8c7",
+    "totals": {
+      "tests": 2850,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "xml_sha256": "6078c7a576ecac28d3900128de52efaa9f41abf316de49a16e671227f7a3c117",
+    "evidence_classifier_sha256_after": "6d81a9912e08c37aca6ad83eb7fbefe3341c5e46af403801cb4045b5296c98f1",
+    "previous_evidence_classifier_sha256": "9c95b59054aed2adc38a41f5f65b0a65c314ac4cb3b29ea437a88d2b6dfcf8e0",
+    "baseline_minimum": 2783,
+    "expected_minimum": 2850,
+    "checks_after": {
+      "strategy_freeze": {
+        "exit_code": 0,
+        "result": {
+          "baseline": "nse-working-baseline",
+          "file_count": 1,
+          "method_count": 8,
+          "parameter_count": 32,
+          "passed": true
+        }
+      },
+      "phase0": {
+        "exit_code": 0,
+        "result": {
+          "project": "anchorium-perpetual-alpha",
+          "checks": {
+            "project_is_perpetual_alpha": true,
+            "independent_git_directory": true,
+            "migration_branch": true,
+            "testnet_venue": true,
+            "paper_execution_mode": true,
+            "migration_policy_valid": true,
+            "orders_disabled": true,
+            "angel_one_client_disabled": true,
+            "angel_one_order_boundary_disabled": true,
+            "testnet_order_boundary_disabled": true,
+            "signal_logic_present": true,
+            "signal_source_unchanged": true
+          },
+          "passed": true
+        }
+      }
+    },
+    "passed": true,
+    "requirements_sha256": "db76f769d0aae03197e922f579ce6db9aa6aced9587da93e11b4bba409774b4d",
+    "runtime_versions": {
+      "numpy": "2.5.2",
+      "pandas": "3.0.5",
+      "python-dateutil": "2.9.0.post0",
+      "python-dotenv": "1.2.3",
+      "pytest": "8.4.1",
+      "requests": "2.34.2",
+      "tzdata": "2026.3",
+      "websocket-client": "1.9.0",
+      "hyperliquid-python-sdk": "0.24.0"
+    }
+  },
+  "signing_boundaries": {
+    "tests": 9,
+    "xml_sha256": "1d6e0067c2f53a929da25a58303eca525607dca33207bed93643810154c69066",
+    "log": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/pas_migration_2026-10-17/signing_boundaries_v2.log"
+  },
+  "preservation_passed": true,
+  "exchange_writes": 0,
+  "actual_wallet_signatures": 0,
+  "private_keys_accessed": false,
+  "pas_observation": {
+    "path": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/pas_migration_2026-10-17/pas_discovery_oct18/discovery.json",
+    "observed_ms": 1792295298261,
+    "age_ms": 556326,
+    "dex": "pas",
+    "dex_index": 271,
+    "collateral": "USDP",
+    "collateral_token": 3307,
+    "account_mode": "unifiedAccount",
+    "positions": [],
+    "orders": [],
+    "terminal_flat": true,
+    "realized": {
+      "gross_closed_pnl": "0",
+      "actual_fill_fees": "0",
+      "actual_funding_cashflow": "0",
+      "net_after_fees_and_funding": "0",
+      "scope": "ONLY_OBSERVED_ACCOUNT_EVENTS; excludes deposits/transfers and unknown historical events"
+    },
+    "equity": {
+      "reported_account_value": "0",
+      "collateral_balance": "0",
+      "margin_used": "0",
+      "withdrawable": null,
+      "valuation_source": "spotClearinghouseState.USDP.total"
+    },
+    "request_count": 54
+  },
+  "terminal_path": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-migration-oct18/sessions/8975fad88edb437fad82672ee154af36/terminal_result.json",
+  "terminal_status": "STOPPED",
+  "terminal_flat": true,
+  "threads_stopped": true,
+  "historical_par_net_usdpr": "0.050512",
+  "historical_unknown": {
+    "verdict": "BLOCKED_EXTERNAL_EVIDENCE",
+    "original_dex": "par",
+    "original_market": "par:BTC",
+    "cloid": "0xac0eea156fcec80986dd67c9057b6ded",
+    "nonce": 1792217834069,
+    "mandate": "59445fe546d38a96e486140fda781d09ae8a0942f93a3614fa8abcbc34f5e7ea",
+    "original_worker_stopped": true,
+    "original_execution_state": "UNKNOWN",
+    "positive_original_terminal_record": null,
+    "durable_original_http_dispatch_claim": null,
+    "reconstructed_age_ms": 5526,
+    "reconstruction_is_original_explicit_guard_failure": false,
+    "current_unknownOid_and_flatness_resolve_original": false,
+    "pas_is_independent_asset_and_collateral_namespace": true,
+    "team_account_shared": true,
+    "api_signer_shared": true,
+    "nonce_database_shared": true,
+    "account_execution_lease_shared": true,
+    "approved_safe_isolation_established": false,
+    "historical_certificate_broadened": false,
+    "nonce_reset": false,
+    "hidden_signer_created": false,
+    "basis": [
+      "docs/practice_recovery_2026-10-17/original_local_evidence.json",
+      "docs/practice_recovery_2026-10-17/original_signing_source_manifest.json",
+      "docs/practice_recovery_2026-10-17/UNKNOWN_INTENT_RESOLUTION_REPORT.json",
+      "docs/blocker_resolution_2026-10-17/fresh_account_audit/audit.json",
+      "docs/pas_migration_2026-10-17/preservation_receipt.json"
+    ],
+    "required_evidence": "Matching positive authoritative original action/order outcome or an independently reviewed admissible original non-transmission or approved isolation mechanism. Absence is not a rejection.",
+    "future_policy": "PAS builder stops before key access on unresolved shared history; every PAS preflight repeats local scope checks and bounded fresh par exposure/order reads. Owned known PAS protection remains manageable; UNKNOWN does not."
+  },
+  "blockers": [
+    "Historical par UNKNOWN shares account/signer/nonce; no admissible outcome or approved safe isolation",
+    "No actual USDP collateral balance",
+    "PAS 1x CROSS configuration not verified/authorized",
+    "No genuine PAS native trigger-to-closing-fill and residual qualification",
+    "No reviewed original applicable organizer confirmation or current scored-window approval",
+    "No fresh exact scored session approval",
+    "No current empirically verified profitable strategy edge; market/history/REST and stream health must qualify on each action"
+  ],
+  "live_qualified_autonomous_pas": false,
+  "actual_pas_signing_launch_tested": false
+}

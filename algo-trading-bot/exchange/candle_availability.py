@@ -44,7 +44,8 @@ class CandleAvailabilityMonitor:
     def __init__(self, symbols, *, clock_ms, history_bars=300, retained_intervals=5000):
         self.symbols = tuple(symbols)
         if (not self.symbols or len(set(self.symbols)) != len(self.symbols) or
-                any(not s.startswith('par:') for s in self.symbols)):
+                any(not s.startswith(('par:', 'pas:')) for s in self.symbols)
+                or len({s.split(':')[0] for s in self.symbols})!=1):
             raise ExchangeError('AVAILABILITY_PAR_UNIVERSE_REQUIRED')
         self.clock_ms = clock_ms
         self.started_ms = clock_ms()

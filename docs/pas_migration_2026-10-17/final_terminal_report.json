@@ -1,0 +1,51 @@
+TEAM ANCHORIUM — QUANT ENGINE
+MODE: TESTNET OBSERVATION | STATUS: STOPPED
+TESTNET pas | Collateral: USDP | Team: 0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C
+Source: d37a392acc0c080400d3bd466d10e3be10bb2c1605e7641a7fc1ef733b9ae8c7
+Local: 2026-10-18T09:22:04.057929+05:30 | Exchange time: None (null means unavailable)
+Actual collateral: 0 | Available/withdrawable: None
+Proposed bankroll: 20000 | Approved bankroll: None | Approved notional: None
+Positions: [] | Open orders: []
+Observed account net: 0 | Fees: 0 | Funding: 0
+Account age ms: 2 | Fee age ms: 124295
+Market WS: True | Account WS: True | Authority: NONE
+Risk/remaining attempts: None / None | Residual: FLAT_VERIFIED
+Local intent barrier: BLOCKED_UNRESOLVED_INTENT | Unresolved: 1 | Native: UNQUALIFIED
+[LOCAL_UNKNOWN] cloid 0xac0eea156fcec80986dd67c9057b6ded | journal qualification
+Session actual gross / fees / funding / net: 0 / 0 / 0 / 0
+Initial verified equity / current: None / 0 | Realized net % of initial equity: None
+Equity change %: None | Sampled drawdown %: None | Official score: UNKNOWN
+First verified session equity; equity change is not cash-flow-adjusted or an official competition return
+[NO_TRADE] pas:BRENT | BASELINE_300_BAR_WARMUP_REQUIRED | bid/ask 106.65/106.81 | capacity 0.0000 | SL/TP None/None | approved size None
+  Liquidity / conditional economic / authorized notional: 0 / 0 / 0 | Expected PnL: UNKNOWN | Target-scenario net/stress: None/None
+  ONE_X_CROSS_REQUIRED
+[NO_TRADE] pas:BTC | BASELINE_300_BAR_WARMUP_REQUIRED | bid/ask 81935.0/82009.0 | capacity 0.000000 | SL/TP None/None | approved size None
+  Liquidity / conditional economic / authorized notional: 0 / 0 / 0 | Expected PnL: UNKNOWN | Target-scenario net/stress: None/None
+  ONE_X_CROSS_REQUIRED
+[NO_TRADE] pas:ETH | BASELINE_300_BAR_WARMUP_REQUIRED | bid/ask 2425.1/2427.2 | capacity 0.00000 | SL/TP None/None | approved size None
+  Liquidity / conditional economic / authorized notional: 0 / 0 / 0 | Expected PnL: UNKNOWN | Target-scenario net/stress: None/None
+  ONE_X_CROSS_REQUIRED
+[NO_TRADE] pas:EWJ | BASELINE_300_BAR_WARMUP_REQUIRED | bid/ask 94.798/94.94 | capacity 0.00000 | SL/TP None/None | approved size None
+  Liquidity / conditional economic / authorized notional: 0 / 0 / 0 | Expected PnL: UNKNOWN | Target-scenario net/stress: None/None
+  ONE_X_CROSS_REQUIRED
+[NO_TRADE] pas:EWY | CAPITAL_FRESH_PAR_BOOK_REQUIRED | bid/ask 153.99/154.02 | capacity 0.00000 | SL/TP None/None | approved size None
+  Liquidity / conditional economic / authorized notional: 0 / 0 / 0 | Expected PnL: UNKNOWN | Target-scenario net/stress: None/None
+  ONE_X_CROSS_REQUIRED
+[NO_TRADE] pas:GOLD | BASELINE_300_BAR_WARMUP_REQUIRED | bid/ask 4160.2/4163.9 | capacity 0.00000 | SL/TP None/None | approved size None
+  Liquidity / conditional economic / authorized notional: 0 / 0 / 0 | Expected PnL: UNKNOWN | Target-scenario net/stress: None/None
+  ONE_X_CROSS_REQUIRED
+[NO_TRADE] pas:HYPE | BASELINE_300_BAR_WARMUP_REQUIRED | bid/ask 79.188/79.307 | capacity 0.00000 | SL/TP None/None | approved size None
+  Liquidity / conditional economic / authorized notional: 0 / 0 / 0 | Expected PnL: UNKNOWN | Target-scenario net/stress: None/None
+  ONE_X_CROSS_REQUIRED
+[NO_TRADE] pas:SP500 | BASELINE_300_BAR_WARMUP_REQUIRED | bid/ask 7617.7/7624.5 | capacity 0.0000 | SL/TP None/None | approved size None
+  Liquidity / conditional economic / authorized notional: 0 / 0 / 0 | Expected PnL: UNKNOWN | Target-scenario net/stress: None/None
+  ONE_X_CROSS_REQUIRED
+[NO_TRADE] pas:USDEUR | BASELINE_300_BAR_WARMUP_REQUIRED | bid/ask 1.1237/1.1247 | capacity 0.00000 | SL/TP None/None | approved size None
+  Liquidity / conditional economic / authorized notional: 0 / 0 / 0 | Expected PnL: UNKNOWN | Target-scenario net/stress: None/None
+  ONE_X_CROSS_REQUIRED
+[NO_TRADE] pas:USDJPY | BASELINE_300_BAR_WARMUP_REQUIRED | bid/ask 157.79/157.93 | capacity 0.0000 | SL/TP None/None | approved size None
+  Liquidity / conditional economic / authorized notional: 0 / 0 / 0 | Expected PnL: UNKNOWN | Target-scenario net/stress: None/None
+  ONE_X_CROSS_REQUIRED
+Terminal flat: True | Simulated net: N/A
+Actual account events and synthetic results are separate. No native stop or SHORT qualification is implied.
+This Mac, Python process, power and internet. Codex and its app may be closed.

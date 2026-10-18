@@ -1,0 +1,26 @@
+............................................................F........... [ 49%]
+........................................................................ [ 98%]
+..                                                                       [100%]
+=================================== FAILURES ===================================
+____ test_shared_scope_preserves_unknown_but_allows_owned_known_protection _____
+algo-trading-bot/test_pas_migration.py:247: in test_shared_scope_preserves_unknown_but_allows_owned_known_protection
+    require_shared_scope(tmp_path,c,owned_pas_intents=['owned'])
+algo-trading-bot/exchange/scored_session.py:111: in require_shared_scope
+    value=client.rate_limits.read(kind,operation,request_key='shared:'+json.dumps(payload,sort_keys=True),
+algo-trading-bot/test_pas_migration.py:241: in read
+    def read(self,q,operation,**kwargs):return operation()
+                                               ^^^^^^^^^^^
+algo-trading-bot/exchange/scored_session.py:110: in <lambda>
+    client.transport,RequestsInfoTransport) else lambda:client.transport(payload)
+                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/test_pas_migration.py:43: in __call__
+    return super().__call__(payload)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/test_exchange_migration.py:73: in __call__
+    return deepcopy(responses[query])
+                    ^^^^^^^^^^^^^^^^
+E   KeyError: 'frontendOpenOrders'
+- generated xml file: /Users/adesh/Autonomous Trading Bot - Crypto /docs/pas_migration_2026-10-17/integration_corrected.xml -
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_pas_migration.py::test_shared_scope_preserves_unknown_but_allows_owned_known_protection
+1 failed, 145 passed in 15.69s

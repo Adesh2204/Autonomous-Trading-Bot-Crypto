@@ -78,12 +78,12 @@ def build_exchange(signer,client,nonce_manager,sink,*,offline=False):
         exchange.expires_after=None
     else:
         exchange=GuardedExchange(signer,TESTNET_API_URL,account_address=sink.team_address,
-                                 spot_meta={'universe':[],'tokens':[]},perp_dexs=['par'],timeout=10)
+                                 spot_meta={'universe':[],'tokens':[]},perp_dexs=[getattr(client,'dex','par')],timeout=10)
     for name,spec in client.markets.items():
         if (exchange.info.name_to_asset(name)!=spec.asset_id or
                 exchange.info.asset_to_sz_decimals[spec.asset_id]!=spec.size_decimals):
             raise ExchangeError('SDK_MARKET_MAPPING_MISMATCH')
-    if any(not name.startswith('par:') for name in exchange.info.coin_to_asset):
+    if any(not name.startswith(getattr(client,'dex','par')+':') for name in exchange.info.coin_to_asset):
         raise ExchangeError('SDK_NATIVE_MARKETS_PROHIBITED')
     return exchange
 
@@ -91,6 +91,7 @@ def build_exchange(signer,client,nonce_manager,sink,*,offline=False):
 class OfficialSDKTransport:
     is_offline=False
     def __init__(self,client,signer,team_address,nonce_manager,authorization,*,rate_limits):
+        self._require_venue(client,authorization)
         from .live_readiness import valid_address
         from eth_account.signers.local import LocalAccount
         if not isinstance(signer,LocalAccount):
@@ -121,9 +122,19 @@ class OfficialSDKTransport:
             raise
 
     def __repr__(self):
-        return '<OfficialSDKTransport testnet:par signer=[PRIVATE]>'
+        return '<OfficialSDKTransport testnet:'+getattr(self.client,'dex','par')+' signer=[PRIVATE]>'
+
+    @staticmethod
+    def _require_venue(client,authorization):
+        if getattr(client,'dex','par')!='par':
+            from .venue_profiles import venue_profile
+            expected=venue_profile(client.dex).identity
+            if (getattr(client,'venue_identity',None)!=expected or
+                    getattr(authorization,'venue_identity',None)!=expected):
+                raise ExchangeError('EXACT_SIGNED_VENUE_IDENTITY_REQUIRED')
 
     def check(self, action):
+        self._require_venue(self.client,self.authorization)
         if self._expected is None or self._guard is None or fingerprint(action)!=self._expected:
             raise ExchangeError('UNVALIDATED_SIGNED_ACTION')
         if action.get('type') not in {'order','cancel','cancelByCloid','batchModify','updateLeverage'}:

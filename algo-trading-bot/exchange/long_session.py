@@ -51,7 +51,8 @@ class LongMandate:
         if type(self) is not LongMandate:
             from .overnight_session import OvernightLongMandate
             from .practice_weekend_session import PracticeWeekendLongMandate
-            if type(self) not in {OvernightLongMandate,PracticeWeekendLongMandate}:raise ExchangeError('EXACT_LONG_CONTRACT_TYPE_REQUIRED')
+            from .scored_session import ScoredLongMandate
+            if type(self) not in {OvernightLongMandate,PracticeWeekendLongMandate,ScoredLongMandate}:raise ExchangeError('EXACT_LONG_CONTRACT_TYPE_REQUIRED')
         self.require_contract(d)
         if (d.directions!=('LONG',)
                 or d.team_wallet.lower()!=TEAM.lower() or d.api_wallet.lower()!=API.lower()
@@ -91,6 +92,10 @@ class LongMandate:
 
 def read_mandate(path):
     data=json.loads(Path(path).read_text())
+    if data.get('mode')=='EXACT_APPROVED_SCORED_PAS_LONG_TESTNET_V1':
+        from .scored_session import ScoredLimits,ScoredLongMandate
+        data['daily']=ScoredLimits(**data['daily'])
+        return ScoredLongMandate(**data).require()
     if data.get('mode')=='EXACT_APPROVED_PRACTICE_WEEKEND_LONG_TESTNET_V1':
         from .practice_weekend_session import PracticeWeekendLimits,PracticeWeekendLongMandate
         data['daily']=PracticeWeekendLimits(**data['daily'])
@@ -131,8 +136,10 @@ def require_native_evidence(path,daily):
     Trigger execution remains a separate fact from mere stop acceptance. This
     unattended path requires actual closing SELL fills linked to the trigger.
     """
+    from .venue_profiles import venue_profile
+    profile=venue_profile(daily.dex)
     p=Path(path);proof=json.loads(p.read_text());raw=p.parent/proof['receipt_file']
-    if (proof.get('network')!='testnet' or proof.get('dex')!='par'
+    if (proof.get('network')!='testnet' or proof.get('dex')!=profile.dex
             or proof.get('team_wallet','').lower()!=daily.team_wallet.lower()
             or proof.get('api_wallet','').lower()!=daily.api_wallet.lower()
             or proof.get('source')!='ACTUAL_NATIVE_PROTECTION_QUALIFICATION'
@@ -149,7 +156,7 @@ def require_native_evidence(path,daily):
             if kind=='userFillsByTime' and isinstance(response,list):fills+=response
             if kind=='userFunding' and isinstance(response,list):funding=True
             if kind=='orderStatus' and str(q.get('oid'))==stop_oid and isinstance(response,dict):stop=response
-            if kind=='clearinghouseState' and q.get('dex')=='par' and not any(
+            if kind=='clearinghouseState' and q.get('dex')==profile.dex and not any(
                     D(x['position']['szi']) for x in response['assetPositions']):
                 flat.append(r)
         unique={str(f['tid']):f for f in fills if f.get('coin')==symbol}
@@ -166,14 +173,14 @@ def require_native_evidence(path,daily):
                 or order.get('orderType')!='Stop Limit'
                 or D(order.get('origSz','0'))!=sum((D(f['sz']) for f in buys),D(0))
                 or any(D(f['px'])<D(order.get('limitPx','0')) for f in sells)
-                or not funding or any(f.get('feeToken')!='USDPR' or f.get('closedPnl') is None for f in buys+sells)):
+                or not funding or any(f.get('feeToken')!=profile.collateral or f.get('closedPnl') is None for f in buys+sells)):
             raise ExchangeError('NATIVE_TRIGGER_IDENTITY_FILL_ACCOUNTING_REQUIRED')
         after=max(f['time'] for f in sells);verified=[]
         for r in flat:
             at=r.get('received_ms',0)
             if at<=after:continue
             orders=[x for x in rows if x.get('request',{}).get('type')=='frontendOpenOrders'
-                and x['request'].get('dex')=='par' and x['request'].get('user','').lower()==daily.team_wallet.lower()
+                and x['request'].get('dex')==profile.dex and x['request'].get('user','').lower()==daily.team_wallet.lower()
                 and at<=x.get('received_ms',0)<=at+5000 and x.get('response')==[]]
             if orders:verified.append(at)
         if len(set(verified))<2:raise ExchangeError('NATIVE_TWO_TERMINAL_FLAT_READBACKS_REQUIRED')
@@ -184,6 +191,8 @@ class LongAuthorization:
     """Finite capability. Persist consumption before HTTP, never repeat a wire."""
     def __init__(self,mandate,acceptance_path,journal,*,clock_ms,source_hash,policy_hash,host=None):
         self.m=mandate.require();self.path=Path(acceptance_path);self.journal=journal
+        from .venue_profiles import venue_profile
+        self.venue_identity=venue_profile(mandate.daily.dex).identity
         self.clock_ms=clock_ms;self.source_hash=source_hash;self.policy_hash=policy_hash
         self.entry_stop_event=None
         self.host=host or socket.gethostname();self.revoked=False;self.lifecycle=None
@@ -201,7 +210,7 @@ class LongAuthorization:
 
     def require(self,team,signer):
         from venue_config import require_paper_migration
-        require_paper_migration();m=self.m;d=m.daily;now=self.clock_ms();a=self.acceptance
+        m=self.m;d=m.daily;require_paper_migration(d.dex);now=self.clock_ms();a=self.acceptance
         try:current=json.loads(self.path.read_text())
         except (ValueError,OSError):raise ExchangeError('LONG_ACCEPTANCE_REMOVED_OR_CHANGED') from None
         try:
@@ -217,6 +226,10 @@ class LongAuthorization:
                 or team.lower()!=d.team_wallet.lower() or signer.lower()!=d.api_wallet.lower()
                 or self.host!=d.signing_host or not stable):
             raise ExchangeError('EXACT_LONG_APPROVAL_WINDOW_SOURCE_HOST_REQUIRED')
+        if d.dex=='pas':
+            from .scored_session import SCORED_ACKS,SCORED_START_MS
+            if now<SCORED_START_MS or any(a.get(k) is not True for k in SCORED_ACKS):
+                raise ExchangeError('EXACT_PAS_SCORED_ACKNOWLEDGMENTS_AND_OPEN_WINDOW_REQUIRED')
         if m.mode=='EXACT_APPROVED_OVERNIGHT_LONG_TESTNET_V1':
             from .overnight_session import OVERNIGHT_ACKS
             if any(a.get(k) is not True for k in OVERNIGHT_ACKS):
@@ -246,6 +259,7 @@ class LongAuthorization:
         if action.get('type')!='order' or len(action.get('orders',[]))!=1:
             raise ExchangeError('LONG_ADMIN_MODIFY_BATCH_PROHIBITED')
         wire=action['orders'][0];row=self.journal.db.execute('SELECT * FROM intents WHERE cloid=?',(wire.get('c'),)).fetchone()
+        if action.get('grouping','na')!='na':raise ExchangeError('LONG_FIXED_ORDER_GROUPING_REQUIRED')
         own=self.data['owned'].get(row['intent_key']) if row else None
         if not own or own['symbol'] not in self.m.daily.markets:raise ExchangeError('LONG_OWN_INTENT_REQUIRED')
         request=json.loads(row['request']);kind=own['kind'];quantity=decimal(wire.get('s'),positive=True)
@@ -469,7 +483,7 @@ class DailyLongExecution(HyperliquidExecution):
             orders=self.account.get_frontend_open_orders();after=self.account.get_positions()
             now=self.client.clock_ms()
             signature=lambda values:{s:(p.quantity,p.entry_price) for s,p in values.items()}
-            readings.append(dict(source='OFFLINE_FIXTURE' if self.daily.mode=='OFFLINE_FIXTURE' else 'EXCHANGE_DIRECT_TESTNET_PAR_INFO',
+            readings.append(dict(source='OFFLINE_FIXTURE' if self.daily.mode=='OFFLINE_FIXTURE' else 'EXCHANGE_DIRECT_TESTNET_'+self.daily.m.dex.upper()+'_INFO',
                 team=self.daily.m.team_wallet,observed_ms=now,positions=after,orders=orders,
                 ready=self.recovery.last_report.ready and signature(before)==signature(after) and 0<=now-started<=5000))
         return readings
@@ -509,13 +523,18 @@ class DailyLongExecution(HyperliquidExecution):
             return
         if not quantity:return
         close_rows=[r for r in rows if owned[r['intent_key']]['kind'] in {'exit','protection'}]
+        if (any(r['state'] in {'PREPARED','SUBMITTED','UNKNOWN','OPEN','CANCEL_PENDING'} for r in close_rows)
+                or self.protection is not None and not self.protection.healthy):
+            d._state(TradeState.RECOVERY_REQUIRED,'CLOSING_ORDER_OR_PROTECTION_EVIDENCE_UNRESOLVED')
+            self.entries_paused=True;return
         close_ids={str(r['oid']) for r in close_rows if r['oid']}
         close_ids.update(str(oid) for r in close_rows for oid in json.loads(r['outcome'] or '{}').get('child_order_ids',[]))
         sells=[f for f in fills if f.order_id in close_ids and f.symbol==entry['symbol'] and f.side=='SELL'
             and f.timestamp_ms>=min(x.timestamp_ms for x in buys)]
         if sum((f.quantity for f in sells),D(0))!=quantity:
             d._state(TradeState.RECOVERY_REQUIRED,'ACTUAL_CLOSING_FILL_REQUIRED');return
-        if any(f.fee_token!='USDPR' or f.closed_pnl is None for f in buys+sells):
+        from .venue_profiles import venue_profile
+        if any(f.fee_token!=venue_profile(d.m.dex).collateral or f.closed_pnl is None for f in buys+sells):
             d._state(TradeState.RECOVERY_REQUIRED,'ACTUAL_FILL_ACCOUNTING_REQUIRED');return
         net=sum((f.quantity*f.price for f in sells),D(0))-sum((f.quantity*f.price for f in buys),D(0))
         if abs(net-sum((f.closed_pnl for f in buys+sells),D(0)))>D('.000001'):
@@ -566,6 +585,7 @@ class DailyLimitProtection(ExchangeProtectionManager):
     @staticmethod
     def _matches(order,plan):
         return (plan.is_market is False and order.get('isTrigger') is True and order.get('reduceOnly') is True
+            and order.get('isPositionTpsl') is not True
             and order.get('side')==('A' if plan.side=='SELL' else 'B')
             and decimal(order['sz'])==plan.quantity and decimal(order['triggerPx'])==plan.trigger_price
             and decimal(order['limitPx'])==plan.limit_price and order.get('orderType') in {'Stop Limit','StopLimit'})
@@ -635,9 +655,21 @@ def build_long_runtime(root,mandate_path,acceptance_path,release_path,protection
     from live_execution_session import LiveExecutionSession
     from risk.portfolio_risk import PortfolioRisk
     from live_session_results import LiveSessionResults
-    require_paper_migration();verify_strategy_freeze();root=Path(root);m=read_mandate(mandate_path)
+    root=Path(root);m=read_mandate(mandate_path)
     from .competition_windows import require_published_window
     require_published_window(m.daily.starts_ms,m.daily.expires_ms)
+    from .venue_profiles import venue_profile
+    profile=venue_profile(m.daily.dex)
+    require_paper_migration(profile);verify_strategy_freeze()
+    scored_bound={}
+    if profile.dex=='pas':
+        from .terminal_evidence import local_execution_state
+        from .scored_session import require_scored_evidence
+        # Same team and API signer retain shared nonce/account hazards across
+        # DEXs. A different collateral/asset ID is not an isolation certificate.
+        if local_execution_state(root)['status']!='NO_LOCAL_UNRESOLVED_INTENT':
+            raise ExchangeError('PAS_SHARED_ACCOUNT_UNKNOWN_REQUIRES_ADMISSIBLE_RESOLUTION')
+        scored_bound=require_scored_evidence(m,Path(mandate_path).parent)
     require_release(root,release_path,m.daily.source_hash,m.release_sha256)
     if sha(protection_evidence_path)!=m.protection_evidence_sha256:raise ExchangeError('LONG_PROTECTION_PROOF_CHANGED')
     native_proof=require_native_evidence(protection_evidence_path,m.daily)
@@ -650,19 +682,37 @@ def build_long_runtime(root,mandate_path,acceptance_path,release_path,protection
             or scanner_policy.min_atr_fraction<D('.004') or scanner_policy.max_spread_bps>D(m.maximum_spread_bps)
             or scanner_policy.history_bars!=300 or scanner_policy.top_n!=3):
         raise ExchangeError('LONG_BASELINE_POLICIES_REQUIRED')
-    state=root/'runtime/testnet/anchorium-bot-1';journal=ExecutionJournal(state/'qualification.sqlite',
-        session_id='anchorium-one-qualification-v1',team_address=TEAM)
+    state=root/'runtime/testnet/anchorium-bot-1'
+    journal=ExecutionJournal(state/('pas.sqlite' if profile.dex=='pas' else 'qualification.sqlite'),
+        session_id='anchorium-pas-v1' if profile.dex=='pas' else 'anchorium-one-qualification-v1',team_address=TEAM)
     client=nonces=transport=None
     try:
         auth=LongAuthorization(m,acceptance_path,journal,clock_ms=lambda:time.time_ns()//1000000,
             source_hash=lambda:active_source_hash(root),policy_hash=lambda:sha(policy_path))
         auth.bound_evidence={str(release_path):m.release_sha256,str(protection_evidence_path):m.protection_evidence_sha256}
+        auth.bound_evidence.update(scored_bound)
         if json.loads(Path(release_path).read_text()).get('requirements_sha256'):
             auth.bound_evidence[str(root/'algo-trading-bot/requirements.txt')]=json.loads(Path(release_path).read_text())['requirements_sha256']
         auth.bound_evidence[str(Path(release_path).parent/'regression.xml')]=json.loads(Path(release_path).read_text())['xml_sha256']
         auth.bound_evidence[str(Path(protection_evidence_path).parent/native_proof['receipt_file'])]=native_proof['receipt_sha256']
         daily=DailyLifecycle(journal,m.daily,clock_ms=auth.clock_ms,source_hash=auth.source_hash,
             mode='AUTHORIZED_TESTNET_LONG',authorization=auth);auth.lifecycle=daily
+        rates=HyperliquidRateLimitManager(journal,policy=rate,signer_address=API);rates.read_budget_wait_seconds=65
+        if profile.dex=='pas':
+            client=HyperliquidClient(rate_limits=rates,venue=profile);client.startup()
+            discovery=json.loads((Path(mandate_path).parent/'venue_discovery.json').read_text())
+            if (fingerprint(discovery['metadata'])!=fingerprint(client.metadata)
+                    or discovery['dex_index']!=client.dex_index
+                    or discovery['collateral_token']!=client.collateral_token_id):
+                raise ExchangeError('APPROVED_PAS_DEPLOYMENT_CHANGED')
+            from .scored_session import require_shared_scope
+            require_shared_scope(root,client)
+            account=HyperliquidAccount(client,TEAM)
+            # Public account checks precede loading a real signer.
+            if account.get_positions() or account.get_frontend_open_orders() or account.get_equity().collateral_balance<=0:
+                raise ExchangeError('PAS_FRESH_FUNDED_FLAT_ACCOUNT_REQUIRED')
+            from .pas_readiness import require_pas_market_status
+            require_pas_market_status(client)
         # All evidence and exact genuine acceptance pass before accessing the key.
         from .practice_preflight import read_api_key,api_signer
         key,_=read_api_key(root)
@@ -670,13 +720,20 @@ def build_long_runtime(root,mandate_path,acceptance_path,release_path,protection
         finally:key=None
         if signer.address.lower()!=API.lower():raise ExchangeError('LONG_SIGNER_IDENTITY_MISMATCH')
         nonces=NonceManager(state/'nonces.sqlite',signer.address,journal=journal)
-        rates=HyperliquidRateLimitManager(journal,policy=rate,signer_address=API);rates.read_budget_wait_seconds=65
-        client=HyperliquidClient(rate_limits=rates);client.startup();account=HyperliquidAccount(client,TEAM)
+        if client is None:
+            client=HyperliquidClient(rate_limits=rates);client.startup();account=HyperliquidAccount(client,TEAM)
         public=HyperliquidMarketData(client);engine=ParMarketDataEngine(public,include_trades=True)
         market=StreamFirstMarketData(client,engine);clock=ClockHealthMonitor(journal=journal,**clock_config)
         recovery=LongAccountRecovery(account,journal,initial_start_ms=0);holder={}
         provider=LiveContextProvider(market,account,API,clock,rates,reconciliation_ready=lambda:recovery.last_report.ready,
             feed_ready=lambda:bool(holder.get('stream') and holder['stream'].healthy),policy_leverage=1)
+        if profile.dex=='pas':
+            original_load=provider.load
+            def pas_load(request,*,critical=False):
+                require_shared_scope(root,client,owned_pas_intents=auth.data['owned'])
+                require_pas_market_status(client)
+                return original_load(request,critical=critical)
+            provider.load=pas_load
         transport=LongSDKTransport(client,signer,TEAM,nonces,auth,rate_limits=rates)
         executor=DailyLongExecution(client,transport=transport,account=account,journal=journal,context_provider=provider,
             validator=HyperliquidOrderValidator(client,policy_leverage=1),recovery=recovery,clock_health=clock,rate_limits=rates)
@@ -752,7 +809,7 @@ def build_long_runtime(root,mandate_path,acceptance_path,release_path,protection
                         signature=lambda positions:{s:(p.quantity,p.entry_price) for s,p in positions.items()}
                         if signature(before)!=signature(after):raise ExchangeError('POSITION_CHANGED_DURING_TERMINAL_READBACK')
                         readings.append(dict(observed_ms=client.clock_ms(),team=TEAM,
-                            source='EXCHANGE_DIRECT_TESTNET_PAR_INFO',positions=[asdict(p) for p in after.values()],
+                            source='EXCHANGE_DIRECT_TESTNET_'+profile.dex.upper()+'_INFO',positions=[asdict(p) for p in after.values()],
                             orders=orders,ready=r.ready))
                     report.update(readbacks=readings,account=recovery.state.report(),
                         terminal_flat=all(r['ready'] and not r['positions'] and not r['orders'] for r in readings)

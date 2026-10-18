@@ -1,0 +1,13 @@
+F............                                                            [100%]
+=================================== FAILURES ===================================
+_____ test_pas_frozen_signal_sdk_protection_close_and_realized_accounting ______
+algo-trading-bot/test_pas_execution_faults.py:79: in test_pas_frozen_signal_sdk_protection_close_and_realized_accounting
+    assert stop['t']['trigger']['isMarket'] is False and b.daily.state==TradeState.POSITION_PROTECTED
+E   AssertionError: assert (False is False and <TradeState.P...TION_MANAGED'> == <TradeState.P...ON_PROTECTED'>
+E     
+E     - POSITION_PROTECTED
+E     + POSITION_MANAGED)
+- generated xml file: /Users/adesh/Autonomous Trading Bot - Crypto /docs/scored_opening_2026-10-18/pas_faults_second.xml -
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_pas_execution_faults.py::test_pas_frozen_signal_sdk_protection_close_and_realized_accounting
+1 failed, 12 passed in 13.17s

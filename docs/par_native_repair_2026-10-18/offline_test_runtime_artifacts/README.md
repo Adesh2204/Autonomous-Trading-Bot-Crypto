@@ -1,0 +1,1 @@
+Two completed offline regression fixture runs, process 84408. Both PAPER authentication-failure paths stopped within one second. Moved intact from the default paper output folder after the full regression; no actual exchange process or proof was altered.
