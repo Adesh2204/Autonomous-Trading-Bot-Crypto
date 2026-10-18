@@ -63,14 +63,20 @@ class LiveSessionResults:
                 with file.open('w',newline='') as stream:
                     csv.DictWriter(stream,fieldnames=fields).writeheader()
         scanner_policy=getattr(session.scanner,'policy',None)
-        configuration=dict(network='testnet',dex='par',execution_mode=self.mode,
+        configuration=dict(network='testnet',competition_market=session.market.client.competition_market,
+            dex=session.market.client.api_dex,api_market=session.market.client.api_market,
+            collateral_token=session.market.client.collateral_token_name,execution_mode=self.mode,
             risk_policy=asdict(session.risk.policy),scanner_policy=asdict(scanner_policy) if scanner_policy is not None else None,
             vwap_policy='UTC_MIDNIGHT_BASELINE',model_version=None,
             protection_policy=asdict(session.execution.protection.policy) if session.execution.protection is not None else None,
             rate_policy=asdict(session.execution.rate_limits.policy))
-        data=dict(schema_version=2,execution_mode=self.mode,source=self.source,
+        data=dict(schema_version=3,execution_mode=self.mode,source=self.source,
+                  competition_market=session.market.client.competition_market,
+                  api_dex=session.market.client.api_dex,api_market=session.market.client.api_market,
+                  collateral_token=session.market.client.collateral_token_name,
                   team_wallet=session.execution.account.team_address,
-                  api_wallet=session.execution.transport.signer_address,network='testnet',dex='par',
+                  api_wallet=session.execution.transport.signer_address,network='testnet',
+                  dex=session.market.client.api_dex,
                   session_id=self.journal.session_id,sdk_version='0.24.0',strategy_freeze=verify_strategy_freeze(),
                   git_commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
                   git_branch=subprocess.check_output(['git','branch','--show-current'],cwd=ROOT,text=True).strip(),
@@ -88,6 +94,7 @@ class LiveSessionResults:
         if previous.exists():
             prior=json.loads(previous.read_text())
             keys=('schema_version','session_id','team_wallet','api_wallet','execution_mode','source',
+                  'competition_market','api_dex','api_market','collateral_token',
                   'configuration_hash','working_source_hash','strategy_source_hash')
             if any(prior.get(k)!=data.get(k) for k in keys):
                 raise ValueError('RESULT_MANIFEST_IDENTITY_OR_POLICY_CHANGED')

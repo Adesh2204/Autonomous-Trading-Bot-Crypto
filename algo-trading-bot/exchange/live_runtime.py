@@ -1,6 +1,7 @@
 """Explicit future-session assembly; no key creation, approval, funding or activation."""
 from pathlib import Path
 import os
+from decimal import Decimal
 
 from .base_exchange import ExchangeError
 from .execution_journal import ExecutionJournal
@@ -59,7 +60,7 @@ class LiveRuntime:
             except Exception as exc:
                 self.session.execution.entries_paused=True
                 self.journal.event('MARKET_STREAM_FAILED',self.session.clock_ms(),error_type=type(exc).__name__)
-        self.market_thread=threading.Thread(target=run,name='par-public-stream',daemon=True)
+        self.market_thread=threading.Thread(target=run,name='pas-btc-public-stream',daemon=True)
         self.market_thread.start()
 
     def deactivate(self):
@@ -159,8 +160,6 @@ def build_live_runtime(*,team_address,approval,session_id,initial_start_ms,risk_
     authorization.require(team_address,approval.signer_address)
     protection_policy=protection_policy or ProtectionPolicy()
     protection_policy.require()
-    if fee_scale_verified!=1:
-        raise ExchangeError('VENUE_FEE_SCALE_REVERIFICATION_REQUIRED')
     key=os.environ.get('API_WALLET_PRIVATE_KEY')
     if not key:
         raise ExchangeError('API_WALLET_SIGNER_REQUIRED')
@@ -200,11 +199,18 @@ def build_live_runtime(*,team_address,approval,session_id,initial_start_ms,risk_
             recovery=recovery,clock_health=clock,rate_limits=rates)
         ExchangeProtectionManager(executor,policy=protection_policy,managers=recovery.managers)
         base_fees=account._query('userFees')
-        multiplier=1+fee_scale_verified
         from .base_exchange import decimal
+        from .competition_market import COMPETITION_MARKET
+        raw_scale=(client.dex_identity or {}).get('deployerFeeScale')
+        if raw_scale is None:
+            raise ExchangeError('PAS_DEPLOYER_FEE_SCALE_UNAVAILABLE')
+        venue_scale=decimal(raw_scale,nonnegative=True)
+        if fee_scale_verified is None or decimal(fee_scale_verified,nonnegative=True)!=venue_scale:
+            raise ExchangeError('PAS_DEPLOYER_FEE_SCALE_MANUAL_VERIFICATION_MISMATCH')
+        multiplier=Decimal(1)+venue_scale
         fees=FeeSchedule(decimal(base_fees['userAddRate'],nonnegative=True)*multiplier,
                          decimal(base_fees['userCrossRate'],nonnegative=True)*multiplier,
-                         'VERIFIED_PAR_DEPLOYER_SCALE_1_TIMES_REPORTED_USER_BASE_RATES')
+                         'VERIFIED_RUNTIME_'+COMPETITION_MARKET.upper()+'_DEPLOYER_FEE_SCALE')
         scanner=MarketRegimeScanner(market,scanner_policy,live_authorization=authorization,
                                    team_address=team_address,signer_address=signer.address)
         session=LiveExecutionSession(market,scanner,executor,
