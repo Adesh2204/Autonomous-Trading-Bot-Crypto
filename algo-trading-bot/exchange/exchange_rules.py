@@ -183,15 +183,22 @@ class HyperliquidOrderValidator:
                 caps=dict(limits['coinToOiCap'])
                 # The raw limits schema names coins with or without the DEX prefix.
                 cap=decimal(caps.get(request.symbol,caps.get(request.symbol.split(':')[1])),positive=True)
-                cap=min(cap,Decimal(COMPETITION_BTC_OI_CAP_USD))
+                if getattr(self.client, 'competition_mode', False):
+                    cap=min(cap,Decimal(COMPETITION_BTC_OI_CAP_USD))
                 current=decimal(context.contexts[request.symbol]['openInterest'],nonnegative=True)
                 size_cap=decimal(limits['oiSzCapPerPerp'],positive=True)
                 api_total_cap=decimal(limits['totalOiCap'],positive=True)
-                total_cap=min(api_total_cap,Decimal(COMPETITION_DEX_OI_CAP_USD))
-                if (context.dex_total_oi_notional is None or context.dex_oi_observed_ms is None or
-                        not 0<=now_ms-context.dex_oi_observed_ms<=5000):
-                    return reject('DEX_OI_AGGREGATE_STALE_OR_UNVERIFIED')
-                total=decimal(context.dex_total_oi_notional,nonnegative=True)
+                if getattr(self.client, 'competition_mode', False):
+                    total_cap=min(api_total_cap,Decimal(COMPETITION_DEX_OI_CAP_USD))
+                    if (context.dex_total_oi_notional is None or context.dex_oi_observed_ms is None or
+                            not 0<=now_ms-context.dex_oi_observed_ms<=5000):
+                        return reject('DEX_OI_AGGREGATE_STALE_OR_UNVERIFIED')
+                    total=decimal(context.dex_total_oi_notional,nonnegative=True)
+                else:
+                    total_cap=api_total_cap
+                    total=sum((decimal(c['openInterest'],nonnegative=True)*
+                               decimal(c['oraclePx'],positive=True)
+                               for c in context.contexts.values()),Decimal(0))
                 audit.update(current_open_interest_notional=str(current*oracle_reference),
                              open_interest_cap=str(cap),dex_open_interest_notional=str(total),
                              dex_open_interest_cap=str(total_cap),
@@ -276,13 +283,13 @@ class LiveContextProvider:
                 if symbol==self.client.api_market:
                     if symbol in contexts:raise ExchangeError('AMBIGUOUS_BTC_ASSET_CONTEXT')
                     contexts[symbol]=value
-            elif symbol==request.symbol:
+            else:
                 if symbol in contexts:raise ExchangeError('AMBIGUOUS_ASSET_CONTEXT')
                 contexts[symbol]=value
         if getattr(self.client, 'competition_mode', False):
             if set(contexts)!={self.client.api_market}:
                 raise ExchangeError('PAS_BTC_ASSET_CONTEXT_UNAVAILABLE')
-        elif set(contexts)!={request.symbol}:
+        elif request.symbol not in contexts:
             raise ExchangeError('ASSET_CONTEXT_UNAVAILABLE')
         oi_observed=self.client.clock_ms()
         self.client.dex_total_oi_notional=dex_total_oi
