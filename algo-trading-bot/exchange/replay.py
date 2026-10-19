@@ -67,10 +67,13 @@ class ReplayTape:
         self.previous_clock=-1
         self.closed=False
 
-    def _next(self,kind):
+    def _peek(self,kind):
         if self.cursor>=len(self.operations) or self.operations[self.cursor].get('kind')!=kind:
             raise ExchangeError('REPLAY_OPERATION_MISMATCH')
-        event=self.operations[self.cursor]
+        return self.operations[self.cursor]
+
+    def _next(self,kind):
+        event=self._peek(kind)
         self.cursor+=1
         return event
 
@@ -85,9 +88,10 @@ class ReplayTape:
         require_paper_migration()
         if any(k in payload for k in ('action','signature','nonce','user')):
             raise ExchangeError('REPLAY_PUBLIC_READ_ONLY')
-        event=self._next('info')
+        event=self._peek('info')
         if event['payload']!=payload:
             raise ExchangeError('REPLAY_REQUEST_MISMATCH_NO_FUTURE_DATA')
+        self.cursor+=1
         return deepcopy(event['response'])
 
     def finish(self):
