@@ -6,7 +6,8 @@ from .base_exchange import ExchangeError, decimal
 from .execution_journal import fingerprint
 from .order_lifecycle import OrderRequest
 from .competition_market import (COMPETITION_MARKET_OI_CAP_USD, COMPETITION_DEX_OI_CAP_USD,
-                                INTERNAL_OI_HEADROOM_FRACTION, is_scored_phase)
+                                INTERNAL_OI_HEADROOM_FRACTION, PAS_TARGET_LEVERAGE,
+                                is_scored_phase)
 
 
 @dataclass(frozen=True)
@@ -71,8 +72,10 @@ class ValidationResult:
 
 
 class HyperliquidOrderValidator:
-    def __init__(self, client, *, policy_leverage=1):
+    def __init__(self, client, *, policy_leverage=None):
         self.client = client
+        if policy_leverage is None:
+            policy_leverage = (PAS_TARGET_LEVERAGE if getattr(client, 'competition_mode', False) else 1)
         self.policy_leverage = policy_leverage
 
     def validate(self, request, context, permission, now_ms, *, operation='ORDER'):
@@ -148,8 +151,11 @@ class HyperliquidOrderValidator:
                 return reject('PRICE_BAND_VIOLATION')
             if request.tif == 'Alo' and (request.side == 'BUY' and price >= q.ask or request.side == 'SELL' and price <= q.bid):
                 return reject('POST_ONLY_WOULD_CROSS')
-            if (type(context.leverage) is not int or context.leverage < 1 or
-                    context.leverage > spec.maximum_leverage_at(notional) or context.leverage != self.policy_leverage):
+            expected_leverage = (PAS_TARGET_LEVERAGE if getattr(self.client, 'competition_mode', False)
+                                 else self.policy_leverage)
+            if (self.policy_leverage != expected_leverage or type(context.leverage) is not int or
+                    context.leverage < 1 or context.leverage > spec.maximum_leverage_at(notional) or
+                    context.leverage != expected_leverage):
                 return reject('INVALID_LEVERAGE')
             if not context.readiness.account_ready or not 0 <= now_ms-context.readiness.observed_ms <= 5000:
                 return reject('ACCOUNT_NOT_READY')

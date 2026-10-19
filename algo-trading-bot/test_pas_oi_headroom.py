@@ -219,7 +219,8 @@ def test_noncompetition_offline_fixture_keeps_original_strictly_greater_cap_rule
                   totalOiCap='1000000')
     active_asset = dict(context.active_asset, coin='par:BTC')
     context = replace(context, spec=spec, quote=quote, contexts=contexts, limits=limits,
-                      active_asset=active_asset, dex_total_oi_notional=None,
+                      active_asset=dict(active_asset, leverage={'type': 'cross', 'value': 1}),
+                      leverage=1, dex_total_oi_notional=None,
                       dex_oi_observed_ms=None)
     at_cap = _validate(client, request, context, permission)
     assert at_cap.allowed  # exactly $1,000 was historically permitted

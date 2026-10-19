@@ -221,6 +221,7 @@ class HyperliquidClient:
         self.last_received_ms = None
         self.metadata = None
         self.rate_limits = rate_limits
+        self._read_cancellation=threading.local()
         # A custom transport is not proof of offline operation. Every PAS
         # client shares the process budget; offline tests may explicitly replace
         # this object with an isolated deterministic fixture budget.
@@ -230,6 +231,22 @@ class HyperliquidClient:
         self.progress=progress
         self._snapshots=threading.local()
         self.snapshot_hits=0
+
+    @property
+    def read_cancel_event(self):
+        return getattr(self._read_cancellation,'event',self._default_read_cancel_event)
+
+    @read_cancel_event.setter
+    def read_cancel_event(self,event):
+        self._default_read_cancel_event=event
+
+    @contextmanager
+    def read_cancellation(self,event):
+        """Scope cancellation to this thread, restoring nested contexts."""
+        previous=getattr(self._read_cancellation,'event',self._default_read_cancel_event)
+        self._read_cancellation.event=event
+        try:yield
+        finally:self._read_cancellation.event=previous
 
     @contextmanager
     def read_snapshot_scope(self,max_age_ms=1000):

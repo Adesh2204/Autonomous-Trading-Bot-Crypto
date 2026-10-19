@@ -45,5 +45,10 @@ jobs:
           test_pas_stream_warmup.py
           test_pas_candle_diagnostics.py
           test_pas_liquidity_selection.py
+          test_pas_thread_local_read_cancellation.py
+          test_exchange_migration.py
+          test_pas_migration.py
+          test_market_discovery.py
+          test_scored_opening_release.py
       - name: Verify frozen baseline
         run: python scripts/check_strategy_freeze.py

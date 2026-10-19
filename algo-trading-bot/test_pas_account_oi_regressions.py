@@ -110,7 +110,7 @@ def test_snapshot_still_rejects_quote_newer_than_post_read_reference():
 def _risk_context(symbol='pas:BTC', *, orders=(), dex_oi='1000'):
     specs = {
         'pas:BTC': MarketSpec('pas:BTC', 4, 20, 100),
-        'pas:EWY': MarketSpec('pas:EWY', 3, 10, 101),
+        'pas:EWY': MarketSpec('pas:EWY', 3, 20, 101),
     }
     client = SimpleNamespace(
         competition_mode=True, api_market='pas:BTC',
@@ -128,13 +128,13 @@ def _risk_context(symbol='pas:BTC', *, orders=(), dex_oi='1000'):
                                 agent_expiry_ms=NOW + 60_000, team_address=TEAM)
     context = ValidationContext(
         specs[symbol], 'metadata', 'metadata', NOW, quote, readiness, {}, tuple(orders),
-        {'user': TEAM, 'coin': symbol, 'leverage': {'type': 'cross', 'value': 1},
+        {'user': TEAM, 'coin': symbol, 'leverage': {'type': 'cross', 'value': 20},
          'maxTradeSzs': ['100', '100'], 'availableToTrade': ['100000', '100000']},
         NOW,
         {'coinToOiCap': [['pas:BTC', '10000000'], ['BTC', '10000000'],
                          ['pas:EWY', '5000000'], ['EWY', '5000000']],
          'oiSzCapPerPerp': '100000', 'totalOiCap': '100000000'},
-        contexts, True, leverage=1, fills=(), reconciled=True, oracle_ms=NOW,
+        contexts, True, leverage=20, fills=(), reconciled=True, oracle_ms=NOW,
         dex_total_oi_notional=D(dex_oi), dex_oi_observed_ms=NOW,
     )
     permission = RiskPermission('regression', symbol, 'BUY', D('.1'), NOW,
@@ -144,6 +144,30 @@ def _risk_context(symbol='pas:BTC', *, orders=(), dex_oi='1000'):
 
 def _validate(client, request, context, permission):
     return HyperliquidOrderValidator(client).validate(request, context, permission, NOW)
+
+
+@pytest.mark.parametrize('wrong_target', [1, 19, 21])
+def test_pas_entry_rejects_non_target_cross_leverage(wrong_target):
+    client, request, context, permission = _risk_context()
+    active = dict(context.active_asset, leverage={'type': 'cross', 'value': wrong_target})
+    result = _validate(client, request, replace(context, leverage=wrong_target, active_asset=active), permission)
+    assert not result.allowed and result.code == 'INVALID_LEVERAGE'
+
+
+def test_pas_entry_rejects_isolated_and_accepts_exact_20x_cross():
+    client, request, context, permission = _risk_context()
+    assert _validate(client, request, context, permission).allowed
+    isolated = dict(context.active_asset, leverage={'type': 'isolated', 'value': 20})
+    result = _validate(client, request, replace(context, active_asset=isolated), permission)
+    assert not result.allowed and result.code == 'INVALID_LEVERAGE'
+
+
+def test_pas_entry_rejects_target_above_runtime_metadata_maximum():
+    client, request, context, permission = _risk_context()
+    insufficient = MarketSpec('pas:BTC', 4, 19, 100)
+    client.markets['pas:BTC'] = insufficient
+    result = _validate(client, request, replace(context, spec=insufficient), permission)
+    assert not result.allowed and result.code == 'INVALID_LEVERAGE'
 
 
 def test_pas_active_btc_pending_orders_reserve_symbol_cap_from_list_pair_limits():

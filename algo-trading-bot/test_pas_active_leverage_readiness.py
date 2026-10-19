@@ -17,7 +17,8 @@ class AccountFixture(PasFixture):
     def __init__(self):
         super().__init__()
         self.orders = []
-        self.active_leverages = {'pas:BTC': 1, 'pas:EWY': 1}
+        self.active_leverages = {'pas:BTC': 20, 'pas:EWY': 20}
+        self.active_margin_modes = {'pas:BTC': 'cross', 'pas:EWY': 'cross'}
         self.agents = [dict(address=SIGNER, validUntil=NOW + 86_400_000)]
         self.fees = dict(userCrossRate='.00045', userAddRate='.00015')
         self.budget = dict(nRequestsUsed=0, nRequestsCap=10000)
@@ -28,7 +29,7 @@ class AccountFixture(PasFixture):
             self.calls.append(dict(payload))
             symbol = payload['coin']
             return dict(user=TEAM, coin=symbol,
-                        leverage=dict(type='cross', value=self.active_leverages[symbol]),
+                        leverage=dict(type=self.active_margin_modes[symbol], value=self.active_leverages[symbol]),
                         maxTradeSzs=['10', '10'], availableToTrade=['100000', '100000'])
         if query in {'extraAgents', 'userFees', 'userRateLimit'}:
             self.calls.append(dict(payload))
@@ -72,17 +73,21 @@ def readiness(account):
 
 
 @pytest.mark.parametrize('symbol', ['pas:BTC', 'pas:EWY'])
-def test_pas_readiness_requires_cross_1x_for_both_markets(pas_account, symbol):
+@pytest.mark.parametrize('wrong_target', [1, 19, 21, 'isolated'])
+def test_pas_readiness_requires_exact_cross_20x_for_both_markets(pas_account, symbol, wrong_target):
     fixture, _, account = pas_account
-    fixture.active_leverages[symbol] = 20
+    if wrong_target == 'isolated':
+        fixture.active_margin_modes[symbol] = 'isolated'
+    else:
+        fixture.active_leverages[symbol] = wrong_target
     result = readiness(account)
     assert not result.account_ready
-    assert 'PAS_ACTIVE_ASSET_CROSS_1X_REQUIRED' in result.reasons
+    assert 'PAS_ACTIVE_ASSET_CROSS_20X_REQUIRED' in result.reasons
     assert not result.report(market_ready=True)['live_orders_permitted']
     assert not fixture.calls or all(call['type'] != 'exchange' for call in fixture.calls)
 
 
-def test_pas_readiness_accepts_verified_cross_1x_for_both_markets(pas_account):
+def test_pas_readiness_accepts_verified_exact_cross_20x_for_both_markets(pas_account):
     fixture, _, account = pas_account
     result = readiness(account)
     assert result.account_ready
@@ -93,7 +98,7 @@ def test_pas_readiness_accepts_verified_cross_1x_for_both_markets(pas_account):
 
 def test_entry_leverage_gate_does_not_disable_existing_critical_reduce_only_recovery(pas_account):
     fixture, _, account = pas_account
-    fixture.active_leverages = {'pas:BTC': 20, 'pas:EWY': 20}
+    fixture.active_leverages = {'pas:BTC': 1, 'pas:EWY': 1}
     rates = RateState()
     try:
         result = verify_live_account_readiness(

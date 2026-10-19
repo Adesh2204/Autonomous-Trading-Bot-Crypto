@@ -749,9 +749,13 @@ class HyperliquidExecution:
         self._require()
         self._dependencies()
         with self.lock:
+            from .competition_market import PAS_TARGET_LEVERAGE
             spec=self.client.market(symbol)
+            expected_leverage=(PAS_TARGET_LEVERAGE if getattr(self.client,'competition_mode',False)
+                               else self.validator.policy_leverage)
             if (type(leverage) is not int or leverage<1 or leverage>spec.max_leverage or
-                    leverage!=self.validator.policy_leverage or is_cross is not True):
+                    self.validator.policy_leverage!=expected_leverage or leverage!=expected_leverage or
+                    is_cross is not True):
                 raise ExchangeError('INVALID_LEVERAGE')
             quote=self.context_provider.market.get_quote(symbol)
             quantity=spec.normalize_size(Decimal(11)/quote.mid+spec.size_step)

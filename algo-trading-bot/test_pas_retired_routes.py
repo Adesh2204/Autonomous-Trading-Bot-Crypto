@@ -12,6 +12,15 @@ from exchange.par_retirement import RETIRED_PAR_WRITE_ROUTE
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
 
+def test_legacy_pas_configuration_stops_before_any_io(tmp_path):
+    from exchange.pas_configuration import approve_configuration, execute_configuration
+    output = tmp_path / 'must-not-be-created'
+    with pytest.raises(ExchangeError, match='RETIRED_PAS_1X_CONFIGURATION_WRITE_ROUTE'):
+        approve_configuration(None, None, None, None, output)
+    with pytest.raises(ExchangeError, match='RETIRED_PAS_1X_CONFIGURATION_WRITE_ROUTE'):
+        execute_configuration(None, None, None, None, None, output)
+    assert not output.exists()
+
 def load_script(name):
     sys.path.insert(0, str(SCRIPTS))
     spec = importlib.util.spec_from_file_location("retired_" + name, SCRIPTS / (name + ".py"))

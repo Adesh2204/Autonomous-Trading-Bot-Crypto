@@ -4,6 +4,7 @@ import re
 
 from .base_exchange import ExchangeError, decimal
 from .execution_journal import safe_reason
+from .competition_market import PAS_TARGET_LEVERAGE
 
 
 def valid_address(value):
@@ -11,7 +12,7 @@ def valid_address(value):
             and int(value[2:], 16) != 0)
 
 
-def require_pas_cross_1x(account):
+def require_pas_cross_20x(account):
     """Read both active settings; observing funds never grants configuration authority."""
     observed = {}
     for symbol in account.client.api_markets.values():
@@ -21,8 +22,8 @@ def require_pas_cross_1x(account):
         if (not isinstance(user, str) or user.lower() != account.team_address.lower()
                 or active.get('coin') != symbol or not isinstance(leverage, dict)
                 or leverage.get('type') != 'cross' or type(leverage.get('value')) is not int
-                or leverage.get('value') != 1):
-            raise ExchangeError('PAS_ACTIVE_ASSET_CROSS_1X_REQUIRED')
+                or leverage.get('value') != PAS_TARGET_LEVERAGE):
+            raise ExchangeError('PAS_ACTIVE_ASSET_CROSS_20X_REQUIRED')
         observed[symbol] = dict(leverage)
     return observed
 
@@ -151,9 +152,9 @@ def verify_live_account_readiness(account, signer_address, *, clock_health, rate
             # existing critical reduce-only/cancel recovery; those actions
             # still require every identity, approval and exact-action check.
             try:
-                require_pas_cross_1x(account)
+                require_pas_cross_20x(account)
             except ExchangeError as exc:
-                if str(exc) != 'PAS_ACTIVE_ASSET_CROSS_1X_REQUIRED':
+                if str(exc) != 'PAS_ACTIVE_ASSET_CROSS_20X_REQUIRED':
                     raise
                 reasons.append(str(exc))
         fees = account._query('userFees')

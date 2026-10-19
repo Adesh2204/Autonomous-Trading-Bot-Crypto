@@ -10,6 +10,8 @@ from exchange.base_exchange import ExchangeError
 from exchange.live_runtime import verified_fee_scale
 
 ROOT = Path(__file__).resolve().parents[1]
+OWNER_TEAM = '0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C'
+CERT_SIGNER = '0x' + '2' * 40
 spec = importlib.util.spec_from_file_location('pas_launcher_regressions', ROOT / 'scripts/run_pas_btc.py')
 runner = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(runner)
@@ -77,11 +79,21 @@ def test_profile_exactly_two_assets_but_one_global_position(tmp_path):
     path = ROOT / 'configs/pas_btc_production.example.json'
     profile, risk, scanner = runner.load_profile(path)
     assert profile['base_assets'] == ['BTC', 'EWY']
-    assert risk.max_positions == 1 and risk.leverage == 1 and scanner.top_n == 1
+    assert risk.max_positions == 1 and risk.leverage == 20 and scanner.top_n == 1
     profile['base_assets'].append('ETH')
     changed = tmp_path / 'expanded.json'
     changed.write_text(json.dumps(profile))
     with pytest.raises(ExchangeError, match='PROFILE_IDENTITY_INVALID'):
+        runner.load_profile(changed)
+
+
+@pytest.mark.parametrize('leverage', [1, 19, 21])
+def test_profile_cannot_override_exact_pas_target_leverage(tmp_path, leverage):
+    profile = json.loads((ROOT / 'configs/pas_btc_production.example.json').read_text())
+    profile['risk']['leverage'] = leverage
+    changed = tmp_path / f'leverage-{leverage}.json'
+    changed.write_text(json.dumps(profile))
+    with pytest.raises(ExchangeError, match='SINGLE_POSITION_20X_PROFILE_REQUIRED'):
         runner.load_profile(changed)
 
 
@@ -106,12 +118,15 @@ def test_btc_only_certificate_cannot_authorize_ewy(tmp_path, monkeypatch):
                         'current\n' if args[1] == 'rev-parse' else '')
     evidence = dict(status='READY_FOR_SCORED_PHASE', competition_market='pas',
                     api_dex='pas', api_market='pas:BTC', commit_sha='current',
+                    network='testnet', team_wallet=OWNER_TEAM,
+                    api_wallet_address=CERT_SIGNER,
                     profile_sha256=runner.hashlib.sha256((ROOT / 'configs/pas_btc_production.example.json').read_bytes()).hexdigest(),
                     checks={name: True for name in runner.CRITICAL_TESTS})
     path = tmp_path / 'certificate.json'
     path.write_text(json.dumps(evidence))
     with pytest.raises(ExchangeError, match='NOT_CURRENT_OR_NOT_COMPLETE'):
-        runner.verify_certification(path, 'pas', {'BTC': 'pas:BTC', 'EWY': 'pas:EWY'})
+        runner.verify_certification(path, 'pas', {'BTC': 'pas:BTC', 'EWY': 'pas:EWY'},
+                                    team_address=OWNER_TEAM, api_wallet_address=CERT_SIGNER)
     evidence.update(api_markets={'BTC': 'pas:BTC', 'EWY': 'pas:EWY'},
                     active_base_assets=['BTC', 'EWY'],
                     market_checks={symbol: {name: True for name in (
@@ -119,7 +134,47 @@ def test_btc_only_certificate_cannot_authorize_ewy(tmp_path, monkeypatch):
                         'actual_fill', 'protection', 'exit', 'partial_fill', 'restart_recovery')}
                         for symbol in ('pas:BTC', 'pas:EWY')})
     path.write_text(json.dumps(evidence))
-    runner.verify_certification(path, 'pas', evidence['api_markets'])
+    runner.verify_certification(path, 'pas', evidence['api_markets'],
+                                team_address=OWNER_TEAM, api_wallet_address=CERT_SIGNER)
+
+
+@pytest.mark.parametrize('field,value', [
+    ('network', None), ('network', 'mainnet'),
+    ('team_wallet', None), ('team_wallet', '0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12'),
+    ('api_wallet_address', None), ('api_wallet_address', '0x' + '3' * 40),
+])
+def test_certification_requires_exact_testnet_and_command_wallet_bindings(tmp_path, monkeypatch, field, value):
+    monkeypatch.setattr(runner.subprocess, 'check_output', lambda args, **kwargs:
+                        'current\n' if args[1] == 'rev-parse' else '')
+    evidence = dict(
+        profile_sha256=runner.hashlib.sha256(
+            (ROOT / 'configs/pas_btc_production.example.json').read_bytes()).hexdigest(),
+        network='testnet', team_wallet=OWNER_TEAM, api_wallet_address=CERT_SIGNER,
+    )
+    if value is None:
+        evidence.pop(field)
+    else:
+        evidence[field] = value
+    path = tmp_path / 'identity-certificate.json'
+    path.write_text(json.dumps(evidence))
+    with pytest.raises(ExchangeError, match='CERTIFICATION_COMMAND_IDENTITY_MISMATCH'):
+        runner.verify_certification(path, 'pas', {'BTC': 'pas:BTC', 'EWY': 'pas:EWY'},
+                                    team_address=OWNER_TEAM, api_wallet_address=CERT_SIGNER)
+
+
+def test_profile_snapshot_retains_selected_bytes_and_rejects_replacement(tmp_path):
+    path = ROOT / 'configs/pas_btc_production.example.json'
+    snapshot = runner.load_profile_snapshot(path)
+    assert snapshot.sha256 == runner.hashlib.sha256(snapshot.raw_bytes).hexdigest()
+    assert runner.load_profile(path)[1] == snapshot.risk
+    replaced = tmp_path / 'replaced.json'
+    replaced.write_bytes(snapshot.raw_bytes)
+    selected = runner.load_profile_snapshot(replaced)
+    replacement = json.loads(snapshot.raw_bytes)
+    replacement['risk']['risk_fraction'] = '0.0024'
+    replaced.write_text(json.dumps(replacement))
+    with pytest.raises(ExchangeError, match='PROFILE_CHANGED_AFTER_VALIDATION'):
+        runner.require_profile_unchanged(replaced, selected)
 
 
 @pytest.mark.parametrize('status', [
@@ -137,6 +192,8 @@ def test_certification_rejects_dirty_runtime_source_or_config(tmp_path, monkeypa
     evidence = dict(status='READY_FOR_SCORED_PHASE', competition_market='pas',
                     api_dex='pas', api_markets={'BTC': 'pas:BTC', 'EWY': 'pas:EWY'},
                     active_base_assets=['BTC', 'EWY'], commit_sha='current',
+                    network='testnet', team_wallet=OWNER_TEAM,
+                    api_wallet_address=CERT_SIGNER,
                     checks={name: True for name in runner.CRITICAL_TESTS},
                     market_checks={symbol: {name: True for name in (
                         'market_data', 'order_validation', 'controlled_order_lifecycle',
@@ -170,7 +227,8 @@ def test_certification_binds_the_exact_selected_profile(tmp_path, monkeypatch, c
     certificate = tmp_path / 'certificate.json'
     certificate.write_text(json.dumps(dict(profile_sha256=certified_hash)))
     with pytest.raises(ExchangeError, match='CERTIFICATION_SELECTED_PROFILE_MISMATCH'):
-        runner.verify_certification(certificate, 'pas', {'BTC': 'pas:BTC', 'EWY': 'pas:EWY'}, profile)
+        runner.verify_certification(certificate, 'pas', {'BTC': 'pas:BTC', 'EWY': 'pas:EWY'}, profile,
+                                    team_address=OWNER_TEAM, api_wallet_address=CERT_SIGNER)
 
 
 def test_runtime_builder_explicitly_selects_pas_without_constructing_signer():
@@ -201,13 +259,17 @@ def test_live_launcher_composes_dependencies_without_keys_or_transport(monkeypat
     monkeypatch.setattr(runner.time, 'time_ns', lambda: (SCORING_START_MS + 1000) * 1000000)
     names = ('configuration', 'pas_btc_ewy_discovery', 'btc_ewy_market_data',
              'network_and_venue', 'account_read_only', 'api_wallet', 'btc_ewy_account_leverage')
+    profile_snapshot = runner.load_profile_snapshot(ROOT / 'configs/pas_btc_production.example.json')
     preflight = dict(api_dex='pas', api_market='pas:BTC',
                      api_markets={'BTC': 'pas:BTC', 'EWY': 'pas:EWY'},
+                     profile_sha256=profile_snapshot.sha256,
                      checks={name: {'passed': True} for name in names})
     preflight['checks']['btc_ewy_account_leverage']['passed'] = leverage_ready
     monkeypatch.setattr(runner, 'read_only_preflight', lambda *a, **k: preflight)
     verified = []
-    monkeypatch.setattr(runner, 'verify_certification', lambda path, dex, markets, profile: verified.append((dex, markets)))
+    monkeypatch.setattr(runner, 'verify_certification',
+                        lambda path, dex, markets, **kwargs:
+                        verified.append((dex, markets, kwargs)))
     monkeypatch.setattr(runner, 'load_reliability_policy',
                         lambda path: (None, {}, SimpleNamespace(enabled=True)))
     built = []
@@ -227,7 +289,9 @@ def test_live_launcher_composes_dependencies_without_keys_or_transport(monkeypat
         assert not built and not ran and not verified
         return
     assert runner.main(arguments) == 0
-    assert verified == [('pas', preflight['api_markets'])]
+    assert verified[0][:2] == ('pas', preflight['api_markets'])
+    assert verified[0][2] == dict(profile_sha256=profile_snapshot.sha256,
+                                  team_address=team, api_wallet_address=signer)
     assert built[0]['approval'].signer_address == signer
     assert built[0]['risk_policy'].max_positions == 1
     assert ran == [True]

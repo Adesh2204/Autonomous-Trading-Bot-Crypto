@@ -676,11 +676,11 @@ class ParMarketDataEngine:
                 self.connected = True
                 self._lifecycle('SUBSCRIBED')
                 self._recovery_cancel.clear()
-                self.client.read_cancel_event=self._recovery_cancel
                 self.recovery_status='RECOVERING'
                 def repair(token=generation, selected=None):
                     try:
-                        self.reconcile_history(token,selected)
+                        with self.client.read_cancellation(self._recovery_cancel):
+                            self.reconcile_history(token,selected)
                         recovered.put(None)
                     except Exception as exc:recovered.put(exc)
                 self._recovery_worker=threading.Thread(target=repair,name='par-public-repair',daemon=True)

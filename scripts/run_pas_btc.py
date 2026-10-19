@@ -5,7 +5,7 @@ Default mode is read-only. Explicit Testnet order submission requires a current
 an enabled protection policy and the exact Testnet environment.
 """
 import argparse
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -21,13 +21,13 @@ sys.path.insert(0, str(ROOT / "algo-trading-bot"))
 from exchange.base_exchange import ExchangeError, decimal
 from exchange.competition_market import (
     COMPETITION_MARKET, SCORING_START_MS, is_scored_phase,
-    COMPETITION_MARKET_OI_CAP_USD, COMPETITION_DEX_OI_CAP_USD,
+    COMPETITION_MARKET_OI_CAP_USD, COMPETITION_DEX_OI_CAP_USD, PAS_TARGET_LEVERAGE,
 )
 from exchange.hyperliquid_client import HyperliquidClient
 from exchange.hyperliquid_market_data import HyperliquidMarketData
 from exchange.hyperliquid_account import HyperliquidAccount
 from exchange.market_health import validate_history
-from exchange.live_readiness import valid_address, require_pas_cross_1x
+from exchange.live_readiness import valid_address, require_pas_cross_20x
 from exchange.execution_safety import HumanLiveApproval
 from exchange.reliability_policy import load_reliability_policy
 from market_regime_scanner import ScannerPolicy
@@ -56,10 +56,22 @@ def write_report(path, report):
     print(encoded)
 
 
-def load_profile(path):
-    """Load and bound the production risk profile; examples are not permissions."""
+@dataclass(frozen=True)
+class ProfileSnapshot:
+    """Validated policy objects plus the exact profile bytes they came from."""
+
+    profile: dict
+    risk: RiskPolicy
+    scanner: ScannerPolicy
+    raw_bytes: bytes
+    sha256: str
+
+
+def load_profile_snapshot(path):
+    """Read once, then validate and retain the exact bytes used for policy."""
     try:
-        profile = json.loads(path.read_text(encoding="utf-8"))
+        raw_bytes = path.read_bytes()
+        profile = json.loads(raw_bytes.decode("utf-8"))
     except (OSError, ValueError) as exc:
         raise ExchangeError("PAS_BTC_PROFILE_UNAVAILABLE") from exc
     if (not isinstance(profile, dict) or profile.get("competition_market") != COMPETITION_MARKET or
@@ -71,8 +83,9 @@ def load_profile(path):
         raise ExchangeError("PAS_BTC_SCANNER_POLICY_SCHEMA_INVALID")
     risk = RiskPolicy(**profile["risk"])
     scanner = ScannerPolicy(**profile["scanner"])
-    if risk.leverage != 1 or risk.max_positions != 1 or scanner.top_n != 1:
-        raise ExchangeError("PAS_BTC_SINGLE_POSITION_1X_PROFILE_REQUIRED")
+    if (risk.leverage != PAS_TARGET_LEVERAGE or risk.max_positions != 1 or
+            scanner.top_n != 1):
+        raise ExchangeError("PAS_BTC_SINGLE_POSITION_20X_PROFILE_REQUIRED")
 
     # Enforce internal risk ceilings even if an operator edits the JSON profile.
     ceilings = {
@@ -111,9 +124,28 @@ def load_profile(path):
                 for base in ("btc", "ewy")) or
             decimal(oi_caps["dex_total"], positive=True) != decimal(COMPETITION_DEX_OI_CAP_USD)):
         raise ExchangeError("PAS_BTC_COMPETITION_OI_CAPS_INVALID")
-    return profile, risk, scanner
+    return ProfileSnapshot(profile, risk, scanner, raw_bytes,
+                           hashlib.sha256(raw_bytes).hexdigest())
 
-def verify_certification(path, api_dex, api_markets, profile_path=None):
+
+def load_profile(path):
+    """Compatibility API: load and bound the profile, returning its 3-tuple."""
+    snapshot = load_profile_snapshot(path)
+    return snapshot.profile, snapshot.risk, snapshot.scanner
+
+
+def require_profile_unchanged(path, snapshot):
+    """Reject replacement or edits after policy validation and before runtime."""
+    try:
+        current = hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError as exc:
+        raise ExchangeError("PAS_BTC_PROFILE_CHANGED_AFTER_VALIDATION") from exc
+    if current != snapshot.sha256:
+        raise ExchangeError("PAS_BTC_PROFILE_CHANGED_AFTER_VALIDATION")
+
+
+def verify_certification(path, api_dex, api_markets, profile_path=None, *,
+                         profile_sha256=None, team_address=None, api_wallet_address=None):
     if not path or not path.is_file():
         raise ExchangeError("CRITICAL_CERTIFICATION_REPORT_REQUIRED")
     try:
@@ -124,8 +156,9 @@ def verify_certification(path, api_dex, api_markets, profile_path=None):
             ["git", "status", "--porcelain", "--untracked-files=all", "--",
              "algo-trading-bot", "scripts", "configs", "deploy", "libquant_engine"],
             cwd=ROOT, text=True).strip()
-        selected_profile = profile_path or ROOT / "configs/pas_btc_production.example.json"
-        profile_sha256 = hashlib.sha256(selected_profile.read_bytes()).hexdigest()
+        if profile_sha256 is None:
+            selected_profile = profile_path or ROOT / "configs/pas_btc_production.example.json"
+            profile_sha256 = hashlib.sha256(selected_profile.read_bytes()).hexdigest()
     except Exception as exc:
         raise ExchangeError("CERTIFICATION_EVIDENCE_UNREADABLE") from exc
     if dirty_runtime:
@@ -134,6 +167,13 @@ def verify_certification(path, api_dex, api_markets, profile_path=None):
         raise ExchangeError("CRITICAL_CERTIFICATION_REPORT_INVALID")
     if evidence.get("profile_sha256") != profile_sha256:
         raise ExchangeError("CERTIFICATION_SELECTED_PROFILE_MISMATCH")
+    if (evidence.get("network") != "testnet" or
+            not valid_address(team_address) or not valid_address(api_wallet_address) or
+            not isinstance(evidence.get("team_wallet"), str) or
+            evidence["team_wallet"].lower() != team_address.lower() or
+            not isinstance(evidence.get("api_wallet_address"), str) or
+            evidence["api_wallet_address"].lower() != api_wallet_address.lower()):
+        raise ExchangeError("CERTIFICATION_COMMAND_IDENTITY_MISMATCH")
     checks = evidence.get("checks")
     if (evidence.get("status") != "READY_FOR_SCORED_PHASE" or
             evidence.get("competition_market") != COMPETITION_MARKET or
@@ -198,7 +238,8 @@ def read_preflight_candles(market, symbol, bars, client):
             raise
 
 
-def read_only_preflight(profile_path, team_address=None, api_wallet_address=None, output_path=None):
+def read_only_preflight(profile_path, team_address=None, api_wallet_address=None,
+                        output_path=None, profile_snapshot=None):
     now_ms = time.time_ns() // 1_000_000
     report = {
         "status": "BLOCKED",
@@ -214,11 +255,14 @@ def read_only_preflight(profile_path, team_address=None, api_wallet_address=None
     }
     client = None
     try:
-        profile, risk, scanner = load_profile(profile_path)
+        snapshot = profile_snapshot or load_profile_snapshot(profile_path)
+        profile, risk, scanner = snapshot.profile, snapshot.risk, snapshot.scanner
+        report["profile_sha256"] = snapshot.sha256
         report["checks"]["configuration"] = {
             "passed": True, "leverage": risk.leverage, "max_positions": risk.max_positions,
             "scanner_markets": scanner.top_n,
             "target_starting_equity_usd": profile["target_starting_equity_usd"],
+            "profile_sha256": snapshot.sha256,
             "note": "Target only. Live sizing uses account-reported equity.",
         }
         report["checks"]["strategy_freeze"] = verify_strategy_freeze()
@@ -311,15 +355,15 @@ def read_only_preflight(profile_path, team_address=None, api_wallet_address=None
                 "reported_fee_schedule_available": isinstance(fees, dict),
             }
             try:
-                leverage_settings = require_pas_cross_1x(account)
+                leverage_settings = require_pas_cross_20x(account)
                 report["checks"]["btc_ewy_account_leverage"] = {
                     "passed": True, "markets": leverage_settings,
                 }
             except Exception:
                 report["checks"]["btc_ewy_account_leverage"] = {
-                    "passed": False, "reason": "PAS_ACTIVE_ASSET_CROSS_1X_REQUIRED",
+                    "passed": False, "reason": "PAS_ACTIVE_ASSET_CROSS_20X_REQUIRED",
                 }
-                report["reasons"].append("PAS_ACTIVE_ASSET_CROSS_1X_REQUIRED")
+                report["reasons"].append("PAS_ACTIVE_ASSET_CROSS_20X_REQUIRED")
             if positions:
                 report["reasons"].append("EXISTING_POSITION_REQUIRES_JOURNAL_AND_PROTECTION_RECONCILIATION")
             if orders:
@@ -403,15 +447,24 @@ def main(argv=None):
         raise SystemExit("BLOCKED: outside the scored-phase UTC window")
     if args.approval_expires_ms <= now_ms or args.fee_scale_verified is None:
         raise SystemExit("BLOCKED: unexpired manual approval and fee-scale verification are required")
-    profile, risk, scanner = load_profile(args.profile)
-    preflight = read_only_preflight(args.profile, args.team_wallet, args.api_wallet_address)
+    profile_snapshot = load_profile_snapshot(args.profile)
+    profile, risk, scanner = (profile_snapshot.profile, profile_snapshot.risk,
+                              profile_snapshot.scanner)
+    preflight = read_only_preflight(
+        args.profile, args.team_wallet, args.api_wallet_address,
+        profile_snapshot=profile_snapshot)
     if preflight.get("api_dex") is None or not preflight.get("api_markets"):
         raise SystemExit("BLOCKED: PAS BTC/EWY market mapping is unverified")
     required_reads = ("configuration", "pas_btc_ewy_discovery", "btc_ewy_market_data", "network_and_venue",
                       "account_read_only", "api_wallet", "btc_ewy_account_leverage")
     if any(preflight.get("checks", {}).get(name, {}).get("passed") is not True for name in required_reads):
         raise SystemExit("BLOCKED: current read-only preflight checks failed")
-    verify_certification(args.certification_report, preflight["api_dex"], preflight["api_markets"], args.profile)
+    if preflight.get("profile_sha256") != profile_snapshot.sha256:
+        raise ExchangeError("PAS_BTC_PREFLIGHT_PROFILE_SNAPSHOT_MISMATCH")
+    verify_certification(
+        args.certification_report, preflight["api_dex"], preflight["api_markets"],
+        profile_sha256=profile_snapshot.sha256, team_address=args.team_wallet,
+        api_wallet_address=args.api_wallet_address)
     rate_policy, clock_policy, protection_policy = load_reliability_policy(
         ROOT / "configs/reliability_policy.json")
     if not protection_policy.enabled:
@@ -426,6 +479,7 @@ def main(argv=None):
     )
     from exchange.live_runtime import build_live_runtime
     from exchange.runtime_schedule import RuntimeSchedule
+    require_profile_unchanged(args.profile, profile_snapshot)
     runtime = build_live_runtime(
         team_address=args.team_wallet, approval=approval, session_id=args.session_id,
         initial_start_ms=SCORING_START_MS, risk_policy=risk, scanner_policy=scanner,

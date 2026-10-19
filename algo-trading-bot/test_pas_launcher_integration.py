@@ -61,6 +61,7 @@ def launcher_path(monkeypatch, tmp_path):
     evidence = dict(
         status='READY_FOR_SCORED_PHASE', competition_market='pas', api_dex='pas',
         api_markets={'BTC': 'pas:BTC', 'EWY': 'pas:EWY'}, active_base_assets=['BTC', 'EWY'],
+        network='testnet', team_wallet=TEAM, api_wallet_address=SIGNER,
         commit_sha='offline-release', profile_sha256=runner.hashlib.sha256(profile.read_bytes()).hexdigest(),
         checks={name: True for name in runner.CRITICAL_TESTS},
         market_checks={symbol: {name: True for name in (
@@ -92,9 +93,13 @@ def assert_both_public_markets_read(fixture):
 
 
 @pytest.mark.parametrize('wrong_market', ['pas:BTC', 'pas:EWY'])
-def test_actual_launcher_preflight_rejects_each_wrong_leverage_market(launcher_path, wrong_market):
+@pytest.mark.parametrize('wrong_target', [1, 19, 21, 'isolated'])
+def test_actual_launcher_preflight_rejects_each_wrong_leverage_market(launcher_path, wrong_market, wrong_target):
     fixture, arguments, _, _, git_calls = launcher_path
-    fixture.active_leverages[wrong_market] = 20
+    if wrong_target == 'isolated':
+        fixture.active_margin_modes[wrong_market] = 'isolated'
+    else:
+        fixture.active_leverages[wrong_market] = wrong_target
     with pytest.raises(SystemExit, match='current read-only preflight checks failed'):
         runner.main(arguments)
     assert_both_public_markets_read(fixture)
@@ -154,3 +159,28 @@ def test_actual_launcher_rejects_weakened_profile_before_public_reads(launcher_p
     with pytest.raises(ExchangeError, match='RELIABILITY_OR_MARGIN_POLICY_WEAKENED'):
         runner.main(arguments + ['--profile', str(selected)])
     assert not fixture.calls and not git_calls
+
+
+def test_profile_replacement_during_preflight_cannot_reach_runtime(
+        launcher_path, monkeypatch, tmp_path):
+    fixture, arguments, _, _, _ = launcher_path
+    selected = tmp_path / 'selected-profile.json'
+    original_bytes = (ROOT / 'configs/pas_btc_production.example.json').read_bytes()
+    selected.write_bytes(original_bytes)
+    replacement = json.loads(original_bytes)
+    replacement['risk']['risk_fraction'] = '0.0024'
+    original_preflight = runner.read_only_preflight
+
+    def replace_after_preflight(*args, **kwargs):
+        result = original_preflight(*args, **kwargs)
+        selected.write_text(json.dumps(replacement))
+        return result
+
+    monkeypatch.setattr(runner, 'read_only_preflight', replace_after_preflight)
+    monkeypatch.setattr(runner, 'load_reliability_policy',
+                        lambda _path: (None, {}, type('Policy', (), {'enabled': True})()))
+    with pytest.raises(ExchangeError, match='PROFILE_CHANGED_AFTER_VALIDATION'):
+        runner.main(arguments + ['--profile', str(selected)])
+    assert_both_public_markets_read(fixture)
+    assert not any(row['type'] in {'order', 'updateLeverage', 'approveAgent'}
+                   for row in fixture.calls)
