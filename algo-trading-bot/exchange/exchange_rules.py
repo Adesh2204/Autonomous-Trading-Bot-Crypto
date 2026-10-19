@@ -84,6 +84,9 @@ class HyperliquidOrderValidator:
                 return reject('INVALID_MARKET')
             if not self.client.ready or request.symbol not in self.client.markets:
                 return reject('INVALID_MARKET')
+            if getattr(self.client,'dex','par')=='pas' and not request.reduce_only:
+                from .entry_scope import require_entry
+                require_entry(request.symbol)
             spec = self.client.market(request.symbol)
             if spec != context.spec or context.metadata_hash != context.expected_metadata_hash:
                 return reject('MARKET_METADATA_CHANGED')

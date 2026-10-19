@@ -6,6 +6,7 @@ from .base_exchange import ExchangeError
 from .bounded_daily_session import DailyMandate
 from .long_session import LongMandate, sha
 from .venue_profiles import SCORED
+from .entry_scope import PAS_ENTRY_MARKETS
 from .competition_windows import SCORED_START_MS,SCORED_END_MS
 
 SCORED_ACKS = ('exact_pas_usdp_venue','shared_account_nonce_and_unknown_review',
@@ -21,7 +22,7 @@ class ScoredLimits(DailyMandate):
 
     def require(self):
         self._require_scope()
-        if (self.directions!=('LONG',) or not set(self.markets)<=SCORED.markets
+        if (self.directions!=('LONG',) or not set(self.markets)<=PAS_ENTRY_MARKETS
                 or not SCORED_START_MS<=self.starts_ms<self.expires_ms<=SCORED_END_MS):
             raise ExchangeError('EXACT_FINITE_PAS_SCORED_WINDOW_REQUIRED')
         return self

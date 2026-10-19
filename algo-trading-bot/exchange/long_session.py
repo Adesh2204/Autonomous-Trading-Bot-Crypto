@@ -269,6 +269,8 @@ class LongAuthorization:
                 or decimal(wire.get('p'),positive=True)!=decimal(request['price'])):
             raise ExchangeError('LONG_EXACT_VALIDATED_WIRE_REQUIRED')
         if kind=='entry':
+            from .entry_scope import require_entry
+            require_entry(own['symbol'])
             if (self.entry_stop_event is not None and self.entry_stop_event.is_set()):
                 raise ExchangeError('LONG_NEW_ENTRIES_REVOKED_BY_OPERATOR_STOP')
             if (not wire['b'] or wire['r'] or wire['t']!={'limit':{'tif':'Ioc'}}
@@ -338,6 +340,9 @@ class AllocatedLongRisk:
         from .perpetual_economics import estimate_trade,FeeSchedule
         self.last_plan=None
         try:
+            if self.market.client.dex=='pas':
+                from .entry_scope import require_entry
+                require_entry(spec.symbol)
             observed=self.account._query('userFees')
             self.fees=FeeSchedule(decimal(observed['userAddRate'])*6,decimal(observed['userCrossRate'])*6,
                 'FRESH_CONSERVATIVE_MAXIMUM_PAR_MULTIPLIER')
@@ -405,6 +410,9 @@ class DailyLongExecution(HyperliquidExecution):
                 if request.price<context.spec.normalize_price(quote.bid*(1-slippage/10000),'SELL'):
                     raise ExchangeError('DAILY_FRESH_CLOSING_PRICE_LIMIT')
         else:
+            if self.client.dex=='pas':
+                from .entry_scope import require_entry
+                require_entry(request.symbol)
             if request.side!='BUY':raise ExchangeError('DAILY_SHORT_DISABLED')
             scope=getattr(self.daily_auth,'m',None)
             participation=decimal(scope.depth_participation) if scope else D('.1')
@@ -671,6 +679,8 @@ def build_long_runtime(root,mandate_path,acceptance_path,release_path,protection
             raise ExchangeError('PAS_SHARED_ACCOUNT_UNKNOWN_REQUIRES_ADMISSIBLE_RESOLUTION')
         scored_bound=require_scored_evidence(m,Path(mandate_path).parent)
     require_release(root,release_path,m.daily.source_hash,m.release_sha256)
+    from .entry_scope import require_entry
+    for symbol in m.daily.markets:require_entry(symbol)
     if sha(protection_evidence_path)!=m.protection_evidence_sha256:raise ExchangeError('LONG_PROTECTION_PROOF_CHANGED')
     native_proof=require_native_evidence(protection_evidence_path,m.daily)
     policy_path=root/'configs/reliability_policy.json'
@@ -722,7 +732,7 @@ def build_long_runtime(root,mandate_path,acceptance_path,release_path,protection
         nonces=NonceManager(state/'nonces.sqlite',signer.address,journal=journal)
         if client is None:
             client=HyperliquidClient(rate_limits=rates);client.startup();account=HyperliquidAccount(client,TEAM)
-        public=HyperliquidMarketData(client);engine=ParMarketDataEngine(public,include_trades=True)
+        public=HyperliquidMarketData(client);engine=ParMarketDataEngine(public,symbols=m.daily.markets,include_trades=True)
         market=StreamFirstMarketData(client,engine);clock=ClockHealthMonitor(journal=journal,**clock_config)
         recovery=LongAccountRecovery(account,journal,initial_start_ms=0);holder={}
         provider=LiveContextProvider(market,account,API,clock,rates,reconciliation_ready=lambda:recovery.last_report.ready,
@@ -754,7 +764,7 @@ def build_long_runtime(root,mandate_path,acceptance_path,release_path,protection
                 result.watchlist=[s for s in result.watchlist if s in m.daily.markets and next(
                     (d.signal and d.signal.get('long') and not d.signal.get('short') for d in result.diagnostics if d.symbol==s),False)]
                 return result
-        scanner=LongScanner(market,scanner_policy)
+        scanner=LongScanner(market,scanner_policy,candidate_symbols=m.daily.markets)
         session=DailyLongSession(market,scanner,executor,risk,authority=auth)
         stream=LiveAccountStream(TEAM,recovery,executor,clock_ms=client.clock_ms);holder['stream']=stream
         session.attach_account_stream(stream);session.startup()

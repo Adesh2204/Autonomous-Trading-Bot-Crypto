@@ -27,10 +27,25 @@ def funding_snapshot(root,output):
 def dispatch(root,args):
     from .terminal_app import validate_safe
     validate_safe('pas')
+    if args.command=='history-review':
+        from .pas_history_review import review_history
+        return review_history(root,args.output)
     if args.command=='funding':return funding_snapshot(root,args.output)
     if args.command=='configuration-review':
         from .venue_discovery import discover
-        return discover(root,args.output,venue='pas')
+        d=discover(root,args.output,venue='pas')
+        if getattr(args,'organizer_confirmation',None):
+            import time
+            from .scored_prepare import copy_organizer_record
+            from .team_registration import registration_evidence
+            from .pas_configuration_plan import configuration_plan
+            copy_organizer_record(args.organizer_confirmation,Path(args.output))
+            d.pop('configuration_plan',None)
+            d['registration_evidence']=registration_evidence(args.output,time.time_ns()//1000000)
+            d['configuration_plan']=configuration_plan(d)
+            atomic_json(Path(args.output)/'discovery.json',d)
+            atomic_json(Path(args.output)/'account_configuration_plan.json',d['configuration_plan'])
+        return d
     if args.command=='configuration-approve':
         from .pas_configuration import approve_configuration
         return approve_configuration(root,args.plan,args.discovery,args.release,args.output)

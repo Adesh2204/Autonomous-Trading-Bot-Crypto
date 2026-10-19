@@ -122,7 +122,7 @@ class OpportunityFunnel:
             dt=datetime.fromtimestamp(scan.observed_at_ms/1000,timezone.utc)
             t=dict(candidate_id=cid,symbol=d.symbol,decision_ms=scan.observed_at_ms,available_at_ms=scan.observed_at_ms,
                 source=self.source,utc_day=dt.date().isoformat(),utc_hour=dt.hour,weekday=dt.strftime('%A'),
-                session_context='CONTINUOUS_CRYPTO' if d.symbol in {'par:BTC','par:ETH','par:HYPE'} else 'TRADITIONAL_REFERENCE_SESSION_UNVERIFIED',
+                session_context='CONTINUOUS_CRYPTO' if d.symbol in {p+':'+s for p in ('par','pas') for s in ('BTC','ETH','HYPE')} else 'TRADITIONAL_REFERENCE_SESSION_UNVERIFIED',
                 metrics=dict(d.metrics),scanner_policy=vars(policy).copy() if policy else None,
                 scanner_rank=getattr(d,'evidence',{}).get('scanner_rank'),selected=d.symbol in scan.watchlist,
                 signal=dict(d.signal) if d.signal else None,side_channel_signal=bool(d.signal and (d.signal.get('long') or d.signal.get('short'))),
@@ -130,7 +130,11 @@ class OpportunityFunnel:
                 all_observed_failed_conditions=[],stages={s:dict(status='NOT_REACHED',reason=None) for s in STAGES})
             self.traces[cid]=t
             self._stage(t,'TOTAL_MARKETS_SEEN','PASS')
-            self._stage(t,'VALID_MARKET_IDENTITY','PASS' if d.symbol.startswith('par:') else 'FAIL','INVALID_MARKET_DATA' if not d.symbol.startswith('par:') else None)
+            from exchange.venue_profiles import symbol_profile
+            from exchange.base_exchange import ExchangeError
+            try:symbol_profile(d.symbol);valid_identity=True
+            except ExchangeError:valid_identity=False
+            self._stage(t,'VALID_MARKET_IDENTITY','PASS' if valid_identity else 'FAIL',None if valid_identity else 'INVALID_MARKET_DATA')
             p=policy
             history=len(d.candles)
             enough=history>=p.history_bars if p else bool(d.signal)

@@ -163,22 +163,34 @@ def test_signer_deadline_does_not_stop_outer_observer(monkeypatch,tmp_path):
     assert result['terminal_flat'] and not outer.is_set()
 
 
-def test_stop_revokes_entry_at_signing_boundary_but_retains_exact_risk_exit(tmp_path):
-    from test_long_session import authority
+def test_stop_revokes_entry_at_signing_boundary_but_retains_exact_risk_exit(tmp_path,monkeypatch):
+    # V4 prohibits new PAR entries. Exercise the same stop/exit contract with
+    # an explicit synthetic PAS acceptance in a temporary journal, no signer.
+    from test_pas_migration import scored
+    from exchange.long_session import LongAuthorization,ACKS
+    from exchange.scored_session import SCORED_ACKS
+    from exchange.execution_journal import ExecutionJournal
     from exchange.bounded_daily_session import TradeState
-    auth,clock,journal=authority(tmp_path)
+    monkeypatch.setenv('HL_DEX','pas');monkeypatch.setenv('SIGNAL_DATA_MODE','PAS_NATIVE_ONLY')
+    m=scored();clock=[m.created_ms+1]
+    acceptance=dict(mandate_hash=m.identity,operator_acceptance='OFFLINE TEST FIXTURE ONLY',
+        accepted_ms=clock[0],expires_ms=m.daily.expires_ms,**{k:True for k in ACKS+SCORED_ACKS})
+    path=tmp_path/'acceptance.json';path.write_text(json.dumps(acceptance))
+    journal=ExecutionJournal(tmp_path/'auth.sqlite',session_id='offline:v4-stop',team_address=m.daily.team_wallet)
+    auth=LongAuthorization(m,path,journal,clock_ms=lambda:clock[0],source_hash=lambda:m.daily.source_hash,
+        policy_hash=lambda:m.reliability_sha256)
     auth.lifecycle=SimpleNamespace(data={'attempts':1},state=TradeState.ENTRY_SUBMITTED)
     auth.entry_stop_event=threading.Event()
     try:
-        request=dict(symbol='par:BTC',side='BUY',quantity='1',price='100',reduce_only=False)
-        row,_=journal.reserve('entry',request,'candidate',clock[0]);auth.bind('entry','entry','par:BTC',1)
+        request=dict(symbol='pas:BTC',side='BUY',quantity='1',price='100',reduce_only=False)
+        row,_=journal.reserve('entry',request,'candidate',clock[0]);auth.bind('entry','entry','pas:BTC',1)
         wire=dict(a=1,b=True,r=False,s='1',p='100',t={'limit':{'tif':'Ioc'}},c=row['cloid'])
         assert auth.check_action(dict(type='order',orders=[wire]))[0]=='entry'
         auth.entry_stop_event.set()
         with pytest.raises(ExchangeError,match='REVOKED_BY_OPERATOR_STOP'):
             auth.check_action(dict(type='order',orders=[wire]))
         request.update(side='SELL',reduce_only=True)
-        row,_=journal.reserve('exit',request,'exit-candidate',clock[0]);auth.bind('exit','exit','par:BTC',1)
+        row,_=journal.reserve('exit',request,'exit-candidate',clock[0]);auth.bind('exit','exit','pas:BTC',1)
         wire.update(b=False,r=True,c=row['cloid'])
         assert auth.check_action(dict(type='order',orders=[wire]))[0]=='exit'
     finally:journal.close()

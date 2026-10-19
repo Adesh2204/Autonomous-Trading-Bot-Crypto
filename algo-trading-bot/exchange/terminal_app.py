@@ -301,7 +301,9 @@ def run_authorized(root, args, stop, publish):
         try:return original(scan=scan)
         finally:
             d=runtime.session.execution.daily
-            publish(dict(mode='AUTHORIZED TESTNET TRADING', status=d.state.value, team_wallet=TEAM,
+            from .trading_status import authorized_status
+            activity=authorized_status(runtime,runtime.session.clock_ms(),stop.is_set())
+            publish(dict(**activity,mode='AUTHORIZED TESTNET TRADING', status=d.state.value, team_wallet=TEAM,
                 dex=m.daily.dex,collateral=getattr(m,'collateral','USDPR'),venue_identity=runtime.authorization.venue_identity,
                 source_hash=m.daily.source_hash, mandate_hash=m.identity, expires_ms=m.daily.expires_ms,
                 signing_authority='EXACT_BOUNDED_LONG_MANDATE', approved_bankroll=m.daily.bankroll,
@@ -474,16 +476,17 @@ def main(root):
         q=sub.add_parser(name);q.add_argument('--state',default=str(root/'runtime/terminal'))
         if name=='dashboard':
             q.add_argument('--refresh',type=int,default=5);q.add_argument('--once',action='store_true')
-    for name in ('funding','configuration-review','native-prepare'):
+    for name in ('funding','configuration-review','native-prepare','history-review'):
         q=sub.add_parser(name);q.add_argument('--output',required=True)
         if name=='native-prepare':q.add_argument('--market',default='pas:BTC')
+        if name=='configuration-review':q.add_argument('--organizer-confirmation')
     for name in ('configuration-approve','configuration-apply'):
         q=sub.add_parser(name)
         for flag in ('plan','discovery','release','output'):q.add_argument('--'+flag,required=True)
         if name=='configuration-apply':q.add_argument('--acceptance',required=True)
     args=p.parse_args()
     try:
-        if args.command in {'funding','configuration-review','native-prepare','configuration-approve','configuration-apply'}:
+        if args.command in {'funding','configuration-review','native-prepare','history-review','configuration-approve','configuration-apply'}:
             from .pas_operations import dispatch
             result=dispatch(root,args);print(json.dumps(result,indent=2,default=str))
             return 1 if result.get('status')=='CONFIGURATION_REQUIRES_REVIEW' else 0

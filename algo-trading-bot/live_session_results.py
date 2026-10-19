@@ -63,14 +63,21 @@ class LiveSessionResults:
                 with file.open('w',newline='') as stream:
                     csv.DictWriter(stream,fieldnames=fields).writeheader()
         scanner_policy=getattr(session.scanner,'policy',None)
-        configuration=dict(network='testnet',dex='par',execution_mode=self.mode,
+        from exchange.venue_profiles import venue_profile
+        from exchange.entry_scope import PAS_ENTRY_MARKETS
+        profile=venue_profile(getattr(session.market.client,'dex','par'))
+        mandate=getattr(getattr(session,'daily_authority',None),'m',None)
+        entry_markets=sorted(mandate.daily.markets if mandate else PAS_ENTRY_MARKETS if profile.dex=='pas' else session.market.client.markets)
+        configuration=dict(network='testnet',dex=profile.dex,collateral=profile.collateral,
+            venue_identity=profile.identity,entry_markets=entry_markets,
+            account_reconciliation_markets=sorted(session.market.client.markets),execution_mode=self.mode,
             risk_policy=asdict(session.risk.policy),scanner_policy=asdict(scanner_policy) if scanner_policy is not None else None,
             vwap_policy='UTC_MIDNIGHT_BASELINE',model_version=None,
             protection_policy=asdict(session.execution.protection.policy) if session.execution.protection is not None else None,
             rate_policy=asdict(session.execution.rate_limits.policy))
         data=dict(schema_version=2,execution_mode=self.mode,source=self.source,
                   team_wallet=session.execution.account.team_address,
-                  api_wallet=session.execution.transport.signer_address,network='testnet',dex='par',
+                  api_wallet=session.execution.transport.signer_address,network='testnet',dex=profile.dex,collateral=profile.collateral,venue_identity=profile.identity,
                   session_id=self.journal.session_id,sdk_version='0.24.0',strategy_freeze=verify_strategy_freeze(),
                   git_commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
                   git_branch=subprocess.check_output(['git','branch','--show-current'],cwd=ROOT,text=True).strip(),
