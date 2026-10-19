@@ -1,0 +1,235 @@
+{
+  "scope": "UNSIGNED_READ_ONLY_SHADOW; NOT_LIVE_CERTIFICATION",
+  "engine_run_invocations": 1,
+  "exit_code": 0,
+  "signing_sdk_loaded": false,
+  "blocked_submission_attempts": 0,
+  "scan_status": "NO_TRADE",
+  "watchlist": [],
+  "local_orders": 0,
+  "local_fills": 0,
+  "exchange_orders_submitted": 0,
+  "markets": {
+    "pas:BTC": {
+      "rest_request_count": 2,
+      "requested_slots_total": 300,
+      "requests_slots": [
+        150,
+        150
+      ],
+      "http_statuses": [
+        200,
+        200
+      ],
+      "raw_returned_rows": [
+        150,
+        130
+      ],
+      "rolling_market_slots_peak": 150,
+      "genuine_completed_cache_count": 280,
+      "latest_300_window_count": 278,
+      "latest_300_missing_timestamps_ms": [
+        1792435080000,
+        1792435140000,
+        1792435200000,
+        1792435260000,
+        1792435320000,
+        1792435380000,
+        1792435440000,
+        1792435500000,
+        1792435560000,
+        1792435620000,
+        1792435680000,
+        1792435740000,
+        1792435800000,
+        1792435860000,
+        1792435920000,
+        1792435980000,
+        1792436040000,
+        1792436100000,
+        1792436160000,
+        1792436220000,
+        1792436280000,
+        1792436340000
+      ],
+      "consecutive_cache_tail": 280,
+      "newest_completed_close_ms": 1792435080000,
+      "newest_completed_close_age_seconds": 1361.13,
+      "history_and_freshness_gate_passed": false,
+      "engine_health": {
+        "symbol": "pas:BTC",
+        "state": "QUARANTINED",
+        "data_state": "INSUFFICIENT_HISTORY",
+        "healthy": false,
+        "quarantined": true,
+        "reasons": [
+          "INSUFFICIENT_COMPLETED_HISTORY",
+          "LAST_CANDLE_TIME_STALE"
+        ],
+        "evaluated_at_ms": 1792436441130,
+        "recovery_attempts": 3,
+        "restorations": 0,
+        "quarantines": 4,
+        "next_retry_at_ms": 1792436524011,
+        "overall_market_health": "QUARANTINED",
+        "source": "PUBLIC_STREAM",
+        "clocks": {
+          "last_candle_time": 1792435080000,
+          "last_orderbook_time": 1792436438010,
+          "last_mark_time": 1792436440713,
+          "last_tick_time": 1792436438010
+        },
+        "ages_ms": {
+          "last_candle_time": 1361130,
+          "last_orderbook_time": 3120,
+          "last_mark_time": 417,
+          "last_tick_time": 3120
+        },
+        "completed_candles": 280,
+        "spread_bps": "6.109108681043435762722218828",
+        "history_health": "INSUFFICIENT_HISTORY",
+        "candle_health": "STALE_CANDLE",
+        "book_health": "HEALTHY",
+        "tick_health": "HEALTHY",
+        "context_health": "HEALTHY",
+        "consecutive_recovery_attempts": 3,
+        "recovery": "INVALID_DATA"
+      }
+    },
+    "pas:EWY": {
+      "rest_request_count": 2,
+      "requested_slots_total": 300,
+      "requests_slots": [
+        150,
+        150
+      ],
+      "http_statuses": [
+        200,
+        200
+      ],
+      "raw_returned_rows": [
+        150,
+        150
+      ],
+      "rolling_market_slots_peak": 150,
+      "genuine_completed_cache_count": 300,
+      "latest_300_window_count": 298,
+      "latest_300_missing_timestamps_ms": [
+        1792436280000,
+        1792436340000
+      ],
+      "consecutive_cache_tail": 300,
+      "newest_completed_close_ms": 1792436280000,
+      "newest_completed_close_age_seconds": 161.13,
+      "history_and_freshness_gate_passed": false,
+      "engine_health": {
+        "symbol": "pas:EWY",
+        "state": "QUARANTINED",
+        "data_state": "STALE_CANDLE",
+        "healthy": false,
+        "quarantined": true,
+        "reasons": [
+          "LAST_CANDLE_TIME_STALE"
+        ],
+        "evaluated_at_ms": 1792436441130,
+        "recovery_attempts": 3,
+        "restorations": 0,
+        "quarantines": 4,
+        "next_retry_at_ms": 1792436524011,
+        "overall_market_health": "QUARANTINED",
+        "source": "PUBLIC_STREAM",
+        "clocks": {
+          "last_candle_time": 1792436280000,
+          "last_orderbook_time": 1792436438010,
+          "last_mark_time": 1792436439789,
+          "last_tick_time": 1792436438010
+        },
+        "ages_ms": {
+          "last_candle_time": 161130,
+          "last_orderbook_time": 3120,
+          "last_mark_time": 1341,
+          "last_tick_time": 3120
+        },
+        "completed_candles": 300,
+        "spread_bps": "5.722824531841159825771786475",
+        "history_health": "HEALTHY",
+        "candle_health": "STALE_CANDLE",
+        "book_health": "HEALTHY",
+        "tick_health": "HEALTHY",
+        "context_health": "HEALTHY",
+        "consecutive_recovery_attempts": 3,
+        "recovery": "INVALID_DATA"
+      }
+    }
+  },
+  "requests": [
+    {
+      "query": "candleSnapshot",
+      "request": {
+        "type": "candleSnapshot",
+        "req": {
+          "coin": "pas:BTC",
+          "interval": "1m",
+          "startTime": 1792418280000,
+          "endTime": 1792427279999
+        }
+      },
+      "sent_ms": 1792436301575,
+      "status": 200,
+      "returned_ms": 1792436301898
+    },
+    {
+      "query": "candleSnapshot",
+      "request": {
+        "type": "candleSnapshot",
+        "req": {
+          "coin": "pas:EWY",
+          "interval": "1m",
+          "startTime": 1792418280000,
+          "endTime": 1792427279999
+        }
+      },
+      "sent_ms": 1792436302111,
+      "status": 200,
+      "returned_ms": 1792436302560
+    },
+    {
+      "query": "candleSnapshot",
+      "request": {
+        "type": "candleSnapshot",
+        "req": {
+          "coin": "pas:BTC",
+          "interval": "1m",
+          "startTime": 1792427280000,
+          "endTime": 1792436279999
+        }
+      },
+      "sent_ms": 1792436401132,
+      "status": 200,
+      "returned_ms": 1792436401799
+    },
+    {
+      "query": "candleSnapshot",
+      "request": {
+        "type": "candleSnapshot",
+        "req": {
+          "coin": "pas:EWY",
+          "interval": "1m",
+          "startTime": 1792427280000,
+          "endTime": 1792436279999
+        }
+      },
+      "sent_ms": 1792436401883,
+      "status": 200,
+      "returned_ms": 1792436402532
+    }
+  ],
+  "rolling_global_slots_peak": 300,
+  "ended_ms": 1792436441130,
+  "ended_utc": "2026-10-19T19:00:41.130000+00:00",
+  "messages": 397,
+  "reconnections": 0,
+  "fair_candle_scheduling": true,
+  "source_hashes_match_run_start": true,
+  "decision": "NO-GO"
+}

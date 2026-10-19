@@ -226,6 +226,9 @@ class HyperliquidClient:
         # client shares the process budget; offline tests may explicitly replace
         # this object with an isolated deterministic fixture budget.
         self.candle_budget=PAS_CANDLE_BUDGET if self.competition_mode else None
+        # Opt in only for concurrent two-market collectors; sequential readiness
+        # reads retain their existing 300-slot contract under the same global cap.
+        self.fair_candle_scheduling=False
         self.read_cancel_event=None
         self.candle_audit=candle_audit
         self.progress=progress
@@ -319,10 +322,13 @@ class HyperliquidClient:
             elif query!='candleSnapshot':expected=0
             result=self.rate_limits.read(query,operation,priority=priority,
                 request_key=key,expected_items=expected,cancel_event=self.read_cancel_event,
-                candle_budget=self.candle_budget)
+                candle_budget=self.candle_budget,
+                candle_symbol=payload.get('req',{}).get('coin')
+                    if query=='candleSnapshot' and self.fair_candle_scheduling else None)
         else:
             if query=='candleSnapshot' and self.candle_budget is not None:
-                self.candle_budget.reserve(expected)
+                self.candle_budget.reserve(expected,**({'symbol':payload['req']['coin']}
+                    if self.fair_candle_scheduling else {}))
             result = operation()
         self.last_received_ms = self.clock_ms()
         if reusable:scope['values'][key]=(self.last_received_ms,deepcopy(result))
