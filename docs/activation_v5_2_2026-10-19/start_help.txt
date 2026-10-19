@@ -1,0 +1,32 @@
+usage: anchorium_cli.py start [-h] [--authorized] [--state STATE]
+                              [--venue {par,pas}]
+                              [--readiness-release READINESS_RELEASE]
+                              [--readiness-native-proof READINESS_NATIVE_PROOF]
+                              [--wait-for-readiness] [--markets [MARKETS ...]]
+                              [--scan-seconds SCAN_SECONDS]
+                              [--duration DURATION] [--mandate MANDATE]
+                              [--acceptance ACCEPTANCE] [--release RELEASE]
+                              [--native-protection-evidence NATIVE_PROTECTION_EVIDENCE]
+
+options:
+  -h, --help            show this help message and exit
+  --authorized
+  --state STATE
+  --venue {par,pas}     Explicit isolated practice or scored profile; grants
+                        no signing authority
+  --readiness-release READINESS_RELEASE
+                        Public verification only; grants no authority
+  --readiness-native-proof READINESS_NATIVE_PROOF
+                        Public raw-proof verification only; grants no
+                        authority
+  --wait-for-readiness  PAS only: one finite unsigned wait with an already
+                        genuinely accepted mandate; no approval creation or
+                        restart
+  --markets [MARKETS ...]
+  --scan-seconds SCAN_SECONDS
+  --duration DURATION   Optional bounded read-only development soak; signing
+                        expiry is unchanged
+  --mandate MANDATE
+  --acceptance ACCEPTANCE
+  --release RELEASE
+  --native-protection-evidence NATIVE_PROTECTION_EVIDENCE

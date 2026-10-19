@@ -2,6 +2,7 @@
 from .base_exchange import ExchangeError,decimal
 from .execution_journal import fingerprint
 from .venue_profiles import SCORED
+from .entry_scope import PAS_ENTRY_MARKETS
 from .testnet_certification import TEAM
 import re
 
@@ -22,6 +23,7 @@ def configuration_plan(discovery):
         if (spec['symbol']!=symbol or type(spec['asset_id']) is not int or spec['max_leverage']<1
                 or active.get('coin')!=symbol or active.get('user','').lower()!=TEAM.lower()):
             raise ExchangeError('EXACT_PAS_CONFIGURATION_MAPPING_REQUIRED')
+        if symbol not in PAS_ENTRY_MARKETS:continue
         if active.get('leverage')==dict(type='cross',value=1):verified.append(symbol)
         else:changes.append(dict(symbol=symbol,observed_ms=row['observed_ms'],before=active.get('leverage'),
             requested_action=dict(type='updateLeverage',asset=spec['asset_id'],isCross=True,leverage=1)))
@@ -33,8 +35,12 @@ def configuration_plan(discovery):
     if discovery.get('terminal_flat') is not True:blockers.append('TWO_FRESH_FLAT_ZERO_ORDER_READBACKS_REQUIRED')
     local=discovery.get('local_execution_state',{})
     if local.get('status')!='NO_LOCAL_UNRESOLVED_INTENT':blockers.append('SHARED_UNKNOWN_AND_CONSUMED_INVOCATION_REVIEW_REQUIRED')
+    if discovery.get('registration_evidence',{}).get('status')!='OPERATOR_REVIEWED_ORGANIZER_RECORD':
+        blockers.append('REGISTERED_TEAM_ORGANIZER_RECORD_REQUIRED')
     plan=dict(status='UNSIGNED_CONFIGURATION_PLAN_ONLY',network='testnet',dex='pas',collateral='USDP',
         source_hash=discovery['source_hash'],observed_ms=discovery['finished_ms'],
+        entry_markets=sorted(PAS_ENTRY_MARKETS),account_reconciliation_scope='ALL_CANONICAL_PAS_MARKETS',
+        policy_basis='V4 BTC/EWY entries only; leverage is per market, not an all-ten venue obligation',
         team_wallet=TEAM,
         discovery_hash=fingerprint(discovery),changes=changes,already_one_x_cross=sorted(verified),
         collateral_balance=str(balance),organizer_credit_amount=None,

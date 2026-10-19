@@ -59,10 +59,11 @@ class ScanResult:
 
 class MarketRegimeScanner:
     def __init__(self, market, policy, *, session=None, live_authorization=None,
-                 team_address=None, signer_address=None):
+                 team_address=None, signer_address=None, candidate_symbols=()):
         self.market=market
         self.client=market.client
         self.policy=policy
+        self.candidate_symbols=tuple(candidate_symbols)
         self.session=session or SessionManager()
         self.brain=FrozenStrategy(market,self.session)
         self.diagnostic_sink=None
@@ -77,7 +78,7 @@ class MarketRegimeScanner:
         # Public scanning cannot grant an exchange-write permit. The default
         # remains PAPER; the future owner must supply its exact authorization.
         if self.live_authorization is None:
-            return require_paper_migration()
+            return require_paper_migration(getattr(self.client,'dex','par'))
         from exchange.execution_safety import LiveAuthorization
         if (type(self.live_authorization) is not LiveAuthorization or
                 not isinstance(self.team_address,str) or not isinstance(self.signer_address,str)):
@@ -88,8 +89,10 @@ class MarketRegimeScanner:
         self.require_runtime()
         self.client.startup()
         p=self.policy
+        from exchange.entry_scope import signal_markets
+        selected=tuple(sorted(signal_markets(self.client,self.candidate_symbols)))
         if self.health_manager is None:
-            self.health_manager=MarketHealthManager(tuple(sorted(self.client.markets)),history_bars=p.history_bars,
+            self.health_manager=MarketHealthManager(selected,history_bars=p.history_bars,
                 max_candle_age_ms=p.max_candle_age_ms)
         now=self.client.clock_ms()
         end=now//60000*60000-1
@@ -100,12 +103,12 @@ class MarketRegimeScanner:
         except Exception:
             failed=ScanResult(now,[MarketDiagnostic(s,reasons=['MARKET_DATA_UNAVAILABLE'],
                 evidence=dict(root_cause='ASSET_CONTEXT_READ_FAILED',request_time_ms=None))
-                for s in sorted(self.client.markets)],[],'FAILED_SAFE')
+                for s in selected],[],'FAILED_SAFE')
             if self.diagnostic_sink is not None:self.diagnostic_sink.observe_scan(failed,p)
             raise
         context_observed=self.client.clock_ms()
         diagnostics=[]
-        for symbol in sorted(self.client.markets):
+        for symbol in selected:
             d=MarketDiagnostic(symbol)
             diagnostics.append(d)
             d.evidence=dict(request_time_ms=None,request_cycle_observed_ms=context_observed,

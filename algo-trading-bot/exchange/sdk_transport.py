@@ -134,6 +134,8 @@ class OfficialSDKTransport:
                 raise ExchangeError('EXACT_SIGNED_VENUE_IDENTITY_REQUIRED')
 
     def check(self, action):
+        from .entry_scope import require_entry_action
+        require_entry_action(self.client,action)
         self._require_venue(self.client,self.authorization)
         if self._expected is None or self._guard is None or fingerprint(action)!=self._expected:
             raise ExchangeError('UNVALIDATED_SIGNED_ACTION')

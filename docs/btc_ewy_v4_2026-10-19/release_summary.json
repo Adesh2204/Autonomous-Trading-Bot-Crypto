@@ -1,0 +1,390 @@
+{
+  "observed_ms": 1792380321150,
+  "source_hash": "56ee079f7b8403811674d429aff3b9143a1810290bdd9a23f319b7cedd47170c",
+  "release": {
+    "started_unix": 1792379409.643522,
+    "source_hash": "56ee079f7b8403811674d429aff3b9143a1810290bdd9a23f319b7cedd47170c",
+    "scope": "V4 BTC/EWY entry scope across scanner, risk and actual SDK boundary; request/stream provenance, cancellation isolation, reconnect burst recovery, targeted configuration, registered-account provenance and operational status, explicit PAS scanner/safety-read/export/trace integration and canonical tie ordering. Full legacy and PAS regression; ephemeral offline SDK fixtures only; no actual-wallet access or exchange write",
+    "evidence_classifier_sha256": "6d81a9912e08c37aca6ad83eb7fbefe3341c5e46af403801cb4045b5296c98f1",
+    "checks_before": {
+      "strategy_freeze": {
+        "exit_code": 0,
+        "result": {
+          "baseline": "nse-working-baseline",
+          "file_count": 1,
+          "method_count": 8,
+          "parameter_count": 32,
+          "passed": true
+        }
+      },
+      "phase0": {
+        "exit_code": 0,
+        "result": {
+          "project": "anchorium-perpetual-alpha",
+          "checks": {
+            "project_is_perpetual_alpha": true,
+            "independent_git_directory": true,
+            "migration_branch": true,
+            "testnet_venue": true,
+            "paper_execution_mode": true,
+            "migration_policy_valid": true,
+            "orders_disabled": true,
+            "angel_one_client_disabled": true,
+            "angel_one_order_boundary_disabled": true,
+            "testnet_order_boundary_disabled": true,
+            "signal_logic_present": true,
+            "signal_source_unchanged": true
+          },
+          "passed": true
+        }
+      }
+    },
+    "finished_unix": 1792380153.372203,
+    "exit_code": 0,
+    "source_hash_after": "56ee079f7b8403811674d429aff3b9143a1810290bdd9a23f319b7cedd47170c",
+    "totals": {
+      "tests": 3033,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "xml_sha256": "7ef9e8bd8c8d178218d3039924390270df7a012983eb92017b736e7e352abcfe",
+    "evidence_classifier_sha256_after": "6d81a9912e08c37aca6ad83eb7fbefe3341c5e46af403801cb4045b5296c98f1",
+    "previous_evidence_classifier_sha256": "9c95b59054aed2adc38a41f5f65b0a65c314ac4cb3b29ea437a88d2b6dfcf8e0",
+    "baseline_minimum": 2979,
+    "expected_minimum": 3033,
+    "checks_after": {
+      "strategy_freeze": {
+        "exit_code": 0,
+        "result": {
+          "baseline": "nse-working-baseline",
+          "file_count": 1,
+          "method_count": 8,
+          "parameter_count": 32,
+          "passed": true
+        }
+      },
+      "phase0": {
+        "exit_code": 0,
+        "result": {
+          "project": "anchorium-perpetual-alpha",
+          "checks": {
+            "project_is_perpetual_alpha": true,
+            "independent_git_directory": true,
+            "migration_branch": true,
+            "testnet_venue": true,
+            "paper_execution_mode": true,
+            "migration_policy_valid": true,
+            "orders_disabled": true,
+            "angel_one_client_disabled": true,
+            "angel_one_order_boundary_disabled": true,
+            "testnet_order_boundary_disabled": true,
+            "signal_logic_present": true,
+            "signal_source_unchanged": true
+          },
+          "passed": true
+        }
+      }
+    },
+    "passed": true,
+    "requirements_sha256": "db76f769d0aae03197e922f579ce6db9aa6aced9587da93e11b4bba409774b4d",
+    "runtime_versions": {
+      "numpy": "2.5.2",
+      "pandas": "3.0.5",
+      "python-dateutil": "2.9.0.post0",
+      "python-dotenv": "1.2.3",
+      "pytest": "8.4.1",
+      "requests": "2.34.2",
+      "tzdata": "2026.3",
+      "websocket-client": "1.9.0",
+      "hyperliquid-python-sdk": "0.24.0"
+    }
+  },
+  "verdict": "NO_GO",
+  "decision": {
+    "SOFTWARE_READY": {
+      "value": false,
+      "evidence_path": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/btc_ewy_v4_2026-10-19/regression_release_final/test_receipt.json",
+      "timestamp_ms": 1792380321150,
+      "evidence_observed_ms": 1792380153372,
+      "source_hash": "56ee079f7b8403811674d429aff3b9143a1810290bdd9a23f319b7cedd47170c",
+      "remaining_blocker": "V4 guard/observer infrastructure passed, but the complete requested native/residual activation route is not releasable: admissible PAS subminimum semantics and separately reviewed qualification dispatch remain unavailable."
+    },
+    "ACCOUNT_READY": {
+      "value": false,
+      "evidence_path": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/btc_ewy_v4_2026-10-19/account_report.json",
+      "timestamp_ms": 1792380321150,
+      "evidence_observed_ms": 1792380216547,
+      "source_hash": "56ee079f7b8403811674d429aff3b9143a1810290bdd9a23f319b7cedd47170c",
+      "remaining_blocker": "USDP balance zero; BTC/EWY actually 20x CROSS, not 1x; organizer wallet binding unresolved."
+    },
+    "MARKET_DATA_READY": {
+      "value": false,
+      "evidence_path": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/btc_ewy_v4_2026-10-19/market_readiness.json",
+      "timestamp_ms": 1792380321150,
+      "evidence_observed_ms": 1792379543653,
+      "source_hash": "56ee079f7b8403811674d429aff3b9143a1810290bdd9a23f319b7cedd47170c",
+      "remaining_blocker": "BTC has 281 completed bars and stale data; EWY warmup exists but its latest genuine candle is stale. Upstream absence proven by current normalized queries and acknowledged streams."
+    },
+    "ORDER_RECOVERY_READY": {
+      "value": false,
+      "evidence_path": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/btc_ewy_v4_2026-10-19/historical_recovery.json",
+      "timestamp_ms": 1792380321150,
+      "evidence_observed_ms": 1792379514703,
+      "source_hash": "56ee079f7b8403811674d429aff3b9143a1810290bdd9a23f319b7cedd47170c",
+      "remaining_blocker": "Original PAR UNKNOWN and consumed native invocation remain preserved; no admissible terminal/nontransmission evidence or approved isolation."
+    },
+    "NATIVE_PROTECTION_READY": {
+      "value": false,
+      "evidence_path": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/btc_ewy_v4_2026-10-19/native_qualification_report.json",
+      "timestamp_ms": 1792380321150,
+      "evidence_observed_ms": 1792380321150,
+      "source_hash": "56ee079f7b8403811674d429aff3b9143a1810290bdd9a23f319b7cedd47170c",
+      "remaining_blocker": "Neither BTC nor EWY has actual PAS armed/triggered/linked closing-fill/residual qualification."
+    },
+    "APPROVAL_READY": {
+      "value": false,
+      "evidence_path": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/btc_ewy_v4_2026-10-19/OPERATOR_RUNBOOK.md",
+      "timestamp_ms": 1792380321150,
+      "evidence_observed_ms": 1792380321150,
+      "source_hash": "56ee079f7b8403811674d429aff3b9143a1810290bdd9a23f319b7cedd47170c",
+      "remaining_blocker": "External prerequisites fail; no fresh executable session mandate or actual human acceptance exists. Current unsigned proposals are not approvals."
+    },
+    "TRADING_AUTHORIZED": {
+      "value": false,
+      "evidence_path": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/btc_ewy_v4_2026-10-19/final_observer_snapshot.json",
+      "timestamp_ms": 1792380321150,
+      "evidence_observed_ms": 1792380319679,
+      "source_hash": "56ee079f7b8403811674d429aff3b9143a1810290bdd9a23f319b7cedd47170c",
+      "remaining_blocker": "Only public observation is running; no signer or current accepted finite mandate."
+    }
+  },
+  "actual_account": {
+    "source": "EXCHANGE_REPORTED_ACCOUNT_OBSERVER",
+    "exchange_orders_submitted": 0,
+    "entries_paused": false,
+    "reasons": [],
+    "positions": [],
+    "open_orders": [],
+    "fills": [],
+    "funding_events": [],
+    "reported_account_equity": {
+      "reported_account_value": "0",
+      "collateral_balance": "0",
+      "margin_used": "0",
+      "withdrawable": null,
+      "valuation_source": "spotClearinghouseState.USDP.total"
+    },
+    "accounting_window_ms": [
+      0,
+      1792379995462
+    ],
+    "latest_query_window_ms": [
+      1792379905543,
+      1792379995462
+    ],
+    "realized": {
+      "gross_closed_pnl": "0",
+      "actual_fill_fees": "0",
+      "actual_funding_cashflow": "0",
+      "net_after_fees_and_funding": "0",
+      "scope": "ONLY_OBSERVED_ACCOUNT_EVENTS; excludes deposits/transfers and unknown historical events"
+    },
+    "corrections": []
+  },
+  "funding": {
+    "status": "USDP_ZERO",
+    "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+    "network": "testnet",
+    "dex": "pas",
+    "collateral": "USDP",
+    "account_mode": "unifiedAccount",
+    "token": 3307,
+    "observed_ms": 1792379997047,
+    "exchange_time_ms": 1792379997388,
+    "balance": "0",
+    "age_ms": 264885,
+    "organizer_credit_amount": null,
+    "organizer_credit_provenance": "UNKNOWN",
+    "signing_authority": "NONE",
+    "reasons": [],
+    "response_hashes": {
+      "spot": "b65b90d9873795759f9492dfb2f7292b91b9c74a2316065e25ea373c3db6ab27",
+      "state": "363634b1fa18658f64ba6c5d799079a1afc78865b7709548d8bcca7d168325a7"
+    },
+    "provenance": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v4/sessions/6fda562ca4ad4bce9c3dbaab3fc4b772/info_receipts.jsonl",
+    "equity_basis": "Unified USDP total once; no addition of per-DEX equity or unrealized PnL",
+    "evidence_hash": "f5db09fd5fb8a64817f3c1b41b6662950ed0a1529a990a089f82e1b3e17ace66"
+  },
+  "selected_markets": [
+    "pas:BTC",
+    "pas:EWY"
+  ],
+  "historical_verdict": "BLOCKED_EXTERNAL_ORDER_EVIDENCE",
+  "native_qualification": {
+    "pas:BTC": {
+      "venue_qualified": false,
+      "residual_qualified": false
+    },
+    "pas:EWY": {
+      "venue_qualified": false,
+      "residual_qualified": false
+    }
+  },
+  "observer": {
+    "observed_ms": 1792380215398,
+    "identity_checks": {
+      "pid": true,
+      "command": true,
+      "caffeinate": true,
+      "source": true,
+      "session": true,
+      "output": true,
+      "entry_scope": true,
+      "owner_lock": true,
+      "no_signer": true
+    },
+    "processes": [
+      {
+        "pid": 49425,
+        "ppid": 1,
+        "command": "/Library/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python /Users/adesh/Autonomous Trading Bot - Crypto /scripts/anchorium_cli.py start --venue pas --state /Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v4 --markets pas:BTC pas:EWY --scan-seconds 60 --readiness-release /Users/adesh/Autonomous Trading Bot - Crypto /docs/btc_ewy_v4_2026-10-19/regression_release_final/test_receipt.json"
+      },
+      {
+        "pid": 49426,
+        "ppid": 1,
+        "command": "/usr/bin/caffeinate -w 49425"
+      }
+    ],
+    "worker_pid": 49425,
+    "session_id": "6fda562ca4ad4bce9c3dbaab3fc4b772",
+    "output": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v4/sessions/6fda562ca4ad4bce9c3dbaab3fc4b772",
+    "source_hash": "56ee079f7b8403811674d429aff3b9143a1810290bdd9a23f319b7cedd47170c",
+    "status": "OBSERVING",
+    "status_age_ms": 5130,
+    "stream_connected": true,
+    "account_stream_healthy": true,
+    "last_completed_scan_ms": 1792380199624,
+    "account_observed_ms": 1792379996827,
+    "readiness": {
+      "automation_status": "AUTOMATION_SOFTWARE_READY",
+      "venue_qualification_status": "TRADING_BLOCKED",
+      "authorization_status": "TRADING_BLOCKED",
+      "entry_markets": [
+        "pas:BTC",
+        "pas:EWY"
+      ],
+      "canonical_account_markets": [
+        "pas:BRENT",
+        "pas:BTC",
+        "pas:ETH",
+        "pas:EWJ",
+        "pas:EWY",
+        "pas:GOLD",
+        "pas:HYPE",
+        "pas:SP500",
+        "pas:USDEUR",
+        "pas:USDJPY"
+      ],
+      "state": "PREOPEN_OBSERVATION",
+      "gates": {
+        "SCORING_WINDOW_OPEN": false,
+        "USDP_FUNDING_VERIFIED": false,
+        "PAS_ACCOUNT_CONFIGURATION_VERIFIED": false,
+        "HISTORICAL_ORDER_SAFETY_VERIFIED": false,
+        "NATIVE_PROTECTION_QUALIFIED": false,
+        "MARKET_HISTORY_READY": false,
+        "EXECUTABLE_OPPORTUNITY_AVAILABLE": false,
+        "SOURCE_RELEASE_VERIFIED": true,
+        "EXACT_SESSION_APPROVAL_ACCEPTED": false
+      },
+      "blockers": [
+        {
+          "gate": "SCORING_WINDOW_OPEN",
+          "reason": "SCORED_PHASE_NOT_OPEN"
+        },
+        {
+          "gate": "USDP_FUNDING_VERIFIED",
+          "reason": "USDP_ZERO"
+        },
+        {
+          "gate": "PAS_ACCOUNT_CONFIGURATION_VERIFIED",
+          "reason": "FRESH_SELECTED_BTC_EWY_ONE_X_CROSS_READBACKS_REQUIRED"
+        },
+        {
+          "gate": "HISTORICAL_ORDER_SAFETY_VERIFIED",
+          "reason": "SHARED_UNKNOWN_OR_ACCOUNT_REVIEW_REQUIRED"
+        },
+        {
+          "gate": "NATIVE_PROTECTION_QUALIFIED",
+          "reason": "GENUINE_PAS_NATIVE_AND_RESIDUAL_PROOF_REQUIRED"
+        },
+        {
+          "gate": "MARKET_HISTORY_READY",
+          "reason": "AUTHENTIC_CONTIGUOUS_300_BAR_WARMUP_REQUIRED"
+        },
+        {
+          "gate": "EXECUTABLE_OPPORTUNITY_AVAILABLE",
+          "reason": "NO_FRESH_EXECUTABLE_POSITIVE_CONDITIONAL_LONG_SETUP"
+        },
+        {
+          "gate": "EXACT_SESSION_APPROVAL_ACCEPTED",
+          "reason": "NEW_EXACT_HUMAN_SESSION_APPROVAL_REQUIRED"
+        }
+      ],
+      "funding": {
+        "status": "USDP_ZERO",
+        "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+        "network": "testnet",
+        "dex": "pas",
+        "collateral": "USDP",
+        "account_mode": "unifiedAccount",
+        "token": 3307,
+        "observed_ms": 1792379997047,
+        "exchange_time_ms": 1792379997388,
+        "balance": "0",
+        "age_ms": 213221,
+        "organizer_credit_amount": null,
+        "organizer_credit_provenance": "UNKNOWN",
+        "signing_authority": "NONE",
+        "reasons": [],
+        "response_hashes": {
+          "spot": "b65b90d9873795759f9492dfb2f7292b91b9c74a2316065e25ea373c3db6ab27",
+          "state": "363634b1fa18658f64ba6c5d799079a1afc78865b7709548d8bcca7d168325a7"
+        },
+        "provenance": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v4/sessions/6fda562ca4ad4bce9c3dbaab3fc4b772/info_receipts.jsonl",
+        "equity_basis": "Unified USDP total once; no addition of per-DEX equity or unrealized PnL",
+        "evidence_hash": "f5db09fd5fb8a64817f3c1b41b6662950ed0a1529a990a089f82e1b3e17ace66"
+      },
+      "observed_ms": 1792380210268,
+      "next_action": "SCORED_PHASE_NOT_OPEN",
+      "ready_for_operator_action": false,
+      "terminal_status": "READY_FOR_OBSERVATION",
+      "trading_verdict": "NO_GO",
+      "signing_authority": "NONE",
+      "native_protection": "UNQUALIFIED_WITHOUT_VALIDATED_RAW_PROOF",
+      "historical_safety": "BLOCKED",
+      "note": "Diagnostic gates cannot create approval, isolation, protection qualification or a signer"
+    },
+    "release_verification": {
+      "verified": true,
+      "source_hash": "56ee079f7b8403811674d429aff3b9143a1810290bdd9a23f319b7cedd47170c",
+      "receipt_sha256": "c291164a8b8af6eddd8941b03e00f910889c57b68ef5daa800222b57b53fc3f5"
+    },
+    "actual_errors": {},
+    "source_verified": true,
+    "independent_of_codex_app": true,
+    "health_verified": true,
+    "terminal_flat": "NOT_CLAIMED_WHILE_RUNNING",
+    "exchange_writes": 0,
+    "signatures_created": 0,
+    "dependency": "Mac/Python/power/internet/exchange; process-bound caffeinate cannot guarantee operation through interruptions"
+  },
+  "final_market_snapshot_time_ms": 1792380216547,
+  "original_53_preserved": true,
+  "preparation_exchange_writes": 0,
+  "actual_wallet_signatures_created": 0,
+  "actual_acceptance_created": false,
+  "known_implementation_limit": "Dedicated PAS subminimum native/residual qualification dispatch is unavailable until admissible venue policy and separately reviewed exact authority exist; no ordinary approval bypass.",
+  "original_oct15_par_net": "0.050512 TEST USDPR; not PAS, current session profit or an official score"
+}

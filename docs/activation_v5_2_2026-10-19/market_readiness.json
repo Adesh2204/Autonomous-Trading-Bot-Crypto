@@ -1,0 +1,962 @@
+{
+  "pas:BTC": {
+    "probe_observed_ms": 1792397278765,
+    "probe_history": {
+      "raw_returned_last": 268,
+      "raw_returned_in_retained_snapshots": 1227,
+      "valid_returned_last": 268,
+      "valid_deduplicated_completed": 959,
+      "contiguous_tail_bars": 959,
+      "missing_intervals": [],
+      "earliest_ms": 1792337760000,
+      "latest_ms": 1792395240000,
+      "latest_completed_ms": 1792395300000,
+      "cache_age_ms": 1978733,
+      "last_collection_ms": 1792397250715,
+      "warmup_required": 300,
+      "strategy_history_ready": false,
+      "warmup_satisfied": true,
+      "data_freshness_satisfied": false,
+      "failure_classification": "UPSTREAM_DATA_UNAVAILABLE",
+      "failure_reasons": [
+        "COMPLETED_CANDLE_STALE_OR_MISSING"
+      ],
+      "request_diagnostics": {
+        "rest": {
+          "request": {
+            "coin": "pas:BTC",
+            "interval": "1m",
+            "startTime": 1792379220000,
+            "endTime": 1792397219999
+          },
+          "received_ms": 1792397251371,
+          "returned_count": 268,
+          "first_returned_ms": 1792379220000,
+          "last_returned_ms": 1792395240000,
+          "expected_intervals": 300,
+          "normalization_succeeded": true,
+          "receipt_file": "docs/activation_v5_2_2026-10-19/history_review/info_receipts.jsonl"
+        }
+      },
+      "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+      "database": "docs/activation_v5_2_2026-10-19/history_review/history.sqlite"
+    },
+    "current_cache": {
+      "raw_returned_last": 2,
+      "raw_returned_in_retained_snapshots": 5474,
+      "valid_returned_last": 2,
+      "valid_deduplicated_completed": 959,
+      "contiguous_tail_bars": 959,
+      "missing_intervals": [],
+      "earliest_ms": 1792337760000,
+      "latest_ms": 1792395240000,
+      "latest_completed_ms": 1792395300000,
+      "cache_age_ms": 3759410,
+      "last_collection_ms": 1792399059396,
+      "warmup_required": 300,
+      "strategy_history_ready": false,
+      "warmup_satisfied": true,
+      "data_freshness_satisfied": false,
+      "failure_classification": "UPSTREAM_DATA_UNAVAILABLE",
+      "failure_reasons": [
+        "COMPLETED_CANDLE_STALE_OR_MISSING"
+      ],
+      "request_diagnostics": {
+        "rest": {
+          "request": {
+            "coin": "pas:BTC",
+            "interval": "1m",
+            "startTime": 1792395180000,
+            "endTime": 1792399019999
+          },
+          "received_ms": 1792399059394,
+          "returned_count": 2,
+          "first_returned_ms": 1792395180000,
+          "last_returned_ms": 1792395240000,
+          "expected_intervals": 64,
+          "normalization_succeeded": true,
+          "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v5-2/sessions/ef5c66c9f26149349e0dd74a6a3b60a7/info_receipts.jsonl"
+        }
+      },
+      "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+      "database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v5-2/history.sqlite"
+    },
+    "current_cache_age_ms": 3812617,
+    "latest_public_liquidity": {
+      "quantity": "0.00000",
+      "notional": "0.000000",
+      "bid": "82754.0",
+      "ask": "82805.0",
+      "book_ms": 1792399056130,
+      "observed_ms": 1792399059597,
+      "active_asset_ms": 1792399059862,
+      "context_ms": 1792399059597,
+      "market_context": {
+        "funding": "-0.0000645961",
+        "openInterest": "2.20926",
+        "prevDayPx": "81066.0",
+        "dayNtlVlm": "96947.97953",
+        "premium": "-0.000900852",
+        "oraclePx": "82866.0",
+        "markPx": "82805.0",
+        "midPx": "82779.5",
+        "impactPxs": [
+          "82734.9",
+          "82847.8"
+        ],
+        "dayBaseVlm": "1.19505"
+      },
+      "size_step": "0.00001",
+      "one_lot_bid_notional": "0.827540",
+      "partial_minimum_admissible": false,
+      "partial_protection_qualified": false,
+      "native_protection_qualified": false,
+      "partial_path": {
+        "entry_admissible_under_documented_minimum": false,
+        "blocker": "FROZEN_STOP_PLAN_UNAVAILABLE"
+      },
+      "targets": {
+        "1000": false,
+        "2500": false,
+        "5000": false,
+        "10000": false,
+        "25000": false,
+        "50000": false
+      },
+      "qualified_unattended_notional": "0",
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "pas:BTC",
+        "leverage": {
+          "type": "cross",
+          "value": 20
+        },
+        "maxTradeSzs": [
+          "0.0",
+          "0.0"
+        ],
+        "availableToTrade": [
+          "0.0",
+          "0.0"
+        ],
+        "markPx": "82805.0"
+      },
+      "evidence_evaluation": {
+        "symbol": "pas:BTC",
+        "liquidity_only_quantity": "0",
+        "liquidity_only_notional": "0",
+        "economically_viable_notional": "0",
+        "authorized_executable_notional": "0",
+        "expected_net_pnl": null,
+        "expected_return_probability": null,
+        "decision": "OBSERVE",
+        "reasons": [
+          "ONE_X_CROSS_REQUIRED"
+        ],
+        "observed_ms": 1792399059862
+      },
+      "fee_scenarios": {
+        "base_taker_rate": "0.00045",
+        "documented_pas_rate_estimate": "0.00090",
+        "unchanged_signing_stress_rate": "0.00270",
+        "actual_charged_rate": null,
+        "documented_source": "https://perpetual-alpha26.github.io/docs/#venue-mechanics",
+        "expected_net_pnl": null,
+        "scenario_only": true,
+        "production_fee_policy_changed": false,
+        "assumption": "Published PAS positive base-rate multiplier=2; actual fill fee/feeToken govern charges",
+        "documented_target_scenario": null,
+        "stress_target_scenario": null,
+        "quantity": "0.00000",
+        "hourly_funding": "-0.0000645961",
+        "mark_oracle_divergence_bps": "-7.361282069847705934882822871",
+        "book_mid_oracle_divergence_bps": "-10.43853932855453382569449473",
+        "documented_taker_roundtrip_fee": "0E-11",
+        "stress_taker_roundtrip_fee": "0E-11",
+        "immediate_roundtrip_spread": "0.000000",
+        "maker_sensitivity_assumption": "Hypothetical maker entry and taker exit; no maker fill or execution switch implied",
+        "documented_maker_entry_taker_exit_fee": "0E-11"
+      }
+    },
+    "book_age_ms": 56487,
+    "account_limit_age_ms": 52755,
+    "broad_book_snapshot": {
+      "spec": {
+        "symbol": "pas:BTC",
+        "size_decimals": 5,
+        "max_leverage": 40,
+        "asset_id": 2810000,
+        "margin_tiers": [
+          [
+            "0",
+            40
+          ]
+        ]
+      },
+      "context": {
+        "funding": "-0.0000642178",
+        "openInterest": "2.20926",
+        "prevDayPx": "81066.0",
+        "dayNtlVlm": "96947.97953",
+        "premium": "-0.0008614427",
+        "oraclePx": "82594.0",
+        "markPx": "82534.0",
+        "midPx": "82514.0",
+        "impactPxs": [
+          "82473.5",
+          "82572.2"
+        ],
+        "dayBaseVlm": "1.19505"
+      },
+      "context_ms": 1792397162957,
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "pas:BTC",
+        "leverage": {
+          "type": "cross",
+          "value": 20
+        },
+        "maxTradeSzs": [
+          "0.0",
+          "0.0"
+        ],
+        "availableToTrade": [
+          "0.0",
+          "0.0"
+        ],
+        "markPx": "82534.0"
+      },
+      "active_ms": 1792397163130,
+      "book": {
+        "symbol": "pas:BTC",
+        "timestamp_ms": 1792397162615,
+        "bids": [
+          {
+            "price": "82494.0",
+            "quantity": "0.006"
+          },
+          {
+            "price": "82492.0",
+            "quantity": "0.0302"
+          },
+          {
+            "price": "82455.0",
+            "quantity": "0.1817"
+          },
+          {
+            "price": "82444.0",
+            "quantity": "0.0605"
+          },
+          {
+            "price": "82442.0",
+            "quantity": "0.03164"
+          },
+          {
+            "price": "82425.0",
+            "quantity": "0.4241"
+          },
+          {
+            "price": "82393.0",
+            "quantity": "0.6057"
+          },
+          {
+            "price": "82342.0",
+            "quantity": "0.06337"
+          },
+          {
+            "price": "82230.0",
+            "quantity": "0.1269"
+          },
+          {
+            "price": "82032.0",
+            "quantity": "0.19081"
+          },
+          {
+            "price": "81735.0",
+            "quantity": "0.25533"
+          },
+          {
+            "price": "81239.0",
+            "quantity": "0.289"
+          },
+          {
+            "price": "80579.0",
+            "quantity": "0.32375"
+          },
+          {
+            "price": "77818.0",
+            "quantity": "0.00015"
+          }
+        ],
+        "asks": [
+          {
+            "price": "82534.0",
+            "quantity": "0.006"
+          },
+          {
+            "price": "82574.0",
+            "quantity": "0.0302"
+          },
+          {
+            "price": "82577.0",
+            "quantity": "0.0605"
+          },
+          {
+            "price": "82610.0",
+            "quantity": "0.4241"
+          },
+          {
+            "price": "82621.0",
+            "quantity": "0.1817"
+          },
+          {
+            "price": "82640.0",
+            "quantity": "0.04537"
+          },
+          {
+            "price": "82691.0",
+            "quantity": "0.6057"
+          },
+          {
+            "price": "82739.0",
+            "quantity": "0.09064"
+          },
+          {
+            "price": "82891.0",
+            "quantity": "0.18096"
+          },
+          {
+            "price": "83089.0",
+            "quantity": "0.27079"
+          },
+          {
+            "price": "83386.0",
+            "quantity": "0.35977"
+          },
+          {
+            "price": "83881.0",
+            "quantity": "0.40235"
+          },
+          {
+            "price": "84542.0",
+            "quantity": "0.44356"
+          }
+        ],
+        "received_timestamp_ms": 1792397163293,
+        "processed_timestamp_ms": 1792397163293
+      },
+      "observed_ms": 1792397163293,
+      "displayed_book_only_quantity": "0.00060",
+      "displayed_book_only_notional": "49.520400",
+      "account_constrained_quantity": "0",
+      "authorized_executable_notional": "0",
+      "signal": "UNKNOWN_NO_FRESH_COMPLETED_HISTORY",
+      "fee_scenarios": {
+        "base_taker_rate": "0.00045",
+        "documented_pas_rate_estimate": "0.00090",
+        "unchanged_signing_stress_rate": "0.00270",
+        "actual_charged_rate": null,
+        "documented_source": "https://perpetual-alpha26.github.io/docs/#venue-mechanics",
+        "expected_net_pnl": null,
+        "scenario_only": true,
+        "production_fee_policy_changed": false,
+        "assumption": "Published PAS positive base-rate multiplier=2; actual fill fee/feeToken govern charges",
+        "documented_target_scenario": null,
+        "stress_target_scenario": null,
+        "quantity": "0.00060",
+        "hourly_funding": "-0.0000642178",
+        "mark_oracle_divergence_bps": "-7.264450202193863961062546916",
+        "book_mid_oracle_divergence_bps": "-9.685933602925151948083395888",
+        "documented_taker_roundtrip_fee": "0.08911512000",
+        "stress_taker_roundtrip_fee": "0.26734536000",
+        "immediate_roundtrip_spread": "0.024000",
+        "maker_sensitivity_assumption": "Hypothetical maker entry and taker exit; no maker fill or execution switch implied",
+        "documented_maker_entry_taker_exit_fee": "0.05940288000"
+      }
+    },
+    "authorized_executable_notional": "0",
+    "expected_net_pnl": null,
+    "native_qualified": false,
+    "residual_qualified": false,
+    "qualification_proposal": {
+      "status": "BLOCKED_QUALIFICATION_PROPOSAL",
+      "purpose": "SEPARATELY_AUTHORIZED_PAS_NATIVE_AND_RESIDUAL_EXPERIMENT",
+      "network": "testnet",
+      "dex": "pas",
+      "collateral": "USDP",
+      "source_hash": "dcb8012f1d55db16d769cec4573015f56534243c275a281a33148c17f76f91e5",
+      "discovery_hash": "1d60af43797c36bdcca2499b5fc648ba1cb25bbed139c0498cb44a26f407133f",
+      "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+      "api_wallet": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+      "observed_ms": 1792398375916,
+      "market_observed_ms": 1792398375839,
+      "book_ms": 1792398375469,
+      "context_ms": 1792398375499,
+      "active_ms": 1792398375669,
+      "symbol": "pas:BTC",
+      "asset_id": 2810000,
+      "size_step": "0.00001",
+      "quantity": "0.00030",
+      "entry": {
+        "side": "BUY",
+        "tif": "Ioc",
+        "reduce_only": false,
+        "maximum_limit": "82739",
+        "maximum_notional": "25"
+      },
+      "stop": {
+        "side": "SELL",
+        "reduce_only": true,
+        "type": "Stop Limit",
+        "isMarket": false,
+        "tpsl": "sl",
+        "grouping": "na",
+        "trigger_reference": "MARK",
+        "trigger": "81821",
+        "limit": "81412",
+        "fixed_size": "0.00030"
+      },
+      "cleanup": {
+        "side": "SELL",
+        "reduce_only": true,
+        "tif": "Ioc",
+        "exact_remaining_position_only": true,
+        "minimum_limit": "81412",
+        "maximum_resolved_attempts": 2,
+        "maximum_slippage_bps": "20",
+        "owned_cancellation_rounds": 1,
+        "unsupported_subminimum_dispatch": false,
+        "uncertain_retry": false
+      },
+      "maximum_entries": 1,
+      "maximum_signed_actions": 6,
+      "acceptance_window_ms": 300000,
+      "maximum_authority_ms": 300000,
+      "natural_trigger_wait_seconds": 120,
+      "minimum_reserved_cleanup_ms": 120000,
+      "session_loss_budget": "10",
+      "planned_floor_loss_including_fee_and_funding_reserve": "0.534340874315820",
+      "guaranteed_loss_cap": false,
+      "partial_assessment": {
+        "symbol": "pas:BTC",
+        "asset_id": 2810000,
+        "size_step": "0.00001",
+        "minimum_order_notional": "10",
+        "smallest_possible_fill": "0.00001",
+        "smallest_possible_exit_remainder": "0.00001",
+        "one_lot_notionals": {
+          "entry_limit": "0.82739",
+          "stop_limit": "0.81412",
+          "exit_bound": "0.81412"
+        },
+        "subminimum_full_close_exception": "NOT_ESTABLISHED_BY_AUTHORITATIVE_DOCUMENTATION",
+        "subminimum_protection_exception": "NOT_ESTABLISHED_BY_AUTHORITATIVE_DOCUMENTATION",
+        "entry_admissible_under_documented_minimum": false,
+        "blocker": "SUB_MINIMUM_PARTIAL_FILL_EXIT_NOT_VERIFIED",
+        "scope": "REVIEWED_LIMIT_PRICES_ONLY_NOT_A_FILL_OR_PROTECTION_GUARANTEE"
+      },
+      "normal_autonomous_native_proof_required_to_prepare": false,
+      "prior_par_proof_qualifies_pas": false,
+      "consumed_attempt_reset_permitted": false,
+      "risks": [
+        "Partial fill may leave an unprotected subminimum residual",
+        "Stop Limit gap may trigger without fill",
+        "Rejection, ambiguous transmission or interruption requires original-order reconciliation",
+        "This Mac, process, power and internet remain dependencies"
+      ],
+      "blockers": [
+        "PAS_SUBMINIMUM_CLEANUP_SCOPE_NOT_ESTABLISHED_NO_PAR_EXCEPTION",
+        "PAS_ONE_X_CROSS_REQUIRED",
+        "USDP_FUNDING_REQUIRED",
+        "SHARED_UNKNOWN_AND_CONSUMED_NATIVE_ATTEMPT_REVIEW_REQUIRED",
+        "OFFICIAL_SCORED_WINDOW_REQUIRED",
+        "REVIEWED_APPLICABLE_ORGANIZER_SCOPE_REQUIRED",
+        "NEW_EXACT_QUALIFICATION_ONLY_HUMAN_APPROVAL_REQUIRED"
+      ],
+      "signing_authority": "NONE",
+      "approval_created": false,
+      "exchange_writes": 0,
+      "signatures_created": 0,
+      "execution_status": "NO_EXECUTION_CAPABILITY_CREATED; unresolved residual policy cannot be bypassed by an ordinary session approval",
+      "proposal_hash": "7ef7196ec0a755c93c3ead29ae6bbf07ae7af97b9eef54f98801c3c83c7ab0e4"
+    }
+  },
+  "pas:EWY": {
+    "probe_observed_ms": 1792397278765,
+    "probe_history": {
+      "raw_returned_last": 294,
+      "raw_returned_in_retained_snapshots": 4347,
+      "valid_returned_last": 294,
+      "valid_deduplicated_completed": 4053,
+      "contiguous_tail_bars": 4053,
+      "missing_intervals": [],
+      "earliest_ms": 1792153680000,
+      "latest_ms": 1792396800000,
+      "latest_completed_ms": 1792396860000,
+      "cache_age_ms": 418739,
+      "last_collection_ms": 1792397250715,
+      "warmup_required": 300,
+      "strategy_history_ready": false,
+      "warmup_satisfied": true,
+      "data_freshness_satisfied": false,
+      "failure_classification": "UPSTREAM_DATA_UNAVAILABLE",
+      "failure_reasons": [
+        "COMPLETED_CANDLE_STALE_OR_MISSING"
+      ],
+      "request_diagnostics": {
+        "rest": {
+          "request": {
+            "coin": "pas:EWY",
+            "interval": "1m",
+            "startTime": 1792379220000,
+            "endTime": 1792397219999
+          },
+          "received_ms": 1792397251557,
+          "returned_count": 294,
+          "first_returned_ms": 1792379220000,
+          "last_returned_ms": 1792396800000,
+          "expected_intervals": 300,
+          "normalization_succeeded": true,
+          "receipt_file": "docs/activation_v5_2_2026-10-19/history_review/info_receipts.jsonl"
+        }
+      },
+      "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+      "database": "docs/activation_v5_2_2026-10-19/history_review/history.sqlite"
+    },
+    "current_cache": {
+      "raw_returned_last": 2,
+      "raw_returned_in_retained_snapshots": 8724,
+      "valid_returned_last": 2,
+      "valid_deduplicated_completed": 4053,
+      "contiguous_tail_bars": 4053,
+      "missing_intervals": [],
+      "earliest_ms": 1792153680000,
+      "latest_ms": 1792396800000,
+      "latest_completed_ms": 1792396860000,
+      "cache_age_ms": 2200186,
+      "last_collection_ms": 1792399060144,
+      "warmup_required": 300,
+      "strategy_history_ready": false,
+      "warmup_satisfied": true,
+      "data_freshness_satisfied": false,
+      "failure_classification": "UPSTREAM_DATA_UNAVAILABLE",
+      "failure_reasons": [
+        "COMPLETED_CANDLE_STALE_OR_MISSING"
+      ],
+      "request_diagnostics": {
+        "rest": {
+          "request": {
+            "coin": "pas:EWY",
+            "interval": "1m",
+            "startTime": 1792396740000,
+            "endTime": 1792399019999
+          },
+          "received_ms": 1792399060140,
+          "returned_count": 2,
+          "first_returned_ms": 1792396740000,
+          "last_returned_ms": 1792396800000,
+          "expected_intervals": 38,
+          "normalization_succeeded": true,
+          "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v5-2/sessions/ef5c66c9f26149349e0dd74a6a3b60a7/info_receipts.jsonl"
+        }
+      },
+      "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+      "database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v5-2/history.sqlite"
+    },
+    "current_cache_age_ms": 2252617,
+    "latest_public_liquidity": {
+      "quantity": "0.000",
+      "notional": "0.00000",
+      "bid": "158.51",
+      "ask": "158.62",
+      "book_ms": 1792399056130,
+      "observed_ms": 1792399060476,
+      "active_asset_ms": 1792399060659,
+      "context_ms": 1792399060476,
+      "market_context": {
+        "funding": "-0.0000067875",
+        "openInterest": "88.29",
+        "prevDayPx": "153.99",
+        "dayNtlVlm": "74297.07021",
+        "premium": "-0.0004633132",
+        "oraclePx": "158.64",
+        "markPx": "158.58",
+        "midPx": "158.565",
+        "impactPxs": [
+          "158.453",
+          "158.68"
+        ],
+        "dayBaseVlm": "490.069"
+      },
+      "size_step": "0.001",
+      "one_lot_bid_notional": "0.15851",
+      "partial_minimum_admissible": false,
+      "partial_protection_qualified": false,
+      "native_protection_qualified": false,
+      "partial_path": {
+        "entry_admissible_under_documented_minimum": false,
+        "blocker": "FROZEN_STOP_PLAN_UNAVAILABLE"
+      },
+      "targets": {
+        "1000": false,
+        "2500": false,
+        "5000": false,
+        "10000": false,
+        "25000": false,
+        "50000": false
+      },
+      "qualified_unattended_notional": "0",
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "pas:EWY",
+        "leverage": {
+          "type": "cross",
+          "value": 20
+        },
+        "maxTradeSzs": [
+          "0.0",
+          "0.0"
+        ],
+        "availableToTrade": [
+          "0.0",
+          "0.0"
+        ],
+        "markPx": "158.58"
+      },
+      "evidence_evaluation": {
+        "symbol": "pas:EWY",
+        "liquidity_only_quantity": "0",
+        "liquidity_only_notional": "0",
+        "economically_viable_notional": "0",
+        "authorized_executable_notional": "0",
+        "expected_net_pnl": null,
+        "expected_return_probability": null,
+        "decision": "OBSERVE",
+        "reasons": [
+          "ONE_X_CROSS_REQUIRED"
+        ],
+        "observed_ms": 1792399060659
+      },
+      "fee_scenarios": {
+        "base_taker_rate": "0.00045",
+        "documented_pas_rate_estimate": "0.00090",
+        "unchanged_signing_stress_rate": "0.00270",
+        "actual_charged_rate": null,
+        "documented_source": "https://perpetual-alpha26.github.io/docs/#venue-mechanics",
+        "expected_net_pnl": null,
+        "scenario_only": true,
+        "production_fee_policy_changed": false,
+        "assumption": "Published PAS positive base-rate multiplier=2; actual fill fee/feeToken govern charges",
+        "documented_target_scenario": null,
+        "stress_target_scenario": null,
+        "quantity": "0.000",
+        "hourly_funding": "-0.0000067875",
+        "mark_oracle_divergence_bps": "-3.782148260211800302571860817",
+        "book_mid_oracle_divergence_bps": "-4.727685325264750378214826021",
+        "documented_taker_roundtrip_fee": "0E-10",
+        "stress_taker_roundtrip_fee": "0E-10",
+        "immediate_roundtrip_spread": "0.00000",
+        "maker_sensitivity_assumption": "Hypothetical maker entry and taker exit; no maker fill or execution switch implied",
+        "documented_maker_entry_taker_exit_fee": "0E-10"
+      }
+    },
+    "book_age_ms": 56487,
+    "account_limit_age_ms": 51958,
+    "broad_book_snapshot": {
+      "spec": {
+        "symbol": "pas:EWY",
+        "size_decimals": 3,
+        "max_leverage": 20,
+        "asset_id": 2810004,
+        "margin_tiers": [
+          [
+            "0",
+            20
+          ]
+        ]
+      },
+      "context": {
+        "funding": "-0.0000096659",
+        "openInterest": "88.29",
+        "prevDayPx": "153.99",
+        "dayNtlVlm": "74297.07021",
+        "premium": "-0.0003882086",
+        "oraclePx": "158.42",
+        "markPx": "158.36",
+        "midPx": "158.335",
+        "impactPxs": [
+          "158.237",
+          "158.48"
+        ],
+        "dayBaseVlm": "490.069"
+      },
+      "context_ms": 1792397163465,
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "pas:EWY",
+        "leverage": {
+          "type": "cross",
+          "value": 20
+        },
+        "maxTradeSzs": [
+          "0.0",
+          "0.0"
+        ],
+        "availableToTrade": [
+          "0.0",
+          "0.0"
+        ],
+        "markPx": "158.36"
+      },
+      "active_ms": 1792397163637,
+      "book": {
+        "symbol": "pas:EWY",
+        "timestamp_ms": 1792397163125,
+        "bids": [
+          {
+            "price": "158.28",
+            "quantity": "3.15"
+          },
+          {
+            "price": "158.25",
+            "quantity": "15.78"
+          },
+          {
+            "price": "158.22",
+            "quantity": "31.57"
+          },
+          {
+            "price": "158.19",
+            "quantity": "94.72"
+          },
+          {
+            "price": "158.16",
+            "quantity": "221.02"
+          },
+          {
+            "price": "158.08",
+            "quantity": "23.17"
+          },
+          {
+            "price": "158.07",
+            "quantity": "315.74"
+          },
+          {
+            "price": "157.83",
+            "quantity": "46.413"
+          },
+          {
+            "price": "157.39",
+            "quantity": "93.088"
+          },
+          {
+            "price": "157.01",
+            "quantity": "139.97"
+          },
+          {
+            "price": "156.38",
+            "quantity": "187.379"
+          },
+          {
+            "price": "155.43",
+            "quantity": "212.09"
+          },
+          {
+            "price": "153.85",
+            "quantity": "238.075"
+          }
+        ],
+        "asks": [
+          {
+            "price": "158.39",
+            "quantity": "3.15"
+          },
+          {
+            "price": "158.45",
+            "quantity": "15.78"
+          },
+          {
+            "price": "158.52",
+            "quantity": "94.72"
+          },
+          {
+            "price": "158.54",
+            "quantity": "31.56"
+          },
+          {
+            "price": "158.55",
+            "quantity": "221.02"
+          },
+          {
+            "price": "158.65",
+            "quantity": "315.74"
+          },
+          {
+            "price": "158.71",
+            "quantity": "23.628"
+          },
+          {
+            "price": "158.97",
+            "quantity": "47.178"
+          },
+          {
+            "price": "159.17",
+            "quantity": "94.238"
+          },
+          {
+            "price": "159.55",
+            "quantity": "141.021"
+          },
+          {
+            "price": "160.18",
+            "quantity": "187.289"
+          },
+          {
+            "price": "161.13",
+            "quantity": "209.458"
+          },
+          {
+            "price": "162.71",
+            "quantity": "230.471"
+          }
+        ],
+        "received_timestamp_ms": 1792397163800,
+        "processed_timestamp_ms": 1792397163800
+      },
+      "observed_ms": 1792397163800,
+      "displayed_book_only_quantity": "0.315",
+      "displayed_book_only_notional": "49.89285",
+      "account_constrained_quantity": "0",
+      "authorized_executable_notional": "0",
+      "signal": "UNKNOWN_NO_FRESH_COMPLETED_HISTORY",
+      "fee_scenarios": {
+        "base_taker_rate": "0.00045",
+        "documented_pas_rate_estimate": "0.00090",
+        "unchanged_signing_stress_rate": "0.00270",
+        "actual_charged_rate": null,
+        "documented_source": "https://perpetual-alpha26.github.io/docs/#venue-mechanics",
+        "expected_net_pnl": null,
+        "scenario_only": true,
+        "production_fee_policy_changed": false,
+        "assumption": "Published PAS positive base-rate multiplier=2; actual fill fee/feeToken govern charges",
+        "documented_target_scenario": null,
+        "stress_target_scenario": null,
+        "quantity": "0.315",
+        "hourly_funding": "-0.0000096659",
+        "mark_oracle_divergence_bps": "-3.787400580734755712662542608",
+        "book_mid_oracle_divergence_bps": "-5.365484156040903926271935362",
+        "documented_taker_roundtrip_fee": "0.0897759450",
+        "stress_taker_roundtrip_fee": "0.2693278350",
+        "immediate_roundtrip_spread": "0.03465",
+        "maker_sensitivity_assumption": "Hypothetical maker entry and taker exit; no maker fill or execution switch implied",
+        "documented_maker_entry_taker_exit_fee": "0.0598402350"
+      }
+    },
+    "authorized_executable_notional": "0",
+    "expected_net_pnl": null,
+    "native_qualified": false,
+    "residual_qualified": false,
+    "qualification_proposal": {
+      "status": "BLOCKED_QUALIFICATION_PROPOSAL",
+      "purpose": "SEPARATELY_AUTHORIZED_PAS_NATIVE_AND_RESIDUAL_EXPERIMENT",
+      "network": "testnet",
+      "dex": "pas",
+      "collateral": "USDP",
+      "source_hash": "dcb8012f1d55db16d769cec4573015f56534243c275a281a33148c17f76f91e5",
+      "discovery_hash": "a69387ee92d510604159646c3705589b03b2bba1abf85fc4f3c5db09b8225668",
+      "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+      "api_wallet": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+      "observed_ms": 1792398390339,
+      "market_observed_ms": 1792398390260,
+      "book_ms": 1792398389767,
+      "context_ms": 1792398389708,
+      "active_ms": 1792398389881,
+      "symbol": "pas:EWY",
+      "asset_id": 2810004,
+      "size_step": "0.001",
+      "quantity": "0.157",
+      "entry": {
+        "side": "BUY",
+        "tif": "Ioc",
+        "reduce_only": false,
+        "maximum_limit": "158.68",
+        "maximum_notional": "25"
+      },
+      "stop": {
+        "side": "SELL",
+        "reduce_only": true,
+        "type": "Stop Limit",
+        "isMarket": false,
+        "tpsl": "sl",
+        "grouping": "na",
+        "trigger_reference": "MARK",
+        "trigger": "156.92",
+        "limit": "156.14",
+        "fixed_size": "0.157"
+      },
+      "cleanup": {
+        "side": "SELL",
+        "reduce_only": true,
+        "tif": "Ioc",
+        "exact_remaining_position_only": true,
+        "minimum_limit": "156.14",
+        "maximum_resolved_attempts": 2,
+        "maximum_slippage_bps": "20",
+        "owned_cancellation_rounds": 1,
+        "unsupported_subminimum_dispatch": false,
+        "uncertain_retry": false
+      },
+      "maximum_entries": 1,
+      "maximum_signed_actions": 6,
+      "acceptance_window_ms": 300000,
+      "maximum_authority_ms": 300000,
+      "natural_trigger_wait_seconds": 120,
+      "minimum_reserved_cleanup_ms": 120000,
+      "session_loss_budget": "10",
+      "planned_floor_loss_including_fee_and_funding_reserve": "0.532621664159632",
+      "guaranteed_loss_cap": false,
+      "partial_assessment": {
+        "symbol": "pas:EWY",
+        "asset_id": 2810004,
+        "size_step": "0.001",
+        "minimum_order_notional": "10",
+        "smallest_possible_fill": "0.001",
+        "smallest_possible_exit_remainder": "0.001",
+        "one_lot_notionals": {
+          "entry_limit": "0.15868",
+          "stop_limit": "0.15614",
+          "exit_bound": "0.15614"
+        },
+        "subminimum_full_close_exception": "NOT_ESTABLISHED_BY_AUTHORITATIVE_DOCUMENTATION",
+        "subminimum_protection_exception": "NOT_ESTABLISHED_BY_AUTHORITATIVE_DOCUMENTATION",
+        "entry_admissible_under_documented_minimum": false,
+        "blocker": "SUB_MINIMUM_PARTIAL_FILL_EXIT_NOT_VERIFIED",
+        "scope": "REVIEWED_LIMIT_PRICES_ONLY_NOT_A_FILL_OR_PROTECTION_GUARANTEE"
+      },
+      "normal_autonomous_native_proof_required_to_prepare": false,
+      "prior_par_proof_qualifies_pas": false,
+      "consumed_attempt_reset_permitted": false,
+      "risks": [
+        "Partial fill may leave an unprotected subminimum residual",
+        "Stop Limit gap may trigger without fill",
+        "Rejection, ambiguous transmission or interruption requires original-order reconciliation",
+        "This Mac, process, power and internet remain dependencies"
+      ],
+      "blockers": [
+        "PAS_SUBMINIMUM_CLEANUP_SCOPE_NOT_ESTABLISHED_NO_PAR_EXCEPTION",
+        "PAS_ONE_X_CROSS_REQUIRED",
+        "USDP_FUNDING_REQUIRED",
+        "SHARED_UNKNOWN_AND_CONSUMED_NATIVE_ATTEMPT_REVIEW_REQUIRED",
+        "OFFICIAL_SCORED_WINDOW_REQUIRED",
+        "REVIEWED_APPLICABLE_ORGANIZER_SCOPE_REQUIRED",
+        "NEW_EXACT_QUALIFICATION_ONLY_HUMAN_APPROVAL_REQUIRED"
+      ],
+      "signing_authority": "NONE",
+      "approval_created": false,
+      "exchange_writes": 0,
+      "signatures_created": 0,
+      "execution_status": "NO_EXECUTION_CAPABILITY_CREATED; unresolved residual policy cannot be bypassed by an ordinary session approval",
+      "proposal_hash": "2a90b5fadfca403ee83b3c401d1fd9ea73fd45333099727238f13cbf7af4312e"
+    }
+  }
+}

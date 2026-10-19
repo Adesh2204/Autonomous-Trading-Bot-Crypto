@@ -22,6 +22,7 @@ class DurableHistory:
         self.db.execute('insert or ignore into identity values(1,?)',(binding,))
         self.db.execute('create table if not exists bars (symbol text, t integer, payload text not null, payload_hash text not null, observed_ms integer not null, primary key(symbol,t))')
         self.db.execute('create table if not exists observations (seq integer primary key, symbol text, observed_ms integer, raw_count integer, valid_count integer, provenance text)')
+        self.db.execute('create table if not exists diagnostics (symbol text primary key, payload text not null)')
         self.db.commit()
 
     def require_binding(self):
@@ -30,9 +31,32 @@ class DurableHistory:
         if current!=self.binding:raise ExchangeError('HISTORY_CANONICAL_MARKET_BINDING_CHANGED')
 
     def record(self,stage,**value):
-        # Existing normalizer invokes this only for real normalized REST data.
+        if stage in {'RAW_REST','WS_MERGE'}:
+            symbol=value['request']['req']['coin'] if stage=='RAW_REST' else value['symbol']
+            self.client.market(symbol)
+            with self.lock,self.db:
+                prior=self.db.execute('select payload from diagnostics where symbol=?',(symbol,)).fetchone()
+                diagnostic=json.loads(prior[0]) if prior else {}
+                if stage=='RAW_REST':
+                    rows=value['response'];req=value['request']['req']
+                    times=[r.get('t') for r in rows if isinstance(r,dict) and type(r.get('t')) is int] if isinstance(rows,list) else []
+                    diagnostic['rest']=dict(request=req,received_ms=value['received_ms'],
+                        returned_count=len(rows) if isinstance(rows,list) else None,
+                        first_returned_ms=min(times) if times else None,last_returned_ms=max(times) if times else None,
+                        expected_intervals=(req['endTime']//60000-(req['startTime']+59999)//60000+1),
+                        normalization_succeeded=False,receipt_file=self.receipt_path)
+                else:
+                    c=value['candle'];diagnostic['stream']=dict(received_ms=c.received_timestamp_ms,
+                        candle_open_ms=c.timestamp_ms,candle_close_ms=c.close_timestamp_ms)
+                self.db.execute('insert or replace into diagnostics values(?,?)',(symbol,json.dumps(diagnostic)))
+            return
         if stage!='NORMALIZED_REST':return
         self.ingest(value['symbol'],value['candles'],now_ms=value['as_of_ms'],raw_count=value['raw_count'],source='NORMALIZED_REST')
+        with self.lock,self.db:
+            row=self.db.execute('select payload from diagnostics where symbol=?',(value['symbol'],)).fetchone()
+            if row:
+                diagnostic=json.loads(row[0]);diagnostic.get('rest',{})['normalization_succeeded']=True
+                self.db.execute('update diagnostics set payload=? where symbol=?',(json.dumps(diagnostic),value['symbol']))
 
     def ingest(self,symbol,candles,*,now_ms,raw_count=None,source='NORMALIZED_STREAM_OR_REST'):
         self.require_binding();self.client.market(symbol)
@@ -83,6 +107,8 @@ class DurableHistory:
             obs=self.db.execute('select observed_ms,raw_count,valid_count from observations where symbol=? order by seq desc limit 1',(symbol,)).fetchone()
             raw=self.db.execute('select raw_count from observations where symbol=? and raw_count is not null order by seq desc limit 1',(symbol,)).fetchone()
             raw_total=self.db.execute('select sum(raw_count) from observations where symbol=?',(symbol,)).fetchone()[0]
+            diagnostic=self.db.execute('select payload from diagnostics where symbol=?',(symbol,)).fetchone()
+        diagnostic=json.loads(diagnostic[0]) if diagnostic else {}
         gaps=[dict(start_ms=a.timestamp_ms+60000,end_ms=b.timestamp_ms-60000,count=(b.timestamp_ms-a.timestamp_ms)//60000-1)
             for a,b in zip(bars,bars[1:]) if b.timestamp_ms-a.timestamp_ms!=60000]
         contiguous=0
@@ -92,12 +118,24 @@ class DurableHistory:
         age=now_ms-(bars[-1].timestamp_ms+60000) if bars else None
         relevant_start=min(now_ms//60000*60000-900*60000,(now_ms-1)//86400000*86400000-14*60000)
         relevant_gap=any(g['end_ms']>=relevant_start for g in gaps)
+        warmup=contiguous>=300;fresh=age is not None and 0<=age<=120000
+        ready=warmup and fresh and not relevant_gap
+        rest=diagnostic.get('rest',{})
+        upstream=bool(not ready and rest.get('normalization_succeeded') and
+            0<=now_ms-rest.get('received_ms',-1)<=180000 and
+            rest.get('request',{}).get('endTime',-1)>=now_ms//60000*60000-60001)
+        reasons=[]
+        if not warmup:reasons.append('INSUFFICIENT_CONTIGUOUS_300_BAR_WARMUP')
+        if not fresh:reasons.append('COMPLETED_CANDLE_STALE_OR_MISSING')
+        if relevant_gap:reasons.append('AUTHENTIC_HISTORY_GAPS')
         return dict(raw_returned_last=raw[0] if raw else None,raw_returned_in_retained_snapshots=raw_total,valid_returned_last=obs[2] if obs else None,
             valid_deduplicated_completed=len(bars),contiguous_tail_bars=contiguous,missing_intervals=gaps,
             earliest_ms=bars[0].timestamp_ms if bars else None,latest_ms=bars[-1].timestamp_ms if bars else None,
             latest_completed_ms=bars[-1].timestamp_ms+60000 if bars else None,cache_age_ms=age,
             last_collection_ms=obs[0] if obs else None,warmup_required=300,
-            strategy_history_ready=contiguous>=300 and not relevant_gap and age is not None and 0<=age<=120000,
+            strategy_history_ready=ready,warmup_satisfied=warmup,data_freshness_satisfied=fresh,
+            failure_classification='READY' if ready else 'UPSTREAM_DATA_UNAVAILABLE' if upstream else 'DATA_NOT_READY_UNCONFIRMED_CAUSE',
+            failure_reasons=reasons,request_diagnostics=diagnostic,
             provenance='CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY',database=str(self.path))
 
     def close(self):

@@ -1,0 +1,70 @@
+{
+  "observed_ms": 1792380321150,
+  "source_hash": "56ee079f7b8403811674d429aff3b9143a1810290bdd9a23f319b7cedd47170c",
+  "verdict": "NO_GO",
+  "fields": {
+    "SOFTWARE_READY": {
+      "value": false,
+      "evidence_path": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/btc_ewy_v4_2026-10-19/regression_release_final/test_receipt.json",
+      "timestamp_ms": 1792380321150,
+      "evidence_observed_ms": 1792380153372,
+      "source_hash": "56ee079f7b8403811674d429aff3b9143a1810290bdd9a23f319b7cedd47170c",
+      "remaining_blocker": "V4 guard/observer infrastructure passed, but the complete requested native/residual activation route is not releasable: admissible PAS subminimum semantics and separately reviewed qualification dispatch remain unavailable."
+    },
+    "ACCOUNT_READY": {
+      "value": false,
+      "evidence_path": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/btc_ewy_v4_2026-10-19/account_report.json",
+      "timestamp_ms": 1792380321150,
+      "evidence_observed_ms": 1792380216547,
+      "source_hash": "56ee079f7b8403811674d429aff3b9143a1810290bdd9a23f319b7cedd47170c",
+      "remaining_blocker": "USDP balance zero; BTC/EWY actually 20x CROSS, not 1x; organizer wallet binding unresolved."
+    },
+    "MARKET_DATA_READY": {
+      "value": false,
+      "evidence_path": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/btc_ewy_v4_2026-10-19/market_readiness.json",
+      "timestamp_ms": 1792380321150,
+      "evidence_observed_ms": 1792379543653,
+      "source_hash": "56ee079f7b8403811674d429aff3b9143a1810290bdd9a23f319b7cedd47170c",
+      "remaining_blocker": "BTC has 281 completed bars and stale data; EWY warmup exists but its latest genuine candle is stale. Upstream absence proven by current normalized queries and acknowledged streams."
+    },
+    "ORDER_RECOVERY_READY": {
+      "value": false,
+      "evidence_path": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/btc_ewy_v4_2026-10-19/historical_recovery.json",
+      "timestamp_ms": 1792380321150,
+      "evidence_observed_ms": 1792379514703,
+      "source_hash": "56ee079f7b8403811674d429aff3b9143a1810290bdd9a23f319b7cedd47170c",
+      "remaining_blocker": "Original PAR UNKNOWN and consumed native invocation remain preserved; no admissible terminal/nontransmission evidence or approved isolation."
+    },
+    "NATIVE_PROTECTION_READY": {
+      "value": false,
+      "evidence_path": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/btc_ewy_v4_2026-10-19/native_qualification_report.json",
+      "timestamp_ms": 1792380321150,
+      "evidence_observed_ms": 1792380321150,
+      "source_hash": "56ee079f7b8403811674d429aff3b9143a1810290bdd9a23f319b7cedd47170c",
+      "remaining_blocker": "Neither BTC nor EWY has actual PAS armed/triggered/linked closing-fill/residual qualification."
+    },
+    "APPROVAL_READY": {
+      "value": false,
+      "evidence_path": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/btc_ewy_v4_2026-10-19/OPERATOR_RUNBOOK.md",
+      "timestamp_ms": 1792380321150,
+      "evidence_observed_ms": 1792380321150,
+      "source_hash": "56ee079f7b8403811674d429aff3b9143a1810290bdd9a23f319b7cedd47170c",
+      "remaining_blocker": "External prerequisites fail; no fresh executable session mandate or actual human acceptance exists. Current unsigned proposals are not approvals."
+    },
+    "TRADING_AUTHORIZED": {
+      "value": false,
+      "evidence_path": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/btc_ewy_v4_2026-10-19/final_observer_snapshot.json",
+      "timestamp_ms": 1792380321150,
+      "evidence_observed_ms": 1792380319679,
+      "source_hash": "56ee079f7b8403811674d429aff3b9143a1810290bdd9a23f319b7cedd47170c",
+      "remaining_blocker": "Only public observation is running; no signer or current accepted finite mandate."
+    }
+  },
+  "software_guards_and_observer_release_passed": true,
+  "offline_tests": 3033,
+  "trading_active": false,
+  "approval_created": false,
+  "actual_wallet_signatures_created": 0,
+  "preparation_exchange_writes": 0,
+  "distinction": "A passing software release and running observer do not establish a releasable native/residual qualification dispatch or actual trading authority."
+}

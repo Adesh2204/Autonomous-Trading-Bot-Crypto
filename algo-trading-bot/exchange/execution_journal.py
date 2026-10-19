@@ -33,7 +33,7 @@ def safe_data(value):
     if isinstance(value, dict):
         forbidden = {'signature', 'private_key', 'api_wallet_private_key', 'seed',
                      'seed_phrase', 'signer', 'authorization', 'secret'}
-        public_hash_fields={'metadata_hash','expected_metadata_hash','working_source_hash',
+        public_hash_fields={'venue_identity','metadata_hash','expected_metadata_hash','working_source_hash',
                             'configuration_hash','strategy_source_hash','event_hash',
                             'scanner_policy_hash','risk_policy_hash','reliability_policy_hash',
                             'source_hash','action_hash','resolution_hash','request_hash','original_source_hash'}

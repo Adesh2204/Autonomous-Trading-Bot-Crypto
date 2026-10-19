@@ -66,6 +66,8 @@ class Reporter:
             rss_high_watermark_mb=rss, strategy='HASH_VERIFIED_FROZEN_UTC_VWAP',
             local_dependency='This Mac, Python process, power and internet. Codex and its app may be closed.',
             log_retention='Eight 16 MB receipt archives plus current; four 8 MB event archives plus current. Reports retain final truth; old receipts can expire.')
+        value.setdefault('TRADING_AUTHORIZED',False)
+        value.setdefault('AUTO_TRADING_ACTIVE',False)
         if value.get('dex')=='pas' and value.get('mode')=='TESTNET OBSERVATION':
             from .pas_controller import assess
             from .long_session import require_release,require_native_evidence
@@ -83,8 +85,11 @@ class Reporter:
                     from .venue_profiles import SCORED
                     if not markets or not set(markets)<=SCORED.markets:raise ExchangeError('EXACT_PAS_NATIVE_PROOF_MARKETS_REQUIRED')
                     require_native_evidence(native,SimpleNamespace(dex='pas',team_wallet=TEAM,api_wallet=API,markets=markets))
-                    value['native_proof_verification']=dict(verified=True,markets=markets,proof_sha256=sha(native),residual_scope_verified=False,
-                        limitation='Actual native roundtrip is separate from independently qualified subminimum residual scope')
+                    ordinary=[s for s in markets if value.get('liquidity',{}).get(s,{}).get('partial_minimum_admissible') is True]
+                    value['native_proof_verification']=dict(verified=True,markets=markets,proof_sha256=sha(native),
+                        residual_markets=ordinary,residual_scope_verified=bool(ordinary),
+                        residual_scope_basis='ORDINARY_MINIMUM_FOR_EVERY_PARTIAL_ONLY',
+                        limitation='No PAS subminimum exception is inferred. Each eligible market must meet the ordinary minimum on every possible partial protection/exit path.')
                 except Exception as exc:value['native_proof_verification']=dict(verified=False,reason=str(exc))
             value['readiness']=assess(value,now)
         value['restart_context']=getattr(self,'restart_context',None)
@@ -301,7 +306,9 @@ def run_authorized(root, args, stop, publish):
         try:return original(scan=scan)
         finally:
             d=runtime.session.execution.daily
-            publish(dict(mode='AUTHORIZED TESTNET TRADING', status=d.state.value, team_wallet=TEAM,
+            from .trading_status import authorized_status
+            activity=authorized_status(runtime,runtime.session.clock_ms(),stop.is_set())
+            publish(dict(**activity,mode='AUTHORIZED TESTNET TRADING', status=d.state.value, team_wallet=TEAM,
                 dex=m.daily.dex,collateral=getattr(m,'collateral','USDPR'),venue_identity=runtime.authorization.venue_identity,
                 source_hash=m.daily.source_hash, mandate_hash=m.identity, expires_ms=m.daily.expires_ms,
                 signing_authority='EXACT_BOUNDED_LONG_MANDATE', approved_bankroll=m.daily.bankroll,
@@ -410,10 +417,19 @@ def start(root, args):
             except Exception:stop.set();return
     watcher=threading.Thread(target=guard,name='terminal-stop-source-guard',daemon=True);watcher.start()
     for sig in (signal.SIGINT,signal.SIGTERM):previous[sig]=signal.signal(sig,lambda *_:stop.set())
+    authorized_builder_attempted=False
     try:
         if args.authorized:
             required=('mandate','acceptance','release','native_protection_evidence')
             if not all(getattr(args,n) for n in required):raise ExchangeError('EXACT_MANDATE_ACCEPTANCE_RELEASE_NATIVE_PROOF_REQUIRED')
+            if getattr(args,'wait_for_readiness',False):
+                from .conditional_activation import wait_for_readiness
+                publish.readiness_release=args.release
+                publish.readiness_native_proof=args.native_protection_evidence
+                wait_result=wait_for_readiness(root,args,stop,publish,output)
+                atomic_json(output/'activation_observation_result.json',wait_result)
+                if stop.is_set():raise ExchangeError('CONDITIONAL_ACTIVATION_STOP_REQUESTED')
+            authorized_builder_attempted=True
             result=run_authorized(root,args,stop,publish)
             atomic_json(output/'trading_terminal_result.json',result)
             # The bounded signer has closed and released its locks. Observation
@@ -435,9 +451,16 @@ def start(root, args):
         atomic_json(output/'terminal_result.json',result)
         return 1 if result.get('status')=='HALTED' or result.get('threads_stopped') is False else 0
     except Exception as exc:
-        publish(dict(mode='TESTNET OBSERVATION',status='HALTED_BEFORE_OR_DURING_START',source_hash=source,
+        from .terminal_recovery import exception_evidence
+        failure=dict(mode='AUTHORIZED TESTNET REQUEST HALTED' if authorized_builder_attempted else 'TESTNET OBSERVATION',status='HALTED_BEFORE_OR_DURING_START',source_hash=source,
             dex=venue,collateral='USDP' if venue=='pas' else 'USDPR',
-            signing_authority='NONE',error=str(exc) if isinstance(exc,ExchangeError) else type(exc).__name__,terminal_flat=None))
+            signing_authority='REVOKED_OR_UNAVAILABLE' if authorized_builder_attempted else 'NONE',
+            TRADING_AUTHORIZED=False,AUTO_TRADING_ACTIVE=False,
+            error=str(exc) if isinstance(exc,ExchangeError) else type(exc).__name__,error_details=exception_evidence(exc),
+            terminal_flat=None,residual_status='UNKNOWN_REQUIRES_AUTHORITATIVE_RECONCILIATION',
+            authorized_builder_attempted=authorized_builder_attempted)
+        atomic_json(output/'terminal_result.json',failure)
+        publish(failure)
         return 1
     finally:
         stop.set();done.set();watcher.join(2)
@@ -467,26 +490,37 @@ def main(root):
     launch.add_argument('--venue',choices=('par','pas'),default='par',help='Explicit isolated practice or scored profile; grants no signing authority')
     launch.add_argument('--readiness-release',help='Public verification only; grants no authority')
     launch.add_argument('--readiness-native-proof',help='Public raw-proof verification only; grants no authority')
+    launch.add_argument('--wait-for-readiness',action='store_true',help='PAS only: one finite unsigned wait with an already genuinely accepted mandate; no approval creation or restart')
     launch.add_argument('--markets',nargs='*',default=[]);launch.add_argument('--scan-seconds',type=int,default=60)
     launch.add_argument('--duration',type=int,help='Optional bounded read-only development soak; signing expiry is unchanged')
     for name in ('mandate','acceptance','release','native-protection-evidence'):launch.add_argument('--'+name)
-    for name in ('status','stop','report','dashboard'):
+    for name in ('status','stop','report','dashboard','opening-check'):
         q=sub.add_parser(name);q.add_argument('--state',default=str(root/'runtime/terminal'))
+        if name=='opening-check':
+            for flag in ('release','discovery','organizer-confirmation','native-protection-evidence'):
+                q.add_argument('--'+flag)
         if name=='dashboard':
             q.add_argument('--refresh',type=int,default=5);q.add_argument('--once',action='store_true')
-    for name in ('funding','configuration-review','native-prepare'):
+    for name in ('funding','configuration-review','native-prepare','history-review'):
         q=sub.add_parser(name);q.add_argument('--output',required=True)
         if name=='native-prepare':q.add_argument('--market',default='pas:BTC')
+        if name=='configuration-review':q.add_argument('--organizer-confirmation')
     for name in ('configuration-approve','configuration-apply'):
         q=sub.add_parser(name)
         for flag in ('plan','discovery','release','output'):q.add_argument('--'+flag,required=True)
         if name=='configuration-apply':q.add_argument('--acceptance',required=True)
     args=p.parse_args()
     try:
-        if args.command in {'funding','configuration-review','native-prepare','configuration-approve','configuration-apply'}:
+        if args.command=='opening-check':
+            from .opening_audit import opening_check
+            result=opening_check(root,args);print(json.dumps(result,indent=2,default=str))
+            return 0 if result['statuses']['TRADING_AUTHORIZED'] else 1
+        if args.command in {'funding','configuration-review','native-prepare','history-review','configuration-approve','configuration-apply'}:
             from .pas_operations import dispatch
             result=dispatch(root,args);print(json.dumps(result,indent=2,default=str))
-            return 1 if result.get('status')=='CONFIGURATION_REQUIRES_REVIEW' else 0
+            failed = {'CONFIGURATION_REQUIRES_REVIEW', 'HISTORY_REVIEW_INCOMPLETE',
+                'DISCOVERY_INCOMPLETE'}
+            return 1 if result.get('status') in failed else 0
         if args.command=='doctor':return doctor(root,args.online,args.venue)
         if args.command=='discover':
             from .venue_discovery import discover
@@ -509,6 +543,8 @@ def main(root):
             if not 60<=args.scan_seconds<=3600 or args.duration is not None and args.duration<1:raise ExchangeError('BOUNDED_REFRESH_REQUIRED')
             if not args.authorized and any(getattr(args,n) for n in ('mandate','acceptance','release','native_protection_evidence')):
                 raise ExchangeError('EXPLICIT_AUTHORIZED_MODE_REQUIRED_FOR_SIGNING_FILES')
+            if args.wait_for_readiness and (not args.authorized or args.venue!='pas'):
+                raise ExchangeError('CONDITIONAL_WAIT_REQUIRES_EXACT_AUTHORIZED_PAS_MODE')
             return start(root,args)
         state=Path(args.state).resolve();current=read_json(state/'current.json');running=locked(state/'owner.lock')
         if args.command=='stop':
@@ -516,24 +552,17 @@ def main(root):
                 atomic_json(state/'stop.json',dict(session_id=current['session_id'],requested_ms=time.time_ns()//1000000))
             print(json.dumps(dict(status='GRACEFUL_STOP_REQUESTED' if running else 'ALREADY_STOPPED',
                 session_id=current['session_id'],note='No automatic cancel or close without original exact authority. Use status/report to verify final truth.')));return 0
-        v=read_json(Path(current['output'])/'status.json')
-        v.update(process_lock_held=running,status_age_ms=time.time_ns()//1000000-v['updated_ms'])
-        if running and v['status_age_ms']>180000:
-            v.update(status='STALLED_OR_BOUNDED_RECOVERY_EXCEEDED',terminal_flat=None,
-                residual_status='CACHED_ACCOUNT_TRUTH_REQUIRES_FRESH_READ')
-        if not running and v['status'] not in {'STOPPED','HALTED','HALTED_BEFORE_OR_DURING_START',
-                'STOPPED_FLAT_VERIFIED','HUMAN_RECOVERY_REVIEW_REQUIRED'}:
-            v.update(status='INTERRUPTED_UNCLEAN',terminal_flat=None,residual_status='UNKNOWN_REQUIRES_FRESH_PUBLIC_RECONCILIATION')
+        from .operator_status import current_status
+        v=current_status(read_json(Path(current['output'])/'status.json'),current,
+            running=running,now_ms=time.time_ns()//1000000,source_hash=active_source_hash(root))
         if args.command=='dashboard':
             if not 1<=args.refresh<=60:raise ExchangeError('BOUNDED_DASHBOARD_REFRESH_REQUIRED')
             try:
                 while True:
-                    current=read_json(state/'current.json');v=read_json(Path(current['output'])/'status.json')
-                    running=locked(state/'owner.lock');age=time.time_ns()//1000000-v['updated_ms']
-                    v.update(process_lock_held=running,status_age_ms=age)
-                    if not running and v.get('status') not in {'STOPPED','HALTED','STOPPED_FLAT_VERIFIED','HUMAN_RECOVERY_REVIEW_REQUIRED'}:
-                        v.update(status='INTERRUPTED_UNCLEAN',terminal_flat=None,residual_status='UNKNOWN_REQUIRES_FRESH_PUBLIC_RECONCILIATION')
-                    if running and age>180000:v.update(status='STALLED_OR_BOUNDED_RECOVERY_EXCEEDED',terminal_flat=None)
+                    current=read_json(state/'current.json')
+                    v=current_status(read_json(Path(current['output'])/'status.json'),current,
+                        running=locked(state/'owner.lock'),now_ms=time.time_ns()//1000000,
+                        source_hash=active_source_hash(root))
                     if sys.stdout.isatty():print('\033[2J\033[H',end='')
                     print(render(v),flush=True)
                     if args.once:return 0

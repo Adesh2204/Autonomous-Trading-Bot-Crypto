@@ -5,6 +5,7 @@ from pathlib import Path
 import json,shutil,socket,time,uuid
 from .base_exchange import ExchangeError
 from .venue_profiles import SCORED
+from .entry_scope import PAS_ENTRY_MARKETS
 from .venue_discovery import discover
 from .paper_operations import active_source_hash,atomic_json
 from .terminal_evidence import local_execution_state
@@ -43,8 +44,8 @@ def prepare_scored(root,args):
         blockers.append('COMPLETE_FRESH_ACCOUNT_DISCOVERY_REQUIRED')
     equity=observation.get('account',{}).get('reported_account_equity',{})
     if D(equity.get('collateral_balance') or '0')<=0:blockers.append('PAS_USDP_COLLATERAL_REQUIRED')
-    requested=set(args.markets) if args.markets else SCORED.markets
-    if not requested or not requested<=SCORED.markets:raise ExchangeError('EXPLICIT_PAS_MARKET_SCOPE_REQUIRED')
+    requested=set(args.markets) if args.markets else PAS_ENTRY_MARKETS
+    if not requested or not requested<=PAS_ENTRY_MARKETS:raise ExchangeError('EXPLICIT_PAS_MARKET_SCOPE_REQUIRED')
     snapshot={}
     timer=None
     try:

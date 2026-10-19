@@ -1,0 +1,13 @@
+..................................................F..................... [ 28%]
+........................................................................ [ 56%]
+........................................................................ [ 84%]
+........................................                                 [100%]
+=================================== FAILURES ===================================
+________ test_v4_actual_pas_protection_clock_refresh_never_queries_par _________
+algo-trading-bot/test_btc_ewy_v4.py:174: in test_v4_actual_pas_protection_clock_refresh_never_queries_par
+    b=pas_bridge;calls=[];b.live.clock.healthy=False
+                          ^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: property 'healthy' of 'ClockHealthMonitor' object has no setter
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_btc_ewy_v4.py::test_v4_actual_pas_protection_clock_refresh_never_queries_par
+1 failed, 255 passed in 46.09s
