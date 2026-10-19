@@ -1,0 +1,12 @@
+...............................................F........................ [ 85%]
+............                                                             [100%]
+=================================== FAILURES ===================================
+__ test_cli_rejects_wait_without_real_authorized_files_before_state_creation ___
+algo-trading-bot/test_activation_v5_2.py:171: in test_cli_rejects_wait_without_real_authorized_files_before_state_creation
+    assert p.returncode==1 and 'CONDITIONAL_WAIT_REQUIRES_EXACT_AUTHORIZED_PAS_MODE' in p.stdout
+E   assert (1 == 1 and 'CONDITIONAL_WAIT_REQUIRES_EXACT_AUTHORIZED_PAS_MODE' in '')
+E    +  where 1 = CompletedProcess(args=['/Users/adesh/Autonomous Trading Bot - Crypto /.venv/bin/python', '/Users/adesh/Autonomous Trad...error": "CONDITIONAL_WAIT_REQUIRES_EXACT_AUTHORIZED_PAS_MODE", "signing_authority": "NONE_CREATED_BY_THIS_COMMAND"}\n').returncode
+E    +  and   '' = CompletedProcess(args=['/Users/adesh/Autonomous Trading Bot - Crypto /.venv/bin/python', '/Users/adesh/Autonomous Trad...error": "CONDITIONAL_WAIT_REQUIRES_EXACT_AUTHORIZED_PAS_MODE", "signing_authority": "NONE_CREATED_BY_THIS_COMMAND"}\n').stdout
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_activation_v5_2.py::test_cli_rejects_wait_without_real_authorized_files_before_state_creation
+1 failed, 83 passed in 7.80s

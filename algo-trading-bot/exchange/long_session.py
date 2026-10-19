@@ -187,6 +187,48 @@ def require_native_evidence(path,daily):
     return proof
 
 
+def require_long_acceptance(m,path,*,now_ms,team,signer,source_hash,policy_hash,host,
+        revoked=False,bound_evidence=None,expected_acceptance=None):
+    """Validate existing human authority without a journal, key, lease or nonce.
+
+    This never creates authority and does not authorize a signing transport.
+    Runtime and conditional waiting share exactly the same acceptance rules.
+    """
+    from venue_config import require_paper_migration
+    d=m.daily;require_paper_migration(d.dex);now=now_ms
+    a=json.loads(Path(path).read_text()) if expected_acceptance is None else expected_acceptance
+    try:current=json.loads(Path(path).read_text())
+    except (ValueError,OSError):raise ExchangeError('LONG_ACCEPTANCE_REMOVED_OR_CHANGED') from None
+    try:
+        stable=(source_hash()==d.source_hash and policy_hash()==m.reliability_sha256
+            and all(sha(path)==expected for path,expected in (bound_evidence or {}).items()))
+    except (OSError,ValueError):stable=False
+    if (revoked or Path(path).with_name('session_revocation.json').exists() or current!=a
+            or a.get('mandate_hash')!=m.identity or not str(a.get('operator_acceptance','')).strip()
+            or any(a.get(k) is not True for k in ACKS)
+            or type(a.get('accepted_ms')) is not int or a.get('expires_ms')!=d.expires_ms
+            or not m.created_ms<=a['accepted_ms']<=m.approval_deadline_ms
+            or not a['accepted_ms']<=now<d.expires_ms or now<d.starts_ms
+            or team.lower()!=d.team_wallet.lower() or signer.lower()!=d.api_wallet.lower()
+            or host!=d.signing_host or not stable):
+        raise ExchangeError('EXACT_LONG_APPROVAL_WINDOW_SOURCE_HOST_REQUIRED')
+    if d.dex=='pas':
+        from .scored_session import SCORED_ACKS,SCORED_START_MS
+        if now<SCORED_START_MS or any(a.get(k) is not True for k in SCORED_ACKS):
+            raise ExchangeError('EXACT_PAS_SCORED_ACKNOWLEDGMENTS_AND_OPEN_WINDOW_REQUIRED')
+    if m.mode=='EXACT_APPROVED_OVERNIGHT_LONG_TESTNET_V1':
+        from .overnight_session import OVERNIGHT_ACKS
+        if any(a.get(k) is not True for k in OVERNIGHT_ACKS):
+            raise ExchangeError('EXACT_OVERNIGHT_CARRYOVER_RECOVERY_ACKNOWLEDGMENTS_REQUIRED')
+    if m.mode=='EXACT_APPROVED_PRACTICE_WEEKEND_LONG_TESTNET_V1':
+        from .practice_weekend_session import PRACTICE_ACKS,IST
+        from datetime import datetime
+        if (any(a.get(k) is not True for k in PRACTICE_ACKS)
+                or datetime.fromtimestamp(a['accepted_ms']/1000,IST).date().isoformat()!='2026-10-17'):
+            raise ExchangeError('EXACT_PRACTICE_CARRYOVER_RECOVERY_ACKNOWLEDGMENTS_REQUIRED')
+    return a
+
+
 class LongAuthorization:
     """Finite capability. Persist consumption before HTTP, never repeat a wire."""
     def __init__(self,mandate,acceptance_path,journal,*,clock_ms,source_hash,policy_hash,host=None):
@@ -209,37 +251,9 @@ class LongAuthorization:
             self.journal.db.execute('INSERT OR REPLACE INTO controls VALUES (?,?)',(self.key,canonical(self.data)))
 
     def require(self,team,signer):
-        from venue_config import require_paper_migration
-        m=self.m;d=m.daily;require_paper_migration(d.dex);now=self.clock_ms();a=self.acceptance
-        try:current=json.loads(self.path.read_text())
-        except (ValueError,OSError):raise ExchangeError('LONG_ACCEPTANCE_REMOVED_OR_CHANGED') from None
-        try:
-            stable=(self.source_hash()==d.source_hash and self.policy_hash()==m.reliability_sha256
-                and all(sha(path)==expected for path,expected in getattr(self,'bound_evidence',{}).items()))
-        except (OSError,ValueError):stable=False
-        if (self.revoked or self.path.with_name('session_revocation.json').exists() or current!=a
-                or a.get('mandate_hash')!=m.identity or not str(a.get('operator_acceptance','')).strip()
-                or any(a.get(k) is not True for k in ACKS)
-                or type(a.get('accepted_ms')) is not int or a.get('expires_ms')!=d.expires_ms
-                or not m.created_ms<=a['accepted_ms']<=m.approval_deadline_ms
-                or not a['accepted_ms']<=now<d.expires_ms or now<d.starts_ms
-                or team.lower()!=d.team_wallet.lower() or signer.lower()!=d.api_wallet.lower()
-                or self.host!=d.signing_host or not stable):
-            raise ExchangeError('EXACT_LONG_APPROVAL_WINDOW_SOURCE_HOST_REQUIRED')
-        if d.dex=='pas':
-            from .scored_session import SCORED_ACKS,SCORED_START_MS
-            if now<SCORED_START_MS or any(a.get(k) is not True for k in SCORED_ACKS):
-                raise ExchangeError('EXACT_PAS_SCORED_ACKNOWLEDGMENTS_AND_OPEN_WINDOW_REQUIRED')
-        if m.mode=='EXACT_APPROVED_OVERNIGHT_LONG_TESTNET_V1':
-            from .overnight_session import OVERNIGHT_ACKS
-            if any(a.get(k) is not True for k in OVERNIGHT_ACKS):
-                raise ExchangeError('EXACT_OVERNIGHT_CARRYOVER_RECOVERY_ACKNOWLEDGMENTS_REQUIRED')
-        if m.mode=='EXACT_APPROVED_PRACTICE_WEEKEND_LONG_TESTNET_V1':
-            from .practice_weekend_session import PRACTICE_ACKS,IST
-            from datetime import datetime
-            if (any(a.get(k) is not True for k in PRACTICE_ACKS)
-                    or datetime.fromtimestamp(a['accepted_ms']/1000,IST).date().isoformat()!='2026-10-17'):
-                raise ExchangeError('EXACT_PRACTICE_CARRYOVER_RECOVERY_ACKNOWLEDGMENTS_REQUIRED')
+        return require_long_acceptance(self.m,self.path,now_ms=self.clock_ms(),team=team,signer=signer,
+            source_hash=self.source_hash,policy_hash=self.policy_hash,host=self.host,revoked=self.revoked,
+            bound_evidence=getattr(self,'bound_evidence',{}),expected_acceptance=self.acceptance)
 
     def bind(self,key,kind,symbol,quantity):
         self.require(self.m.daily.team_wallet,self.m.daily.api_wallet)
