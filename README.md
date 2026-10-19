@@ -12,7 +12,7 @@ Runtime metadata must identify **USDP** collateral. Both active assets must be
 present and valid. Unknown venues, ambiguous mappings, missing data, non-USDP
 collateral and unsupported assets fail closed; there is no PAR/native fallback.
 The frozen strategy is unchanged. Both assets are scanned, but only one candidate
-and one global position at 20x CROSS are allowed. The conservative profile caps gross
+and one global position at exactly 1x CROSS are allowed. The conservative profile caps gross
 exposure at 25% of actual account equity; $100,000 is only a reference, not assumed
 funding. Both BTC and EWY have a $10m per-market OI ceiling; total PAS OI has a
 $50m ceiling. Lower authoritative exchange caps also apply. Increasing entries,
@@ -21,11 +21,12 @@ effective market USD, market size and DEX USD cap. This 1% headroom is an intern
 engineering safeguard, **not an official competition percentage**. Reduce-only
 exits retain their independent position, authorization and freshness checks.
 
-The 20x target is the owner's explicit policy request, not a larger exposure
-budget. This change is code-side only: it does not change either exchange
-setting. Readiness must reject a wallet still reporting 1x or isolated margin.
-The old PAS 1x configuration approval/execution routes are retired before I/O;
-unsigned proposals carry no signing or order authority.
+The exact 1x target is a policy gate, not exchange-setting authority. This change
+is code-side only and does not change either exchange setting. Readiness requires
+fresh, well-formed 1x CROSS readbacks for both BTC and EWY and rejects 20x,
+isolated margin, missing data, or malformed per-market observations. PAPER mode
+and `ALLOW_LIVE_ORDERS=false` remain mandatory; unsigned reports grant no signing
+or order authority. Retired configuration/order routes remain blocked.
 
 ### Offline review and read-only startup
 

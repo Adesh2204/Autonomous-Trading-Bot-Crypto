@@ -93,7 +93,7 @@ def assert_both_public_markets_read(fixture):
 
 
 @pytest.mark.parametrize('wrong_market', ['pas:BTC', 'pas:EWY'])
-@pytest.mark.parametrize('wrong_target', [1, 19, 21, 'isolated'])
+@pytest.mark.parametrize('wrong_target', [0, 2, 20, 'isolated'])
 def test_actual_launcher_preflight_rejects_each_wrong_leverage_market(launcher_path, wrong_market, wrong_target):
     fixture, arguments, _, _, git_calls = launcher_path
     if wrong_target == 'isolated':

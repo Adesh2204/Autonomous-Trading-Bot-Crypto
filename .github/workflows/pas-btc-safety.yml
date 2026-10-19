@@ -3,7 +3,8 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [fix/pas-btc-ewy-review-2]
+    branches: [main, fix/pas-btc-ewy-review-2, fix/pas-1x-ci-readiness]
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
@@ -31,6 +32,7 @@ jobs:
         working-directory: algo-trading-bot
         run: >-
           python -m pytest -q -p offline_no_sign
+          --junitxml=pas-offline-safety.xml
           test_pas_btc_competition.py
           test_pas_active_markets.py
           test_pas_account_oi_regressions.py
@@ -46,6 +48,7 @@ jobs:
           test_pas_candle_diagnostics.py
           test_pas_liquidity_selection.py
           test_pas_thread_local_read_cancellation.py
+          test_pas_replay_recovery.py
           test_exchange_migration.py
           test_pas_migration.py
           test_market_discovery.py
@@ -55,3 +58,10 @@ jobs:
           test_opening_v5_3.py
       - name: Verify frozen baseline
         run: python scripts/check_strategy_freeze.py
+      - name: Retain unsigned regression receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pas-offline-safety
+          path: algo-trading-bot/pas-offline-safety.xml
+          if-no-files-found: warn

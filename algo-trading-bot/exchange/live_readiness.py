@@ -12,18 +12,30 @@ def valid_address(value):
             and int(value[2:], 16) != 0)
 
 
-def require_pas_cross_20x(account):
-    """Read both active settings; observing funds never grants configuration authority."""
+def require_pas_cross_1x(account):
+    """Require fresh per-market 1x CROSS readbacks; this grants no write authority."""
+    client = account.client
+    api_markets = getattr(client, 'api_markets', None)
+    api_dex = getattr(client, 'api_dex', None)
+    if (not isinstance(api_markets, dict) or set(api_markets) != {'BTC', 'EWY'} or
+            not isinstance(api_dex, str) or
+            any(api_markets.get(base) != f'{api_dex}:{base}' for base in ('BTC', 'EWY')) or
+            getattr(client, 'api_market', None) != api_markets.get('BTC')):
+        raise ExchangeError('PAS_ACTIVE_ASSET_MAPPING_UNVERIFIED')
     observed = {}
-    for symbol in account.client.api_markets.values():
-        active = account._query('activeAssetData', coin=symbol)
+    for base in ('BTC', 'EWY'):
+        symbol = api_markets[base]
+        try:
+            active = account._query('activeAssetData', coin=symbol)
+        except Exception as exc:
+            raise ExchangeError('PAS_ACTIVE_ASSET_READBACK_UNAVAILABLE') from exc
         leverage = active.get('leverage') if isinstance(active, dict) else None
         user = active.get('user') if isinstance(active, dict) else None
         if (not isinstance(user, str) or user.lower() != account.team_address.lower()
                 or active.get('coin') != symbol or not isinstance(leverage, dict)
                 or leverage.get('type') != 'cross' or type(leverage.get('value')) is not int
                 or leverage.get('value') != PAS_TARGET_LEVERAGE):
-            raise ExchangeError('PAS_ACTIVE_ASSET_CROSS_20X_REQUIRED')
+            raise ExchangeError('PAS_ACTIVE_ASSET_CROSS_1X_REQUIRED')
         observed[symbol] = dict(leverage)
     return observed
 
@@ -79,6 +91,7 @@ class LiveReadiness:
         result.update(network='testnet', competition_market=self.competition_market,
                       dex=self.api_dex, api_market=self.api_market,
                       collateral=self.collateral_token_name, market_data_ready=bool(market_ready),
+                      target_leverage=PAS_TARGET_LEVERAGE, margin_mode='cross',
                       paper_ready=bool(market_ready), live_orders_permitted=bool(live_permitted),
                       controlled_execution_certified=False,
                       live_ready=False,
@@ -152,9 +165,11 @@ def verify_live_account_readiness(account, signer_address, *, clock_health, rate
             # existing critical reduce-only/cancel recovery; those actions
             # still require every identity, approval and exact-action check.
             try:
-                require_pas_cross_20x(account)
+                require_pas_cross_1x(account)
             except ExchangeError as exc:
-                if str(exc) != 'PAS_ACTIVE_ASSET_CROSS_20X_REQUIRED':
+                if str(exc) not in {'PAS_ACTIVE_ASSET_CROSS_1X_REQUIRED',
+                                    'PAS_ACTIVE_ASSET_READBACK_UNAVAILABLE',
+                                    'PAS_ACTIVE_ASSET_MAPPING_UNVERIFIED'}:
                     raise
                 reasons.append(str(exc))
         fees = account._query('userFees')

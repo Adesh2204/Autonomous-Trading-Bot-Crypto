@@ -27,7 +27,7 @@ from exchange.hyperliquid_client import HyperliquidClient
 from exchange.hyperliquid_market_data import HyperliquidMarketData
 from exchange.hyperliquid_account import HyperliquidAccount
 from exchange.market_health import validate_history
-from exchange.live_readiness import valid_address, require_pas_cross_20x
+from exchange.live_readiness import valid_address, require_pas_cross_1x
 from exchange.execution_safety import HumanLiveApproval
 from exchange.reliability_policy import load_reliability_policy
 from market_regime_scanner import ScannerPolicy
@@ -81,11 +81,12 @@ def load_profile_snapshot(path):
         raise ExchangeError("PAS_BTC_RISK_POLICY_SCHEMA_INVALID")
     if set(profile.get("scanner", {})) != set(ScannerPolicy.__dataclass_fields__):
         raise ExchangeError("PAS_BTC_SCANNER_POLICY_SCHEMA_INVALID")
+    if type(profile["risk"].get("leverage")) is not int or profile["risk"]["leverage"] != PAS_TARGET_LEVERAGE:
+        raise ExchangeError("PAS_BTC_SINGLE_POSITION_1X_PROFILE_REQUIRED")
     risk = RiskPolicy(**profile["risk"])
     scanner = ScannerPolicy(**profile["scanner"])
-    if (risk.leverage != PAS_TARGET_LEVERAGE or risk.max_positions != 1 or
-            scanner.top_n != 1):
-        raise ExchangeError("PAS_BTC_SINGLE_POSITION_20X_PROFILE_REQUIRED")
+    if risk.max_positions != 1 or scanner.top_n != 1:
+        raise ExchangeError("PAS_BTC_SINGLE_POSITION_1X_PROFILE_REQUIRED")
 
     # Enforce internal risk ceilings even if an operator edits the JSON profile.
     ceilings = {
@@ -260,6 +261,7 @@ def read_only_preflight(profile_path, team_address=None, api_wallet_address=None
         report["profile_sha256"] = snapshot.sha256
         report["checks"]["configuration"] = {
             "passed": True, "leverage": risk.leverage, "max_positions": risk.max_positions,
+            "margin_mode": "cross",
             "scanner_markets": scanner.top_n,
             "target_starting_equity_usd": profile["target_starting_equity_usd"],
             "profile_sha256": snapshot.sha256,
@@ -355,15 +357,17 @@ def read_only_preflight(profile_path, team_address=None, api_wallet_address=None
                 "reported_fee_schedule_available": isinstance(fees, dict),
             }
             try:
-                leverage_settings = require_pas_cross_20x(account)
+                leverage_settings = require_pas_cross_1x(account)
                 report["checks"]["btc_ewy_account_leverage"] = {
-                    "passed": True, "markets": leverage_settings,
+                    "passed": True, "target_leverage": PAS_TARGET_LEVERAGE,
+                    "margin_mode": "cross", "markets": leverage_settings,
                 }
-            except Exception:
+            except Exception as exc:
                 report["checks"]["btc_ewy_account_leverage"] = {
-                    "passed": False, "reason": "PAS_ACTIVE_ASSET_CROSS_20X_REQUIRED",
+                    "passed": False, "target_leverage": PAS_TARGET_LEVERAGE,
+                    "margin_mode": "cross", "reason": str(exc),
                 }
-                report["reasons"].append("PAS_ACTIVE_ASSET_CROSS_20X_REQUIRED")
+                report["reasons"].append(str(exc))
             if positions:
                 report["reasons"].append("EXISTING_POSITION_REQUIRES_JOURNAL_AND_PROTECTION_RECONCILIATION")
             if orders:

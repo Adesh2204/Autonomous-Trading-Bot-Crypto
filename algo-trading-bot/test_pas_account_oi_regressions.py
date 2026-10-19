@@ -128,13 +128,13 @@ def _risk_context(symbol='pas:BTC', *, orders=(), dex_oi='1000'):
                                 agent_expiry_ms=NOW + 60_000, team_address=TEAM)
     context = ValidationContext(
         specs[symbol], 'metadata', 'metadata', NOW, quote, readiness, {}, tuple(orders),
-        {'user': TEAM, 'coin': symbol, 'leverage': {'type': 'cross', 'value': 20},
+        {'user': TEAM, 'coin': symbol, 'leverage': {'type': 'cross', 'value': 1},
          'maxTradeSzs': ['100', '100'], 'availableToTrade': ['100000', '100000']},
         NOW,
         {'coinToOiCap': [['pas:BTC', '10000000'], ['BTC', '10000000'],
                          ['pas:EWY', '5000000'], ['EWY', '5000000']],
          'oiSzCapPerPerp': '100000', 'totalOiCap': '100000000'},
-        contexts, True, leverage=20, fills=(), reconciled=True, oracle_ms=NOW,
+        contexts, True, leverage=1, fills=(), reconciled=True, oracle_ms=NOW,
         dex_total_oi_notional=D(dex_oi), dex_oi_observed_ms=NOW,
     )
     permission = RiskPermission('regression', symbol, 'BUY', D('.1'), NOW,
@@ -146,7 +146,7 @@ def _validate(client, request, context, permission):
     return HyperliquidOrderValidator(client).validate(request, context, permission, NOW)
 
 
-@pytest.mark.parametrize('wrong_target', [1, 19, 21])
+@pytest.mark.parametrize('wrong_target', [0, 2, 20])
 def test_pas_entry_rejects_non_target_cross_leverage(wrong_target):
     client, request, context, permission = _risk_context()
     active = dict(context.active_asset, leverage={'type': 'cross', 'value': wrong_target})
@@ -154,20 +154,20 @@ def test_pas_entry_rejects_non_target_cross_leverage(wrong_target):
     assert not result.allowed and result.code == 'INVALID_LEVERAGE'
 
 
-def test_pas_entry_rejects_isolated_and_accepts_exact_20x_cross():
+def test_pas_entry_rejects_isolated_and_accepts_exact_1x_cross():
     client, request, context, permission = _risk_context()
     assert _validate(client, request, context, permission).allowed
-    isolated = dict(context.active_asset, leverage={'type': 'isolated', 'value': 20})
+    isolated = dict(context.active_asset, leverage={'type': 'isolated', 'value': 1})
     result = _validate(client, request, replace(context, active_asset=isolated), permission)
     assert not result.allowed and result.code == 'INVALID_LEVERAGE'
 
 
-def test_pas_entry_rejects_target_above_runtime_metadata_maximum():
+def test_pas_entry_accepts_exact_one_x_at_runtime_metadata_maximum():
     client, request, context, permission = _risk_context()
-    insufficient = MarketSpec('pas:BTC', 4, 19, 100)
-    client.markets['pas:BTC'] = insufficient
-    result = _validate(client, request, replace(context, spec=insufficient), permission)
-    assert not result.allowed and result.code == 'INVALID_LEVERAGE'
+    maximum = MarketSpec('pas:BTC', 4, 1, 100)
+    client.markets['pas:BTC'] = maximum
+    result = _validate(client, request, replace(context, spec=maximum), permission)
+    assert result.allowed
 
 
 def test_pas_active_btc_pending_orders_reserve_symbol_cap_from_list_pair_limits():
