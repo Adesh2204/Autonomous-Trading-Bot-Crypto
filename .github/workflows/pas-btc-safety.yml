@@ -39,5 +39,9 @@ jobs:
           test_pas_two_asset_session.py
           test_pas_launcher_regressions.py
           test_pas_retired_routes.py
+          test_pas_candle_budget.py
+          test_pas_stream_warmup.py
+          test_pas_candle_diagnostics.py
+          test_pas_liquidity_selection.py
       - name: Verify frozen baseline
         run: python scripts/check_strategy_freeze.py

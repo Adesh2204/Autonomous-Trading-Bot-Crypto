@@ -18,6 +18,7 @@ from .candle_availability import CandleAvailabilityMonitor
 INTERVAL_MS = {'1m': 60_000, '3m': 180_000, '5m': 300_000, '15m': 900_000,
                '30m': 1_800_000, '1h': 3_600_000, '2h': 7_200_000,
                '4h': 14_400_000, '8h': 28_800_000, '12h': 43_200_000, '1d': 86_400_000}
+PAS_RETAINED_COMPLETED_BARS = 5000
 
 
 def timestamp(value):
@@ -182,6 +183,13 @@ class HyperliquidMarketData:
                 raise ExchangeError('FUTURE_REST_CANDLE')
             if candle.timestamp_ms + INTERVAL_MS[interval] > as_of:
                 continue
+            # For PAS, clock passage alone cannot finalize a stream/REST fact
+            # first observed while its interval was still open. A later real
+            # response can supply that bar; unknown receive time stays blocked.
+            if (getattr(self.client, 'competition_mode', False) and interval == '1m'
+                    and (candle.received_timestamp_ms is None or
+                         candle.received_timestamp_ms < candle.timestamp_ms + 60_000)):
+                continue
             prior = candles.get(candle.timestamp_ms)
             if prior is not None and replace(prior,received_timestamp_ms=candle.received_timestamp_ms,
                     processed_timestamp_ms=candle.processed_timestamp_ms) != candle:
@@ -213,6 +221,12 @@ class ParMarketDataEngine:
         if type(history_bars) is not int or not 1 <= history_bars <= 5000:
             raise ExchangeError('INVALID_HISTORY_WINDOW')
         self.history_bars = history_bars
+        # PAS scanner ranges include the complete UTC-anchor lookback, which
+        # can be longer than the strategy's 300-bar requirement. Keep up to
+        # 5000 completed intervals plus one mutable/open observation; health
+        # and strategy requirements remain governed by history_bars.
+        self.retention_capacity = (PAS_RETAINED_COMPLETED_BARS + 1
+            if getattr(self.client, 'competition_mode', False) else history_bars + 1)
         self.connect = connect or self._connect
         self.connected = False
         self.reconciled = False
@@ -299,11 +313,17 @@ class ParMarketDataEngine:
                 raise ExchangeError('MARKET_RECOVERY_CANCELLED')
             with self._lock:
                 previous=list(self.candles[symbol].values())
+            pas=getattr(self.client,'competition_mode',False)
+            def is_completed_source(bar):
+                return (bar.timestamp_ms+60_000<=now and
+                    (not pas or (bar.received_timestamp_ms is not None and
+                                 bar.received_timestamp_ms>=bar.timestamp_ms+60_000)))
             # Repair from the last actual completed candle, with a small overlap.
             # Missing venue bars remain missing; no interpolation or CSV fallback.
             repair_start=max(start,max((b.timestamp_ms for b in previous
-                if b.timestamp_ms+60000<=now),default=start)-2*60000)
-            completed=sorted((b for b in previous if start<=b.timestamp_ms<=end),key=lambda b:b.timestamp_ms)
+                if is_completed_source(b)),default=start)-2*60000)
+            completed=sorted((b for b in previous if start<=b.timestamp_ms<=end
+                and is_completed_source(b)),key=lambda b:b.timestamp_ms)
             # A narrow tail repair cannot fill an older hole or warm up a short buffer.
             if len(completed)<self.history_bars or any(b.timestamp_ms-a.timestamp_ms!=60000
                     for a,b in zip(completed,completed[1:])):
@@ -316,7 +336,10 @@ class ParMarketDataEngine:
                         missing_timestamps_ms=missing,request_start_ms=repair_start,request_end_ms=end)
             try:
                 fresh=self.market.get_candles(symbol,repair_start,end,now_ms=now)
-                combined={b.timestamp_ms:b for b in previous if start<=b.timestamp_ms<=end}
+                # Preserve genuine older stream rows: the scanner may request
+                # farther back than the narrower health-recovery REST window.
+                combined={b.timestamp_ms:b for b in previous
+                    if pas or start<=b.timestamp_ms<=end}
                 # Validate each genuine row in get_candles, then merge before
                 # checking continuity. Retained rows can complete a sparse REST
                 # response; an unresolved hole still fails market_health.
@@ -362,7 +385,7 @@ class ParMarketDataEngine:
                         try:merged[t]=merge_candle(prior,b,self.client.clock_ms())
                         except ExchangeError as exc:
                             errors[symbol]=str(exc);merged[t]=b
-                self.candles[symbol]=dict(sorted(merged.items())[-(self.history_bars+1):])
+                self.candles[symbol]=dict(sorted(merged.items())[-self.retention_capacity:])
                 self.input_errors[symbol].pop('history_health',None)
                 self._audit_cache(symbol,'REST_MERGE',start,end)
             for symbol in selected:self.recovery_errors.pop(symbol,None)
@@ -505,18 +528,23 @@ class ParMarketDataEngine:
                         self.candles[symbol].get(candle.timestamp_ms),candle,received_ms)
                     keys = sorted(self.candles[symbol])
                     # A current open bar must not evict the 300th completed bar.
-                    for key in keys[:-(self.history_bars+1)]:
+                    for key in keys[:-self.retention_capacity]:
                         del self.candles[symbol][key]
                     if getattr(self.client,'candle_audit',None) is not None:
                         self.client.candle_audit.record('WS_MERGE',symbol=symbol,candle=candle,
                             retained_timestamp_ms=sorted(self.candles[symbol]),
-                            evicted_timestamp_ms=keys[:-(self.history_bars+1)])
+                            evicted_timestamp_ms=keys[:-self.retention_capacity])
             self.messages += 1
 
     def market_health(self):
         now=self.client.clock_ms()
         with self._lock:
-            values={s:(self.get_completed_candles(s),self.books.get(s),self.contexts.get(s),
+            # Retention may include an older UTC scanner window. General feed
+            # health is still judged on the configured recent strategy tail;
+            # the scanner independently validates its complete requested range.
+            values={s:((self.get_completed_candles(s)[-self.history_bars:]
+                        if getattr(self.client,'competition_mode',False)
+                        else self.get_completed_candles(s)),self.books.get(s),self.contexts.get(s),
                 self.context_times.get(s),dict(self.input_errors[s],**({'scanner_history':self.scanner_errors[s]}
                     if s in self.scanner_errors else {}),**({'recovery':self.recovery_errors[s]}
                     if s in self.recovery_errors else {})),self.get_observations(s)) for s in self.symbols}
@@ -532,7 +560,7 @@ class ParMarketDataEngine:
             for c in candles:
                 prior=self.candles[symbol].get(c.timestamp_ms)
                 merged[c.timestamp_ms]=merge_candle(prior,c,self.client.clock_ms())
-            self.candles[symbol]=dict(sorted(merged.items())[-(self.history_bars+1):])
+            self.candles[symbol]=dict(sorted(merged.items())[-self.retention_capacity:])
             self._audit_cache(symbol,'SCANNER_SNAPSHOT',candles[0].timestamp_ms,candles[-1].close_timestamp_ms)
             prior=self.books.get(symbol)
             if prior is None or book.timestamp_ms>=prior.timestamp_ms:self.books[symbol]=book
@@ -545,7 +573,7 @@ class ParMarketDataEngine:
         if getattr(self.client,'candle_audit',None) is not None:
             self.client.candle_audit.record('CACHE',symbol=symbol,operation=operation,
                 requested_start_ms=start_ms,requested_end_ms=end_ms,
-                capacity=self.history_bars+1,candles=list(self.candles[symbol].values()))
+                capacity=self.retention_capacity,candles=list(self.candles[symbol].values()))
 
     def note_scanner_failure(self,symbol,reason):
         if symbol not in self.symbols:raise VenueMismatch('STREAM_MARKET_IDENTITY_MISMATCH')
@@ -583,8 +611,11 @@ class ParMarketDataEngine:
             raise VenueMismatch('STREAM_MARKET_IDENTITY_MISMATCH')
         with self._lock:
             now = self.client.clock_ms()
+            pas = getattr(self.client, 'competition_mode', False)
             return [bar for _, bar in sorted(self.candles[symbol].items())
-                    if bar.timestamp_ms + 60_000 <= now]
+                    if (bar.timestamp_ms + 60_000 <= now and
+                        (not pas or (bar.received_timestamp_ms is not None and
+                                     bar.received_timestamp_ms >= bar.timestamp_ms + 60_000)))]
 
     def get_quote(self, symbol):
         if not self.connected or not self.reconciled or not self.client.ready:

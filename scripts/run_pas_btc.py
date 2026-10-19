@@ -163,6 +163,27 @@ def parse_oi_caps(response, client):
     return caps
 
 
+def read_preflight_candles(market, symbol, bars, client):
+    """Keep the existing warmup, with a bounded wait for the shared REST budget.
+
+    Recalculate the completed window after waiting. Never pad missing bars or
+    lower a requested policy; larger policies still fail closed if unavailable.
+    """
+    for attempt in range(2):
+        now = client.clock_ms()
+        end = now // 60_000 * 60_000 - 1
+        start = end + 1 - bars * 60_000
+        try:
+            return market.get_candles(symbol, start, end, now_ms=now)
+        except ExchangeError as exc:
+            delay = getattr(exc, 'retry_after_ms', None)
+            if (attempt == 0 and str(exc) == 'PAS_CANDLE_BUDGET_EXHAUSTED' and
+                    type(delay) is int and 0 < delay <= 60_000):
+                time.sleep((delay + 1) / 1000)
+                continue
+            raise
+
+
 def read_only_preflight(profile_path, team_address=None, api_wallet_address=None, output_path=None):
     now_ms = time.time_ns() // 1_000_000
     report = {
@@ -209,12 +230,11 @@ def read_only_preflight(profile_path, team_address=None, api_wallet_address=None
         oi_caps = parse_oi_caps(client.post_info("perpDexLimits"), client)
         observations = {}
         for base, symbol in expected_markets.items():
+            candles = read_preflight_candles(market, symbol, scanner.history_bars, client)
+            validate_history(symbol, candles, client.clock_ms(), scanner.history_bars)
+            # Budget waits must occur before executable quote observations.
             book = market.get_orderbook(symbol)
             quote = market.get_quote(symbol)
-            end_ms = client.clock_ms() // 60_000 * 60_000 - 1
-            start_ms = end_ms - (scanner.history_bars + 2) * 60_000
-            candles = market.get_candles(symbol, start_ms, end_ms, now_ms=client.clock_ms())
-            validate_history(symbol, candles, client.clock_ms(), scanner.history_bars)
             now = client.clock_ms()  # after all reads, not before fresh quotes
             spread_bps = (quote.ask - quote.bid) / quote.mid * 10_000
             if (book.symbol != symbol or quote.symbol != symbol or not book.bids or not book.asks or

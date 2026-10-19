@@ -14,6 +14,7 @@ from .venue_profiles import venue_profile
 from .competition_market import (COMPETITION_MARKET, COMPETITION_BASE_ASSET,
     COMPETITION_ACTIVE_BASE_ASSETS, COMPETITION_COLLATERAL, canonical_api_market,
     resolve_competition_dex, resolve_collateral_token)
+from .rate_limits import PAS_CANDLE_BUDGET
 
 TESTNET_API_URL = 'https://api.hyperliquid-testnet.xyz'
 TESTNET_WS_URL = 'wss://api.hyperliquid-testnet.xyz/ws'
@@ -220,6 +221,10 @@ class HyperliquidClient:
         self.last_received_ms = None
         self.metadata = None
         self.rate_limits = rate_limits
+        # A custom transport is not proof of offline operation. Every PAS
+        # client shares the process budget; offline tests may explicitly replace
+        # this object with an isolated deterministic fixture budget.
+        self.candle_budget=PAS_CANDLE_BUDGET if self.competition_mode else None
         self.read_cancel_event=None
         self.candle_audit=candle_audit
         self.progress=progress
@@ -267,6 +272,17 @@ class HyperliquidClient:
             if not isinstance(payload.get('req'), dict):
                 raise ExchangeError('INVALID_CANDLE_REQUEST')
             self._validate_coin(payload['req'].get('coin'))
+            if self.candle_budget is not None:
+                from .hyperliquid_market_data import INTERVAL_MS
+                req=payload['req'];interval=req.get('interval')
+                start,end=req.get('startTime'),req.get('endTime')
+                if (not isinstance(interval,str) or interval not in INTERVAL_MS or
+                        type(start) is not int or type(end) is not int or
+                        start<0 or end<start):
+                    raise ExchangeError('INVALID_CANDLE_REQUEST')
+                expected=(end-start)//INTERVAL_MS[interval]+1
+            else:
+                expected=None
         started=time.monotonic();key=json.dumps(payload,sort_keys=True)
         if self.progress:self.progress('INFO_READ_STARTED',query=query)
         scope=getattr(self._snapshots,'scope',None)
@@ -280,12 +296,16 @@ class HyperliquidClient:
             if isinstance(self.transport,RequestsInfoTransport) else (lambda:self.transport(payload))
         if self.rate_limits is not None:
             req=payload.get('req',{})
-            from .hyperliquid_market_data import INTERVAL_MS
-            expected=(max(0,(req.get('endTime',0)-req.get('startTime',0))//INTERVAL_MS.get(req.get('interval'),60000)+1)
-                      if query=='candleSnapshot' else 0)
+            if query=='candleSnapshot' and expected is None:
+                from .hyperliquid_market_data import INTERVAL_MS
+                expected=(max(0,(req.get('endTime',0)-req.get('startTime',0))//INTERVAL_MS.get(req.get('interval'),60000)+1))
+            elif query!='candleSnapshot':expected=0
             result=self.rate_limits.read(query,operation,priority=priority,
-                request_key=key,expected_items=expected,cancel_event=self.read_cancel_event)
+                request_key=key,expected_items=expected,cancel_event=self.read_cancel_event,
+                candle_budget=self.candle_budget)
         else:
+            if query=='candleSnapshot' and self.candle_budget is not None:
+                self.candle_budget.reserve(expected)
             result = operation()
         self.last_received_ms = self.clock_ms()
         if reusable:scope['values'][key]=(self.last_received_ms,deepcopy(result))

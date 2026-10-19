@@ -232,3 +232,41 @@ def test_sdk_gate_rejects_fabricated_authorizer_even_with_correct_identity():
     fabricated = SimpleNamespace(venue_identity=SCORED.identity, require=lambda *a: None)
     with pytest.raises(ExchangeError, match='SIGNED_VENUE_PAS_AUTHORIZATION_REQUIRED'):
         OfficialSDKTransport._require_venue(client, fabricated)
+
+
+def test_preflight_candle_window_keeps_300_and_recalculates_after_budget_wait(monkeypatch):
+    now = [1800000000000]
+    calls = []
+    result = object()
+    class Market:
+        def get_candles(self, symbol, start, end, **kwargs):
+            calls.append((symbol, start, end, kwargs['now_ms']))
+            assert (end - start) // 60000 + 1 == 300
+            if len(calls) == 1:
+                error = ExchangeError('PAS_CANDLE_BUDGET_EXHAUSTED')
+                error.retry_after_ms = 60000
+                raise error
+            return result
+    waits = []
+    def wait(seconds):
+        waits.append(seconds)
+        now[0] += round(seconds * 1000)
+    monkeypatch.setattr(runner.time, 'sleep', wait)
+    assert runner.read_preflight_candles(Market(), 'pas:EWY', 300,
+        SimpleNamespace(clock_ms=lambda: now[0])) is result
+    assert len(waits) == 1 and len(calls) == 2
+    assert calls[1][1] > calls[0][1]
+
+
+def test_preflight_does_not_wait_forever_on_impossible_budget_or_hide_missing_data(monkeypatch):
+    def forbidden(_seconds):
+        raise AssertionError('Impossible request must fail, not wait')
+    monkeypatch.setattr(runner.time, 'sleep', forbidden)
+    class Market:
+        def get_candles(self, *_args, **_kwargs):
+            error = ExchangeError('PAS_CANDLE_BUDGET_EXHAUSTED')
+            error.retry_after_ms = None
+            raise error
+    with pytest.raises(ExchangeError, match='PAS_CANDLE_BUDGET_EXHAUSTED'):
+        runner.read_preflight_candles(Market(), 'pas:BTC', 301,
+            SimpleNamespace(clock_ms=lambda: 1800000000000))
