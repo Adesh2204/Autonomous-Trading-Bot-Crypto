@@ -494,8 +494,11 @@ def main(root):
     launch.add_argument('--markets',nargs='*',default=[]);launch.add_argument('--scan-seconds',type=int,default=60)
     launch.add_argument('--duration',type=int,help='Optional bounded read-only development soak; signing expiry is unchanged')
     for name in ('mandate','acceptance','release','native-protection-evidence'):launch.add_argument('--'+name)
-    for name in ('status','stop','report','dashboard'):
+    for name in ('status','stop','report','dashboard','opening-check'):
         q=sub.add_parser(name);q.add_argument('--state',default=str(root/'runtime/terminal'))
+        if name=='opening-check':
+            for flag in ('release','discovery','organizer-confirmation','native-protection-evidence'):
+                q.add_argument('--'+flag)
         if name=='dashboard':
             q.add_argument('--refresh',type=int,default=5);q.add_argument('--once',action='store_true')
     for name in ('funding','configuration-review','native-prepare','history-review'):
@@ -508,10 +511,16 @@ def main(root):
         if name=='configuration-apply':q.add_argument('--acceptance',required=True)
     args=p.parse_args()
     try:
+        if args.command=='opening-check':
+            from .opening_audit import opening_check
+            result=opening_check(root,args);print(json.dumps(result,indent=2,default=str))
+            return 0 if result['statuses']['TRADING_AUTHORIZED'] else 1
         if args.command in {'funding','configuration-review','native-prepare','history-review','configuration-approve','configuration-apply'}:
             from .pas_operations import dispatch
             result=dispatch(root,args);print(json.dumps(result,indent=2,default=str))
-            return 1 if result.get('status')=='CONFIGURATION_REQUIRES_REVIEW' else 0
+            failed = {'CONFIGURATION_REQUIRES_REVIEW', 'HISTORY_REVIEW_INCOMPLETE',
+                'DISCOVERY_INCOMPLETE'}
+            return 1 if result.get('status') in failed else 0
         if args.command=='doctor':return doctor(root,args.online,args.venue)
         if args.command=='discover':
             from .venue_discovery import discover
@@ -543,24 +552,17 @@ def main(root):
                 atomic_json(state/'stop.json',dict(session_id=current['session_id'],requested_ms=time.time_ns()//1000000))
             print(json.dumps(dict(status='GRACEFUL_STOP_REQUESTED' if running else 'ALREADY_STOPPED',
                 session_id=current['session_id'],note='No automatic cancel or close without original exact authority. Use status/report to verify final truth.')));return 0
-        v=read_json(Path(current['output'])/'status.json')
-        v.update(process_lock_held=running,status_age_ms=time.time_ns()//1000000-v['updated_ms'])
-        if running and v['status_age_ms']>180000:
-            v.update(status='STALLED_OR_BOUNDED_RECOVERY_EXCEEDED',terminal_flat=None,
-                residual_status='CACHED_ACCOUNT_TRUTH_REQUIRES_FRESH_READ')
-        if not running and v['status'] not in {'STOPPED','HALTED','HALTED_BEFORE_OR_DURING_START',
-                'STOPPED_FLAT_VERIFIED','HUMAN_RECOVERY_REVIEW_REQUIRED'}:
-            v.update(status='INTERRUPTED_UNCLEAN',terminal_flat=None,residual_status='UNKNOWN_REQUIRES_FRESH_PUBLIC_RECONCILIATION')
+        from .operator_status import current_status
+        v=current_status(read_json(Path(current['output'])/'status.json'),current,
+            running=running,now_ms=time.time_ns()//1000000,source_hash=active_source_hash(root))
         if args.command=='dashboard':
             if not 1<=args.refresh<=60:raise ExchangeError('BOUNDED_DASHBOARD_REFRESH_REQUIRED')
             try:
                 while True:
-                    current=read_json(state/'current.json');v=read_json(Path(current['output'])/'status.json')
-                    running=locked(state/'owner.lock');age=time.time_ns()//1000000-v['updated_ms']
-                    v.update(process_lock_held=running,status_age_ms=age)
-                    if not running and v.get('status') not in {'STOPPED','HALTED','STOPPED_FLAT_VERIFIED','HUMAN_RECOVERY_REVIEW_REQUIRED'}:
-                        v.update(status='INTERRUPTED_UNCLEAN',terminal_flat=None,residual_status='UNKNOWN_REQUIRES_FRESH_PUBLIC_RECONCILIATION')
-                    if running and age>180000:v.update(status='STALLED_OR_BOUNDED_RECOVERY_EXCEEDED',terminal_flat=None)
+                    current=read_json(state/'current.json')
+                    v=current_status(read_json(Path(current['output'])/'status.json'),current,
+                        running=locked(state/'owner.lock'),now_ms=time.time_ns()//1000000,
+                        source_hash=active_source_hash(root))
                     if sys.stdout.isatty():print('\033[2J\033[H',end='')
                     print(render(v),flush=True)
                     if args.once:return 0
