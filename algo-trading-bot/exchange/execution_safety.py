@@ -235,6 +235,9 @@ class HumanLiveApproval:
     signer_address: str
     expires_ms: int
     manually_verified: bool = False
+    competition_market: str | None = None
+    active_base_assets: tuple = ()
+    network: str | None = None
 
 
 class LiveAuthorization:
@@ -243,11 +246,20 @@ class LiveAuthorization:
         self.clock_ms = clock_ms or (lambda: time.time_ns() // 1_000_000)
         self.revoked = False
 
+    @property
+    def venue_identity(self):
+        from .venue_profiles import SCORED
+        p = self.approval
+        if (isinstance(p, HumanLiveApproval) and p.competition_market == 'pas' and
+                p.active_base_assets == ('BTC', 'EWY') and p.network == 'testnet'):
+            return SCORED.identity
+        return None
+
     def require(self, team_address, signer_address):
         import venue_config
         from order_guard import OrderRoutingBlocked
         p = self.approval
-        if (self.revoked or not isinstance(p, HumanLiveApproval) or not p.approval_id or
+        if (self.revoked or self.venue_identity is None or not isinstance(p, HumanLiveApproval) or not p.approval_id or
                 p.manually_verified is not True or type(p.expires_ms) is not int or
                 self.clock_ms() >= p.expires_ms or p.team_address.lower()!=team_address.lower() or
                 p.signer_address.lower()!=signer_address.lower()):
@@ -257,7 +269,7 @@ class LiveAuthorization:
                 venue_config.ALLOW_LIVE_ORDERS is not True or
                 os.environ.get('EXECUTION_MODE','')!='HYPERLIQUID_TESTNET_LIVE' or
                 os.environ.get('ALLOW_LIVE_ORDERS','').lower()!='true' or
-                os.environ.get('HL_NETWORK','testnet')!='testnet' or os.environ.get('HL_COMPETITION_MARKET','pas').lower()!='pas' or
+                os.environ.get('HL_NETWORK','testnet')!='testnet' or os.environ.get('HL_DEX','pas')!='pas' or os.environ.get('HL_COMPETITION_MARKET','pas').lower()!='pas' or
                 os.environ.get('TRADING_VENUE','HYPERLIQUID_TESTNET')!='HYPERLIQUID_TESTNET'):
             raise OrderRoutingBlocked('LIVE_RUNTIME_CONFIGURATION_REQUIRED')
 

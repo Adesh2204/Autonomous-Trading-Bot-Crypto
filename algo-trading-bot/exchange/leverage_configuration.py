@@ -103,6 +103,8 @@ class LeverageConfigurationTransport:
     before the SDK allocates a durable nonce and again before HTTP transmission.
     """
     def __init__(self, client, signer, team, nonces, approval, *, rates, readiness_guard):
+        from .par_retirement import reject_retired_par_write
+        reject_retired_par_write()
         from eth_account.signers.local import LocalAccount
         if type(approval) is not LeverageConfigurationApproval or not isinstance(signer, LocalAccount):
             raise ExchangeError('CONFIGURATION_APPROVAL_AND_API_SIGNER_REQUIRED')

@@ -1,51 +1,54 @@
 # Anchorium — Perpetual Alpha
 
-## Current Scored Phase target — PAS BTC only (18 October 2026)
+## Current model: PAS only, BTC and EWY
 
-The current competition build is separate from the historical PAR multi-market migration notes below. Those notes and their artifacts are not PAS readiness evidence.
+The current/future route supports **BTC and EWY only on PAS, Hyperliquid
+Testnet**. This is a narrowed subset of the announced PAS markets, not permission
+to add other assets. The client discovers and verifies the API DEX and both coin
+identifiers at startup. PAR is retired from production; old practice/fill records
+and audit evidence below remain history, not activation evidence.
 
-- Competition-facing market: \`pas\`. Hyperliquid Testnet API DEX and coin are resolved from current venue metadata at every startup; the production market registry must contain exactly one BTC instrument. Any ambiguous mapping, missing collateral mapping, or stale market metadata means \`SAFE_HALT\`. The implementation does not fall back to \`par\` or native BTC.
-- Network: Hyperliquid Testnet only. The collateral token is resolved from the live DEX and spot metadata; no \`USDPR\`/ \`USDP\` assumption is used to select collateral.
-- Strategy: the frozen baseline is retained. \`signal_brain.py\` and \`docs/strategy_freeze.json\` are not modified; BTC-only runtime filtering occurs in the input/venue layers.
-- Risk: one BTC position at 1x leverage, single candidate, fixed low per-trade risk and a maximum gross exposure of 25% of actual reported equity in the example profile. The competition caps of $10 million per BTC market and $50 million per DEX are hard upper bounds, not objectives.
-- Continuous operation: no exchange-session open, entry cutoff, or clock-triggered end-of-day liquidation. Existing account/position/order recovery and protective management must pass before new entries are allowed.
-- Scoring: 19 October 2026 12:00 UTC through 6 November 2026 12:00 UTC. New entries are rejected outside that half-open window. The owner loop records an auditable daily snapshot at 12:00 UTC; missing or unreconciled snapshots block new entries rather than substituting estimates.
-- The $100,000 value is a target and a paper-profile reference only. Live sizing and readiness use the account's reported equity, available margin, positions, orders, fills, fees and funding.
+Runtime metadata must identify **USDP** collateral. Both active assets must be
+present and valid. Unknown venues, ambiguous mappings, missing data, non-USDP
+collateral and unsupported assets fail closed; there is no PAR/native fallback.
+The frozen strategy is unchanged. Both assets are scanned, but only one candidate
+and one global position at 1x are allowed. The conservative profile caps gross
+exposure at 25% of actual account equity; $100,000 is only a reference, not assumed
+funding. BTC OI cannot exceed $10m, total PAS OI cannot exceed $50m, and exchange
+per-asset caps also apply, including pending non-reduce-only orders.
 
-### PAS BTC preflight
+### Offline review and read-only startup
 
-Install core dependencies and verify the frozen baseline:
+The existing entrypoint and profile filenames remain compatible; their scope is
+now BTC/EWY, not BTC alone:
 
-\`\`\`sh
+```sh
 python -m pip install -r algo-trading-bot/requirements.txt
 python scripts/check_strategy_freeze.py
-\`\`\`
+python scripts/run_pas_btc.py --output /tmp/pas-btc-ewy-preflight.json
+```
 
-Run the default read-only startup probe (it never loads the private key or sends orders):
+Preflight never loads a private key or submits an order. `BLOCKED` is expected:
+public data and offline tests do not certify live readiness. `SAFE_HALT` indicates
+a failed venue/data/account probe. Normal development remains `PAPER` with
+`ALLOW_LIVE_ORDERS=false`. No service is installed or enabled by this change.
 
-\`\`\`sh
-python scripts/run_pas_btc.py --output /tmp/pas-btc-preflight.json
-\`\`\`
+Future explicit live startup also requires an unexpired human approval, current
+fee-scale verification from **each active asset's universe metadata**, verified
+funded unified-account NAV and API wallet, enabled/certified protection, and a
+commit-bound certification report identifying both active coin mappings. A BTC-only
+certificate is invalid for BTC/EWY. Per-market controlled lifecycle, fills, exit,
+partial-fill, protection and restart checks are required for **both** assets.
+Existing disabled protection remains disabled. No certification artifact is
+provided, and this branch is **not live-ready**.
 
-The probe deliberately returns \`BLOCKED\` until live account reconciliation, API-wallet approval, controlled fill/exit tests, protective-order verification, restart recovery and supervisor tests are certified. \`SAFE_HALT\` means the read-only venue/data probe failed. It never prints wallet secrets.
+The scored entry window remains 19 October 2026 12:00 UTC through 6 November 2026
+12:00 UTC (end exclusive). Auditable 12:00 UTC snapshots must use fresh post-read
+clock checks and reconciled account truth; a failed/missed snapshot pauses entries.
 
-The live mode requires a separate operator invocation with \`--run-live --confirm-live-testnet\`, explicit Testnet environment settings, a manually verified and unexpired approval, matching current DEX fee-scale evidence, and a certification report for all 20 critical tests whose commit and PAS BTC mapping match the running source. The existing \`configs/reliability_policy.json\` keeps protection disabled by default; the live path refuses to start until a separately controlled protective-order policy is explicitly enabled and verified. No certification artifact is included in this branch, and this PR does not claim \`READY_FOR_SCORED_PHASE\`.
-
-The new offline PAS safety suite can be run with:
-
-\`\`\`sh
-cd algo-trading-bot
-python -m pytest -q test_pas_btc_competition.py
-cd ..
-python scripts/check_strategy_freeze.py
-\`\`\`
-
-These offline checks do not certify a funded team wallet or substitute for the controlled Testnet lifecycle and protection tests.
-
-
-This is Team Anchorium's isolated Hyperliquid testnet migration repository.
-The existing cloned directory is the project root; the original NSE repository
-is not used or modified by this project.
+Run the no-sign review suite using the CI command in
+[`.github/workflows/pas-btc-safety.yml`](.github/workflows/pas-btc-safety.yml).
+The detailed fix/review notes are in [PAS BTC/EWY review fixes](docs/pas_btc_ewy_review_fixes.md).
 
 ## Historical engineering audit — 4 October 2026 (superseded for the PAS BTC scored phase)
 

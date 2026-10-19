@@ -29,6 +29,12 @@ class LiveExecutionSession:
         self.competition_mode=bool(getattr(market.client,'competition_mode',False))
         self.primary_market=(market.client.api_market if self.competition_mode
             else market.client.venue.prefix+'BTC')
+        api_markets=getattr(market.client,'api_markets',None)
+        self.competition_markets=(tuple(sorted(api_markets.values())) if self.competition_mode and
+            isinstance(api_markets,dict) else (self.primary_market,))
+        if self.competition_mode and (self.primary_market not in self.competition_markets or
+                set(market.client.markets)!=set(self.competition_markets)):
+            raise ExchangeError('PAS_ASSET_MAPPING_UNVERIFIED')
         self.position_state=PositionStateJournal(self.journal, self.clock_ms, market=self.primary_market)
         self.managers=self.recovery.managers
         self.quotes={}
@@ -103,39 +109,42 @@ class LiveExecutionSession:
                 self.startup_recovery.state.value != 'READY'):
             self.execution.entries_paused = True
             return
-        symbol = self.position_state.market
         positions = self.recovery.state.positions
-        other = [name for name,p in positions.items() if p.quantity and name != symbol]
-        if other:
+        held_positions=[(name,p) for name,p in positions.items() if p.quantity]
+        unsupported=[name for name,_ in held_positions if name not in self.competition_markets]
+        if unsupported:
             self.execution.entries_paused = True
-            raise ExchangeError('UNEXPECTED_NON_BTC_POSITION')
-        held = positions.get(symbol)
-        if held is None or not held.quantity:
+            raise ExchangeError('UNEXPECTED_PAS_POSITION:'+','.join(sorted(unsupported)))
+        if len(held_positions)>1:
+            self.execution.entries_paused=True
+            raise ExchangeError('MULTIPLE_PAS_POSITIONS_VIOLATE_GLOBAL_LOCK')
+        if not held_positions:
             current = self.position_state.state
-            # A flat position with a still-open entry/exit/trigger order is not flat
-            # for execution purposes. Do not clear the state until authoritative
-            # order reconciliation confirms that every BTC order is resolved.
-            if current != PositionState.FLAT:
-                open_orders = self.recovery.account.get_frontend_open_orders()
-                if open_orders:
-                    self.execution.entries_paused = True
-                    self.journal.event('POSITION_STATE_WAITING_FOR_ORDER_RECONCILIATION',
-                        self.clock_ms(), symbol=symbol, open_order_count=len(open_orders))
-                    return
+            # A flat account with any unresolved entry/exit/trigger order is not
+            # flat for execution purposes. The account snapshot is scoped to PAS.
+            open_orders = self.recovery.account.get_frontend_open_orders()
+            if open_orders:
+                self.execution.entries_paused = True
+                self.journal.event('POSITION_STATE_WAITING_FOR_ORDER_RECONCILIATION',
+                    self.clock_ms(), markets=list(self.competition_markets),
+                    open_order_count=len(open_orders))
+                return
             target = (PositionState.FLAT if current in {PositionState.UNKNOWN, PositionState.FLAT,
                                                         PositionState.FLAT_RECONCILED}
                       else PositionState.FLAT_RECONCILED)
             if current != target:
-                self.position_state.transition(target, 'AUTHORITATIVE_BTC_FLAT_RECONCILIATION',
-                    evidence={'open_positions': 0, 'open_orders': 0, 'reconciliation_ready': True},
+                self.position_state.transition(target, 'AUTHORITATIVE_PAS_FLAT_RECONCILIATION',
+                    evidence={'open_positions': 0, 'open_orders': 0,
+                              'markets':list(self.competition_markets), 'reconciliation_ready': True},
                     reconciled=True)
             return
+        symbol,held=held_positions[0]
         protection = self.execution.protection
         status = protection.states.get(symbol,{}) if protection is not None else {}
         is_protected = (status.get('status') == 'ACTIVE' and
             str(status.get('actual_quantity')) == str(abs(held.quantity)) and
             status.get('position_side') == ('LONG' if held.quantity > 0 else 'SHORT'))
-        evidence = {'actual_quantity':str(held.quantity),
+        evidence = {'symbol':symbol,'actual_quantity':str(held.quantity),
                     'position_side':'LONG' if held.quantity > 0 else 'SHORT',
                     'protection_status':status.get('status'),
                     'protection_verified':bool(is_protected),
@@ -148,10 +157,10 @@ class LiveExecutionSession:
             if target == PositionState.MANAGING:
                 self.position_state.transition(PositionState.PROTECTED, 'STARTUP_PROTECTIVE_ORDER_VERIFIED',
                                                evidence=evidence, reconciled=True)
-                self.position_state.transition(PositionState.MANAGING, 'AUTHORITATIVE_BTC_POSITION_RECONCILIATION',
+                self.position_state.transition(PositionState.MANAGING, 'AUTHORITATIVE_PAS_POSITION_RECONCILIATION',
                                                evidence=evidence)
             else:
-                self.position_state.transition(target, 'AUTHORITATIVE_BTC_POSITION_RECONCILIATION',
+                self.position_state.transition(target, 'AUTHORITATIVE_PAS_POSITION_RECONCILIATION',
                                                evidence=evidence, reconciled=True)
         elif current in {PositionState.FLAT, PositionState.FLAT_RECONCILED,
                          PositionState.SIGNAL_DETECTED, PositionState.ORDER_SUBMITTED}:
@@ -236,7 +245,7 @@ class LiveExecutionSession:
                 if self.competition_mode and self.position_state.state in {PositionState.ORDER_SUBMITTED, PositionState.PARTIALLY_FILLED}:
                     next_state = PositionState.FILLED if filled_for_intent >= request.quantity else PositionState.PARTIALLY_FILLED
                     if self.position_state.state != next_state:
-                        self.position_state.transition(next_state, 'EXCHANGE_REPORTED_ENTRY_FILL', evidence={'fill_id':fill.identity,'requested_quantity':str(request.quantity),'observed_quantity_for_order':str(filled_for_intent)})
+                        self.position_state.transition(next_state, 'EXCHANGE_REPORTED_ENTRY_FILL', evidence={'symbol':fill.symbol,'fill_id':fill.identity,'requested_quantity':str(request.quantity),'observed_quantity_for_order':str(filled_for_intent)})
                 if entry is None or entry['candidate_id']!=intent['candidate']:
                     raise ExchangeError('ENTRY_MANAGEMENT_EVIDENCE_MISSING')
                 decision=SimpleNamespace(stop=Decimal(entry['stop']),target=Decimal(entry['target']))
@@ -256,7 +265,7 @@ class LiveExecutionSession:
                     position['tranches']=[dict(entry_price=float(average))]
                 self.position_candidates[fill.symbol]=intent['candidate']
                 if self.competition_mode and self.position_state.state in {PositionState.FILLED, PositionState.PARTIALLY_FILLED}:
-                    self.position_state.transition(PositionState.PROTECTION_PENDING, 'ENTRY_FILL_REQUIRES_PROTECTION', evidence={'fill_id':fill.identity,'actual_quantity':str(state.positions.get(fill.symbol).quantity if state.positions.get(fill.symbol) else 0)})
+                    self.position_state.transition(PositionState.PROTECTION_PENDING, 'ENTRY_FILL_REQUIRES_PROTECTION', evidence={'symbol':fill.symbol,'fill_id':fill.identity,'actual_quantity':str(state.positions.get(fill.symbol).quantity if state.positions.get(fill.symbol) else 0)})
                 self.direction_flip_intents.pop(fill.symbol,None)
             self.processed_fill_ids.add(fill.identity)
             self.funnel.event('TRADE_PNL' if request.reduce_only and not manager.has_open_position else
@@ -371,7 +380,7 @@ class LiveExecutionSession:
             raise ExchangeError('EXIT_CANDIDATE_LINK_REQUIRED')
         self.exit_reasons[symbol]=reason
         if self.competition_mode and self.position_state.state not in {PositionState.EXIT_REQUESTED, PositionState.EXIT_PARTIAL}:
-            self.position_state.transition(PositionState.EXIT_REQUESTED, str(reason), evidence={'actual_quantity':str(held.quantity),'reduce_only':True})
+            self.position_state.transition(PositionState.EXIT_REQUESTED, str(reason), evidence={'symbol':symbol,'actual_quantity':str(held.quantity),'reduce_only':True})
         self._persist(symbol)
         permission=RiskPermission(candidate,symbol,side,abs(held.quantity),self.clock_ms(),
                                   True,reason,price)
@@ -472,6 +481,11 @@ class LiveExecutionSession:
             self.funnel.permission_observation(candidate,manager,side)
             if not manager.permits(side):
                 continue
+            held_symbols={name for name,p in self.recovery.state.positions.items() if p.quantity}
+            if any(name != symbol for name in held_symbols):
+                self.funnel.event('ENTRY_REJECTED',candidate,
+                    dict(reason='GLOBAL_POSITION_LOCKED',active_markets=sorted(held_symbols)),self.clock_ms())
+                continue
             if manager.has_open_position and manager._open_position['side']!=side:
                 self.direction_flip_intents[symbol]=dict(candidate_id=candidate,from_side=manager._open_position['side'],
                     to_side=side,actual_flat_required=True)
@@ -486,6 +500,10 @@ class LiveExecutionSession:
                 self.funnel.event('ENTRY_REJECTED',candidate,dict(reason=reasons[0] if reasons else 'EXIT_RECONCILIATION_PENDING'),self.clock_ms())
                 continue
             self._account_barrier()
+            if self.execution.entries_paused:
+                self.funnel.event('ENTRY_REJECTED',candidate,
+                    dict(reason='GLOBAL_POSITION_OR_RECOVERY_LOCKED'),self.clock_ms())
+                continue
             quote=self.market.get_quote(symbol)
             self.quotes[symbol]=quote
             active=self.recovery.account._query('activeAssetData',coin=symbol)
@@ -506,7 +524,7 @@ class LiveExecutionSession:
             permission=RiskPermission.from_decision(decision,request,candidate,self.clock_ms(),
                 signal_timestamp_ms=signal['timestamp_ms'],setup_type=signal.get('signal_type'))
             if self.competition_mode:
-                self.position_state.transition(PositionState.SIGNAL_DETECTED, 'VALIDATED_BTC_SIGNAL', evidence={'candidate_id':candidate,'side':side,'signal_timestamp_ms':signal['timestamp_ms']})
+                self.position_state.transition(PositionState.SIGNAL_DETECTED, 'VALIDATED_PAS_SIGNAL', evidence={'symbol':symbol,'candidate_id':candidate,'side':side,'signal_timestamp_ms':signal['timestamp_ms']})
             self.pending_entries[symbol]=dict(candidate_id=candidate,stop=str(decision.stop),target=str(decision.target),
                 setup_type=str(signal.get('signal_type') or 'VWAP_BASELINE'),reference_vwap=str(signal['reference']),
                 atr=str(signal['atr']),signal_timestamp_ms=signal['timestamp_ms'])
@@ -515,7 +533,7 @@ class LiveExecutionSession:
                 self.funnel.event('EXECUTION_DECISION',candidate,{},self.clock_ms())
                 self.funnel.event('ENTRY_ORDER_ATTEMPTED',candidate,{},self.clock_ms())
                 if self.competition_mode:
-                    self.position_state.transition(PositionState.ORDER_SUBMITTED, 'ENTRY_ORDER_SUBMISSION_ATTEMPTED_FILL_MUST_BE_RECONCILED', evidence={'candidate_id':candidate,'quantity':str(decision.quantity),'side':side})
+                    self.position_state.transition(PositionState.ORDER_SUBMITTED, 'ENTRY_ORDER_SUBMISSION_ATTEMPTED_FILL_MUST_BE_RECONCILED', evidence={'symbol':symbol,'candidate_id':candidate,'quantity':str(decision.quantity),'side':side})
                 result=self.execution.submit(request,permission=permission)
                 self.breakers.order_result(result.state not in {OrderState.UNKNOWN,OrderState.REJECTED})
             except ExchangeError as exc:

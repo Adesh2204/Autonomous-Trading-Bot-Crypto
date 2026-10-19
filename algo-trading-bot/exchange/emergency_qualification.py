@@ -761,6 +761,8 @@ def realized(entries,exits,funding,p):
 
 def build_runtime(root,proposal,approval,*,test_receipt,delegation=None,nonce_owner=None,rate_owner=None):
     """Construct actual SDK only AFTER exact current approval and fresh read gates."""
+    from .par_retirement import reject_retired_par_write
+    reject_retired_par_write()
     from venue_config import require_paper_migration
     from strategy_freeze import verify_strategy_freeze
     from .paper_operations import active_source_hash

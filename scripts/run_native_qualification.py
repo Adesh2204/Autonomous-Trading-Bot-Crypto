@@ -17,6 +17,7 @@ sys.path.insert(0, str(ROOT/'algo-trading-bot'))
 os.environ['ANCHORIUM_PUBLIC_ONLY']='true'
 
 from exchange.base_exchange import ExchangeError
+from exchange.par_retirement import reject_retired_par_write
 from safety_errors import SafetyError
 from exchange.execution_journal import ExecutionJournal
 from exchange.execution_safety import ClockHealthMonitor, HyperliquidRateLimitManager
@@ -141,6 +142,7 @@ def main(argv=None):
     parser.add_argument('--approval',type=Path)
     parser.add_argument('--organizer-permission',type=Path,help='Original reviewed permission scoped to this supervised par test outside the published practice interval; grants no API-wallet authority')
     args=parser.parse_args(argv)
+    if args.mode=='execute': reject_retired_par_write()
     if args.mode=='execute' and (args.proposal is None or args.approval is None):
         parser.error('execute requires exact proposal and genuine human approval files')
     args.output.mkdir(parents=True,exist_ok=False)

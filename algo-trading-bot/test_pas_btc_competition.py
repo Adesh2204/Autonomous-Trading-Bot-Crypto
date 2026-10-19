@@ -24,6 +24,11 @@ def test_different_api_alias_requires_explicit_competition_metadata():
     assert resolve_competition_dex(dex)[:2] == ("runtime-x", 1)
 
 
+def test_retired_par_alias_is_rejected_even_with_explicit_pas_identity():
+    with pytest.raises(VenueMismatch, match="PAS_DEX_MAPPING_UNVERIFIED"):
+        resolve_competition_dex([None, {"name": "par", "competition_market": "pas"}])
+
+
 @pytest.mark.parametrize("dexes", [
     [],
     [None, {"name": "some-other-dex", "fullName": "unrelated"}],
@@ -53,21 +58,23 @@ def test_collateral_token_name_is_resolved_from_runtime_spot_metadata():
                                                 {"index": 7, "name": "USDP"}]})
 
 
-def test_market_registry_exposes_only_btc_even_when_dex_lists_other_markets():
+def test_market_registry_exposes_only_active_btc_ewy_even_when_dex_lists_others():
     client = HyperliquidClient(venue='pas', transport=lambda payload: {})
     client.api_dex = "pas"
     metadata = {
         "universe": [
             {"name": "BTC", "szDecimals": 4, "maxLeverage": 40},
             {"name": "ETH", "szDecimals": 4, "maxLeverage": 25},
+            {"name": "EWY", "szDecimals": 3, "maxLeverage": 10},
             {"name": "HYPE", "szDecimals": 2, "maxLeverage": 10},
         ],
         "marginTables": [],
         "collateralToken": 7,
     }
     specs = client._parse_specs(metadata, 271)
-    assert list(specs) == ["pas:BTC"]
+    assert set(specs) == {"pas:BTC", "pas:EWY"}
     assert specs["pas:BTC"].asset_id == 2_810_000
+    assert specs["pas:EWY"].asset_id == 2_810_002
 
 
 def test_scored_phase_window_is_utc_half_open():
@@ -129,9 +136,10 @@ def test_full_startup_resolves_runtime_api_coin_from_competition_dex_metadata():
             return {"universe": [
                 {"name": "BTC", "szDecimals": 4, "maxLeverage": 20},
                 {"name": "ETH", "szDecimals": 3, "maxLeverage": 10},
+                {"name": "EWY", "szDecimals": 2, "maxLeverage": 8},
             ], "marginTables": [], "collateralToken": 7}
         if query == "spotMeta":
-            return {"tokens": [{"index": 7, "name": "USDPR"}]}
+            return {"tokens": [{"index": 7, "name": "USDP"}]}
         raise AssertionError("unexpected query: " + query)
 
     client = HyperliquidClient(venue='pas', transport=transport)
@@ -139,7 +147,10 @@ def test_full_startup_resolves_runtime_api_coin_from_competition_dex_metadata():
     assert client.competition_market == "pas"
     assert client.api_dex == "runtime-x"
     assert client.api_market == "runtime-x:BTC"
-    assert set(client.markets) == {"runtime-x:BTC"}
+    assert set(client.markets) == {"runtime-x:BTC", "runtime-x:EWY"}
+    assert client.api_markets == {"BTC": "runtime-x:BTC", "EWY": "runtime-x:EWY"}
+    assert client.api_market == client.api_markets["BTC"]
+    assert client.market_mapping["collateral_token_name"] == "USDP"
     assert all(payload.get("dex") != "par" for payload in calls)
     assert client.market_mapping["verification"] == "VERIFIED_FROM_LIVE_PERP_DEX_AND_MARKET_METADATA"
 

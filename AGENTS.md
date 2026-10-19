@@ -1,25 +1,29 @@
 # Anchorium Perpetual Alpha migration
 
-## Current PAS BTC scored-phase directive (supersedes legacy PAR routing notes below)
+## Current directive: PAS-only, BTC and EWY (supersedes historical notes below)
 
-The active production target for the October 2026 Scored Phase is Hyperliquid Testnet,
-competition market \`pas\`, BTC only. Older references below to DEX \`par\`, ten-market
-universes, and all-PAR runtime validation describe historical work and must not be
-used to configure the active production route.
+The current/future engine is Hyperliquid Testnet PAS only, with exactly BTC and
+EWY active. These are a narrowed subset of the already announced PAS universe;
+other assets are deferred, not authorized for signals or orders. Discover the
+canonical API DEX and both coins at startup. Reject ambiguous identity, PAR or
+native production routing, missing active assets, and collateral other than
+runtime-verified USDP. There is no fallback venue or collateral.
 
-Resolve the internal API DEX and canonical BTC coin from current \`perpDexs\` and
-\`meta\`/asset-context metadata at every startup. The registry and strategy scanner
-must expose exactly that verified BTC instrument; never fallback to \`par:BTC\` or
-native BTC. Resolve collateral and deployer fee scale from current metadata. Use
-the $10,000,000 BTC and $50,000,000 DEX caps as hard maxima, with a materially lower
-internal risk budget. Keep the validated signal baseline and its freeze manifest
-unchanged.
+Keep exactly one global position across the two active assets at 1x, the frozen
+strategy, existing risk ceilings, the BTC $10m hard OI ceiling and DEX $50m ceiling.
+Use authoritative exchange caps for both symbols and reserve pending exposure.
+The scanner can inspect both assets but selects at most one candidate.
 
-The operator launcher defaults to read-only preflight. All actual exchange writes,
-including entries, exits and protective orders, remain blocked until the human
-operator separately verifies the funded team/API wallet, fee schedule, recovery,
-protective-order policy and every critical certification check. Do not claim
-\`READY_FOR_SCORED_PHASE\` from offline tests or public data alone.
+Preserve historical PAR practice/fill records and source evidence unchanged.
+Legacy PAR literals in historical documents, data and explicit offline fixtures
+are evidence, never a current production configuration. Legacy order/configuration
+commands must fail closed rather than silently retargeting old approvals to PAS.
+
+Default operation is read-only, PAPER and ALLOW_LIVE_ORDERS=false. Do not sign,
+place orders, alter an account, deploy, or claim live certification in this work.
+Future activation requires explicit current approval, funded unified-account and
+API-wallet verification, protection and recovery checks, and controlled
+certification covering BOTH BTC and EWY on the running commit.
 
 
 - Work only in this cloned repository. Keep the original NSE repository untouched.

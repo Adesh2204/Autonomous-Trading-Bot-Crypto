@@ -77,9 +77,15 @@ def verify_live_account_readiness(account, signer_address, *, clock_health, rate
     now = client.clock_ms()
     reasons = []
     expiry = collateral = mode = fees = budget = None
-    if client.competition_mode and (client.api_dex is None or client.api_market is None or
-            set(client.markets) != {client.api_market} or not client.api_market.endswith(':BTC')):
-        reasons.append('PAS_BTC_MARKET_MAPPING_UNVERIFIED')
+    if client.competition_mode:
+        api_markets = getattr(client, 'api_markets', None)
+        if (client.api_dex is None or not isinstance(api_markets, dict) or
+                set(api_markets) != {'BTC', 'EWY'} or
+                api_markets.get('BTC') != client.api_market or
+                any(not isinstance(symbol, str) or not symbol.endswith(':'+base)
+                    for base, symbol in api_markets.items()) or
+                set(client.markets) != set(api_markets.values())):
+            reasons.append('PAS_ASSET_MAPPING_UNVERIFIED')
     if not valid_address(account.team_address) or not valid_address(signer_address):
         reasons.append('TEAM_AND_API_WALLET_REQUIRED')
     elif account.team_address.lower() == signer_address.lower():
@@ -92,7 +98,7 @@ def verify_live_account_readiness(account, signer_address, *, clock_health, rate
                              collateral_token_name=client.collateral_token_name)
     try:
         mode = account._query('userAbstraction')
-        if mode != 'unifiedAccount' and not (getattr(client,'competition_mode',False) and mode=='disabled'):
+        if mode != 'unifiedAccount':
             reasons.append('UNIFIED_ACCOUNT_REQUIRED')
         agents = account._query('extraAgents')
         if not isinstance(agents, list):
@@ -118,7 +124,7 @@ def verify_live_account_readiness(account, signer_address, *, clock_health, rate
                 lifecycle='VERIFIED'
             with rate_limits.journal.transaction():
                 rate_limits.journal.db.execute('INSERT OR REPLACE INTO controls VALUES (?,?)',(lifecycle_key,lifecycle))
-        if mode == 'unifiedAccount' or getattr(client,'dex','par')=='pas' and mode=='disabled':
+        if mode == 'unifiedAccount':
             eq = account.get_equity()
             collateral = str(eq.collateral_balance)
             if eq.collateral_balance <= 0 or eq.reported_account_value <= 0:

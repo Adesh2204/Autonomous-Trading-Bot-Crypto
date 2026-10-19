@@ -103,10 +103,27 @@ class HyperliquidMarketData:
         if not getattr(self.client, 'competition_mode', False):
             return {row['name']: contexts[i] for i, row in enumerate(metadata['universe'])
                     if isinstance(row, dict) and row.get('name') in self.client.markets}
-        btc_contexts = {}
+        # PAS exposes a deliberately small strategy subset. Keep contexts for
+        # every selected asset so EWY is scanned and managed just like BTC;
+        # the OI total remains a DEX-wide safety calculation.
+        api_markets = getattr(self.client, 'api_markets', None)
+        if api_markets is None:
+            # Compatibility for older isolated BTC-only offline fixtures.
+            api_markets = {'BTC': self.client.api_market}
+        if (not isinstance(api_markets, dict) or set(api_markets) != {'BTC', 'EWY'}
+                or api_markets.get('BTC') != self.client.api_market
+                or set(self.client.markets) != set(api_markets.values())):
+            # Old fixtures that have not adopted the two-asset contract are
+            # allowed only as an offline compatibility path, never production.
+            legacy_fixture = (getattr(self.client, 'api_markets', None) is None
+                              and set(self.client.markets) == {self.client.api_market})
+            if not legacy_fixture:
+                raise ExchangeError('PAS_ASSET_MAPPING_UNVERIFIED')
+        selected_markets = set(api_markets.values())
+        contexts_by_symbol = {}
         dex_total_oi = decimal(0)
-        # Only BTC enters the signal/strategy path. The aggregate OI sum below
-        # is a safety calculation for the competition-wide DEX cap, not a scan.
+        # Only BTC and EWY enter the signal/strategy path. The aggregate OI sum
+        # below is a safety calculation for the whole DEX cap, not a scan.
         for i, row in enumerate(metadata['universe']):
             if not isinstance(row, dict) or not isinstance(row.get('name'), str) or not isinstance(contexts[i], dict):
                 raise ExchangeError('INVALID_ASSET_CONTEXTS')
@@ -118,16 +135,18 @@ class HyperliquidMarketData:
                 raise ExchangeError('DEX_OI_AGGREGATE_UNVERIFIABLE') from exc
             if not row.get('isDelisted'):
                 dex_total_oi += oi * oracle
-            if symbol == self.client.api_market:
-                if symbol in btc_contexts:
-                    raise ExchangeError('AMBIGUOUS_BTC_ASSET_CONTEXT')
-                btc_contexts[symbol] = contexts[i]
-        if set(btc_contexts) != {self.client.api_market}:
-            raise ExchangeError('PAS_BTC_ASSET_CONTEXT_UNAVAILABLE')
+            if symbol in selected_markets:
+                if symbol in contexts_by_symbol:
+                    raise ExchangeError('AMBIGUOUS_PAS_ASSET_CONTEXT')
+                if row.get('isDelisted'):
+                    raise ExchangeError('PAS_SELECTED_ASSET_DELISTED')
+                contexts_by_symbol[symbol] = contexts[i]
+        if set(contexts_by_symbol) != selected_markets:
+            raise ExchangeError('PAS_SELECTED_ASSET_CONTEXT_UNAVAILABLE')
         self.client.dex_total_oi_notional = dex_total_oi
         self.client.dex_oi_observed_ms = self.client.clock_ms()
         self.client.dex_oi_market_count = len(metadata['universe'])
-        return btc_contexts
+        return contexts_by_symbol
 
     def get_quote(self, symbol):
         self.client.market(symbol)
@@ -725,3 +744,12 @@ class ParMarketDataEngine:
                     self._recovery_worker.join(timeout=12)
                     if self._recovery_worker.is_alive():
                         raise ExchangeError('MARKET_RECOVERY_WORKER_DID_NOT_STOP')
+
+
+class PasMarketDataEngine(ParMarketDataEngine):
+    """PAS market engine name for the two-asset competition runtime.
+
+    The implementation is venue-generic and subscribes exactly to the symbols
+    supplied by the verified client registry. Keep ``ParMarketDataEngine`` as a
+    backwards-compatible import for isolated historical fixtures.
+    """

@@ -17,7 +17,7 @@ from .sdk_transport import OfficialSDKTransport
 from .live_account_stream import LiveAccountStream
 from .perpetual_economics import FeeSchedule
 from .position_protection import ExchangeProtectionManager,ProtectionPolicy
-from .hyperliquid_market_data import ParMarketDataEngine
+from .hyperliquid_market_data import PasMarketDataEngine
 from .stream_first import StreamFirstMarketData
 import threading
 import time
@@ -60,7 +60,7 @@ class LiveRuntime:
             except Exception as exc:
                 self.session.execution.entries_paused=True
                 self.journal.event('MARKET_STREAM_FAILED',self.session.clock_ms(),error_type=type(exc).__name__)
-        self.market_thread=threading.Thread(target=run,name='pas-btc-public-stream',daemon=True)
+        self.market_thread=threading.Thread(target=run,name='pas-btc-ewy-public-stream',daemon=True)
         self.market_thread.start()
 
     def deactivate(self):
@@ -143,6 +143,36 @@ class LiveRuntime:
         self.journal.close()
 
 
+def verified_fee_scale(client, manually_verified):
+    """Use active asset metadata, never the perpDexs identity object.
+
+    A shared FeeSchedule is safe only when both active markets report exactly
+    the manually verified scale. Missing, duplicate, unequal or stale metadata
+    is a startup blocker, not a reason to guess fees.
+    """
+    from .base_exchange import decimal
+    from .competition_market import canonical_api_market
+    now = client.clock_ms()
+    if (not client.ready or client.metadata_timestamp_ms is None or
+            not 0 <= now-client.metadata_timestamp_ms <= 60000):
+        raise ExchangeError('PAS_FEE_METADATA_NOT_CURRENT')
+    active = set(client.markets)
+    scales = {}
+    for row in (client.metadata or {}).get('universe', []):
+        symbol = canonical_api_market(client.api_dex, row.get('name'))
+        if symbol not in active:
+            continue
+        if symbol in scales or row.get('deployerFeeScale') is None:
+            raise ExchangeError('PAS_DEPLOYER_FEE_SCALE_UNAVAILABLE')
+        scales[symbol] = decimal(row['deployerFeeScale'], nonnegative=True)
+    if set(scales) != active or len(set(scales.values())) != 1:
+        raise ExchangeError('PAS_ACTIVE_MARKET_FEE_SCALES_MISMATCH')
+    scale = next(iter(scales.values()))
+    if manually_verified is None or decimal(manually_verified, nonnegative=True) != scale:
+        raise ExchangeError('PAS_DEPLOYER_FEE_SCALE_MANUAL_VERIFICATION_MISMATCH')
+    return scale
+
+
 def build_live_runtime(*,team_address,approval,session_id,initial_start_ms,risk_policy,
                        scanner_policy,state_directory,fee_scale_verified=None,rate_policy=None,
                        protection_policy=None,clock_policy=None,schedule=None):
@@ -185,11 +215,11 @@ def build_live_runtime(*,team_address,approval,session_id,initial_start_ms,risk_
     try:
         nonces=NonceManager(root/'nonces.sqlite',signer.address,journal=journal)
         rates=HyperliquidRateLimitManager(journal,policy=rate_policy,signer_address=signer.address)
-        client=HyperliquidClient(rate_limits=rates)
+        client=HyperliquidClient(rate_limits=rates,venue='pas')
         client.startup()
         account=HyperliquidAccount(client,team_address)
         public_market=HyperliquidMarketData(client)
-        market_stream=ParMarketDataEngine(public_market,include_trades=True)
+        market_stream=PasMarketDataEngine(public_market,include_trades=True)
         market=StreamFirstMarketData(client,market_stream)
         clock=ClockHealthMonitor(journal=journal,**(clock_policy or {}))
         recovery=LiveAccountRecovery(account,journal,initial_start_ms=initial_start_ms)
@@ -198,6 +228,7 @@ def build_live_runtime(*,team_address,approval,session_id,initial_start_ms,risk_
             reconciliation_ready=lambda:recovery.last_report.ready,
             feed_ready=lambda:bool(holder.get('stream') and holder['stream'].healthy),
             policy_leverage=risk_policy.leverage)
+        venue_scale=verified_fee_scale(client,fee_scale_verified)
         transport=OfficialSDKTransport(client,signer,team_address,nonces,authorization,rate_limits=rates)
         executor=HyperliquidExecution(client,transport=transport,account=account,journal=journal,
             context_provider=provider,validator=HyperliquidOrderValidator(client,policy_leverage=risk_policy.leverage),
@@ -206,12 +237,7 @@ def build_live_runtime(*,team_address,approval,session_id,initial_start_ms,risk_
         base_fees=account._query('userFees')
         from .base_exchange import decimal
         from .competition_market import COMPETITION_MARKET
-        raw_scale=(client.dex_identity or {}).get('deployerFeeScale')
-        if raw_scale is None:
-            raise ExchangeError('PAS_DEPLOYER_FEE_SCALE_UNAVAILABLE')
-        venue_scale=decimal(raw_scale,nonnegative=True)
-        if fee_scale_verified is None or decimal(fee_scale_verified,nonnegative=True)!=venue_scale:
-            raise ExchangeError('PAS_DEPLOYER_FEE_SCALE_MANUAL_VERIFICATION_MISMATCH')
+        venue_scale=verified_fee_scale(client,fee_scale_verified)
         multiplier=Decimal(1)+venue_scale
         fees=FeeSchedule(decimal(base_fees['userAddRate'],nonnegative=True)*multiplier,
                          decimal(base_fees['userCrossRate'],nonnegative=True)*multiplier,

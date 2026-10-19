@@ -1,4 +1,4 @@
-"""Durable, exchange-truth-driven BTC position lifecycle state machine."""
+"""Durable, exchange-truth-driven lifecycle for the single PAS position."""
 from enum import Enum
 
 from .base_exchange import ExchangeError
@@ -50,7 +50,7 @@ _ALLOWED = {
 
 
 class PositionStateJournal:
-    """Single-session transition log; restart begins UNKNOWN until REST reconciliation.
+    """Single global-position transition log; restart begins UNKNOWN until REST reconciliation.
 
     Previous journal state is retained for audit, but never treated as current
     exchange truth after a restart.
@@ -58,8 +58,9 @@ class PositionStateJournal:
     PREFIX = "btc_position_state:"
 
     def __init__(self, journal, clock_ms, *, market):
-        if not isinstance(market, str) or market.count(":") != 1 or not market.endswith(":BTC"):
-            raise ExchangeError("PAS_BTC_POSITION_STATE_REQUIRED")
+        if (not isinstance(market, str) or market.count(":") != 1 or
+                market.rsplit(":", 1)[1] not in {"BTC", "EWY"}):
+            raise ExchangeError("PAS_SELECTED_POSITION_STATE_REQUIRED")
         self.journal = journal
         self.clock_ms = clock_ms
         self.market = market

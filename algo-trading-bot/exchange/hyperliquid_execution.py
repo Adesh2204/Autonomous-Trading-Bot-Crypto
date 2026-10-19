@@ -191,6 +191,39 @@ class HyperliquidExecution:
                 readiness=SimpleNamespace(account_ready=bool(report and report.ready)),
                 account_ms=state.last_window[1],reconciled=bool(report and report.ready)),self.client.clock_ms())
 
+    def _context_with_journal_pending_entry(self, context):
+        """Fail closed if a durable unresolved entry has no open-order readback.
+
+        Journal intents are a global one-position reservation, not an additional
+        numerical OI reservation: when oid/cloid is present in the fresh provider
+        rows the validator counts that exchange order once from open_orders.
+        """
+        try:
+            from .single_position_guard import unresolved
+            visible_ids={str(order[name]) for order in context.open_orders
+                         for name in ('oid','cloid')
+                         if order.get(name) is not None and str(order[name])}
+            journal_only=False
+            for row in self.journal.intents():
+                if not unresolved(row):
+                    continue
+                request=json.loads(row.get('request') or '')
+                if not isinstance(request,dict):
+                    journal_only=True
+                    break
+                if request.get('reduce_only') is True:
+                    continue
+                intent_ids={str(row[name]) for name in ('oid','cloid')
+                            if row.get(name) is not None and str(row[name])}
+                if not intent_ids or intent_ids.isdisjoint(visible_ids):
+                    journal_only=True
+                    break
+        except Exception:
+            # Corrupt/unavailable journal or provider evidence cannot establish
+            # that every pending entry is represented in the authoritative view.
+            journal_only=True
+        return replace(context,journal_only_entry_pending=journal_only)
+
     def _validated(self, request, permission, *, critical=False, trigger=False, modify_oid=None,
                    full_position_close=False):
         if full_position_close and (trigger or modify_oid is not None):
@@ -211,6 +244,7 @@ class HyperliquidExecution:
                 bool(self.recovery.last_report.ready) and
                 {s:p.quantity for s,p in state.positions.items()}=={s:p.quantity for s,p in context.positions.items()} and
                 set(state.orders)=={str(o['oid']) for o in context.open_orders})
+        context=self._context_with_journal_pending_entry(context)
         # Default is identity. Only the versioned qualification executor opts
         # into a bounded request selected from this mandatory fresh context.
         request,permission=self._prepare_context_request(request,permission,context)

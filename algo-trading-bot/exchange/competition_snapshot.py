@@ -60,8 +60,12 @@ class CompetitionSnapshotRecorder:
         try:
             client = self.session.market.client
             api_market = client.api_market
+            api_markets=getattr(client,'api_markets',None)
             if (client.api_dex is None or api_market is None or
-                    set(client.markets) != {api_market} or not api_market.endswith(":BTC")):
+                    not isinstance(api_markets,dict) or set(api_markets)!={'BTC','EWY'} or
+                    api_markets.get('BTC')!=api_market or
+                    set(client.markets)!=set(api_markets.values()) or
+                    any(not symbol.endswith(':'+base) for base,symbol in api_markets.items())):
                 raise ExchangeError("PAS_BTC_MAPPING_UNVERIFIED")
 
             # Snapshot data comes from a fresh authoritative recovery pass, not
@@ -73,17 +77,29 @@ class CompetitionSnapshotRecorder:
             if state.equity is None:
                 raise ExchangeError("ACCOUNT_EQUITY_UNAVAILABLE")
             positions = dict(state.positions)
-            if any(symbol != api_market for symbol in positions):
-                raise ExchangeError("UNEXPECTED_NON_BTC_POSITION")
-            quote = self.session.market.get_quote(api_market)
-            if (quote.symbol != api_market or not 0 <= now_ms - quote.timestamp_ms <= 5000 or
-                    quote.mark_timestamp_ms is None or not 0 <= now_ms - quote.mark_timestamp_ms <= 60000):
-                raise ExchangeError("SNAPSHOT_MARKET_DATA_STALE")
-
+            if any(symbol not in api_markets.values() for symbol in positions):
+                raise ExchangeError("UNEXPECTED_INACTIVE_POSITION")
+            if len(positions) > 1:
+                raise ExchangeError("SINGLE_GLOBAL_POSITION_REQUIRED")
+            quotes = {symbol: self.session.market.get_quote(symbol)
+                      for symbol in api_markets.values()}
+            # Anchor freshness AFTER the reads, never before a fresh response.
+            quote_reference_ms = self.session.clock_ms()
+            completed = datetime.fromtimestamp(quote_reference_ms / 1000, timezone.utc)
+            if completed.date() != now.date() or completed.hour != 12 or completed.minute != 0:
+                raise ExchangeError("SNAPSHOT_WINDOW_EXPIRED_DURING_READS")
+            for symbol, observed in quotes.items():
+                if (observed.symbol != symbol or
+                        not 0 <= quote_reference_ms - observed.timestamp_ms <= 5000 or
+                        observed.mark_timestamp_ms is None or
+                        not 0 <= quote_reference_ms - observed.mark_timestamp_ms <= 60000):
+                    raise ExchangeError("SNAPSHOT_MARKET_DATA_STALE")
+            quote = quotes[api_market]  # historical BTC fields remain compatible
             position = positions.get(api_market)
             equity = decimal(state.equity.reported_account_value, nonnegative=True)
             unrealized = sum((p.unrealized_pnl for p in positions.values()), Decimal(0))
-            exposure = abs(position.quantity) * quote.mark if position else Decimal(0)
+            exposure = sum((abs(p.quantity) * decimal(quotes[symbol].mark, positive=True)
+                            for symbol, p in positions.items()), Decimal(0))
             fills = list(state.fills.values())
             funding_events = list(state.funding.values())
             closed_pnl = [f.closed_pnl for f in fills]
@@ -112,10 +128,14 @@ class CompetitionSnapshotRecorder:
             snapshot = {
                 "status": "RECORDED",
                 "scheduled_snapshot_utc": now.replace(minute=0, second=0, microsecond=0).isoformat(),
-                "observed_at_utc": now.isoformat(),
+                "observed_at_utc": datetime.fromtimestamp(quote_reference_ms / 1000, timezone.utc).isoformat(),
                 "competition_market": COMPETITION_MARKET,
                 "api_dex": client.api_dex,
                 "api_market": api_market,
+                "api_markets": dict(api_markets),
+                "active_positions": {symbol: {"quantity": p.quantity, "unrealized_pnl": p.unrealized_pnl}
+                                     for symbol, p in positions.items()},
+                "mark_prices": {symbol: q.mark for symbol, q in quotes.items()},
                 "collateral_token": client.collateral_token_name,
                 "equity": equity,
                 "btc_position": ({
@@ -143,7 +163,7 @@ class CompetitionSnapshotRecorder:
             self.journal.control(key, snapshot)
             history.append(snapshot)
             self.journal.control("competition_daily_snapshot_history", history[-60:])
-            self.journal.event("COMPETITION_DAILY_SNAPSHOT", now_ms, **snapshot)
+            self.journal.event("COMPETITION_DAILY_SNAPSHOT", quote_reference_ms, **snapshot)
             return snapshot
         except Exception as exc:
             return self._skip(day, now_ms, "SNAPSHOT_BLOCKED:" + type(exc).__name__)

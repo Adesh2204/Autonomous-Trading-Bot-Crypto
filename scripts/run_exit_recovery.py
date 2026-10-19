@@ -3,6 +3,7 @@ import argparse,json,sys
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'algo-trading-bot'))
 from exchange.exit_recovery import RecoveryMandate,RecoveryApproval,prepare,execute
+from exchange.par_retirement import reject_retired_par_write
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
@@ -11,6 +12,7 @@ def main():
     p.add_argument('--immediate-loss',action='store_true',help='Prepare a separate explicit bounded-loss close mandate.')
     p.add_argument('--full-day',action='store_true',help='Prepare the separate 15 October profit-only session ending 23:59 IST.')
     a=p.parse_args()
+    if a.execute: reject_retired_par_write()
     if a.execute:
         if a.immediate_loss or a.full_day:p.error('Execution mode comes only from the exact accepted mandate.')
         if not a.mandate or not a.approval:p.error('Exact mandate and genuine new human approval required.')

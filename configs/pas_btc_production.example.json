@@ -1,7 +1,6 @@
 {
-  "description": "Conservative single-market risk profile for PAS BTC. starting_equity_usd is a target/reference only; runtime equity is always read from the account.",
+  "description": "PAS-only BTC/EWY subset of the announced PAS universe; one global position at 1x. Reference equity is not sizing equity.",
   "competition_market": "pas",
-  "base_asset": "BTC",
   "network": "testnet",
   "target_starting_equity_usd": "100000",
   "risk": {
@@ -48,5 +47,9 @@
     "api_wallet_must_be_distinct_and_approved": true,
     "protection_must_be_enabled_and_verified": true,
     "requires_successful_critical_test_report": true
-  }
+  },
+  "base_assets": [
+    "BTC",
+    "EWY"
+  ]
 }

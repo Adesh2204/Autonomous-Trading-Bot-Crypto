@@ -1,4 +1,4 @@
-"""Public testnet /info transport and mandatory par venue discovery.
+"""Public Testnet /info transport with PAS production discovery and offline PAR fixtures.
 
 No private keys, signing SDK, or /exchange HTTP transport exists in this module.
 """
@@ -11,7 +11,9 @@ from contextlib import contextmanager
 
 from .base_exchange import ExchangeError, MarketSpec, VenueMismatch
 from .venue_profiles import venue_profile
-from .competition_market import (COMPETITION_MARKET, COMPETITION_BASE_ASSET, canonical_api_market, resolve_competition_dex, resolve_collateral_token)
+from .competition_market import (COMPETITION_MARKET, COMPETITION_BASE_ASSET,
+    COMPETITION_ACTIVE_BASE_ASSETS, COMPETITION_COLLATERAL, canonical_api_market,
+    resolve_competition_dex, resolve_collateral_token)
 
 TESTNET_API_URL = 'https://api.hyperliquid-testnet.xyz'
 TESTNET_WS_URL = 'wss://api.hyperliquid-testnet.xyz/ws'
@@ -172,26 +174,34 @@ class RequestsInfoTransport:
             else:self.session.close()
 
 class HyperliquidClient:
-    def __init__(self, transport=None, *, base_url=TESTNET_API_URL, clock_ms=None, rate_limits=None, candle_audit=None, progress=None, venue='par'):
+    def __init__(self, transport=None, *, base_url=TESTNET_API_URL, clock_ms=None, rate_limits=None, candle_audit=None, progress=None, venue='pas'):
         if base_url != TESTNET_API_URL:
             raise VenueMismatch('TESTNET_ENDPOINT_REQUIRED')
+        self.base_url = base_url
         self.venue = venue_profile(venue)
+        # Explicitly injected offline callables preserve historical PAR reads;
+        # the real HTTP transport is never a legacy-route escape hatch.
+        if self.venue.dex != 'pas' and (transport is None or isinstance(transport, RequestsInfoTransport)):
+            raise VenueMismatch('PRODUCTION_PAS_ONLY')
+        self.legacy_offline_read_only = self.venue.dex == 'par'
         self.dex = self.venue.dex
         self.collateral = self.venue.collateral
         self.venue_identity = self.venue.identity
         self.expected_markets = self.venue.markets
-        # PAS is an explicit competition mode; its API DEX alias is discovered
-        # from live metadata. The default/profile path remains available for the
-        # existing isolated PAR/native qualification workflows.
-        self.competition_mode = venue == 'pas'
+        # PAS is the only default/current engine route; its API DEX alias is
+        # discovered from current metadata. PAR is accepted only for explicitly
+        # injected offline, read-only historical fixtures.
+        self.competition_mode = self.venue.dex == 'pas'
         self.competition_market = COMPETITION_MARKET if self.competition_mode else self.dex
         self.api_dex = None if self.competition_mode else self.dex
         self.api_market = None
+        self.api_markets = {}
         self.collateral_token_name = None if self.competition_mode else self.collateral
         self.market_mapping = {
             "competition_market": self.competition_market,
             "api_dex": self.api_dex,
             "api_market": None,
+            "api_markets": {},
             "collateral_token_name": self.collateral_token_name,
             "verification": "UNVERIFIED" if self.competition_mode else "EXPLICIT_VENUE_PROFILE",
         }
@@ -287,8 +297,8 @@ class HyperliquidClient:
 
     def _validate_coin(self, symbol):
         if self.competition_mode:
-            if not isinstance(symbol, str) or self.api_market is None or symbol != self.api_market:
-                raise VenueMismatch('PAS_BTC_MARKET_REQUIRED')
+            if not isinstance(symbol, str) or symbol not in set(self.api_markets.values()):
+                raise VenueMismatch('PAS_ACTIVE_MARKET_REQUIRED')
         elif not isinstance(symbol, str) or not symbol.startswith(self.venue.prefix):
             raise VenueMismatch('EXPECTED_'+self.dex.upper()+'_MARKET_REQUIRED')
         self.market(symbol)
@@ -296,6 +306,7 @@ class HyperliquidClient:
     def invalidate(self):
         self.ready = False
         self.markets = MappingProxyType({})
+        self.api_markets = {}
         self.dex_index = None
         self.collateral_token_id = None
         self.api_dex = None if self.competition_mode else self.dex
@@ -305,6 +316,7 @@ class HyperliquidClient:
             "competition_market": self.competition_market,
             "api_dex": self.api_dex,
             "api_market": None,
+            "api_markets": {},
             "collateral_token_name": self.collateral_token_name,
             "verification": "UNVERIFIED" if self.competition_mode else "EXPLICIT_VENUE_PROFILE",
         }
@@ -375,7 +387,7 @@ class HyperliquidClient:
             tables = {table_id: table['marginTiers'] for table_id, table in metadata.get('marginTables', [])}
         except (TypeError, KeyError, ValueError) as exc:
             raise VenueMismatch('INVALID_MARGIN_TABLES') from exc
-        btc_found = False
+        active_found = set()
         for index, row in enumerate(metadata['universe']):
             if not isinstance(row, dict) or not isinstance(row.get('name'), str):
                 raise VenueMismatch('INVALID_PAS_METADATA')
@@ -384,12 +396,12 @@ class HyperliquidClient:
                 raise VenueMismatch('DUPLICATE_MARKET_METADATA')
             seen.add(name)
             base = name.split(':', 1)[1]
-            if base != COMPETITION_BASE_ASSET:
-                # Non-BTC metadata is never admitted to the production market registry.
+            if base not in COMPETITION_ACTIVE_BASE_ASSETS:
+                # Approved-but-inactive and unapproved metadata stay out of registry.
                 continue
-            btc_found = True
+            active_found.add(base)
             if row.get('isDelisted'):
-                raise VenueMismatch('PAS_BTC_DELISTED')
+                raise VenueMismatch('PAS_ACTIVE_MARKET_DELISTED:'+base)
             try:
                 table_id = row.get('marginTableId')
                 if table_id is not None and (type(table_id) is not int or table_id < 1):
@@ -400,9 +412,9 @@ class HyperliquidClient:
                 result[name] = MarketSpec(name, row['szDecimals'], row['maxLeverage'],
                     100000 + 10000 * dex_index + index, tiers)
             except (KeyError, TypeError, ValueError) as exc:
-                raise VenueMismatch('INVALID_PAS_BTC_MARKET_SPEC') from exc
-        if not btc_found or len(result) != 1:
-            raise VenueMismatch('PAS_BTC_MAPPING_UNVERIFIED')
+                raise VenueMismatch('INVALID_PAS_ACTIVE_MARKET_SPEC:'+base) from exc
+        if active_found != set(COMPETITION_ACTIVE_BASE_ASSETS) or len(result) != len(COMPETITION_ACTIVE_BASE_ASSETS):
+            raise VenueMismatch('PAS_ACTIVE_MARKET_MAPPING_UNVERIFIED')
         return result
 
 
@@ -430,16 +442,6 @@ class HyperliquidClient:
         self.dex_index = matches[0]
         self.collateral_token_id = metadata.get('collateralToken')
         self.discovery = deepcopy(dexes[matches[0]])
-        if self.dex == 'pas':
-            tokens = self.post_info('spotMeta')
-            token = self.collateral_token_id
-            if (type(token) is not int or token < 0 or not isinstance(tokens,dict)
-                    or not isinstance(tokens.get('tokens'),list)):
-                raise VenueMismatch('PAS_COLLATERAL_METADATA_REQUIRED')
-            matching = [x for x in tokens['tokens'] if x.get('index') == token]
-            named = [x for x in tokens['tokens'] if x.get('name') == self.collateral]
-            if len(matching) != 1 or len(named) != 1 or matching[0] != named[0]:
-                raise VenueMismatch('PAS_USDP_COLLATERAL_IDENTITY_MISMATCH')
         self.markets = MappingProxyType(specifications)
         self.metadata = deepcopy(metadata)
         self.metadata_timestamp_ms = self.clock_ms()
@@ -456,12 +458,15 @@ class HyperliquidClient:
         self.dex_identity = identity
         metadata = self.post_info('meta', dex=api_dex)
         specifications = self._parse_specs(metadata, dex_index)
-        self.api_market = next(iter(specifications))
+        self.api_markets = {name.split(':', 1)[1]: name for name in specifications}
+        if set(self.api_markets) != set(COMPETITION_ACTIVE_BASE_ASSETS):
+            raise VenueMismatch('PAS_ACTIVE_MARKET_MAPPING_UNVERIFIED')
+        self.api_market = self.api_markets[COMPETITION_BASE_ASSET]
         self.collateral_token_id = metadata.get('collateralToken')
         spot_metadata = self.post_info('spotMeta')
         self.collateral_token_name = resolve_collateral_token(self.collateral_token_id, spot_metadata)
-        if not isinstance(self.collateral_token_name, str) or not self.collateral_token_name:
-            raise VenueMismatch('PAS_COLLATERAL_MAPPING_UNVERIFIED')
+        if self.collateral_token_name != COMPETITION_COLLATERAL:
+            raise VenueMismatch('PAS_USDP_COLLATERAL_REQUIRED')
         self.markets = MappingProxyType(specifications)
         self.metadata = self._canonical_metadata(metadata, api_dex)
         self.metadata_timestamp_ms = self.clock_ms()
@@ -469,6 +474,7 @@ class HyperliquidClient:
             "competition_market": self.competition_market,
             "api_dex": self.api_dex,
             "api_market": self.api_market,
+            "api_markets": dict(self.api_markets),
             "collateral_token_name": self.collateral_token_name,
             "metadata_timestamp_ms": self.metadata_timestamp_ms,
             "verification": "VERIFIED_FROM_LIVE_PERP_DEX_AND_MARKET_METADATA",
@@ -483,12 +489,12 @@ class HyperliquidClient:
     def market(self, symbol):
         if not self.ready:
             raise VenueMismatch('PAS_STARTUP_CHECK_REQUIRED' if self.competition_mode else self.dex.upper()+'_STARTUP_CHECK_REQUIRED')
-        if self.competition_mode and symbol != self.api_market:
-            raise VenueMismatch('PAS_BTC_MARKET_REQUIRED')
+        if self.competition_mode and symbol not in set(self.api_markets.values()):
+            raise VenueMismatch('PAS_ACTIVE_MARKET_REQUIRED')
         try:
             return self.markets[symbol]
         except KeyError as exc:
-            raise VenueMismatch('PAS_BTC_MARKET_REQUIRED' if self.competition_mode else 'EXPECTED_'+self.dex.upper()+'_MARKET_REQUIRED') from exc
+            raise VenueMismatch('PAS_ACTIVE_MARKET_REQUIRED' if self.competition_mode else 'EXPECTED_'+self.dex.upper()+'_MARKET_REQUIRED') from exc
 
     def validate_metadata(self, metadata):
         if not self.ready:
@@ -500,7 +506,7 @@ class HyperliquidClient:
             if self.competition_mode:
                 tokens = self.post_info('spotMeta')
                 token_name = resolve_collateral_token(self.collateral_token_id, tokens)
-                if token_name != self.collateral_token_name:
+                if token_name != COMPETITION_COLLATERAL or token_name != self.collateral_token_name:
                     raise VenueMismatch('PAS_COLLATERAL_MAPPING_CHANGED_RESTART_REQUIRED')
         except ExchangeError:
             self.invalidate()

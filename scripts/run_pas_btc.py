@@ -1,4 +1,4 @@
-"""Fail-closed PAS BTC production launcher.
+"""Fail-closed PAS BTC/EWY production launcher.
 
 Default mode is read-only. Explicit Testnet order submission requires a current
 20-gate certification report, an operator approval, account/API-wallet checks,
@@ -26,19 +26,21 @@ from exchange.hyperliquid_market_data import HyperliquidMarketData
 from exchange.hyperliquid_account import HyperliquidAccount
 from exchange.market_health import validate_history
 from exchange.live_readiness import valid_address
+from exchange.execution_safety import HumanLiveApproval
+from exchange.reliability_policy import load_reliability_policy
 from market_regime_scanner import ScannerPolicy
 from risk.models import RiskPolicy
 from strategy_freeze import verify_strategy_freeze
 
 
 CRITICAL_TESTS = (
-    "static_import", "configuration", "pas_btc_discovery", "account_read_only",
-    "api_wallet", "btc_market_data", "websocket", "rest_fallback",
-    "btc_order_validation", "controlled_testnet_order_lifecycle",
+    "static_import", "configuration", "pas_btc_ewy_discovery", "account_read_only",
+    "api_wallet", "btc_ewy_market_data", "websocket", "rest_fallback",
+    "btc_ewy_order_validation", "controlled_testnet_order_lifecycle",
     "actual_fill_verification", "protection_verification", "exit_verification",
     "partial_fill_handling", "restart_recovery", "account_reconciliation",
     "funding_accounting", "snapshot_utc_calculation", "supervisor_failure_recovery",
-    "full_autonomous_btc_dry_run",
+    "full_autonomous_btc_ewy_dry_run",
 )
 
 
@@ -59,7 +61,7 @@ def load_profile(path):
     except (OSError, ValueError) as exc:
         raise ExchangeError("PAS_BTC_PROFILE_UNAVAILABLE") from exc
     if (not isinstance(profile, dict) or profile.get("competition_market") != COMPETITION_MARKET or
-            profile.get("base_asset") != "BTC" or profile.get("network") != "testnet"):
+            profile.get("base_assets") != ["BTC", "EWY"] or profile.get("network") != "testnet"):
         raise ExchangeError("PAS_BTC_PROFILE_IDENTITY_INVALID")
     if set(profile.get("risk", {})) != set(RiskPolicy.__dataclass_fields__):
         raise ExchangeError("PAS_BTC_RISK_POLICY_SCHEMA_INVALID")
@@ -104,7 +106,7 @@ def load_profile(path):
         raise ExchangeError("PAS_BTC_COMPETITION_OI_CAPS_INVALID")
     return profile, risk, scanner
 
-def verify_certification(path, api_dex, api_market):
+def verify_certification(path, api_dex, api_markets):
     if not path or not path.is_file():
         raise ExchangeError("CRITICAL_CERTIFICATION_REPORT_REQUIRED")
     try:
@@ -118,11 +120,44 @@ def verify_certification(path, api_dex, api_market):
     checks = evidence.get("checks")
     if (evidence.get("status") != "READY_FOR_SCORED_PHASE" or
             evidence.get("competition_market") != COMPETITION_MARKET or
-            evidence.get("api_dex") != api_dex or evidence.get("api_market") != api_market or
+            evidence.get("api_dex") != api_dex or evidence.get("api_markets") != api_markets or
+            evidence.get("active_base_assets") != ["BTC", "EWY"] or
             evidence.get("commit_sha") != current or not isinstance(checks, dict) or
             any(checks.get(name) is not True for name in CRITICAL_TESTS)):
         raise ExchangeError("CERTIFICATION_NOT_CURRENT_OR_NOT_COMPLETE")
+    per_market = evidence.get("market_checks")
+    required = ("market_data", "order_validation", "controlled_order_lifecycle",
+                "actual_fill", "protection", "exit", "partial_fill", "restart_recovery")
+    if (not isinstance(per_market, dict) or set(per_market) != set(api_markets.values()) or
+            any(not isinstance(per_market[symbol], dict) or
+                any(per_market[symbol].get(name) is not True for name in required)
+                for symbol in api_markets.values())):
+        raise ExchangeError("BOTH_ACTIVE_MARKETS_REQUIRE_CONTROLLED_CERTIFICATION")
     return evidence
+
+
+def parse_oi_caps(response, client):
+    """Normalize documented pair-list limits without silently accepting duplicates."""
+    if not isinstance(response, dict):
+        raise ExchangeError("PAS_OI_LIMITS_INVALID")
+    rows = response.get("coinToOiCap")
+    if isinstance(rows, dict):
+        rows = list(rows.items())
+    if not isinstance(rows, list):
+        raise ExchangeError("PAS_OI_LIMITS_INVALID")
+    caps = {}
+    from exchange.competition_market import canonical_api_market
+    for row in rows:
+        if not isinstance(row, (list, tuple)) or len(row) != 2:
+            raise ExchangeError("PAS_OI_LIMITS_INVALID")
+        symbol = canonical_api_market(client.api_dex, row[0])
+        if symbol in caps:
+            raise ExchangeError("PAS_OI_LIMITS_DUPLICATE")
+        caps[symbol] = decimal(row[1], positive=True)
+    if not set(client.markets).issubset(caps):
+        raise ExchangeError("PAS_ACTIVE_OI_LIMIT_MISSING")
+    decimal(response.get("totalOiCap"), positive=True)
+    return caps
 
 
 def read_only_preflight(profile_path, team_address=None, api_wallet_address=None, output_path=None):
@@ -151,51 +186,53 @@ def read_only_preflight(profile_path, team_address=None, api_wallet_address=None
         report["checks"]["strategy_freeze"] = verify_strategy_freeze()
         client = HyperliquidClient(venue='pas')
         client.startup()
-        if set(client.markets) != {client.api_market} or not client.api_market.endswith(":BTC"):
-            raise ExchangeError("BTC_ONLY_MARKET_REGISTRY_REQUIRED")
+        expected_markets = {base: f"{client.api_dex}:{base}" for base in ("BTC", "EWY")}
+        if dict(client.api_markets) != expected_markets or set(client.markets) != set(expected_markets.values()):
+            raise ExchangeError("PAS_BTC_EWY_MARKET_REGISTRY_REQUIRED")
+        if client.collateral_token_name != "USDP":
+            raise ExchangeError("PAS_USDP_COLLATERAL_REQUIRED")
         report.update(
-            api_dex=client.api_dex, api_market=client.api_market, dex_index=client.dex_index,
-            collateral_token=client.collateral_token_name,
+            api_dex=client.api_dex, api_market=client.api_market,
+            api_markets=dict(client.api_markets), active_base_assets=["BTC", "EWY"],
+            dex_index=client.dex_index, collateral_token=client.collateral_token_name,
             metadata_timestamp_ms=client.metadata_timestamp_ms,
         )
-        report["checks"]["pas_btc_discovery"] = {
+        report["checks"]["pas_btc_ewy_discovery"] = {
             "passed": True, "competition_market": client.competition_market,
-            "api_dex": client.api_dex, "api_market": client.api_market,
+            "api_dex": client.api_dex, "api_markets": dict(client.api_markets),
             "markets_registered": list(client.markets),
         }
         market = HyperliquidMarketData(client)
-        book = market.get_orderbook(client.api_market)
-        quote = market.get_quote(client.api_market)
-        end_ms = client.clock_ms() // 60_000 * 60_000 - 1
-        start_ms = end_ms - (scanner.history_bars + 2) * 60_000
-        candles = market.get_candles(client.api_market, start_ms, end_ms, now_ms=client.clock_ms())
-        validate_history(client.api_market, candles, client.clock_ms(), scanner.history_bars)
+        oi_caps = parse_oi_caps(client.post_info("perpDexLimits"), client)
+        observations = {}
+        for base, symbol in expected_markets.items():
+            book = market.get_orderbook(symbol)
+            quote = market.get_quote(symbol)
+            end_ms = client.clock_ms() // 60_000 * 60_000 - 1
+            start_ms = end_ms - (scanner.history_bars + 2) * 60_000
+            candles = market.get_candles(symbol, start_ms, end_ms, now_ms=client.clock_ms())
+            validate_history(symbol, candles, client.clock_ms(), scanner.history_bars)
+            now = client.clock_ms()  # after all reads, not before fresh quotes
+            spread_bps = (quote.ask - quote.bid) / quote.mid * 10_000
+            if (book.symbol != symbol or quote.symbol != symbol or not book.bids or not book.asks or
+                    not 0 <= now - book.timestamp_ms <= risk.max_data_age_ms or
+                    not 0 <= now - quote.timestamp_ms <= risk.max_data_age_ms or
+                    quote.mark_timestamp_ms is None or
+                    not 0 <= now - quote.mark_timestamp_ms <= risk.max_mark_age_ms or
+                    len(candles) < scanner.history_bars or
+                    not 0 <= now - (candles[-1].timestamp_ms + 60_000) <= scanner.max_candle_age_ms):
+                raise ExchangeError("PAS_MARKET_DATA_STALE_OR_INCOMPLETE:" + base)
+            if spread_bps > risk.max_spread_bps:
+                raise ExchangeError("PAS_SPREAD_OUTSIDE_POLICY:" + base)
+            observations[symbol] = {
+                "completed_candles": len(candles), "bid": quote.bid, "ask": quote.ask,
+                "mark": quote.mark, "oracle": quote.oracle, "spread_bps": spread_bps,
+                "api_oi_cap": oi_caps[symbol],
+            }
         market.get_asset_contexts()
-        now = client.clock_ms()
-        spread_bps = (quote.ask - quote.bid) / quote.mid * 10_000
-        if (book.symbol != client.api_market or not book.bids or not book.asks or
-                not 0 <= now - book.timestamp_ms <= risk.max_data_age_ms or
-                not 0 <= now - quote.timestamp_ms <= risk.max_data_age_ms or
-                quote.mark_timestamp_ms is None or
-                not 0 <= now - quote.mark_timestamp_ms <= risk.max_mark_age_ms or
-                len(candles) < scanner.history_bars or
-                not 0 <= now - (candles[-1].timestamp_ms + 60_000) <= scanner.max_candle_age_ms):
-            raise ExchangeError("BTC_MARKET_DATA_STALE_OR_INCOMPLETE")
-        if spread_bps > risk.max_spread_bps:
-            raise ExchangeError("BTC_SPREAD_OUTSIDE_POLICY")
-        oi_caps = client.post_info("perpDexLimits")
-        btc_oi_cap = decimal(oi_caps["coinToOiCap"].get(
-            client.api_market, oi_caps["coinToOiCap"].get("BTC")), positive=True)
-        dex_oi_cap = decimal(oi_caps["totalOiCap"], positive=True)
-        report["checks"]["btc_market_data"] = {
-            "passed": True, "completed_candles": len(candles),
-            "required_candles": scanner.history_bars, "bid": quote.bid, "ask": quote.ask,
-            "mark": quote.mark, "oracle": quote.oracle, "funding": quote.hourly_funding,
-            "open_interest_contracts": quote.open_interest, "spread_bps": spread_bps,
+        report["checks"]["btc_ewy_market_data"] = {
+            "passed": True, "markets": observations,
             "dex_oi_notional": client.dex_total_oi_notional,
-            "api_btc_oi_cap": btc_oi_cap, "api_dex_oi_cap": dex_oi_cap,
-            "competition_btc_oi_cap_usd": 10_000_000,
-            "competition_dex_oi_cap_usd": 50_000_000,
         }
         if client.dex_total_oi_notional is None:
             raise ExchangeError("DEX_OI_TOTAL_UNAVAILABLE")
@@ -291,7 +328,7 @@ def main(argv=None):
     parser.add_argument("--fee-scale-verified")
     parser.add_argument("--certification-report", type=Path)
     parser.add_argument("--state-directory", type=Path, default=Path("/var/lib/anchorium/pas-btc"))
-    parser.add_argument("--session-id", default="anchorium-pas-btc-scored-2026")
+    parser.add_argument("--session-id", default="anchorium-pas-btc-ewy-scored-2026")
     parser.add_argument("--scan-interval-seconds", type=float, default=300)
     parser.add_argument("--management-interval-seconds", type=float, default=1)
     parser.add_argument("--export-interval-seconds", type=float, default=30)
@@ -321,9 +358,13 @@ def main(argv=None):
         raise SystemExit("BLOCKED: unexpired manual approval and fee-scale verification are required")
     profile, risk, scanner = load_profile(args.profile)
     preflight = read_only_preflight(args.profile, args.team_wallet, args.api_wallet_address)
-    if preflight.get("api_dex") is None or preflight.get("api_market") is None:
-        raise SystemExit("BLOCKED: PAS BTC market mapping is unverified")
-    verify_certification(args.certification_report, preflight["api_dex"], preflight["api_market"])
+    if preflight.get("api_dex") is None or not preflight.get("api_markets"):
+        raise SystemExit("BLOCKED: PAS BTC/EWY market mapping is unverified")
+    required_reads = ("configuration", "pas_btc_ewy_discovery", "btc_ewy_market_data", "network_and_venue",
+                      "account_read_only", "api_wallet")
+    if any(preflight.get("checks", {}).get(name, {}).get("passed") is not True for name in required_reads):
+        raise SystemExit("BLOCKED: current read-only preflight checks failed")
+    verify_certification(args.certification_report, preflight["api_dex"], preflight["api_markets"])
     rate_policy, clock_policy, protection_policy = load_reliability_policy(
         ROOT / "configs/reliability_policy.json")
     if not protection_policy.enabled:
@@ -334,6 +375,7 @@ def main(argv=None):
         signer_address=args.api_wallet_address,
         expires_ms=args.approval_expires_ms,
         manually_verified=True,
+        competition_market="pas", active_base_assets=("BTC", "EWY"), network="testnet",
     )
     from exchange.live_runtime import build_live_runtime
     from exchange.runtime_schedule import RuntimeSchedule

@@ -46,7 +46,7 @@ def locked(path):
     return False
 
 
-def validate_safe(venue='par'):
+def validate_safe(venue='pas'):
     from venue_config import require_paper_migration
     from strategy_freeze import verify_strategy_freeze
     require_paper_migration(venue);verify_strategy_freeze()
@@ -104,7 +104,7 @@ def render(v):
     eq = account.get('reported_account_equity') or {}
     realized = account.get('realized') or {}
     lines = ['TEAM ANCHORIUM — QUANT ENGINE', f"MODE: {v.get('mode')} | STATUS: {v.get('status')}",
-        f"TESTNET {v.get('dex','par')} | Collateral: {v.get('collateral','USDPR')} | Team: {v.get('team_wallet',TEAM)}", f"Source: {v.get('source_hash')}",
+        f"TESTNET {v.get('dex','pas')} | Collateral: {v.get('collateral','USDP')} | Team: {v.get('team_wallet',TEAM)}", f"Source: {v.get('source_hash')}",
         f"Local: {v.get('local_time')} | Exchange time: {v.get('exchange_time_ms')} (null means unavailable)",
         f"Actual collateral: {eq.get('collateral_balance')} | Available/withdrawable: {eq.get('withdrawable')}",
         f"Proposed bankroll: 20000 | Approved bankroll: {v.get('approved_bankroll')} | Approved notional: {v.get('approved_maximum_notional')}",
@@ -144,7 +144,7 @@ def render(v):
     return '\n'.join(lines)
 
 
-def doctor(root, online=False, venue='par'):
+def doctor(root, online=False, venue='pas'):
     validate_safe(venue)
     dependencies = {}
     for line in (root/'algo-trading-bot/requirements.txt').read_text().splitlines():
@@ -174,7 +174,7 @@ def doctor(root, online=False, venue='par'):
 
 def prepare(root, args):
     """Fresh public proposal, never an acceptance or signing capability."""
-    if getattr(args,'venue','par')=='pas':
+    if getattr(args,'venue','pas')=='pas':
         from .scored_prepare import prepare_scored
         return prepare_scored(root,args)
     from .terminal_observer import observe
@@ -251,11 +251,14 @@ def prepare(root, args):
 
 
 def run_authorized(root, args, stop, publish):
+    from .par_retirement import reject_retired_authorized_terminal_route
+    reject_retired_authorized_terminal_route()
     from .long_session import build_long_runtime, read_mandate
     from market_regime_scanner import ScannerPolicy
     from risk.models import RiskPolicy
     m = read_mandate(args.mandate)
-    if getattr(args,'venue','par')!=m.daily.dex:raise ExchangeError('CLI_MANDATE_VENUE_MISMATCH')
+    if getattr(args,'venue','pas')=='par':raise ExchangeError('RETIRED_PAR_AUTHORIZED_ROUTE')
+    if getattr(args,'venue','pas')!=m.daily.dex:raise ExchangeError('CLI_MANDATE_VENUE_MISMATCH')
     scanner = ScannerPolicy(D('.004'), D(m.maximum_spread_bps), D(0), D(10), history_bars=300, top_n=3)
     risk = RiskPolicy(D(m.daily.risk_fraction), D(m.daily.daily_loss_fraction),D(1),D('.5'),D(2),D('.001'),D(50),
         D(m.maximum_spread_bps),D(m.depth_participation),D(m.execution_slippage_bps),D(1),1)
@@ -344,7 +347,10 @@ def approve(root,args):
 
 
 def start(root, args):
-    venue=getattr(args,'venue','par')
+    if args.authorized:
+        from .par_retirement import reject_retired_authorized_terminal_route
+        reject_retired_authorized_terminal_route()
+    venue=getattr(args,'venue','pas')
     validate_safe(venue)
     if venue=='pas' and Path(args.state).resolve()==(root/'runtime/terminal').resolve():
         args.state=str(root/'runtime/terminal-pas')
@@ -354,7 +360,7 @@ def start(root, args):
         raise ExchangeError('TERMINAL_STATE_VENUE_MISMATCH')
     old=read_json(state/'current.json') if (state/'current.json').exists() else None
     old_status=Path(old['output'])/'status.json' if old and old.get('output') else None
-    if old_status and old_status.exists() and read_json(old_status).get('dex','par')!=venue:
+    if old_status and old_status.exists() and read_json(old_status).get('dex','pas')!=venue:
         raise ExchangeError('TERMINAL_STATE_VENUE_MISMATCH')
     # One local application owner across all output directories/modes.
     owner=PaperOwner(state/'owner.lock')
@@ -390,7 +396,7 @@ def start(root, args):
                     signing_authority='REVOKED',previous_trading_result=result))
         if not stop.is_set():
             from .terminal_observer import observe
-            scope={'venue':venue} if venue!='par' else {}
+            scope={'venue':venue}
             result=observe(root,output,stop,publish,markets=args.markets,scan_seconds=args.scan_seconds,**scope)
         elif args.authorized:
             result=dict(result,mode='AUTHORIZED TESTNET TRADING',signing_authority='REVOKED')
@@ -416,12 +422,12 @@ def main(root):
     root=Path(root)
     p=argparse.ArgumentParser(description=__doc__);sub=p.add_subparsers(dest='command',required=True)
     doctor_p=sub.add_parser('doctor');doctor_p.add_argument('--online',action='store_true')
-    doctor_p.add_argument('--venue',choices=('par','pas'),default='par')
+    doctor_p.add_argument('--venue',choices=('par','pas'),default='pas')
     discovery=sub.add_parser('discover');discovery.add_argument('--venue',choices=('par','pas'),default='pas');discovery.add_argument('--output',required=True)
     research=sub.add_parser('research');research.add_argument('--snapshot',required=True);research.add_argument('--output',required=True)
     sim=sub.add_parser('simulate');sim.add_argument('--output',required=True)
     prep=sub.add_parser('prepare');prep.add_argument('--output',required=True);prep.add_argument('--markets',nargs='*',default=[])
-    prep.add_argument('--venue',choices=('par','pas'),default='par')
+    prep.add_argument('--venue',choices=('par','pas'),default='pas')
     prep.add_argument('--organizer-confirmation',help='Reviewed organizer provenance JSON with retained original record; PAS only')
     prep.add_argument('--minutes',type=int,default=60);prep.add_argument('--maximum-notional',default='1000')
     prep.add_argument('--release');prep.add_argument('--native-protection-evidence')
@@ -431,7 +437,7 @@ def main(root):
     accept=sub.add_parser('approve',help='Interactive exact human acceptance; never auto-approve')
     for name in ('mandate','release','native-protection-evidence'):accept.add_argument('--'+name,required=True)
     launch=sub.add_parser('start');launch.add_argument('--authorized',action='store_true');launch.add_argument('--state',default=str(root/'runtime/terminal'))
-    launch.add_argument('--venue',choices=('par','pas'),default='par',help='Explicit isolated practice or scored profile; grants no signing authority')
+    launch.add_argument('--venue',choices=('par','pas'),default='pas',help='Explicit isolated practice or scored profile; grants no signing authority')
     launch.add_argument('--markets',nargs='*',default=[]);launch.add_argument('--scan-seconds',type=int,default=60)
     launch.add_argument('--duration',type=int,help='Optional bounded read-only development soak; signing expiry is unchanged')
     for name in ('mandate','acceptance','release','native-protection-evidence'):launch.add_argument('--'+name)

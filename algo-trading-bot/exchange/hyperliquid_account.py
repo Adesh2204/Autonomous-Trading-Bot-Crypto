@@ -105,7 +105,7 @@ class HyperliquidAccount:
                 if not isinstance(symbol, str):
                     raise ExchangeError('INVALID_ACCOUNT_FILLS')
                 if getattr(self.client,'competition_mode',False):
-                    if symbol != self.client.api_market:
+                    if symbol not in self.client.api_markets.values():
                         continue
                 elif not symbol.startswith(self.venue.prefix):
                     continue
@@ -172,7 +172,7 @@ class HyperliquidAccount:
                 if not isinstance(symbol,str):
                     raise ExchangeError('INVALID_ACCOUNT_FUNDING')
                 if getattr(self.client,'competition_mode',False):
-                    if symbol != self.client.api_market:
+                    if symbol not in self.client.api_markets.values():
                         continue
                 elif not symbol.startswith(self.venue.prefix):
                     continue
@@ -241,24 +241,34 @@ class HyperliquidAccount:
         state = self._query('clearinghouseState')
         spot = self._query('spotClearinghouseState')
         try:
+            if self.client.collateral_token_name != self.venue.collateral:
+                raise ExchangeError('COLLATERAL_TOKEN_MAPPING_REQUIRED')
             token = self.client.collateral_token_id
             if type(token) is not int or token < 0:
                 raise ExchangeError('COLLATERAL_TOKEN_MAPPING_REQUIRED')
-            balances = [row for row in spot['balances'] if row.get('coin') == self.client.collateral_token_name]
-            if len(balances) > 1:
+            spot_balances = spot['balances']
+            if not isinstance(spot_balances, list) or any(not isinstance(row, dict) for row in spot_balances):
+                raise ExchangeError('COLLATERAL_BALANCE_UNAVAILABLE')
+            balances = [row for row in spot_balances if row.get('coin') == self.client.collateral_token_name]
+            token_balances = [row for row in spot_balances if row.get('token') == token]
+            if len(balances) > 1 or len(token_balances) > 1:
                 raise ExchangeError('AMBIGUOUS_COLLATERAL_BALANCE')
-            token_balances = [row for row in spot['balances'] if row.get('token') == token]
-            if balances and (type(balances[0].get('token')) is not int or
-                             balances[0]['token'] != token or len(token_balances) != 1):
+            if not balances and not token_balances:
+                # Zero balances may be omitted by the endpoint. Keep zero as
+                # zero; never infer collateral from another coin/token row.
+                collateral = decimal(0)
+            elif (len(balances) != 1 or len(token_balances) != 1 or balances[0] is not token_balances[0] or
+                    type(balances[0].get('token')) is not int or balances[0]['token'] != token):
                 raise ExchangeError('COLLATERAL_TOKEN_MISMATCH')
-            if not balances and token_balances:
-                raise ExchangeError('COLLATERAL_TOKEN_MISMATCH')
-            collateral = decimal(balances[0]['total'], nonnegative=True) if balances else decimal(0)
-            # Unified collateral lives in spotClearinghouseState. Use the token
-            # symbol resolved from live metadata; never assume USDPR/USDP.
-            # Trading capacity still comes separately from activeAssetData.
+            else:
+                collateral = decimal(balances[0]['total'], nonnegative=True)
+            # Unified mode's documented source of truth is spotClearinghouseState;
+            # per-DEX equity summaries and unrealized PnL are not extra unified
+            # NAV components and adding them would misstate/double-count equity.
             margin = decimal(0)
             seen = set()
+            if not isinstance(state, dict) or not isinstance(state.get('assetPositions'), list):
+                raise ExchangeError('ACCOUNT_EQUITY_UNAVAILABLE')
             for row in state['assetPositions']:
                 position = row['position']
                 symbol = position['coin']

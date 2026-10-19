@@ -7,9 +7,13 @@ import re
 from datetime import datetime, timezone
 
 from .base_exchange import VenueMismatch
+from .venue_profiles import ACTIVE_PAS_BASE_ASSETS, APPROVED_PAS_BASE_ASSETS
 
 COMPETITION_MARKET = "pas"
 COMPETITION_BASE_ASSET = "BTC"
+COMPETITION_ACTIVE_BASE_ASSETS = ACTIVE_PAS_BASE_ASSETS
+COMPETITION_APPROVED_BASE_ASSETS = APPROVED_PAS_BASE_ASSETS
+COMPETITION_COLLATERAL = "USDP"
 COMPETITION_BTC_OI_CAP_USD = 10_000_000
 COMPETITION_DEX_OI_CAP_USD = 50_000_000
 SCORING_START_MS = int(datetime(2026, 10, 19, 12, 0, tzinfo=timezone.utc).timestamp() * 1000)
@@ -44,6 +48,10 @@ def resolve_competition_dex(dexes):
             continue
         api_name = row.get("name")
         if not isinstance(api_name, str) or not api_name.strip():
+            continue
+        # PAR is retired for current/future production even if stale metadata
+        # incorrectly labels it as the PAS competition venue.
+        if _normalize(api_name) == "par":
             continue
         direct = _normalize(api_name) == COMPETITION_MARKET
         explicit = any(_normalize(row.get(field)) == COMPETITION_MARKET for field in explicit_fields)
@@ -98,4 +106,6 @@ def resolve_collateral_token(token_id, spot_metadata):
                 matches.append(symbol.strip())
     if len(matches) != 1:
         raise VenueMismatch("PAS_COLLATERAL_MAPPING_UNVERIFIED")
+    if matches[0] != COMPETITION_COLLATERAL:
+        raise VenueMismatch("PAS_USDP_COLLATERAL_REQUIRED")
     return matches[0]
