@@ -11,6 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT/'algo-trading-bot'))
 from exchange.base_exchange import ExchangeError
+from exchange.par_retirement import reject_retired_par_write
 from exchange.paper_operations import active_source_hash, atomic_json, PaperOwner
 from exchange.qualification_watcher import prior_execution_check, source_unchanged
 from exchange.emergency_qualification import (EmergencyProposal, BOUNDED_PRICE,
@@ -112,6 +113,7 @@ def require_unused_runtime(mandate):
 
 
 def execute_session(directory, delegation, receipt):
+    reject_retired_par_write()
     directory = Path(directory).resolve(); directory.mkdir(parents=True, exist_ok=False)
     result = dict(status='READ_ONLY_OBSERVATION', mode=MODE, session_id=delegation.mandate.identity,
         actual_fill_verified=False, organizer_whitelisting_confirmed=False,
@@ -193,6 +195,7 @@ def execute_session(directory, delegation, receipt):
 
 
 def execute_persistent_session(directory,delegation,receipt):
+    reject_retired_par_write()
     from exchange.persistent_qualification_watcher import PersistentQualificationObserver
     directory=Path(directory).resolve();directory.mkdir(parents=True,exist_ok=True)
     observer_dir=directory/'persistent_observer'
@@ -276,6 +279,7 @@ def main():
     parser.add_argument('--observe-only-seconds',type=int)
     parser.add_argument('--mandate-file'); parser.add_argument('--session-acceptance-file')
     args = parser.parse_args()
+    if args.execute: reject_retired_par_write()
     if args.observe_only_seconds is not None:
         if args.execute or args.revoke or args.mandate_file or args.session_acceptance_file or not args.output_directory:
             parser.error('Engineering observation forbids execution/acceptance and requires an output directory.')

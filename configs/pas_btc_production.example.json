@@ -1,0 +1,56 @@
+{
+  "description": "PAS-only BTC/EWY subset of the announced PAS universe; one global position at 20x CROSS. Reference equity is not sizing equity.",
+  "competition_market": "pas",
+  "network": "testnet",
+  "target_starting_equity_usd": "100000",
+  "risk": {
+    "risk_fraction": "0.0025",
+    "max_daily_loss_fraction": "0.005",
+    "max_gross_equity_multiple": "0.25",
+    "max_margin_utilization": "0.25",
+    "maintenance_buffer_multiple": "2",
+    "max_funding_cost_fraction": "0.001",
+    "max_mark_oracle_bps": "50",
+    "max_spread_bps": "15",
+    "depth_participation": "0.05",
+    "slippage_bps": "5",
+    "holding_hours": "1",
+    "leverage": 20,
+    "max_positions": 1,
+    "max_daily_setups": 2,
+    "max_drawdown_fraction": "0.03",
+    "max_symbol_equity_multiple": "0.25",
+    "max_net_equity_multiple": "0.25",
+    "max_directional_equity_multiple": "0.25",
+    "max_data_age_ms": 5000,
+    "max_mark_age_ms": 60000,
+    "max_candle_age_ms": 120000,
+    "max_consecutive_order_errors": 3,
+    "max_reconnect_failures": 5
+  },
+  "scanner": {
+    "min_atr_fraction": "0.004",
+    "max_spread_bps": "15",
+    "min_window_notional": "0",
+    "min_bbo_notional": "10",
+    "history_bars": 300,
+    "top_n": 1,
+    "max_candle_age_ms": 120000
+  },
+  "production_oi_caps_usd": {
+    "btc": "10000000",
+    "ewy": "10000000",
+    "dex_total": "50000000"
+  },
+  "operator_gate": {
+    "execution_mode": "HYPERLIQUID_TESTNET_LIVE",
+    "allow_live_orders": true,
+    "api_wallet_must_be_distinct_and_approved": true,
+    "protection_must_be_enabled_and_verified": true,
+    "requires_successful_critical_test_report": true
+  },
+  "base_assets": [
+    "BTC",
+    "EWY"
+  ]
+}

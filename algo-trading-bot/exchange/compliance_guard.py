@@ -178,7 +178,10 @@ class ComplianceGuard:
                 return finish(False, 'UNEXPLAINED_ORDER')
             if not position.allowed:
                 return finish(False, position.code, position.reason)
-            if not request.reduce_only and (type(context.leverage) is not int or context.leverage!=1):
+            from .competition_market import PAS_TARGET_LEVERAGE
+            client = getattr(self.execution_owner, 'client', None)
+            expected_leverage = PAS_TARGET_LEVERAGE if getattr(client, 'competition_mode', False) else 1
+            if not request.reduce_only and (type(context.leverage) is not int or context.leverage!=expected_leverage):
                 return finish(False, 'INVALID_LEVERAGE')
             if (p.candidate_id != candidate or p.strategy_id != request.strategy_id or
                     p.source_market != request.symbol or p.direction != request.side or

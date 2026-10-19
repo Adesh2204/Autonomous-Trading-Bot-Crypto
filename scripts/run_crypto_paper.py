@@ -1,4 +1,4 @@
-"""Bounded or continuous local paper trading from public par data. No signer."""
+"""Bounded or continuous local paper trading from verified PAS BTC data. No signer."""
 import argparse
 from dataclasses import asdict
 from datetime import datetime,timezone
@@ -65,7 +65,7 @@ class ReportWriter:
             bot.audit_scan(bot.latest_scan)
         report=bot.report()
         report.update(provenance=self.provenance,observed_at_utc=datetime.now(timezone.utc).isoformat(),
-            assumptions=['Hypothetical USDPR starting collateral; no wallet balance used.',
+            assumptions=['Hypothetical local paper collateral; no wallet balance is assumed.',
                 'Taker fills only from fresh displayed BBO, bounded by displayed size.',
                 'Displayed liquidity consumed once per observation; no invented queue or maker fill.',
                 'Fee rates are explicit paper assumptions; actual wallet tiers not verified.',
@@ -103,7 +103,7 @@ class ReportWriter:
             exchange_orders_submitted=0,reason=str(reason),
             last_good_report=str(self.path/'report.json') if (self.path/'report.json').exists() else None,
             known_positions=[asdict(p) for p in ledger.positions.values()],
-            cash=ledger.cash,collateral='USDPR',equity=None,
+            cash=ledger.cash,collateral=ledger.collateral,equity=None,
             order_events=bot.execution.events,ledger_events=ledger.events,
             decisions=bot.decisions))+'\n')
 
@@ -176,7 +176,8 @@ def main():
         market=HyperliquidMarketData(client)
         scanner=MarketRegimeScanner(market,scanner_policy)
         execution=PaperExecution(client.markets,fees=fees,clock_ms=client.clock_ms,
-            starting_collateral=config['starting_collateral'],leverage=risk_policy.leverage)
+            starting_collateral=config['starting_collateral'],leverage=risk_policy.leverage,
+            collateral=client.collateral_token_name)
         bot=CryptoPaperBot(market,scanner,execution,PortfolioRisk(risk_policy,fees))
         if args.state_directory:
             from exchange.execution_journal import fingerprint

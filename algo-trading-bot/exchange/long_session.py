@@ -657,6 +657,8 @@ class DailyLongSession(LiveExecutionSession):
 
 def build_long_runtime(root,mandate_path,acceptance_path,release_path,protection_evidence_path,*,scanner_policy,risk_policy):
     """Only construction gate for actual execution. Never called by public CLI."""
+    from .par_retirement import reject_retired_scored_session_route
+    reject_retired_scored_session_route()
     from venue_config import require_paper_migration
     from strategy_freeze import verify_strategy_freeze
     from .paper_operations import active_source_hash

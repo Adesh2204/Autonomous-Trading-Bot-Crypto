@@ -1,0 +1,57 @@
+name: PAS BTC-EWY offline safety
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [fix/pas-btc-ewy-review-2]
+permissions:
+  contents: read
+jobs:
+  offline-safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      EXECUTION_MODE: PAPER
+      ALLOW_LIVE_ORDERS: "false"
+      HL_COMPETITION_MARKET: pas
+      HL_DEX: pas
+      HL_NETWORK: testnet
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: algo-trading-bot/requirements.txt
+      - name: Install core dependencies
+        run: python -m pip install -r algo-trading-bot/requirements.txt
+      - name: Static imports
+        run: python -c "import sys; sys.path.insert(0, 'algo-trading-bot'); sys.path.insert(0, 'scripts'); import exchange.live_runtime; import live_execution_session; import run_pas_btc"
+      - name: PAS BTC-EWY regressions (network and signing prohibited)
+        working-directory: algo-trading-bot
+        run: >-
+          python -m pytest -q -p offline_no_sign
+          test_pas_btc_competition.py
+          test_pas_active_markets.py
+          test_pas_account_oi_regressions.py
+          test_pas_active_leverage_readiness.py
+          test_pas_pending_journal_oi.py
+          test_pas_oi_headroom.py
+          test_pas_two_asset_session.py
+          test_pas_launcher_regressions.py
+          test_pas_launcher_integration.py
+          test_pas_retired_routes.py
+          test_pas_candle_budget.py
+          test_pas_stream_warmup.py
+          test_pas_candle_diagnostics.py
+          test_pas_liquidity_selection.py
+          test_pas_thread_local_read_cancellation.py
+          test_exchange_migration.py
+          test_pas_migration.py
+          test_market_discovery.py
+          test_scored_opening_release.py
+          test_pas_merge_conflict_regressions.py
+          test_activation_v5_2.py
+          test_opening_v5_3.py
+      - name: Verify frozen baseline
+        run: python scripts/check_strategy_freeze.py

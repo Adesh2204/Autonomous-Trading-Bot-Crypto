@@ -382,6 +382,8 @@ def prepare(root,directory,receipt,*,immediate_loss=False,full_day=False):
 
 def execute(root,directory,mandate,approval,acceptance_path,receipt):
     """One approved ten-minute observer, at most one durable SELL attempt."""
+    from .par_retirement import reject_retired_par_write
+    reject_retired_par_write()
     from .emergency_qualification import require_emergency_regression
     from .paper_operations import atomic_json,active_source_hash,PaperOwner
     from .practice_preflight import read_api_key,api_signer,verify_private_identity

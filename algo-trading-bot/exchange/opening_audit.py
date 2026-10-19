@@ -5,6 +5,7 @@ import time
 
 from .base_exchange import ExchangeError
 from .entry_scope import PAS_ENTRY_MARKETS
+from .competition_market import PAS_TARGET_LEVERAGE
 from .operator_status import current_status
 from .paper_operations import active_source_hash
 from .pas_controller import assess, fresh
@@ -73,7 +74,7 @@ def opening_check(root, args):
         and value.get('status') not in {'HALTED','STOPPED','HALTED_BEFORE_OR_DURING_START'}
         and not value.get('error') and not account.get('reasons'))
     liquidity=value.get('liquidity') or {};histories=value.get('market_history') or {}
-    configured={s:account_current and liquidity.get(s,{}).get('active_asset',{}).get('leverage')==dict(type='cross',value=1)
+    configured={s:account_current and liquidity.get(s,{}).get('active_asset',{}).get('leverage')==dict(type='cross',value=PAS_TARGET_LEVERAGE)
         and fresh(liquidity.get(s,{}).get('active_asset_ms'),now,360000) for s in PAS_ENTRY_MARKETS}
     qualified={s:s in native_markets and liquidity.get(s,{}).get('partial_minimum_admissible') is True
         and fresh(liquidity.get(s,{}).get('book_ms'),now,5000) for s in PAS_ENTRY_MARKETS}
@@ -82,7 +83,7 @@ def opening_check(root, args):
     statuses=dict(AUTOMATION_IMPLEMENTED=release_verified,RELEASE_VERIFIED=release_verified,
         OBSERVER_HEALTHY=healthy,FUNDING_VERIFIED=readiness['gates']['USDP_FUNDING_VERIFIED'],
         ACCOUNT_IDENTITY_VERIFIED=registered and agent_verified and value.get('team_wallet','').lower()==TEAM.lower(),
-        BTC_1X_VERIFIED=configured['pas:BTC'],EWY_1X_VERIFIED=configured['pas:EWY'],
+        BTC_20X_CROSS_VERIFIED=configured['pas:BTC'],EWY_20X_CROSS_VERIFIED=configured['pas:EWY'],
         HISTORICAL_ORDER_SAFE=(account_current and not account.get('reasons')
             and value['local_execution_state']['status']=='NO_LOCAL_UNRESOLVED_INTENT'),
         BTC_NATIVE_AND_RESIDUAL_QUALIFIED=qualified['pas:BTC'],EWY_NATIVE_AND_RESIDUAL_QUALIFIED=qualified['pas:EWY'],
@@ -94,8 +95,8 @@ def opening_check(root, args):
         OBSERVER_HEALTHY='Review status/report and terminal reconciliation before a new public-only start.',
         FUNDING_VERIFIED='Run funding --output NEW_DIRECTORY after actual USDP arrives; no activation is inferred.',
         ACCOUNT_IDENTITY_VERIFIED='Supply --organizer-confirmation organizer_confirmation.json with retained original provenance and --discovery a fresh discover result.',
-        BTC_1X_VERIFIED='Run configuration-review, then the separate exact configuration-approve/configuration-apply workflow and exchange readback.',
-        EWY_1X_VERIFIED='Run configuration-review, then the separate exact configuration-approve/configuration-apply workflow and exchange readback.',
+        BTC_20X_CROSS_VERIFIED='Obtain fresh exact 20x CROSS readback; an observed mismatch blocks readiness. This code review authorizes no account change; legacy 1x configuration commands remain retired.',
+        EWY_20X_CROSS_VERIFIED='Obtain fresh exact 20x CROSS readback; an observed mismatch blocks readiness. This code review authorizes no account change; legacy 1x configuration commands remain retired.',
         HISTORICAL_ORDER_SAFE='Inspect the original qualification intent; obtain its terminal/rejection evidence or an independently validated and expressly authorized isolation policy. Never reset it.',
         BTC_NATIVE_AND_RESIDUAL_QUALIFIED='Run native-prepare --market pas:BTC --output NEW_DIRECTORY. Genuine PAS native/residual route qualification remains required; no executable PAS qualification route is currently admitted.',
         EWY_NATIVE_AND_RESIDUAL_QUALIFIED='Run native-prepare --market pas:EWY --output NEW_DIRECTORY. Genuine PAS native/residual route qualification remains required; no executable PAS qualification route is currently admitted.',

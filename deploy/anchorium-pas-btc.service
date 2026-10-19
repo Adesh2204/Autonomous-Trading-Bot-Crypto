@@ -1,0 +1,34 @@
+[Unit]
+Description=Anchorium PAS BTC/EWY Perpetual Alpha 2026 testnet supervisor
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=anchorium
+Group=anchorium
+WorkingDirectory=/opt/anchorium/Autonomous-Trading-Bot-Crypto
+EnvironmentFile=/etc/anchorium/pas-btc.env
+StateDirectory=anchorium-pas-btc
+StateDirectoryMode=0700
+ExecStart=/opt/anchorium/venv/bin/python scripts/run_pas_btc.py --run-live --confirm-live-testnet --profile /etc/anchorium/pas-btc-production.json --certification-report /etc/anchorium/pas-btc-certification.json --state-directory /var/lib/anchorium-pas-btc
+Restart=on-failure
+RestartSec=30
+TimeoutStopSec=30
+UMask=0077
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/anchorium-pas-btc
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

@@ -8,6 +8,7 @@ from types import SimpleNamespace
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'algo-trading-bot'))
 from exchange.base_exchange import ExchangeError,decimal
+from exchange.par_retirement import reject_retired_par_write
 from exchange.execution_journal import fingerprint
 from exchange.paper_operations import active_source_hash,atomic_json,PaperOwner
 from exchange.qualification_watcher import (ReadOnlyQualificationSession,PublicBookStream,PublicBookReader,
@@ -217,6 +218,7 @@ def main():
     a.add_argument('--price-mode',choices=['fixed','bounded'],default='fixed')
     a.add_argument('--execute',action='store_true');a.add_argument('--proposal-file');a.add_argument('--operator-approval-file')
     args=a.parse_args()
+    if args.execute: reject_retired_par_write()
     if args.execute:
         if not all((args.proposal_file,args.operator_approval_file,args.test_receipt)):
             a.error('Exact proposal, human operator approval and source-bound test receipt are required.')

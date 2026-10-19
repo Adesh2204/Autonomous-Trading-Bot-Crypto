@@ -5,6 +5,10 @@ import json
 from .base_exchange import VenueMismatch
 
 BASE_MARKETS = ('BTC','ETH','HYPE','SP500','EWY','EWJ','BRENT','GOLD','USDEUR','USDJPY')
+# The approved PAS universe is intentionally broader than the current active
+# engine set. Only these two instruments may enter a current/future PAS scan.
+APPROVED_PAS_BASE_ASSETS = BASE_MARKETS
+ACTIVE_PAS_BASE_ASSETS = ('BTC', 'EWY')
 
 
 @dataclass(frozen=True)
@@ -17,7 +21,9 @@ class VenueProfile:
     def prefix(self): return self.dex + ':'
 
     @property
-    def markets(self): return frozenset(self.prefix + x for x in BASE_MARKETS)
+    def markets(self):
+        bases = ACTIVE_PAS_BASE_ASSETS if self.phase == 'SCORED' else BASE_MARKETS
+        return frozenset(self.prefix + x for x in bases)
 
     @property
     def identity(self):
@@ -28,7 +34,7 @@ PRACTICE = VenueProfile('par','USDPR','PRACTICE')
 SCORED = VenueProfile('pas','USDP','SCORED')
 
 
-def venue_profile(value='par'):
+def venue_profile(value='pas'):
     if value == 'par' or type(value) is VenueProfile and value == PRACTICE: return PRACTICE
     if value == 'pas' or type(value) is VenueProfile and value == SCORED: return SCORED
     raise VenueMismatch('EXPLICIT_PAR_OR_PAS_PROFILE_REQUIRED')

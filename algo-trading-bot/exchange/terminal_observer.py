@@ -53,7 +53,7 @@ class RotatingReceipts(ReadOnlyReceipts):
             super()._record(record)
 
 
-def observe(root, output, stop, publish, *, markets=(), scan_seconds=60, account_seconds=300, once=False, venue='par'):
+def observe(root, output, stop, publish, *, markets=(), scan_seconds=60, account_seconds=300, once=False, venue='pas'):
     """Reuse stream, rate and account reconciliation infrastructure indefinitely.
 
     STOP/deadline belongs to the outer local application. No mandate is renewed.
@@ -62,6 +62,10 @@ def observe(root, output, stop, publish, *, markets=(), scan_seconds=60, account
     root, output = Path(root), Path(output)
     from .venue_profiles import venue_profile
     profile = venue_profile(venue)
+    selected = tuple(markets) or tuple(sorted(profile.markets))
+    if (not selected or len(set(selected)) != len(selected)
+            or any(symbol not in profile.markets for symbol in selected)):
+        raise ExchangeError('RUNTIME_MARKET_SCOPE_REQUIRED')
     source = active_source_hash(root)
     clock = lambda: time.time_ns() // 1_000_000
     journal = ExecutionJournal(output/'public.sqlite', session_id='public:terminal', team_address=TEAM)
@@ -89,9 +93,9 @@ def observe(root, output, stop, publish, *, markets=(), scan_seconds=60, account
         client.candle_audit=history
         result['market_history']={}
         from .entry_scope import signal_markets
-        selected = signal_markets(client,markets)
-        if not selected or len(set(selected)) != len(selected) or any(s not in client.markets for s in selected):
-            raise ExchangeError('RUNTIME_PAR_MARKETS_REQUIRED')
+        selected = signal_markets(client, markets)
+        if any(symbol not in client.markets for symbol in selected):
+            raise ExchangeError('RUNTIME_MARKET_METADATA_SCOPE_MISMATCH')
         result.update(markets=selected, metadata=client.metadata)
         stream = ParMarketDataEngine(SerializedPublicMarket(client), symbols=selected, history_bars=900, include_trades=True)
         def receive():

@@ -11,6 +11,7 @@ import time
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT/'algo-trading-bot'))
 from exchange.base_exchange import ExchangeError
+from exchange.par_retirement import reject_retired_par_write
 from exchange.execution_journal import ExecutionJournal
 from exchange.execution_safety import ClockHealthMonitor, HyperliquidRateLimitManager
 from exchange.exchange_rules import LiveContextProvider, HyperliquidOrderValidator
@@ -137,6 +138,7 @@ def main(argv=None):
     p.add_argument('--operator-approval-file', type=Path)
     p.add_argument('--test-receipt', type=Path)
     args = p.parse_args(argv)
+    if args.mode != 'PAPER': reject_retired_par_write()
     require_paper_migration()
     if args.mode == 'TESTNET_PRACTICE':
         p.error('Separate autonomous practice authorization and certifications required; not implemented by this launcher')

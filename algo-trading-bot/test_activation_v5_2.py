@@ -27,7 +27,7 @@ def ready_report():
         native_proof_verification=dict(verified=True,markets=['pas:BTC','pas:EWY'],residual_scope_verified=True),
         market_history={s:dict(strategy_history_ready=True,latest_completed_ms=NOW) for s in ('pas:BTC','pas:EWY')},
         signals=[dict(symbol='pas:BTC',decision='LONG',observed_ms=NOW)],
-        liquidity={s:dict(active_asset=dict(leverage=dict(type='cross',value=1)),active_asset_ms=NOW,
+        liquidity={s:dict(active_asset=dict(leverage=dict(type='cross',value=20)),active_asset_ms=NOW,
             evidence_evaluation=dict(observed_ms=NOW,economically_viable_notional='10')) for s in ('pas:BTC','pas:EWY')})
 
 
@@ -76,7 +76,7 @@ def test_conditional_dispatch_requires_every_gate_and_no_exposure(fault):
     r=ready_report();a=fake_authority();assert readiness_to_dispatch(r,a,NOW)
     if fault=='funding':r['funding']['status']='USDP_ZERO'
     elif fault=='unknown':r['local_execution_state']['status']='BLOCKED_UNRESOLVED_INTENT'
-    elif fault=='leverage':r['liquidity']['pas:BTC']['active_asset']['leverage']['value']=20
+    elif fault=='leverage':r['liquidity']['pas:BTC']['active_asset']['leverage']['value']=1
     elif fault=='history':r['market_history']={}
     elif fault=='native':r['native_proof_verification']={}
     elif fault=='source':r['release_verification']['source_hash']='b'*64
@@ -172,15 +172,15 @@ def test_cli_rejects_wait_without_real_authorized_files_before_state_creation(tm
     assert not (tmp_path/'state').exists()
 
 
-def test_failed_wait_persists_terminal_unknown_and_never_builds_signer(tmp_path):
+def test_retired_authorized_wait_rejects_before_state_or_signer_creation(tmp_path):
     from test_terminal_app import command
     state=tmp_path/'state'
     p=command('start','--venue','pas','--authorized','--wait-for-readiness','--state',state)
     assert p.returncode==1
-    current=json.loads((state/'current.json').read_text())
-    terminal=json.loads((Path(current['output'])/'terminal_result.json').read_text())
-    assert not terminal['authorized_builder_attempted'] and terminal['signing_authority']=='NONE'
-    assert terminal['terminal_flat'] is None and not terminal['AUTO_TRADING_ACTIVE']
+    failure=json.loads(p.stderr)
+    assert failure['error']=='RETIRED_AUTHORIZED_TERMINAL_ROUTE'
+    assert failure['signing_authority']=='NONE_CREATED_BY_THIS_COMMAND'
+    assert not state.exists()
 
 
 @pytest.mark.parametrize('at',[None,True,'bad',{},NOW+1,NOW-360001])

@@ -1,5 +1,41 @@
 # Anchorium Perpetual Alpha migration
 
+## Current directive: PAS-only, BTC and EWY (supersedes historical notes below)
+
+The current/future engine is Hyperliquid Testnet PAS only, with exactly BTC and
+EWY active. These are a narrowed subset of the already announced PAS universe;
+other assets are deferred, not authorized for signals or orders. Discover the
+canonical API DEX and both coins at startup. Reject ambiguous identity, PAR or
+native production routing, missing active assets, and collateral other than
+runtime-verified USDP. There is no fallback venue or collateral.
+
+Keep exactly one global position across the two active assets at 20x CROSS, the frozen
+strategy, existing risk ceilings, the $10m per-market ceiling for BOTH BTC and EWY
+and DEX $50m ceiling. Use the lower authoritative/published caps, reserve pending
+exposure, and require increasing entries strictly below 99% of each effective
+market USD, market size and DEX USD cap. The 1% reserve is an INTERNAL engineering
+choice, not an official competition percentage; it cannot be disabled by profile.
+The scanner can inspect both assets but selects at most one candidate.
+
+The owner confirmed registered team wallet
+`0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C` on 19 October 2026.
+The latest task is code-side only: expect exactly 20x CROSS for BTC/EWY, but do
+not connect a wallet, request credentials, sign, or change exchange settings.
+An observed 1x setting is a blocker, never permission to alter or bypass it.
+Historical 1x configuration approvals below are not current authority.
+
+Preserve historical PAR practice/fill records and source evidence unchanged.
+Legacy PAR literals in historical documents, data and explicit offline fixtures
+are evidence, never a current production configuration. Legacy order/configuration
+commands must fail closed rather than silently retargeting old approvals to PAS.
+
+Default operation is read-only, PAPER and ALLOW_LIVE_ORDERS=false. Do not sign,
+place orders, alter an account, deploy, or claim live certification in this work.
+Future activation requires explicit current approval, funded unified-account and
+API-wallet verification, protection and recovery checks, and controlled
+certification covering BOTH BTC and EWY on the running commit.
+
+
 - Work only in this cloned repository. Keep the original NSE repository untouched.
 - This is an exchange/market infrastructure migration, never a strategy rewrite.
 - Enforce `EXECUTION_MODE=PAPER` and `ALLOW_LIVE_ORDERS=false` throughout migration.

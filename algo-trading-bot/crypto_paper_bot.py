@@ -144,7 +144,7 @@ class CryptoPaperBot:
                 if not manager.has_open_position:
                     self.closed_trades.append(dict(symbol=symbol,reason=reason,candidate_id=cid,
                         completed_at_ms=self.clock_ms(),net_pnl=self.execution.portfolio.cash-
-                        self.setup_baseline_cash.pop(symbol),collateral='USDPR',simulated=True,
+                        self.setup_baseline_cash.pop(symbol),collateral=self.execution.portfolio.collateral,simulated=True,
                         **timing(self.clock_ms())))
                     self._record('TRADE_PNL',symbol=symbol,candidate_id=cid,trade=self.closed_trades[-1])
                     self.position_candidates.pop(symbol,None)
@@ -351,7 +351,7 @@ class CryptoPaperBot:
         self._performance(snapshot)
         scan=self.latest_scan
         return dict(execution_mode=self.execution.execution_mode,readiness=readiness(self.team_address,market_ready=self.market.client.ready),allow_live_orders=False,exchange_orders_submitted=0,
-            balance_origin='HYPOTHETICAL_LOCAL_USDPR',starting_collateral=self.execution.portfolio.starting_collateral,
+            balance_origin='HYPOTHETICAL_LOCAL_PAPER_COLLATERAL',collateral=self.execution.portfolio.collateral,starting_collateral=self.execution.portfolio.starting_collateral,
             portfolio=asdict(snapshot),positions=[asdict(p) for p in self.execution.portfolio.positions.values()],
             scan_status=scan.status if scan else 'NOT_SCANNED',watchlist=scan.watchlist if scan else [],
             scanned_markets=len(scan.diagnostics) if scan else 0,

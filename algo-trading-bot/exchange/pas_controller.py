@@ -4,6 +4,7 @@ from .competition_windows import SCORED_START_MS, SCORED_END_MS
 from .pas_funding import current_funding
 from .venue_profiles import SCORED
 from .entry_scope import PAS_ENTRY_MARKETS
+from .competition_market import PAS_TARGET_LEVERAGE
 
 STATES=('SCORING_WINDOW_OPEN','USDP_FUNDING_VERIFIED','PAS_ACCOUNT_CONFIGURATION_VERIFIED',
     'HISTORICAL_ORDER_SAFETY_VERIFIED','NATIVE_PROTECTION_QUALIFIED','MARKET_HISTORY_READY',
@@ -34,9 +35,13 @@ def assess(report, now_ms):
     account_fresh=fresh(account_at,now_ms,360000) and not report.get('account_error')
     selected=set(report.get('markets') or PAS_ENTRY_MARKETS)
     valid_scope=bool(selected) and selected<=PAS_ENTRY_MARKETS
-    configured=valid_scope and selected<=set(liquidity) and all(
-        c.get('active_asset',{}).get('leverage')=={'type':'cross','value':1}
-        and type(c.get('active_asset_ms')) is int and 0<=now_ms-c['active_asset_ms']<=360000 for s,c in liquidity.items() if s in selected)
+    configured=valid_scope and PAS_ENTRY_MARKETS<=set(liquidity) and all(
+        isinstance(c.get('active_asset',{}).get('leverage'),dict)
+        and c['active_asset']['leverage'].get('type')=='cross'
+        and type(c['active_asset']['leverage'].get('value')) is int
+        and c['active_asset']['leverage']['value']==PAS_TARGET_LEVERAGE
+        and fresh(c.get('active_asset_ms'),now_ms,360000)
+        for s,c in liquidity.items() if s in PAS_ENTRY_MARKETS)
     histories=report.get('market_history') or {}
     ready_symbols={s for s,h in histories.items() if s in selected and h.get('strategy_history_ready') is True
         and type(h.get('latest_completed_ms')) is int and 0<=now_ms-h['latest_completed_ms']<=120000}
@@ -60,7 +65,7 @@ def assess(report, now_ms):
     reasons={
         'SCORING_WINDOW_OPEN':'SCORED_PHASE_NOT_OPEN' if now_ms<SCORED_START_MS else 'SCORED_PHASE_CLOSED',
         'USDP_FUNDING_VERIFIED':funding.get('status','USDP_UNAVAILABLE'),
-        'PAS_ACCOUNT_CONFIGURATION_VERIFIED':'FRESH_SELECTED_BTC_EWY_ONE_X_CROSS_READBACKS_REQUIRED',
+        'PAS_ACCOUNT_CONFIGURATION_VERIFIED':'FRESH_BOTH_BTC_EWY_20X_CROSS_READBACKS_REQUIRED',
         'HISTORICAL_ORDER_SAFETY_VERIFIED':'SHARED_UNKNOWN_OR_ACCOUNT_REVIEW_REQUIRED',
         'NATIVE_PROTECTION_QUALIFIED':'GENUINE_PAS_NATIVE_AND_RESIDUAL_PROOF_REQUIRED',
         'MARKET_HISTORY_READY':'AUTHENTIC_CONTIGUOUS_300_BAR_WARMUP_REQUIRED',

@@ -7,6 +7,7 @@ import sys
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'algo-trading-bot'))
 from exchange.execution_safety import HumanLiveApproval,LiveAuthorization
+from exchange.par_retirement import reject_retired_par_write
 from exchange.live_runtime import build_live_runtime
 from exchange.reliability_policy import load_reliability_policy
 from exchange.runtime_schedule import RuntimeSchedule
@@ -23,6 +24,7 @@ def main():
     p.add_argument('--reliability-policy',type=Path,default=ROOT/'configs/reliability_policy.json')
     p.add_argument('--verified-fee-scale',type=int,required=True)
     args=p.parse_args()
+    reject_retired_par_write()
     try:
         approval=HumanLiveApproval(**json.loads(args.approval_file.read_text()))
         LiveAuthorization(approval).require(approval.team_address,approval.signer_address)

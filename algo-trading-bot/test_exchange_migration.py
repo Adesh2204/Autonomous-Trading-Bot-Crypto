@@ -76,7 +76,9 @@ class PublicInfoFixture:
 @pytest.fixture
 def public():
     transport = PublicInfoFixture()
-    client = HyperliquidClient(transport, clock_ms=lambda: transport.now)
+    # Historical PAR tests use an injected callable; never let this fixture
+    # inherit the current PAS default or stand in for a production route.
+    client = HyperliquidClient(transport, clock_ms=lambda: transport.now, venue='par')
     client.startup()
     return transport, client, HyperliquidMarketData(client)
 

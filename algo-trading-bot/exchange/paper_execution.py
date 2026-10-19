@@ -39,7 +39,7 @@ class PaperFill:
     simulated: bool=True
     fill_id: str=field(default_factory=lambda: 'paper-fill-'+uuid.uuid4().hex)
     liquidity: str='TAKER'
-    fee_token: str='USDPR'
+    fee_token: str='USDP'
     exchange_ts: str | None=None
     received_ts: str | None=None
     processed_ts: str | None=None
@@ -51,7 +51,7 @@ class PaperExecution:
     execution_mode="PAPER"
 
     def __init__(self, market_specs, *, clock_ms, fee_rate=None, fees=None,
-                 starting_collateral=None, leverage=1, id_factory=None):
+                 starting_collateral=None, leverage=1, id_factory=None, collateral='USDP'):
         require_paper_migration()
         self.id_factory=id_factory or (lambda prefix: prefix+uuid.uuid4().hex)
         self.candidate_id=None
@@ -66,6 +66,9 @@ class PaperExecution:
             raise ExchangeError('AMBIGUOUS_PAPER_FEES')
         if type(leverage) is not int or any(not 1<=leverage<=s.max_leverage for s in self.specs.values()):
             raise ExchangeError('INVALID_PAPER_LEVERAGE')
+        if not isinstance(collateral,str) or not collateral.strip():
+            raise ExchangeError('PAPER_COLLATERAL_IDENTITY_REQUIRED')
+        self.collateral=collateral.strip()
         self.fees=fees
         self.fee_rate=fees.taker
         self.leverage=leverage
@@ -74,7 +77,7 @@ class PaperExecution:
         self.fills=[]
         self.positions={}
         self.events=[]
-        self.portfolio=PaperPortfolio(self.specs,starting_collateral,clock_ms=self.clock_ms) if starting_collateral is not None else None
+        self.portfolio=PaperPortfolio(self.specs,starting_collateral,clock_ms=self.clock_ms,collateral=self.collateral) if starting_collateral is not None else None
         self.quotes={}
         self._client_ids={}
         self._liquidity_used={}
@@ -205,7 +208,7 @@ class PaperExecution:
             return None
         fill=PaperFill(order_id,order.symbol,order.side,quantity,price,
                        self.fees.fee(quantity,price),now,fill_id=self.id_factory("paper-fill-"),
-                       received_ts=timing(now)["received_ts"],processed_ts=timing(now)["processed_ts"],
+                       fee_token=self.collateral,received_ts=timing(now)["received_ts"],processed_ts=timing(now)["processed_ts"],
                        candidate_id=self.order_candidates.get(order_id))
         self.quotes[quote.symbol]=quote
         if self.portfolio:
@@ -228,7 +231,7 @@ class PaperExecution:
         state='FILLED' if total==order.quantity else 'PARTIALLY_FILLED'
         self.orders[order_id]=replace(resting,status=state,filled_quantity=total)
         self._event(order_id,state,fill_id=fill.fill_id,quantity=quantity,price=price,fee=fill.fee,
-            fee_token='USDPR',observed_book_time_ms=quote.timestamp_ms,bid=bid,ask=ask,
+            fee_token=self.collateral,observed_book_time_ms=quote.timestamp_ms,bid=bid,ask=ask,
             observed_side_depth=depth,consumed_before=consumed)
         if self.portfolio:
             if state=='FILLED' or order.reduce_only:

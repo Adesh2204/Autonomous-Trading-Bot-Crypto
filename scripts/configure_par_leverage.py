@@ -8,6 +8,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'algo-trading-bot'))
 from exchange.base_exchange import ExchangeError
+from exchange.par_retirement import reject_retired_par_write
 from exchange.execution_journal import ExecutionJournal
 from exchange.execution_safety import NonceManager, ClockHealthMonitor, HyperliquidRateLimitManager
 from exchange.hyperliquid_client import HyperliquidClient
@@ -33,6 +34,7 @@ def main():
     p.add_argument('--apply', action='store_true', help='Only the separately approved 1x CROSS configuration')
     p.add_argument('--manual-confirmation-file', type=Path)
     args = p.parse_args()
+    reject_retired_par_write()
     if args.output.exists():
         p.error('preserve previous configuration evidence; choose a new output')
     report = dict(scope='PAR_1X_CROSS_CONFIGURATION_ONLY', execution_mode='PAPER', allow_live_orders=False,
@@ -60,7 +62,7 @@ def main():
                                    session_id='par-one-x-configuration', team_address=args.team_address)
         rate_policy, clock_policy, _ = load_reliability_policy(ROOT / 'configs/reliability_policy.json')
         rates = HyperliquidRateLimitManager(journal, policy=rate_policy, signer_address=args.api_wallet_address)
-        client = HyperliquidClient(rate_limits=rates)
+        client = HyperliquidClient(rate_limits=rates, venue='par')
         client.startup()
         account = HyperliquidAccount(client, args.team_address)
         market = HyperliquidMarketData(client)

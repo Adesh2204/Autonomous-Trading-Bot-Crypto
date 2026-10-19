@@ -18,6 +18,7 @@ from .candle_availability import CandleAvailabilityMonitor
 INTERVAL_MS = {'1m': 60_000, '3m': 180_000, '5m': 300_000, '15m': 900_000,
                '30m': 1_800_000, '1h': 3_600_000, '2h': 7_200_000,
                '4h': 14_400_000, '8h': 28_800_000, '12h': 43_200_000, '1d': 86_400_000}
+PAS_RETAINED_COMPLETED_BARS = 5000
 
 
 def timestamp(value):
@@ -92,7 +93,7 @@ class HyperliquidMarketData:
 
     def get_asset_contexts(self):
         if not self.client.ready:
-            raise VenueMismatch('PAR_STARTUP_CHECK_REQUIRED')
+            raise VenueMismatch('PAS_STARTUP_CHECK_REQUIRED' if getattr(self.client, 'competition_mode', False) else self.client.dex.upper()+'_STARTUP_CHECK_REQUIRED')
         result = self.client.post_info('metaAndAssetCtxs')
         if not isinstance(result, list) or len(result) != 2:
             raise ExchangeError('INVALID_ASSET_CONTEXTS')
@@ -100,8 +101,53 @@ class HyperliquidMarketData:
         self.client.validate_metadata(metadata)
         if not isinstance(contexts, list) or len(contexts) != len(metadata['universe']):
             raise ExchangeError('INVALID_ASSET_CONTEXTS')
-        return {row['name']: contexts[i] for i, row in enumerate(metadata['universe'])
-                if row['name'] in self.client.markets}
+        if not getattr(self.client, 'competition_mode', False):
+            return {row['name']: contexts[i] for i, row in enumerate(metadata['universe'])
+                    if isinstance(row, dict) and row.get('name') in self.client.markets}
+        # PAS exposes a deliberately small strategy subset. Keep contexts for
+        # every selected asset so EWY is scanned and managed just like BTC;
+        # the OI total remains a DEX-wide safety calculation.
+        api_markets = getattr(self.client, 'api_markets', None)
+        if api_markets is None:
+            # Compatibility for older isolated BTC-only offline fixtures.
+            api_markets = {'BTC': self.client.api_market}
+        if (not isinstance(api_markets, dict) or set(api_markets) != {'BTC', 'EWY'}
+                or api_markets.get('BTC') != self.client.api_market
+                or set(self.client.markets) != set(api_markets.values())):
+            # Old fixtures that have not adopted the two-asset contract are
+            # allowed only as an offline compatibility path, never production.
+            legacy_fixture = (getattr(self.client, 'api_markets', None) is None
+                              and set(self.client.markets) == {self.client.api_market})
+            if not legacy_fixture:
+                raise ExchangeError('PAS_ASSET_MAPPING_UNVERIFIED')
+        selected_markets = set(api_markets.values())
+        contexts_by_symbol = {}
+        dex_total_oi = decimal(0)
+        # Only BTC and EWY enter the signal/strategy path. The aggregate OI sum
+        # below is a safety calculation for the whole DEX cap, not a scan.
+        for i, row in enumerate(metadata['universe']):
+            if not isinstance(row, dict) or not isinstance(row.get('name'), str) or not isinstance(contexts[i], dict):
+                raise ExchangeError('INVALID_ASSET_CONTEXTS')
+            symbol = self.client.canonical_market_name(row['name'])
+            try:
+                oi = decimal(contexts[i]['openInterest'], nonnegative=True)
+                oracle = decimal(contexts[i]['oraclePx'], positive=True)
+            except (KeyError, TypeError, ValueError) as exc:
+                raise ExchangeError('DEX_OI_AGGREGATE_UNVERIFIABLE') from exc
+            if not row.get('isDelisted'):
+                dex_total_oi += oi * oracle
+            if symbol in selected_markets:
+                if symbol in contexts_by_symbol:
+                    raise ExchangeError('AMBIGUOUS_PAS_ASSET_CONTEXT')
+                if row.get('isDelisted'):
+                    raise ExchangeError('PAS_SELECTED_ASSET_DELISTED')
+                contexts_by_symbol[symbol] = contexts[i]
+        if set(contexts_by_symbol) != selected_markets:
+            raise ExchangeError('PAS_SELECTED_ASSET_CONTEXT_UNAVAILABLE')
+        self.client.dex_total_oi_notional = dex_total_oi
+        self.client.dex_oi_observed_ms = self.client.clock_ms()
+        self.client.dex_oi_market_count = len(metadata['universe'])
+        return contexts_by_symbol
 
     def get_quote(self, symbol):
         self.client.market(symbol)
@@ -137,6 +183,13 @@ class HyperliquidMarketData:
                 raise ExchangeError('FUTURE_REST_CANDLE')
             if candle.timestamp_ms + INTERVAL_MS[interval] > as_of:
                 continue
+            # For PAS, clock passage alone cannot finalize a stream/REST fact
+            # first observed while its interval was still open. A later real
+            # response can supply that bar; unknown receive time stays blocked.
+            if (getattr(self.client, 'competition_mode', False) and interval == '1m'
+                    and (candle.received_timestamp_ms is None or
+                         candle.received_timestamp_ms < candle.timestamp_ms + 60_000)):
+                continue
             prior = candles.get(candle.timestamp_ms)
             if prior is not None and replace(prior,received_timestamp_ms=candle.received_timestamp_ms,
                     processed_timestamp_ms=candle.processed_timestamp_ms) != candle:
@@ -169,6 +222,12 @@ class ParMarketDataEngine:
         if type(history_bars) is not int or not 1 <= history_bars <= 5000:
             raise ExchangeError('INVALID_HISTORY_WINDOW')
         self.history_bars = history_bars
+        # PAS scanner ranges include the complete UTC-anchor lookback, which
+        # can be longer than the strategy's 300-bar requirement. Keep up to
+        # 5000 completed intervals plus one mutable/open observation; health
+        # and strategy requirements remain governed by history_bars.
+        self.retention_capacity = (PAS_RETAINED_COMPLETED_BARS + 1
+            if getattr(self.client, 'competition_mode', False) else history_bars + 1)
         self.connect = connect or self._connect
         self.connected = False
         self.reconciled = False
@@ -255,11 +314,17 @@ class ParMarketDataEngine:
                 raise ExchangeError('MARKET_RECOVERY_CANCELLED')
             with self._lock:
                 previous=list(self.candles[symbol].values())
+            pas=getattr(self.client,'competition_mode',False)
+            def is_completed_source(bar):
+                return (bar.timestamp_ms+60_000<=now and
+                    (not pas or (bar.received_timestamp_ms is not None and
+                                 bar.received_timestamp_ms>=bar.timestamp_ms+60_000)))
             # Repair from the last actual completed candle, with a small overlap.
             # Missing venue bars remain missing; no interpolation or CSV fallback.
             repair_start=max(start,max((b.timestamp_ms for b in previous
-                if b.timestamp_ms+60000<=now),default=start)-2*60000)
-            completed=sorted((b for b in previous if start<=b.timestamp_ms<=end),key=lambda b:b.timestamp_ms)
+                if is_completed_source(b)),default=start)-2*60000)
+            completed=sorted((b for b in previous if start<=b.timestamp_ms<=end
+                and is_completed_source(b)),key=lambda b:b.timestamp_ms)
             # A narrow tail repair cannot fill an older hole or warm up a short buffer.
             if len(completed)<self.history_bars or any(b.timestamp_ms-a.timestamp_ms!=60000
                     for a,b in zip(completed,completed[1:])):
@@ -272,7 +337,10 @@ class ParMarketDataEngine:
                         missing_timestamps_ms=missing,request_start_ms=repair_start,request_end_ms=end)
             try:
                 fresh=self.market.get_candles(symbol,repair_start,end,now_ms=now)
-                combined={b.timestamp_ms:b for b in previous if start<=b.timestamp_ms<=end}
+                # Preserve genuine older stream rows: the scanner may request
+                # farther back than the narrower health-recovery REST window.
+                combined={b.timestamp_ms:b for b in previous
+                    if pas or start<=b.timestamp_ms<=end}
                 # Validate each genuine row in get_candles, then merge before
                 # checking continuity. Retained rows can complete a sparse REST
                 # response; an unresolved hole still fails market_health.
@@ -318,7 +386,7 @@ class ParMarketDataEngine:
                         try:merged[t]=merge_candle(prior,b,self.client.clock_ms())
                         except ExchangeError as exc:
                             errors[symbol]=str(exc);merged[t]=b
-                self.candles[symbol]=dict(sorted(merged.items())[-(self.history_bars+1):])
+                self.candles[symbol]=dict(sorted(merged.items())[-self.retention_capacity:])
                 self.input_errors[symbol].pop('history_health',None)
                 self._audit_cache(symbol,'REST_MERGE',start,end)
             for symbol in selected:self.recovery_errors.pop(symbol,None)
@@ -461,18 +529,23 @@ class ParMarketDataEngine:
                         self.candles[symbol].get(candle.timestamp_ms),candle,received_ms)
                     keys = sorted(self.candles[symbol])
                     # A current open bar must not evict the 300th completed bar.
-                    for key in keys[:-(self.history_bars+1)]:
+                    for key in keys[:-self.retention_capacity]:
                         del self.candles[symbol][key]
                     if getattr(self.client,'candle_audit',None) is not None:
                         self.client.candle_audit.record('WS_MERGE',symbol=symbol,candle=candle,
                             retained_timestamp_ms=sorted(self.candles[symbol]),
-                            evicted_timestamp_ms=keys[:-(self.history_bars+1)])
+                            evicted_timestamp_ms=keys[:-self.retention_capacity])
             self.messages += 1
 
     def market_health(self):
         now=self.client.clock_ms()
         with self._lock:
-            values={s:(self.get_completed_candles(s),self.books.get(s),self.contexts.get(s),
+            # Retention may include an older UTC scanner window. General feed
+            # health is still judged on the configured recent strategy tail;
+            # the scanner independently validates its complete requested range.
+            values={s:((self.get_completed_candles(s)[-self.history_bars:]
+                        if getattr(self.client,'competition_mode',False)
+                        else self.get_completed_candles(s)),self.books.get(s),self.contexts.get(s),
                 self.context_times.get(s),dict(self.input_errors[s],**({'scanner_history':self.scanner_errors[s]}
                     if s in self.scanner_errors else {}),**({'recovery':self.recovery_errors[s]}
                     if s in self.recovery_errors else {})),self.get_observations(s)) for s in self.symbols}
@@ -488,7 +561,7 @@ class ParMarketDataEngine:
             for c in candles:
                 prior=self.candles[symbol].get(c.timestamp_ms)
                 merged[c.timestamp_ms]=merge_candle(prior,c,self.client.clock_ms())
-            self.candles[symbol]=dict(sorted(merged.items())[-(self.history_bars+1):])
+            self.candles[symbol]=dict(sorted(merged.items())[-self.retention_capacity:])
             self._audit_cache(symbol,'SCANNER_SNAPSHOT',candles[0].timestamp_ms,candles[-1].close_timestamp_ms)
             prior=self.books.get(symbol)
             if prior is None or book.timestamp_ms>=prior.timestamp_ms:self.books[symbol]=book
@@ -501,7 +574,7 @@ class ParMarketDataEngine:
         if getattr(self.client,'candle_audit',None) is not None:
             self.client.candle_audit.record('CACHE',symbol=symbol,operation=operation,
                 requested_start_ms=start_ms,requested_end_ms=end_ms,
-                capacity=self.history_bars+1,candles=list(self.candles[symbol].values()))
+                capacity=self.retention_capacity,candles=list(self.candles[symbol].values()))
 
     def note_scanner_failure(self,symbol,reason):
         if symbol not in self.symbols:raise VenueMismatch('STREAM_MARKET_IDENTITY_MISMATCH')
@@ -539,8 +612,11 @@ class ParMarketDataEngine:
             raise VenueMismatch('STREAM_MARKET_IDENTITY_MISMATCH')
         with self._lock:
             now = self.client.clock_ms()
+            pas = getattr(self.client, 'competition_mode', False)
             return [bar for _, bar in sorted(self.candles[symbol].items())
-                    if bar.timestamp_ms + 60_000 <= now]
+                    if (bar.timestamp_ms + 60_000 <= now and
+                        (not pas or (bar.received_timestamp_ms is not None and
+                                     bar.received_timestamp_ms >= bar.timestamp_ms + 60_000)))]
 
     def get_quote(self, symbol):
         if not self.connected or not self.reconciled or not self.client.ready:
@@ -708,3 +784,12 @@ class ParMarketDataEngine:
                     self._recovery_worker.join(timeout=12)
                     if self._recovery_worker.is_alive():
                         raise ExchangeError('MARKET_RECOVERY_WORKER_DID_NOT_STOP')
+
+
+class PasMarketDataEngine(ParMarketDataEngine):
+    """PAS market engine name for the two-asset competition runtime.
+
+    The implementation is venue-generic and subscribes exactly to the symbols
+    supplied by the verified client registry. Keep ``ParMarketDataEngine`` as a
+    backwards-compatible import for isolated historical fixtures.
+    """

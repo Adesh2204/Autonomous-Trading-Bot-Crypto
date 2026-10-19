@@ -33,6 +33,13 @@ def isolated_pas_environment(monkeypatch):
 class PasFixture(PublicInfoFixture):
     def __init__(self):
         super().__init__()
+        # PAS runtime assertions cover only the active BTC/EWY pair; historical
+        # all-market practice coverage stays in PublicInfoFixture's PAR tests.
+        selected = {'par:BTC', 'par:EWY'}
+        self.contexts = [ctx for row,ctx in zip(self.metadata['universe'],self.contexts)
+                         if row['name'] in selected]
+        self.metadata['universe'] = [row for row in self.metadata['universe']
+                                     if row['name'] in selected]
         self.dexes=[None,dict(name='par'),dict(name='pa'),dict(name='pas')]
         self.metadata['collateralToken']=77
         for row in self.metadata['universe']:
@@ -58,9 +65,10 @@ def pas():
 
 def test_pas_discovery_uses_canonical_index_precision_and_collateral():
     f,c,a=pas();assert c.dex_index==3 and c.collateral_token_id==77 and c.venue_identity==SCORED.identity
-    for index,row in enumerate(f.metadata['universe']):
-        assert c.market(row['name']).asset_id==130000+index
-        assert c.market(row['name']).size_step==D('.00001')
+    assert set(c.api_markets.values())=={'pas:BTC','pas:EWY'}
+    for index,symbol in enumerate(('pas:BTC','pas:EWY')):
+        assert c.market(symbol).asset_id==130000+index
+        assert c.market(symbol).size_step==D('.00001')
     assert f.calls[:3]==[dict(type='perpDexs'),dict(type='meta',dex='pas'),dict(type='spotMeta')]
 
 @pytest.mark.parametrize('damage',['missing_pas','pa_only','duplicate_pas','wrong_token','duplicate_token','delisted','par_symbol','missing_market'])
@@ -70,10 +78,10 @@ def test_pas_discovery_fails_closed_without_native_or_practice_fallback(damage):
     elif damage=='pa_only':f.dexes=[None,dict(name='pa')]
     elif damage=='duplicate_pas':f.dexes.append(dict(name='pas'))
     elif damage=='wrong_token':f.tokens[0]['name']='USDPR'
-    elif damage=='duplicate_token':f.tokens.append(dict(name='USDP',index=78))
-    elif damage=='delisted':f.metadata['universe'][0]['isDelisted']=True
+    elif damage=='duplicate_token':f.tokens.append(dict(name='USDP',index=77))
+    elif damage=='delisted':next(row for row in f.metadata['universe'] if row['name']=='pas:BTC')['isDelisted']=True
     elif damage=='par_symbol':f.metadata['universe'][0]['name']='par:BTC'
-    else:f.metadata['universe'].pop()
+    else:f.metadata['universe']=[row for row in f.metadata['universe'] if row['name']!='pas:EWY']
     c=HyperliquidClient(f,venue='pas')
     with pytest.raises(ExchangeError):c.startup()
     assert not c.ready and not c.markets
@@ -84,9 +92,12 @@ def test_pas_public_boundary_rejects_wrong_venue_and_signed_queries(query,params
     with pytest.raises(ExchangeError):c.post_info(query,**params)
     assert len(f.calls)==before
 
-def test_practice_client_and_environment_do_not_implicitly_promote():
-    f=PasFixture()
-    with pytest.raises(ExchangeError):HyperliquidClient(f).startup()
+def test_practice_profile_is_only_available_for_explicit_offline_callable():
+    with pytest.raises(ExchangeError,match='PRODUCTION_PAS_ONLY'):
+        HyperliquidClient(venue='par')
+    with pytest.raises(ExchangeError):HyperliquidClient(PublicInfoFixture(),venue='pas').startup()
+    practice=HyperliquidClient(PublicInfoFixture(),venue='par');practice.startup()
+    assert practice.dex=='par' and practice.legacy_offline_read_only
     for name in ['PAS','pa','native','',True]:
         with pytest.raises(ExchangeError):venue_profile(name)
 
@@ -188,11 +199,11 @@ def test_capacity_cannot_mix_pas_spec_and_practice_book():
     assert r['authorized_executable_notional']=='0' and 'CAPACITY_VENUE_MARKET_IDENTITY_MISMATCH' in r['reasons']
 
 
-def test_pas_authorized_cli_rejects_wrong_profile_before_builder(monkeypatch,tmp_path):
+def test_retired_pas_authorized_cli_fails_closed_before_builder(monkeypatch,tmp_path):
     from exchange import terminal_app,long_session
     m=scored();p=tmp_path/'m.json';p.write_text(json.dumps(asdict(m)))
     monkeypatch.setattr(long_session,'build_long_runtime',lambda *a,**k:pytest.fail('builder reached'))
-    with pytest.raises(ExchangeError,match='CLI_MANDATE_VENUE_MISMATCH'):
+    with pytest.raises(ExchangeError,match='RETIRED_AUTHORIZED_TERMINAL_ROUTE'):
         terminal_app.run_authorized(tmp_path,SimpleNamespace(mandate=p,venue='par'),None,None)
 
 
@@ -290,8 +301,9 @@ def test_pas_proposal_saves_all_blockers_without_mandate_or_acceptance(monkeypat
 def test_pas_state_directory_cannot_reuse_practice_state(tmp_path):
     from exchange.terminal_app import start
     (tmp_path/'venue.json').write_text(json.dumps(dict(dex='par')))
-    with pytest.raises(ExchangeError,match='STATE_VENUE_MISMATCH'):
-        start(__import__('pathlib').Path(__file__).resolve().parents[1],SimpleNamespace(venue='pas',state=str(tmp_path)))
+    with pytest.raises(ExchangeError,match='TERMINAL_STATE_VENUE_MISMATCH'):
+        start(__import__('pathlib').Path(__file__).resolve().parents[1],
+            SimpleNamespace(authorized=False,venue='pas',state=str(tmp_path)))
 
 
 def test_sdk_rechecks_canonical_pas_identity_even_if_both_missing():
@@ -299,7 +311,7 @@ def test_sdk_rechecks_canonical_pas_identity_even_if_both_missing():
         OfficialSDKTransport(SimpleNamespace(dex='pas'),None,TEAM,None,SimpleNamespace(),rate_limits=None)
 
 
-@pytest.mark.parametrize('setting,value',[('HL_DEX','par'),('SIGNAL_DATA_MODE','PAR_NATIVE_ONLY')])
+@pytest.mark.parametrize('setting,value',[('HL_COMPETITION_MARKET','par'),('SIGNAL_DATA_MODE','PAR_NATIVE_ONLY')])
 def test_explicit_pas_profile_rejects_conflicting_practice_environment(monkeypatch,setting,value):
     from venue_config import require_paper_migration,MigrationPolicyError
     monkeypatch.setenv(setting,value)
