@@ -1,0 +1,364 @@
+{
+  "observed_ms": 1792351712711,
+  "final_status": "BLOCKED_EXTERNAL_EVIDENCE",
+  "observation_capability": "READY_FOR_OBSERVATION",
+  "trading_verdict": "NO_GO",
+  "source_hash": "6d37a929e23e295cd35a4aa137a077b6533b711bf085d292fff8c2103420ca42",
+  "regression": {
+    "started_unix": 1792350859.183819,
+    "source_hash": "6d37a929e23e295cd35a4aa137a077b6533b711bf085d292fff8c2103420ca42",
+    "scope": "V3 PAS funding, diagnostic readiness, durable history, configuration-only route, qualification preparation and terminal release; 2927 preserved plus 52 adversarial tests. Ephemeral offline SDK fixtures only; no actual-wallet access or exchange write",
+    "evidence_classifier_sha256": "6d81a9912e08c37aca6ad83eb7fbefe3341c5e46af403801cb4045b5296c98f1",
+    "checks_before": {
+      "strategy_freeze": {
+        "exit_code": 0,
+        "result": {
+          "baseline": "nse-working-baseline",
+          "file_count": 1,
+          "method_count": 8,
+          "parameter_count": 32,
+          "passed": true
+        }
+      },
+      "phase0": {
+        "exit_code": 0,
+        "result": {
+          "project": "anchorium-perpetual-alpha",
+          "checks": {
+            "project_is_perpetual_alpha": true,
+            "independent_git_directory": true,
+            "migration_branch": true,
+            "testnet_venue": true,
+            "paper_execution_mode": true,
+            "migration_policy_valid": true,
+            "orders_disabled": true,
+            "angel_one_client_disabled": true,
+            "angel_one_order_boundary_disabled": true,
+            "testnet_order_boundary_disabled": true,
+            "signal_logic_present": true,
+            "signal_source_unchanged": true
+          },
+          "passed": true
+        }
+      }
+    },
+    "finished_unix": 1792351583.98675,
+    "exit_code": 0,
+    "source_hash_after": "6d37a929e23e295cd35a4aa137a077b6533b711bf085d292fff8c2103420ca42",
+    "totals": {
+      "tests": 2979,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "xml_sha256": "db85c3cdcf8557d8cb299e433a68590aa12411720b70a45f0b94e394644cdb0a",
+    "evidence_classifier_sha256_after": "6d81a9912e08c37aca6ad83eb7fbefe3341c5e46af403801cb4045b5296c98f1",
+    "previous_evidence_classifier_sha256": "9c95b59054aed2adc38a41f5f65b0a65c314ac4cb3b29ea437a88d2b6dfcf8e0",
+    "baseline_minimum": 2927,
+    "expected_minimum": 2979,
+    "checks_after": {
+      "strategy_freeze": {
+        "exit_code": 0,
+        "result": {
+          "baseline": "nse-working-baseline",
+          "file_count": 1,
+          "method_count": 8,
+          "parameter_count": 32,
+          "passed": true
+        }
+      },
+      "phase0": {
+        "exit_code": 0,
+        "result": {
+          "project": "anchorium-perpetual-alpha",
+          "checks": {
+            "project_is_perpetual_alpha": true,
+            "independent_git_directory": true,
+            "migration_branch": true,
+            "testnet_venue": true,
+            "paper_execution_mode": true,
+            "migration_policy_valid": true,
+            "orders_disabled": true,
+            "angel_one_client_disabled": true,
+            "angel_one_order_boundary_disabled": true,
+            "testnet_order_boundary_disabled": true,
+            "signal_logic_present": true,
+            "signal_source_unchanged": true
+          },
+          "passed": true
+        }
+      }
+    },
+    "passed": true,
+    "requirements_sha256": "db76f769d0aae03197e922f579ce6db9aa6aced9587da93e11b4bba409774b4d",
+    "runtime_versions": {
+      "numpy": "2.5.2",
+      "pandas": "3.0.5",
+      "python-dateutil": "2.9.0.post0",
+      "python-dotenv": "1.2.3",
+      "pytest": "8.4.1",
+      "requests": "2.34.2",
+      "tzdata": "2026.3",
+      "websocket-client": "1.9.0",
+      "hyperliquid-python-sdk": "0.24.0"
+    }
+  },
+  "original_53_preserved": true,
+  "actual_funding": {
+    "status": "USDP_ZERO",
+    "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+    "network": "testnet",
+    "dex": "pas",
+    "collateral": "USDP",
+    "account_mode": "unifiedAccount",
+    "token": 3307,
+    "observed_ms": 1792351574833,
+    "exchange_time_ms": 1792351575483,
+    "balance": "0",
+    "age_ms": 137872,
+    "organizer_credit_amount": null,
+    "organizer_credit_provenance": "UNKNOWN",
+    "signing_authority": "NONE",
+    "reasons": [],
+    "response_hashes": {
+      "spot": "b65b90d9873795759f9492dfb2f7292b91b9c74a2316065e25ea373c3db6ab27",
+      "state": "ef1737f071ed47d800ae801e7e5cdbe5481752055fe6e16aabf599a8177a6e81"
+    },
+    "provenance": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-v3-public/sessions/6665be4ba11a4c6baf3be6cab8638777/info_receipts.jsonl",
+    "equity_basis": "Unified USDP total once; no addition of per-DEX equity or unrealized PnL",
+    "evidence_hash": "360696388a52e4fe8e6581a8ad35587a5c9f31906c9a78181bced5aceea779d8"
+  },
+  "discovery_funding": {
+    "status": "USDP_ZERO",
+    "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+    "network": "testnet",
+    "dex": "pas",
+    "collateral": "USDP",
+    "account_mode": "unifiedAccount",
+    "token": 3307,
+    "observed_ms": 1792350864911,
+    "exchange_time_ms": 1792350865193,
+    "balance": "0",
+    "age_ms": 531,
+    "organizer_credit_amount": null,
+    "organizer_credit_provenance": "UNKNOWN",
+    "signing_authority": "NONE",
+    "reasons": [],
+    "response_hashes": {
+      "spot": "b65b90d9873795759f9492dfb2f7292b91b9c74a2316065e25ea373c3db6ab27",
+      "state": "b2a3cd8550010eeaa8711028148b5c478d52ed823904696e6297de35710274ff"
+    },
+    "provenance": "docs/activation_v3_2026-10-19/native_qualification_release/fresh_discovery/info_receipts.jsonl",
+    "equity_basis": "Unified USDP total once; no addition of per-DEX equity or unrealized PnL",
+    "evidence_hash": "81f6747c0fd05f24a32f34ae63201ad82563bd3abef3d3c3158bd37f45e03c3e"
+  },
+  "one_x_verified": 0,
+  "historical_unknown": "BLOCKED",
+  "safe_pas_isolation": "BLOCKED",
+  "native_qualification": "UNQUALIFIED",
+  "native_proposal_hash": "470bba7a8333a41d3202a27b2b42a234a8c1ac1cf5a0f3492dfd3a6fddc6a23e",
+  "account": {
+    "source": "EXCHANGE_REPORTED_ACCOUNT_OBSERVER",
+    "exchange_orders_submitted": 0,
+    "entries_paused": false,
+    "reasons": [],
+    "positions": [],
+    "open_orders": [],
+    "fills": [],
+    "funding_events": [],
+    "reported_account_equity": {
+      "reported_account_value": "0",
+      "collateral_balance": "0",
+      "margin_used": "0",
+      "withdrawable": null,
+      "valuation_source": "spotClearinghouseState.USDP.total"
+    },
+    "accounting_window_ms": [
+      0,
+      1792350874355
+    ],
+    "latest_query_window_ms": [
+      1792350811690,
+      1792350874355
+    ],
+    "realized": {
+      "gross_closed_pnl": "0",
+      "actual_fill_fees": "0",
+      "actual_funding_cashflow": "0",
+      "net_after_fees_and_funding": "0",
+      "scope": "ONLY_OBSERVED_ACCOUNT_EVENTS; excludes deposits/transfers and unknown historical events"
+    },
+    "corrections": [
+      {
+        "kind": "EXCHANGE_TRUTH_ADOPTED",
+        "timestamp_ms": 1792350873341,
+        "differences": {},
+        "new_fill_count": 0,
+        "reasons": [],
+        "exchange_ts": null,
+        "received_ts": "2026-10-18T19:14:33.341+00:00",
+        "processed_ts": "2026-10-18T19:14:33.341+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      {
+        "kind": "EXCHANGE_TRUTH_ADOPTED",
+        "timestamp_ms": 1792350875703,
+        "differences": {},
+        "new_fill_count": 0,
+        "reasons": [],
+        "exchange_ts": null,
+        "received_ts": "2026-10-18T19:14:35.703+00:00",
+        "processed_ts": "2026-10-18T19:14:35.703+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      }
+    ]
+  },
+  "terminal_discovery_flat": true,
+  "terminal_discovery_readbacks": [
+    {
+      "observed_ms": 1792350873857,
+      "ready": true,
+      "positions": [],
+      "orders": [],
+      "team": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+      "source": "EXCHANGE_DIRECT_TESTNET_PAS_INFO"
+    },
+    {
+      "observed_ms": 1792350876270,
+      "ready": true,
+      "positions": [],
+      "orders": [],
+      "team": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+      "source": "EXCHANGE_DIRECT_TESTNET_PAS_INFO"
+    }
+  ],
+  "actual_pas_fills": [],
+  "actual_pas_realized": {
+    "gross_closed_pnl": "0",
+    "actual_fill_fees": "0",
+    "actual_funding_cashflow": "0",
+    "net_after_fees_and_funding": "0",
+    "scope": "ONLY_OBSERVED_ACCOUNT_EVENTS; excludes deposits/transfers and unknown historical events"
+  },
+  "actual_funding_events": [],
+  "historical_oct15_par_net": "0.050512 TEST USDPR; separate from PAS",
+  "observer": {
+    "pid": 21050,
+    "session_id": "6665be4ba11a4c6baf3be6cab8638777",
+    "output": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-v3-public/sessions/6665be4ba11a4c6baf3be6cab8638777",
+    "source": "6d37a929e23e295cd35a4aa137a077b6533b711bf085d292fff8c2103420ca42",
+    "status": "OBSERVING",
+    "status_observed_ms": 1792351709648,
+    "complete_frame_count": 33,
+    "stream_connected": true,
+    "account_stream_healthy": true,
+    "actual_errors": {
+      "None:INFO_READ_CANCELLED": 1
+    },
+    "terminal_flat": "NOT_CLAIMED_WHILE_RUNNING",
+    "signing_authority": "NONE"
+  },
+  "preparation_exchange_writes": 0,
+  "actual_wallet_signatures_created": 0,
+  "actual_approval_created": false,
+  "remaining_external_conditions": [
+    {
+      "blocker": "Funding detection",
+      "initial_cause": "Practice USDPR cannot fund PAS",
+      "code_repair": "Canonical unsigned USDP/mode watcher and durable events",
+      "offline_verification": "Funding arrival/disappearance/token/mode/age tests",
+      "current_exchange_evidence": "0 USDP, USDP_ZERO",
+      "external_requirement": "Actual USDP credit and original organizer origin record",
+      "status": "SOFTWARE_READY_EXTERNAL_PROOF_MISSING"
+    },
+    {
+      "blocker": "PAS 1x CROSS",
+      "initial_cause": "Current market leverage is 10x/20x",
+      "code_repair": "Exact configuration-only plan, genuine TTY approval and one-use SDK route",
+      "offline_verification": "Ephemeral PAS SDK wire/expiry/exact-action/repeat rejection; existing ten-market configuration regression",
+      "current_exchange_evidence": "0/10 actually 1x CROSS",
+      "external_requirement": "Fresh funded clean account, separate approval and authoritative final readbacks",
+      "status": "AUTHORIZATION_REQUIRED"
+    },
+    {
+      "blocker": "Historical UNKNOWN outcome A",
+      "initial_cause": "Original causal/transmission evidence incomplete",
+      "code_repair": "Preserved forensic review; no fabricated certificate",
+      "offline_verification": "Shared barriers and original certificate classifier regression",
+      "current_exchange_evidence": "BLOCKED; exact original CLOID remains UNKNOWN",
+      "external_requirement": "Admissible original terminal/causal record",
+      "status": "BLOCKED"
+    },
+    {
+      "blocker": "Independent PAS isolation B",
+      "initial_cause": "Shared account/API/nonce domain",
+      "code_repair": "No automatic DEX isolation bypass",
+      "offline_verification": "Foreign UNKNOWN and shared order barriers retained",
+      "current_exchange_evidence": "No independent isolation proof or approval",
+      "external_requirement": "Independently justified and explicitly authorized policy; preserve original row and nonce",
+      "status": "BLOCKED"
+    },
+    {
+      "blocker": "Consumed native attempt",
+      "initial_cause": "Prior terminal do_not_restart marker",
+      "code_repair": "Preserved and reviewed; no reset/relaunch",
+      "offline_verification": "Consumed-attempt tests retained",
+      "current_exchange_evidence": "Original marker unchanged",
+      "external_requirement": "Independent review; no authority inherited by a new test",
+      "status": "BLOCKED"
+    },
+    {
+      "blocker": "PAS native/residual qualification",
+      "initial_cause": "No genuine PAS trigger/residual proof; subminimum cleanup unsupported",
+      "code_repair": "Dedicated unsigned test proposal and separate milestone telemetry; par repairs retained",
+      "offline_verification": "PAS lifecycle fault suite plus V3 plan/milestone tests",
+      "current_exchange_evidence": "UNQUALIFIED; no actual PAS test submitted",
+      "external_requirement": "Admissible PAS residual cleanup scope, funded/1x/clean account, permission and new exact test approval; future narrow integration review",
+      "status": "BLOCKED"
+    },
+    {
+      "blocker": "History and frozen signal readiness",
+      "initial_cause": "Sparse/stale PAS candles and memory-only cache",
+      "code_repair": "Crash-safe authentic cache, incremental updates, conflict/gap/age reports; post-backfill fresh quotes",
+      "offline_verification": "Restart/dedup/numeric-format/conflict/future/gap/mapping tests",
+      "current_exchange_evidence": "See market_readiness.json; no manufactured bars",
+      "external_requirement": "Sufficient fresh authentic 300-bar history and a valid frozen LONG signal",
+      "status": "SOFTWARE_READY_EXTERNAL_PROOF_MISSING"
+    },
+    {
+      "blocker": "Executable economics",
+      "initial_cause": "Book movement or target estimate is not a qualified edge",
+      "code_repair": "Both-side caps remain; published fee scenario separate from unchanged stress guard",
+      "offline_verification": "Existing risk/liquidity tests and V3 fee/report checks",
+      "current_exchange_evidence": "Actual authorized capacity zero; no qualified executable setup",
+      "external_requirement": "Qualified protection, funding/margin, fresh signal and exact approved risk bounds",
+      "status": "SOFTWARE_READY_EXTERNAL_PROOF_MISSING"
+    },
+    {
+      "blocker": "Scored calendar",
+      "initial_cause": "Outdated practice rules must not gate the open scored phase",
+      "code_repair": "Shared exact UTC boundaries preserved; verified official schedule",
+      "offline_verification": "Start/end-minus-one/exact-boundary tests",
+      "current_exchange_evidence": "Preopening at preparation; no clock-based authority",
+      "external_requirement": "Official opening plus independent account eligibility requirements",
+      "status": "SOFTWARE_READY_EXTERNAL_PROOF_MISSING"
+    },
+    {
+      "blocker": "Finite autonomous signing",
+      "initial_cause": "Public readiness cannot create a signer",
+      "code_repair": "Existing exact source-bound noninteractive two-entry/twelve-action lifecycle preserved",
+      "offline_verification": "Full crash/nonce/clock/loss/expiry/partial/protection/reconcile tests; V3 report cannot manufacture acceptance",
+      "current_exchange_evidence": "No actual session acceptance or signer created",
+      "external_requirement": "Fresh genuine exact session approval after every prerequisite",
+      "status": "AUTHORIZATION_REQUIRED"
+    }
+  ],
+  "known_implementation_limit": "Dedicated PAS native execution exception remains unavailable until admissible residual cleanup policy and exact authority are independently established; preparation does not certify or bypass that integration.",
+  "dependencies": "Standalone public observation depends on Mac, Python, power, internet and exchange, independent of Codex/app; no unattended recovery/signing can be guaranteed through interruption."
+}

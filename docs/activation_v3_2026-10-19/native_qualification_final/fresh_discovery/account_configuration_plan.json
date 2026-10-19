@@ -1,0 +1,176 @@
+{
+  "status": "UNSIGNED_CONFIGURATION_PLAN_ONLY",
+  "network": "testnet",
+  "dex": "pas",
+  "collateral": "USDP",
+  "source_hash": "b04e790ac319dd434cf1e2291557a186281f13ff5c6a8fe997293d57df24b6ca",
+  "observed_ms": 1792350525155,
+  "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+  "discovery_hash": "b0f883b0feb61f393557bb763d0402f37f6f8526f7a300c90ada77fa11b06610",
+  "changes": [
+    {
+      "symbol": "pas:BRENT",
+      "observed_ms": 1792350516281,
+      "before": {
+        "type": "cross",
+        "value": 20
+      },
+      "requested_action": {
+        "type": "updateLeverage",
+        "asset": 2810006,
+        "isCross": true,
+        "leverage": 1
+      }
+    },
+    {
+      "symbol": "pas:BTC",
+      "observed_ms": 1792350516625,
+      "before": {
+        "type": "cross",
+        "value": 20
+      },
+      "requested_action": {
+        "type": "updateLeverage",
+        "asset": 2810000,
+        "isCross": true,
+        "leverage": 1
+      }
+    },
+    {
+      "symbol": "pas:ETH",
+      "observed_ms": 1792350517116,
+      "before": {
+        "type": "cross",
+        "value": 20
+      },
+      "requested_action": {
+        "type": "updateLeverage",
+        "asset": 2810001,
+        "isCross": true,
+        "leverage": 1
+      }
+    },
+    {
+      "symbol": "pas:EWJ",
+      "observed_ms": 1792350517653,
+      "before": {
+        "type": "cross",
+        "value": 20
+      },
+      "requested_action": {
+        "type": "updateLeverage",
+        "asset": 2810005,
+        "isCross": true,
+        "leverage": 1
+      }
+    },
+    {
+      "symbol": "pas:EWY",
+      "observed_ms": 1792350517997,
+      "before": {
+        "type": "cross",
+        "value": 20
+      },
+      "requested_action": {
+        "type": "updateLeverage",
+        "asset": 2810004,
+        "isCross": true,
+        "leverage": 1
+      }
+    },
+    {
+      "symbol": "pas:GOLD",
+      "observed_ms": 1792350518521,
+      "before": {
+        "type": "cross",
+        "value": 20
+      },
+      "requested_action": {
+        "type": "updateLeverage",
+        "asset": 2810007,
+        "isCross": true,
+        "leverage": 1
+      }
+    },
+    {
+      "symbol": "pas:HYPE",
+      "observed_ms": 1792350519045,
+      "before": {
+        "type": "cross",
+        "value": 10
+      },
+      "requested_action": {
+        "type": "updateLeverage",
+        "asset": 2810002,
+        "isCross": true,
+        "leverage": 1
+      }
+    },
+    {
+      "symbol": "pas:SP500",
+      "observed_ms": 1792350519570,
+      "before": {
+        "type": "cross",
+        "value": 20
+      },
+      "requested_action": {
+        "type": "updateLeverage",
+        "asset": 2810003,
+        "isCross": true,
+        "leverage": 1
+      }
+    },
+    {
+      "symbol": "pas:USDEUR",
+      "observed_ms": 1792350520094,
+      "before": {
+        "type": "cross",
+        "value": 20
+      },
+      "requested_action": {
+        "type": "updateLeverage",
+        "asset": 2810008,
+        "isCross": true,
+        "leverage": 1
+      }
+    },
+    {
+      "symbol": "pas:USDJPY",
+      "observed_ms": 1792350520426,
+      "before": {
+        "type": "cross",
+        "value": 20
+      },
+      "requested_action": {
+        "type": "updateLeverage",
+        "asset": 2810009,
+        "isCross": true,
+        "leverage": 1
+      }
+    }
+  ],
+  "already_one_x_cross": [],
+  "collateral_balance": "0",
+  "organizer_credit_amount": null,
+  "organizer_credit_status": "ORIGINAL_ORGANIZER_CREDIT_RECORD_REQUIRED; balance is not funding provenance",
+  "blockers": [
+    "SEPARATE_EXACT_OPERATOR_CONFIGURATION_APPROVAL_REQUIRED",
+    "PAS_USDP_FUNDING_REQUIRED_BEFORE_CONFIGURATION",
+    "SHARED_UNKNOWN_AND_CONSUMED_INVOCATION_REVIEW_REQUIRED"
+  ],
+  "signing_authority": "NONE",
+  "signatures_created": 0,
+  "exchange_writes": 0,
+  "transfers_allowed": false,
+  "configuration_approval_created": false,
+  "required_before_execution": [
+    "Fresh funded Unified account/agent/identity checks",
+    "Prior UNKNOWN/invocation review",
+    "Exact new configuration-only approval",
+    "Shared sole host/signer/nonce ownership",
+    "Per-action exact permit and durable uncertainty",
+    "Fresh readback of every requested 1x CROSS value"
+  ],
+  "note": "Unsigned evidence only. The separate exact PAS configuration-only approval/route is required; existing par approval never authorizes PAS.",
+  "plan_hash": "06359898b0725821753910734ee8b13a76b3f54c995ef19ab8ac2cf5f2907ef4"
+}

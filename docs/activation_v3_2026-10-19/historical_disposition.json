@@ -1,0 +1,53 @@
+{
+  "observed_ms": 1792350176916,
+  "original_cloid": "0xac0eea156fcec80986dd67c9057b6ded",
+  "original_nonce": 1792217834069,
+  "original_source": "88429ed4fabb3f1564b4c0bb281466e841cd6fa3e522bd3092172d78a3a7fc5f",
+  "question_A_order_outcome": "BLOCKED",
+  "question_B_safe_pas_isolation": "BLOCKED",
+  "disposition": "BLOCKED",
+  "evidence_files": {
+    "docs/par_native_repair_2026-10-18/unknown_forensic_verdict.json": "7abceabff6317997a4d4abbc227f3e73d6137422cc408c6a3157807e6f342e56",
+    "docs/activation_v3_2026-10-19/original_order_audit/readback.json": "b4b71cdd0f4820ceeb5e92b1b583a6a30a43f52f008073f753168e2c80c4fbfd",
+    "docs/activation_v3_2026-10-19/original_order_audit/info_receipts.jsonl": "47abafec3eb5a232586e04daae8c3c074706155208e5a632018c05179bec53b2"
+  },
+  "current_readbacks": [
+    {
+      "observed_ms": 1792349989078,
+      "source": "EXCHANGE_DIRECT_TESTNET_PAR_INFO",
+      "order_status": {
+        "status": "unknownOid"
+      },
+      "positions": [],
+      "orders": [],
+      "stable": true
+    },
+    {
+      "observed_ms": 1792349989768,
+      "source": "EXCHANGE_DIRECT_TESTNET_PAR_INFO",
+      "order_status": {
+        "status": "unknownOid"
+      },
+      "positions": [],
+      "orders": [],
+      "stable": true
+    }
+  ],
+  "original_row": {
+    "intent_key": "certification:59445fe546d38a96e486140fda781d09ae8a0942f93a3614fa8abcbc34f5e7ea:entry",
+    "cloid": "0xac0eea156fcec80986dd67c9057b6ded",
+    "fingerprint": "efc18b3a319c40edd7165878db06d67628d1f533c9cddbe40d5fbac47189b28e",
+    "request": "{\"client_order_id\":\"certification:59445fe546d38a96e486140fda781d09ae8a0942f93a3614fa8abcbc34f5e7ea:entry\",\"order_type\":\"LIMIT\",\"price\":\"81518\",\"quantity\":\"0.0002\",\"reduce_only\":false,\"side\":\"BUY\",\"strategy_id\":\"TESTNET_CERTIFICATION_ENTRY\",\"symbol\":\"par:BTC\",\"tif\":\"Ioc\"}",
+    "candidate": "certification:59445fe546d38a96e486140fda781d09ae8a0942f93a3614fa8abcbc34f5e7ea",
+    "state": "UNKNOWN",
+    "oid": null,
+    "outcome": "{\"code\":\"TRANSMISSION_UNCERTAIN\",\"reason\":\"ExchangeError\"}",
+    "created_ms": 1792217831637,
+    "updated_ms": 1792217835092
+  },
+  "prior_certificate_different_cloid": "0x3486c3b8e88add1a77175c9c5965350f",
+  "prior_certificate_reused": false,
+  "consumed_attempt_reset": false,
+  "nonce_reset": false,
+  "reason": "No new admissible terminal/causal record establishes original transmission or execution. Fresh flatness, expiry and unknownOid do not prove nontransmission. Shared account/signer/nonce isolation lacks independent proof and authorization."
+}

@@ -1,0 +1,53 @@
+....................................F................................... [  2%]
+........................................................................ [  4%]
+......................................................................F. [  7%]
+..................................................................
+=================================== FAILURES ===================================
+________ test_configuration_transport_offline_pas_exact_action_one_use _________
+algo-trading-bot/test_activation_v3.py:208: in test_configuration_transport_offline_pas_exact_action_one_use
+    t.set_one_x_cross('pas:BTC')
+algo-trading-bot/exchange/leverage_configuration.py:182: in set_one_x_cross
+    self.check(action)
+algo-trading-bot/exchange/leverage_configuration.py:143: in check
+    require_paper_migration(getattr(self.client,'dex','par'))
+algo-trading-bot/venue_config.py:43: in require_paper_migration
+    raise MigrationPolicyError('MIGRATION_'+profile.dex.upper()+'_DEX_REQUIRED')
+E   venue_config.MigrationPolicyError: MIGRATION_PAS_DEX_REQUIRED
+_______________ test_replay_deterministic_same_brain_no_network ________________
+algo-trading-bot/test_crypto_audit_replay.py:201: in test_replay_deterministic_same_brain_no_network
+    original=record(universe,tmp_path)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/test_crypto_audit_replay.py:57: in record
+    report=writer(bot,path/'paper').save(bot,snapshot)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/run_crypto_paper.py:95: in save
+    self.results.save(bot,snapshot)
+algo-trading-bot/session_results.py:151: in save
+    self.bind(bot)
+algo-trading-bot/session_results.py:143: in bind
+    data=manifest(bot,self.provenance,self.start_timestamp)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/session_results.py:49: in manifest
+    git_dirty=bool(git('status','--porcelain')),working_source_hash=source_version(sources+scripts),
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/session_results.py:40: in git
+    return subprocess.check_output(['git',*args],cwd=ROOT,text=True).strip()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/subprocess.py:466: in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/subprocess.py:571: in run
+    raise CalledProcessError(retcode, process.args,
+E   subprocess.CalledProcessError: Command '['git', 'status', '--porcelain']' returned non-zero exit status 128.
+----------------------------- Captured stderr call -----------------------------
+Error cleaning Git LFS object: open /Users/adesh/Autonomous Trading Bot - Crypto /.git/lfs/tmp/1431994086: operation not permitted
+error: packet write failed: Broken pipe
+error: external filter 'git-lfs filter-process' failed
+fatal: docs/legacy_dependency_inventory.csv: clean filter 'lfs' failed
+- generated xml file: /Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v3_2026-10-19/regression_release_final/regression.xml -
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_activation_v3.py::test_configuration_transport_offline_pas_exact_action_one_use
+FAILED algo-trading-bot/test_crypto_audit_replay.py::test_replay_deterministic_same_brain_no_network
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! KeyboardInterrupt !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/ast.py:52: KeyboardInterrupt
+(to show a full traceback on KeyboardInterrupt use --full-trace)
+2 failed, 280 passed in 40.06s
