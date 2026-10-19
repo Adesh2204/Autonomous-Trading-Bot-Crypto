@@ -135,3 +135,62 @@ or executing signed fixture tests to produce a misleading green result.
 
 The source fixes do not establish whether the current external PAS deployment or
 funded account satisfies these prerequisites. No live certification is claimed.
+
+## PR #2 conflict resolution against current main
+
+The existing draft branch incorporates current main
+`d5edb3668379d8b72e7f1551da04f4c3f47d6fd6` without merging the PR or rewriting
+its prior head `c17548288bd453a9892928f3121d736bddee3193`.
+The older 1x references above describe earlier review stages, not current policy:
+BTC and EWY now both require exactly **20x CROSS**. This merge is code-side only;
+no account configuration or exchange write is authorized.
+
+The six textual conflicts are reconciled semantically: keep the shared candle
+budget and thread-local cancellation isolation; combine unsigned 20x BTC/EWY
+configuration proposals with main's organizer-registration blocker and audit
+scope; retain verified market selection and main's trade/context observations;
+retain the session's mapped primary market rather than restoring a PAR/BTC
+fallback; and combine schema-3 PAS/API identity with main's entry/reconciliation
+scope and venue-provenance fields. Configuration proposals remain unsigned and
+cannot authorize the retired 1x configuration route.
+
+Two automatically merged diagnostics still expected 1x. The PAS controller and
+opening audit now expect 20x CROSS, with controller configuration readiness
+requiring fresh readbacks for **both** active assets even for a narrower selected
+scan. Main's same-market native/residual/history/opportunity intersection,
+independent freshness checks, finite exact-acceptance validation and diagnostic
+no-signing status remain intact. The retired authorized terminal route still
+rejects before state creation; its regression now asserts that stronger lockout
+instead of expecting the newly merged but inaccessible wait path to start.
+
+The scoped no-network/no-sign CI includes the new conflict regressions and main's
+activation/opening safety tests. Historical PAR records and all main-side data,
+logs and evidence remain unchanged. The frozen strategy source and manifest are
+not rewritten; liquidity selection, one global position, OI reserves and risk
+limits retain their reviewed semantics. The full historical signed/legacy test
+suite is not claimed green or executed as part of this no-sign review.
+
+Live readiness remains blocked pending actual funded unified-account/API-wallet
+verification, fresh 20x CROSS readbacks for BTC/EWY, authentic market history and
+executable liquidity, resolved historical order uncertainty, genuine native and
+residual protection/fill/exit/restart certification for both assets, a release
+certificate matching the running commit and market mappings, and a new exact
+human activation approval. Offline synthetic results do not satisfy these gates.
+
+The review also found a pre-existing shared compliance check hardcoded to 1x.
+Its verified competition path now requires the central PAS 20x target; explicit
+noncompetition offline fixtures retain their historical 1x semantics. Provenance,
+position permission, reduce-only handling and all later compliance checks are
+unchanged. Old long-session 1x plumbing and subset mandates are not revived:
+`build_long_runtime` rejects unconditionally at entry, and the authorized terminal
+and scored-session routes remain retired. The canonical PAS launcher/session
+continues to validate the two-asset mapping and scan BTC/EWY for one selection.
+
+Final conflict-resolution validation: **549 passed** using the expanded
+`PAS BTC-EWY offline safety` selection with `-p offline_no_sign` (network and
+signatures prohibited), including **26 new conflict regressions**. Static imports
+and changed Python syntax pass; strategy freeze passes for one file, eight
+methods and 32 parameters. Review-source whitespace checks pass. Whitespace
+already present in incoming historical logs/HTML/source evidence was preserved,
+not reformatted. These results are scoped offline checks, not live certification
+or a claim that every legacy signed fixture is compatible.

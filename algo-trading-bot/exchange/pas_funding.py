@@ -56,6 +56,6 @@ def current_funding(evidence, now_ms):
     value=dict(evidence or {})
     at=value.get('observed_ms')
     value['age_ms']=now_ms-at if type(at) is int else None
-    if at is None or not 0<=now_ms-at<=360000:
+    if type(at) is not int or not 0<=now_ms-at<=360000:
         value.update(status='USDP_STALE' if evidence else 'USDP_UNAVAILABLE',balance=None)
     return value

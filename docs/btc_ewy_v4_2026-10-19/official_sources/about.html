@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="google-site-verification" content="8SC6aDf0lhU8oSL496rmS0_QrUduoHIWdnqtErCUa1c" />
+    <title>About the Competition</title>
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Perpetual Alpha">
+    <meta property="og:description" content="The AI Trading Competition on Hyperliquid">
+    <meta property="og:image" content="https://perpetual-alpha26.github.io/assets/images/hero_image.png">
+    <meta property="og:url" content="https://perpetual-alpha26.github.io/about.html">
+    <meta property="og:type" content="website">
+
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Perpetual Alpha">
+    <meta name="twitter:description" content="The AI Trading Competition on Hyperliquid">
+    <meta name="twitter:image" content="https://perpetual-alpha26.github.io/assets/images/hero_image.png">
+
+    <link rel="icon" type="image/png" href="/assets/images/favicon.png">
+    <link rel="stylesheet" href="/assets/css/style.css?v=8">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <header class="site-header" id="site-header">
+    <div class="container header-content">
+        <a href="/" class="mobile-brand">
+            <img src="/assets/images/logo.png" alt="Logo" class="mobile-logo">
+            <span class="mobile-title">Perpetual <span class="highlight">Alpha</span></span>
+        </a>
+        <button id="mobile-menu-btn" class="mobile-menu-btn">☰</button>
+        <nav class="main-nav" id="main-nav">
+            <a href="/" class="">Home</a>
+            <a href="/about" class="active">About</a>
+            <a href="/schedule" class="">Schedule</a>
+            <a href="/docs/" class="">Docs</a>
+            <a href="/leaderboard" class="">Leaderboard</a>
+            <a href="/faq" class="">FAQ</a>
+            <a href="/committee" class="">Committee</a>
+        </nav>
+    </div>
+</header>
+
+<script>
+    let lastScrollTop = 0;
+    const header = document.getElementById("site-header");
+    const menuBtn = document.getElementById("mobile-menu-btn");
+    const nav = document.getElementById("main-nav");
+
+    // Hamburger toggle
+    menuBtn.addEventListener("click", function() {
+        nav.classList.toggle("nav-open");
+    });
+
+    // Scroll hide
+    window.addEventListener("scroll", function() {
+        let currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+        
+        if (currentScroll > lastScrollTop && currentScroll > 80) {
+            // Scrolling down - only hide if menu isn't open
+            if (!nav.classList.contains("nav-open")) {
+                header.classList.add("header-hidden");
+            }
+        } else {
+            // Scrolling up
+            header.classList.remove("header-hidden");
+        }
+        lastScrollTop = currentScroll <= 0 ? 0 : currentScroll;
+    }, false);
+</script>
+
+    <main class="container">
+        <div class="page-content">
+    <h1>About the Competition</h1>
+
+    <h2>Task</h2>
+    <p>You will build and deploy an autonomous trading algorithm that trades a fixed universe of perpetual futures on the Hyperliquid testnet, via its public API. Your algorithm will manage the full trading lifecycle: signal generation, order placement on a live order book, position and margin management, funding-rate dynamics, and risk control across assets with different trading regimes. The tradable universe will span multiple asset classes. Further details on the assets and oracles will be shared soon.</p>
+
+    <h2>The Trading Platform</h2>
+    <p>Hyperliquid is a layer-1 blockchain whose core state is a fully on-chain central limit order book supporting perpetual futures with cross and isolated margin, funding, and liquidation. Its HIP-3 standard allows an approved deployer to launch and operate independent perpetual markets — choosing the underlying, the oracle, contract specifications, margin parameters, and fee schedule — on the shared matching engine. HIP-3 is available on the Hyperliquid testnet, which mirrors mainnet functionality with valueless test tokens distributed via a faucet.</p>
+    <p>You'll trade on a dedicated HIP-3 perpetuals exchange on the testnet. The tradable universe will comprise multiple asset classes, requiring your algorithm to handle several phenomena such as regime heterogeneity, calendar effects, oracle-update discontinuities, and cross-asset risk.</p>
+    <p>Market-making bots will quote continuously in all markets to guarantee baseline liquidity, and per-market position limits will prevent any single team from cornering a book. Your team trades from its own wallet, which the organizers whitelist and fund with a testnet balance identical to every other team — top-ups aren't permitted. Technical instructions and a backtesting dataset will be provided soon, so you can test your strategy ahead of the competition.</p>
+
+    <h2>Eligible Teams</h2>
+    <p>Eligible Teams: Teams must be made up of 1 to 4 members. Should the team be selected as a winner, at least one member must be available to attend ICAIF 2026 in Milan in person to present its work.</p>
+
+    <h2>Evaluation Protocol</h2>
+    <p>Teams are evaluated according to three criteria:</p>
+    <ul>
+        <li><strong>Total net return</strong> on initial capital, marked to oracle prices at the end of the Live Trading phase, min–max normalized across teams.</li>
+        <li><strong>Negative</strong> of the <strong>standard deviation</strong> of daily equity returns (lower volatility scores higher), min–max normalized.</li>
+        <li><strong>Jury score</strong> on a 2–4 page technical report: methodology and depth of AI/ML techniques, originality, rigor and reproducibility, and clarity. Each report is scored independently by at least three jurors.</li>
+    </ul>
+
+    <h2>Fairness and Anti-Gaming Rules</h2>
+    <p>One trading account per team; accounts are whitelisted and monitored on-chain. To be ranked, a team must have at least one executed trade (fill) during the scored phase. Wash trading, self-crossing, coordinated collusion between teams, and attacks on the exchange or oracle infrastructure are prohibited. All trading activity is recorded on-chain and can be reviewed for violations, which lead to disqualification. Fully manual trading is not allowed: entries must be algorithmic, as verified through the technical report and a code walkthrough with the jury.</p>
+
+    <h2>Live Leaderboard</h2>
+    <p>A public web leaderboard, updated in near real time from on-chain data, will track team performance throughout the Live Trading phase.</p>
+
+    <h2>Awards</h2>
+    <p>The top teams will be invited to present at the ICAIF 2026 Competition Track in Milan. Prize details will be announced soon.</p>
+
+</div>
+
+    </main>
+    <footer class="site-footer">
+    <div class="container footer-content">
+        <div class="footer-section">
+            <h4>Perpetual Alpha</h4>
+            <p>The AI Trading Competition on Hyperliquid.</p>
+        </div>
+        <div class="footer-section">
+            <h4>Contact</h4>
+            <p><a href="mailto:perpetual-alpha@googlegroups.com">perpetual-alpha@googlegroups.com</a></p>
+        </div>
+        <div class="footer-section">
+            <h4>Organized within</h4>
+            <p><a href="https://icaif2026.org/" target="_blank">ICAIF 2026</a></p>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>&copy; 2026. Built with Jekyll and GitHub Pages.</p>
+    </div>
+</footer>
+
+</body>
+</html>

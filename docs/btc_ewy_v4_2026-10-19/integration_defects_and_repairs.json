@@ -1,0 +1,50 @@
+{
+  "baseline_source": "6d37a929e23e295cd35a4aa137a077b6533b711bf085d292fff8c2103420ca42",
+  "findings": [
+    {
+      "path": "algo-trading-bot/market_regime_scanner.py",
+      "function": "require_runtime",
+      "before": "require_paper_migration() defaults to par",
+      "failure": "PAS_NATIVE_ONLY environment rejects actual PAS scanner startup",
+      "repair": "Pass verified client DEX; actual scanner test no longer stubs this method"
+    },
+    {
+      "path": "algo-trading-bot/market_regime_scanner.py",
+      "function": "scan",
+      "before": "New requested candidate order could differ from canonical order",
+      "failure": "Tie order can change first global entry candidate",
+      "repair": "Sort filtered candidates before unchanged selector"
+    },
+    {
+      "path": "algo-trading-bot/live_execution_session.py",
+      "function": "_protection_barrier / cycle",
+      "before": "Hardcoded par:BTC for fresh clock and idle buying power",
+      "failure": "PAS client rejects wrong-DEX coin before safety refresh",
+      "repair": "Use verified client DEX for those public safety queries; observed exposure still takes precedence"
+    },
+    {
+      "path": "algo-trading-bot/live_session_results.py",
+      "function": "LiveSessionResults.__init__",
+      "before": "Export manifest hardcoded dex=par",
+      "failure": "PAS run/accounting provenance mislabeled",
+      "repair": "Verified venue/collateral identity, entry scope and complete account scope"
+    },
+    {
+      "path": "algo-trading-bot/opportunity_funnel.py",
+      "function": "observe_scan",
+      "before": "Only par: prefix considered valid; crypto labels par-only",
+      "failure": "PAS opportunity traces show invalid market identity",
+      "repair": "Canonical profile identity and instrument labels for both explicit namespaces"
+    },
+    {
+      "path": "algo-trading-bot/exchange/execution_journal.py",
+      "function": "safe_data",
+      "before": "New public venue_identity hash was scrubbed after configuration hashing",
+      "failure": "Exported manifest configuration_hash could not be reproduced from serialized configuration",
+      "repair": "Narrow public-hash allowlist entry for venue_identity; private keys and signatures remain excluded; real serialized output is tested"
+    }
+  ],
+  "source_of_findings": "Current local consumer code, not an inference from the reviewer old checkout",
+  "strategy_formulas_changed": false,
+  "signed_actions_in_audit": 0
+}

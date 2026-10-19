@@ -1,0 +1,12 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+__ test_synthetic_account_labels_and_rejected_intents_never_claim_real_orders __
+algo-trading-bot/test_hackathon_certification.py:72: in test_synthetic_account_labels_and_rejected_intents_never_claim_real_orders
+    assert manifest['configuration_hash']==fingerprint(manifest['configuration'])
+E   AssertionError: assert '694bc9333ed0...e5af35b48bb19' == '7e8991b41b99...81db12d4e4cba'
+E     
+E     - 7e8991b41b992406df2a939a97e23c366f2a93143ac0011147c81db12d4e4cba
+E     + 694bc9333ed03b0e1340763024ac9011d72d327b541699a9c31e5af35b48bb19
+=========================== short test summary info ============================
+FAILED algo-trading-bot/test_hackathon_certification.py::test_synthetic_account_labels_and_rejected_intents_never_claim_real_orders
+1 failed in 2.96s

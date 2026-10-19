@@ -16,6 +16,8 @@ from .competition_windows import SCORED_START_MS,SCORED_END_MS
 
 
 def prepare_native_test(discovery,source,now_ms,*,symbol='pas:BTC'):
+    from .entry_scope import require_entry
+    require_entry(symbol)
     from .pas_configuration_plan import configuration_plan
     configuration_plan(discovery)  # Validate complete canonical source-bound observations.
     if discovery['source_hash']!=source or not 0<=now_ms-discovery['finished_ms']<=300000:

@@ -1,0 +1,213 @@
+{
+  "observed_ms": 1792407837007,
+  "source_hash": "d0b72ec4cbce7d74cdad62b480ac22a8dc336182fc1445612b7666b95747f9f9",
+  "verdict": "NO_GO",
+  "statuses": {
+    "AUTOMATION_IMPLEMENTED": true,
+    "RELEASE_VERIFIED": true,
+    "OBSERVER_HEALTHY": false,
+    "FUNDING_VERIFIED": false,
+    "ACCOUNT_IDENTITY_VERIFIED": false,
+    "BTC_1X_VERIFIED": false,
+    "EWY_1X_VERIFIED": false,
+    "HISTORICAL_ORDER_SAFE": false,
+    "BTC_NATIVE_AND_RESIDUAL_QUALIFIED": false,
+    "EWY_NATIVE_AND_RESIDUAL_QUALIFIED": false,
+    "MARKET_DATA_FRESH": false,
+    "EXACT_SESSION_ACCEPTED": false,
+    "TRADING_AUTHORIZED": false,
+    "AUTO_TRADING_ACTIVE": false
+  },
+  "failed_requirements": {
+    "OBSERVER_HEALTHY": {
+      "requirement": "OBSERVER_HEALTHY",
+      "next_step": "Review status/report and terminal reconciliation before a new public-only start."
+    },
+    "FUNDING_VERIFIED": {
+      "requirement": "FUNDING_VERIFIED",
+      "next_step": "Run funding --output NEW_DIRECTORY after actual USDP arrives; no activation is inferred."
+    },
+    "ACCOUNT_IDENTITY_VERIFIED": {
+      "requirement": "ACCOUNT_IDENTITY_VERIFIED",
+      "next_step": "Supply --organizer-confirmation organizer_confirmation.json with retained original provenance and --discovery a fresh discover result."
+    },
+    "BTC_1X_VERIFIED": {
+      "requirement": "BTC_1X_VERIFIED",
+      "next_step": "Run configuration-review, then the separate exact configuration-approve/configuration-apply workflow and exchange readback."
+    },
+    "EWY_1X_VERIFIED": {
+      "requirement": "EWY_1X_VERIFIED",
+      "next_step": "Run configuration-review, then the separate exact configuration-approve/configuration-apply workflow and exchange readback."
+    },
+    "HISTORICAL_ORDER_SAFE": {
+      "requirement": "HISTORICAL_ORDER_SAFE",
+      "next_step": "Inspect the original qualification intent; obtain its terminal/rejection evidence or an independently validated and expressly authorized isolation policy. Never reset it."
+    },
+    "BTC_NATIVE_AND_RESIDUAL_QUALIFIED": {
+      "requirement": "BTC_NATIVE_AND_RESIDUAL_QUALIFIED",
+      "next_step": "Run native-prepare --market pas:BTC --output NEW_DIRECTORY. Genuine PAS native/residual route qualification remains required; no executable PAS qualification route is currently admitted."
+    },
+    "EWY_NATIVE_AND_RESIDUAL_QUALIFIED": {
+      "requirement": "EWY_NATIVE_AND_RESIDUAL_QUALIFIED",
+      "next_step": "Run native-prepare --market pas:EWY --output NEW_DIRECTORY. Genuine PAS native/residual route qualification remains required; no executable PAS qualification route is currently admitted."
+    },
+    "MARKET_DATA_FRESH": {
+      "requirement": "MARKET_DATA_FRESH",
+      "next_step": "Run history-review --output NEW_DIRECTORY; await authentic current completed PAS candles. No OHLC, PAR or mainnet substitution."
+    },
+    "EXACT_SESSION_ACCEPTED": {
+      "requirement": "EXACT_SESSION_ACCEPTED",
+      "next_step": "After prerequisites pass, prepare a finite mandate, review and accept it once with approve. No individual BUY/SELL prompts exist inside that scope."
+    },
+    "TRADING_AUTHORIZED": {
+      "requirement": "TRADING_AUTHORIZED",
+      "next_step": "Only after prerequisites and genuine acceptance, use start --venue pas --authorized with the exact mandate, acceptance, release and native proof."
+    },
+    "AUTO_TRADING_ACTIVE": {
+      "requirement": "AUTO_TRADING_ACTIVE",
+      "next_step": "Wait for a current eligible frozen signal and an owned transmitted order with an actual matching fill during the accepted session."
+    }
+  },
+  "evidence": {
+    "state": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v5-2",
+    "snapshot_source": "d0b72ec4cbce7d74cdad62b480ac22a8dc336182fc1445612b7666b95747f9f9",
+    "process_lock_held": true,
+    "worker_status": "OBSERVING",
+    "status_age_ms": 4546,
+    "funding": {
+      "status": "USDP_ZERO",
+      "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+      "network": "testnet",
+      "dex": "pas",
+      "collateral": "USDP",
+      "account_mode": "unifiedAccount",
+      "token": 3307,
+      "observed_ms": 1792407556139,
+      "exchange_time_ms": 1792407556218,
+      "balance": "0",
+      "age_ms": 280868,
+      "organizer_credit_amount": null,
+      "organizer_credit_provenance": "UNKNOWN",
+      "signing_authority": "NONE",
+      "reasons": [],
+      "response_hashes": {
+        "spot": "b65b90d9873795759f9492dfb2f7292b91b9c74a2316065e25ea373c3db6ab27",
+        "state": "77cd4584328b7b85ea8ea73940e0528a2927da6146d151e8b4503bcaae110c10"
+      },
+      "provenance": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v5-2/sessions/16921000ecb741f1a3f506b60acba565/info_receipts.jsonl",
+      "equity_basis": "Unified USDP total once; no addition of per-DEX equity or unrealized PnL",
+      "evidence_hash": "c57117edd22fdc79d3d9bef81319ea00362574fe92c291688337245a6c8dfc58"
+    },
+    "account_age_ms": 281238,
+    "local_execution_state": {
+      "status": "BLOCKED_UNRESOLVED_INTENT",
+      "unresolved": [
+        {
+          "journal": "qualification",
+          "cloid": "0xac0eea156fcec80986dd67c9057b6ded",
+          "state": "UNKNOWN",
+          "intent_key": "certification:59445fe546d38a96e486140fda781d09ae8a0942f93a3614fa8abcbc34f5e7ea:entry"
+        }
+      ],
+      "native_protection": "UNQUALIFIED",
+      "signing_authority": "NONE"
+    },
+    "leverage": {
+      "pas:BTC": {
+        "type": "cross",
+        "value": 20
+      },
+      "pas:EWY": {
+        "type": "cross",
+        "value": 20
+      }
+    },
+    "histories": {
+      "pas:BTC": {
+        "raw_returned_last": 2,
+        "raw_returned_in_retained_snapshots": 36271,
+        "valid_returned_last": 2,
+        "valid_deduplicated_completed": 959,
+        "contiguous_tail_bars": 959,
+        "missing_intervals": [],
+        "earliest_ms": 1792337760000,
+        "latest_ms": 1792395240000,
+        "latest_completed_ms": 1792395300000,
+        "cache_age_ms": 12537007,
+        "last_collection_ms": 1792407824574,
+        "warmup_required": 300,
+        "strategy_history_ready": false,
+        "warmup_satisfied": true,
+        "data_freshness_satisfied": false,
+        "failure_classification": "UPSTREAM_DATA_UNAVAILABLE",
+        "failure_reasons": [
+          "COMPLETED_CANDLE_STALE_OR_MISSING"
+        ],
+        "request_diagnostics": {
+          "rest": {
+            "request": {
+              "coin": "pas:BTC",
+              "interval": "1m",
+              "startTime": 1792395180000,
+              "endTime": 1792407779999
+            },
+            "received_ms": 1792407824573,
+            "returned_count": 2,
+            "first_returned_ms": 1792395180000,
+            "last_returned_ms": 1792395240000,
+            "expected_intervals": 210,
+            "normalization_succeeded": true,
+            "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v5-2/sessions/16921000ecb741f1a3f506b60acba565/info_receipts.jsonl"
+          }
+        },
+        "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+        "database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v5-2/history.sqlite"
+      },
+      "pas:EWY": {
+        "raw_returned_last": 2,
+        "raw_returned_in_retained_snapshots": 40561,
+        "valid_returned_last": 2,
+        "valid_deduplicated_completed": 4053,
+        "contiguous_tail_bars": 4053,
+        "missing_intervals": [],
+        "earliest_ms": 1792153680000,
+        "latest_ms": 1792396800000,
+        "latest_completed_ms": 1792396860000,
+        "cache_age_ms": 10977007,
+        "last_collection_ms": 1792407825202,
+        "warmup_required": 300,
+        "strategy_history_ready": false,
+        "warmup_satisfied": true,
+        "data_freshness_satisfied": false,
+        "failure_classification": "UPSTREAM_DATA_UNAVAILABLE",
+        "failure_reasons": [
+          "COMPLETED_CANDLE_STALE_OR_MISSING"
+        ],
+        "request_diagnostics": {
+          "rest": {
+            "request": {
+              "coin": "pas:EWY",
+              "interval": "1m",
+              "startTime": 1792396740000,
+              "endTime": 1792407779999
+            },
+            "received_ms": 1792407825200,
+            "returned_count": 2,
+            "first_returned_ms": 1792396740000,
+            "last_returned_ms": 1792396800000,
+            "expected_intervals": 184,
+            "normalization_succeeded": true,
+            "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v5-2/sessions/16921000ecb741f1a3f506b60acba565/info_receipts.jsonl"
+          }
+        },
+        "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+        "database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v5-2/history.sqlite"
+      }
+    },
+    "validation_errors": {}
+  },
+  "signing_authority": "NONE_CREATED_BY_THIS_COMMAND",
+  "exchange_writes": 0,
+  "signatures_created": 0,
+  "scope": "Local diagnostic only. Registration provenance is operator-reviewed. Public agent approval does not certify local signer ownership. Synthetic tests never qualify a venue or funded account."
+}

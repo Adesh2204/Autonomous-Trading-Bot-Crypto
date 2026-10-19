@@ -3,6 +3,7 @@ from .base_exchange import ExchangeError,decimal
 from .execution_journal import fingerprint
 from .venue_profiles import SCORED
 from .competition_market import PAS_TARGET_LEVERAGE
+from .entry_scope import PAS_ENTRY_MARKETS
 from .testnet_certification import TEAM
 import re
 
@@ -42,8 +43,12 @@ def configuration_plan(discovery):
     if discovery.get('terminal_flat') is not True:blockers.append('TWO_FRESH_FLAT_ZERO_ORDER_READBACKS_REQUIRED')
     local=discovery.get('local_execution_state',{})
     if local.get('status')!='NO_LOCAL_UNRESOLVED_INTENT':blockers.append('SHARED_UNKNOWN_AND_CONSUMED_INVOCATION_REVIEW_REQUIRED')
+    if discovery.get('registration_evidence',{}).get('status')!='OPERATOR_REVIEWED_ORGANIZER_RECORD':
+        blockers.append('REGISTERED_TEAM_ORGANIZER_RECORD_REQUIRED')
     plan=dict(status='UNSIGNED_CONFIGURATION_PLAN_ONLY',network='testnet',dex='pas',collateral='USDP',
         source_hash=discovery['source_hash'],observed_ms=discovery['finished_ms'],
+        entry_markets=sorted(PAS_ENTRY_MARKETS),account_reconciliation_scope='ALL_CANONICAL_PAS_MARKETS',
+        policy_basis='PAS BTC/EWY only; exact 20x CROSS per active market',
         team_wallet=TEAM,target_leverage=PAS_TARGET_LEVERAGE,margin_mode='cross',
         discovery_hash=fingerprint(discovery),changes=changes,already_target_cross=sorted(verified),
         collateral_balance=str(balance),organizer_credit_amount=None,

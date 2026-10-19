@@ -18,7 +18,7 @@ from .stream_first import StreamFirstMarketData
 from .quant_observation import explain_market,rank_reports
 from .capital_allocation import floor_quantity,depth_capacity
 
-READ_QUERIES=frozenset({'perpDexs','meta','metaAndAssetCtxs','l2Book','candleSnapshot',
+READ_QUERIES=frozenset({'recentTrades','fundingHistory','perpDexs','meta','metaAndAssetCtxs','l2Book','candleSnapshot',
     'clearinghouseState','spotClearinghouseState','frontendOpenOrders','openOrders',
     'userFillsByTime','userFunding','userFees','activeAssetData','userAbstraction','extraAgents',
     'orderStatus','perpDexLimits','userRateLimit','spotMeta','perpDexStatus','exchangeStatus','allPerpMetas'})

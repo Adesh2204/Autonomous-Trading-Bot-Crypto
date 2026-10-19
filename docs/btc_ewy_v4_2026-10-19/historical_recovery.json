@@ -1,0 +1,51 @@
+{
+  "observed_ms": 1792379514703,
+  "source_hash": "56ee079f7b8403811674d429aff3b9143a1810290bdd9a23f319b7cedd47170c",
+  "verdict": "BLOCKED_EXTERNAL_ORDER_EVIDENCE",
+  "original_cloid": "0xac0eea156fcec80986dd67c9057b6ded",
+  "original_nonce": 1792217834069,
+  "original_dex": "par",
+  "current_readbacks": [
+    {
+      "observed_ms": 1792379514002,
+      "source": "EXCHANGE_DIRECT_TESTNET_PAR_INFO",
+      "order_status": {
+        "status": "unknownOid"
+      },
+      "positions": [],
+      "orders": [],
+      "stable": true
+    },
+    {
+      "observed_ms": 1792379514703,
+      "source": "EXCHANGE_DIRECT_TESTNET_PAR_INFO",
+      "order_status": {
+        "status": "unknownOid"
+      },
+      "positions": [],
+      "orders": [],
+      "stable": true
+    }
+  ],
+  "prior_forensic_review": "docs/activation_v3_2026-10-19/historical_disposition.json",
+  "original_row": {
+    "intent_key": "certification:59445fe546d38a96e486140fda781d09ae8a0942f93a3614fa8abcbc34f5e7ea:entry",
+    "cloid": "0xac0eea156fcec80986dd67c9057b6ded",
+    "fingerprint": "efc18b3a319c40edd7165878db06d67628d1f533c9cddbe40d5fbac47189b28e",
+    "request": "{\"client_order_id\":\"certification:59445fe546d38a96e486140fda781d09ae8a0942f93a3614fa8abcbc34f5e7ea:entry\",\"order_type\":\"LIMIT\",\"price\":\"81518\",\"quantity\":\"0.0002\",\"reduce_only\":false,\"side\":\"BUY\",\"strategy_id\":\"TESTNET_CERTIFICATION_ENTRY\",\"symbol\":\"par:BTC\",\"tif\":\"Ioc\"}",
+    "candidate": "certification:59445fe546d38a96e486140fda781d09ae8a0942f93a3614fa8abcbc34f5e7ea",
+    "state": "UNKNOWN",
+    "oid": null,
+    "outcome": "{\"code\":\"TRANSMISSION_UNCERTAIN\",\"reason\":\"ExchangeError\"}",
+    "created_ms": 1792217831637,
+    "updated_ms": 1792217835092
+  },
+  "prior_certificate_different_cloid": "0x3486c3b8e88add1a77175c9c5965350f",
+  "prior_certificate_reused": false,
+  "nonce_reset": false,
+  "records_modified": false,
+  "safe_isolation_approved": false,
+  "consumed_attempt_reset": false,
+  "consumed_attempt_disposition": "TERMINAL_DO_NOT_RESTART; independent review required",
+  "reason": "unknownOid and current flatness do not establish original rejection, nontransmission or terminal outcome. Shared team/API/nonce hazards remain; no isolation approved."
+}

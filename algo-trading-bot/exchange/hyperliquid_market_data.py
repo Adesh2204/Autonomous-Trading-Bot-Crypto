@@ -213,7 +213,8 @@ class ParMarketDataEngine:
     def __init__(self, market, symbols=None, *, connect=None, history_bars=300,include_trades=False,on_lifecycle=None):
         self.market = market
         self.client = market.client
-        self.symbols = tuple(symbols) if symbols is not None else tuple(sorted(self.client.markets))
+        from .entry_scope import signal_markets
+        self.symbols = signal_markets(self.client,symbols or ())
         if not self.symbols or len(set(self.symbols)) != len(self.symbols):
             raise ExchangeError('INVALID_STREAM_MARKETS')
         for symbol in self.symbols:
@@ -628,6 +629,13 @@ class ParMarketDataEngine:
                 raise ExchangeError('ASSET_CONTEXT_STALE')
             return make_quote(self.books[symbol], self.contexts[symbol], now,mark_timestamp_ms=self.context_times[symbol])
 
+    def _reset_stable_failure_burst(self):
+        current=self.transport_health.current or {}
+        if (self.connected and self.reconciled
+                and self.transport_health.confirmed==self.transport_health.desired
+                and self.client.clock_ms()-current.get('connection_started_at_ms',self.client.clock_ms())>=60000):
+            self.consecutive_failures=0
+
     def run(self, stop_event, *, max_reconnects=5):
         import websocket
         if not self._run_owner.acquire(blocking=False):
@@ -741,6 +749,7 @@ class ParMarketDataEngine:
                     self.ingest(parsed,generation=generation)
                     if self.recovery_status=='RECONCILED' and self.transport_health.confirmed==self.transport_health.desired:
                         self.reconciled=True
+                    self._reset_stable_failure_burst()
                     if self.reconciled and not self.recovery_errors:
                         self.transport_health.current['transport_state']='CONNECTED'
                         self.last_error=None

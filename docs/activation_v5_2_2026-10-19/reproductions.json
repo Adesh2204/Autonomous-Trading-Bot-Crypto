@@ -1,0 +1,19 @@
+{
+  "observed_ms": 1792397189136,
+  "baseline_commit": "289e6fd",
+  "fixture_only": true,
+  "exchange_writes": 0,
+  "cross_market_protection_signal": {
+    "before": true,
+    "after": false
+  },
+  "nonfinite_capacity": {
+    "before_error": "InvalidOperation",
+    "after": "BLOCKED_NO_EXCEPTION"
+  },
+  "invalid_cached_funding_clock": {
+    "before_error": "TypeError",
+    "after": "USDP_STALE_NO_EXCEPTION"
+  },
+  "tests": "test_activation_v5_2.py and full source-matched regression"
+}

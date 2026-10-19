@@ -1,0 +1,67 @@
+{
+  "source_hash": "56ee079f7b8403811674d429aff3b9143a1810290bdd9a23f319b7cedd47170c",
+  "observed_ms": 1792380321150,
+  "components": [
+    {
+      "stage": "Candidate universe/ranking",
+      "module": "market_regime_scanner.MarketRegimeScanner.scan",
+      "evidence": "Filters permitted candidates before unchanged Top-3 selection; 300 bars/UTC brain and thresholds preserved"
+    },
+    {
+      "stage": "Subscriptions/history",
+      "module": "entry_scope.signal_markets; terminal_observer.observe; ParMarketDataEngine",
+      "evidence": "PAS signal subscriptions/history limited to BTC/EWY; metadata/cache identity and account truth still cover ten markets"
+    },
+    {
+      "stage": "Capital/risk",
+      "module": "long_session.AllocatedLongRisk.assess; DailyLongExecution._prepare_context_request",
+      "evidence": "BTC/EWY entry validation, 1x, both-side participation/depth, source/economics/risk and residual minimum guards"
+    },
+    {
+      "stage": "Normalization/central guard",
+      "module": "exchange_rules.HyperliquidOrderValidator.validate",
+      "evidence": "Actual runtime PAS asset/size/price metadata; no PAR/native fallback; rejects other PAS entries"
+    },
+    {
+      "stage": "Exact contract",
+      "module": "scored_session.ScoredLimits; long_session.LongAuthorization.check_action",
+      "evidence": "Finite LONG-only BTC/EWY subset; hashes, sole host, original genuine acceptance, expiry and durable per-action consumption"
+    },
+    {
+      "stage": "Final signed action",
+      "module": "sdk_transport.OfficialSDKTransport.check; entry_scope.require_entry_action",
+      "evidence": "Every actual new order/modify entry resolves its runtime asset and fails unless PAS BTC/EWY; independent reduce-only management is retained"
+    },
+    {
+      "stage": "SDK transport",
+      "module": "long_session.LongSDKTransport; sdk_transport.build_exchange",
+      "evidence": "Official 0.24.0 SDK, TESTNET, account_address team, approved API signer, exact ActionPermit, expiry, nonce and no HTTP retries"
+    },
+    {
+      "stage": "Acknowledgement/fills/protection/exit",
+      "module": "hyperliquid_execution; position_protection; DailyLongSession; long_session.require_native_evidence",
+      "evidence": "Intent before wire, real status/fills, trigger-child linkage, partial/uncertain handling and independent minimum protection gates"
+    },
+    {
+      "stage": "Reconciliation/accounting",
+      "module": "hyperliquid_account; hyperliquid_reconciliation; terminal_evidence.SessionPerformance",
+      "evidence": "All PAS markets remain visible, shared PAR UNKNOWN/nonce barrier retained, actual fill/fee/funding accounting and two terminal flat readbacks"
+    },
+    {
+      "stage": "Watchdog/terminal",
+      "module": "terminal_app; trading_status; hyperliquid_client.read_cancellation",
+      "evidence": "No restored signing, source/expiry/stop guards, truthful active/paused/expired status; thread-local repair cancellation and stable reconnect burst reset"
+    }
+  ],
+  "runtime_ids": {
+    "pas:BTC": 2810000,
+    "pas:EWY": 2810004
+  },
+  "canonical_market_count": 10,
+  "new_entry_markets": [
+    "pas:BTC",
+    "pas:EWY"
+  ],
+  "offline_sdk_only": true,
+  "genuine_pas_native_or_residual_qualification": false
+}

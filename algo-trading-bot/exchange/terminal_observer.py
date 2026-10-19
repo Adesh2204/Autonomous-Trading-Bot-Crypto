@@ -92,10 +92,12 @@ def observe(root, output, stop, publish, *, markets=(), scan_seconds=60, account
         history=DurableHistory(cache_path,client,output/'info_receipts.jsonl')
         client.candle_audit=history
         result['market_history']={}
+        from .entry_scope import signal_markets
+        selected = signal_markets(client, markets)
         if any(symbol not in client.markets for symbol in selected):
             raise ExchangeError('RUNTIME_MARKET_METADATA_SCOPE_MISMATCH')
         result.update(markets=selected, metadata=client.metadata)
-        stream = ParMarketDataEngine(SerializedPublicMarket(client), symbols=selected, history_bars=900, include_trades=False)
+        stream = ParMarketDataEngine(SerializedPublicMarket(client), symbols=selected, history_bars=900, include_trades=True)
         def receive():
             try:stream.run(stop, max_reconnects=5)
             except Exception as exc:result['market_thread_error'] = type(exc).__name__
@@ -132,7 +134,7 @@ def observe(root, output, stop, publish, *, markets=(), scan_seconds=60, account
                         session_performance=performance.observe(result['account'],result['account_observed_ms']))
                     truth.events.clear()  # Account state lives in the report, not an unbounded event list.
                     fees = account._query('userFees')
-                    result.update(base_taker_fee_rate=str(D(fees['userCrossRate'])),
+                    result.update(base_taker_fee_rate=str(D(fees['userCrossRate'])),base_maker_fee_rate=str(D(fees['userAddRate'])),
                         documented_pas_taker_fee_estimate=str(D(fees['userCrossRate'])*2) if profile.dex=='pas' else None,
                         fee_rate_bound=str(D(fees['userCrossRate'])*6),
                         maker_fee_rate_bound=str(D(fees['userAddRate'])*6),fees_observed_ms=clock(),
@@ -215,7 +217,7 @@ def observe(root, output, stop, publish, *, markets=(), scan_seconds=60, account
                         capacity[symbol] = dict(quantity=str(q), notional=str(q*a['best_price']),
                             bid=str(book.bids[0].price), ask=str(book.asks[0].price), book_ms=book.timestamp_ms,
                             observed_ms=at, active_asset_ms=active_ms, context_ms=context_ms,
-                            size_step=str(spec.size_step), one_lot_bid_notional=str(spec.size_step*book.bids[0].price),
+                            market_context=context,size_step=str(spec.size_step), one_lot_bid_notional=str(spec.size_step*book.bids[0].price),
                             partial_minimum_admissible=partial['entry_admissible_under_documented_minimum'],
                             partial_protection_qualified=partial['entry_admissible_under_documented_minimum'] if profile.dex=='par' else False,
                             native_protection_qualified=False,partial_path=partial,
@@ -225,7 +227,7 @@ def observe(root, output, stop, publish, *, markets=(), scan_seconds=60, account
                         if profile.dex=='pas' and result.get('base_taker_fee_rate') is not None:
                             from .pas_economics import fee_scenarios
                             capacity[symbol]['fee_scenarios']=fee_scenarios(book,context,row,quantity=q,
-                                base_taker_rate=result['base_taker_fee_rate'],now_ms=clock(),context_ms=context_ms)
+                                base_taker_rate=result['base_taker_fee_rate'],base_maker_rate=result['base_maker_fee_rate'],now_ms=clock(),context_ms=context_ms)
                         if any(x in opportunity['reasons'] for x in ('CAPITAL_FRESH_PAR_BOOK_REQUIRED','ACTIVE_ACCOUNT_LIMITS_STALE','FEE_OBSERVATION_STALE')):
                             capacity[symbol].update(quantity='0',notional='0',stale_capacity_withheld=True)
                         row.update(approved_quantity=None, execution_preflight='NOT_AUTHORIZED',

@@ -174,6 +174,8 @@ class OfficialSDKTransport:
         return '<OfficialSDKTransport testnet:' + ('verified-PAS-BTC-EWY' if getattr(self.client,'competition_mode',False) else 'BLOCKED') + ' signer=[PRIVATE]>'
 
     def check(self, action):
+        from .entry_scope import require_entry_action
+        require_entry_action(self.client,action)
         self._require_venue(self.client,self.authorization)
         if self._expected is None or self._guard is None or fingerprint(action)!=self._expected:
             raise ExchangeError('UNVALIDATED_SIGNED_ACTION')

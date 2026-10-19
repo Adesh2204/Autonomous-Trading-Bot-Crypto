@@ -50,5 +50,8 @@ jobs:
           test_pas_migration.py
           test_market_discovery.py
           test_scored_opening_release.py
+          test_pas_merge_conflict_regressions.py
+          test_activation_v5_2.py
+          test_opening_v5_3.py
       - name: Verify frozen baseline
         run: python scripts/check_strategy_freeze.py

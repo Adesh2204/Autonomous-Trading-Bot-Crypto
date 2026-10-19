@@ -70,8 +70,11 @@ def approve_configuration(root,plan_path,discovery_path,release,output):
     from dataclasses import asdict
     plan=json.loads(Path(plan_path).read_text());d=json.loads(Path(discovery_path).read_text())
     now=time.time_ns()//1000000;release_hash=approval_preflight(root,plan,d,release,now)
+    from .team_registration import registration_evidence
+    if d.get('registration_evidence')!=registration_evidence(Path(discovery_path).parent,now):
+        raise ExchangeError('CONFIGURATION_REGISTRATION_RECORD_CHANGED')
     if not sys.stdin.isatty():raise ExchangeError('GENUINE_INTERACTIVE_CONFIGURATION_APPROVAL_REQUIRED')
-    print(json.dumps(plan,indent=2));print('Confirm team/API identities, sole signing Mac, exact ten-market changes only. No order/transfer authority.')
+    print(json.dumps(plan,indent=2));print('Confirm team/API identities, sole signing Mac, exact BTC/EWY changes only. No order/transfer authority.')
     phrase='APPROVE PAS CONFIGURATION '+plan['plan_hash']
     if input(phrase+'\n> ').strip()!=phrase:raise ExchangeError('CONFIGURATION_APPROVAL_NOT_ACCEPTED')
     accepted=time.time_ns()//1000000
@@ -116,6 +119,9 @@ def execute_configuration(root,plan_path,discovery_path,release,acceptance,outpu
     if a.plan_hash!=p['plan_hash'] or a.source_hash!=active_source_hash(root) or sha(release)!=a.release_sha256:
         raise ExchangeError('CONFIGURATION_APPROVAL_SOURCE_OR_PLAN_CHANGED')
     require_release(root,release,a.source_hash,a.release_sha256)
+    from .team_registration import registration_evidence
+    if d.get('registration_evidence')!=registration_evidence(Path(discovery_path).parent,now):
+        raise ExchangeError('CONFIGURATION_REGISTRATION_RECORD_CHANGED')
     require_paper_migration('pas');verify_strategy_freeze()
     state=root/'runtime/testnet/anchorium-bot-1'
     # Entry/signer ownership is global; never a new nonce store.
@@ -136,6 +142,8 @@ def execute_configuration(root,plan_path,discovery_path,release,acceptance,outpu
             if active_source_hash(root)!=a.source_hash or sha(acceptance)!=acceptance_hash:
                 raise ExchangeError('CONFIGURATION_SOURCE_OR_ACCEPTANCE_CHANGED')
             require_release(root,release,a.source_hash,a.release_sha256)
+            if d.get('registration_evidence')!=registration_evidence(Path(discovery_path).parent,client.clock_ms()):
+                raise ExchangeError('CONFIGURATION_REGISTRATION_RECORD_CHANGED')
             wait_for_configuration_reads(rates,a,TEAM,API,venue='pas')
             client.startup();require_shared_scope(root,client,owned_configuration_actions=tuple(x for x in current_action if x is not None))
             if account.get_positions() or account.get_open_orders() or account.get_frontend_open_orders():
@@ -187,11 +195,11 @@ def execute_configuration(root,plan_path,discovery_path,release,acceptance,outpu
                 raise
             finally:current_action[0]=None
         guard()
-        for s in sorted(client.markets):
+        for s in p['entry_markets']:
             r=account._query('activeAssetData',coin=s)
             if r.get('coin')!=s or r.get('user','').lower()!=TEAM.lower() or r.get('leverage')!=dict(type='cross',value=1):
-                raise ExchangeError('ALL_TEN_ONE_X_READBACKS_REQUIRED')
-        result.update(status='ALL_TEN_ONE_X_CROSS_VERIFIED',verified_ms=client.clock_ms())
+                raise ExchangeError('SELECTED_MARKETS_ONE_X_READBACKS_REQUIRED')
+        result.update(status='SELECTED_MARKETS_ONE_X_CROSS_VERIFIED',verified_markets=p['entry_markets'],verified_ms=client.clock_ms())
     except Exception as exc:
         result.update(status='CONFIGURATION_REQUIRES_REVIEW',error=str(exc),blind_retry=False)
     finally:

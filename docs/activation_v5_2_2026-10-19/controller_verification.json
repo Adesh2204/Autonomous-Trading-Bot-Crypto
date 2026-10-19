@@ -1,0 +1,102 @@
+{
+  "automation_status": "AUTOMATION_SOFTWARE_READY",
+  "venue_qualification_status": "TRADING_BLOCKED",
+  "authorization_status": "TRADING_BLOCKED",
+  "entry_markets": [
+    "pas:BTC",
+    "pas:EWY"
+  ],
+  "eligible_markets": [],
+  "opportunity_markets": [],
+  "canonical_account_markets": [
+    "pas:BRENT",
+    "pas:BTC",
+    "pas:ETH",
+    "pas:EWJ",
+    "pas:EWY",
+    "pas:GOLD",
+    "pas:HYPE",
+    "pas:SP500",
+    "pas:USDEUR",
+    "pas:USDJPY"
+  ],
+  "state": "PREOPEN_OBSERVATION",
+  "gates": {
+    "SCORING_WINDOW_OPEN": false,
+    "USDP_FUNDING_VERIFIED": false,
+    "PAS_ACCOUNT_CONFIGURATION_VERIFIED": false,
+    "HISTORICAL_ORDER_SAFETY_VERIFIED": false,
+    "NATIVE_PROTECTION_QUALIFIED": false,
+    "MARKET_HISTORY_READY": false,
+    "EXECUTABLE_OPPORTUNITY_AVAILABLE": false,
+    "SOURCE_RELEASE_VERIFIED": true,
+    "EXACT_SESSION_APPROVAL_ACCEPTED": false
+  },
+  "blockers": [
+    {
+      "gate": "SCORING_WINDOW_OPEN",
+      "reason": "SCORED_PHASE_NOT_OPEN"
+    },
+    {
+      "gate": "USDP_FUNDING_VERIFIED",
+      "reason": "USDP_ZERO"
+    },
+    {
+      "gate": "PAS_ACCOUNT_CONFIGURATION_VERIFIED",
+      "reason": "FRESH_SELECTED_BTC_EWY_ONE_X_CROSS_READBACKS_REQUIRED"
+    },
+    {
+      "gate": "HISTORICAL_ORDER_SAFETY_VERIFIED",
+      "reason": "SHARED_UNKNOWN_OR_ACCOUNT_REVIEW_REQUIRED"
+    },
+    {
+      "gate": "NATIVE_PROTECTION_QUALIFIED",
+      "reason": "GENUINE_PAS_NATIVE_AND_RESIDUAL_PROOF_REQUIRED"
+    },
+    {
+      "gate": "MARKET_HISTORY_READY",
+      "reason": "AUTHENTIC_CONTIGUOUS_300_BAR_WARMUP_REQUIRED"
+    },
+    {
+      "gate": "EXECUTABLE_OPPORTUNITY_AVAILABLE",
+      "reason": "NO_FRESH_EXECUTABLE_POSITIVE_CONDITIONAL_LONG_SETUP"
+    },
+    {
+      "gate": "EXACT_SESSION_APPROVAL_ACCEPTED",
+      "reason": "NEW_EXACT_HUMAN_SESSION_APPROVAL_REQUIRED"
+    }
+  ],
+  "funding": {
+    "status": "USDP_ZERO",
+    "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+    "network": "testnet",
+    "dex": "pas",
+    "collateral": "USDP",
+    "account_mode": "unifiedAccount",
+    "token": 3307,
+    "observed_ms": 1792399100736,
+    "exchange_time_ms": 1792399101280,
+    "balance": "0",
+    "age_ms": 11881,
+    "organizer_credit_amount": null,
+    "organizer_credit_provenance": "UNKNOWN",
+    "signing_authority": "NONE",
+    "reasons": [],
+    "response_hashes": {
+      "spot": "b65b90d9873795759f9492dfb2f7292b91b9c74a2316065e25ea373c3db6ab27",
+      "state": "58114814bfaffa4fd31e192e093a2b28a4af489aaa14cac72141d4d82a32648b"
+    },
+    "provenance": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v5-2/sessions/ef5c66c9f26149349e0dd74a6a3b60a7/info_receipts.jsonl",
+    "equity_basis": "Unified USDP total once; no addition of per-DEX equity or unrealized PnL",
+    "evidence_hash": "3491eea50440c561dab9bdc3f20da94c82491a0ecca6b1315f21618e5e8b5dbc"
+  },
+  "observed_ms": 1792399112617,
+  "next_action": "SCORED_PHASE_NOT_OPEN",
+  "ready_for_operator_action": false,
+  "terminal_status": "READY_FOR_OBSERVATION",
+  "trading_verdict": "NO_GO",
+  "signing_authority": "NONE",
+  "native_protection": "UNQUALIFIED_WITHOUT_VALIDATED_RAW_PROOF",
+  "historical_safety": "BLOCKED",
+  "note": "Diagnostic gates cannot create approval, isolation, protection qualification or a signer"
+}
