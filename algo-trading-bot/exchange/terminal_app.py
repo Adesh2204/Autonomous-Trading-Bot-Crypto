@@ -66,6 +66,27 @@ class Reporter:
             rss_high_watermark_mb=rss, strategy='HASH_VERIFIED_FROZEN_UTC_VWAP',
             local_dependency='This Mac, Python process, power and internet. Codex and its app may be closed.',
             log_retention='Eight 16 MB receipt archives plus current; four 8 MB event archives plus current. Reports retain final truth; old receipts can expire.')
+        if value.get('dex')=='pas' and value.get('mode')=='TESTNET OBSERVATION':
+            from .pas_controller import assess
+            from .long_session import require_release,require_native_evidence
+            from types import SimpleNamespace
+            release=getattr(self,'readiness_release',None)
+            if release:
+                try:
+                    require_release(self.root,release,value['source_hash'],sha(release))
+                    value['release_verification']=dict(verified=True,source_hash=value['source_hash'],receipt_sha256=sha(release))
+                except Exception as exc:value['release_verification']=dict(verified=False,reason=str(exc))
+            native=getattr(self,'readiness_native_proof',None)
+            if native:
+                try:
+                    proof=read_json(native);markets=tuple(proof.get('markets',{}))
+                    from .venue_profiles import SCORED
+                    if not markets or not set(markets)<=SCORED.markets:raise ExchangeError('EXACT_PAS_NATIVE_PROOF_MARKETS_REQUIRED')
+                    require_native_evidence(native,SimpleNamespace(dex='pas',team_wallet=TEAM,api_wallet=API,markets=markets))
+                    value['native_proof_verification']=dict(verified=True,markets=markets,proof_sha256=sha(native),residual_scope_verified=False,
+                        limitation='Actual native roundtrip is separate from independently qualified subminimum residual scope')
+                except Exception as exc:value['native_proof_verification']=dict(verified=False,reason=str(exc))
+            value['readiness']=assess(value,now)
         value['restart_context']=getattr(self,'restart_context',None)
         if value.get('account_observed_ms') is not None:value['account_age_ms']=now-value['account_observed_ms']
         if value.get('fees_observed_ms') is not None:value['fee_age_ms']=now-value['fees_observed_ms']
@@ -79,7 +100,7 @@ class Reporter:
         key = json.dumps([value.get('mode'), value.get('status'), value.get('error'),
             [(r['symbol'], r['decision'], r.get('reasons')) for r in value.get('signals', [])],
             value.get('account', {}).get('positions'), value.get('account', {}).get('open_orders'),
-            value.get('daily_lifecycle')], default=str, sort_keys=True)
+            value.get('daily_lifecycle'),value.get('funding_event')], default=str, sort_keys=True)
         complete_scan=not value.get('markets') or len(value.get('signals',[]))==len(value['markets'])
         if complete_scan and (key != self.previous or now-self.last_event >= 30000):
             path = self.output/'events.jsonl'
@@ -113,6 +134,11 @@ def render(v):
         f"Account age ms: {v.get('account_age_ms')} | Fee age ms: {v.get('fee_age_ms')}",
         f"Market WS: {v.get('stream_connected')} | Account WS: {v.get('account_stream_healthy')} | Authority: {v.get('signing_authority')}",
         f"Risk/remaining attempts: {v.get('risk_remaining')} / {v.get('remaining_attempts')} | Residual: {v.get('residual_status','UNKNOWN')}"]
+    if v.get('readiness'):
+        r=v['readiness'];funding=r['funding']
+        lines += [f"READINESS: {r['state']} | Trading: {r['trading_verdict']} | NEXT ACTION: {r['next_action']}",
+            f"USDP FUNDING: {funding.get('status')} | balance {funding.get('balance')} | age ms {funding.get('age_ms')} | organizer credit origin UNKNOWN",
+            'READINESS GATES: '+json.dumps(r['gates'])]
     if v.get('expires_ms'):
         lines.append(f"Signing hard expiry ms: {v['expires_ms']} | Entry cutoff ms: {v.get('entry_cutoff_ms')} | Scheduled risk close ms: {v.get('scheduled_risk_close_ms')} | Midnight: {v.get('midnight_policy','SINGLE_DAY')}")
     if v.get('protection_statuses'):lines.append('NATIVE PROTECTION: '+json.dumps(v['protection_statuses'],default=str))
@@ -129,10 +155,14 @@ def render(v):
     for r in v.get('signals', []):
         c = v.get('liquidity', {}).get(r['symbol'], {})
         lines.append(f"[{r['decision']}] {r['symbol']} | {', '.join(r.get('reasons',[]))} | bid/ask {c.get('bid')}/{c.get('ask')} | capacity {c.get('notional')} | SL/TP {r.get('baseline_stop')}/{r.get('baseline_target')} | approved size {r.get('approved_quantity')}")
+        h=(v.get('market_history') or {}).get(r['symbol'],{})
+        if h:lines.append(f"  Authentic history: {h['valid_deduplicated_completed']} completed | contiguous tail {h['contiguous_tail_bars']}/300 | gaps {len(h['missing_intervals'])} | age ms {h['cache_age_ms']} | last raw count {h['raw_returned_last']}")
         evidence=c.get('evidence_evaluation') or {}
         if evidence:
             lines.append(f"  Liquidity / conditional economic / authorized notional: {evidence['liquidity_only_notional']} / {evidence['economically_viable_notional']} / {evidence['authorized_executable_notional']} | Expected PnL: UNKNOWN | Target-scenario net/stress: {evidence.get('conditional_target_net')}/{evidence.get('stressed_conditional_target_net')}")
             lines.append('  '+', '.join(evidence['reasons']))
+    if v.get('base_taker_fee_rate') is not None:
+        lines.append(f"Fees: account base {v['base_taker_fee_rate']} | documented PAS estimate {v.get('documented_pas_taker_fee_estimate')} | unchanged 6x stress bound {v.get('fee_rate_bound')} | actual charges require fills")
     if v.get('error'):lines.append('ERROR: '+v['error'])
     for order in v.get('owned_order_statuses',[]):
         lines.append(f"[ORDER_{order['state']}] {order['side']} {order['symbol']} | oid {order['oid']} | quantity {order['quantity']}")
@@ -367,7 +397,10 @@ def start(root, args):
     atomic_json(binding,dict(network='testnet',dex=venue))
     prior=read_json(state/'current.json') if (state/'current.json').exists() else None
     session=uuid.uuid4().hex;output=state/'sessions'/session;output.mkdir(parents=True,mode=0o700)
-    publish=Reporter(root,state,output,session);stop=threading.Event();done=threading.Event()
+    publish=Reporter(root,state,output,session)
+    publish.readiness_release=getattr(args,'readiness_release',None)
+    publish.readiness_native_proof=getattr(args,'readiness_native_proof',None)
+    stop=threading.Event();done=threading.Event()
     publish.restart_context=dict(previous_session=prior.get('session_id') if prior else None,
         previous_output=prior.get('output') if prior else None,
         restored_authority=False,policy='Fresh public reconciliation; never restore signing from a prior process')
@@ -437,7 +470,9 @@ def main(root):
     accept=sub.add_parser('approve',help='Interactive exact human acceptance; never auto-approve')
     for name in ('mandate','release','native-protection-evidence'):accept.add_argument('--'+name,required=True)
     launch=sub.add_parser('start');launch.add_argument('--authorized',action='store_true');launch.add_argument('--state',default=str(root/'runtime/terminal'))
-    launch.add_argument('--venue',choices=('par','pas'),default='pas',help='Explicit isolated practice or scored profile; grants no signing authority')
+    launch.add_argument('--venue',choices=('par','pas'),default='pas',help='PAS observation; grants no signing authority')
+    launch.add_argument('--readiness-release',help='Public verification only; grants no authority')
+    launch.add_argument('--readiness-native-proof',help='Public raw-proof verification only; grants no authority')
     launch.add_argument('--markets',nargs='*',default=[]);launch.add_argument('--scan-seconds',type=int,default=60)
     launch.add_argument('--duration',type=int,help='Optional bounded read-only development soak; signing expiry is unchanged')
     for name in ('mandate','acceptance','release','native-protection-evidence'):launch.add_argument('--'+name)
@@ -445,8 +480,19 @@ def main(root):
         q=sub.add_parser(name);q.add_argument('--state',default=str(root/'runtime/terminal'))
         if name=='dashboard':
             q.add_argument('--refresh',type=int,default=5);q.add_argument('--once',action='store_true')
+    for name in ('funding','configuration-review','native-prepare'):
+        q=sub.add_parser(name);q.add_argument('--output',required=True)
+        if name=='native-prepare':q.add_argument('--market',default='pas:BTC')
+    for name in ('configuration-approve','configuration-apply'):
+        q=sub.add_parser(name)
+        for flag in ('plan','discovery','release','output'):q.add_argument('--'+flag,required=True)
+        if name=='configuration-apply':q.add_argument('--acceptance',required=True)
     args=p.parse_args()
     try:
+        if args.command in {'funding','configuration-review','native-prepare','configuration-approve','configuration-apply'}:
+            from .pas_operations import dispatch
+            result=dispatch(root,args);print(json.dumps(result,indent=2,default=str))
+            return 1 if result.get('status')=='CONFIGURATION_REQUIRES_REVIEW' else 0
         if args.command=='doctor':return doctor(root,args.online,args.venue)
         if args.command=='discover':
             from .venue_discovery import discover

@@ -4,6 +4,7 @@ from decimal import Decimal as D
 from pathlib import Path
 from types import SimpleNamespace
 import json
+import os
 import threading
 import time
 
@@ -75,7 +76,7 @@ def observe(root, output, stop, publish, *, markets=(), scan_seconds=60, account
     transport = RotatingReceipts(RequestsInfoTransport(), output/'info_receipts.jsonl')
     client = SerializedPublicClient(transport, rate_limits=rates, clock_ms=clock, venue=profile)
     client.read_cancel_event = stop
-    stream = account_stream = thread = account_thread = None
+    stream = account_stream = thread = account_thread = history = None
     result = dict(mode='TESTNET OBSERVATION', status='CONNECTING', source_hash=source,
         team_wallet=TEAM, network='testnet', dex=profile.dex, collateral=profile.collateral,
         venue_identity=profile.identity, phase=profile.phase, approved_bankroll=None,
@@ -86,6 +87,11 @@ def observe(root, output, stop, publish, *, markets=(), scan_seconds=60, account
     try:
         publish(result)
         client.startup()
+        from .durable_history import DurableHistory
+        cache_path=(output.parent.parent/'history.sqlite') if output.parent.name=='sessions' else output/'history.sqlite'
+        history=DurableHistory(cache_path,client,output/'info_receipts.jsonl')
+        client.candle_audit=history
+        result['market_history']={}
         if any(symbol not in client.markets for symbol in selected):
             raise ExchangeError('RUNTIME_MARKET_METADATA_SCOPE_MISMATCH')
         result.update(markets=selected, metadata=client.metadata)
@@ -118,15 +124,31 @@ def observe(root, output, stop, publish, *, markets=(), scan_seconds=60, account
                 next_account = now + account_seconds*1000
                 try:
                     generation=account_stream.generation;sequence=account_stream.event_sequence
-                    with client.request_lock:reconciler.recover_incremental(truth, initial_start_ms=0)
+                    with client.request_lock:
+                        client.startup()
+                        reconciler.recover_incremental(truth, initial_start_ms=0)
                     result.update(account=truth.report(), account_observed_ms=clock(), account_error=None)
                     result.update(local_execution_state=local_execution_state(root),
                         session_performance=performance.observe(result['account'],result['account_observed_ms']))
                     truth.events.clear()  # Account state lives in the report, not an unbounded event list.
                     fees = account._query('userFees')
-                    result.update(fee_rate_bound=str(D(fees['userCrossRate'])*6),
+                    result.update(base_taker_fee_rate=str(D(fees['userCrossRate'])),
+                        documented_pas_taker_fee_estimate=str(D(fees['userCrossRate'])*2) if profile.dex=='pas' else None,
+                        fee_rate_bound=str(D(fees['userCrossRate'])*6),
                         maker_fee_rate_bound=str(D(fees['userAddRate'])*6),fees_observed_ms=clock(),
                         fee_estimation_basis='Existing conservative 6x base-rate bound; actual fills determine charged fees')
+                    if profile.dex=='pas':
+                        from .pas_funding import read_funding
+                        prior_funding=result.get('funding',{})
+                        result['funding']=read_funding(client,account,provenance=str(output/'info_receipts.jsonl'))
+                        if prior_funding.get('balance')!=result['funding'].get('balance') or prior_funding.get('status')!=result['funding'].get('status'):
+                            result['funding_event']=dict(before=prior_funding.get('status'),after=result['funding']['status'],
+                                balance=result['funding']['balance'],observed_ms=clock(),signing_triggered=False)
+                            with (output/'funding_events.jsonl').open('a') as f:
+                                f.write(json.dumps(result['funding_event'])+'\n');f.flush();os.fsync(f.fileno())
+                            next_scan=0
+                        from .paper_operations import atomic_json
+                        atomic_json(output/'funding_evidence.json',result['funding'])
                     account_failures = 0
                     with account_stream.lock:
                         if (account_stream.connected and account_stream.generation==generation
@@ -147,21 +169,31 @@ def observe(root, output, stop, publish, *, markets=(), scan_seconds=60, account
                     try:
                         end = clock()//60000*60000-1
                         begin = min(end+1-900*60000, end//86400000*86400000-14*60000)
-                        context = market.get_asset_contexts()[symbol];context_ms = clock()
-                        book = market.get_orderbook(symbol);at = clock();spec = client.market(symbol)
-                        active = account._query('activeAssetData', coin=symbol);active_ms = clock()
-                        fee = D(result.get('fee_rate_bound', '.003'))
+                        spec = client.market(symbol)
                         try:
-                            bars = market.get_candles(symbol, begin, end, now_ms=clock())
-                            row = explain_market(spec, book, bars, context, now_ms=clock(), context_ms=context_ms, fee_rate=fee)
+                            # Persist every normalized real REST response, including
+                            # sparse snapshots which cannot yet satisfy the strategy.
+                            cached=history.read(symbol,clock())
+                            full=history.report(symbol,clock())
+                            request_begin=max(begin,cached[-1].timestamp_ms-60000) if cached and cached[0].timestamp_ms<=begin and full['contiguous_tail_bars']>=300 else begin
+                            try:
+                                returned=market.get_candles(symbol,request_begin,end,now_ms=clock())
+                                history.ingest(symbol,returned,now_ms=clock())
+                            except (ExchangeError,ValueError) as exc:
+                                row['history_recovery_reason']=str(exc)
+                            bars=[b for b in history.read(symbol,clock()) if begin<=b.timestamp_ms<=end]
+                            h=history.report(symbol,clock());result['market_history'][symbol]=h
+                            # Slow history calls must not age quotes used for signal
+                            # explanations; each observation has its own clock.
+                            context=market.get_asset_contexts()[symbol];context_ms=clock()
+                            book=market.get_orderbook(symbol);at=clock()
+                            active=account._query('activeAssetData',coin=symbol);active_ms=clock()
+                            row=explain_market(spec,book,bars,context,now_ms=clock(),context_ms=context_ms,fee_rate=D(result.get('fee_rate_bound','.003')))
+                            row['history']=h
                         except (ExchangeError,ValueError) as exc:
                             row['reasons'].append(str(exc))
-                        # Historical candle recovery may take seconds. Capacity
-                        # must use its own fresh book/account observations.
-                        if not 0<=clock()-book.timestamp_ms<=5000:
-                            book=market.get_orderbook(symbol);at=clock()
-                        if not 0<=clock()-active_ms<=5000:
-                            active=account._query('activeAssetData',coin=symbol);active_ms=clock()
+                            raise
+                        fee=D(result.get('fee_rate_bound','.003'))
                         opportunity=opportunity_capacity(spec,book,active,row,now_ms=clock(),active_ms=active_ms,
                             fee_rate=fee,fee_ms=result.get('fees_observed_ms'),maker_fee_rate=result.get('maker_fee_rate_bound'))
                         opportunities.append(opportunity)
@@ -190,6 +222,10 @@ def observe(root, output, stop, publish, *, markets=(), scan_seconds=60, account
                             targets={str(t):q*a['best_price']>=t for t in (1000,2500,5000,10000,25000,50000)},
                             qualified_unattended_notional='0', active_asset=active)
                         capacity[symbol]['evidence_evaluation']=opportunity
+                        if profile.dex=='pas' and result.get('base_taker_fee_rate') is not None:
+                            from .pas_economics import fee_scenarios
+                            capacity[symbol]['fee_scenarios']=fee_scenarios(book,context,row,quantity=q,
+                                base_taker_rate=result['base_taker_fee_rate'],now_ms=clock(),context_ms=context_ms)
                         if any(x in opportunity['reasons'] for x in ('CAPITAL_FRESH_PAR_BOOK_REQUIRED','ACTIVE_ACCOUNT_LIMITS_STALE','FEE_OBSERVATION_STALE')):
                             capacity[symbol].update(quantity='0',notional='0',stale_capacity_withheld=True)
                         row.update(approved_quantity=None, execution_preflight='NOT_AUTHORIZED',
@@ -259,8 +295,13 @@ def observe(root, output, stop, publish, *, markets=(), scan_seconds=60, account
         result.setdefault('residual_status','FLAT_VERIFIED' if result['terminal_flat'] else 'UNKNOWN_REQUIRES_OPERATOR')
         result['journal_integrity'] = journal.db.execute('PRAGMA integrity_check').fetchone()[0]
         result['execution_intents'] = len(journal.intents())
+        if history:
+            result['history_integrity']=history.db.execute('PRAGMA integrity_check').fetchone()[0]
+            history.close()
         client.close();journal.close()
         if result['status'] != 'HALTED':result['status'] = 'STOPPED'
+        result['source_hash_after']=active_source_hash(root)
+        if result['source_hash_after']!=source:result.update(status='HALTED',error='TERMINAL_SOURCE_CHANGED')
         result.update(public_receipt_count=transport.records, receipt_rotations=transport.rotations, actual_errors=transport.error_counts)
         publish(result)
     return result

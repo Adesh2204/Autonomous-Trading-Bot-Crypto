@@ -83,7 +83,7 @@ def require_scored_evidence(m, directory):
     return {str(organizer):sha(organizer),str(discovery):sha(discovery),str(raw):sha(raw)}
 
 
-def require_shared_scope(root,client,*,owned_pas_intents=()):
+def require_shared_scope(root,client,*,owned_pas_intents=(),owned_configuration_actions=()):
     """Read every deployed DEX before PAS signing: one global account, no isolation."""
     from .terminal_evidence import local_execution_state
     local=local_execution_state(root)
@@ -91,7 +91,7 @@ def require_shared_scope(root,client,*,owned_pas_intents=()):
     if (local['status'] not in {'NO_LOCAL_UNRESOLVED_INTENT','BLOCKED_UNRESOLVED_INTENT'}
             or any(not (r.get('journal')=='pas' and r.get('intent_key') in permitted
                 and r.get('state') in {'PREPARED','SUBMITTED','OPEN','CANCEL_PENDING','PARTIALLY_FILLED'})
-                for r in local['unresolved'])):
+                for r in local['unresolved'] if not (r.get('journal')=='pas-configuration' and r.get('management_id') in set(owned_configuration_actions) and r.get('state')=='UNKNOWN'))):
         raise ExchangeError('PAS_SHARED_ACCOUNT_UNKNOWN_REQUIRES_ADMISSIBLE_RESOLUTION')
     # Explicit /info requests only. The selected PAS client intentionally cannot
     # issue other-DEX queries; no second signer or transport is constructed.

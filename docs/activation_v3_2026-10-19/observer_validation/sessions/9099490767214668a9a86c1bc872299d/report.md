@@ -1,0 +1,65 @@
+TEAM ANCHORIUM — QUANT ENGINE
+MODE: TESTNET OBSERVATION | STATUS: STOPPED
+TESTNET pas | Collateral: USDP | Team: 0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C
+Source: 8f2e9a008810123fd56bc5897c8024c0d38aebff5aa384d55c216806dfbd8055
+Local: 2026-10-19T00:25:30.098505+05:30 | Exchange time: None (null means unavailable)
+Actual collateral: 0 | Available/withdrawable: None
+Proposed bankroll: 20000 | Approved bankroll: None | Approved notional: None
+Positions: [] | Open orders: []
+Observed account net: 0 | Fees: 0 | Funding: 0
+Account age ms: 8 | Fee age ms: 51421
+Market WS: False | Account WS: True | Authority: NONE
+Risk/remaining attempts: None / None | Residual: FLAT_VERIFIED
+READINESS: PREOPEN_OBSERVATION | Trading: NO_GO | NEXT ACTION: SCORED_PHASE_NOT_OPEN
+USDP FUNDING: USDP_ZERO | balance 0 | age ms 51421 | organizer credit origin UNKNOWN
+READINESS GATES: {"SCORING_WINDOW_OPEN": false, "USDP_FUNDING_VERIFIED": false, "PAS_ACCOUNT_CONFIGURATION_VERIFIED": false, "HISTORICAL_ORDER_SAFETY_VERIFIED": false, "NATIVE_PROTECTION_QUALIFIED": false, "MARKET_HISTORY_READY": false, "EXECUTABLE_OPPORTUNITY_AVAILABLE": false, "SOURCE_RELEASE_VERIFIED": false, "EXACT_SESSION_APPROVAL_ACCEPTED": false}
+Local intent barrier: BLOCKED_UNRESOLVED_INTENT | Unresolved: 1 | Native: UNQUALIFIED
+[LOCAL_UNKNOWN] cloid 0xac0eea156fcec80986dd67c9057b6ded | journal qualification
+Session actual gross / fees / funding / net: 0 / 0 / 0 / 0
+Initial verified equity / current: None / 0 | Realized net % of initial equity: None
+Equity change %: None | Sampled drawdown %: None | Official score: UNKNOWN
+First verified session equity; equity change is not cash-flow-adjusted or an official competition return
+[NO_TRADE] pas:BRENT | BASELINE_300_BAR_WARMUP_REQUIRED | bid/ask 106.84/106.89 | capacity 0.0000 | SL/TP None/None | approved size None
+  Authentic history: 0 completed | contiguous tail 0/300 | gaps 0 | age ms None | last raw count None
+  Liquidity / conditional economic / authorized notional: 0 / 0 / 0 | Expected PnL: UNKNOWN | Target-scenario net/stress: None/None
+  ONE_X_CROSS_REQUIRED
+[NO_TRADE] pas:BTC | BASELINE_300_BAR_WARMUP_REQUIRED | bid/ask 81039.0/81086.0 | capacity 0.000000 | SL/TP None/None | approved size None
+  Authentic history: 6 completed | contiguous tail 6/300 | gaps 0 | age ms 11560260 | last raw count None
+  Liquidity / conditional economic / authorized notional: 0 / 0 / 0 | Expected PnL: UNKNOWN | Target-scenario net/stress: None/None
+  ONE_X_CROSS_REQUIRED
+[NO_TRADE] pas:ETH | BASELINE_300_BAR_WARMUP_REQUIRED | bid/ask 2361.7/2363.2 | capacity 0.00000 | SL/TP None/None | approved size None
+  Authentic history: 60 completed | contiguous tail 60/300 | gaps 0 | age ms 8256280 | last raw count None
+  Liquidity / conditional economic / authorized notional: 0 / 0 / 0 | Expected PnL: UNKNOWN | Target-scenario net/stress: None/None
+  ONE_X_CROSS_REQUIRED
+[NO_TRADE] pas:EWJ | BASELINE_300_BAR_WARMUP_REQUIRED | bid/ask 94.323/94.38 | capacity 0.00000 | SL/TP None/None | approved size None
+  Authentic history: 2 completed | contiguous tail 2/300 | gaps 0 | age ms 996807 | last raw count None
+  Liquidity / conditional economic / authorized notional: 0 / 0 / 0 | Expected PnL: UNKNOWN | Target-scenario net/stress: None/None
+  ONE_X_CROSS_REQUIRED
+[NO_TRADE] pas:EWY | COMPLETED_CANDLE_STALE | bid/ask 147.75/147.83 | capacity 0.00000 | SL/TP None/None | approved size None
+  Authentic history: 951 completed | contiguous tail 951/300 | gaps 0 | age ms 11797999 | last raw count None
+  Liquidity / conditional economic / authorized notional: 0 / 0 / 0 | Expected PnL: UNKNOWN | Target-scenario net/stress: None/None
+  ONE_X_CROSS_REQUIRED
+[NO_TRADE] pas:GOLD | BASELINE_300_BAR_WARMUP_REQUIRED | bid/ask 4157.9/4160.5 | capacity 0.00000 | SL/TP None/None | approved size None
+  Authentic history: 0 completed | contiguous tail 0/300 | gaps 0 | age ms None | last raw count None
+  Liquidity / conditional economic / authorized notional: 0 / 0 / 0 | Expected PnL: UNKNOWN | Target-scenario net/stress: None/None
+  ONE_X_CROSS_REQUIRED
+[NO_TRADE] pas:HYPE | BASELINE_300_BAR_WARMUP_REQUIRED | bid/ask 77.31/77.37 | capacity 0.0000 | SL/TP None/None | approved size None
+  Authentic history: 6 completed | contiguous tail 6/300 | gaps 0 | age ms 11550319 | last raw count None
+  Liquidity / conditional economic / authorized notional: 0 / 0 / 0 | Expected PnL: UNKNOWN | Target-scenario net/stress: None/None
+  ONE_X_CROSS_REQUIRED
+[NO_TRADE] pas:SP500 | BASELINE_300_BAR_WARMUP_REQUIRED | bid/ask 7610.4/7612.4 | capacity 0.0000 | SL/TP None/None | approved size None
+  Authentic history: 1 completed | contiguous tail 1/300 | gaps 0 | age ms 11854446 | last raw count None
+  Liquidity / conditional economic / authorized notional: 0 / 0 / 0 | Expected PnL: UNKNOWN | Target-scenario net/stress: None/None
+  ONE_X_CROSS_REQUIRED
+[NO_TRADE] pas:USDEUR | BASELINE_300_BAR_WARMUP_REQUIRED | bid/ask 1.1225/1.1232 | capacity 0.00000 | SL/TP None/None | approved size None
+  Authentic history: 0 completed | contiguous tail 0/300 | gaps 0 | age ms None | last raw count None
+  Liquidity / conditional economic / authorized notional: 0 / 0 / 0 | Expected PnL: UNKNOWN | Target-scenario net/stress: None/None
+  ONE_X_CROSS_REQUIRED
+[NO_TRADE] pas:USDJPY | BASELINE_300_BAR_WARMUP_REQUIRED | bid/ask 158.11/158.21 | capacity 0.0000 | SL/TP None/None | approved size None
+  Authentic history: 6 completed | contiguous tail 6/300 | gaps 0 | age ms 11555522 | last raw count None
+  Liquidity / conditional economic / authorized notional: 0 / 0 / 0 | Expected PnL: UNKNOWN | Target-scenario net/stress: None/None
+  ONE_X_CROSS_REQUIRED
+Fees: account base 0.00045 | documented PAS estimate 0.00090 | unchanged 6x stress bound 0.00270 | actual charges require fills
+Terminal flat: True | Simulated net: N/A
+Actual account events and synthetic results are separate. No native stop or SHORT qualification is implied.
+This Mac, Python process, power and internet. Codex and its app may be closed.

@@ -34,7 +34,7 @@ class LeverageConfigurationApproval:
             raise ExchangeError('EXPLICIT_MANUAL_LEVERAGE_CONFIGURATION_APPROVAL_REQUIRED')
 
 
-def wait_for_configuration_reads(rates, approval, team, signer, *, required_weight=300, max_wait_ms=65000):
+def wait_for_configuration_reads(rates, approval, team, signer, *, required_weight=300, max_wait_ms=65000, venue='par'):
     """Pace a whole read group without spending the configured safety reserve.
 
     Every account/metadata check still runs after waiting. This is not an action
@@ -51,7 +51,7 @@ def wait_for_configuration_reads(rates, approval, team, signer, *, required_weig
     if required_weight > limit:
         raise ExchangeError('CONFIGURATION_READ_GROUP_EXCEEDS_BUDGET')
     while True:
-        require_paper_migration()
+        require_paper_migration(venue)
         now = rates.clock_ms()
         if approval is not None:
             approval.require(team, signer, now)
@@ -102,11 +102,13 @@ class LeverageConfigurationTransport:
     There is intentionally no generic perform/order/cancel method. Checks run
     before the SDK allocates a durable nonce and again before HTTP transmission.
     """
-    def __init__(self, client, signer, team, nonces, approval, *, rates, readiness_guard):
+    def __init__(self, client, signer, team, nonces, approval, *, rates, readiness_guard, approved_plan=None):
         from .par_retirement import reject_retired_par_write
         reject_retired_par_write()
         from eth_account.signers.local import LocalAccount
-        if type(approval) is not LeverageConfigurationApproval or not isinstance(signer, LocalAccount):
+        from .pas_configuration import PasConfigurationApproval
+        expected = PasConfigurationApproval if getattr(client,'dex','par')=='pas' else LeverageConfigurationApproval
+        if type(approval) is not expected or not isinstance(signer, LocalAccount):
             raise ExchangeError('CONFIGURATION_APPROVAL_AND_API_SIGNER_REQUIRED')
         approval.require(team, signer.address, client.clock_ms())
         if nonces.signer_address != signer.address.lower():
@@ -114,6 +116,14 @@ class LeverageConfigurationTransport:
         self.client, self.signer_address, self.team_address = client, signer.address, team
         self.nonces, self.approval, self.rates = nonces, approval, rates
         self.readiness_guard = readiness_guard
+        if expected is PasConfigurationApproval:
+            if not isinstance(approved_plan,dict):raise ExchangeError('HASH_BOUND_PAS_CONFIGURATION_PLAN_REQUIRED')
+            plan=dict(approved_plan);identity=plan.pop('plan_hash',None)
+            if identity!=approval.plan_hash or fingerprint(plan)!=identity or plan.get('source_hash')!=approval.source_hash:
+                raise ExchangeError('HASH_BOUND_PAS_CONFIGURATION_PLAN_REQUIRED')
+            self._approved_actions=frozenset(fingerprint(r['requested_action']) for r in plan['changes'])
+            self.action_expiry_ms=approval.expires_ms
+        self.consumed_pas_actions=set()
         self.expected = None
         self.transmitted = False
         self.transmission_attempts = 0
@@ -128,11 +138,11 @@ class LeverageConfigurationTransport:
             raise
 
     def __repr__(self):
-        return '<LeverageConfigurationTransport testnet:par 1x-cross-only signer=[PRIVATE]>'
+        return '<LeverageConfigurationTransport testnet:'+getattr(self.client,'dex','par')+' 1x-cross-only signer=[PRIVATE]>'
 
     def check(self, action):
         from venue_config import require_paper_migration
-        require_paper_migration()
+        require_paper_migration(getattr(self.client,'dex','par'))
         self.approval.require(self.team_address, self.signer_address, self.client.clock_ms())
         self.account_lease.require()
         if (self.expected is None or self.transmitted or not self.nonces.healthy or
@@ -142,14 +152,18 @@ class LeverageConfigurationTransport:
                 type(action['asset']) is not int or fingerprint(action) != self.expected or
                 action['asset'] not in {m.asset_id for m in self.client.markets.values()}):
             raise ExchangeError('EXACT_ONE_X_CROSS_ACTION_PERMIT_REQUIRED')
+        if getattr(self.client,'dex','par')=='pas' and (fingerprint(action) not in getattr(self,'_approved_actions',frozenset()) or fingerprint(action) in self.consumed_pas_actions):
+            raise ExchangeError('EXACT_APPROVED_PAS_CONFIGURATION_ACTION_REQUIRED')
         # Account/clock/rate/approval freshness is rechecked at the signed sink.
         self.readiness_guard()
+        self.approval.require(self.team_address, self.signer_address, self.client.clock_ms())
 
     def transmit(self, payload):
         self.check(payload['action'])
         if (set(payload) != {'action', 'nonce', 'signature', 'vaultAddress', 'expiresAfter'} or
-                payload['vaultAddress'] is not None or payload['expiresAfter'] is not None):
+                payload['vaultAddress'] is not None or payload['expiresAfter'] != getattr(self,'action_expiry_ms',None)):
             raise ExchangeError('CONFIGURATION_PAYLOAD_IDENTITY_INVALID')
+        if getattr(self.client,'dex','par')=='pas':self.consumed_pas_actions.add(fingerprint(payload['action']))
         self.transmitted = True  # An ambiguous response can never reuse a permit.
         self.transmission_attempts += 1
         try:

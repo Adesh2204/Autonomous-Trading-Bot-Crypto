@@ -18,7 +18,20 @@ from .terminal_recovery import terminal_reconcile,exception_evidence
 from .testnet_certification import TEAM
 
 
-def discover(root,output,*,venue='pas',timeout_seconds=180):
+def final_market_observation(client,account,market,symbol):
+    """Last targeted unsigned snapshot after slow broad history/account reads."""
+    spec=client.market(symbol)
+    context=market.get_asset_contexts()[symbol];context_ms=client.clock_ms()
+    active=account._query('activeAssetData',coin=symbol);active_ms=client.clock_ms()
+    book=market.get_orderbook(symbol);at=client.clock_ms();validate_book(book,at)
+    buy,sell=depth_capacity(book,'BUY'),depth_capacity(book,'SELL')
+    qty=floor_quantity(spec,min(buy['best_quantity'],sell['best_quantity'],buy['raw_l2_quantity'],sell['raw_l2_quantity'])*D('.1'))
+    return dict(symbol=symbol,spec=asdict(spec),book=asdict(book),context=context,context_ms=context_ms,
+        active_asset=active,active_ms=active_ms,observed_ms=at,displayed_book_only_quantity=str(qty),
+        displayed_book_only_notional=str(qty*book.asks[0].price),snapshot_role='FINAL_TARGETED_PUBLIC_PROPOSAL_OBSERVATION')
+
+
+def discover(root,output,*,venue='pas',timeout_seconds=180,final_market=None):
     from venue_config import require_paper_migration
     from strategy_freeze import verify_strategy_freeze
     profile=venue_profile(venue);require_paper_migration(profile);verify_strategy_freeze()
@@ -38,6 +51,9 @@ def discover(root,output,*,venue='pas',timeout_seconds=180):
         result.update(dex_index=client.dex_index,collateral_token=client.collateral_token_id,
             metadata=client.metadata,deployment=client.discovery,account_mode=account._query('userAbstraction'))
         if profile.dex=='pas':
+            from .pas_funding import read_funding
+            result['funding']=read_funding(client,account,provenance=str(output/'info_receipts.jsonl'))
+            atomic_json(output/'funding_evidence.json',result['funding'])
             from .pas_readiness import require_pas_market_status
             result['market_status']=require_pas_market_status(client)
         fees=account._query('userFees');fee_ms=clock()
@@ -60,6 +76,9 @@ def discover(root,output,*,venue='pas',timeout_seconds=180):
             atomic_json(output/'discovery.json',result)
         truth=ExchangeTruthState();reconciler=HyperliquidReconciliation(account)
         result.update(terminal_reconcile(account,reconciler,truth,client,rates,clock,timeout_seconds=timeout_seconds))
+        if final_market is not None:
+            if profile.dex!='pas' or final_market not in profile.markets:raise ValueError('EXACT_PAS_FINAL_MARKET_REQUIRED')
+            result['qualification_market']=final_market_observation(client,account,market,final_market)
         result['status']='READ_ONLY_DISCOVERY_COMPLETE'
     except Exception as exc:
         result.update(status='DISCOVERY_INCOMPLETE',error=exception_evidence(exc));result['errors'].append(str(exc))

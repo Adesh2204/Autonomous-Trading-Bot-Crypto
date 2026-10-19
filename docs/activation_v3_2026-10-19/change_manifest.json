@@ -1,0 +1,132 @@
+{
+  "source_hash": "6d37a929e23e295cd35a4aa137a077b6533b711bf085d292fff8c2103420ca42",
+  "changes": [
+    {
+      "file": "algo-trading-bot/exchange/durable_history.py",
+      "before_sha256": null,
+      "after_sha256": "03bb80b461d714d4781d7de387cf5383c09253ecb74f897606c36263547f6aa7",
+      "reason": "Crash-safe canonical completed-bar persistence, deduplication, conflicts, bounded retention and gap/warmup/freshness evidence",
+      "release_source_hash": "6d37a929e23e295cd35a4aa137a077b6533b711bf085d292fff8c2103420ca42",
+      "regression_xml_sha256": "db85c3cdcf8557d8cb299e433a68590aa12411720b70a45f0b94e394644cdb0a"
+    },
+    {
+      "file": "algo-trading-bot/exchange/leverage_configuration.py",
+      "before_sha256": "3c18336917e129a5e2768e6a382591900664cad92f88a6a6804fea12065d9714",
+      "after_sha256": "fcd67bf5d656ed9bee10c284951724ce9f4baa943ecf62983797ca77a90f5431",
+      "reason": "Reuse existing exact 1x SDK sink with PAS-only plan-hash action binding, finite signed expiry and transmitted-action consumption; preserve par behavior",
+      "release_source_hash": "6d37a929e23e295cd35a4aa137a077b6533b711bf085d292fff8c2103420ca42",
+      "regression_xml_sha256": "db85c3cdcf8557d8cb299e433a68590aa12411720b70a45f0b94e394644cdb0a"
+    },
+    {
+      "file": "algo-trading-bot/exchange/pas_configuration.py",
+      "before_sha256": null,
+      "after_sha256": "188af6e7e05ee28f977e2bc8e2b05ac7a2a8e4aa1540cfcef77f3daa5b1224e4",
+      "reason": "Exact new configuration-only TTY approval and future source/plan-bound one-use SDK route with shared nonce and authoritative readback; canonical observation hashing excludes exactly its embedded plan and verifies the copy agrees",
+      "release_source_hash": "6d37a929e23e295cd35a4aa137a077b6533b711bf085d292fff8c2103420ca42",
+      "regression_xml_sha256": "db85c3cdcf8557d8cb299e433a68590aa12411720b70a45f0b94e394644cdb0a"
+    },
+    {
+      "file": "algo-trading-bot/exchange/pas_configuration_plan.py",
+      "before_sha256": "9ce5dfdd74480b0b3768814c0630fb3f21db944df07f9dc1ee17076d354da330",
+      "after_sha256": "653e5787bb1feaa6c8adee6fdc2771c1907e9deee3a92ca95c6fcee13feca7dd",
+      "reason": "Connect unsigned plan explanation to separate exact PAS configuration route; old par approval remains invalid",
+      "release_source_hash": "6d37a929e23e295cd35a4aa137a077b6533b711bf085d292fff8c2103420ca42",
+      "regression_xml_sha256": "db85c3cdcf8557d8cb299e433a68590aa12411720b70a45f0b94e394644cdb0a"
+    },
+    {
+      "file": "algo-trading-bot/exchange/pas_controller.py",
+      "before_sha256": null,
+      "after_sha256": "c9408cf4dd079121264a9cd5bb62b3f680fd266b506495f0bb3074ebfafbb82f",
+      "reason": "Independent diagnostic opening/readiness gates without execution capability or clock/funding activation",
+      "release_source_hash": "6d37a929e23e295cd35a4aa137a077b6533b711bf085d292fff8c2103420ca42",
+      "regression_xml_sha256": "db85c3cdcf8557d8cb299e433a68590aa12411720b70a45f0b94e394644cdb0a"
+    },
+    {
+      "file": "algo-trading-bot/exchange/pas_economics.py",
+      "before_sha256": null,
+      "after_sha256": "8536d5c6992d18a15e22e7bd67477aa377fd6f82a55934bdd2ac48b55e2117e6",
+      "reason": "Separate documented PAS fee scenario from unchanged 6x stress guard and actual fill fees; expected PnL stays unknown",
+      "release_source_hash": "6d37a929e23e295cd35a4aa137a077b6533b711bf085d292fff8c2103420ca42",
+      "regression_xml_sha256": "db85c3cdcf8557d8cb299e433a68590aa12411720b70a45f0b94e394644cdb0a"
+    },
+    {
+      "file": "algo-trading-bot/exchange/pas_funding.py",
+      "before_sha256": null,
+      "after_sha256": "b2fda66d16fe9d004376b8371b0ce97353cb592629e5c1160ad30d8e918c8d13",
+      "reason": "Unsigned exact-team canonical USDP and mode evidence, distinct zero/stale/unavailable/positive states, no double counting or inferred organizer credit",
+      "release_source_hash": "6d37a929e23e295cd35a4aa137a077b6533b711bf085d292fff8c2103420ca42",
+      "regression_xml_sha256": "db85c3cdcf8557d8cb299e433a68590aa12411720b70a45f0b94e394644cdb0a"
+    },
+    {
+      "file": "algo-trading-bot/exchange/pas_native_plan.py",
+      "before_sha256": null,
+      "after_sha256": "a95525088218aff6ca69ec241189213a05498280f342539d4c80c55d428da76a",
+      "reason": "Dedicated unsigned PAS qualification risk/cleanup proposal and separate telemetry milestones; unsupported subminimum behavior stays blocked",
+      "release_source_hash": "6d37a929e23e295cd35a4aa137a077b6533b711bf085d292fff8c2103420ca42",
+      "regression_xml_sha256": "db85c3cdcf8557d8cb299e433a68590aa12411720b70a45f0b94e394644cdb0a"
+    },
+    {
+      "file": "algo-trading-bot/exchange/pas_operations.py",
+      "before_sha256": null,
+      "after_sha256": "dff9745d0c3685e2c47f60da430039a56f2621239798e3a9d1cc34a9b73d2425",
+      "reason": "Public funding/configuration/native-preparation operator entry points, with bounded reads and preserved receipts",
+      "release_source_hash": "6d37a929e23e295cd35a4aa137a077b6533b711bf085d292fff8c2103420ca42",
+      "regression_xml_sha256": "db85c3cdcf8557d8cb299e433a68590aa12411720b70a45f0b94e394644cdb0a"
+    },
+    {
+      "file": "algo-trading-bot/exchange/scored_session.py",
+      "before_sha256": "d9dd908da677193bb5daebe7f625f54d960f07532ab734b3a1875fd12451a66c",
+      "after_sha256": "413c037de7e13d27350b8b19892d3039d1187dfb12896ba9d2182d3c5a26a766",
+      "reason": "Permit only the current owned configuration management record at its own sink; foreign order uncertainty still blocks",
+      "release_source_hash": "6d37a929e23e295cd35a4aa137a077b6533b711bf085d292fff8c2103420ca42",
+      "regression_xml_sha256": "db85c3cdcf8557d8cb299e433a68590aa12411720b70a45f0b94e394644cdb0a"
+    },
+    {
+      "file": "algo-trading-bot/exchange/terminal_app.py",
+      "before_sha256": "c1013516fcb714e42d8eb8192401f9ac96fd17731bd5bd85f9c04263d969a6e2",
+      "after_sha256": "c6f971c0bd2e3893970bc699b82cbd3aafe8008017816a7e8da5d5df72e483c0",
+      "reason": "Expose reviewed CLI routes, exact public proof/release checks and readiness/funding/history/fee dashboard",
+      "release_source_hash": "6d37a929e23e295cd35a4aa137a077b6533b711bf085d292fff8c2103420ca42",
+      "regression_xml_sha256": "db85c3cdcf8557d8cb299e433a68590aa12411720b70a45f0b94e394644cdb0a"
+    },
+    {
+      "file": "algo-trading-bot/exchange/terminal_evidence.py",
+      "before_sha256": "0079688706bff37d4afd9b532b601b2e6b985e1034497aeb9118c29c85b07b69",
+      "after_sha256": "86d3ea382c5a86c86280bdb8d1a4443a98f3a182f23487bc9de1401b04af9895",
+      "reason": "Include new configuration uncertainty in shared local-state diagnostics",
+      "release_source_hash": "6d37a929e23e295cd35a4aa137a077b6533b711bf085d292fff8c2103420ca42",
+      "regression_xml_sha256": "db85c3cdcf8557d8cb299e433a68590aa12411720b70a45f0b94e394644cdb0a"
+    },
+    {
+      "file": "algo-trading-bot/exchange/terminal_observer.py",
+      "before_sha256": "af55ed8aeccffc75898ebb279107cec5be354f7c7a91077616b827e859b79cfd",
+      "after_sha256": "e066f42cb2f5f934bccb1075aafe11838d726181d86e8589b92a5944fe3e94ee",
+      "reason": "Integrate durable history, funding events and fresh post-backfill signal observations; refresh canonical metadata and report source drift",
+      "release_source_hash": "6d37a929e23e295cd35a4aa137a077b6533b711bf085d292fff8c2103420ca42",
+      "regression_xml_sha256": "db85c3cdcf8557d8cb299e433a68590aa12411720b70a45f0b94e394644cdb0a"
+    },
+    {
+      "file": "algo-trading-bot/exchange/venue_discovery.py",
+      "before_sha256": "36ebfcacc6ac4201db011f15e25fa869f197bc206301497ebb24f150405ae20e",
+      "after_sha256": "ca01796cd75abc1b9bf5e0220c1b37230bf85c3282280bd2b6882b74ba3fd078",
+      "reason": "Persist canonical funding evidence alongside ten-market discovery and unsigned configuration plan; targeted final native proposal snapshot avoids broad-audit quote aging",
+      "release_source_hash": "6d37a929e23e295cd35a4aa137a077b6533b711bf085d292fff8c2103420ca42",
+      "regression_xml_sha256": "db85c3cdcf8557d8cb299e433a68590aa12411720b70a45f0b94e394644cdb0a"
+    },
+    {
+      "file": "algo-trading-bot/test_activation_v3.py",
+      "before_sha256": null,
+      "after_sha256": "20696cf7d02141f7eab7d60241e4e2dc133420000f7c276bee27bbc5938e42ad",
+      "reason": "52 deterministic/adversarial V3 tests, ephemeral isolated SDK-only signing and explicit PAS test environment",
+      "release_source_hash": "6d37a929e23e295cd35a4aa137a077b6533b711bf085d292fff8c2103420ca42",
+      "regression_xml_sha256": "db85c3cdcf8557d8cb299e433a68590aa12411720b70a45f0b94e394644cdb0a"
+    }
+  ],
+  "regression_receipt": "regression_release_final/test_receipt.json",
+  "supporting_change": {
+    "file": "docs/legacy_dependency_inventory.csv",
+    "sha256": "3db455d6cbca24af0f0a02580515800eed0fc7428cbf44a8cfd2ec250320ce94",
+    "reason": "Regenerated required legacy occurrence inventory; classifications remain reference/migration dispositions"
+  },
+  "artifact_manifest": "artifact_manifest.json"
+}

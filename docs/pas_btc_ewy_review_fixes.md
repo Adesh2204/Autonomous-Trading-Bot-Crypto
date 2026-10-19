@@ -4,7 +4,12 @@
 
 This is a separate fix branch based on PR #1's reviewed head
 `76bee2c44631625c2b15e78bf0ac6ee426433070`, targeting the same `main` branch.
-PR #1 stays open and unchanged. This PR includes that unmerged foundation plus
+PR #1 stays open and unchanged. During publication, `main` advanced from
+`7353ed9f9a5b8e8b208cda1aa8dd418fd0a2b908` to
+`e1f8a53a1af7ed066b31b14f5da7ec51b7f65952`. This working branch incorporates
+that updated base, preserves its durable-history/readiness additions, resolves
+three source conflicts without relaxing PAS-only gates, and re-passes the same
+85-test no-sign suite. Neither PR is merged. This PR includes that unmerged foundation plus
 its review fixes; compare against the reviewed head to isolate the fixes.
 
 The current/future engine is **PAS-only on Hyperliquid Testnet**, with exactly
