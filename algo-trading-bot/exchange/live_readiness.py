@@ -11,6 +11,22 @@ def valid_address(value):
             and int(value[2:], 16) != 0)
 
 
+def require_pas_cross_1x(account):
+    """Read both active settings; observing funds never grants configuration authority."""
+    observed = {}
+    for symbol in account.client.api_markets.values():
+        active = account._query('activeAssetData', coin=symbol)
+        leverage = active.get('leverage') if isinstance(active, dict) else None
+        user = active.get('user') if isinstance(active, dict) else None
+        if (not isinstance(user, str) or user.lower() != account.team_address.lower()
+                or active.get('coin') != symbol or not isinstance(leverage, dict)
+                or leverage.get('type') != 'cross' or type(leverage.get('value')) is not int
+                or leverage.get('value') != 1):
+            raise ExchangeError('PAS_ACTIVE_ASSET_CROSS_1X_REQUIRED')
+        observed[symbol] = dict(leverage)
+    return observed
+
+
 @dataclass(frozen=True)
 class LiveReadiness:
     status: str
@@ -129,6 +145,17 @@ def verify_live_account_readiness(account, signer_address, *, clock_health, rate
             collateral = str(eq.collateral_balance)
             if eq.collateral_balance <= 0 or eq.reported_account_value <= 0:
                 reasons.append('ACCOUNT_NOT_FUNDED')
+        if client.competition_mode and not critical:
+            # Readiness is a market-wide statement: inspect both active PAS
+            # markets before entry, not only the requested symbol. Preserve
+            # existing critical reduce-only/cancel recovery; those actions
+            # still require every identity, approval and exact-action check.
+            try:
+                require_pas_cross_1x(account)
+            except ExchangeError as exc:
+                if str(exc) != 'PAS_ACTIVE_ASSET_CROSS_1X_REQUIRED':
+                    raise
+                reasons.append(str(exc))
         fees = account._query('userFees')
         if not isinstance(fees,dict):
             raise ExchangeError('USER_FEES_UNAVAILABLE')

@@ -7,6 +7,7 @@ an enabled protection policy and the exact Testnet environment.
 import argparse
 from dataclasses import asdict
 from datetime import datetime, timezone
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -26,7 +27,7 @@ from exchange.hyperliquid_client import HyperliquidClient
 from exchange.hyperliquid_market_data import HyperliquidMarketData
 from exchange.hyperliquid_account import HyperliquidAccount
 from exchange.market_health import validate_history
-from exchange.live_readiness import valid_address
+from exchange.live_readiness import valid_address, require_pas_cross_1x
 from exchange.execution_safety import HumanLiveApproval
 from exchange.reliability_policy import load_reliability_policy
 from market_regime_scanner import ScannerPolicy
@@ -92,6 +93,9 @@ def load_profile(path):
     for name, ceiling in ceilings.items():
         if getattr(risk, name) > decimal(ceiling, nonnegative=True):
             raise ExchangeError("PAS_BTC_RISK_CEILING_EXCEEDED:" + name)
+    if (risk.max_consecutive_order_errors > 3 or risk.max_reconnect_failures > 5 or
+            risk.maintenance_buffer_multiple < decimal('2') or risk.holding_hours < decimal('1')):
+        raise ExchangeError("PAS_BTC_RELIABILITY_OR_MARGIN_POLICY_WEAKENED")
     if risk.max_daily_setups > 2 or scanner.history_bars < 300:
         raise ExchangeError("PAS_BTC_ACTIVITY_OR_HISTORY_POLICY_INVALID")
     if (scanner.min_atr_fraction < decimal("0.004") or
@@ -109,17 +113,27 @@ def load_profile(path):
         raise ExchangeError("PAS_BTC_COMPETITION_OI_CAPS_INVALID")
     return profile, risk, scanner
 
-def verify_certification(path, api_dex, api_markets):
+def verify_certification(path, api_dex, api_markets, profile_path=None):
     if not path or not path.is_file():
         raise ExchangeError("CRITICAL_CERTIFICATION_REPORT_REQUIRED")
     try:
         evidence = json.loads(path.read_text(encoding="utf-8"))
         current = subprocess.check_output(["git", "rev-parse", "HEAD"],
                                           cwd=ROOT, text=True).strip()
+        dirty_runtime = subprocess.check_output(
+            ["git", "status", "--porcelain", "--untracked-files=all", "--",
+             "algo-trading-bot", "scripts", "configs", "deploy", "libquant_engine"],
+            cwd=ROOT, text=True).strip()
+        selected_profile = profile_path or ROOT / "configs/pas_btc_production.example.json"
+        profile_sha256 = hashlib.sha256(selected_profile.read_bytes()).hexdigest()
     except Exception as exc:
         raise ExchangeError("CERTIFICATION_EVIDENCE_UNREADABLE") from exc
+    if dirty_runtime:
+        raise ExchangeError("CERTIFICATION_SOURCE_OR_CONFIG_DIRTY")
     if not isinstance(evidence, dict):
         raise ExchangeError("CRITICAL_CERTIFICATION_REPORT_INVALID")
+    if evidence.get("profile_sha256") != profile_sha256:
+        raise ExchangeError("CERTIFICATION_SELECTED_PROFILE_MISMATCH")
     checks = evidence.get("checks")
     if (evidence.get("status") != "READY_FOR_SCORED_PHASE" or
             evidence.get("competition_market") != COMPETITION_MARKET or
@@ -296,6 +310,16 @@ def read_only_preflight(profile_path, team_address=None, api_wallet_address=None
                 "approved_and_unexpired": api_wallet_ok, "expiry_ms": expiry_ms,
                 "reported_fee_schedule_available": isinstance(fees, dict),
             }
+            try:
+                leverage_settings = require_pas_cross_1x(account)
+                report["checks"]["btc_ewy_account_leverage"] = {
+                    "passed": True, "markets": leverage_settings,
+                }
+            except Exception:
+                report["checks"]["btc_ewy_account_leverage"] = {
+                    "passed": False, "reason": "PAS_ACTIVE_ASSET_CROSS_1X_REQUIRED",
+                }
+                report["reasons"].append("PAS_ACTIVE_ASSET_CROSS_1X_REQUIRED")
             if positions:
                 report["reasons"].append("EXISTING_POSITION_REQUIRES_JOURNAL_AND_PROTECTION_RECONCILIATION")
             if orders:
@@ -384,10 +408,10 @@ def main(argv=None):
     if preflight.get("api_dex") is None or not preflight.get("api_markets"):
         raise SystemExit("BLOCKED: PAS BTC/EWY market mapping is unverified")
     required_reads = ("configuration", "pas_btc_ewy_discovery", "btc_ewy_market_data", "network_and_venue",
-                      "account_read_only", "api_wallet")
+                      "account_read_only", "api_wallet", "btc_ewy_account_leverage")
     if any(preflight.get("checks", {}).get(name, {}).get("passed") is not True for name in required_reads):
         raise SystemExit("BLOCKED: current read-only preflight checks failed")
-    verify_certification(args.certification_report, preflight["api_dex"], preflight["api_markets"])
+    verify_certification(args.certification_report, preflight["api_dex"], preflight["api_markets"], args.profile)
     rate_policy, clock_policy, protection_policy = load_reliability_policy(
         ROOT / "configs/reliability_policy.json")
     if not protection_policy.enabled:

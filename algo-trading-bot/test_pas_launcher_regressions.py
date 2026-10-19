@@ -102,9 +102,11 @@ def test_profile_cannot_omit_or_relax_active_oi_caps(tmp_path, caps):
 
 
 def test_btc_only_certificate_cannot_authorize_ewy(tmp_path, monkeypatch):
-    monkeypatch.setattr(runner.subprocess, 'check_output', lambda *a, **k: 'current\n')
+    monkeypatch.setattr(runner.subprocess, 'check_output', lambda args, **kwargs:
+                        'current\n' if args[1] == 'rev-parse' else '')
     evidence = dict(status='READY_FOR_SCORED_PHASE', competition_market='pas',
                     api_dex='pas', api_market='pas:BTC', commit_sha='current',
+                    profile_sha256=runner.hashlib.sha256((ROOT / 'configs/pas_btc_production.example.json').read_bytes()).hexdigest(),
                     checks={name: True for name in runner.CRITICAL_TESTS})
     path = tmp_path / 'certificate.json'
     path.write_text(json.dumps(evidence))
@@ -120,6 +122,57 @@ def test_btc_only_certificate_cannot_authorize_ewy(tmp_path, monkeypatch):
     runner.verify_certification(path, 'pas', evidence['api_markets'])
 
 
+@pytest.mark.parametrize('status', [
+    ' M algo-trading-bot/exchange/hyperliquid_market_data.py\n',
+    '?? configs/uncertified.json\n',
+    '?? scripts/unreviewed.py\n',
+])
+def test_certification_rejects_dirty_runtime_source_or_config(tmp_path, monkeypatch, status):
+    def git_output(args, **_kwargs):
+        if args[1] == 'rev-parse':
+            return 'current\n'
+        assert '--untracked-files=all' in args
+        return status
+    monkeypatch.setattr(runner.subprocess, 'check_output', git_output)
+    evidence = dict(status='READY_FOR_SCORED_PHASE', competition_market='pas',
+                    api_dex='pas', api_markets={'BTC': 'pas:BTC', 'EWY': 'pas:EWY'},
+                    active_base_assets=['BTC', 'EWY'], commit_sha='current',
+                    checks={name: True for name in runner.CRITICAL_TESTS},
+                    market_checks={symbol: {name: True for name in (
+                        'market_data', 'order_validation', 'controlled_order_lifecycle',
+                        'actual_fill', 'protection', 'exit', 'partial_fill', 'restart_recovery')}
+                        for symbol in ('pas:BTC', 'pas:EWY')})
+    path = tmp_path / 'certificate.json'
+    path.write_text(json.dumps(evidence))
+    with pytest.raises(ExchangeError, match='CERTIFICATION_SOURCE_OR_CONFIG_DIRTY'):
+        runner.verify_certification(path, 'pas', evidence['api_markets'])
+
+
+@pytest.mark.parametrize('field,value', [
+    ('max_consecutive_order_errors', 4), ('max_reconnect_failures', 6),
+    ('maintenance_buffer_multiple', '1'), ('holding_hours', '0'),
+])
+def test_profile_cannot_weaken_breakers_or_margin_assumptions(tmp_path, field, value):
+    profile = json.loads((ROOT / 'configs/pas_btc_production.example.json').read_text())
+    profile['risk'][field] = value
+    path = tmp_path / 'weaker.json'
+    path.write_text(json.dumps(profile))
+    with pytest.raises(ExchangeError, match='RELIABILITY_OR_MARGIN_POLICY_WEAKENED'):
+        runner.load_profile(path)
+
+
+@pytest.mark.parametrize('certified_hash', [None, '0' * 64])
+def test_certification_binds_the_exact_selected_profile(tmp_path, monkeypatch, certified_hash):
+    monkeypatch.setattr(runner.subprocess, 'check_output', lambda args, **kwargs:
+                        'current\n' if args[1] == 'rev-parse' else '')
+    profile = tmp_path / 'profile.json'
+    profile.write_text('{}\n')
+    certificate = tmp_path / 'certificate.json'
+    certificate.write_text(json.dumps(dict(profile_sha256=certified_hash)))
+    with pytest.raises(ExchangeError, match='CERTIFICATION_SELECTED_PROFILE_MISMATCH'):
+        runner.verify_certification(certificate, 'pas', {'BTC': 'pas:BTC', 'EWY': 'pas:EWY'}, profile)
+
+
 def test_runtime_builder_explicitly_selects_pas_without_constructing_signer():
     import ast
     source = (ROOT / 'algo-trading-bot/exchange/live_runtime.py').read_text()
@@ -131,7 +184,8 @@ def test_runtime_builder_explicitly_selects_pas_without_constructing_signer():
                for k in builders[0].keywords)
 
 
-def test_live_launcher_composes_dependencies_without_keys_or_transport(monkeypatch):
+@pytest.mark.parametrize('leverage_ready', [True, False])
+def test_live_launcher_composes_dependencies_without_keys_or_transport(monkeypatch, leverage_ready):
     """Exercise formerly NameError-prone path using only mocked authorization evidence."""
     import exchange.live_runtime as runtime_module
     from exchange.competition_market import SCORING_START_MS
@@ -146,13 +200,14 @@ def test_live_launcher_composes_dependencies_without_keys_or_transport(monkeypat
     monkeypatch.delenv('API_WALLET_PRIVATE_KEY', raising=False)
     monkeypatch.setattr(runner.time, 'time_ns', lambda: (SCORING_START_MS + 1000) * 1000000)
     names = ('configuration', 'pas_btc_ewy_discovery', 'btc_ewy_market_data',
-             'network_and_venue', 'account_read_only', 'api_wallet')
+             'network_and_venue', 'account_read_only', 'api_wallet', 'btc_ewy_account_leverage')
     preflight = dict(api_dex='pas', api_market='pas:BTC',
                      api_markets={'BTC': 'pas:BTC', 'EWY': 'pas:EWY'},
                      checks={name: {'passed': True} for name in names})
+    preflight['checks']['btc_ewy_account_leverage']['passed'] = leverage_ready
     monkeypatch.setattr(runner, 'read_only_preflight', lambda *a, **k: preflight)
     verified = []
-    monkeypatch.setattr(runner, 'verify_certification', lambda path, dex, markets: verified.append((dex, markets)))
+    monkeypatch.setattr(runner, 'verify_certification', lambda path, dex, markets, profile: verified.append((dex, markets)))
     monkeypatch.setattr(runner, 'load_reliability_policy',
                         lambda path: (None, {}, SimpleNamespace(enabled=True)))
     built = []
@@ -161,11 +216,17 @@ def test_live_launcher_composes_dependencies_without_keys_or_transport(monkeypat
         built.append(kwargs)
         return SimpleNamespace(run=lambda: ran.append(True))
     monkeypatch.setattr(runtime_module, 'build_live_runtime', fake_build)
-    assert runner.main([
+    arguments = [
         '--run-live', '--confirm-live-testnet', '--team-wallet', team,
         '--api-wallet-address', signer, '--approval-id', 'offline-mocked-evidence',
         '--approval-expires-ms', str(SCORING_START_MS + 60000), '--fee-scale-verified', '1',
-    ]) == 0
+    ]
+    if not leverage_ready:
+        with pytest.raises(SystemExit, match='current read-only preflight checks failed'):
+            runner.main(arguments)
+        assert not built and not ran and not verified
+        return
+    assert runner.main(arguments) == 0
     assert verified == [('pas', preflight['api_markets'])]
     assert built[0]['approval'].signer_address == signer
     assert built[0]['risk_policy'].max_positions == 1
