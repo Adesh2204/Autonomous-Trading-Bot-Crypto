@@ -20,6 +20,7 @@ sys.path.insert(0, str(ROOT / "algo-trading-bot"))
 from exchange.base_exchange import ExchangeError, decimal
 from exchange.competition_market import (
     COMPETITION_MARKET, SCORING_START_MS, is_scored_phase,
+    COMPETITION_MARKET_OI_CAP_USD, COMPETITION_DEX_OI_CAP_USD,
 )
 from exchange.hyperliquid_client import HyperliquidClient
 from exchange.hyperliquid_market_data import HyperliquidMarketData
@@ -101,8 +102,10 @@ def load_profile(path):
         raise ExchangeError("PAS_BTC_COMPETITION_EQUITY_REFERENCE_INVALID")
     oi_caps = profile.get("production_oi_caps_usd")
     if (not isinstance(oi_caps, dict) or
-            decimal(oi_caps.get("btc"), positive=True) != decimal("10000000") or
-            decimal(oi_caps.get("dex_total"), positive=True) != decimal("50000000")):
+            set(oi_caps) != {"btc", "ewy", "dex_total"} or
+            any(decimal(oi_caps[base], positive=True) != decimal(COMPETITION_MARKET_OI_CAP_USD)
+                for base in ("btc", "ewy")) or
+            decimal(oi_caps["dex_total"], positive=True) != decimal(COMPETITION_DEX_OI_CAP_USD)):
         raise ExchangeError("PAS_BTC_COMPETITION_OI_CAPS_INVALID")
     return profile, risk, scanner
 

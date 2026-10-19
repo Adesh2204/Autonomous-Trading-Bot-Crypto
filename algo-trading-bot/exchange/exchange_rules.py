@@ -5,8 +5,8 @@ from decimal import Decimal
 from .base_exchange import ExchangeError, decimal
 from .execution_journal import fingerprint
 from .order_lifecycle import OrderRequest
-from .competition_market import (COMPETITION_BTC_OI_CAP_USD, COMPETITION_DEX_OI_CAP_USD,
-                                is_scored_phase)
+from .competition_market import (COMPETITION_MARKET_OI_CAP_USD, COMPETITION_DEX_OI_CAP_USD,
+                                INTERNAL_OI_HEADROOM_FRACTION, is_scored_phase)
 
 
 @dataclass(frozen=True)
@@ -221,9 +221,10 @@ class HyperliquidOrderValidator:
                 if not cap_values or any(value!=cap_values[0] for value in cap_values[1:]):
                     return reject('EXCHANGE_RULE_DATA_UNAVAILABLE')
                 cap=cap_values[0]
-                if (getattr(self.client, 'competition_mode', False) and
-                        request.symbol.rsplit(':',1)[-1]=='BTC'):
-                    cap=min(cap,Decimal(COMPETITION_BTC_OI_CAP_USD))
+                competition_mode=getattr(self.client, 'competition_mode', False)
+                if competition_mode:
+                    # The identity gate above restricts this path to BTC/EWY.
+                    cap=min(cap,Decimal(COMPETITION_MARKET_OI_CAP_USD))
                 current=decimal(context.contexts[request.symbol]['openInterest'],nonnegative=True)
                 size_cap=decimal(limits['oiSzCapPerPerp'],positive=True)
                 api_total_cap=decimal(limits['totalOiCap'],positive=True)
@@ -275,15 +276,36 @@ class HyperliquidOrderValidator:
                     reserved_dex_notional+=reserved_size*reserve_oracle
                 reserved_symbol=reserved_by_symbol.get(request.symbol,Decimal(0))
                 total+=reserved_dex_notional
+                headroom=INTERNAL_OI_HEADROOM_FRACTION if competition_mode else Decimal(0)
+                available_fraction=Decimal(1)-headroom
+                market_entry_limit=cap*available_fraction
+                size_entry_limit=size_cap*available_fraction
+                dex_entry_limit=total_cap*available_fraction
+                projected_size=current+reserved_symbol+increase
+                projected_market=projected_size*oracle_reference
+                projected_dex=total+increase*oracle_reference
                 audit.update(current_open_interest_notional=str(current*oracle_reference),
                              open_interest_cap=str(cap),dex_open_interest_notional=str(total),
                              dex_open_interest_cap=str(total_cap),
                              proposed_exposure_increase=str(increase*oracle_reference),
                              reserved_open_order_quantity=str(reserved_symbol),
-                             reserved_open_order_dex_notional=str(reserved_dex_notional))
-                if increase and (current+reserved_symbol+increase>size_cap or
-                                 (current+reserved_symbol+increase)*oracle_reference>cap or
-                                 total+increase*oracle_reference>total_cap):
+                             reserved_open_order_dex_notional=str(reserved_dex_notional),
+                             symbol_oi_cap=str(cap),dex_oi_cap=str(total_cap),
+                             oi_headroom_fraction=str(headroom),
+                             symbol_oi_entry_limit=str(market_entry_limit),
+                             symbol_oi_size_entry_limit=str(size_entry_limit),
+                             dex_oi_entry_limit=str(dex_entry_limit),
+                             projected_symbol_oi_notional=str(projected_market),
+                             projected_dex_oi_notional=str(projected_dex))
+                # Competition entries must stay STRICTLY below the buffered
+                # ceilings. Preserve historical offline protocol semantics.
+                exhausted=(projected_size>=size_entry_limit or
+                           projected_market>=market_entry_limit or
+                           projected_dex>=dex_entry_limit) if competition_mode else (
+                           projected_size>size_entry_limit or
+                           projected_market>market_entry_limit or
+                           projected_dex>dex_entry_limit)
+                if increase and exhausted:
                     return reject('OPEN_INTEREST_CAPACITY')
             normalized=exact_close or spec.normalize_order(request.side,quantity,price,reduce_only=request.reduce_only,tif=request.tif)
             return ValidationResult(True,'ALLOWED','All pre-trade checks passed',now_ms,normalized,audit)

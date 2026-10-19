@@ -85,6 +85,22 @@ def test_profile_exactly_two_assets_but_one_global_position(tmp_path):
         runner.load_profile(changed)
 
 
+@pytest.mark.parametrize('caps', [
+    {'btc': '10000000', 'dex_total': '50000000'},
+    {'btc': '10000000', 'ewy': '10000001', 'dex_total': '50000000'},
+    {'btc': '10000001', 'ewy': '10000000', 'dex_total': '50000000'},
+    {'btc': '10000000', 'ewy': '10000000', 'dex_total': '50000001'},
+    {'btc': '10000000', 'ewy': '10000000', 'dex_total': '50000000', 'eth': '10000000'},
+])
+def test_profile_cannot_omit_or_relax_active_oi_caps(tmp_path, caps):
+    profile = json.loads((ROOT / 'configs/pas_btc_production.example.json').read_text())
+    profile['production_oi_caps_usd'] = caps
+    changed = tmp_path / 'invalid-oi.json'
+    changed.write_text(json.dumps(profile))
+    with pytest.raises(ExchangeError, match='COMPETITION_OI_CAPS_INVALID'):
+        runner.load_profile(changed)
+
+
 def test_btc_only_certificate_cannot_authorize_ewy(tmp_path, monkeypatch):
     monkeypatch.setattr(runner.subprocess, 'check_output', lambda *a, **k: 'current\n')
     evidence = dict(status='READY_FOR_SCORED_PHASE', competition_market='pas',

@@ -10,8 +10,11 @@ native production routing, missing active assets, and collateral other than
 runtime-verified USDP. There is no fallback venue or collateral.
 
 Keep exactly one global position across the two active assets at 1x, the frozen
-strategy, existing risk ceilings, the BTC $10m hard OI ceiling and DEX $50m ceiling.
-Use authoritative exchange caps for both symbols and reserve pending exposure.
+strategy, existing risk ceilings, the $10m per-market ceiling for BOTH BTC and EWY
+and DEX $50m ceiling. Use the lower authoritative/published caps, reserve pending
+exposure, and require increasing entries strictly below 99% of each effective
+market USD, market size and DEX USD cap. The 1% reserve is an INTERNAL engineering
+choice, not an official competition percentage; it cannot be disabled by profile.
 The scanner can inspect both assets but selects at most one candidate.
 
 Preserve historical PAR practice/fill records and source evidence unchanged.

@@ -23,6 +23,33 @@ fill, journal, audit and source evidence remains intact. Historical fixtures and
 parsers do not authorize real PAR clients or signing. Legacy PAR-specific write
 commands must stop rather than retargeting their old approval to PAS.
 
+## Follow-up: both market caps and strict headroom
+
+The authenticated follow-up confirmed two remaining validator defects: EWY did
+not receive the $10m per-market clamp, and increasing entries could reach the
+OI caps exactly without conservative headroom. This updates the existing draft
+PR #2 and its branch, not a new PR or a merge.
+
+Both BTC and EWY now use the lower of the authoritative exchange USD cap and
+the announced $10m per-market ceiling. The DEX ceiling remains the lower of the
+authoritative exchange limit and the announced $50m default. Missing or invalid
+exchange limits still fail closed; published ceilings are never a fallback for
+unverified runtime data.
+
+The shared validator requires projected exposure-increasing entries to remain
+**strictly below 99%** of each effective market USD cap, market size cap and DEX
+USD cap. Equality at the buffered boundary or the published cap is rejected.
+The **1% reserve is an internal engineering choice, not an official competition
+percentage**. It is fixed in reviewed code, not a profile switch that can turn
+it off. The production example and loader explicitly require both asset caps.
+
+Projections retain authoritative pending-order reservations, deduplication and
+the journal-only uncertainty block. Reduce-only exits retain their independent
+position, permission, price, metadata and freshness safeguards; an exhausted
+entry OI cap does not prevent an otherwise valid reduce-only exit. Historical
+offline noncompetition protocol semantics remain unchanged. Existing historical
+PAR trade/fill records, the frozen strategy and live approval gates are untouched.
+
 ## Review defects addressed
 
 - Runtime construction explicitly selects PAS rather than inheriting PAR.
@@ -57,7 +84,7 @@ HTTP requests and signing functions are prohibited. Tests use synthetic metadata
 account responses and mocked transport/runtime boundaries. Historical tests that
 intentionally create signatures are not part of this review's execution.
 
-The final focused command passed **85 tests** across
+The previous publication's focused command passed **85 tests** across
 `test_pas_btc_competition.py`, `test_pas_active_markets.py`,
 `test_pas_account_oi_regressions.py`, `test_pas_pending_journal_oi.py`,
 `test_pas_two_asset_session.py`, `test_pas_launcher_regressions.py` and
@@ -65,6 +92,22 @@ The final focused command passed **85 tests** across
 frozen-strategy verification and whitespace checks passed too. Passing these checks is evidence of code behavior, not of
 actual funded-wallet execution, exchange liquidity, committee certification or
 operational readiness.
+
+The OI follow-up's final combined offline suite passes **137 tests** using the
+same seven files plus `test_pas_oi_headroom.py`. That new file contains **47**
+regressions; five additional launcher cases reject omitted/relaxed/extra cap
+declarations. The existing pending-order deduplication fixture was moved below
+the new buffered limit without relaxing its deduplication/accumulation assertions.
+
+For a behavior-only negative control, the original `f21100e` validator was
+loaded only inside an isolated Python test process, without changing source
+files. The eight high-exchange-cap cases produced **5 failed, 3 passed** on the
+original validator and all eight pass with the fix. This demonstrates the old
+EWY clamp and cap-equality defects rather than merely testing new audit fields.
+All runs use `-p offline_no_sign`; no signing or network exchange transport is
+allowed. Static imports, changed Python syntax, strategy freeze (one file, eight
+methods, 32 parameters) and `git diff --check` also pass. Remote CI status is
+reported separately; local results do not establish its completion.
 
 ## Still blocked: live activation
 

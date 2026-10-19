@@ -5,6 +5,7 @@ Testnet metadata on each startup; fail closed if identity is ambiguous.
 """
 import re
 from datetime import datetime, timezone
+from decimal import Decimal
 
 from .base_exchange import VenueMismatch
 from .venue_profiles import ACTIVE_PAS_BASE_ASSETS, APPROVED_PAS_BASE_ASSETS
@@ -14,8 +15,13 @@ COMPETITION_BASE_ASSET = "BTC"
 COMPETITION_ACTIVE_BASE_ASSETS = ACTIVE_PAS_BASE_ASSETS
 COMPETITION_APPROVED_BASE_ASSETS = APPROVED_PAS_BASE_ASSETS
 COMPETITION_COLLATERAL = "USDP"
-COMPETITION_BTC_OI_CAP_USD = 10_000_000
+COMPETITION_MARKET_OI_CAP_USD = 10_000_000
+# Compatibility name for historical imports; the ceiling applies to BTC AND EWY.
+COMPETITION_BTC_OI_CAP_USD = COMPETITION_MARKET_OI_CAP_USD
 COMPETITION_DEX_OI_CAP_USD = 50_000_000
+# Internal engineering reserve, NOT an official competition percentage. Entries
+# must remain strictly below 99% of every effective USD/size OI ceiling.
+INTERNAL_OI_HEADROOM_FRACTION = Decimal("0.01")
 SCORING_START_MS = int(datetime(2026, 10, 19, 12, 0, tzinfo=timezone.utc).timestamp() * 1000)
 SCORING_END_MS = int(datetime(2026, 11, 6, 12, 0, tzinfo=timezone.utc).timestamp() * 1000)
 

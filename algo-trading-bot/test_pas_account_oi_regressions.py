@@ -164,7 +164,9 @@ def test_batch_and_sequential_pending_orders_are_reserved_once_and_accumulate():
               'sz': '.04', 'limitPx': '100', 'reduceOnly': False}
     # Duplicate transport rows for oid/cloid 10 must not reserve the same order twice.
     client, request, context, permission = _risk_context(orders=(first, second, dict(first)))
-    limits = dict(context.limits, coinToOiCap=[['pas:BTC', '1020'], ['BTC', '1020'],
+    # 99% of 1030 is 1019.7: 1018 fits only if the duplicate is counted once;
+    # the later sequential projection of 1024 still exceeds that entry ceiling.
+    limits = dict(context.limits, coinToOiCap=[['pas:BTC', '1030'], ['BTC', '1030'],
                                               ['pas:EWY', '5000000'], ['EWY', '5000000']])
     context = replace(context, limits=limits)
     result = _validate(client, request, context, permission)

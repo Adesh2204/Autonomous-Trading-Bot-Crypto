@@ -14,8 +14,12 @@ collateral and unsupported assets fail closed; there is no PAR/native fallback.
 The frozen strategy is unchanged. Both assets are scanned, but only one candidate
 and one global position at 1x are allowed. The conservative profile caps gross
 exposure at 25% of actual account equity; $100,000 is only a reference, not assumed
-funding. BTC OI cannot exceed $10m, total PAS OI cannot exceed $50m, and exchange
-per-asset caps also apply, including pending non-reduce-only orders.
+funding. Both BTC and EWY have a $10m per-market OI ceiling; total PAS OI has a
+$50m ceiling. Lower authoritative exchange caps also apply. Increasing entries,
+including pending non-reduce-only orders, must remain strictly below 99% of each
+effective market USD, market size and DEX USD cap. This 1% headroom is an internal
+engineering safeguard, **not an official competition percentage**. Reduce-only
+exits retain their independent position, authorization and freshness checks.
 
 ### Offline review and read-only startup
 
