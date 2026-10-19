@@ -1,0 +1,44 @@
+{
+  "observed_ms": 1792351658508,
+  "source": "6d37a929e23e295cd35a4aa137a077b6533b711bf085d292fff8c2103420ca42",
+  "session_id": "6665be4ba11a4c6baf3be6cab8638777",
+  "recorded_errors": [
+    {
+      "request": {
+        "type": "spotMeta"
+      },
+      "sent_ms": 1792351522714,
+      "error": "INFO_READ_CANCELLED",
+      "status_code": null,
+      "retry_after_ms": null,
+      "received_ms": 1792351522824
+    }
+  ],
+  "account_recovery_events": [
+    {
+      "observed_ms": 1792351521583,
+      "kind": "ACCOUNT_RECEIVER_RECOVERY",
+      "data": {
+        "candidate_id": null,
+        "clock_skew_detected": false,
+        "event_type": "ACCOUNT_RECEIVER_RECOVERY",
+        "exchange_to_receive_ms": null,
+        "exchange_ts": null,
+        "processed_ts": "2026-10-18T19:25:21.583+00:00",
+        "reason": "ACCOUNT_WEBSOCKET_DISCONNECTED",
+        "receive_to_process_ms": 0,
+        "received_ts": "2026-10-18T19:25:21.583+00:00",
+        "session_id": "public:terminal",
+        "symbol": null,
+        "timestamp_source": "LOCAL_PROCESS"
+      }
+    }
+  ],
+  "current_generation": 2,
+  "connected": true,
+  "healthy": true,
+  "account_error": null,
+  "worker_restarted": false,
+  "http429_claim": false,
+  "interpretation": "One actual account websocket disconnect was recorded, followed by reconnect generation 2 and fresh reconciliation. INFO_READ_CANCELLED is a cancellation record with no HTTP status; it is not evidence of HTTP429."
+}

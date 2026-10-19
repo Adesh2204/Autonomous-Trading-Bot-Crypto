@@ -44,6 +44,6 @@ def configuration_plan(discovery):
         required_before_execution=['Fresh funded Unified account/agent/identity checks','Prior UNKNOWN/invocation review',
             'Exact new configuration-only approval','Shared sole host/signer/nonce ownership','Per-action exact permit and durable uncertainty',
             'Fresh readback of every requested 1x CROSS value'],
-        note='This release prepares actions only. Existing par configuration approval does not authorize PAS. No configuration execution command is added.')
+        note='Unsigned evidence only. The separate exact PAS configuration-only approval/route is required; existing par approval never authorizes PAS.')
     plan['plan_hash']=fingerprint(plan)
     return plan

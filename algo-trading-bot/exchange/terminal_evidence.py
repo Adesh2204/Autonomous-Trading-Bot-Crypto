@@ -11,7 +11,7 @@ def local_execution_state(root):
     """Read the real intent barrier without opening/migrating a trading journal."""
     result=dict(status='UNKNOWN',unresolved=[],native_protection='UNQUALIFIED',signing_authority='NONE')
     try:
-        for name in ('certification','qualification','pas'):
+        for name in ('certification','qualification','pas','pas-configuration'):
             p=Path(root)/'runtime/testnet/anchorium-bot-1'/(name+'.sqlite')
             if not p.exists():continue
             with sqlite3.connect(p.resolve().as_uri()+'?mode=ro',uri=True) as db:

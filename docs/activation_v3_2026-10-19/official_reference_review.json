@@ -1,0 +1,25 @@
+{
+  "client_date": "2026-10-19",
+  "reviewed_sources": [
+    {
+      "url": "https://perpetual-alpha26.github.io/schedule",
+      "finding": "Published scored phase starts 2026-10-19 12:00 UTC and ends 2026-11-06 12:00 UTC; the October 17–18 practice exception is not a scored PAS calendar requirement."
+    },
+    {
+      "url": "https://perpetual-alpha26.github.io/docs/",
+      "finding": "Canonical PAS/USDP, team-wallet public queries, runtime metadata, Unified collateral, ordinary $10 minimum, reduce-only triggers, explicit leverage setting, actual fill fee fields, and setup after organizer funding are documented. Positive base fees are doubled under the published PAS venue configuration."
+    },
+    {
+      "url": "https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api/exchange-endpoint",
+      "finding": "updateLeverage specifies exact asset, isCross and integer leverage. Signed requests support expiresAfter. No supported pre-funding eligibility guarantee was established."
+    }
+  ],
+  "not_established": [
+    "This team's organizer whitelist, exact USDP credit origin/reset amount or special exception",
+    "Original UNKNOWN order terminal outcome or nontransmission",
+    "Independently approved shared-domain PAS isolation",
+    "Actual PAS subminimum full-position/native residual behavior",
+    "Actual qualification from any synthetic test"
+  ],
+  "policy_effect": "No trading authority, wallet-mode change, transfer, nonce reset, UNKNOWN clearance, new risk geometry or fee-limit relaxation. Published 2x estimate is diagnostic; existing 6x signing stress bound is preserved."
+}

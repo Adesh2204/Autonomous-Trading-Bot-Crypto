@@ -1,0 +1,131 @@
+{
+  "observed_ms": 1792351661678,
+  "identity_checks": {
+    "pid": true,
+    "command": true,
+    "caffeinate": true,
+    "source": true,
+    "session": true,
+    "output": true,
+    "owner_lock": true,
+    "no_signer": true
+  },
+  "processes": [
+    {
+      "pid": 21050,
+      "ppid": 1,
+      "command": "/Library/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python /Users/adesh/Autonomous Trading Bot - Crypto /scripts/anchorium_cli.py start --venue pas --state /Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-v3-public --scan-seconds 60 --readiness-release /Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v3_2026-10-19/regression_release_final/test_receipt.json"
+    },
+    {
+      "pid": 21051,
+      "ppid": 1,
+      "command": "/usr/bin/caffeinate -w 21050"
+    }
+  ],
+  "worker_pid": 21050,
+  "session_id": "6665be4ba11a4c6baf3be6cab8638777",
+  "output": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-v3-public/sessions/6665be4ba11a4c6baf3be6cab8638777",
+  "source_hash": "6d37a929e23e295cd35a4aa137a077b6533b711bf085d292fff8c2103420ca42",
+  "status": "OBSERVING",
+  "status_age_ms": 5174,
+  "stream_connected": true,
+  "account_stream_healthy": true,
+  "last_completed_scan_ms": 1792351645704,
+  "account_observed_ms": 1792351574473,
+  "readiness": {
+    "state": "PREOPEN_OBSERVATION",
+    "gates": {
+      "SCORING_WINDOW_OPEN": false,
+      "USDP_FUNDING_VERIFIED": false,
+      "PAS_ACCOUNT_CONFIGURATION_VERIFIED": false,
+      "HISTORICAL_ORDER_SAFETY_VERIFIED": false,
+      "NATIVE_PROTECTION_QUALIFIED": false,
+      "MARKET_HISTORY_READY": false,
+      "EXECUTABLE_OPPORTUNITY_AVAILABLE": false,
+      "SOURCE_RELEASE_VERIFIED": true,
+      "EXACT_SESSION_APPROVAL_ACCEPTED": false
+    },
+    "blockers": [
+      {
+        "gate": "SCORING_WINDOW_OPEN",
+        "reason": "SCORED_PHASE_NOT_OPEN"
+      },
+      {
+        "gate": "USDP_FUNDING_VERIFIED",
+        "reason": "USDP_ZERO"
+      },
+      {
+        "gate": "PAS_ACCOUNT_CONFIGURATION_VERIFIED",
+        "reason": "FRESH_ALL_TEN_ONE_X_CROSS_READBACKS_REQUIRED"
+      },
+      {
+        "gate": "HISTORICAL_ORDER_SAFETY_VERIFIED",
+        "reason": "SHARED_UNKNOWN_OR_ACCOUNT_REVIEW_REQUIRED"
+      },
+      {
+        "gate": "NATIVE_PROTECTION_QUALIFIED",
+        "reason": "GENUINE_PAS_NATIVE_AND_RESIDUAL_PROOF_REQUIRED"
+      },
+      {
+        "gate": "MARKET_HISTORY_READY",
+        "reason": "AUTHENTIC_CONTIGUOUS_300_BAR_WARMUP_REQUIRED"
+      },
+      {
+        "gate": "EXECUTABLE_OPPORTUNITY_AVAILABLE",
+        "reason": "NO_FRESH_EXECUTABLE_POSITIVE_CONDITIONAL_LONG_SETUP"
+      },
+      {
+        "gate": "EXACT_SESSION_APPROVAL_ACCEPTED",
+        "reason": "NEW_EXACT_HUMAN_SESSION_APPROVAL_REQUIRED"
+      }
+    ],
+    "funding": {
+      "status": "USDP_ZERO",
+      "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+      "network": "testnet",
+      "dex": "pas",
+      "collateral": "USDP",
+      "account_mode": "unifiedAccount",
+      "token": 3307,
+      "observed_ms": 1792351574833,
+      "exchange_time_ms": 1792351575483,
+      "balance": "0",
+      "age_ms": 81671,
+      "organizer_credit_amount": null,
+      "organizer_credit_provenance": "UNKNOWN",
+      "signing_authority": "NONE",
+      "reasons": [],
+      "response_hashes": {
+        "spot": "b65b90d9873795759f9492dfb2f7292b91b9c74a2316065e25ea373c3db6ab27",
+        "state": "ef1737f071ed47d800ae801e7e5cdbe5481752055fe6e16aabf599a8177a6e81"
+      },
+      "provenance": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-v3-public/sessions/6665be4ba11a4c6baf3be6cab8638777/info_receipts.jsonl",
+      "equity_basis": "Unified USDP total once; no addition of per-DEX equity or unrealized PnL",
+      "evidence_hash": "360696388a52e4fe8e6581a8ad35587a5c9f31906c9a78181bced5aceea779d8"
+    },
+    "observed_ms": 1792351656504,
+    "next_action": "SCORED_PHASE_NOT_OPEN",
+    "ready_for_operator_action": false,
+    "terminal_status": "READY_FOR_OBSERVATION",
+    "trading_verdict": "NO_GO",
+    "signing_authority": "NONE",
+    "native_protection": "UNQUALIFIED_WITHOUT_VALIDATED_RAW_PROOF",
+    "historical_safety": "BLOCKED",
+    "note": "Diagnostic gates cannot create approval, isolation, protection qualification or a signer"
+  },
+  "release_verification": {
+    "verified": true,
+    "source_hash": "6d37a929e23e295cd35a4aa137a077b6533b711bf085d292fff8c2103420ca42",
+    "receipt_sha256": "801ca15975db6c0ec6742649343376b90282c63edfb443401756829f88b43751"
+  },
+  "actual_errors": {
+    "None:INFO_READ_CANCELLED": 1
+  },
+  "source_verified": true,
+  "independent_of_codex_app": true,
+  "health_verified": true,
+  "terminal_flat": "NOT_CLAIMED_WHILE_RUNNING",
+  "exchange_writes": 0,
+  "signatures_created": 0,
+  "dependency": "Mac/Python/power/internet/exchange; process-bound caffeinate cannot guarantee operation through interruptions"
+}
