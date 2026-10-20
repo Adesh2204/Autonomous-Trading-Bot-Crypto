@@ -1,0 +1,43 @@
+{
+  "status": "UNSIGNED_CONFIGURATION_PLAN_ONLY",
+  "network": "testnet",
+  "dex": "pas",
+  "collateral": "USDP",
+  "source_hash": "8bb636e708306673f327384fc451519e5e74d526ff3dbd81c17620973bb13bad",
+  "observed_ms": 1792419076347,
+  "entry_markets": [
+    "pas:BTC",
+    "pas:EWY"
+  ],
+  "account_reconciliation_scope": "ALL_CANONICAL_PAS_MARKETS",
+  "policy_basis": "V4 BTC/EWY entries only; leverage is per market, not an all-ten venue obligation",
+  "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+  "discovery_hash": "5df9978f1286473f8b668cf4fe5cfe7d3f16bec8be46ba80203b217267ece5c9",
+  "changes": [],
+  "already_one_x_cross": [
+    "pas:BTC",
+    "pas:EWY"
+  ],
+  "collateral_balance": "100000.0",
+  "organizer_credit_amount": null,
+  "organizer_credit_status": "ORIGINAL_ORGANIZER_CREDIT_RECORD_REQUIRED; balance is not funding provenance",
+  "blockers": [
+    "SHARED_UNKNOWN_AND_CONSUMED_INVOCATION_REVIEW_REQUIRED",
+    "REGISTERED_TEAM_ORGANIZER_RECORD_REQUIRED"
+  ],
+  "signing_authority": "NONE",
+  "signatures_created": 0,
+  "exchange_writes": 0,
+  "transfers_allowed": false,
+  "configuration_approval_created": false,
+  "required_before_execution": [
+    "Fresh funded Unified account/agent/identity checks",
+    "Prior UNKNOWN/invocation review",
+    "Exact new configuration-only approval",
+    "Shared sole host/signer/nonce ownership",
+    "Per-action exact permit and durable uncertainty",
+    "Fresh readback of every requested 1x CROSS value"
+  ],
+  "note": "Unsigned evidence only. The separate exact PAS configuration-only approval/route is required; existing par approval never authorizes PAS.",
+  "plan_hash": "1a59cdc571beb0393d2b8e62badfce8978123de5136c03a82fbd0bd0e6e41d1f"
+}

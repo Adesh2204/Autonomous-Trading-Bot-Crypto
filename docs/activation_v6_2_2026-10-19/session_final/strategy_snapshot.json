@@ -1,0 +1,937 @@
+{
+  "mode": "TESTNET OBSERVATION",
+  "status": "STOPPED",
+  "source_hash": "8bb636e708306673f327384fc451519e5e74d526ff3dbd81c17620973bb13bad",
+  "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+  "network": "testnet",
+  "dex": "pas",
+  "collateral": "USDP",
+  "venue_identity": "7562c7f16a800fae8d3f9ed4afd76c2d2a8597e5814a1626ef9553346789b493",
+  "phase": "SCORED",
+  "approved_bankroll": null,
+  "approved_maximum_notional": null,
+  "proposed_bankroll": "20000",
+  "signing_authority": "NONE",
+  "exchange_writes": 0,
+  "signatures_created": 0,
+  "exchange_time_ms": null,
+  "signals": [
+    {
+      "symbol": "pas:BTC",
+      "observed_ms": 1792419271038,
+      "decision": "NO_TRADE",
+      "reasons": [
+        "ATR_BELOW_UNCHANGED_0_40_PERCENT_FLOOR",
+        "NO_FROZEN_STRATEGY_SETUP"
+      ],
+      "metrics": {
+        "atr": "55.642857142857146",
+        "atr_fraction": "0.0006788363403139901668943978138",
+        "close": "81968.0",
+        "vwap": "82243.01087678628",
+        "vwap_slope": "-5.487869775350555",
+        "ema9": "81857.53179484606",
+        "ema21": "81920.41550094882",
+        "trend": "BEARISH",
+        "volume_ratio": "0.4717632683419221165595282367",
+        "realized_volatility": 0.0007518130714447037,
+        "spread_bps": "4.756068560557557575868439827",
+        "mark_oracle_bps": "8.285710804323191460843924015",
+        "book_imbalance": "-0.09041167410656015871772783042",
+        "bid_depth_notional": "212635.805470",
+        "ask_depth_notional": "258831.776600",
+        "bbo_notional": "491.8860",
+        "window_notional_approx": "112612.21270",
+        "hourly_funding": "-0.0000594706",
+        "mark": "82001.0",
+        "oracle": "82069.0"
+      },
+      "baseline_strategy_unchanged": true,
+      "order_submission_enabled": false,
+      "confidence_probability": null,
+      "baseline_long": false,
+      "baseline_short": false,
+      "higher_timeframe": {
+        "status": "READY",
+        "completed_bars": 59,
+        "ema9": 82424.49499869179,
+        "ema21": 82436.33202064004,
+        "trend": "BEARISH",
+        "latest_complete_ms": 1792418400000,
+        "scope": "RESEARCH_CONFIRMATION_VETO_ONLY"
+      },
+      "candle_count": 900,
+      "latest_completed_candle_ms": 1792419180000,
+      "source": "HASH_VERIFIED_FROZEN_STRATEGY_PLUS_ISOLATED_HTF_VETO",
+      "history": {
+        "raw_returned_last": 900,
+        "raw_returned_in_retained_snapshots": 900,
+        "valid_returned_last": 2,
+        "valid_deduplicated_completed": 900,
+        "contiguous_tail_bars": 900,
+        "missing_intervals": [],
+        "earliest_ms": 1792365240000,
+        "latest_ms": 1792419180000,
+        "latest_completed_ms": 1792419240000,
+        "cache_age_ms": 30625,
+        "last_collection_ms": 1792419270620,
+        "warmup_required": 300,
+        "strategy_history_ready": true,
+        "warmup_satisfied": true,
+        "data_freshness_satisfied": true,
+        "failure_classification": "READY",
+        "failure_reasons": [],
+        "request_diagnostics": {
+          "rest": {
+            "request": {
+              "coin": "pas:BTC",
+              "interval": "1m",
+              "startTime": 1792365240000,
+              "endTime": 1792419239999
+            },
+            "received_ms": 1792419269176,
+            "returned_count": 900,
+            "first_returned_ms": 1792365240000,
+            "last_returned_ms": 1792419180000,
+            "expected_intervals": 900,
+            "normalization_succeeded": true,
+            "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v6_2_2026-10-19/session_final/strategy_observation/info_receipts.jsonl"
+          }
+        },
+        "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+        "database": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v6_2_2026-10-19/session_final/strategy_observation/history.sqlite"
+      },
+      "approved_quantity": null,
+      "execution_preflight": "NOT_AUTHORIZED",
+      "protection": "ACTUAL_NATIVE_TRIGGER_QUALIFICATION_REQUIRED"
+    },
+    {
+      "symbol": "pas:EWY",
+      "observed_ms": 1792419271764,
+      "decision": "NO_TRADE",
+      "reasons": [
+        "ATR_BELOW_UNCHANGED_0_40_PERCENT_FLOOR",
+        "NO_FROZEN_STRATEGY_SETUP"
+      ],
+      "metrics": {
+        "atr": "0.16999999999999765",
+        "atr_fraction": "0.001076085580453207051525509558",
+        "close": "157.98",
+        "vwap": "156.22821579571698",
+        "vwap_slope": "0.00969594716478639",
+        "ema9": "157.7666464197452",
+        "ema21": "157.8131249692244",
+        "trend": "BEARISH",
+        "volume_ratio": "0.01736165584177883760576490645",
+        "realized_volatility": 0.0013744050294247894,
+        "spread_bps": "6.954762431637846552650712863",
+        "mark_oracle_bps": "1.264622194119506797344293392",
+        "book_imbalance": "-0.01449608583442003596690743800",
+        "bid_depth_notional": "246319.98127",
+        "ask_depth_notional": "258452.23295",
+        "bbo_notional": "499.6276",
+        "window_notional_approx": "64694.31950",
+        "hourly_funding": "0.00000625",
+        "mark": "158.13",
+        "oracle": "158.15"
+      },
+      "baseline_strategy_unchanged": true,
+      "order_submission_enabled": false,
+      "confidence_probability": null,
+      "baseline_long": false,
+      "baseline_short": false,
+      "higher_timeframe": {
+        "status": "READY",
+        "completed_bars": 59,
+        "ema9": 158.39715652122302,
+        "ema21": 157.79551589902968,
+        "trend": "BULLISH",
+        "latest_complete_ms": 1792418400000,
+        "scope": "RESEARCH_CONFIRMATION_VETO_ONLY"
+      },
+      "candle_count": 900,
+      "latest_completed_candle_ms": 1792419180000,
+      "source": "HASH_VERIFIED_FROZEN_STRATEGY_PLUS_ISOLATED_HTF_VETO",
+      "history": {
+        "raw_returned_last": 900,
+        "raw_returned_in_retained_snapshots": 900,
+        "valid_returned_last": 2,
+        "valid_deduplicated_completed": 900,
+        "contiguous_tail_bars": 900,
+        "missing_intervals": [],
+        "earliest_ms": 1792365240000,
+        "latest_ms": 1792419180000,
+        "latest_completed_ms": 1792419240000,
+        "cache_age_ms": 31406,
+        "last_collection_ms": 1792419271401,
+        "warmup_required": 300,
+        "strategy_history_ready": true,
+        "warmup_satisfied": true,
+        "data_freshness_satisfied": true,
+        "failure_classification": "READY",
+        "failure_reasons": [],
+        "request_diagnostics": {
+          "rest": {
+            "request": {
+              "coin": "pas:EWY",
+              "interval": "1m",
+              "startTime": 1792365240000,
+              "endTime": 1792419239999
+            },
+            "received_ms": 1792419269978,
+            "returned_count": 900,
+            "first_returned_ms": 1792365240000,
+            "last_returned_ms": 1792419180000,
+            "expected_intervals": 900,
+            "normalization_succeeded": true,
+            "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v6_2_2026-10-19/session_final/strategy_observation/info_receipts.jsonl"
+          }
+        },
+        "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+        "database": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v6_2_2026-10-19/session_final/strategy_observation/history.sqlite"
+      },
+      "approved_quantity": null,
+      "execution_preflight": "NOT_AUTHORIZED",
+      "protection": "ACTUAL_NATIVE_TRIGGER_QUALIFICATION_REQUIRED"
+    }
+  ],
+  "liquidity": {
+    "pas:BTC": {
+      "quantity": "0.00060",
+      "notional": "49.212000",
+      "bid": "81981.0",
+      "ask": "82020.0",
+      "book_ms": 1792419270375,
+      "observed_ms": 1792419270862,
+      "active_asset_ms": 1792419271038,
+      "context_ms": 1792419270862,
+      "market_context": {
+        "funding": "-0.0000594706",
+        "openInterest": "4.23804",
+        "prevDayPx": "81066.0",
+        "dayNtlVlm": "210143.4721399999",
+        "premium": "-0.0011015121",
+        "oraclePx": "82069.0",
+        "markPx": "82001.0",
+        "midPx": "81989.5",
+        "impactPxs": [
+          "81924.1",
+          "82033.1"
+        ],
+        "dayBaseVlm": "2.57078"
+      },
+      "size_step": "0.00001",
+      "one_lot_bid_notional": "0.819810",
+      "partial_minimum_admissible": false,
+      "partial_protection_qualified": false,
+      "native_protection_qualified": false,
+      "partial_path": {
+        "entry_admissible_under_documented_minimum": false,
+        "blocker": "FROZEN_STOP_PLAN_UNAVAILABLE"
+      },
+      "targets": {
+        "1000": false,
+        "2500": false,
+        "5000": false,
+        "10000": false,
+        "25000": false,
+        "50000": false
+      },
+      "qualified_unattended_notional": "0",
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "pas:BTC",
+        "leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "maxTradeSzs": [
+          "1.21921",
+          "1.21921"
+        ],
+        "availableToTrade": [
+          "100000.0",
+          "100000.0"
+        ],
+        "markPx": "82020.0"
+      },
+      "evidence_evaluation": {
+        "symbol": "pas:BTC",
+        "liquidity_only_quantity": "0.00060",
+        "liquidity_only_notional": "49.212000",
+        "economically_viable_notional": "0",
+        "authorized_executable_notional": "0",
+        "expected_net_pnl": null,
+        "expected_return_probability": null,
+        "decision": "OBSERVE",
+        "reasons": [
+          "NO_CURRENT_QUALIFIED_FROZEN_LONG_SIGNAL",
+          "EMPIRICAL_EXPECTED_EDGE_NOT_ESTABLISHED",
+          "NATIVE_RESIDUAL_PROTECTION_UNQUALIFIED",
+          "NO_EXACT_SESSION_AUTHORITY"
+        ],
+        "observed_ms": 1792419271391,
+        "quantity_bounds": {
+          "entry_bbo": "0.0006",
+          "exit_bbo": "0.0006",
+          "entry_five_bps": "0.00973",
+          "exit_five_bps": "0.0006",
+          "account": "1.21921",
+          "margin": "1.212666426946767387829689440",
+          "proposed_upper_cap": "0.1219214825652279931723969763"
+        },
+        "spread_bps": "4.756068560557557575868439827",
+        "entry_capacity": "0.00060",
+        "exit_capacity": "0.00060",
+        "book_age_ms": 1016,
+        "fee_age_ms": 2700,
+        "funding_rate": "-0.0000594706",
+        "conditional_target_net": null,
+        "stressed_conditional_target_net": null
+      },
+      "fee_scenarios": {
+        "base_taker_rate": "0.00045",
+        "documented_pas_rate_estimate": "0.00090",
+        "unchanged_signing_stress_rate": "0.00270",
+        "actual_charged_rate": null,
+        "documented_source": "https://perpetual-alpha26.github.io/docs/#venue-mechanics",
+        "expected_net_pnl": null,
+        "scenario_only": true,
+        "production_fee_policy_changed": false,
+        "assumption": "Published PAS positive base-rate multiplier=2; actual fill fee/feeToken govern charges",
+        "documented_target_scenario": null,
+        "stress_target_scenario": null,
+        "quantity": "0.00060",
+        "hourly_funding": "-0.0000594706",
+        "mark_oracle_divergence_bps": "-8.285710804323191460843924015",
+        "book_mid_oracle_divergence_bps": "-8.346635148472626692173658751",
+        "documented_taker_roundtrip_fee": "0.08856054000",
+        "stress_taker_roundtrip_fee": "0.26568162000",
+        "immediate_roundtrip_spread": "0.023400",
+        "maker_sensitivity_assumption": "Hypothetical maker entry and taker exit; no maker fill or execution switch implied",
+        "documented_maker_entry_taker_exit_fee": "0.05903334000"
+      }
+    },
+    "pas:EWY": {
+      "quantity": "0.316",
+      "notional": "49.99752",
+      "bid": "158.11",
+      "ask": "158.22",
+      "book_ms": 1792419270375,
+      "observed_ms": 1792419271593,
+      "active_asset_ms": 1792419271764,
+      "context_ms": 1792419271593,
+      "market_context": {
+        "funding": "0.00000625",
+        "openInterest": "276.476",
+        "prevDayPx": "153.99",
+        "dayNtlVlm": "139070.58401",
+        "premium": "-0.000056908",
+        "oraclePx": "158.15",
+        "markPx": "158.13",
+        "midPx": "158.165",
+        "impactPxs": [
+          "158.043",
+          "158.239"
+        ],
+        "dayBaseVlm": "898.415"
+      },
+      "size_step": "0.001",
+      "one_lot_bid_notional": "0.15811",
+      "partial_minimum_admissible": false,
+      "partial_protection_qualified": false,
+      "native_protection_qualified": false,
+      "partial_path": {
+        "entry_admissible_under_documented_minimum": false,
+        "blocker": "FROZEN_STOP_PLAN_UNAVAILABLE"
+      },
+      "targets": {
+        "1000": false,
+        "2500": false,
+        "5000": false,
+        "10000": false,
+        "25000": false,
+        "50000": false
+      },
+      "qualified_unattended_notional": "0",
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "pas:EWY",
+        "leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "maxTradeSzs": [
+          "632.391",
+          "632.391"
+        ],
+        "availableToTrade": [
+          "100000.0",
+          "100000.0"
+        ],
+        "markPx": "158.13"
+      },
+      "evidence_evaluation": {
+        "symbol": "pas:EWY",
+        "liquidity_only_quantity": "0.316",
+        "liquidity_only_notional": "49.99752",
+        "economically_viable_notional": "0",
+        "authorized_executable_notional": "0",
+        "expected_net_pnl": null,
+        "expected_return_probability": null,
+        "decision": "OBSERVE",
+        "reasons": [
+          "NO_CURRENT_QUALIFIED_FROZEN_LONG_SIGNAL",
+          "EMPIRICAL_EXPECTED_EDGE_NOT_ESTABLISHED",
+          "NATIVE_RESIDUAL_PROTECTION_UNQUALIFIED",
+          "NO_EXACT_SESSION_AUTHORITY"
+        ],
+        "observed_ms": 1792419271868,
+        "quantity_bounds": {
+          "entry_bbo": "0.316",
+          "exit_bbo": "0.316",
+          "entry_five_bps": "5.058",
+          "exit_five_bps": "0.9612",
+          "account": "632.391",
+          "margin": "628.6367105181005002514924024",
+          "proposed_upper_cap": "63.20313487548982429528504614"
+        },
+        "spread_bps": "6.954762431637846552650712863",
+        "entry_capacity": "0.316",
+        "exit_capacity": "0.316",
+        "book_age_ms": 1493,
+        "fee_age_ms": 3177,
+        "funding_rate": "0.00000625",
+        "conditional_target_net": null,
+        "stressed_conditional_target_net": null
+      },
+      "fee_scenarios": {
+        "base_taker_rate": "0.00045",
+        "documented_pas_rate_estimate": "0.00090",
+        "unchanged_signing_stress_rate": "0.00270",
+        "actual_charged_rate": null,
+        "documented_source": "https://perpetual-alpha26.github.io/docs/#venue-mechanics",
+        "expected_net_pnl": null,
+        "scenario_only": true,
+        "production_fee_policy_changed": false,
+        "assumption": "Published PAS positive base-rate multiplier=2; actual fill fee/feeToken govern charges",
+        "documented_target_scenario": null,
+        "stress_target_scenario": null,
+        "quantity": "0.316",
+        "hourly_funding": "0.00000625",
+        "mark_oracle_divergence_bps": "-1.264622194119506797344293392",
+        "book_mid_oracle_divergence_bps": "0.9484666455896300980082200443",
+        "documented_taker_roundtrip_fee": "0.0899642520",
+        "stress_taker_roundtrip_fee": "0.2698927560",
+        "immediate_roundtrip_spread": "0.03476",
+        "maker_sensitivity_assumption": "Hypothetical maker entry and taker exit; no maker fill or execution switch implied",
+        "documented_maker_entry_taker_exit_fee": "0.0599657400"
+      }
+    }
+  },
+  "market_history": {
+    "pas:BTC": {
+      "raw_returned_last": 900,
+      "raw_returned_in_retained_snapshots": 900,
+      "valid_returned_last": 2,
+      "valid_deduplicated_completed": 900,
+      "contiguous_tail_bars": 900,
+      "missing_intervals": [],
+      "earliest_ms": 1792365240000,
+      "latest_ms": 1792419180000,
+      "latest_completed_ms": 1792419240000,
+      "cache_age_ms": 30625,
+      "last_collection_ms": 1792419270620,
+      "warmup_required": 300,
+      "strategy_history_ready": true,
+      "warmup_satisfied": true,
+      "data_freshness_satisfied": true,
+      "failure_classification": "READY",
+      "failure_reasons": [],
+      "request_diagnostics": {
+        "rest": {
+          "request": {
+            "coin": "pas:BTC",
+            "interval": "1m",
+            "startTime": 1792365240000,
+            "endTime": 1792419239999
+          },
+          "received_ms": 1792419269176,
+          "returned_count": 900,
+          "first_returned_ms": 1792365240000,
+          "last_returned_ms": 1792419180000,
+          "expected_intervals": 900,
+          "normalization_succeeded": true,
+          "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v6_2_2026-10-19/session_final/strategy_observation/info_receipts.jsonl"
+        }
+      },
+      "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+      "database": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v6_2_2026-10-19/session_final/strategy_observation/history.sqlite"
+    },
+    "pas:EWY": {
+      "raw_returned_last": 900,
+      "raw_returned_in_retained_snapshots": 900,
+      "valid_returned_last": 2,
+      "valid_deduplicated_completed": 900,
+      "contiguous_tail_bars": 900,
+      "missing_intervals": [],
+      "earliest_ms": 1792365240000,
+      "latest_ms": 1792419180000,
+      "latest_completed_ms": 1792419240000,
+      "cache_age_ms": 31406,
+      "last_collection_ms": 1792419271401,
+      "warmup_required": 300,
+      "strategy_history_ready": true,
+      "warmup_satisfied": true,
+      "data_freshness_satisfied": true,
+      "failure_classification": "READY",
+      "failure_reasons": [],
+      "request_diagnostics": {
+        "rest": {
+          "request": {
+            "coin": "pas:EWY",
+            "interval": "1m",
+            "startTime": 1792365240000,
+            "endTime": 1792419239999
+          },
+          "received_ms": 1792419269978,
+          "returned_count": 900,
+          "first_returned_ms": 1792365240000,
+          "last_returned_ms": 1792419180000,
+          "expected_intervals": 900,
+          "normalization_succeeded": true,
+          "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v6_2_2026-10-19/session_final/strategy_observation/info_receipts.jsonl"
+        }
+      },
+      "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+      "database": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v6_2_2026-10-19/session_final/strategy_observation/history.sqlite"
+    }
+  },
+  "markets": [
+    "pas:BTC",
+    "pas:EWY"
+  ],
+  "metadata": {
+    "universe": [
+      {
+        "szDecimals": 5,
+        "name": "pas:BTC",
+        "maxLeverage": 40,
+        "marginTableId": 40,
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 4,
+        "name": "pas:ETH",
+        "maxLeverage": 25,
+        "marginTableId": 25,
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 2,
+        "name": "pas:HYPE",
+        "maxLeverage": 10,
+        "marginTableId": 10,
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 3,
+        "name": "pas:SP500",
+        "maxLeverage": 50,
+        "marginTableId": 50,
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 3,
+        "name": "pas:EWY",
+        "maxLeverage": 20,
+        "marginTableId": 20,
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 3,
+        "name": "pas:EWJ",
+        "maxLeverage": 20,
+        "marginTableId": 20,
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 2,
+        "name": "pas:BRENT",
+        "maxLeverage": 20,
+        "marginTableId": 20,
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 4,
+        "name": "pas:GOLD",
+        "maxLeverage": 25,
+        "marginTableId": 25,
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 1,
+        "name": "pas:USDEUR",
+        "maxLeverage": 50,
+        "marginTableId": 50,
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 2,
+        "name": "pas:USDJPY",
+        "maxLeverage": 50,
+        "marginTableId": 50,
+        "deployerFeeScale": "1.0"
+      }
+    ],
+    "marginTables": [
+      [
+        50,
+        {
+          "description": "",
+          "marginTiers": [
+            {
+              "lowerBound": "0.0",
+              "maxLeverage": 50
+            }
+          ]
+        }
+      ]
+    ],
+    "collateralToken": 3307
+  },
+  "account": {
+    "source": "EXCHANGE_REPORTED_ACCOUNT_OBSERVER",
+    "exchange_orders_submitted": 0,
+    "entries_paused": false,
+    "reasons": [],
+    "positions": [],
+    "open_orders": [],
+    "fills": [],
+    "funding_events": [],
+    "reported_account_equity": {
+      "reported_account_value": "100000.0",
+      "collateral_balance": "100000.0",
+      "margin_used": "0",
+      "withdrawable": null,
+      "valuation_source": "spotClearinghouseState.USDP.total"
+    },
+    "accounting_window_ms": [
+      0,
+      1792419275989
+    ],
+    "latest_query_window_ms": [
+      1792419213140,
+      1792419275989
+    ],
+    "realized": {
+      "gross_closed_pnl": "0",
+      "actual_fill_fees": "0",
+      "actual_funding_cashflow": "0",
+      "net_after_fees_and_funding": "0",
+      "scope": "ONLY_OBSERVED_ACCOUNT_EVENTS; excludes deposits/transfers and unknown historical events"
+    },
+    "corrections": [
+      {
+        "kind": "EXCHANGE_TRUTH_ADOPTED",
+        "timestamp_ms": 1792419274803,
+        "differences": {},
+        "new_fill_count": 0,
+        "reasons": [],
+        "exchange_ts": null,
+        "received_ts": "2026-10-19T14:14:34.803+00:00",
+        "processed_ts": "2026-10-19T14:14:34.803+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      {
+        "kind": "EXCHANGE_TRUTH_ADOPTED",
+        "timestamp_ms": 1792419277508,
+        "differences": {},
+        "new_fill_count": 0,
+        "reasons": [],
+        "exchange_ts": null,
+        "received_ts": "2026-10-19T14:14:37.508+00:00",
+        "processed_ts": "2026-10-19T14:14:37.508+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      }
+    ]
+  },
+  "account_observed_ms": 1792419278318,
+  "account_error": null,
+  "local_execution_state": {
+    "status": "BLOCKED_UNRESOLVED_INTENT",
+    "unresolved": [
+      {
+        "journal": "qualification",
+        "cloid": "0xac0eea156fcec80986dd67c9057b6ded",
+        "state": "UNKNOWN",
+        "intent_key": "certification:59445fe546d38a96e486140fda781d09ae8a0942f93a3614fa8abcbc34f5e7ea:entry"
+      }
+    ],
+    "native_protection": "UNQUALIFIED",
+    "signing_authority": "NONE",
+    "dispatch_evidence": []
+  },
+  "session_performance": {
+    "source": "EXCHANGE_REPORTED_FILLS_FEES_FUNDING",
+    "session_started_ms": 1792419261663,
+    "initial_equity": "100000.0",
+    "initial_equity_observed_ms": 1792419268327,
+    "current_equity": "100000.0",
+    "as_of_ms": 1792419278318,
+    "actual_gross_realized": "0",
+    "actual_fees": "0",
+    "actual_funding": "0",
+    "actual_net_realized": "0",
+    "realized_net_on_initial_equity_pct": "0E+1",
+    "equity_change_pct": "0",
+    "return_basis": "First verified session equity; equity change is not cash-flow-adjusted or an official competition return",
+    "sampled_maximum_drawdown_pct": "0",
+    "fill_count": 0,
+    "funding_event_count": 0,
+    "official_score": null,
+    "daily_return_volatility": null,
+    "accounting_complete": true,
+    "unrealized_pnl_source": "See exchange-reported position fields; no synthetic valuation added"
+  },
+  "base_taker_fee_rate": "0.00045",
+  "base_maker_fee_rate": "0.00015",
+  "documented_pas_taker_fee_estimate": "0.00090",
+  "fee_rate_bound": "0.00270",
+  "maker_fee_rate_bound": "0.00090",
+  "fees_observed_ms": 1792419268691,
+  "fee_estimation_basis": "Existing conservative 6x base-rate bound; actual fills determine charged fees",
+  "funding": {
+    "status": "USDP_POSITIVE_VERIFIED",
+    "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+    "network": "testnet",
+    "dex": "pas",
+    "collateral": "USDP",
+    "account_mode": "unifiedAccount",
+    "token": 3307,
+    "observed_ms": 1792419268691,
+    "exchange_time_ms": 1792419269865,
+    "balance": "100000.0",
+    "age_ms": 1535,
+    "organizer_credit_amount": null,
+    "organizer_credit_provenance": "UNKNOWN",
+    "signing_authority": "NONE",
+    "reasons": [],
+    "response_hashes": {
+      "spot": "1b53cc1b5d50cbc4d32da7b9a35a0374cce3d4807876bfad58e272e368e811df",
+      "state": "1319f695d58d65823cb8544798b4820ef8b0c0514621e3b92836691119b4041d"
+    },
+    "provenance": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v6_2_2026-10-19/session_final/strategy_observation/info_receipts.jsonl",
+    "equity_basis": "Unified USDP total once; no addition of per-DEX equity or unrealized PnL",
+    "evidence_hash": "7241fe2396fb2bb5351d8e270bf6f856225e6874dba163e233eb359060be634d"
+  },
+  "funding_event": {
+    "before": null,
+    "after": "USDP_POSITIVE_VERIFIED",
+    "balance": "100000.0",
+    "observed_ms": 1792419270226,
+    "signing_triggered": false
+  },
+  "scan_in_progress": false,
+  "capacity_ranking": [
+    {
+      "symbol": "pas:EWY",
+      "liquidity_only_quantity": "0.316",
+      "liquidity_only_notional": "49.99752",
+      "economically_viable_notional": "0",
+      "authorized_executable_notional": "0",
+      "expected_net_pnl": null,
+      "expected_return_probability": null,
+      "decision": "OBSERVE",
+      "reasons": [
+        "NO_CURRENT_QUALIFIED_FROZEN_LONG_SIGNAL",
+        "EMPIRICAL_EXPECTED_EDGE_NOT_ESTABLISHED",
+        "NATIVE_RESIDUAL_PROTECTION_UNQUALIFIED",
+        "NO_EXACT_SESSION_AUTHORITY"
+      ],
+      "observed_ms": 1792419271868,
+      "quantity_bounds": {
+        "entry_bbo": "0.316",
+        "exit_bbo": "0.316",
+        "entry_five_bps": "5.058",
+        "exit_five_bps": "0.9612",
+        "account": "632.391",
+        "margin": "628.6367105181005002514924024",
+        "proposed_upper_cap": "63.20313487548982429528504614"
+      },
+      "spread_bps": "6.954762431637846552650712863",
+      "entry_capacity": "0.316",
+      "exit_capacity": "0.316",
+      "book_age_ms": 1493,
+      "fee_age_ms": 3177,
+      "funding_rate": "0.00000625",
+      "conditional_target_net": null,
+      "stressed_conditional_target_net": null
+    },
+    {
+      "symbol": "pas:BTC",
+      "liquidity_only_quantity": "0.00060",
+      "liquidity_only_notional": "49.212000",
+      "economically_viable_notional": "0",
+      "authorized_executable_notional": "0",
+      "expected_net_pnl": null,
+      "expected_return_probability": null,
+      "decision": "OBSERVE",
+      "reasons": [
+        "NO_CURRENT_QUALIFIED_FROZEN_LONG_SIGNAL",
+        "EMPIRICAL_EXPECTED_EDGE_NOT_ESTABLISHED",
+        "NATIVE_RESIDUAL_PROTECTION_UNQUALIFIED",
+        "NO_EXACT_SESSION_AUTHORITY"
+      ],
+      "observed_ms": 1792419271391,
+      "quantity_bounds": {
+        "entry_bbo": "0.0006",
+        "exit_bbo": "0.0006",
+        "entry_five_bps": "0.00973",
+        "exit_five_bps": "0.0006",
+        "account": "1.21921",
+        "margin": "1.212666426946767387829689440",
+        "proposed_upper_cap": "0.1219214825652279931723969763"
+      },
+      "spread_bps": "4.756068560557557575868439827",
+      "entry_capacity": "0.00060",
+      "exit_capacity": "0.00060",
+      "book_age_ms": 1016,
+      "fee_age_ms": 2700,
+      "funding_rate": "-0.0000594706",
+      "conditional_target_net": null,
+      "stressed_conditional_target_net": null
+    }
+  ],
+  "latest_scan_ms": 1792419271869,
+  "capacity_ranking_scope": "OBSERVATION_ONLY_NOT_PRODUCTION_TOP3",
+  "opportunity_counts": {
+    "candidate_occurrences": 0,
+    "markets_with_two_sided_capacity": 2,
+    "candidates_passing_capacity": 0,
+    "conditional_friction_and_stress": 0,
+    "qualified_protection": 0,
+    "authorized": 0,
+    "statistical_expected_edge_verified": 0
+  },
+  "threads_stopped": true,
+  "terminal_readbacks": [
+    {
+      "observed_ms": 1792419275485,
+      "ready": true,
+      "positions": [],
+      "orders": [],
+      "team": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+      "source": "EXCHANGE_DIRECT_TESTNET_PAS_INFO"
+    },
+    {
+      "observed_ms": 1792419278318,
+      "ready": true,
+      "positions": [],
+      "orders": [],
+      "team": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+      "source": "EXCHANGE_DIRECT_TESTNET_PAS_INFO"
+    }
+  ],
+  "terminal_recovery_steps": [
+    {
+      "phase": "ACCOUNT_HISTORY_1",
+      "start_ms": 1792419206673,
+      "known_history_overlap": true,
+      "observed_ms": 1792419272790
+    },
+    {
+      "phase": "ACCOUNT_HISTORY_2",
+      "start_ms": 1792419213140,
+      "known_history_overlap": true,
+      "observed_ms": 1792419275485
+    }
+  ],
+  "terminal_recovery_started_ms": 1792419272790,
+  "terminal_recovery_timeout_seconds": 180,
+  "terminal_recovery_order_actions": 0,
+  "terminal_flat": true,
+  "account_status": "FLAT_VERIFIED",
+  "residual_status": "FLAT_VERIFIED",
+  "terminal_recovery_finished_ms": 1792419278318,
+  "rate_report": {
+    "state": "UNKNOWN",
+    "policy": {
+      "ip_weight_per_minute": 1200,
+      "ip_safety_reserve": 120,
+      "daily_actions": 50000,
+      "daily_safety_reserve": 500,
+      "account_action_reserve": 10,
+      "max_open_orders": 1000,
+      "max_ws_connections": 10,
+      "max_ws_subscriptions": 1000,
+      "max_ws_unique_users": 10,
+      "venue_ws_connections_per_minute": 30,
+      "max_ws_messages_per_minute": 2000,
+      "ws_reconnects_per_minute": 5,
+      "budget_max_age_ms": 60000,
+      "optional_poll_interval_ms": 5000,
+      "read_retry_attempts": 3,
+      "backoff_base_ms": 1000,
+      "backoff_max_ms": 30000,
+      "exhausted_safety_action_interval_ms": 10000,
+      "caution_fraction": 0.75,
+      "throttle_fraction": 0.9
+    },
+    "ip_weight": 770,
+    "public_read_blocked": false,
+    "account_requests_used": null,
+    "account_requests_cap": null,
+    "remaining_budget": null,
+    "budget_observed_ms": null,
+    "daily_actions": 0,
+    "daily_limit": 50000,
+    "entries_allowed": false,
+    "open_orders": 0,
+    "backoff_until_ms": 0,
+    "websocket": {
+      "connections": 0,
+      "subscriptions": 0,
+      "outgoing_messages": 12,
+      "heartbeats": 0,
+      "reconnects_last_minute": 2
+    },
+    "public_reads": {
+      "upstream_by_operation": {
+        "perpDexs": 3,
+        "meta": 3,
+        "spotMeta": 3,
+        "clearinghouseState": 14,
+        "openOrders": 6,
+        "userFillsByTime": 3,
+        "userFunding": 3,
+        "userAbstraction": 4,
+        "spotClearinghouseState": 4,
+        "metaAndAssetCtxs": 3,
+        "userFees": 1,
+        "candleSnapshot": 2,
+        "l2Book": 2,
+        "activeAssetData": 2,
+        "frontendOpenOrders": 2
+      },
+      "failures": {},
+      "pending": 0,
+      "coalesced": 0,
+      "max_seconds": 0.8137143328785896,
+      "failure_details": []
+    }
+  },
+  "journal_integrity": "ok",
+  "execution_intents": 0,
+  "history_integrity": "ok",
+  "source_hash_after": "8bb636e708306673f327384fc451519e5e74d526ff3dbd81c17620973bb13bad",
+  "public_receipt_count": 55,
+  "receipt_rotations": 0,
+  "actual_errors": {}
+}

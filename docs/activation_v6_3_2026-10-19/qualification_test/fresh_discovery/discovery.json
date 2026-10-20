@@ -1,0 +1,2963 @@
+{
+  "status": "READ_ONLY_DISCOVERY_COMPLETE",
+  "network": "testnet",
+  "dex": "pas",
+  "collateral": "USDP",
+  "venue_identity": "7562c7f16a800fae8d3f9ed4afd76c2d2a8597e5814a1626ef9553346789b493",
+  "started_ms": 1792432795469,
+  "source_hash": "f7c06578501f703e7c5bd6402060cb83714e15b0acb73a9fbe41b3af77c94840",
+  "signatures_created": 0,
+  "exchange_writes": 0,
+  "signing_authority": "NONE",
+  "markets": [
+    {
+      "symbol": "pas:BRENT",
+      "spec": {
+        "symbol": "pas:BRENT",
+        "size_decimals": 2,
+        "max_leverage": 20,
+        "asset_id": 2810006,
+        "margin_tiers": [
+          [
+            "0",
+            20
+          ]
+        ]
+      },
+      "book": {
+        "symbol": "pas:BRENT",
+        "timestamp_ms": 1792432798644,
+        "bids": [
+          {
+            "price": "106.71",
+            "quantity": "4.68"
+          },
+          {
+            "price": "106.67",
+            "quantity": "23.42"
+          },
+          {
+            "price": "106.66",
+            "quantity": "0.93"
+          },
+          {
+            "price": "106.65",
+            "quantity": "515.09"
+          },
+          {
+            "price": "106.55",
+            "quantity": "468.41"
+          },
+          {
+            "price": "106.54",
+            "quantity": "0.46"
+          },
+          {
+            "price": "106.52",
+            "quantity": "31.93"
+          },
+          {
+            "price": "106.35",
+            "quantity": "63.97"
+          },
+          {
+            "price": "106.22",
+            "quantity": "192.08"
+          },
+          {
+            "price": "105.96",
+            "quantity": "192.6"
+          },
+          {
+            "price": "105.53",
+            "quantity": "257.85"
+          },
+          {
+            "price": "104.89",
+            "quantity": "291.85"
+          },
+          {
+            "price": "103.82",
+            "quantity": "327.62"
+          },
+          {
+            "price": "98.144",
+            "quantity": "0.12"
+          }
+        ],
+        "asks": [
+          {
+            "price": "106.78",
+            "quantity": "4.68"
+          },
+          {
+            "price": "106.82",
+            "quantity": "9.36"
+          },
+          {
+            "price": "106.83",
+            "quantity": "46.84"
+          },
+          {
+            "price": "106.85",
+            "quantity": "23.41"
+          },
+          {
+            "price": "106.88",
+            "quantity": "140.49"
+          },
+          {
+            "price": "106.92",
+            "quantity": "327.76"
+          },
+          {
+            "price": "106.93",
+            "quantity": "0.46"
+          },
+          {
+            "price": "106.94",
+            "quantity": "468.41"
+          },
+          {
+            "price": "106.95",
+            "quantity": "35.06"
+          },
+          {
+            "price": "106.98",
+            "quantity": "0.93"
+          },
+          {
+            "price": "107.12",
+            "quantity": "70.01"
+          },
+          {
+            "price": "107.41",
+            "quantity": "139.65"
+          },
+          {
+            "price": "107.67",
+            "quantity": "139.31"
+          },
+          {
+            "price": "108.1",
+            "quantity": "277.52"
+          },
+          {
+            "price": "108.74",
+            "quantity": "310.37"
+          },
+          {
+            "price": "109.8",
+            "quantity": "341.53"
+          }
+        ],
+        "received_timestamp_ms": 1792432799134,
+        "processed_timestamp_ms": 1792432799134
+      },
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "pas:BRENT",
+        "leverage": {
+          "type": "cross",
+          "value": 20
+        },
+        "maxTradeSzs": [
+          "18730.09",
+          "18730.09"
+        ],
+        "availableToTrade": [
+          "100000.0",
+          "100000.0"
+        ],
+        "markPx": "106.78"
+      },
+      "context": {
+        "funding": "0.00000625",
+        "openInterest": "1735.78",
+        "prevDayPx": "106.95",
+        "dayNtlVlm": "152988.802",
+        "premium": "-0.0002458556",
+        "oraclePx": "106.77",
+        "markPx": "106.78",
+        "midPx": "106.745",
+        "impactPxs": [
+          "106.6634",
+          "106.8241"
+        ],
+        "dayBaseVlm": "1447.32"
+      },
+      "observed_ms": 1792432799311,
+      "capacity": {
+        "symbol": "pas:BRENT",
+        "liquidity_only_quantity": "0",
+        "liquidity_only_notional": "0",
+        "economically_viable_notional": "0",
+        "authorized_executable_notional": "0",
+        "expected_net_pnl": null,
+        "expected_return_probability": null,
+        "decision": "OBSERVE",
+        "reasons": [
+          "ONE_X_CROSS_REQUIRED"
+        ],
+        "observed_ms": 1792432799311
+      },
+      "native_protection_qualified": false,
+      "displayed_book_only_quantity": "0.46",
+      "displayed_book_only_notional": "49.1188",
+      "book_only_scope": "Both BBO and 5 bps caps, lot rounded; excludes account funding/leverage/risk/protection/approval",
+      "minimum_notional": "10",
+      "minimum_basis": "DOCUMENTED_ORDINARY_ORDER_POLICY; full-position exceptions are separately qualified"
+    },
+    {
+      "symbol": "pas:BTC",
+      "spec": {
+        "symbol": "pas:BTC",
+        "size_decimals": 5,
+        "max_leverage": 40,
+        "asset_id": 2810000,
+        "margin_tiers": [
+          [
+            "0",
+            40
+          ]
+        ]
+      },
+      "book": {
+        "symbol": "pas:BTC",
+        "timestamp_ms": 1792432799157,
+        "bids": [
+          {
+            "price": "81795.0",
+            "quantity": "0.01222"
+          },
+          {
+            "price": "81789.0",
+            "quantity": "0.0061"
+          },
+          {
+            "price": "81782.0",
+            "quantity": "0.00039"
+          },
+          {
+            "price": "81769.0",
+            "quantity": "0.01222"
+          },
+          {
+            "price": "81752.0",
+            "quantity": "0.00122"
+          },
+          {
+            "price": "81744.0",
+            "quantity": "0.0305"
+          },
+          {
+            "price": "81739.0",
+            "quantity": "0.0611"
+          },
+          {
+            "price": "81734.0",
+            "quantity": "0.1833"
+          },
+          {
+            "price": "81726.0",
+            "quantity": "0.03189"
+          },
+          {
+            "price": "81695.0",
+            "quantity": "0.4279"
+          },
+          {
+            "price": "81688.0",
+            "quantity": "0.00122"
+          },
+          {
+            "price": "81665.0",
+            "quantity": "0.6111"
+          },
+          {
+            "price": "81628.0",
+            "quantity": "0.06386"
+          },
+          {
+            "price": "81414.0",
+            "quantity": "0.12812"
+          },
+          {
+            "price": "81218.0",
+            "quantity": "0.19265"
+          },
+          {
+            "price": "80924.0",
+            "quantity": "0.2578"
+          },
+          {
+            "price": "80433.0",
+            "quantity": "0.29179"
+          },
+          {
+            "price": "79779.0",
+            "quantity": "0.32687"
+          },
+          {
+            "price": "77818.0",
+            "quantity": "0.00015"
+          }
+        ],
+        "asks": [
+          {
+            "price": "81839.0",
+            "quantity": "0.0061"
+          },
+          {
+            "price": "81843.0",
+            "quantity": "0.0305"
+          },
+          {
+            "price": "81860.0",
+            "quantity": "0.0611"
+          },
+          {
+            "price": "81872.0",
+            "quantity": "0.00122"
+          },
+          {
+            "price": "81878.0",
+            "quantity": "0.01221"
+          },
+          {
+            "price": "81888.0",
+            "quantity": "0.01222"
+          },
+          {
+            "price": "81895.0",
+            "quantity": "0.1833"
+          },
+          {
+            "price": "81904.0",
+            "quantity": "0.4278"
+          },
+          {
+            "price": "81922.0",
+            "quantity": "0.04577"
+          },
+          {
+            "price": "81971.0",
+            "quantity": "0.0039"
+          },
+          {
+            "price": "81973.0",
+            "quantity": "0.611"
+          },
+          {
+            "price": "81998.0",
+            "quantity": "0.00121"
+          },
+          {
+            "price": "82021.0",
+            "quantity": "0.09143"
+          },
+          {
+            "price": "82068.0",
+            "quantity": "0.18277"
+          },
+          {
+            "price": "82264.0",
+            "quantity": "0.2735"
+          },
+          {
+            "price": "82558.0",
+            "quantity": "0.36338"
+          },
+          {
+            "price": "83049.0",
+            "quantity": "0.40638"
+          },
+          {
+            "price": "83703.0",
+            "quantity": "0.44801"
+          }
+        ],
+        "received_timestamp_ms": 1792432799627,
+        "processed_timestamp_ms": 1792432799627
+      },
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "pas:BTC",
+        "leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "maxTradeSzs": [
+          "1.22223",
+          "1.22223"
+        ],
+        "availableToTrade": [
+          "100000.0",
+          "100000.0"
+        ],
+        "markPx": "81817.0"
+      },
+      "context": {
+        "funding": "-0.0000515223",
+        "openInterest": "4.18594",
+        "prevDayPx": "80630.0",
+        "dayNtlVlm": "178331.75051",
+        "premium": "-0.0012142116",
+        "oraclePx": "81905.0",
+        "markPx": "81817.0",
+        "midPx": "81817.0",
+        "impactPxs": [
+          "81760.0",
+          "81851.1"
+        ],
+        "dayBaseVlm": "2.17074"
+      },
+      "observed_ms": 1792432799806,
+      "capacity": {
+        "symbol": "pas:BTC",
+        "liquidity_only_quantity": "0.00061",
+        "liquidity_only_notional": "49.921790",
+        "economically_viable_notional": "0",
+        "authorized_executable_notional": "0",
+        "expected_net_pnl": null,
+        "expected_return_probability": null,
+        "decision": "OBSERVE",
+        "reasons": [
+          "SIGNAL_ECONOMIC_EVIDENCE_STALE",
+          "NO_CURRENT_QUALIFIED_FROZEN_LONG_SIGNAL",
+          "EMPIRICAL_EXPECTED_EDGE_NOT_ESTABLISHED",
+          "NATIVE_RESIDUAL_PROTECTION_UNQUALIFIED",
+          "NO_EXACT_SESSION_AUTHORITY"
+        ],
+        "observed_ms": 1792432799806,
+        "quantity_bounds": {
+          "entry_bbo": "0.00061",
+          "exit_bbo": "0.001222",
+          "entry_five_bps": "0.011113",
+          "exit_five_bps": "0.003093",
+          "account": "1.22223",
+          "margin": "1.215348432143279624015336550",
+          "proposed_upper_cap": "0.1221911313676853333985019367"
+        },
+        "spread_bps": "5.377855457912169842453279881",
+        "entry_capacity": "0.00061",
+        "exit_capacity": "0.00122",
+        "book_age_ms": 649,
+        "fee_age_ms": 1432,
+        "funding_rate": "None",
+        "conditional_target_net": null,
+        "stressed_conditional_target_net": null
+      },
+      "native_protection_qualified": false,
+      "displayed_book_only_quantity": "0.00061",
+      "displayed_book_only_notional": "49.921790",
+      "book_only_scope": "Both BBO and 5 bps caps, lot rounded; excludes account funding/leverage/risk/protection/approval",
+      "minimum_notional": "10",
+      "minimum_basis": "DOCUMENTED_ORDINARY_ORDER_POLICY; full-position exceptions are separately qualified"
+    },
+    {
+      "symbol": "pas:ETH",
+      "spec": {
+        "symbol": "pas:ETH",
+        "size_decimals": 4,
+        "max_leverage": 25,
+        "asset_id": 2810001,
+        "margin_tiers": [
+          [
+            "0",
+            25
+          ]
+        ]
+      },
+      "book": {
+        "symbol": "pas:ETH",
+        "timestamp_ms": 1792432799673,
+        "bids": [
+          {
+            "price": "2394.0",
+            "quantity": "0.208"
+          },
+          {
+            "price": "2393.8",
+            "quantity": "1.043"
+          },
+          {
+            "price": "2393.3",
+            "quantity": "2.087"
+          },
+          {
+            "price": "2393.1",
+            "quantity": "0.4178"
+          },
+          {
+            "price": "2393.0",
+            "quantity": "0.4175"
+          },
+          {
+            "price": "2392.3",
+            "quantity": "20.875"
+          },
+          {
+            "price": "2391.5",
+            "quantity": "1.2077"
+          },
+          {
+            "price": "2391.0",
+            "quantity": "0.0418"
+          },
+          {
+            "price": "2390.9",
+            "quantity": "0.0418"
+          },
+          {
+            "price": "2390.6",
+            "quantity": "20.877"
+          },
+          {
+            "price": "2388.6",
+            "quantity": "2.4184"
+          },
+          {
+            "price": "2384.0",
+            "quantity": "7.2647"
+          },
+          {
+            "price": "2378.3",
+            "quantity": "7.2874"
+          },
+          {
+            "price": "2369.6",
+            "quantity": "9.7522"
+          },
+          {
+            "price": "2355.3",
+            "quantity": "11.0378"
+          },
+          {
+            "price": "2336.1",
+            "quantity": "12.365"
+          },
+          {
+            "price": "2315.2",
+            "quantity": "0.005"
+          }
+        ],
+        "asks": [
+          {
+            "price": "2395.6",
+            "quantity": "0.208"
+          },
+          {
+            "price": "2396.0",
+            "quantity": "0.4173"
+          },
+          {
+            "price": "2396.4",
+            "quantity": "0.0417"
+          },
+          {
+            "price": "2396.6",
+            "quantity": "0.4175"
+          },
+          {
+            "price": "2396.7",
+            "quantity": "1.043"
+          },
+          {
+            "price": "2396.8",
+            "quantity": "2.087"
+          },
+          {
+            "price": "2397.2",
+            "quantity": "7.8273"
+          },
+          {
+            "price": "2398.0",
+            "quantity": "0.2472"
+          },
+          {
+            "price": "2398.1",
+            "quantity": "0.0416"
+          },
+          {
+            "price": "2398.2",
+            "quantity": "14.612"
+          },
+          {
+            "price": "2399.3",
+            "quantity": "20.877"
+          },
+          {
+            "price": "2400.1",
+            "quantity": "3.1248"
+          },
+          {
+            "price": "2403.2",
+            "quantity": "6.2416"
+          },
+          {
+            "price": "2408.9",
+            "quantity": "9.3403"
+          },
+          {
+            "price": "2417.5",
+            "quantity": "12.4095"
+          },
+          {
+            "price": "2431.9",
+            "quantity": "13.878"
+          },
+          {
+            "price": "2451.0",
+            "quantity": "15.2998"
+          }
+        ],
+        "received_timestamp_ms": 1792432800132,
+        "processed_timestamp_ms": 1792432800132
+      },
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "pas:ETH",
+        "leverage": {
+          "type": "cross",
+          "value": 20
+        },
+        "maxTradeSzs": [
+          "834.8639",
+          "834.8639"
+        ],
+        "availableToTrade": [
+          "100000.0",
+          "100000.0"
+        ],
+        "markPx": "2395.6"
+      },
+      "context": {
+        "funding": "-0.0000531785",
+        "openInterest": "106.8036",
+        "prevDayPx": "2352.4",
+        "dayNtlVlm": "214020.23431",
+        "premium": "-0.00095107",
+        "oraclePx": "2397.3",
+        "markPx": "2395.6",
+        "midPx": "2394.8",
+        "impactPxs": [
+          "2393.56",
+          "2396.48"
+        ],
+        "dayBaseVlm": "89.0362"
+      },
+      "observed_ms": 1792432800464,
+      "capacity": {
+        "symbol": "pas:ETH",
+        "liquidity_only_quantity": "0",
+        "liquidity_only_notional": "0",
+        "economically_viable_notional": "0",
+        "authorized_executable_notional": "0",
+        "expected_net_pnl": null,
+        "expected_return_probability": null,
+        "decision": "OBSERVE",
+        "reasons": [
+          "ONE_X_CROSS_REQUIRED"
+        ],
+        "observed_ms": 1792432800464
+      },
+      "native_protection_qualified": false,
+      "displayed_book_only_quantity": "0.0208",
+      "displayed_book_only_notional": "49.82848",
+      "book_only_scope": "Both BBO and 5 bps caps, lot rounded; excludes account funding/leverage/risk/protection/approval",
+      "minimum_notional": "10",
+      "minimum_basis": "DOCUMENTED_ORDINARY_ORDER_POLICY; full-position exceptions are separately qualified"
+    },
+    {
+      "symbol": "pas:EWJ",
+      "spec": {
+        "symbol": "pas:EWJ",
+        "size_decimals": 3,
+        "max_leverage": 20,
+        "asset_id": 2810005,
+        "margin_tiers": [
+          [
+            "0",
+            20
+          ]
+        ]
+      },
+      "book": {
+        "symbol": "pas:EWJ",
+        "timestamp_ms": 1792432799673,
+        "bids": [
+          {
+            "price": "95.107",
+            "quantity": "215.544"
+          },
+          {
+            "price": "95.095",
+            "quantity": "10.492"
+          },
+          {
+            "price": "95.057",
+            "quantity": "10.512"
+          },
+          {
+            "price": "95.054",
+            "quantity": "26.284"
+          },
+          {
+            "price": "95.035",
+            "quantity": "52.569"
+          },
+          {
+            "price": "95.029",
+            "quantity": "157.688"
+          },
+          {
+            "price": "95.0",
+            "quantity": "367.976"
+          },
+          {
+            "price": "94.945",
+            "quantity": "36.284"
+          },
+          {
+            "price": "94.928",
+            "quantity": "525.762"
+          },
+          {
+            "price": "94.793",
+            "quantity": "72.684"
+          },
+          {
+            "price": "94.694",
+            "quantity": "145.509"
+          },
+          {
+            "price": "94.465",
+            "quantity": "218.792"
+          },
+          {
+            "price": "94.084",
+            "quantity": "292.905"
+          },
+          {
+            "price": "93.513",
+            "quantity": "331.53"
+          },
+          {
+            "price": "92.561",
+            "quantity": "372.155"
+          },
+          {
+            "price": "91.431",
+            "quantity": "0.126"
+          }
+        ],
+        "asks": [
+          {
+            "price": "95.166",
+            "quantity": "5.255"
+          },
+          {
+            "price": "95.172",
+            "quantity": "26.284"
+          },
+          {
+            "price": "95.191",
+            "quantity": "63.073"
+          },
+          {
+            "price": "95.196",
+            "quantity": "10.512"
+          },
+          {
+            "price": "95.22",
+            "quantity": "157.688"
+          },
+          {
+            "price": "95.229",
+            "quantity": "367.976"
+          },
+          {
+            "price": "95.272",
+            "quantity": "525.762"
+          },
+          {
+            "price": "95.287",
+            "quantity": "6.948"
+          },
+          {
+            "price": "95.326",
+            "quantity": "39.338"
+          },
+          {
+            "price": "95.478",
+            "quantity": "78.552"
+          },
+          {
+            "price": "95.76",
+            "quantity": "156.641"
+          },
+          {
+            "price": "95.989",
+            "quantity": "234.401"
+          },
+          {
+            "price": "96.37",
+            "quantity": "311.3"
+          },
+          {
+            "price": "96.941",
+            "quantity": "348.149"
+          },
+          {
+            "price": "97.893",
+            "quantity": "383.071"
+          }
+        ],
+        "received_timestamp_ms": 1792432800625,
+        "processed_timestamp_ms": 1792432800625
+      },
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "pas:EWJ",
+        "leverage": {
+          "type": "cross",
+          "value": 20
+        },
+        "maxTradeSzs": [
+          "21019.442",
+          "21019.442"
+        ],
+        "availableToTrade": [
+          "100000.0",
+          "100000.0"
+        ],
+        "markPx": "95.15"
+      },
+      "context": {
+        "funding": "-0.0000144879",
+        "openInterest": "1505.408",
+        "prevDayPx": "94.387",
+        "dayNtlVlm": "140104.755838",
+        "premium": "-0.0011445973",
+        "oraclePx": "95.23",
+        "markPx": "95.15",
+        "midPx": "95.136",
+        "impactPxs": [
+          "95.062",
+          "95.18"
+        ],
+        "dayBaseVlm": "1470.733"
+      },
+      "observed_ms": 1792432801177,
+      "capacity": {
+        "symbol": "pas:EWJ",
+        "liquidity_only_quantity": "0",
+        "liquidity_only_notional": "0",
+        "economically_viable_notional": "0",
+        "authorized_executable_notional": "0",
+        "expected_net_pnl": null,
+        "expected_return_probability": null,
+        "decision": "OBSERVE",
+        "reasons": [
+          "ONE_X_CROSS_REQUIRED"
+        ],
+        "observed_ms": 1792432801177
+      },
+      "native_protection_qualified": false,
+      "displayed_book_only_quantity": "0.525",
+      "displayed_book_only_notional": "49.962150",
+      "book_only_scope": "Both BBO and 5 bps caps, lot rounded; excludes account funding/leverage/risk/protection/approval",
+      "minimum_notional": "10",
+      "minimum_basis": "DOCUMENTED_ORDINARY_ORDER_POLICY; full-position exceptions are separately qualified"
+    },
+    {
+      "symbol": "pas:EWY",
+      "spec": {
+        "symbol": "pas:EWY",
+        "size_decimals": 3,
+        "max_leverage": 20,
+        "asset_id": 2810004,
+        "margin_tiers": [
+          [
+            "0",
+            20
+          ]
+        ]
+      },
+      "book": {
+        "symbol": "pas:EWY",
+        "timestamp_ms": 1792432800239,
+        "bids": [
+          {
+            "price": "157.35",
+            "quantity": "3.17"
+          },
+          {
+            "price": "157.27",
+            "quantity": "6.358"
+          },
+          {
+            "price": "157.26",
+            "quantity": "95.28"
+          },
+          {
+            "price": "157.25",
+            "quantity": "15.88"
+          },
+          {
+            "price": "157.24",
+            "quantity": "1.999"
+          },
+          {
+            "price": "157.22",
+            "quantity": "31.77"
+          },
+          {
+            "price": "157.17",
+            "quantity": "222.41"
+          },
+          {
+            "price": "157.1",
+            "quantity": "317.68"
+          },
+          {
+            "price": "157.06",
+            "quantity": "23.035"
+          },
+          {
+            "price": "156.81",
+            "quantity": "46.144"
+          },
+          {
+            "price": "156.26",
+            "quantity": "92.619"
+          },
+          {
+            "price": "155.88",
+            "quantity": "139.267"
+          },
+          {
+            "price": "155.25",
+            "quantity": "186.443"
+          },
+          {
+            "price": "154.31",
+            "quantity": "211.026"
+          },
+          {
+            "price": "152.74",
+            "quantity": "236.884"
+          }
+        ],
+        "asks": [
+          {
+            "price": "157.44",
+            "quantity": "3.17"
+          },
+          {
+            "price": "157.45",
+            "quantity": "15.88"
+          },
+          {
+            "price": "157.46",
+            "quantity": "6.35"
+          },
+          {
+            "price": "157.48",
+            "quantity": "31.77"
+          },
+          {
+            "price": "157.54",
+            "quantity": "222.43"
+          },
+          {
+            "price": "157.58",
+            "quantity": "95.28"
+          },
+          {
+            "price": "157.64",
+            "quantity": "317.76"
+          },
+          {
+            "price": "157.69",
+            "quantity": "23.78"
+          },
+          {
+            "price": "157.95",
+            "quantity": "47.483"
+          },
+          {
+            "price": "158.02",
+            "quantity": "94.924"
+          },
+          {
+            "price": "158.4",
+            "quantity": "142.045"
+          },
+          {
+            "price": "159.03",
+            "quantity": "188.643"
+          },
+          {
+            "price": "159.97",
+            "quantity": "210.977"
+          },
+          {
+            "price": "161.54",
+            "quantity": "232.14"
+          }
+        ],
+        "received_timestamp_ms": 1792432801347,
+        "processed_timestamp_ms": 1792432801347
+      },
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "pas:EWY",
+        "leverage": {
+          "type": "cross",
+          "value": 1
+        },
+        "maxTradeSzs": [
+          "635.404",
+          "635.404"
+        ],
+        "availableToTrade": [
+          "100000.0",
+          "100000.0"
+        ],
+        "markPx": "157.38"
+      },
+      "context": {
+        "funding": "-0.0000004396",
+        "openInterest": "290.482",
+        "prevDayPx": "148.99",
+        "dayNtlVlm": "231680.44318",
+        "premium": "-0.0004160579",
+        "oraclePx": "157.43",
+        "markPx": "157.38",
+        "midPx": "157.395",
+        "impactPxs": [
+          "157.269",
+          "157.46"
+        ],
+        "dayBaseVlm": "1483.261"
+      },
+      "observed_ms": 1792432801524,
+      "capacity": {
+        "symbol": "pas:EWY",
+        "liquidity_only_quantity": "0.317",
+        "liquidity_only_notional": "49.90848",
+        "economically_viable_notional": "0",
+        "authorized_executable_notional": "0",
+        "expected_net_pnl": null,
+        "expected_return_probability": null,
+        "decision": "OBSERVE",
+        "reasons": [
+          "SIGNAL_ECONOMIC_EVIDENCE_STALE",
+          "NO_CURRENT_QUALIFIED_FROZEN_LONG_SIGNAL",
+          "EMPIRICAL_EXPECTED_EDGE_NOT_ESTABLISHED",
+          "NATIVE_RESIDUAL_PROTECTION_UNQUALIFIED",
+          "NO_EXACT_SESSION_AUTHORITY"
+        ],
+        "observed_ms": 1792432801524,
+        "quantity_bounds": {
+          "entry_bbo": "0.317",
+          "exit_bbo": "0.317",
+          "entry_five_bps": "5.717",
+          "exit_five_bps": "0.317",
+          "account": "635.404",
+          "margin": "631.7511454406368213274334852",
+          "proposed_upper_cap": "63.51626016260162601626016260"
+        },
+        "spread_bps": "5.718097779472028971695415992",
+        "entry_capacity": "0.317",
+        "exit_capacity": "0.317",
+        "book_age_ms": 1285,
+        "fee_age_ms": 3150,
+        "funding_rate": "None",
+        "conditional_target_net": null,
+        "stressed_conditional_target_net": null
+      },
+      "native_protection_qualified": false,
+      "displayed_book_only_quantity": "0.317",
+      "displayed_book_only_notional": "49.90848",
+      "book_only_scope": "Both BBO and 5 bps caps, lot rounded; excludes account funding/leverage/risk/protection/approval",
+      "minimum_notional": "10",
+      "minimum_basis": "DOCUMENTED_ORDINARY_ORDER_POLICY; full-position exceptions are separately qualified"
+    },
+    {
+      "symbol": "pas:GOLD",
+      "spec": {
+        "symbol": "pas:GOLD",
+        "size_decimals": 4,
+        "max_leverage": 25,
+        "asset_id": 2810007,
+        "margin_tiers": [
+          [
+            "0",
+            25
+          ]
+        ]
+      },
+      "book": {
+        "symbol": "pas:GOLD",
+        "timestamp_ms": 1792432801313,
+        "bids": [
+          {
+            "price": "4147.9",
+            "quantity": "0.1205"
+          },
+          {
+            "price": "4147.0",
+            "quantity": "0.09"
+          },
+          {
+            "price": "4146.4",
+            "quantity": "0.2411"
+          },
+          {
+            "price": "4145.4",
+            "quantity": "0.6027"
+          },
+          {
+            "price": "4145.0",
+            "quantity": "0.241"
+          },
+          {
+            "price": "4143.9",
+            "quantity": "1.2056"
+          },
+          {
+            "price": "4143.7",
+            "quantity": "3.6163"
+          },
+          {
+            "price": "4143.5",
+            "quantity": "0.905"
+          },
+          {
+            "price": "4143.1",
+            "quantity": "8.4375"
+          },
+          {
+            "price": "4140.9",
+            "quantity": "12.0528"
+          },
+          {
+            "price": "4138.5",
+            "quantity": "1.8122"
+          },
+          {
+            "price": "4132.7",
+            "quantity": "3.6295"
+          },
+          {
+            "price": "4122.8",
+            "quantity": "5.4574"
+          },
+          {
+            "price": "4107.8",
+            "quantity": "7.3031"
+          },
+          {
+            "price": "4082.9",
+            "quantity": "8.2661"
+          },
+          {
+            "price": "4049.7",
+            "quantity": "9.2599"
+          },
+          {
+            "price": "3888.3",
+            "quantity": "0.003"
+          }
+        ],
+        "asks": [
+          {
+            "price": "4150.2",
+            "quantity": "0.1205"
+          },
+          {
+            "price": "4150.7",
+            "quantity": "0.8435"
+          },
+          {
+            "price": "4150.8",
+            "quantity": "0.241"
+          },
+          {
+            "price": "4151.7",
+            "quantity": "0.0546"
+          },
+          {
+            "price": "4152.0",
+            "quantity": "1.2052"
+          },
+          {
+            "price": "4152.1",
+            "quantity": "3.6163"
+          },
+          {
+            "price": "4152.3",
+            "quantity": "8.4392"
+          },
+          {
+            "price": "4153.4",
+            "quantity": "0.8916"
+          },
+          {
+            "price": "4156.2",
+            "quantity": "12.052"
+          },
+          {
+            "price": "4158.4",
+            "quantity": "1.7811"
+          },
+          {
+            "price": "4165.9",
+            "quantity": "3.5558"
+          },
+          {
+            "price": "4175.9",
+            "quantity": "5.321"
+          },
+          {
+            "price": "4190.8",
+            "quantity": "7.0694"
+          },
+          {
+            "price": "4215.7",
+            "quantity": "7.9061"
+          },
+          {
+            "price": "4248.9",
+            "quantity": "8.7159"
+          }
+        ],
+        "received_timestamp_ms": 1792432801814,
+        "processed_timestamp_ms": 1792432801814
+      },
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "pas:GOLD",
+        "leverage": {
+          "type": "cross",
+          "value": 20
+        },
+        "maxTradeSzs": [
+          "482.1019",
+          "482.1019"
+        ],
+        "availableToTrade": [
+          "100000.0",
+          "100000.0"
+        ],
+        "markPx": "4148.5"
+      },
+      "context": {
+        "funding": "0.00000625",
+        "openInterest": "6.7814",
+        "prevDayPx": "4168.4",
+        "dayNtlVlm": "30349.97277",
+        "premium": "-0.0000289275",
+        "oraclePx": "4148.3",
+        "markPx": "4148.3",
+        "midPx": "4148.15",
+        "impactPxs": [
+          "4145.56",
+          "4150.8"
+        ],
+        "dayBaseVlm": "7.2903"
+      },
+      "observed_ms": 1792432802026,
+      "capacity": {
+        "symbol": "pas:GOLD",
+        "liquidity_only_quantity": "0",
+        "liquidity_only_notional": "0",
+        "economically_viable_notional": "0",
+        "authorized_executable_notional": "0",
+        "expected_net_pnl": null,
+        "expected_return_probability": null,
+        "decision": "OBSERVE",
+        "reasons": [
+          "ONE_X_CROSS_REQUIRED"
+        ],
+        "observed_ms": 1792432802026
+      },
+      "native_protection_qualified": false,
+      "displayed_book_only_quantity": "0.0120",
+      "displayed_book_only_notional": "49.80240",
+      "book_only_scope": "Both BBO and 5 bps caps, lot rounded; excludes account funding/leverage/risk/protection/approval",
+      "minimum_notional": "10",
+      "minimum_basis": "DOCUMENTED_ORDINARY_ORDER_POLICY; full-position exceptions are separately qualified"
+    },
+    {
+      "symbol": "pas:HYPE",
+      "spec": {
+        "symbol": "pas:HYPE",
+        "size_decimals": 2,
+        "max_leverage": 10,
+        "asset_id": 2810002,
+        "margin_tiers": [
+          [
+            "0",
+            10
+          ]
+        ]
+      },
+      "book": {
+        "symbol": "pas:HYPE",
+        "timestamp_ms": 1792432801831,
+        "bids": [
+          {
+            "price": "78.01",
+            "quantity": "6.4"
+          },
+          {
+            "price": "77.97",
+            "quantity": "64.07"
+          },
+          {
+            "price": "77.95",
+            "quantity": "32.05"
+          },
+          {
+            "price": "77.92",
+            "quantity": "640.92"
+          },
+          {
+            "price": "77.88",
+            "quantity": "682.46"
+          },
+          {
+            "price": "77.869",
+            "quantity": "1.28"
+          },
+          {
+            "price": "77.835",
+            "quantity": "1.28"
+          },
+          {
+            "price": "77.756",
+            "quantity": "83.37"
+          },
+          {
+            "price": "77.657",
+            "quantity": "166.93"
+          },
+          {
+            "price": "77.47",
+            "quantity": "251.0"
+          },
+          {
+            "price": "77.157",
+            "quantity": "336.03"
+          },
+          {
+            "price": "76.689",
+            "quantity": "380.34"
+          },
+          {
+            "price": "75.908",
+            "quantity": "426.95"
+          }
+        ],
+        "asks": [
+          {
+            "price": "78.05",
+            "quantity": "6.4"
+          },
+          {
+            "price": "78.06",
+            "quantity": "32.04"
+          },
+          {
+            "price": "78.07",
+            "quantity": "64.1"
+          },
+          {
+            "price": "78.074",
+            "quantity": "1.28"
+          },
+          {
+            "price": "78.087",
+            "quantity": "12.81"
+          },
+          {
+            "price": "78.09",
+            "quantity": "192.3"
+          },
+          {
+            "price": "78.1",
+            "quantity": "448.71"
+          },
+          {
+            "price": "78.137",
+            "quantity": "8.64"
+          },
+          {
+            "price": "78.139",
+            "quantity": "1.27"
+          },
+          {
+            "price": "78.17",
+            "quantity": "640.85"
+          },
+          {
+            "price": "78.193",
+            "quantity": "47.95"
+          },
+          {
+            "price": "78.317",
+            "quantity": "95.76"
+          },
+          {
+            "price": "78.532",
+            "quantity": "191.0"
+          },
+          {
+            "price": "78.719",
+            "quantity": "285.82"
+          },
+          {
+            "price": "79.032",
+            "quantity": "379.59"
+          },
+          {
+            "price": "79.5",
+            "quantity": "424.52"
+          },
+          {
+            "price": "80.281",
+            "quantity": "467.1"
+          }
+        ],
+        "received_timestamp_ms": 1792432802344,
+        "processed_timestamp_ms": 1792432802344
+      },
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "pas:HYPE",
+        "leverage": {
+          "type": "cross",
+          "value": 10
+        },
+        "maxTradeSzs": [
+          "12812.29",
+          "12812.29"
+        ],
+        "availableToTrade": [
+          "100000.0",
+          "100000.0"
+        ],
+        "markPx": "78.05"
+      },
+      "context": {
+        "funding": "-0.0000686313",
+        "openInterest": "2541.94",
+        "prevDayPx": "76.627",
+        "dayNtlVlm": "244736.65574",
+        "premium": "-0.0011266884",
+        "oraclePx": "78.105",
+        "markPx": "78.05",
+        "midPx": "78.02",
+        "impactPxs": [
+          "77.9699",
+          "78.0641"
+        ],
+        "dayBaseVlm": "3101.02"
+      },
+      "observed_ms": 1792432802551,
+      "capacity": {
+        "symbol": "pas:HYPE",
+        "liquidity_only_quantity": "0",
+        "liquidity_only_notional": "0",
+        "economically_viable_notional": "0",
+        "authorized_executable_notional": "0",
+        "expected_net_pnl": null,
+        "expected_return_probability": null,
+        "decision": "OBSERVE",
+        "reasons": [
+          "ONE_X_CROSS_REQUIRED"
+        ],
+        "observed_ms": 1792432802551
+      },
+      "native_protection_qualified": false,
+      "displayed_book_only_quantity": "0.64",
+      "displayed_book_only_notional": "49.9520",
+      "book_only_scope": "Both BBO and 5 bps caps, lot rounded; excludes account funding/leverage/risk/protection/approval",
+      "minimum_notional": "10",
+      "minimum_basis": "DOCUMENTED_ORDINARY_ORDER_POLICY; full-position exceptions are separately qualified"
+    },
+    {
+      "symbol": "pas:SP500",
+      "spec": {
+        "symbol": "pas:SP500",
+        "size_decimals": 3,
+        "max_leverage": 50,
+        "asset_id": 2810003,
+        "margin_tiers": [
+          [
+            "0.0",
+            50
+          ]
+        ]
+      },
+      "book": {
+        "symbol": "pas:SP500",
+        "timestamp_ms": 1792432802343,
+        "bids": [
+          {
+            "price": "7678.4",
+            "quantity": "0.282"
+          },
+          {
+            "price": "7676.3",
+            "quantity": "0.3"
+          },
+          {
+            "price": "7675.3",
+            "quantity": "0.13"
+          },
+          {
+            "price": "7674.7",
+            "quantity": "0.6"
+          },
+          {
+            "price": "7673.2",
+            "quantity": "1.9"
+          },
+          {
+            "price": "7671.7",
+            "quantity": "4.5"
+          },
+          {
+            "price": "7670.6",
+            "quantity": "0.013"
+          },
+          {
+            "price": "7669.2",
+            "quantity": "0.561"
+          },
+          {
+            "price": "7663.9",
+            "quantity": "1.242"
+          },
+          {
+            "price": "7662.2",
+            "quantity": "6.5"
+          },
+          {
+            "price": "7645.4",
+            "quantity": "1.868"
+          },
+          {
+            "price": "7617.7",
+            "quantity": "2.5"
+          },
+          {
+            "price": "7571.5",
+            "quantity": "2.83"
+          },
+          {
+            "price": "7510.0",
+            "quantity": "3.17"
+          },
+          {
+            "price": "7358.7",
+            "quantity": "0.002"
+          }
+        ],
+        "asks": [
+          {
+            "price": "7682.2",
+            "quantity": "0.3"
+          },
+          {
+            "price": "7685.6",
+            "quantity": "0.13"
+          },
+          {
+            "price": "7685.7",
+            "quantity": "0.6"
+          },
+          {
+            "price": "7686.6",
+            "quantity": "0.13"
+          },
+          {
+            "price": "7688.9",
+            "quantity": "1.9"
+          },
+          {
+            "price": "7690.2",
+            "quantity": "4.5"
+          },
+          {
+            "price": "7693.4",
+            "quantity": "6.5"
+          },
+          {
+            "price": "7693.7",
+            "quantity": "0.012"
+          },
+          {
+            "price": "7696.8",
+            "quantity": "0.487"
+          },
+          {
+            "price": "7697.1",
+            "quantity": "0.151"
+          },
+          {
+            "price": "7706.1",
+            "quantity": "0.973"
+          },
+          {
+            "price": "7725.4",
+            "quantity": "1.941"
+          },
+          {
+            "price": "7743.9",
+            "quantity": "2.905"
+          },
+          {
+            "price": "7771.6",
+            "quantity": "3.86"
+          },
+          {
+            "price": "7817.8",
+            "quantity": "4.317"
+          },
+          {
+            "price": "7879.3",
+            "quantity": "4.759"
+          }
+        ],
+        "received_timestamp_ms": 1792432802719,
+        "processed_timestamp_ms": 1792432802719
+      },
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "pas:SP500",
+        "leverage": {
+          "type": "cross",
+          "value": 20
+        },
+        "maxTradeSzs": [
+          "260.362",
+          "260.362"
+        ],
+        "availableToTrade": [
+          "100000.0",
+          "100000.0"
+        ],
+        "markPx": "7681.6"
+      },
+      "context": {
+        "funding": "-0.0001146155",
+        "openInterest": "63.192",
+        "prevDayPx": "7610.4",
+        "dayNtlVlm": "232555.8381",
+        "premium": "-0.0023741362",
+        "oraclePx": "7698.8",
+        "markPx": "7681.6",
+        "midPx": "7680.3",
+        "impactPxs": [
+          "7676.707",
+          "7684.337"
+        ],
+        "dayBaseVlm": "30.265"
+      },
+      "observed_ms": 1792432803076,
+      "capacity": {
+        "symbol": "pas:SP500",
+        "liquidity_only_quantity": "0",
+        "liquidity_only_notional": "0",
+        "economically_viable_notional": "0",
+        "authorized_executable_notional": "0",
+        "expected_net_pnl": null,
+        "expected_return_probability": null,
+        "decision": "OBSERVE",
+        "reasons": [
+          "ONE_X_CROSS_REQUIRED"
+        ],
+        "observed_ms": 1792432803076
+      },
+      "native_protection_qualified": false,
+      "displayed_book_only_quantity": "0.028",
+      "displayed_book_only_notional": "215.1016",
+      "book_only_scope": "Both BBO and 5 bps caps, lot rounded; excludes account funding/leverage/risk/protection/approval",
+      "minimum_notional": "10",
+      "minimum_basis": "DOCUMENTED_ORDINARY_ORDER_POLICY; full-position exceptions are separately qualified"
+    },
+    {
+      "symbol": "pas:USDEUR",
+      "spec": {
+        "symbol": "pas:USDEUR",
+        "size_decimals": 1,
+        "max_leverage": 50,
+        "asset_id": 2810008,
+        "margin_tiers": [
+          [
+            "0.0",
+            50
+          ]
+        ]
+      },
+      "book": {
+        "symbol": "pas:USDEUR",
+        "timestamp_ms": 1792432802861,
+        "bids": [
+          {
+            "price": "1.1216",
+            "quantity": "267.2"
+          },
+          {
+            "price": "1.1215",
+            "quantity": "445.0"
+          },
+          {
+            "price": "1.1214",
+            "quantity": "2227.0"
+          },
+          {
+            "price": "1.1211",
+            "quantity": "5347.3"
+          },
+          {
+            "price": "1.121",
+            "quantity": "884.3"
+          },
+          {
+            "price": "1.1208",
+            "quantity": "3345.8"
+          },
+          {
+            "price": "1.1207",
+            "quantity": "31191.0"
+          },
+          {
+            "price": "1.1205",
+            "quantity": "13373.0"
+          },
+          {
+            "price": "1.1202",
+            "quantity": "89.2"
+          },
+          {
+            "price": "1.1195",
+            "quantity": "51280.4"
+          },
+          {
+            "price": "1.1169",
+            "quantity": "20145.0"
+          },
+          {
+            "price": "1.1142",
+            "quantity": "20193.8"
+          },
+          {
+            "price": "1.1102",
+            "quantity": "27022.1"
+          },
+          {
+            "price": "1.1034",
+            "quantity": "30587.2"
+          },
+          {
+            "price": "1.0945",
+            "quantity": "34262.2"
+          },
+          {
+            "price": "1.0566",
+            "quantity": "10.9"
+          }
+        ],
+        "asks": [
+          {
+            "price": "1.1223",
+            "quantity": "1336.0"
+          },
+          {
+            "price": "1.1227",
+            "quantity": "891.3"
+          },
+          {
+            "price": "1.1228",
+            "quantity": "2244.8"
+          },
+          {
+            "price": "1.1229",
+            "quantity": "13372.0"
+          },
+          {
+            "price": "1.123",
+            "quantity": "4456.0"
+          },
+          {
+            "price": "1.1235",
+            "quantity": "34884.9"
+          },
+          {
+            "price": "1.1239",
+            "quantity": "44571.0"
+          },
+          {
+            "price": "1.1249",
+            "quantity": "6667.2"
+          },
+          {
+            "price": "1.1259",
+            "quantity": "13322.6"
+          },
+          {
+            "price": "1.1285",
+            "quantity": "19937.9"
+          },
+          {
+            "price": "1.1326",
+            "quantity": "26487.7"
+          },
+          {
+            "price": "1.1393",
+            "quantity": "29623.4"
+          },
+          {
+            "price": "1.1483",
+            "quantity": "32656.9"
+          }
+        ],
+        "received_timestamp_ms": 1792432803243,
+        "processed_timestamp_ms": 1792432803243
+      },
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "pas:USDEUR",
+        "leverage": {
+          "type": "cross",
+          "value": 20
+        },
+        "maxTradeSzs": [
+          "1782531.1000000001",
+          "1782531.1000000001"
+        ],
+        "availableToTrade": [
+          "100000.0",
+          "100000.0"
+        ],
+        "markPx": "1.122"
+      },
+      "context": {
+        "funding": "-0.0000100431",
+        "openInterest": "25876.4",
+        "prevDayPx": "1.1234",
+        "dayNtlVlm": "20999.2887",
+        "premium": "-0.0003786529",
+        "oraclePx": "1.1224",
+        "markPx": "1.122",
+        "midPx": "1.12195",
+        "impactPxs": [
+          "1.12128",
+          "1.12267"
+        ],
+        "dayBaseVlm": "18710.8"
+      },
+      "observed_ms": 1792432803415,
+      "capacity": {
+        "symbol": "pas:USDEUR",
+        "liquidity_only_quantity": "0",
+        "liquidity_only_notional": "0",
+        "economically_viable_notional": "0",
+        "authorized_executable_notional": "0",
+        "expected_net_pnl": null,
+        "expected_return_probability": null,
+        "decision": "OBSERVE",
+        "reasons": [
+          "ONE_X_CROSS_REQUIRED"
+        ],
+        "observed_ms": 1792432803415
+      },
+      "native_protection_qualified": false,
+      "displayed_book_only_quantity": "26.7",
+      "displayed_book_only_notional": "29.96541",
+      "book_only_scope": "Both BBO and 5 bps caps, lot rounded; excludes account funding/leverage/risk/protection/approval",
+      "minimum_notional": "10",
+      "minimum_basis": "DOCUMENTED_ORDINARY_ORDER_POLICY; full-position exceptions are separately qualified"
+    },
+    {
+      "symbol": "pas:USDJPY",
+      "spec": {
+        "symbol": "pas:USDJPY",
+        "size_decimals": 2,
+        "max_leverage": 50,
+        "asset_id": 2810009,
+        "margin_tiers": [
+          [
+            "0.0",
+            50
+          ]
+        ]
+      },
+      "book": {
+        "symbol": "pas:USDJPY",
+        "timestamp_ms": 1792432802861,
+        "bids": [
+          {
+            "price": "158.46",
+            "quantity": "23.66"
+          },
+          {
+            "price": "158.44",
+            "quantity": "3.15"
+          },
+          {
+            "price": "158.38",
+            "quantity": "6.31"
+          },
+          {
+            "price": "158.37",
+            "quantity": "31.54"
+          },
+          {
+            "price": "158.35",
+            "quantity": "110.51"
+          },
+          {
+            "price": "158.33",
+            "quantity": "220.77"
+          },
+          {
+            "price": "158.27",
+            "quantity": "47.38"
+          },
+          {
+            "price": "158.19",
+            "quantity": "315.48"
+          },
+          {
+            "price": "157.8",
+            "quantity": "95.05"
+          },
+          {
+            "price": "157.42",
+            "quantity": "142.92"
+          },
+          {
+            "price": "156.85",
+            "quantity": "191.26"
+          },
+          {
+            "price": "155.9",
+            "quantity": "216.48"
+          },
+          {
+            "price": "154.63",
+            "quantity": "242.51"
+          },
+          {
+            "price": "150.82",
+            "quantity": "0.08"
+          }
+        ],
+        "asks": [
+          {
+            "price": "158.54",
+            "quantity": "9.45"
+          },
+          {
+            "price": "158.61",
+            "quantity": "15.77"
+          },
+          {
+            "price": "158.64",
+            "quantity": "31.54"
+          },
+          {
+            "price": "158.68",
+            "quantity": "94.62"
+          },
+          {
+            "price": "158.71",
+            "quantity": "220.8"
+          },
+          {
+            "price": "158.77",
+            "quantity": "315.48"
+          },
+          {
+            "price": "158.84",
+            "quantity": "13.22"
+          },
+          {
+            "price": "159.03",
+            "quantity": "26.42"
+          },
+          {
+            "price": "159.07",
+            "quantity": "52.89"
+          },
+          {
+            "price": "159.45",
+            "quantity": "79.16"
+          },
+          {
+            "price": "160.02",
+            "quantity": "105.17"
+          },
+          {
+            "price": "160.97",
+            "quantity": "117.61"
+          },
+          {
+            "price": "162.24",
+            "quantity": "129.66"
+          }
+        ],
+        "received_timestamp_ms": 1792432803600,
+        "processed_timestamp_ms": 1792432803600
+      },
+      "active_asset": {
+        "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+        "coin": "pas:USDJPY",
+        "leverage": {
+          "type": "cross",
+          "value": 20
+        },
+        "maxTradeSzs": [
+          "12618.29",
+          "12618.29"
+        ],
+        "availableToTrade": [
+          "100000.0",
+          "100000.0"
+        ],
+        "markPx": "158.5"
+      },
+      "context": {
+        "funding": "0.0000328434",
+        "openInterest": "2514.76",
+        "prevDayPx": "158.35",
+        "dayNtlVlm": "92398.0308",
+        "premium": "0.0005876783",
+        "oraclePx": "158.42",
+        "markPx": "158.5",
+        "midPx": "158.5",
+        "impactPxs": [
+          "158.4337",
+          "158.5925"
+        ],
+        "dayBaseVlm": "583.08"
+      },
+      "observed_ms": 1792432803777,
+      "capacity": {
+        "symbol": "pas:USDJPY",
+        "liquidity_only_quantity": "0",
+        "liquidity_only_notional": "0",
+        "economically_viable_notional": "0",
+        "authorized_executable_notional": "0",
+        "expected_net_pnl": null,
+        "expected_return_probability": null,
+        "decision": "OBSERVE",
+        "reasons": [
+          "ONE_X_CROSS_REQUIRED"
+        ],
+        "observed_ms": 1792432803777
+      },
+      "native_protection_qualified": false,
+      "displayed_book_only_quantity": "0.94",
+      "displayed_book_only_notional": "149.0276",
+      "book_only_scope": "Both BBO and 5 bps caps, lot rounded; excludes account funding/leverage/risk/protection/approval",
+      "minimum_notional": "10",
+      "minimum_basis": "DOCUMENTED_ORDINARY_ORDER_POLICY; full-position exceptions are separately qualified"
+    }
+  ],
+  "errors": [],
+  "dex_index": 271,
+  "collateral_token": 3307,
+  "metadata": {
+    "universe": [
+      {
+        "szDecimals": 5,
+        "name": "pas:BTC",
+        "maxLeverage": 40,
+        "marginTableId": 40,
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 4,
+        "name": "pas:ETH",
+        "maxLeverage": 25,
+        "marginTableId": 25,
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 2,
+        "name": "pas:HYPE",
+        "maxLeverage": 10,
+        "marginTableId": 10,
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 3,
+        "name": "pas:SP500",
+        "maxLeverage": 50,
+        "marginTableId": 50,
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 3,
+        "name": "pas:EWY",
+        "maxLeverage": 20,
+        "marginTableId": 20,
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 3,
+        "name": "pas:EWJ",
+        "maxLeverage": 20,
+        "marginTableId": 20,
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 2,
+        "name": "pas:BRENT",
+        "maxLeverage": 20,
+        "marginTableId": 20,
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 4,
+        "name": "pas:GOLD",
+        "maxLeverage": 25,
+        "marginTableId": 25,
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 1,
+        "name": "pas:USDEUR",
+        "maxLeverage": 50,
+        "marginTableId": 50,
+        "deployerFeeScale": "1.0"
+      },
+      {
+        "szDecimals": 2,
+        "name": "pas:USDJPY",
+        "maxLeverage": 50,
+        "marginTableId": 50,
+        "deployerFeeScale": "1.0"
+      }
+    ],
+    "marginTables": [
+      [
+        50,
+        {
+          "description": "",
+          "marginTiers": [
+            {
+              "lowerBound": "0.0",
+              "maxLeverage": 50
+            }
+          ]
+        }
+      ]
+    ],
+    "collateralToken": 3307
+  },
+  "deployment": {
+    "name": "pas",
+    "fullName": "Perpetual Alpha",
+    "deployer": "0xa89c67454b8791bcebd3bb6802c085feb4ba0e25",
+    "oracleUpdater": "0xa89c67454b8791bcebd3bb6802c085feb4ba0e25",
+    "feeRecipient": null,
+    "assetToStreamingOiCap": [
+      [
+        "pas:BRENT",
+        "10000000.0"
+      ],
+      [
+        "pas:BTC",
+        "10000000.0"
+      ],
+      [
+        "pas:ETH",
+        "10000000.0"
+      ],
+      [
+        "pas:EWJ",
+        "10000000.0"
+      ],
+      [
+        "pas:EWY",
+        "10000000.0"
+      ],
+      [
+        "pas:GOLD",
+        "10000000.0"
+      ],
+      [
+        "pas:HYPE",
+        "10000000.0"
+      ],
+      [
+        "pas:SP500",
+        "10000000.0"
+      ],
+      [
+        "pas:USDEUR",
+        "10000000.0"
+      ],
+      [
+        "pas:USDJPY",
+        "10000000.0"
+      ]
+    ],
+    "subDeployers": [
+      [
+        "setOracle",
+        [
+          "0x289e13791248647d51b3ad2d2bd280809eddf825",
+          "0xa49cc79ad968130a1b60bd9012a10110870e987e",
+          "0xa89c67454b8791bcebd3bb6802c085feb4ba0e25"
+        ]
+      ]
+    ],
+    "assetToFundingMultiplier": [
+      [
+        "pas:BRENT",
+        "0.5"
+      ],
+      [
+        "pas:EWJ",
+        "0.5"
+      ],
+      [
+        "pas:EWY",
+        "0.5"
+      ],
+      [
+        "pas:GOLD",
+        "0.5"
+      ],
+      [
+        "pas:SP500",
+        "0.5"
+      ],
+      [
+        "pas:USDEUR",
+        "0.5"
+      ],
+      [
+        "pas:USDJPY",
+        "0.5"
+      ]
+    ],
+    "assetToFundingInterestRate": [
+      [
+        "pas:USDEUR",
+        "0.0"
+      ],
+      [
+        "pas:USDJPY",
+        "0.0"
+      ]
+    ],
+    "assetToFundingClamp": [
+      [
+        "pas:BTC",
+        "0.0005"
+      ],
+      [
+        "pas:ETH",
+        "0.0005"
+      ],
+      [
+        "pas:HYPE",
+        "0.0005"
+      ]
+    ]
+  },
+  "account_mode": "unifiedAccount",
+  "funding": {
+    "status": "USDP_POSITIVE_VERIFIED",
+    "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+    "network": "testnet",
+    "dex": "pas",
+    "collateral": "USDP",
+    "account_mode": "unifiedAccount",
+    "token": 3307,
+    "observed_ms": 1792432797318,
+    "exchange_time_ms": 1792432797522,
+    "balance": "100000.0",
+    "age_ms": 527,
+    "organizer_credit_amount": null,
+    "organizer_credit_provenance": "UNKNOWN",
+    "signing_authority": "NONE",
+    "reasons": [],
+    "response_hashes": {
+      "spot": "1b53cc1b5d50cbc4d32da7b9a35a0374cce3d4807876bfad58e272e368e811df",
+      "state": "33f80f2b34ff0d831fb0a86c114532c48bf2060f9f12cfef0f4289c5ccc27d98"
+    },
+    "provenance": "docs/activation_v6_3_2026-10-19/qualification_test/fresh_discovery/info_receipts.jsonl",
+    "equity_basis": "Unified USDP total once; no addition of per-DEX equity or unrealized PnL",
+    "evidence_hash": "ab46d851f47bf5fdd754d225001edf88b44326ea2f15d59972ebbaa381b7cf23"
+  },
+  "market_status": {
+    "exchange": {
+      "specialStatuses": null,
+      "time": 1792432797727
+    },
+    "dex_status": {
+      "totalNetDeposit": "200371659.8668009937"
+    },
+    "observed_ms": 1792432798204,
+    "limitation": "perpDexStatus reports deposits, not a market-open flag; phase permission, metadata and executable books are independent gates"
+  },
+  "user_fees": {
+    "dailyUserVlm": [
+      {
+        "date": "2026-10-05",
+        "userCross": "0.0",
+        "userAdd": "0.0",
+        "exchange": "4295368.6500000004"
+      },
+      {
+        "date": "2026-10-06",
+        "userCross": "0.0",
+        "userAdd": "0.0",
+        "exchange": "5789290.3600000003"
+      },
+      {
+        "date": "2026-10-07",
+        "userCross": "0.0",
+        "userAdd": "0.0",
+        "exchange": "5814031.0899999999"
+      },
+      {
+        "date": "2026-10-08",
+        "userCross": "0.0",
+        "userAdd": "0.0",
+        "exchange": "5803798.0599999996"
+      },
+      {
+        "date": "2026-10-09",
+        "userCross": "0.0",
+        "userAdd": "0.0",
+        "exchange": "16694743.0800000001"
+      },
+      {
+        "date": "2026-10-10",
+        "userCross": "0.0",
+        "userAdd": "0.0",
+        "exchange": "2682872.8100000001"
+      },
+      {
+        "date": "2026-10-11",
+        "userCross": "0.0",
+        "userAdd": "0.0",
+        "exchange": "2604769.8799999999"
+      },
+      {
+        "date": "2026-10-12",
+        "userCross": "0.0",
+        "userAdd": "0.0",
+        "exchange": "3546292.6699999999"
+      },
+      {
+        "date": "2026-10-13",
+        "userCross": "0.0",
+        "userAdd": "0.0",
+        "exchange": "4917761.7999999998"
+      },
+      {
+        "date": "2026-10-14",
+        "userCross": "0.0",
+        "userAdd": "0.0",
+        "exchange": "5397160.9699999997"
+      },
+      {
+        "date": "2026-10-15",
+        "userCross": "0.0",
+        "userAdd": "0.0",
+        "exchange": "5335671.54"
+      },
+      {
+        "date": "2026-10-16",
+        "userCross": "0.0",
+        "userAdd": "0.0",
+        "exchange": "7095919.0300000003"
+      },
+      {
+        "date": "2026-10-17",
+        "userCross": "0.0",
+        "userAdd": "0.0",
+        "exchange": "3178917.6699999999"
+      },
+      {
+        "date": "2026-10-18",
+        "userCross": "0.0",
+        "userAdd": "0.0",
+        "exchange": "3275301.4500000002"
+      },
+      {
+        "date": "2026-10-19",
+        "userCross": "0.0",
+        "userAdd": "0.0",
+        "exchange": "5279638.7599999998"
+      }
+    ],
+    "feeSchedule": {
+      "cross": "0.00045",
+      "add": "0.00015",
+      "spotCross": "0.0007",
+      "spotAdd": "0.0004",
+      "tiers": {
+        "vip": [
+          {
+            "ntlCutoff": "5000000.0",
+            "cross": "0.0004",
+            "add": "0.00012",
+            "spotCross": "0.0006",
+            "spotAdd": "0.0003"
+          },
+          {
+            "ntlCutoff": "25000000.0",
+            "cross": "0.00035",
+            "add": "0.00008",
+            "spotCross": "0.0005",
+            "spotAdd": "0.0002"
+          },
+          {
+            "ntlCutoff": "100000000.0",
+            "cross": "0.0003",
+            "add": "0.00004",
+            "spotCross": "0.0004",
+            "spotAdd": "0.0001"
+          },
+          {
+            "ntlCutoff": "500000000.0",
+            "cross": "0.00028",
+            "add": "0.0",
+            "spotCross": "0.00035",
+            "spotAdd": "0.0"
+          },
+          {
+            "ntlCutoff": "2000000000.0",
+            "cross": "0.00026",
+            "add": "0.0",
+            "spotCross": "0.0003",
+            "spotAdd": "0.0"
+          },
+          {
+            "ntlCutoff": "7000000000.0",
+            "cross": "0.00024",
+            "add": "0.0",
+            "spotCross": "0.00025",
+            "spotAdd": "0.0"
+          }
+        ],
+        "mm": [
+          {
+            "makerFractionCutoff": "0.005",
+            "add": "-0.00001"
+          },
+          {
+            "makerFractionCutoff": "0.015",
+            "add": "-0.00002"
+          },
+          {
+            "makerFractionCutoff": "0.03",
+            "add": "-0.00003"
+          }
+        ]
+      },
+      "referralDiscount": "0.04",
+      "stakingDiscountTiers": [
+        {
+          "bpsOfMaxSupply": "0.0",
+          "discount": "0.0"
+        },
+        {
+          "bpsOfMaxSupply": "0.0001",
+          "discount": "0.05"
+        },
+        {
+          "bpsOfMaxSupply": "0.001",
+          "discount": "0.1"
+        },
+        {
+          "bpsOfMaxSupply": "0.01",
+          "discount": "0.15"
+        },
+        {
+          "bpsOfMaxSupply": "0.1",
+          "discount": "0.2"
+        },
+        {
+          "bpsOfMaxSupply": "1.0",
+          "discount": "0.3"
+        },
+        {
+          "bpsOfMaxSupply": "5.0",
+          "discount": "0.4"
+        }
+      ]
+    },
+    "userCrossRate": "0.00045",
+    "userAddRate": "0.00015",
+    "userSpotCrossRate": "0.0007",
+    "userSpotAddRate": "0.0004",
+    "activeReferralDiscount": "0.0",
+    "trial": null,
+    "feeTrialEscrow": "0.0",
+    "nextTrialAvailableTimestamp": null,
+    "stakingLink": null,
+    "activeStakingDiscount": {
+      "bpsOfMaxSupply": "0.0",
+      "discount": "0.0"
+    }
+  },
+  "fee_rate_bound": "0.00270",
+  "fee_basis": "UNCHANGED_CONSERVATIVE_6X_BASE; actual fills govern charges",
+  "agents": [
+    {
+      "name": "anchorium-bot-1",
+      "address": "0x46c9bed595770150752e7fa3806449f81e0ec6f9",
+      "validUntil": 1806859924898
+    }
+  ],
+  "account_rate": {
+    "cumVlm": "32.68",
+    "nRequestsUsed": 17,
+    "nRequestsCap": 10032,
+    "nRequestsSurplus": 0
+  },
+  "local_execution_state": {
+    "status": "BLOCKED_UNRESOLVED_INTENT",
+    "unresolved": [
+      {
+        "journal": "qualification",
+        "cloid": "0xac0eea156fcec80986dd67c9057b6ded",
+        "state": "UNKNOWN",
+        "intent_key": "certification:59445fe546d38a96e486140fda781d09ae8a0942f93a3614fa8abcbc34f5e7ea:entry"
+      }
+    ],
+    "native_protection": "UNQUALIFIED",
+    "signing_authority": "NONE",
+    "dispatch_evidence": []
+  },
+  "terminal_readbacks": [
+    {
+      "observed_ms": 1792432806403,
+      "ready": true,
+      "positions": [],
+      "orders": [],
+      "team": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+      "source": "EXCHANGE_DIRECT_TESTNET_PAS_INFO"
+    },
+    {
+      "observed_ms": 1792432808732,
+      "ready": true,
+      "positions": [],
+      "orders": [],
+      "team": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+      "source": "EXCHANGE_DIRECT_TESTNET_PAS_INFO"
+    }
+  ],
+  "terminal_recovery_steps": [
+    {
+      "phase": "ACCOUNT_HISTORY_1",
+      "start_ms": 0,
+      "known_history_overlap": false,
+      "observed_ms": 1792432803781
+    },
+    {
+      "phase": "ACCOUNT_HISTORY_2",
+      "start_ms": 1792432744126,
+      "known_history_overlap": true,
+      "observed_ms": 1792432806403
+    }
+  ],
+  "terminal_recovery_started_ms": 1792432803781,
+  "terminal_recovery_timeout_seconds": 180,
+  "terminal_recovery_order_actions": 0,
+  "terminal_flat": true,
+  "account_status": "FLAT_VERIFIED",
+  "residual_status": "FLAT_VERIFIED",
+  "account": {
+    "source": "EXCHANGE_REPORTED_ACCOUNT_OBSERVER",
+    "exchange_orders_submitted": 0,
+    "entries_paused": false,
+    "reasons": [],
+    "positions": [],
+    "open_orders": [],
+    "fills": [],
+    "funding_events": [],
+    "reported_account_equity": {
+      "reported_account_value": "100000.0",
+      "collateral_balance": "100000.0",
+      "margin_used": "0",
+      "withdrawable": null,
+      "valuation_source": "spotClearinghouseState.USDP.total"
+    },
+    "accounting_window_ms": [
+      0,
+      1792432806753
+    ],
+    "latest_query_window_ms": [
+      1792432744126,
+      1792432806753
+    ],
+    "realized": {
+      "gross_closed_pnl": "0",
+      "actual_fill_fees": "0",
+      "actual_funding_cashflow": "0",
+      "net_after_fees_and_funding": "0",
+      "scope": "ONLY_OBSERVED_ACCOUNT_EVENTS; excludes deposits/transfers and unknown historical events"
+    },
+    "corrections": [
+      {
+        "kind": "EXCHANGE_TRUTH_ADOPTED",
+        "timestamp_ms": 1792432805697,
+        "differences": {},
+        "new_fill_count": 0,
+        "reasons": [],
+        "exchange_ts": null,
+        "received_ts": "2026-10-19T18:00:05.697+00:00",
+        "processed_ts": "2026-10-19T18:00:05.697+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      {
+        "kind": "EXCHANGE_TRUTH_ADOPTED",
+        "timestamp_ms": 1792432807968,
+        "differences": {},
+        "new_fill_count": 0,
+        "reasons": [],
+        "exchange_ts": null,
+        "received_ts": "2026-10-19T18:00:07.968+00:00",
+        "processed_ts": "2026-10-19T18:00:07.968+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      }
+    ]
+  },
+  "account_observed_ms": 1792432808732,
+  "terminal_recovery_finished_ms": 1792432808732,
+  "rate_report": {
+    "state": "HEALTHY",
+    "policy": {
+      "ip_weight_per_minute": 1200,
+      "ip_safety_reserve": 120,
+      "daily_actions": 50000,
+      "daily_safety_reserve": 500,
+      "account_action_reserve": 10,
+      "max_open_orders": 1000,
+      "max_ws_connections": 10,
+      "max_ws_subscriptions": 1000,
+      "max_ws_unique_users": 10,
+      "venue_ws_connections_per_minute": 30,
+      "max_ws_messages_per_minute": 2000,
+      "ws_reconnects_per_minute": 5,
+      "budget_max_age_ms": 60000,
+      "optional_poll_interval_ms": 5000,
+      "read_retry_attempts": 3,
+      "backoff_base_ms": 1000,
+      "backoff_max_ms": 30000,
+      "exhausted_safety_action_interval_ms": 10000,
+      "caution_fraction": 0.75,
+      "throttle_fraction": 0.9
+    },
+    "ip_weight": 732,
+    "public_read_blocked": false,
+    "account_requests_used": 17,
+    "account_requests_cap": 10032,
+    "remaining_budget": 10015,
+    "budget_observed_ms": 1792432798723,
+    "daily_actions": 0,
+    "daily_limit": 50000,
+    "entries_allowed": true,
+    "open_orders": 0,
+    "backoff_until_ms": 0,
+    "websocket": {
+      "connections": 0,
+      "subscriptions": 0,
+      "outgoing_messages": 0,
+      "heartbeats": 0,
+      "reconnects_last_minute": 0
+    },
+    "public_reads": {
+      "upstream_by_operation": {
+        "perpDexs": 1,
+        "meta": 1,
+        "spotMeta": 1,
+        "userAbstraction": 4,
+        "spotClearinghouseState": 3,
+        "clearinghouseState": 11,
+        "exchangeStatus": 1,
+        "perpDexStatus": 1,
+        "userFees": 1,
+        "extraAgents": 1,
+        "userRateLimit": 1,
+        "metaAndAssetCtxs": 2,
+        "l2Book": 11,
+        "activeAssetData": 11,
+        "openOrders": 4,
+        "userFillsByTime": 2,
+        "userFunding": 2,
+        "frontendOpenOrders": 2
+      },
+      "failures": {},
+      "pending": 0,
+      "coalesced": 0,
+      "max_seconds": 1.202573707792908,
+      "failure_details": []
+    }
+  },
+  "qualification_market": {
+    "symbol": "pas:BTC",
+    "spec": {
+      "symbol": "pas:BTC",
+      "size_decimals": 5,
+      "max_leverage": 40,
+      "asset_id": 2810000,
+      "margin_tiers": [
+        [
+          "0",
+          40
+        ]
+      ]
+    },
+    "book": {
+      "symbol": "pas:BTC",
+      "timestamp_ms": 1792432809080,
+      "bids": [
+        {
+          "price": "81807.0",
+          "quantity": "0.0061"
+        },
+        {
+          "price": "81787.0",
+          "quantity": "0.01221"
+        },
+        {
+          "price": "81785.0",
+          "quantity": "0.0305"
+        },
+        {
+          "price": "81782.0",
+          "quantity": "0.00039"
+        },
+        {
+          "price": "81752.0",
+          "quantity": "0.00122"
+        },
+        {
+          "price": "81739.0",
+          "quantity": "0.4887"
+        },
+        {
+          "price": "81734.0",
+          "quantity": "0.1833"
+        },
+        {
+          "price": "81726.0",
+          "quantity": "0.03189"
+        },
+        {
+          "price": "81688.0",
+          "quantity": "0.00122"
+        },
+        {
+          "price": "81665.0",
+          "quantity": "0.6111"
+        },
+        {
+          "price": "81628.0",
+          "quantity": "0.06386"
+        },
+        {
+          "price": "81414.0",
+          "quantity": "0.12812"
+        },
+        {
+          "price": "81218.0",
+          "quantity": "0.19265"
+        },
+        {
+          "price": "80924.0",
+          "quantity": "0.2578"
+        },
+        {
+          "price": "80433.0",
+          "quantity": "0.29179"
+        },
+        {
+          "price": "79779.0",
+          "quantity": "0.32687"
+        },
+        {
+          "price": "77818.0",
+          "quantity": "0.00015"
+        }
+      ],
+      "asks": [
+        {
+          "price": "81857.0",
+          "quantity": "0.0061"
+        },
+        {
+          "price": "81872.0",
+          "quantity": "0.00122"
+        },
+        {
+          "price": "81884.0",
+          "quantity": "0.0305"
+        },
+        {
+          "price": "81895.0",
+          "quantity": "0.1833"
+        },
+        {
+          "price": "81904.0",
+          "quantity": "0.4888"
+        },
+        {
+          "price": "81905.0",
+          "quantity": "0.01221"
+        },
+        {
+          "price": "81922.0",
+          "quantity": "0.04577"
+        },
+        {
+          "price": "81960.0",
+          "quantity": "0.0039"
+        },
+        {
+          "price": "81973.0",
+          "quantity": "0.611"
+        },
+        {
+          "price": "81998.0",
+          "quantity": "0.00121"
+        },
+        {
+          "price": "82021.0",
+          "quantity": "0.09143"
+        },
+        {
+          "price": "82068.0",
+          "quantity": "0.18277"
+        },
+        {
+          "price": "82264.0",
+          "quantity": "0.2735"
+        },
+        {
+          "price": "82558.0",
+          "quantity": "0.36338"
+        },
+        {
+          "price": "83049.0",
+          "quantity": "0.40638"
+        },
+        {
+          "price": "83703.0",
+          "quantity": "0.44801"
+        }
+      ],
+      "received_timestamp_ms": 1792432809564,
+      "processed_timestamp_ms": 1792432809564
+    },
+    "context": {
+      "funding": "-0.0000822138",
+      "openInterest": "4.18594",
+      "prevDayPx": "80630.0",
+      "dayNtlVlm": "178331.75051",
+      "premium": "-0.0011900839",
+      "oraclePx": "81927.0",
+      "markPx": "81839.0",
+      "midPx": "81832.0",
+      "impactPxs": [
+        "81772.2",
+        "81886.8"
+      ],
+      "dayBaseVlm": "2.17074"
+    },
+    "context_ms": 1792432809066,
+    "active_asset": {
+      "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+      "coin": "pas:BTC",
+      "leverage": {
+        "type": "cross",
+        "value": 1
+      },
+      "maxTradeSzs": [
+        "1.22191",
+        "1.22191"
+      ],
+      "availableToTrade": [
+        "100000.0",
+        "100000.0"
+      ],
+      "markPx": "81839.0"
+    },
+    "active_ms": 1792432809400,
+    "observed_ms": 1792432809564,
+    "displayed_book_only_quantity": "0.00061",
+    "displayed_book_only_notional": "49.932770",
+    "snapshot_role": "FINAL_TARGETED_PUBLIC_PROPOSAL_OBSERVATION"
+  },
+  "finished_ms": 1792432809565,
+  "source_hash_after": "f7c06578501f703e7c5bd6402060cb83714e15b0acb73a9fbe41b3af77c94840",
+  "journal_integrity": "ok",
+  "configuration_plan": {
+    "status": "UNSIGNED_CONFIGURATION_PLAN_ONLY",
+    "network": "testnet",
+    "dex": "pas",
+    "collateral": "USDP",
+    "source_hash": "f7c06578501f703e7c5bd6402060cb83714e15b0acb73a9fbe41b3af77c94840",
+    "observed_ms": 1792432809565,
+    "entry_markets": [
+      "pas:BTC",
+      "pas:EWY"
+    ],
+    "account_reconciliation_scope": "ALL_CANONICAL_PAS_MARKETS",
+    "policy_basis": "V4 BTC/EWY entries only; leverage is per market, not an all-ten venue obligation",
+    "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+    "discovery_hash": "3004dee5f52d1009130ac10b9b2e149dc373387bdca92054c6f99c5e02d8c538",
+    "changes": [],
+    "already_one_x_cross": [
+      "pas:BTC",
+      "pas:EWY"
+    ],
+    "collateral_balance": "100000.0",
+    "organizer_credit_amount": null,
+    "organizer_credit_status": "ORIGINAL_ORGANIZER_CREDIT_RECORD_REQUIRED; balance is not funding provenance",
+    "blockers": [
+      "SHARED_UNKNOWN_AND_CONSUMED_INVOCATION_REVIEW_REQUIRED",
+      "REGISTERED_TEAM_ORGANIZER_RECORD_REQUIRED"
+    ],
+    "signing_authority": "NONE",
+    "signatures_created": 0,
+    "exchange_writes": 0,
+    "transfers_allowed": false,
+    "configuration_approval_created": false,
+    "required_before_execution": [
+      "Fresh funded Unified account/agent/identity checks",
+      "Prior UNKNOWN/invocation review",
+      "Exact new configuration-only approval",
+      "Shared sole host/signer/nonce ownership",
+      "Per-action exact permit and durable uncertainty",
+      "Fresh readback of every requested 1x CROSS value"
+    ],
+    "note": "Unsigned evidence only. The separate exact PAS configuration-only approval/route is required; existing par approval never authorizes PAS.",
+    "plan_hash": "e99389257c848c4cf90e56992f272dc29fbd011903a5a4c2ca68f7cc3c6d2bf7"
+  }
+}

@@ -54,6 +54,9 @@ class PasConfigurationApproval:
 def approval_preflight(root,plan,discovery,release,now):
     from .long_session import require_release,sha
     require_plan(plan,discovery,active_source_hash(root),now)
+    if plan.get('configuration_isolation') is not None:
+        from .configuration_isolation import verify_local
+        verify_local(root,plan['configuration_isolation'],plan['source_hash'],now)
     require_release(root,release,plan['source_hash'],sha(release))
     blocked=[x for x in plan['blockers'] if x!='SEPARATE_EXACT_OPERATOR_CONFIGURATION_APPROVAL_REQUIRED']
     if blocked:raise ExchangeError('CONFIGURATION_PREREQUISITES:'+','.join(blocked))
@@ -68,10 +71,15 @@ def approve_configuration(root,plan_path,discovery_path,release,output):
     plan=json.loads(Path(plan_path).read_text());d=json.loads(Path(discovery_path).read_text())
     now=time.time_ns()//1000000;release_hash=approval_preflight(root,plan,d,release,now)
     from .team_registration import registration_evidence
-    if d.get('registration_evidence')!=registration_evidence(Path(discovery_path).parent,now):
+    if d.get('registration_evidence')!=registration_evidence(Path(discovery_path).parent,now,scope='CONFIGURATION_ONLY'):
         raise ExchangeError('CONFIGURATION_REGISTRATION_RECORD_CHANGED')
+    if plan.get('configuration_isolation'):
+        from .configuration_isolation import verify_receipts
+        verify_receipts(plan['configuration_isolation'],Path(discovery_path).parent/'configuration_isolation')
     if not sys.stdin.isatty():raise ExchangeError('GENUINE_INTERACTIVE_CONFIGURATION_APPROVAL_REQUIRED')
     print(json.dumps(plan,indent=2));print('Confirm team/API identities, sole signing Mac, exact BTC/EWY changes only. No order/transfer authority.')
+    if plan.get('configuration_isolation'):
+        print('This exact configuration approval also accepts the displayed finite CONFIGURATION-ONLY isolation. Original UNKNOWN and consumed attempt remain unchanged and still block all order/qualification paths.')
     phrase='APPROVE PAS CONFIGURATION '+plan['plan_hash']
     if input(phrase+'\n> ').strip()!=phrase:raise ExchangeError('CONFIGURATION_APPROVAL_NOT_ACCEPTED')
     accepted=time.time_ns()//1000000
@@ -115,7 +123,7 @@ def execute_configuration(root,plan_path,discovery_path,release,acceptance,outpu
         raise ExchangeError('CONFIGURATION_APPROVAL_SOURCE_OR_PLAN_CHANGED')
     require_release(root,release,a.source_hash,a.release_sha256)
     from .team_registration import registration_evidence
-    if d.get('registration_evidence')!=registration_evidence(Path(discovery_path).parent,now):
+    if d.get('registration_evidence')!=registration_evidence(Path(discovery_path).parent,now,scope='CONFIGURATION_ONLY'):
         raise ExchangeError('CONFIGURATION_REGISTRATION_RECORD_CHANGED')
     require_paper_migration('pas');verify_strategy_freeze()
     state=root/'runtime/testnet/anchorium-bot-1'
@@ -137,10 +145,15 @@ def execute_configuration(root,plan_path,discovery_path,release,acceptance,outpu
             if active_source_hash(root)!=a.source_hash or sha(acceptance)!=acceptance_hash:
                 raise ExchangeError('CONFIGURATION_SOURCE_OR_ACCEPTANCE_CHANGED')
             require_release(root,release,a.source_hash,a.release_sha256)
-            if d.get('registration_evidence')!=registration_evidence(Path(discovery_path).parent,client.clock_ms()):
+            if d.get('registration_evidence')!=registration_evidence(Path(discovery_path).parent,client.clock_ms(),scope='CONFIGURATION_ONLY'):
                 raise ExchangeError('CONFIGURATION_REGISTRATION_RECORD_CHANGED')
             wait_for_configuration_reads(rates,a,TEAM,API,venue='pas')
-            client.startup();require_shared_scope(root,client,owned_configuration_actions=tuple(x for x in current_action if x is not None))
+            client.startup()
+            isolation=None
+            if p.get('configuration_isolation') is not None:
+                from .configuration_isolation import ConfigurationIsolation
+                isolation=ConfigurationIsolation(root,p['configuration_isolation'],a,p,Path(discovery_path).parent/'configuration_isolation')
+            require_shared_scope(root,client,owned_configuration_actions=tuple(x for x in current_action if x is not None),configuration_isolation=isolation)
             if account.get_positions() or account.get_open_orders() or account.get_frontend_open_orders():
                 raise ExchangeError('FRESH_FLAT_ACCOUNT_REQUIRED')
             f=read_funding(client,account,provenance=str(out/'info_receipts.jsonl'));result['funding']=f

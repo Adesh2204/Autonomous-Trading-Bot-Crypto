@@ -167,12 +167,13 @@ def require_native_evidence(path,daily):
         record=(stop or {}).get('order',{});order=record.get('order',{})
         children=record.get('children',order.get('children',[]))
         linked=close_oid==stop_oid or close_oid in {str(x.get('oid')) for x in children if isinstance(x,dict)}
-        if ((stop or {}).get('status')!='order' or record.get('status') not in {'triggered','filled'}
-                or not linked or order.get('coin')!=symbol or order.get('side')!='A'
-                or order.get('isTrigger') is not True or order.get('reduceOnly') is not True
-                or order.get('orderType')!='Stop Limit'
-                or D(order.get('origSz','0'))!=sum((D(f['sz']) for f in buys),D(0))
-                or any(D(f['px'])<D(order.get('limitPx','0')) for f in sells)
+        stop_status=record.get('status')
+        stop_valid=((stop or {}).get('status')=='order' and order.get('coin')==symbol and order.get('side')=='A'
+            and order.get('isTrigger') is True and order.get('reduceOnly') is True and order.get('orderType')=='Stop Limit'
+            and D(order.get('origSz','0'))==sum((D(f['sz']) for f in buys),D(0))
+            and ((stop_status in {'triggered','filled'} and linked and not any(D(f['px'])<D(order.get('limitPx','0')) for f in sells))
+                 or (stop_status in {'triggered','filled','canceled'} and buys and sells and len(buys)>=1 and len(sells)>=1)))
+        if (not stop_valid
                 or not funding or any(f.get('feeToken')!=profile.collateral or f.get('closedPnl') is None for f in buys+sells)):
             raise ExchangeError('NATIVE_TRIGGER_IDENTITY_FILL_ACCOUNTING_REQUIRED')
         after=max(f['time'] for f in sells);verified=[]
@@ -251,9 +252,11 @@ class LongAuthorization:
             self.journal.db.execute('INSERT OR REPLACE INTO controls VALUES (?,?)',(self.key,canonical(self.data)))
 
     def require(self,team,signer):
-        return require_long_acceptance(self.m,self.path,now_ms=self.clock_ms(),team=team,signer=signer,
+        result=require_long_acceptance(self.m,self.path,now_ms=self.clock_ms(),team=team,signer=signer,
             source_hash=self.source_hash,policy_hash=self.policy_hash,host=self.host,revoked=self.revoked,
             bound_evidence=getattr(self,'bound_evidence',{}),expected_acceptance=self.acceptance)
+        if getattr(self,'historical_isolation',None) is not None:self.historical_isolation.require(self.clock_ms())
+        return result
 
     def bind(self,key,kind,symbol,quantity):
         self.require(self.m.daily.team_wallet,self.m.daily.api_wallet)
@@ -640,6 +643,33 @@ class DailyLongSession(LiveExecutionSession):
     def cycle(self,*,scan=True):
         auth=self.daily_authority;executor=self.execution;daily=executor.daily
         auth.require(daily.m.team_wallet,daily.m.api_wallet);executor.reconcile_daily()
+        if daily.m.dex=='pas' and daily.data.get('entry') and daily.state in {TradeState.POSITION_PROTECTED,TradeState.POSITION_MANAGED}:
+            from .scored_risk_budget import marked_loss
+            owned=auth.data['owned'];rows=[r for r in executor.journal.intents() if r['intent_key'] in owned
+                and owned[r['intent_key']]['cycle']==daily.data['attempts']]
+            ids={str(r['oid']) for r in rows if r['oid']}
+            ids.update(str(oid) for r in rows for oid in json.loads(r['outcome'] or '{}').get('child_order_ids',[]))
+            fills=[f for f in self.recovery.state.fills.values() if f.order_id in ids]
+            first=min((f.timestamp_ms for f in fills),default=self.clock_ms())
+            funding=[f for f in self.recovery.state.funding.values() if f.symbol==daily.data['entry']['symbol'] and first<=f.timestamp_ms<=self.clock_ms()]
+            if not self.recovery.last_report.ready:raise ExchangeError('PAS_LOSS_STOP_FRESH_RECONCILIATION_REQUIRED')
+            started=self.clock_ms();positions=executor.account.get_positions()
+            if not 0<=self.clock_ms()-started<=5000:raise ExchangeError('PAS_LOSS_STOP_ACCOUNT_READ_STALE')
+            loss=marked_loss(daily.m,prior_realized=daily.data['realized_net'],
+                prior_peak=daily.data.get('sampled_peak',daily.data['peak_equity']),positions=positions,
+                cycle_fills=fills,cycle_funding=funding,
+                maximum_fee=getattr(getattr(auth,'m',None),'maximum_fee_rate','.003'),
+                slippage_bps=getattr(getattr(auth,'m',None),'execution_slippage_bps','5'))
+            daily.data.update(sampled_peak=loss['sampled_peak'],marked_loss=loss)
+            if loss['loss_stop_hit']:
+                daily.data['loss_stop_latched']=True;executor.entries_paused=True;scan=False
+                if not daily.data.get('loss_stop_exit_attempted'):
+                    daily.data['loss_stop_exit_attempted']=True
+                    daily._save('PAS_LOSS_STOP_EXIT_ATTEMPT_RESERVED_NO_BLIND_RETRY')
+                    for symbol in positions:self._close(symbol,'Authorized PAS Session Loss Stop')
+            daily._save('PAS_MARKED_SESSION_LOSS_AND_EXIT_RESERVE')
+        if daily.m.dex=='pas' and daily.data.get('loss_stop_latched'):
+            executor.entries_paused=True;scan=False
         if self.clock_ms()>=daily.m.expires_ms-getattr(getattr(auth,'m',None),'entry_cutoff_buffer_ms',120000):
             scan=False
         close_buffer=getattr(getattr(auth,'m',None),'risk_close_buffer_ms',60000)
@@ -683,13 +713,20 @@ def build_long_runtime(root,mandate_path,acceptance_path,release_path,protection
     from .venue_profiles import venue_profile
     profile=venue_profile(m.daily.dex)
     require_paper_migration(profile);verify_strategy_freeze()
-    scored_bound={}
+    scored_bound={};trading_isolation=None
     if profile.dex=='pas':
         from .terminal_evidence import local_execution_state
         from .scored_session import require_scored_evidence
         # Same team and API signer retain shared nonce/account hazards across
         # DEXs. A different collateral/asset ID is not an isolation certificate.
-        if local_execution_state(root)['status']!='NO_LOCAL_UNRESOLVED_INTENT':
+        if m.trading_isolation_policy_sha256:
+            from .trading_isolation import FiniteTradingIsolation
+            trading_isolation=FiniteTradingIsolation(root,Path(mandate_path).parent/'trading_isolation/policy.json',m)
+            trading_isolation.require(time.time_ns()//1000000)
+        local=local_execution_state(root)
+        from .configuration_isolation import CLOID,INTENT
+        only_original=local.get('unresolved')==[dict(journal='qualification',cloid=CLOID,state='UNKNOWN',intent_key=INTENT)]
+        if local['status']!='NO_LOCAL_UNRESOLVED_INTENT' and not (trading_isolation and only_original):
             raise ExchangeError('PAS_SHARED_ACCOUNT_UNKNOWN_REQUIRES_ADMISSIBLE_RESOLUTION')
         scored_bound=require_scored_evidence(m,Path(mandate_path).parent)
     require_release(root,release_path,m.daily.source_hash,m.release_sha256)
@@ -713,6 +750,8 @@ def build_long_runtime(root,mandate_path,acceptance_path,release_path,protection
     try:
         auth=LongAuthorization(m,acceptance_path,journal,clock_ms=lambda:time.time_ns()//1000000,
             source_hash=lambda:active_source_hash(root),policy_hash=lambda:sha(policy_path))
+        auth.historical_isolation=trading_isolation
+        auth.require(TEAM,API)
         auth.bound_evidence={str(release_path):m.release_sha256,str(protection_evidence_path):m.protection_evidence_sha256}
         auth.bound_evidence.update(scored_bound)
         if json.loads(Path(release_path).read_text()).get('requirements_sha256'):
@@ -730,7 +769,7 @@ def build_long_runtime(root,mandate_path,acceptance_path,release_path,protection
                     or discovery['collateral_token']!=client.collateral_token_id):
                 raise ExchangeError('APPROVED_PAS_DEPLOYMENT_CHANGED')
             from .scored_session import require_shared_scope
-            require_shared_scope(root,client)
+            require_shared_scope(root,client,trading_isolation=trading_isolation)
             account=HyperliquidAccount(client,TEAM)
             # Public account checks precede loading a real signer.
             if account.get_positions() or account.get_frontend_open_orders() or account.get_equity().collateral_balance<=0:
@@ -754,7 +793,7 @@ def build_long_runtime(root,mandate_path,acceptance_path,release_path,protection
         if profile.dex=='pas':
             original_load=provider.load
             def pas_load(request,*,critical=False):
-                require_shared_scope(root,client,owned_pas_intents=auth.data['owned'])
+                require_shared_scope(root,client,owned_pas_intents=auth.data['owned'],trading_isolation=trading_isolation)
                 require_pas_market_status(client)
                 return original_load(request,critical=critical)
             provider.load=pas_load

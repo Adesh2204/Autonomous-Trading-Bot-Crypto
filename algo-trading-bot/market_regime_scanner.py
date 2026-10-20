@@ -89,8 +89,7 @@ class MarketRegimeScanner:
         self.require_runtime()
         self.client.startup()
         p=self.policy
-        from exchange.entry_scope import signal_markets
-        selected=tuple(sorted(signal_markets(self.client,self.candidate_symbols)))
+        selected=self.selected_markets()
         if self.health_manager is None:
             self.health_manager=MarketHealthManager(selected,history_bars=p.history_bars,
                 max_candle_age_ms=p.max_candle_age_ms)
@@ -211,6 +210,11 @@ class MarketRegimeScanner:
             d.evidence['scanner_rank']=rank
         return ScanResult(self.client.clock_ms(),diagnostics,[d.symbol for d in qualified[:p.top_n]],
                           'ACTIVE' if qualified else 'NO_TRADE')
+
+    def selected_markets(self):
+        """Execution scanner scope; observation subclasses cannot grant entries."""
+        from exchange.entry_scope import signal_markets
+        return tuple(sorted(signal_markets(self.client,self.candidate_symbols)))
 
     def run(self, stop_event, interval_seconds):
         if not 1<=interval_seconds<=3600:

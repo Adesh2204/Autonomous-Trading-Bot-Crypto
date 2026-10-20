@@ -1,0 +1,122 @@
+{
+  "status": "BLOCKED_QUALIFICATION_PROPOSAL",
+  "purpose": "SEPARATELY_AUTHORIZED_PAS_NATIVE_AND_RESIDUAL_EXPERIMENT",
+  "network": "testnet",
+  "dex": "pas",
+  "collateral": "USDP",
+  "source_hash": "bdbdfcf68f4e0d0afba8fe3dfb60c9087283897a081425b35e75d664e1e22f95",
+  "discovery_hash": "04c0eba62a808ed48bed0bab057831ffb34501c5dba4615e1aac4b16dd635403",
+  "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+  "api_wallet": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+  "observed_ms": 1792415725707,
+  "market_observed_ms": 1792415725635,
+  "book_ms": 1792415724891,
+  "context_ms": 1792415725295,
+  "active_ms": 1792415725473,
+  "symbol": "pas:EWY",
+  "asset_id": 2810004,
+  "size_step": "0.001",
+  "quantity": "0.156",
+  "entry": {
+    "side": "BUY",
+    "tif": "Ioc",
+    "reduce_only": false,
+    "maximum_limit": "159.41",
+    "maximum_notional": "25"
+  },
+  "stop": {
+    "side": "SELL",
+    "reduce_only": true,
+    "type": "Stop Limit",
+    "isMarket": false,
+    "tpsl": "sl",
+    "grouping": "na",
+    "trigger_reference": "MARK",
+    "trigger": "157.65",
+    "limit": "156.87",
+    "fixed_size": "0.156"
+  },
+  "cleanup": {
+    "side": "SELL",
+    "reduce_only": true,
+    "tif": "Ioc",
+    "exact_remaining_position_only": true,
+    "minimum_limit": "156.87",
+    "maximum_resolved_attempts": 2,
+    "maximum_slippage_bps": "20",
+    "owned_cancellation_rounds": 1,
+    "unsupported_subminimum_dispatch": false,
+    "uncertain_retry": false
+  },
+  "maximum_entries": 1,
+  "maximum_signed_actions": 6,
+  "acceptance_window_ms": 300000,
+  "maximum_authority_ms": 300000,
+  "natural_trigger_wait_seconds": 120,
+  "minimum_reserved_cleanup_ms": 120000,
+  "session_loss_budget": "10",
+  "planned_floor_loss_including_fee_and_funding_reserve": "0.5297679855000",
+  "guaranteed_loss_cap": false,
+  "partial_assessment": {
+    "symbol": "pas:EWY",
+    "asset_id": 2810004,
+    "size_step": "0.001",
+    "minimum_order_notional": "10",
+    "smallest_possible_fill": "0.001",
+    "smallest_possible_exit_remainder": "0.001",
+    "one_lot_notionals": {
+      "entry_limit": "0.15941",
+      "stop_limit": "0.15687",
+      "exit_bound": "0.15687"
+    },
+    "subminimum_full_close_exception": "NOT_ESTABLISHED_BY_AUTHORITATIVE_DOCUMENTATION",
+    "subminimum_protection_exception": "NOT_ESTABLISHED_BY_AUTHORITATIVE_DOCUMENTATION",
+    "entry_admissible_under_documented_minimum": false,
+    "blocker": "SUB_MINIMUM_PARTIAL_FILL_EXIT_NOT_VERIFIED",
+    "scope": "REVIEWED_LIMIT_PRICES_ONLY_NOT_A_FILL_OR_PROTECTION_GUARANTEE"
+  },
+  "normal_autonomous_native_proof_required_to_prepare": false,
+  "residual_coverage_requirements": {
+    "routes": {
+      "native_stop": {
+        "number_of_subminimum_sizes": 63,
+        "first_size": "0.001",
+        "last_size": "0.063",
+        "size_step": "0.001",
+        "limit_price": "156.87",
+        "required_basis": "Authoritative PAS-wide semantics plus genuine boundary test, or separately verified genuine evidence for every exact admitted size; acceptance alone never proves trigger/closing fills."
+      },
+      "full_position_ioc": {
+        "number_of_subminimum_sizes": 63,
+        "first_size": "0.001",
+        "last_size": "0.063",
+        "size_step": "0.001",
+        "limit_price": "156.87",
+        "required_basis": "Authoritative PAS-wide semantics plus genuine boundary test, or separately verified genuine evidence for every exact admitted size; acceptance alone never proves trigger/closing fills."
+      }
+    },
+    "all_sizes_qualified": false,
+    "one_lot_proof_generalizes_to_other_sizes": false,
+    "operator_action": "Obtain PAS-specific native-stop and exact full-position IOC minimum rules; then review one bounded actual qualification. Preserve normal strategy gates."
+  },
+  "prior_par_proof_qualifies_pas": false,
+  "consumed_attempt_reset_permitted": false,
+  "risks": [
+    "Partial fill may leave an unprotected subminimum residual",
+    "Stop Limit gap may trigger without fill",
+    "Rejection, ambiguous transmission or interruption requires original-order reconciliation",
+    "This Mac, process, power and internet remain dependencies"
+  ],
+  "blockers": [
+    "PAS_SUBMINIMUM_CLEANUP_SCOPE_NOT_ESTABLISHED_NO_PAR_EXCEPTION",
+    "SHARED_UNKNOWN_AND_CONSUMED_NATIVE_ATTEMPT_REVIEW_REQUIRED",
+    "REVIEWED_APPLICABLE_ORGANIZER_SCOPE_REQUIRED",
+    "NEW_EXACT_QUALIFICATION_ONLY_HUMAN_APPROVAL_REQUIRED"
+  ],
+  "signing_authority": "NONE",
+  "approval_created": false,
+  "exchange_writes": 0,
+  "signatures_created": 0,
+  "execution_status": "NO_EXECUTION_CAPABILITY_CREATED; unresolved residual policy cannot be bypassed by an ordinary session approval",
+  "proposal_hash": "1deb07e6234c5b6cea6703911dc8c485731dcdc15d8da1180efeaaa5595e8142"
+}

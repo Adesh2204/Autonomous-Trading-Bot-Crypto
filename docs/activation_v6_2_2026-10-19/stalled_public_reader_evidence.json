@@ -1,0 +1,1591 @@
+{
+  "launch": {
+    "pid": 94187,
+    "caffeinate_pid": 94188,
+    "created_ms": 1792412363515,
+    "source_hash": "d0b72ec4cbce7d74cdad62b480ac22a8dc336182fc1445612b7666b95747f9f9",
+    "source_root": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v6_2026-10-19/public_reader_source",
+    "state": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public",
+    "command": [
+      "/Users/adesh/Autonomous Trading Bot - Crypto /.venv/bin/python",
+      "/Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v6_2026-10-19/public_reader_source/scripts/anchorium_cli.py",
+      "start",
+      "--venue",
+      "pas",
+      "--state",
+      "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public",
+      "--markets",
+      "pas:BTC",
+      "pas:EWY",
+      "--scan-seconds",
+      "60",
+      "--readiness-release",
+      "/Users/adesh/Autonomous Trading Bot - Crypto /docs/opening_v5_3_2026-10-19/regression_release_final/test_receipt.json"
+    ],
+    "signing_authority": "NONE",
+    "exchange_writes": 0,
+    "actual_wallet_signatures": 0
+  },
+  "current": {
+    "session_id": "f32c0fab3b1747a9970cd2237e9b3c07",
+    "output": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07",
+    "pid": 94187,
+    "updated_ms": 1792417056204
+  },
+  "last_status": {
+    "mode": "TESTNET OBSERVATION",
+    "status": "SCANNING_NO_ORDER_AUTHORITY",
+    "source_hash": "d0b72ec4cbce7d74cdad62b480ac22a8dc336182fc1445612b7666b95747f9f9",
+    "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+    "network": "testnet",
+    "dex": "pas",
+    "collateral": "USDP",
+    "venue_identity": "7562c7f16a800fae8d3f9ed4afd76c2d2a8597e5814a1626ef9553346789b493",
+    "phase": "SCORED",
+    "approved_bankroll": null,
+    "approved_maximum_notional": null,
+    "proposed_bankroll": "20000",
+    "signing_authority": "NONE",
+    "exchange_writes": 0,
+    "signatures_created": 0,
+    "exchange_time_ms": null,
+    "signals": [
+      {
+        "symbol": "pas:BTC",
+        "observed_ms": 1792417056204,
+        "decision": "NO_TRADE",
+        "reasons": [
+          "CAPITAL_FRESH_PAR_BOOK_REQUIRED"
+        ],
+        "metrics": {},
+        "baseline_strategy_unchanged": true,
+        "order_submission_enabled": false,
+        "confidence_probability": null,
+        "data_status": "FAILED_SAFE",
+        "history": {
+          "raw_returned_last": 900,
+          "raw_returned_in_retained_snapshots": 70797,
+          "valid_returned_last": 2,
+          "valid_deduplicated_completed": 1321,
+          "contiguous_tail_bars": 1321,
+          "missing_intervals": [],
+          "earliest_ms": 1792337760000,
+          "latest_ms": 1792416960000,
+          "latest_completed_ms": 1792417020000,
+          "cache_age_ms": 35817,
+          "last_collection_ms": 1792417055808,
+          "warmup_required": 300,
+          "strategy_history_ready": true,
+          "warmup_satisfied": true,
+          "data_freshness_satisfied": true,
+          "failure_classification": "READY",
+          "failure_reasons": [],
+          "request_diagnostics": {
+            "rest": {
+              "request": {
+                "coin": "pas:BTC",
+                "interval": "1m",
+                "startTime": 1792363020000,
+                "endTime": 1792417019999
+              },
+              "received_ms": 1792417032287,
+              "returned_count": 900,
+              "first_returned_ms": 1792363020000,
+              "last_returned_ms": 1792416960000,
+              "expected_intervals": 900,
+              "normalization_succeeded": true,
+              "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl"
+            },
+            "stream": {
+              "received_ms": 1792416971703,
+              "candle_open_ms": 1792416960000,
+              "candle_close_ms": 1792417019999
+            }
+          },
+          "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+          "database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/history.sqlite"
+        },
+        "approved_quantity": null,
+        "execution_preflight": "NOT_AUTHORIZED",
+        "protection": "ACTUAL_NATIVE_TRIGGER_QUALIFICATION_REQUIRED"
+      }
+    ],
+    "liquidity": {
+      "pas:BTC": {
+        "quantity": "0",
+        "notional": "0",
+        "bid": "82199.0",
+        "ask": "82227.0",
+        "book_ms": 1792417051059,
+        "observed_ms": 1792417056016,
+        "active_asset_ms": 1792417056204,
+        "context_ms": 1792417056016,
+        "market_context": {
+          "funding": "-0.000065117",
+          "openInterest": "3.41698",
+          "prevDayPx": "81066.0",
+          "dayNtlVlm": "153795.32707",
+          "premium": "-0.0012639085",
+          "oraclePx": "82324.0",
+          "markPx": "82241.0",
+          "midPx": "82222.5",
+          "impactPxs": [
+            "82173.9",
+            "82266.0"
+          ],
+          "dayBaseVlm": "1.88433"
+        },
+        "size_step": "0.00001",
+        "one_lot_bid_notional": "0.821990",
+        "partial_minimum_admissible": false,
+        "partial_protection_qualified": false,
+        "native_protection_qualified": false,
+        "partial_path": {
+          "entry_admissible_under_documented_minimum": false,
+          "blocker": "FROZEN_STOP_PLAN_UNAVAILABLE"
+        },
+        "targets": {
+          "1000": false,
+          "2500": false,
+          "5000": false,
+          "10000": false,
+          "25000": false,
+          "50000": false
+        },
+        "qualified_unattended_notional": "0",
+        "active_asset": {
+          "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+          "coin": "pas:BTC",
+          "leverage": {
+            "type": "cross",
+            "value": 1
+          },
+          "maxTradeSzs": [
+            "1.21593",
+            "1.21593"
+          ],
+          "availableToTrade": [
+            "100000.0",
+            "100000.0"
+          ],
+          "markPx": "82241.0"
+        },
+        "evidence_evaluation": {
+          "symbol": "pas:BTC",
+          "liquidity_only_quantity": "0",
+          "liquidity_only_notional": "0",
+          "economically_viable_notional": "0",
+          "authorized_executable_notional": "0",
+          "expected_net_pnl": null,
+          "expected_return_probability": null,
+          "decision": "OBSERVE",
+          "reasons": [
+            "CAPITAL_FRESH_PAR_BOOK_REQUIRED"
+          ],
+          "observed_ms": 1792417056204
+        },
+        "fee_scenarios": {
+          "base_taker_rate": "0.00045",
+          "documented_pas_rate_estimate": "0.00090",
+          "unchanged_signing_stress_rate": "0.00270",
+          "actual_charged_rate": null,
+          "documented_source": "https://perpetual-alpha26.github.io/docs/#venue-mechanics",
+          "expected_net_pnl": null,
+          "scenario_only": true,
+          "production_fee_policy_changed": false,
+          "assumption": "Published PAS positive base-rate multiplier=2; actual fill fee/feeToken govern charges",
+          "documented_target_scenario": null,
+          "stress_target_scenario": null,
+          "cost_sensitivity_reason": "FRESH_BOTH_SIDE_CONTEXT_REQUIRED"
+        },
+        "stale_capacity_withheld": true
+      }
+    },
+    "market_history": {
+      "pas:BTC": {
+        "raw_returned_last": 900,
+        "raw_returned_in_retained_snapshots": 70797,
+        "valid_returned_last": 2,
+        "valid_deduplicated_completed": 1321,
+        "contiguous_tail_bars": 1321,
+        "missing_intervals": [],
+        "earliest_ms": 1792337760000,
+        "latest_ms": 1792416960000,
+        "latest_completed_ms": 1792417020000,
+        "cache_age_ms": 35817,
+        "last_collection_ms": 1792417055808,
+        "warmup_required": 300,
+        "strategy_history_ready": true,
+        "warmup_satisfied": true,
+        "data_freshness_satisfied": true,
+        "failure_classification": "READY",
+        "failure_reasons": [],
+        "request_diagnostics": {
+          "rest": {
+            "request": {
+              "coin": "pas:BTC",
+              "interval": "1m",
+              "startTime": 1792363020000,
+              "endTime": 1792417019999
+            },
+            "received_ms": 1792417032287,
+            "returned_count": 900,
+            "first_returned_ms": 1792363020000,
+            "last_returned_ms": 1792416960000,
+            "expected_intervals": 900,
+            "normalization_succeeded": true,
+            "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl"
+          },
+          "stream": {
+            "received_ms": 1792416971703,
+            "candle_open_ms": 1792416960000,
+            "candle_close_ms": 1792417019999
+          }
+        },
+        "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+        "database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/history.sqlite"
+      },
+      "pas:EWY": {
+        "raw_returned_last": 3,
+        "raw_returned_in_retained_snapshots": 78958,
+        "valid_returned_last": 3,
+        "valid_deduplicated_completed": 4388,
+        "contiguous_tail_bars": 4388,
+        "missing_intervals": [],
+        "earliest_ms": 1792153680000,
+        "latest_ms": 1792416900000,
+        "latest_completed_ms": 1792416960000,
+        "cache_age_ms": 36905,
+        "last_collection_ms": 1792416996867,
+        "warmup_required": 300,
+        "strategy_history_ready": true,
+        "warmup_satisfied": true,
+        "data_freshness_satisfied": true,
+        "failure_classification": "READY",
+        "failure_reasons": [],
+        "request_diagnostics": {
+          "rest": {
+            "request": {
+              "coin": "pas:EWY",
+              "interval": "1m",
+              "startTime": 1792416780000,
+              "endTime": 1792416959999
+            },
+            "received_ms": 1792416996861,
+            "returned_count": 3,
+            "first_returned_ms": 1792416780000,
+            "last_returned_ms": 1792416900000,
+            "expected_intervals": 3,
+            "normalization_succeeded": true,
+            "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl"
+          },
+          "stream": {
+            "received_ms": 1792416969676,
+            "candle_open_ms": 1792416960000,
+            "candle_close_ms": 1792417019999
+          }
+        },
+        "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+        "database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/history.sqlite"
+      }
+    },
+    "markets": [
+      "pas:BTC",
+      "pas:EWY"
+    ],
+    "metadata": {
+      "universe": [
+        {
+          "szDecimals": 5,
+          "name": "pas:BTC",
+          "maxLeverage": 40,
+          "marginTableId": 40,
+          "deployerFeeScale": "1.0"
+        },
+        {
+          "szDecimals": 4,
+          "name": "pas:ETH",
+          "maxLeverage": 25,
+          "marginTableId": 25,
+          "deployerFeeScale": "1.0"
+        },
+        {
+          "szDecimals": 2,
+          "name": "pas:HYPE",
+          "maxLeverage": 10,
+          "marginTableId": 10,
+          "deployerFeeScale": "1.0"
+        },
+        {
+          "szDecimals": 3,
+          "name": "pas:SP500",
+          "maxLeverage": 50,
+          "marginTableId": 50,
+          "deployerFeeScale": "1.0"
+        },
+        {
+          "szDecimals": 3,
+          "name": "pas:EWY",
+          "maxLeverage": 20,
+          "marginTableId": 20,
+          "deployerFeeScale": "1.0"
+        },
+        {
+          "szDecimals": 3,
+          "name": "pas:EWJ",
+          "maxLeverage": 20,
+          "marginTableId": 20,
+          "deployerFeeScale": "1.0"
+        },
+        {
+          "szDecimals": 2,
+          "name": "pas:BRENT",
+          "maxLeverage": 20,
+          "marginTableId": 20,
+          "deployerFeeScale": "1.0"
+        },
+        {
+          "szDecimals": 4,
+          "name": "pas:GOLD",
+          "maxLeverage": 25,
+          "marginTableId": 25,
+          "deployerFeeScale": "1.0"
+        },
+        {
+          "szDecimals": 1,
+          "name": "pas:USDEUR",
+          "maxLeverage": 50,
+          "marginTableId": 50,
+          "deployerFeeScale": "1.0"
+        },
+        {
+          "szDecimals": 2,
+          "name": "pas:USDJPY",
+          "maxLeverage": 50,
+          "marginTableId": 50,
+          "deployerFeeScale": "1.0"
+        }
+      ],
+      "marginTables": [
+        [
+          50,
+          {
+            "description": "",
+            "marginTiers": [
+              {
+                "lowerBound": "0.0",
+                "maxLeverage": 50
+              }
+            ]
+          }
+        ]
+      ],
+      "collateralToken": 3307
+    },
+    "account": {
+      "source": "EXCHANGE_REPORTED_ACCOUNT_OBSERVER",
+      "exchange_orders_submitted": 0,
+      "entries_paused": false,
+      "reasons": [],
+      "positions": [],
+      "open_orders": [],
+      "fills": [],
+      "funding_events": [],
+      "reported_account_equity": {
+        "reported_account_value": "100000.0",
+        "collateral_balance": "100000.0",
+        "margin_used": "0",
+        "withdrawable": null,
+        "valuation_source": "spotClearinghouseState.USDP.total"
+      },
+      "accounting_window_ms": [
+        0,
+        1792416924531
+      ],
+      "latest_query_window_ms": [
+        1792416834890,
+        1792416924531
+      ],
+      "realized": {
+        "gross_closed_pnl": "0",
+        "actual_fill_fees": "0",
+        "actual_funding_cashflow": "0",
+        "net_after_fees_and_funding": "0",
+        "scope": "ONLY_OBSERVED_ACCOUNT_EVENTS; excludes deposits/transfers and unknown historical events"
+      },
+      "corrections": []
+    },
+    "account_observed_ms": 1792416926082,
+    "account_error": null,
+    "local_execution_state": {
+      "status": "UNKNOWN_REQUIRES_REVIEW",
+      "unresolved": [],
+      "native_protection": "UNQUALIFIED",
+      "signing_authority": "NONE",
+      "error": "ExchangeError"
+    },
+    "session_performance": {
+      "source": "EXCHANGE_REPORTED_FILLS_FEES_FUNDING",
+      "session_started_ms": 1792412363696,
+      "initial_equity": "100000.0",
+      "initial_equity_observed_ms": 1792412370156,
+      "current_equity": "100000.0",
+      "as_of_ms": 1792416926082,
+      "actual_gross_realized": "0",
+      "actual_fees": "0",
+      "actual_funding": "0",
+      "actual_net_realized": "0",
+      "realized_net_on_initial_equity_pct": "0E+1",
+      "equity_change_pct": "0",
+      "return_basis": "First verified session equity; equity change is not cash-flow-adjusted or an official competition return",
+      "sampled_maximum_drawdown_pct": "0",
+      "fill_count": 0,
+      "funding_event_count": 0,
+      "official_score": null,
+      "daily_return_volatility": null,
+      "accounting_complete": true,
+      "unrealized_pnl_source": "See exchange-reported position fields; no synthetic valuation added"
+    },
+    "base_taker_fee_rate": "0.00045",
+    "base_maker_fee_rate": "0.00015",
+    "documented_pas_taker_fee_estimate": "0.00090",
+    "fee_rate_bound": "0.00270",
+    "maker_fee_rate_bound": "0.00090",
+    "fees_observed_ms": 1792416926415,
+    "fee_estimation_basis": "Existing conservative 6x base-rate bound; actual fills determine charged fees",
+    "funding": {
+      "status": "USDP_POSITIVE_VERIFIED",
+      "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+      "network": "testnet",
+      "dex": "pas",
+      "collateral": "USDP",
+      "account_mode": "unifiedAccount",
+      "token": 3307,
+      "observed_ms": 1792416926415,
+      "exchange_time_ms": 1792416926786,
+      "balance": "100000.0",
+      "age_ms": 715,
+      "organizer_credit_amount": null,
+      "organizer_credit_provenance": "UNKNOWN",
+      "signing_authority": "NONE",
+      "reasons": [],
+      "response_hashes": {
+        "spot": "1b53cc1b5d50cbc4d32da7b9a35a0374cce3d4807876bfad58e272e368e811df",
+        "state": "544f4edb7eb989080068fc1d9ec025da7b941b8bf61e73108fa4c3f9f51aea08"
+      },
+      "provenance": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl",
+      "equity_basis": "Unified USDP total once; no addition of per-DEX equity or unrealized PnL",
+      "evidence_hash": "7f938fc9ccaf51f996727f78faa39bd3f85f640c764363b025f2c68ad8fa67ad"
+    },
+    "funding_event": {
+      "before": null,
+      "after": "USDP_POSITIVE_VERIFIED",
+      "balance": "100000.0",
+      "observed_ms": 1792412371894,
+      "signing_triggered": false
+    },
+    "scan_in_progress": true,
+    "capacity_ranking": [
+      {
+        "symbol": "pas:EWY",
+        "liquidity_only_quantity": "0.633",
+        "liquidity_only_notional": "99.9507",
+        "economically_viable_notional": "0",
+        "authorized_executable_notional": "0",
+        "expected_net_pnl": null,
+        "expected_return_probability": null,
+        "decision": "OBSERVE",
+        "reasons": [
+          "NO_CURRENT_QUALIFIED_FROZEN_LONG_SIGNAL",
+          "EMPIRICAL_EXPECTED_EDGE_NOT_ESTABLISHED",
+          "NATIVE_RESIDUAL_PROTECTION_UNQUALIFIED",
+          "NO_EXACT_SESSION_AUTHORITY"
+        ],
+        "observed_ms": 1792416997411,
+        "quantity_bounds": {
+          "entry_bbo": "0.6333",
+          "exit_bbo": "1.583",
+          "entry_five_bps": "0.6333",
+          "exit_five_bps": "14.8818",
+          "account": "633.552",
+          "margin": "629.9107051182638451538386821",
+          "proposed_upper_cap": "63.33122229259024699176694110"
+        },
+        "spread_bps": "8.236449456711122374631735673",
+        "entry_capacity": "0.633",
+        "exit_capacity": "1.583",
+        "book_age_ms": 3865,
+        "fee_age_ms": 70996,
+        "funding_rate": "0.00000625",
+        "conditional_target_net": null,
+        "stressed_conditional_target_net": null
+      },
+      {
+        "symbol": "pas:BTC",
+        "liquidity_only_quantity": "0.00060",
+        "liquidity_only_notional": "49.372200",
+        "economically_viable_notional": "0",
+        "authorized_executable_notional": "0",
+        "expected_net_pnl": null,
+        "expected_return_probability": null,
+        "decision": "OBSERVE",
+        "reasons": [
+          "NO_CURRENT_QUALIFIED_FROZEN_LONG_SIGNAL",
+          "EMPIRICAL_EXPECTED_EDGE_NOT_ESTABLISHED",
+          "NATIVE_RESIDUAL_PROTECTION_UNQUALIFIED",
+          "NO_EXACT_SESSION_AUTHORITY"
+        ],
+        "observed_ms": 1792416996546,
+        "quantity_bounds": {
+          "entry_bbo": "0.0006",
+          "exit_bbo": "0.0006",
+          "entry_five_bps": "0.00970",
+          "exit_five_bps": "0.00970",
+          "account": "1.21567",
+          "margin": "1.208731638511233380118258387",
+          "proposed_upper_cap": "0.1215258789359194040370896983"
+        },
+        "spread_bps": "6.199741069637679838077350887",
+        "entry_capacity": "0.00060",
+        "exit_capacity": "0.00060",
+        "book_age_ms": 3000,
+        "fee_age_ms": 70131,
+        "funding_rate": "-0.0000651958",
+        "conditional_target_net": null,
+        "stressed_conditional_target_net": null
+      }
+    ],
+    "latest_scan_ms": 1792416997437,
+    "capacity_ranking_scope": "OBSERVATION_ONLY_NOT_PRODUCTION_TOP3",
+    "opportunity_counts": {
+      "candidate_occurrences": 0,
+      "markets_with_two_sided_capacity": 2,
+      "candidates_passing_capacity": 0,
+      "conditional_friction_and_stress": 0,
+      "qualified_protection": 0,
+      "authorized": 0,
+      "statistical_expected_edge_verified": 0
+    },
+    "stream_connected": true,
+    "stream_reconciled": true,
+    "stream_transport": {
+      "current": {
+        "connection_id": "public-8",
+        "generation": 8,
+        "connection_started_at_ms": 1792417031464,
+        "started_monotonic": 2650114.995530583,
+        "last_poll_monotonic": 2650138.432037333,
+        "last_poll_wall_ms": 1792417054901,
+        "last_any_message_at_ms": 1792417054901,
+        "last_trade_message_at_ms": 1792417031836,
+        "last_book_message_at_ms": 1792417051482,
+        "last_candle_message_at_ms": null,
+        "last_context_message_at_ms": 1792417054901,
+        "outgoing_ping_at_ms": null,
+        "pong_at_ms": null,
+        "last_receive_monotonic": 2650138.431984625,
+        "last_ping_monotonic": 2650114.995530583,
+        "pending_ping_monotonic": null,
+        "transport_state": "CONNECTED",
+        "close_code": null,
+        "close_reason": null
+      },
+      "desired_count": 8,
+      "sent_count": 8,
+      "confirmed_count": 8,
+      "missing_acknowledgements": [],
+      "duplicate_subscriptions": 0,
+      "duplicates_prevented": 0,
+      "max_receiver_gap_seconds": 1.1545887500979006,
+      "connections": [
+        {
+          "connection_id": "public-1",
+          "generation": 1,
+          "connection_started_at_ms": 1792412367191,
+          "started_monotonic": 2645450.77882325,
+          "last_poll_monotonic": 2646137.2129605,
+          "last_poll_wall_ms": 1792413053639,
+          "last_any_message_at_ms": 1792413052636,
+          "last_trade_message_at_ms": 1792412786856,
+          "last_book_message_at_ms": 1792413051139,
+          "last_candle_message_at_ms": 1792412787106,
+          "last_context_message_at_ms": 1792413052636,
+          "outgoing_ping_at_ms": 1792413035316,
+          "pong_at_ms": 1792413035477,
+          "last_receive_monotonic": 2646136.209208791,
+          "last_ping_monotonic": 2646118.890265458,
+          "pending_ping_monotonic": null,
+          "transport_state": "DISCONNECTED",
+          "close_code": 1000,
+          "close_reason": "Expired",
+          "disconnected_at_ms": 1792413053666,
+          "connection_age_seconds": 686.461143208202,
+          "client_exception": "STREAM_DISCONNECTED",
+          "pending_rest_calls": 0,
+          "rate_budget": {
+            "state": "UNKNOWN",
+            "policy": {
+              "ip_weight_per_minute": 1200,
+              "ip_safety_reserve": 120,
+              "daily_actions": 50000,
+              "daily_safety_reserve": 500,
+              "account_action_reserve": 10,
+              "max_open_orders": 1000,
+              "max_ws_connections": 10,
+              "max_ws_subscriptions": 1000,
+              "max_ws_unique_users": 10,
+              "venue_ws_connections_per_minute": 30,
+              "max_ws_messages_per_minute": 2000,
+              "ws_reconnects_per_minute": 5,
+              "budget_max_age_ms": 60000,
+              "optional_poll_interval_ms": 5000,
+              "read_retry_attempts": 3,
+              "backoff_base_ms": 1000,
+              "backoff_max_ms": 30000,
+              "exhausted_safety_action_interval_ms": 10000,
+              "caution_fraction": 0.75,
+              "throttle_fraction": 0.9
+            },
+            "ip_weight": 332,
+            "public_read_blocked": false,
+            "account_requests_used": null,
+            "account_requests_cap": null,
+            "remaining_budget": null,
+            "budget_observed_ms": null,
+            "daily_actions": 0,
+            "daily_limit": 50000,
+            "entries_allowed": false,
+            "open_orders": 0,
+            "backoff_until_ms": 0,
+            "websocket": {
+              "connections": 2,
+              "subscriptions": 12,
+              "outgoing_messages": 4,
+              "heartbeats": 4,
+              "reconnects_last_minute": 0
+            },
+            "public_reads": {
+              "upstream_by_operation": {
+                "perpDexs": 7,
+                "meta": 7,
+                "spotMeta": 7,
+                "clearinghouseState": 20,
+                "openOrders": 10,
+                "userFillsByTime": 5,
+                "userFunding": 5,
+                "userAbstraction": 10,
+                "spotClearinghouseState": 10,
+                "metaAndAssetCtxs": 29,
+                "userFees": 5,
+                "candleSnapshot": 33,
+                "l2Book": 13,
+                "activeAssetData": 24
+              },
+              "failures": {},
+              "pending": 0,
+              "coalesced": 0,
+              "max_seconds": 0.975727750454098,
+              "failure_details": []
+            }
+          },
+          "backoff_seconds": 0.8893615894524832,
+          "subscription_count": 8,
+          "subscription_identities": [
+            "{\"coin\":\"pas:BTC\",\"interval\":\"1m\",\"type\":\"candle\"}",
+            "{\"coin\":\"pas:BTC\",\"type\":\"activeAssetCtx\"}",
+            "{\"coin\":\"pas:BTC\",\"type\":\"l2Book\"}",
+            "{\"coin\":\"pas:BTC\",\"type\":\"trades\"}",
+            "{\"coin\":\"pas:EWY\",\"interval\":\"1m\",\"type\":\"candle\"}",
+            "{\"coin\":\"pas:EWY\",\"type\":\"activeAssetCtx\"}",
+            "{\"coin\":\"pas:EWY\",\"type\":\"l2Book\"}",
+            "{\"coin\":\"pas:EWY\",\"type\":\"trades\"}"
+          ],
+          "confirmed_subscriptions": 8,
+          "attribution": "SERVER_CLOSE"
+        },
+        {
+          "connection_id": "public-2",
+          "generation": 2,
+          "connection_started_at_ms": 1792413056622,
+          "started_monotonic": 2646140.195363375,
+          "last_poll_monotonic": 2646827.431705208,
+          "last_poll_wall_ms": 1792413743872,
+          "last_any_message_at_ms": 1792413743872,
+          "last_trade_message_at_ms": 1792413692680,
+          "last_book_message_at_ms": 1792413739454,
+          "last_candle_message_at_ms": 1792413692846,
+          "last_context_message_at_ms": 1792413743872,
+          "outgoing_ping_at_ms": 1792413722006,
+          "pong_at_ms": 1792413722178,
+          "last_receive_monotonic": 2646827.43167675,
+          "last_ping_monotonic": 2646805.566304333,
+          "pending_ping_monotonic": null,
+          "transport_state": "DISCONNECTED",
+          "close_code": 1000,
+          "close_reason": "Expired",
+          "disconnected_at_ms": 1792413743958,
+          "connection_age_seconds": 687.3229474578984,
+          "client_exception": "STREAM_DISCONNECTED",
+          "pending_rest_calls": 0,
+          "rate_budget": {
+            "state": "UNKNOWN",
+            "policy": {
+              "ip_weight_per_minute": 1200,
+              "ip_safety_reserve": 120,
+              "daily_actions": 50000,
+              "daily_safety_reserve": 500,
+              "account_action_reserve": 10,
+              "max_open_orders": 1000,
+              "max_ws_connections": 10,
+              "max_ws_subscriptions": 1000,
+              "max_ws_unique_users": 10,
+              "venue_ws_connections_per_minute": 30,
+              "max_ws_messages_per_minute": 2000,
+              "ws_reconnects_per_minute": 5,
+              "budget_max_age_ms": 60000,
+              "optional_poll_interval_ms": 5000,
+              "read_retry_attempts": 3,
+              "backoff_base_ms": 1000,
+              "backoff_max_ms": 30000,
+              "exhausted_safety_action_interval_ms": 10000,
+              "caution_fraction": 0.75,
+              "throttle_fraction": 0.9
+            },
+            "ip_weight": 177,
+            "public_read_blocked": false,
+            "account_requests_used": null,
+            "account_requests_cap": null,
+            "remaining_budget": null,
+            "budget_observed_ms": null,
+            "daily_actions": 0,
+            "daily_limit": 50000,
+            "entries_allowed": false,
+            "open_orders": 0,
+            "backoff_until_ms": 0,
+            "websocket": {
+              "connections": 2,
+              "subscriptions": 12,
+              "outgoing_messages": 4,
+              "heartbeats": 4,
+              "reconnects_last_minute": 0
+            },
+            "public_reads": {
+              "upstream_by_operation": {
+                "perpDexs": 11,
+                "meta": 11,
+                "spotMeta": 11,
+                "clearinghouseState": 32,
+                "openOrders": 16,
+                "userFillsByTime": 8,
+                "userFunding": 8,
+                "userAbstraction": 16,
+                "spotClearinghouseState": 16,
+                "metaAndAssetCtxs": 64,
+                "userFees": 8,
+                "candleSnapshot": 67,
+                "l2Book": 28,
+                "activeAssetData": 46
+              },
+              "failures": {},
+              "pending": 0,
+              "coalesced": 0,
+              "max_seconds": 0.975727750454098,
+              "failure_details": []
+            }
+          },
+          "backoff_seconds": 0.9080078832171322,
+          "subscription_count": 8,
+          "subscription_identities": [
+            "{\"coin\":\"pas:BTC\",\"interval\":\"1m\",\"type\":\"candle\"}",
+            "{\"coin\":\"pas:BTC\",\"type\":\"activeAssetCtx\"}",
+            "{\"coin\":\"pas:BTC\",\"type\":\"l2Book\"}",
+            "{\"coin\":\"pas:BTC\",\"type\":\"trades\"}",
+            "{\"coin\":\"pas:EWY\",\"interval\":\"1m\",\"type\":\"candle\"}",
+            "{\"coin\":\"pas:EWY\",\"type\":\"activeAssetCtx\"}",
+            "{\"coin\":\"pas:EWY\",\"type\":\"l2Book\"}",
+            "{\"coin\":\"pas:EWY\",\"type\":\"trades\"}"
+          ],
+          "confirmed_subscriptions": 8,
+          "attribution": "SERVER_CLOSE"
+        },
+        {
+          "connection_id": "public-3",
+          "generation": 3,
+          "connection_started_at_ms": 1792413747120,
+          "started_monotonic": 2646830.679693875,
+          "last_poll_monotonic": 2647524.538182666,
+          "last_poll_wall_ms": 1792414440991,
+          "last_any_message_at_ms": 1792414439982,
+          "last_trade_message_at_ms": 1792414273381,
+          "last_book_message_at_ms": 1792414439982,
+          "last_candle_message_at_ms": 1792414273533,
+          "last_context_message_at_ms": 1792414439982,
+          "outgoing_ping_at_ms": 1792414416047,
+          "pong_at_ms": 1792414416207,
+          "last_receive_monotonic": 2647523.5295055,
+          "last_ping_monotonic": 2647499.594858416,
+          "pending_ping_monotonic": null,
+          "transport_state": "DISCONNECTED",
+          "close_code": 1000,
+          "close_reason": "Expired",
+          "disconnected_at_ms": 1792414441093,
+          "connection_age_seconds": 693.9608739162795,
+          "client_exception": "STREAM_DISCONNECTED",
+          "pending_rest_calls": 0,
+          "rate_budget": {
+            "state": "UNKNOWN",
+            "policy": {
+              "ip_weight_per_minute": 1200,
+              "ip_safety_reserve": 120,
+              "daily_actions": 50000,
+              "daily_safety_reserve": 500,
+              "account_action_reserve": 10,
+              "max_open_orders": 1000,
+              "max_ws_connections": 10,
+              "max_ws_subscriptions": 1000,
+              "max_ws_unique_users": 10,
+              "venue_ws_connections_per_minute": 30,
+              "max_ws_messages_per_minute": 2000,
+              "ws_reconnects_per_minute": 5,
+              "budget_max_age_ms": 60000,
+              "optional_poll_interval_ms": 5000,
+              "read_retry_attempts": 3,
+              "backoff_base_ms": 1000,
+              "backoff_max_ms": 30000,
+              "exhausted_safety_action_interval_ms": 10000,
+              "caution_fraction": 0.75,
+              "throttle_fraction": 0.9
+            },
+            "ip_weight": 120,
+            "public_read_blocked": false,
+            "account_requests_used": null,
+            "account_requests_cap": null,
+            "remaining_budget": null,
+            "budget_observed_ms": null,
+            "daily_actions": 0,
+            "daily_limit": 50000,
+            "entries_allowed": false,
+            "open_orders": 0,
+            "backoff_until_ms": 0,
+            "websocket": {
+              "connections": 2,
+              "subscriptions": 12,
+              "outgoing_messages": 4,
+              "heartbeats": 4,
+              "reconnects_last_minute": 0
+            },
+            "public_reads": {
+              "upstream_by_operation": {
+                "perpDexs": 15,
+                "meta": 15,
+                "spotMeta": 15,
+                "clearinghouseState": 44,
+                "openOrders": 22,
+                "userFillsByTime": 11,
+                "userFunding": 11,
+                "userAbstraction": 22,
+                "spotClearinghouseState": 22,
+                "metaAndAssetCtxs": 91,
+                "userFees": 11,
+                "candleSnapshot": 96,
+                "l2Book": 34,
+                "activeAssetData": 70
+              },
+              "failures": {},
+              "pending": 0,
+              "coalesced": 0,
+              "max_seconds": 0.975727750454098,
+              "failure_details": []
+            }
+          },
+          "backoff_seconds": 0.9476609962051152,
+          "subscription_count": 8,
+          "subscription_identities": [
+            "{\"coin\":\"pas:BTC\",\"interval\":\"1m\",\"type\":\"candle\"}",
+            "{\"coin\":\"pas:BTC\",\"type\":\"activeAssetCtx\"}",
+            "{\"coin\":\"pas:BTC\",\"type\":\"l2Book\"}",
+            "{\"coin\":\"pas:BTC\",\"type\":\"trades\"}",
+            "{\"coin\":\"pas:EWY\",\"interval\":\"1m\",\"type\":\"candle\"}",
+            "{\"coin\":\"pas:EWY\",\"type\":\"activeAssetCtx\"}",
+            "{\"coin\":\"pas:EWY\",\"type\":\"l2Book\"}",
+            "{\"coin\":\"pas:EWY\",\"type\":\"trades\"}"
+          ],
+          "confirmed_subscriptions": 8,
+          "attribution": "SERVER_CLOSE"
+        },
+        {
+          "connection_id": "public-4",
+          "generation": 4,
+          "connection_started_at_ms": 1792414444098,
+          "started_monotonic": 2647527.64557225,
+          "last_poll_monotonic": 2648133.887812666,
+          "last_poll_wall_ms": 1792415050351,
+          "last_any_message_at_ms": 1792415050351,
+          "last_trade_message_at_ms": 1792414816947,
+          "last_book_message_at_ms": 1792415046780,
+          "last_candle_message_at_ms": 1792414817267,
+          "last_context_message_at_ms": 1792415050241,
+          "outgoing_ping_at_ms": 1792415050190,
+          "pong_at_ms": 1792415050351,
+          "last_receive_monotonic": 2648133.887757708,
+          "last_ping_monotonic": 2648133.727503083,
+          "pending_ping_monotonic": null,
+          "transport_state": "DISCONNECTED",
+          "close_code": 1000,
+          "close_reason": "Expired",
+          "disconnected_at_ms": 1792415050887,
+          "connection_age_seconds": 606.7781379162334,
+          "client_exception": "STREAM_DISCONNECTED",
+          "pending_rest_calls": 1,
+          "rate_budget": {
+            "state": "UNKNOWN",
+            "policy": {
+              "ip_weight_per_minute": 1200,
+              "ip_safety_reserve": 120,
+              "daily_actions": 50000,
+              "daily_safety_reserve": 500,
+              "account_action_reserve": 10,
+              "max_open_orders": 1000,
+              "max_ws_connections": 10,
+              "max_ws_subscriptions": 1000,
+              "max_ws_unique_users": 10,
+              "venue_ws_connections_per_minute": 30,
+              "max_ws_messages_per_minute": 2000,
+              "ws_reconnects_per_minute": 5,
+              "budget_max_age_ms": 60000,
+              "optional_poll_interval_ms": 5000,
+              "read_retry_attempts": 3,
+              "backoff_base_ms": 1000,
+              "backoff_max_ms": 30000,
+              "exhausted_safety_action_interval_ms": 10000,
+              "caution_fraction": 0.75,
+              "throttle_fraction": 0.9
+            },
+            "ip_weight": 212,
+            "public_read_blocked": false,
+            "account_requests_used": null,
+            "account_requests_cap": null,
+            "remaining_budget": null,
+            "budget_observed_ms": null,
+            "daily_actions": 0,
+            "daily_limit": 50000,
+            "entries_allowed": false,
+            "open_orders": 0,
+            "backoff_until_ms": 0,
+            "websocket": {
+              "connections": 2,
+              "subscriptions": 12,
+              "outgoing_messages": 4,
+              "heartbeats": 4,
+              "reconnects_last_minute": 0
+            },
+            "public_reads": {
+              "upstream_by_operation": {
+                "perpDexs": 19,
+                "meta": 19,
+                "spotMeta": 19,
+                "clearinghouseState": 56,
+                "openOrders": 28,
+                "userFillsByTime": 14,
+                "userFunding": 14,
+                "userAbstraction": 28,
+                "spotClearinghouseState": 28,
+                "metaAndAssetCtxs": 114,
+                "userFees": 14,
+                "candleSnapshot": 122,
+                "l2Book": 42,
+                "activeAssetData": 90
+              },
+              "failures": {},
+              "pending": 1,
+              "coalesced": 0,
+              "max_seconds": 0.975727750454098,
+              "failure_details": []
+            }
+          },
+          "backoff_seconds": 0.835252487202722,
+          "subscription_count": 8,
+          "subscription_identities": [
+            "{\"coin\":\"pas:BTC\",\"interval\":\"1m\",\"type\":\"candle\"}",
+            "{\"coin\":\"pas:BTC\",\"type\":\"activeAssetCtx\"}",
+            "{\"coin\":\"pas:BTC\",\"type\":\"l2Book\"}",
+            "{\"coin\":\"pas:BTC\",\"type\":\"trades\"}",
+            "{\"coin\":\"pas:EWY\",\"interval\":\"1m\",\"type\":\"candle\"}",
+            "{\"coin\":\"pas:EWY\",\"type\":\"activeAssetCtx\"}",
+            "{\"coin\":\"pas:EWY\",\"type\":\"l2Book\"}",
+            "{\"coin\":\"pas:EWY\",\"type\":\"trades\"}"
+          ],
+          "confirmed_subscriptions": 8,
+          "attribution": "SERVER_CLOSE"
+        },
+        {
+          "connection_id": "public-5",
+          "generation": 5,
+          "connection_started_at_ms": 1792415053867,
+          "started_monotonic": 2648137.404490875,
+          "last_poll_monotonic": 2648810.471993291,
+          "last_poll_wall_ms": 1792415726945,
+          "last_any_message_at_ms": 1792415726945,
+          "last_trade_message_at_ms": 1792415221409,
+          "last_book_message_at_ms": 1792415724223,
+          "last_candle_message_at_ms": 1792415221686,
+          "last_context_message_at_ms": 1792415726945,
+          "outgoing_ping_at_ms": 1792415721711,
+          "pong_at_ms": 1792415721870,
+          "last_receive_monotonic": 2648810.471959625,
+          "last_ping_monotonic": 2648805.238083583,
+          "pending_ping_monotonic": null,
+          "transport_state": "DISCONNECTED",
+          "close_code": 1000,
+          "close_reason": "Expired",
+          "disconnected_at_ms": 1792415727792,
+          "connection_age_seconds": 673.914612040855,
+          "client_exception": "STREAM_DISCONNECTED",
+          "pending_rest_calls": 0,
+          "rate_budget": {
+            "state": "UNKNOWN",
+            "policy": {
+              "ip_weight_per_minute": 1200,
+              "ip_safety_reserve": 120,
+              "daily_actions": 50000,
+              "daily_safety_reserve": 500,
+              "account_action_reserve": 10,
+              "max_open_orders": 1000,
+              "max_ws_connections": 10,
+              "max_ws_subscriptions": 1000,
+              "max_ws_unique_users": 10,
+              "venue_ws_connections_per_minute": 30,
+              "max_ws_messages_per_minute": 2000,
+              "ws_reconnects_per_minute": 5,
+              "budget_max_age_ms": 60000,
+              "optional_poll_interval_ms": 5000,
+              "read_retry_attempts": 3,
+              "backoff_base_ms": 1000,
+              "backoff_max_ms": 30000,
+              "exhausted_safety_action_interval_ms": 10000,
+              "caution_fraction": 0.75,
+              "throttle_fraction": 0.9
+            },
+            "ip_weight": 120,
+            "public_read_blocked": false,
+            "account_requests_used": null,
+            "account_requests_cap": null,
+            "remaining_budget": null,
+            "budget_observed_ms": null,
+            "daily_actions": 0,
+            "daily_limit": 50000,
+            "entries_allowed": false,
+            "open_orders": 0,
+            "backoff_until_ms": 0,
+            "websocket": {
+              "connections": 2,
+              "subscriptions": 12,
+              "outgoing_messages": 4,
+              "heartbeats": 4,
+              "reconnects_last_minute": 0
+            },
+            "public_reads": {
+              "upstream_by_operation": {
+                "perpDexs": 23,
+                "meta": 23,
+                "spotMeta": 23,
+                "clearinghouseState": 68,
+                "openOrders": 34,
+                "userFillsByTime": 17,
+                "userFunding": 17,
+                "userAbstraction": 34,
+                "spotClearinghouseState": 34,
+                "metaAndAssetCtxs": 139,
+                "userFees": 17,
+                "candleSnapshot": 150,
+                "l2Book": 50,
+                "activeAssetData": 112
+              },
+              "failures": {
+                "INFO_READ_CANCELLED": 1
+              },
+              "pending": 0,
+              "coalesced": 0,
+              "max_seconds": 0.975727750454098,
+              "failure_details": [
+                {
+                  "query": "l2Book",
+                  "attempt": 1,
+                  "code": "INFO_READ_CANCELLED",
+                  "status_code": null,
+                  "retry_after_ms": null,
+                  "retryable": false
+                }
+              ]
+            }
+          },
+          "backoff_seconds": 0.8320950097634463,
+          "subscription_count": 8,
+          "subscription_identities": [
+            "{\"coin\":\"pas:BTC\",\"interval\":\"1m\",\"type\":\"candle\"}",
+            "{\"coin\":\"pas:BTC\",\"type\":\"activeAssetCtx\"}",
+            "{\"coin\":\"pas:BTC\",\"type\":\"l2Book\"}",
+            "{\"coin\":\"pas:BTC\",\"type\":\"trades\"}",
+            "{\"coin\":\"pas:EWY\",\"interval\":\"1m\",\"type\":\"candle\"}",
+            "{\"coin\":\"pas:EWY\",\"type\":\"activeAssetCtx\"}",
+            "{\"coin\":\"pas:EWY\",\"type\":\"l2Book\"}",
+            "{\"coin\":\"pas:EWY\",\"type\":\"trades\"}"
+          ],
+          "confirmed_subscriptions": 8,
+          "attribution": "SERVER_CLOSE"
+        },
+        {
+          "connection_id": "public-6",
+          "generation": 6,
+          "connection_started_at_ms": 1792415730716,
+          "started_monotonic": 2648814.24272975,
+          "last_poll_monotonic": 2649504.909837583,
+          "last_poll_wall_ms": 1792416421395,
+          "last_any_message_at_ms": 1792416421395,
+          "last_trade_message_at_ms": 1792415731075,
+          "last_book_message_at_ms": 1792416419899,
+          "last_candle_message_at_ms": null,
+          "last_context_message_at_ms": 1792416421395,
+          "outgoing_ping_at_ms": 1792416399422,
+          "pong_at_ms": 1792416399582,
+          "last_receive_monotonic": 2649504.909790708,
+          "last_ping_monotonic": 2649482.9380615,
+          "pending_ping_monotonic": null,
+          "transport_state": "DISCONNECTED",
+          "close_code": 1000,
+          "close_reason": "Expired",
+          "disconnected_at_ms": 1792416422000,
+          "connection_age_seconds": 691.2727455408312,
+          "client_exception": "STREAM_DISCONNECTED",
+          "pending_rest_calls": 0,
+          "rate_budget": {
+            "state": "UNKNOWN",
+            "policy": {
+              "ip_weight_per_minute": 1200,
+              "ip_safety_reserve": 120,
+              "daily_actions": 50000,
+              "daily_safety_reserve": 500,
+              "account_action_reserve": 10,
+              "max_open_orders": 1000,
+              "max_ws_connections": 10,
+              "max_ws_subscriptions": 1000,
+              "max_ws_unique_users": 10,
+              "venue_ws_connections_per_minute": 30,
+              "max_ws_messages_per_minute": 2000,
+              "ws_reconnects_per_minute": 5,
+              "budget_max_age_ms": 60000,
+              "optional_poll_interval_ms": 5000,
+              "read_retry_attempts": 3,
+              "backoff_base_ms": 1000,
+              "backoff_max_ms": 30000,
+              "exhausted_safety_action_interval_ms": 10000,
+              "caution_fraction": 0.75,
+              "throttle_fraction": 0.9
+            },
+            "ip_weight": 120,
+            "public_read_blocked": false,
+            "account_requests_used": null,
+            "account_requests_cap": null,
+            "remaining_budget": null,
+            "budget_observed_ms": null,
+            "daily_actions": 0,
+            "daily_limit": 50000,
+            "entries_allowed": false,
+            "open_orders": 0,
+            "backoff_until_ms": 0,
+            "websocket": {
+              "connections": 2,
+              "subscriptions": 12,
+              "outgoing_messages": 4,
+              "heartbeats": 4,
+              "reconnects_last_minute": 0
+            },
+            "public_reads": {
+              "upstream_by_operation": {
+                "perpDexs": 28,
+                "meta": 28,
+                "spotMeta": 28,
+                "clearinghouseState": 84,
+                "openOrders": 42,
+                "userFillsByTime": 21,
+                "userFunding": 21,
+                "userAbstraction": 42,
+                "spotClearinghouseState": 42,
+                "metaAndAssetCtxs": 166,
+                "userFees": 21,
+                "candleSnapshot": 180,
+                "l2Book": 59,
+                "activeAssetData": 136
+              },
+              "failures": {
+                "INFO_READ_CANCELLED": 1
+              },
+              "pending": 0,
+              "coalesced": 0,
+              "max_seconds": 0.975727750454098,
+              "failure_details": [
+                {
+                  "query": "l2Book",
+                  "attempt": 1,
+                  "code": "INFO_READ_CANCELLED",
+                  "status_code": null,
+                  "retry_after_ms": null,
+                  "retryable": false
+                }
+              ]
+            }
+          },
+          "backoff_seconds": 0.9622487197165963,
+          "subscription_count": 8,
+          "subscription_identities": [
+            "{\"coin\":\"pas:BTC\",\"interval\":\"1m\",\"type\":\"candle\"}",
+            "{\"coin\":\"pas:BTC\",\"type\":\"activeAssetCtx\"}",
+            "{\"coin\":\"pas:BTC\",\"type\":\"l2Book\"}",
+            "{\"coin\":\"pas:BTC\",\"type\":\"trades\"}",
+            "{\"coin\":\"pas:EWY\",\"interval\":\"1m\",\"type\":\"candle\"}",
+            "{\"coin\":\"pas:EWY\",\"type\":\"activeAssetCtx\"}",
+            "{\"coin\":\"pas:EWY\",\"type\":\"l2Book\"}",
+            "{\"coin\":\"pas:EWY\",\"type\":\"trades\"}"
+          ],
+          "confirmed_subscriptions": 8,
+          "attribution": "SERVER_CLOSE"
+        },
+        {
+          "connection_id": "public-7",
+          "generation": 7,
+          "connection_started_at_ms": 1792416425201,
+          "started_monotonic": 2649508.716484875,
+          "last_poll_monotonic": 2650111.514505291,
+          "last_poll_wall_ms": 1792417027983,
+          "last_any_message_at_ms": 1792417027983,
+          "last_trade_message_at_ms": 1792417009162,
+          "last_book_message_at_ms": 1792417025174,
+          "last_candle_message_at_ms": 1792417009162,
+          "last_context_message_at_ms": 1792417027983,
+          "outgoing_ping_at_ms": 1792417005832,
+          "pong_at_ms": 1792417005991,
+          "last_receive_monotonic": 2650111.514455833,
+          "last_ping_monotonic": 2650089.364022833,
+          "pending_ping_monotonic": null,
+          "transport_state": "DISCONNECTED",
+          "close_code": 1000,
+          "close_reason": "Expired",
+          "disconnected_at_ms": 1792417028887,
+          "connection_age_seconds": 603.7016130411066,
+          "client_exception": "STREAM_DISCONNECTED",
+          "pending_rest_calls": 0,
+          "rate_budget": {
+            "state": "UNKNOWN",
+            "policy": {
+              "ip_weight_per_minute": 1200,
+              "ip_safety_reserve": 120,
+              "daily_actions": 50000,
+              "daily_safety_reserve": 500,
+              "account_action_reserve": 10,
+              "max_open_orders": 1000,
+              "max_ws_connections": 10,
+              "max_ws_subscriptions": 1000,
+              "max_ws_unique_users": 10,
+              "venue_ws_connections_per_minute": 30,
+              "max_ws_messages_per_minute": 2000,
+              "ws_reconnects_per_minute": 5,
+              "budget_max_age_ms": 60000,
+              "optional_poll_interval_ms": 5000,
+              "read_retry_attempts": 3,
+              "backoff_base_ms": 1000,
+              "backoff_max_ms": 30000,
+              "exhausted_safety_action_interval_ms": 10000,
+              "caution_fraction": 0.75,
+              "throttle_fraction": 0.9
+            },
+            "ip_weight": 120,
+            "public_read_blocked": false,
+            "account_requests_used": null,
+            "account_requests_cap": null,
+            "remaining_budget": null,
+            "budget_observed_ms": null,
+            "daily_actions": 0,
+            "daily_limit": 50000,
+            "entries_allowed": false,
+            "open_orders": 0,
+            "backoff_until_ms": 0,
+            "websocket": {
+              "connections": 2,
+              "subscriptions": 12,
+              "outgoing_messages": 4,
+              "heartbeats": 4,
+              "reconnects_last_minute": 0
+            },
+            "public_reads": {
+              "upstream_by_operation": {
+                "perpDexs": 33,
+                "meta": 33,
+                "spotMeta": 33,
+                "clearinghouseState": 100,
+                "openOrders": 50,
+                "userFillsByTime": 25,
+                "userFunding": 25,
+                "userAbstraction": 50,
+                "spotClearinghouseState": 50,
+                "metaAndAssetCtxs": 188,
+                "userFees": 25,
+                "candleSnapshot": 199,
+                "l2Book": 68,
+                "activeAssetData": 156
+              },
+              "failures": {
+                "INFO_READ_CANCELLED": 1
+              },
+              "pending": 0,
+              "coalesced": 0,
+              "max_seconds": 0.975727750454098,
+              "failure_details": [
+                {
+                  "query": "l2Book",
+                  "attempt": 1,
+                  "code": "INFO_READ_CANCELLED",
+                  "status_code": null,
+                  "retry_after_ms": null,
+                  "retryable": false
+                }
+              ]
+            }
+          },
+          "backoff_seconds": 0.8914208480004416,
+          "subscription_count": 8,
+          "subscription_identities": [
+            "{\"coin\":\"pas:BTC\",\"interval\":\"1m\",\"type\":\"candle\"}",
+            "{\"coin\":\"pas:BTC\",\"type\":\"activeAssetCtx\"}",
+            "{\"coin\":\"pas:BTC\",\"type\":\"l2Book\"}",
+            "{\"coin\":\"pas:BTC\",\"type\":\"trades\"}",
+            "{\"coin\":\"pas:EWY\",\"interval\":\"1m\",\"type\":\"candle\"}",
+            "{\"coin\":\"pas:EWY\",\"type\":\"activeAssetCtx\"}",
+            "{\"coin\":\"pas:EWY\",\"type\":\"l2Book\"}",
+            "{\"coin\":\"pas:EWY\",\"type\":\"trades\"}"
+          ],
+          "confirmed_subscriptions": 8,
+          "attribution": "SERVER_CLOSE"
+        }
+      ]
+    },
+    "stream_last_error": null,
+    "stream_reconnections": 7,
+    "account_stream_connected": true,
+    "account_stream_error": "ACCOUNT_WEBSOCKET_DISCONNECTED",
+    "account_stream_generation": 8,
+    "account_stream_healthy": true,
+    "account_subscriptions": [
+      "orderUpdates",
+      "userEvents",
+      "userFills",
+      "userFundings"
+    ],
+    "account_age_ms": 130122,
+    "fee_age_ms": 129789,
+    "rate_report": {
+      "state": "UNKNOWN",
+      "policy": {
+        "ip_weight_per_minute": 1200,
+        "ip_safety_reserve": 120,
+        "daily_actions": 50000,
+        "daily_safety_reserve": 500,
+        "account_action_reserve": 10,
+        "max_open_orders": 1000,
+        "max_ws_connections": 10,
+        "max_ws_subscriptions": 1000,
+        "max_ws_unique_users": 10,
+        "venue_ws_connections_per_minute": 30,
+        "max_ws_messages_per_minute": 2000,
+        "ws_reconnects_per_minute": 5,
+        "budget_max_age_ms": 60000,
+        "optional_poll_interval_ms": 5000,
+        "read_retry_attempts": 3,
+        "backoff_base_ms": 1000,
+        "backoff_max_ms": 30000,
+        "exhausted_safety_action_interval_ms": 10000,
+        "caution_fraction": 0.75,
+        "throttle_fraction": 0.9
+      },
+      "ip_weight": 274,
+      "public_read_blocked": false,
+      "account_requests_used": null,
+      "account_requests_cap": null,
+      "remaining_budget": null,
+      "budget_observed_ms": null,
+      "daily_actions": 0,
+      "daily_limit": 50000,
+      "entries_allowed": false,
+      "open_orders": 0,
+      "backoff_until_ms": 0,
+      "websocket": {
+        "connections": 2,
+        "subscriptions": 12,
+        "outgoing_messages": 11,
+        "heartbeats": 3,
+        "reconnects_last_minute": 1
+      },
+      "public_reads": {
+        "upstream_by_operation": {
+          "perpDexs": 34,
+          "meta": 34,
+          "spotMeta": 34,
+          "clearinghouseState": 100,
+          "openOrders": 50,
+          "userFillsByTime": 25,
+          "userFunding": 25,
+          "userAbstraction": 50,
+          "spotClearinghouseState": 50,
+          "metaAndAssetCtxs": 189,
+          "userFees": 25,
+          "candleSnapshot": 201,
+          "l2Book": 70,
+          "activeAssetData": 156
+        },
+        "failures": {
+          "INFO_READ_CANCELLED": 1
+        },
+        "pending": 0,
+        "coalesced": 0,
+        "max_seconds": 0.975727750454098,
+        "failure_details": [
+          {
+            "query": "l2Book",
+            "attempt": 1,
+            "code": "INFO_READ_CANCELLED",
+            "status_code": null,
+            "retry_after_ms": null,
+            "retryable": false
+          }
+        ]
+      }
+    },
+    "public_receipt_count": 1043,
+    "receipt_rotations": 1,
+    "actual_errors": {
+      "None:INFO_READ_CANCELLED": 1
+    },
+    "feed_mode": "WEBSOCKET_WITH_RATE_CONTROLLED_REST_FALLBACK",
+    "session_account_events": {
+      "fills": [],
+      "funding": [],
+      "start_ms": 1792412363696
+    },
+    "updated_ms": 1792417056204,
+    "started_ms": 1792412363617,
+    "session_id": "f32c0fab3b1747a9970cd2237e9b3c07",
+    "pid": 94187,
+    "local_time": "2026-10-19T19:07:36.204510+05:30",
+    "execution_mode": "PAPER",
+    "allow_live_orders": false,
+    "rss_high_watermark_mb": 126.953125,
+    "strategy": "HASH_VERIFIED_FROZEN_UTC_VWAP",
+    "local_dependency": "This Mac, Python process, power and internet. Codex and its app may be closed.",
+    "log_retention": "Eight 16 MB receipt archives plus current; four 8 MB event archives plus current. Reports retain final truth; old receipts can expire.",
+    "TRADING_AUTHORIZED": false,
+    "AUTO_TRADING_ACTIVE": false,
+    "release_verification": {
+      "verified": true,
+      "source_hash": "d0b72ec4cbce7d74cdad62b480ac22a8dc336182fc1445612b7666b95747f9f9",
+      "receipt_sha256": "65699fbd634df6c2312f017afb11769c5bb1565d3ba1f70164785599edb42da9"
+    },
+    "readiness": {
+      "automation_status": "AUTOMATION_SOFTWARE_READY",
+      "venue_qualification_status": "TRADING_BLOCKED",
+      "authorization_status": "TRADING_BLOCKED",
+      "entry_markets": [
+        "pas:BTC",
+        "pas:EWY"
+      ],
+      "eligible_markets": [],
+      "opportunity_markets": [],
+      "canonical_account_markets": [
+        "pas:BRENT",
+        "pas:BTC",
+        "pas:ETH",
+        "pas:EWJ",
+        "pas:EWY",
+        "pas:GOLD",
+        "pas:HYPE",
+        "pas:SP500",
+        "pas:USDEUR",
+        "pas:USDJPY"
+      ],
+      "state": "USDP_FUNDING_VERIFIED",
+      "gates": {
+        "SCORING_WINDOW_OPEN": true,
+        "USDP_FUNDING_VERIFIED": true,
+        "PAS_ACCOUNT_CONFIGURATION_VERIFIED": false,
+        "HISTORICAL_ORDER_SAFETY_VERIFIED": false,
+        "NATIVE_PROTECTION_QUALIFIED": false,
+        "MARKET_HISTORY_READY": true,
+        "EXECUTABLE_OPPORTUNITY_AVAILABLE": false,
+        "SOURCE_RELEASE_VERIFIED": true,
+        "EXACT_SESSION_APPROVAL_ACCEPTED": false
+      },
+      "blockers": [
+        {
+          "gate": "PAS_ACCOUNT_CONFIGURATION_VERIFIED",
+          "reason": "FRESH_SELECTED_BTC_EWY_ONE_X_CROSS_READBACKS_REQUIRED"
+        },
+        {
+          "gate": "HISTORICAL_ORDER_SAFETY_VERIFIED",
+          "reason": "SHARED_UNKNOWN_OR_ACCOUNT_REVIEW_REQUIRED"
+        },
+        {
+          "gate": "NATIVE_PROTECTION_QUALIFIED",
+          "reason": "GENUINE_PAS_NATIVE_AND_RESIDUAL_PROOF_REQUIRED"
+        },
+        {
+          "gate": "EXECUTABLE_OPPORTUNITY_AVAILABLE",
+          "reason": "NO_FRESH_EXECUTABLE_POSITIVE_CONDITIONAL_LONG_SETUP"
+        },
+        {
+          "gate": "EXACT_SESSION_APPROVAL_ACCEPTED",
+          "reason": "NEW_EXACT_HUMAN_SESSION_APPROVAL_REQUIRED"
+        }
+      ],
+      "funding": {
+        "status": "USDP_POSITIVE_VERIFIED",
+        "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+        "network": "testnet",
+        "dex": "pas",
+        "collateral": "USDP",
+        "account_mode": "unifiedAccount",
+        "token": 3307,
+        "observed_ms": 1792416926415,
+        "exchange_time_ms": 1792416926786,
+        "balance": "100000.0",
+        "age_ms": 129789,
+        "organizer_credit_amount": null,
+        "organizer_credit_provenance": "UNKNOWN",
+        "signing_authority": "NONE",
+        "reasons": [],
+        "response_hashes": {
+          "spot": "1b53cc1b5d50cbc4d32da7b9a35a0374cce3d4807876bfad58e272e368e811df",
+          "state": "544f4edb7eb989080068fc1d9ec025da7b941b8bf61e73108fa4c3f9f51aea08"
+        },
+        "provenance": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl",
+        "equity_basis": "Unified USDP total once; no addition of per-DEX equity or unrealized PnL",
+        "evidence_hash": "7f938fc9ccaf51f996727f78faa39bd3f85f640c764363b025f2c68ad8fa67ad"
+      },
+      "observed_ms": 1792417056204,
+      "next_action": "FRESH_SELECTED_BTC_EWY_ONE_X_CROSS_READBACKS_REQUIRED",
+      "ready_for_operator_action": false,
+      "terminal_status": "READY_FOR_OBSERVATION",
+      "trading_verdict": "NO_GO",
+      "signing_authority": "NONE",
+      "native_protection": "UNQUALIFIED_WITHOUT_VALIDATED_RAW_PROOF",
+      "historical_safety": "BLOCKED",
+      "note": "Diagnostic gates cannot create approval, isolation, protection qualification or a signer"
+    },
+    "restart_context": {
+      "previous_session": null,
+      "previous_output": null,
+      "restored_authority": false,
+      "policy": "Fresh public reconciliation; never restore signing from a prior process"
+    }
+  },
+  "observed_ms": 1792419089580,
+  "stale_ms": 2033376,
+  "diagnosis": "LOCAL_PUBLIC_COLLECTOR_STALLED; exact Python lock stack not sampled; cache/REST lock inversion was independently identified and corrected"
+}

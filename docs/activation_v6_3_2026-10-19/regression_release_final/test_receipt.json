@@ -1,0 +1,99 @@
+{
+  "started_unix": 1792470450.6478121,
+  "source_hash": "eae4585b7e1aaf580c1e46dc2e6482194e5928559a9a5f0d2038a8f9ad7ed473",
+  "scope": "V6.3 PAS native execution qualification, $100 stop-loss budget, finite trading isolation, and controlled trading activation",
+  "evidence_classifier_sha256": "6d81a9912e08c37aca6ad83eb7fbefe3341c5e46af403801cb4045b5296c98f1",
+  "checks_before": {
+    "strategy_freeze": {
+      "exit_code": 0,
+      "result": {
+        "baseline": "nse-working-baseline",
+        "file_count": 1,
+        "method_count": 8,
+        "parameter_count": 32,
+        "passed": true
+      }
+    },
+    "phase0": {
+      "exit_code": 0,
+      "result": {
+        "project": "anchorium-perpetual-alpha",
+        "checks": {
+          "project_is_perpetual_alpha": true,
+          "independent_git_directory": true,
+          "migration_branch": true,
+          "testnet_venue": true,
+          "paper_execution_mode": true,
+          "migration_policy_valid": true,
+          "orders_disabled": true,
+          "angel_one_client_disabled": true,
+          "angel_one_order_boundary_disabled": true,
+          "testnet_order_boundary_disabled": true,
+          "signal_logic_present": true,
+          "signal_source_unchanged": true
+        },
+        "passed": true
+      }
+    }
+  },
+  "finished_unix": 1792471099.967288,
+  "exit_code": 0,
+  "source_hash_after": "eae4585b7e1aaf580c1e46dc2e6482194e5928559a9a5f0d2038a8f9ad7ed473",
+  "totals": {
+    "tests": 3251,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "xml_sha256": "85dd120beff537eed4a594c9184e8d48ca604a36f9cf25fc7ddefd103edd340b",
+  "evidence_classifier_sha256_after": "6d81a9912e08c37aca6ad83eb7fbefe3341c5e46af403801cb4045b5296c98f1",
+  "previous_evidence_classifier_sha256": "9c95b59054aed2adc38a41f5f65b0a65c314ac4cb3b29ea437a88d2b6dfcf8e0",
+  "baseline_minimum": 3033,
+  "expected_minimum": 3251,
+  "checks_after": {
+    "strategy_freeze": {
+      "exit_code": 0,
+      "result": {
+        "baseline": "nse-working-baseline",
+        "file_count": 1,
+        "method_count": 8,
+        "parameter_count": 32,
+        "passed": true
+      }
+    },
+    "phase0": {
+      "exit_code": 0,
+      "result": {
+        "project": "anchorium-perpetual-alpha",
+        "checks": {
+          "project_is_perpetual_alpha": true,
+          "independent_git_directory": true,
+          "migration_branch": true,
+          "testnet_venue": true,
+          "paper_execution_mode": true,
+          "migration_policy_valid": true,
+          "orders_disabled": true,
+          "angel_one_client_disabled": true,
+          "angel_one_order_boundary_disabled": true,
+          "testnet_order_boundary_disabled": true,
+          "signal_logic_present": true,
+          "signal_source_unchanged": true
+        },
+        "passed": true
+      }
+    }
+  },
+  "passed": true,
+  "requirements_sha256": "db76f769d0aae03197e922f579ce6db9aa6aced9587da93e11b4bba409774b4d",
+  "runtime_versions": {
+    "numpy": "2.5.2",
+    "pandas": "3.0.5",
+    "python-dateutil": "2.9.0.post0",
+    "python-dotenv": "1.2.3",
+    "pytest": "8.4.1",
+    "requests": "2.34.2",
+    "tzdata": "2026.3",
+    "websocket-client": "1.9.0",
+    "hyperliquid-python-sdk": "0.24.0"
+  }
+}

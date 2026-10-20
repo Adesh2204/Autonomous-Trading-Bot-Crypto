@@ -1,0 +1,162 @@
+........................................................................ [ 36%]
+........................................................................ [ 72%]
+.........................EEE...........................                  [100%]
+==================================== ERRORS ====================================
+_ ERROR at setup of test_pas_announced_oi_ceilings_and_stricter_runtime_limit[market] _
+
+tmp_path = PosixPath('/private/var/folders/b1/3n84_zgj3xxgpkhtf_xzrnpc0000gn/T/pytest-of-adesh/pytest-844/test_pas_announced_oi_ceilings0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a317c20>
+
+    @pytest.fixture
+    def pas_bridge(tmp_path,monkeypatch):
+        import requests,socket
+        def forbidden(*a,**k):raise AssertionError('NO_NETWORK_IN_PAS_SIGNED_FIXTURES')
+        monkeypatch.setattr(requests.Session,'post',forbidden);monkeypatch.setattr(socket.socket,'connect',forbidden)
+        signer=Account.create();f=PasLiveFixture(signer.address)
+        c=HyperliquidClient(f,clock_ms=lambda:f.now,venue='pas');c.startup()
+        j=ExecutionJournal(tmp_path/'offline.sqlite',session_id='offline:pas',team_address=f.active['user'])
+        rates=HyperliquidRateLimitManager(j,clock_ms=lambda:f.now)
+        clock=ClockHealthMonitor(clock_ms=lambda:f.now,monotonic_ms=lambda:f.now)
+        account=HyperliquidAccount(c,f.active['user']);market=HyperliquidMarketData(c)
+        provider=LiveContextProvider(market,account,signer.address,clock,rates,reconciliation_ready=lambda:True,feed_ready=lambda:True)
+        validator=HyperliquidOrderValidator(c);nonces=NonceManager(tmp_path/'offline_nonces.sqlite',signer.address,clock_ms=lambda:f.now)
+        transport=OfflineSDKTransport(c,signer,account.team_address,nonces,[])
+        e=HyperliquidExecution(c,transport=transport,account=account,journal=j,context_provider=provider,
+            validator=validator,recovery=SimpleNamespace(recover=lambda:SimpleNamespace(ready=True,reasons=())),clock_health=clock,rate_limits=rates)
+        e.entries_paused=False
+        v=SimpleNamespace(fixture=f,client=c,journal=j,rate=rates,clock=clock,account=account,market=market,
+            provider=provider,validator=validator,nonces=nonces,transport=transport,executor=e,signer=signer)
+>       try:yield bridge.__wrapped__(v,monkeypatch)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+algo-trading-bot/test_pas_execution_faults.py:71: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+algo-trading-bot/test_long_session.py:148: in bridge
+    daily=DailyLifecycle(live.journal,d,clock_ms=live.client.clock_ms,source_hash=lambda:'a'*64,mode='OFFLINE_FIXTURE')
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/bounded_daily_session.py:118: in __init__
+    self.journal=journal;self.m=mandate.require();self.clock_ms=clock_ms;self.source_hash=source_hash
+                                ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = ScoredLimits(session_id='offline:two-cycles', team_wallet='0x1111111111111111111111111111111111111111', api_wallet='0x... leverage=1, risk_fraction='0.005', daily_loss_fraction='0.01', network='testnet', dex='pas', protection_required=True)
+
+    def require(self):
+        self._require_scope()
+        if (self.directions!=('LONG',) or not set(self.markets)<=PAS_ENTRY_MARKETS
+                or not SCORED_START_MS<=self.starts_ms<self.expires_ms<=SCORED_END_MS):
+            raise ExchangeError('EXACT_FINITE_PAS_SCORED_WINDOW_REQUIRED')
+        from .base_exchange import decimal
+        if (self.expires_ms-self.starts_ms>3600000 or decimal(self.bankroll)>20000
+                or decimal(self.maximum_notional)>1000 or decimal(self.maximum_cumulative_allocation)>2000):
+>           raise ExchangeError('PAS_SIXTY_MINUTE_20K_BANKROLL_1K_ENTRY_2K_CUMULATIVE_CEILINGS')
+E           exchange.base_exchange.ExchangeError: PAS_SIXTY_MINUTE_20K_BANKROLL_1K_ENTRY_2K_CUMULATIVE_CEILINGS
+
+algo-trading-bot/exchange/scored_session.py:31: ExchangeError
+_ ERROR at setup of test_pas_announced_oi_ceilings_and_stricter_runtime_limit[global] _
+
+tmp_path = PosixPath('/private/var/folders/b1/3n84_zgj3xxgpkhtf_xzrnpc0000gn/T/pytest-of-adesh/pytest-844/test_pas_announced_oi_ceilings1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10aa02360>
+
+    @pytest.fixture
+    def pas_bridge(tmp_path,monkeypatch):
+        import requests,socket
+        def forbidden(*a,**k):raise AssertionError('NO_NETWORK_IN_PAS_SIGNED_FIXTURES')
+        monkeypatch.setattr(requests.Session,'post',forbidden);monkeypatch.setattr(socket.socket,'connect',forbidden)
+        signer=Account.create();f=PasLiveFixture(signer.address)
+        c=HyperliquidClient(f,clock_ms=lambda:f.now,venue='pas');c.startup()
+        j=ExecutionJournal(tmp_path/'offline.sqlite',session_id='offline:pas',team_address=f.active['user'])
+        rates=HyperliquidRateLimitManager(j,clock_ms=lambda:f.now)
+        clock=ClockHealthMonitor(clock_ms=lambda:f.now,monotonic_ms=lambda:f.now)
+        account=HyperliquidAccount(c,f.active['user']);market=HyperliquidMarketData(c)
+        provider=LiveContextProvider(market,account,signer.address,clock,rates,reconciliation_ready=lambda:True,feed_ready=lambda:True)
+        validator=HyperliquidOrderValidator(c);nonces=NonceManager(tmp_path/'offline_nonces.sqlite',signer.address,clock_ms=lambda:f.now)
+        transport=OfflineSDKTransport(c,signer,account.team_address,nonces,[])
+        e=HyperliquidExecution(c,transport=transport,account=account,journal=j,context_provider=provider,
+            validator=validator,recovery=SimpleNamespace(recover=lambda:SimpleNamespace(ready=True,reasons=())),clock_health=clock,rate_limits=rates)
+        e.entries_paused=False
+        v=SimpleNamespace(fixture=f,client=c,journal=j,rate=rates,clock=clock,account=account,market=market,
+            provider=provider,validator=validator,nonces=nonces,transport=transport,executor=e,signer=signer)
+>       try:yield bridge.__wrapped__(v,monkeypatch)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+algo-trading-bot/test_pas_execution_faults.py:71: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+algo-trading-bot/test_long_session.py:148: in bridge
+    daily=DailyLifecycle(live.journal,d,clock_ms=live.client.clock_ms,source_hash=lambda:'a'*64,mode='OFFLINE_FIXTURE')
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/bounded_daily_session.py:118: in __init__
+    self.journal=journal;self.m=mandate.require();self.clock_ms=clock_ms;self.source_hash=source_hash
+                                ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = ScoredLimits(session_id='offline:two-cycles', team_wallet='0x1111111111111111111111111111111111111111', api_wallet='0x... leverage=1, risk_fraction='0.005', daily_loss_fraction='0.01', network='testnet', dex='pas', protection_required=True)
+
+    def require(self):
+        self._require_scope()
+        if (self.directions!=('LONG',) or not set(self.markets)<=PAS_ENTRY_MARKETS
+                or not SCORED_START_MS<=self.starts_ms<self.expires_ms<=SCORED_END_MS):
+            raise ExchangeError('EXACT_FINITE_PAS_SCORED_WINDOW_REQUIRED')
+        from .base_exchange import decimal
+        if (self.expires_ms-self.starts_ms>3600000 or decimal(self.bankroll)>20000
+                or decimal(self.maximum_notional)>1000 or decimal(self.maximum_cumulative_allocation)>2000):
+>           raise ExchangeError('PAS_SIXTY_MINUTE_20K_BANKROLL_1K_ENTRY_2K_CUMULATIVE_CEILINGS')
+E           exchange.base_exchange.ExchangeError: PAS_SIXTY_MINUTE_20K_BANKROLL_1K_ENTRY_2K_CUMULATIVE_CEILINGS
+
+algo-trading-bot/exchange/scored_session.py:31: ExchangeError
+_ ERROR at setup of test_pas_announced_oi_ceilings_and_stricter_runtime_limit[stricter_api] _
+
+tmp_path = PosixPath('/private/var/folders/b1/3n84_zgj3xxgpkhtf_xzrnpc0000gn/T/pytest-of-adesh/pytest-844/test_pas_announced_oi_ceilings2')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10af2e6c0>
+
+    @pytest.fixture
+    def pas_bridge(tmp_path,monkeypatch):
+        import requests,socket
+        def forbidden(*a,**k):raise AssertionError('NO_NETWORK_IN_PAS_SIGNED_FIXTURES')
+        monkeypatch.setattr(requests.Session,'post',forbidden);monkeypatch.setattr(socket.socket,'connect',forbidden)
+        signer=Account.create();f=PasLiveFixture(signer.address)
+        c=HyperliquidClient(f,clock_ms=lambda:f.now,venue='pas');c.startup()
+        j=ExecutionJournal(tmp_path/'offline.sqlite',session_id='offline:pas',team_address=f.active['user'])
+        rates=HyperliquidRateLimitManager(j,clock_ms=lambda:f.now)
+        clock=ClockHealthMonitor(clock_ms=lambda:f.now,monotonic_ms=lambda:f.now)
+        account=HyperliquidAccount(c,f.active['user']);market=HyperliquidMarketData(c)
+        provider=LiveContextProvider(market,account,signer.address,clock,rates,reconciliation_ready=lambda:True,feed_ready=lambda:True)
+        validator=HyperliquidOrderValidator(c);nonces=NonceManager(tmp_path/'offline_nonces.sqlite',signer.address,clock_ms=lambda:f.now)
+        transport=OfflineSDKTransport(c,signer,account.team_address,nonces,[])
+        e=HyperliquidExecution(c,transport=transport,account=account,journal=j,context_provider=provider,
+            validator=validator,recovery=SimpleNamespace(recover=lambda:SimpleNamespace(ready=True,reasons=())),clock_health=clock,rate_limits=rates)
+        e.entries_paused=False
+        v=SimpleNamespace(fixture=f,client=c,journal=j,rate=rates,clock=clock,account=account,market=market,
+            provider=provider,validator=validator,nonces=nonces,transport=transport,executor=e,signer=signer)
+>       try:yield bridge.__wrapped__(v,monkeypatch)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+algo-trading-bot/test_pas_execution_faults.py:71: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+algo-trading-bot/test_long_session.py:148: in bridge
+    daily=DailyLifecycle(live.journal,d,clock_ms=live.client.clock_ms,source_hash=lambda:'a'*64,mode='OFFLINE_FIXTURE')
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+algo-trading-bot/exchange/bounded_daily_session.py:118: in __init__
+    self.journal=journal;self.m=mandate.require();self.clock_ms=clock_ms;self.source_hash=source_hash
+                                ^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = ScoredLimits(session_id='offline:two-cycles', team_wallet='0x1111111111111111111111111111111111111111', api_wallet='0x... leverage=1, risk_fraction='0.005', daily_loss_fraction='0.01', network='testnet', dex='pas', protection_required=True)
+
+    def require(self):
+        self._require_scope()
+        if (self.directions!=('LONG',) or not set(self.markets)<=PAS_ENTRY_MARKETS
+                or not SCORED_START_MS<=self.starts_ms<self.expires_ms<=SCORED_END_MS):
+            raise ExchangeError('EXACT_FINITE_PAS_SCORED_WINDOW_REQUIRED')
+        from .base_exchange import decimal
+        if (self.expires_ms-self.starts_ms>3600000 or decimal(self.bankroll)>20000
+                or decimal(self.maximum_notional)>1000 or decimal(self.maximum_cumulative_allocation)>2000):
+>           raise ExchangeError('PAS_SIXTY_MINUTE_20K_BANKROLL_1K_ENTRY_2K_CUMULATIVE_CEILINGS')
+E           exchange.base_exchange.ExchangeError: PAS_SIXTY_MINUTE_20K_BANKROLL_1K_ENTRY_2K_CUMULATIVE_CEILINGS
+
+algo-trading-bot/exchange/scored_session.py:31: ExchangeError
+=========================== short test summary info ============================
+ERROR algo-trading-bot/test_post_funding_v6.py::test_pas_announced_oi_ceilings_and_stricter_runtime_limit[market]
+ERROR algo-trading-bot/test_post_funding_v6.py::test_pas_announced_oi_ceilings_and_stricter_runtime_limit[global]
+ERROR algo-trading-bot/test_post_funding_v6.py::test_pas_announced_oi_ceilings_and_stricter_runtime_limit[stricter_api]
+196 passed, 3 errors in 4.63s

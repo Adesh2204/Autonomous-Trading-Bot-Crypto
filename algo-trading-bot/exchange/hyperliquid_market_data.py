@@ -540,7 +540,8 @@ class ParMarketDataEngine:
         with self._lock:
             now = self.client.clock_ms()
             return [bar for _, bar in sorted(self.candles[symbol].items())
-                    if bar.timestamp_ms + 60_000 <= now]
+                    if bar.timestamp_ms + 60_000 <= now and (bar.received_timestamp_ms is None
+                        or bar.timestamp_ms + 60_000 <= bar.received_timestamp_ms)]
 
     def get_quote(self, symbol):
         if not self.connected or not self.reconciled or not self.client.ready:
