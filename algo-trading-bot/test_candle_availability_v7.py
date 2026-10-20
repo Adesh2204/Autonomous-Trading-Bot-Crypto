@@ -7,9 +7,10 @@ import sys
 import pytest
 from exchange.base_exchange import ExchangeError
 from exchange.candle_availability import CandleAvailabilityMonitor
-from exchange.hyperliquid_market_data import parse_candle
+from exchange.hyperliquid_client import HyperliquidClient
+from exchange.hyperliquid_market_data import HyperliquidMarketData,ParMarketDataEngine,parse_candle
 from test_market_resilience import engine, ready
-from test_exchange_migration import NOW, candle_row
+from test_exchange_migration import NOW, PublicInfoFixture, candle_row
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
 from check_practice_health import describe
@@ -165,6 +166,45 @@ def test_adaptive_hint_is_bounded_and_requires_twenty_live_intervals():
     _,e=engine();e.health_manager.begin_recovery(['par:BTC'],NOW)
     e.health_manager.finish_recovery(['par:BTC'],NOW,delay_hints={'par:BTC':999999})
     assert e.health_manager.records['par:BTC']['next_retry_at_ms']==NOW+300000
+
+
+def test_quota_retry_deadline_is_honored_without_exponential_padding_or_fabrication():
+    source=PublicInfoFixture()
+    client=HyperliquidClient(source,clock_ms=lambda:source.now,venue='par');client.startup()
+    e=ParMarketDataEngine(HyperliquidMarketData(client),history_bars=300,include_trades=True)
+    ready(e)
+    hole=sorted(e.candles['par:BTC'])[30]
+    del e.candles['par:BTC'][hole]
+    e.market_health()
+    genuine_before=dict(e.candles['par:BTC'])
+    original=source.__class__.__call__
+    retry_after=[60000]
+
+    def quota_limited(payload):
+        if payload['type']=='candleSnapshot':
+            error=ExchangeError('PAS_CANDLE_BUDGET_EXHAUSTED')
+            error.retry_after_ms=retry_after[0]
+            error.retryable=False
+            raise error
+        return original(source,payload)
+
+    e.client.transport=quota_limited
+    e.reconcile_history(symbols=['par:BTC'])
+    first_deadline=source.now+60000
+    assert e.health_manager.records['par:BTC']['next_retry_at_ms']==first_deadline
+    assert not e.health_manager.due(first_deadline-1)
+    assert 'par:BTC' in e.health_manager.due(first_deadline)
+    assert e.candles['par:BTC']==genuine_before
+    assert hole not in e.candles['par:BTC']
+
+    # A second, shorter explicit quota wait replaces—not gets padded by—the
+    # generic 60-second exponential delay from the prior failed recovery.
+    source.now=first_deadline
+    retry_after[0]=10000
+    e.reconcile_history(symbols=['par:BTC'])
+    assert e.health_manager.records['par:BTC']['next_retry_at_ms']==source.now+10000
+    assert e.candles['par:BTC']==genuine_before
+    assert hole not in e.candles['par:BTC']
 
 
 def test_healthy_symbol_independent_and_genuine_gap_recovery_recorded():

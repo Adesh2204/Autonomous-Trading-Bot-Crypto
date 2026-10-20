@@ -122,7 +122,7 @@ class MarketHealthManager:
                 r.update(healthy=False,quarantined=True)
                 self._transition(s,'RECOVERING',now_ms,tuple(r['reasons'])+('REST_RECOVERY_PENDING',))
 
-    def finish_recovery(self,symbols,now_ms,*,delay_hints=None):
+    def finish_recovery(self,symbols,now_ms,*,delay_hints=None,retry_deadlines_ms=None):
         with self._lock:
             for s in symbols:
                 self.pending.discard(s)
@@ -131,7 +131,9 @@ class MarketHealthManager:
                 delay=min(300000,self.retry_ms*2**min(4,max(0,r.get('consecutive_recovery_attempts',1)-1)))
                 hint=(delay_hints or {}).get(s)
                 if hint is not None:delay=min(300000,max(delay,int(hint)))
-                r['next_retry_at_ms']=now_ms+delay
+                deadline=(retry_deadlines_ms or {}).get(s)
+                if deadline is None:r['next_retry_at_ms']=now_ms+delay
+                else:r['next_retry_at_ms']=min(now_ms+300000,max(now_ms,int(deadline)))
 
     def due(self,now_ms):
         with self._lock:
