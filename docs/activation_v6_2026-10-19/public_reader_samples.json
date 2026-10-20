@@ -1,0 +1,2973 @@
+{
+  "source_root": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v6_2026-10-19/public_reader_source",
+  "source_hash": "d0b72ec4cbce7d74cdad62b480ac22a8dc336182fc1445612b7666b95747f9f9",
+  "samples": [
+    {
+      "observed_ms": 1792413125683,
+      "status": "OBSERVING",
+      "status_age_ms": 450,
+      "worker_running": true,
+      "public_source_matches": true,
+      "market_stream": true,
+      "account_stream": true,
+      "history": {
+        "pas:BTC": {
+          "raw_returned_last": 2,
+          "raw_returned_in_retained_snapshots": 55386,
+          "valid_returned_last": 2,
+          "valid_deduplicated_completed": 1242,
+          "contiguous_tail_bars": 1242,
+          "missing_intervals": [],
+          "earliest_ms": 1792337760000,
+          "latest_ms": 1792412220000,
+          "latest_completed_ms": 1792412280000,
+          "cache_age_ms": 845683,
+          "last_collection_ms": 1792413087407,
+          "warmup_required": 300,
+          "strategy_history_ready": false,
+          "warmup_satisfied": true,
+          "data_freshness_satisfied": false,
+          "failure_classification": "UPSTREAM_DATA_UNAVAILABLE",
+          "failure_reasons": [
+            "COMPLETED_CANDLE_STALE_OR_MISSING"
+          ],
+          "request_diagnostics": {
+            "rest": {
+              "request": {
+                "coin": "pas:BTC",
+                "interval": "1m",
+                "startTime": 1792412160000,
+                "endTime": 1792413059999
+              },
+              "received_ms": 1792413087406,
+              "returned_count": 2,
+              "first_returned_ms": 1792412160000,
+              "last_returned_ms": 1792412220000,
+              "expected_intervals": 15,
+              "normalization_succeeded": true,
+              "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl"
+            },
+            "stream": {
+              "received_ms": 1792412259536,
+              "candle_open_ms": 1792412220000,
+              "candle_close_ms": 1792412279999
+            }
+          },
+          "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+          "database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/history.sqlite"
+        },
+        "pas:EWY": {
+          "raw_returned_last": 2,
+          "raw_returned_in_retained_snapshots": 60012,
+          "valid_returned_last": 2,
+          "valid_deduplicated_completed": 4319,
+          "contiguous_tail_bars": 4319,
+          "missing_intervals": [],
+          "earliest_ms": 1792153680000,
+          "latest_ms": 1792412760000,
+          "latest_completed_ms": 1792412820000,
+          "cache_age_ms": 305683,
+          "last_collection_ms": 1792413088040,
+          "warmup_required": 300,
+          "strategy_history_ready": false,
+          "warmup_satisfied": true,
+          "data_freshness_satisfied": false,
+          "failure_classification": "UPSTREAM_DATA_UNAVAILABLE",
+          "failure_reasons": [
+            "COMPLETED_CANDLE_STALE_OR_MISSING"
+          ],
+          "request_diagnostics": {
+            "rest": {
+              "request": {
+                "coin": "pas:EWY",
+                "interval": "1m",
+                "startTime": 1792412700000,
+                "endTime": 1792413059999
+              },
+              "received_ms": 1792413088038,
+              "returned_count": 2,
+              "first_returned_ms": 1792412700000,
+              "last_returned_ms": 1792412760000,
+              "expected_intervals": 6,
+              "normalization_succeeded": true,
+              "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl"
+            },
+            "stream": {
+              "received_ms": 1792412787106,
+              "candle_open_ms": 1792412760000,
+              "candle_close_ms": 1792412819999
+            }
+          },
+          "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+          "database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/history.sqlite"
+        }
+      },
+      "signals": [
+        {
+          "symbol": "pas:BTC",
+          "observed_ms": 1792413087782,
+          "decision": "NO_TRADE",
+          "reasons": [
+            "COMPLETED_CANDLE_STALE"
+          ],
+          "metrics": {},
+          "baseline_strategy_unchanged": true,
+          "order_submission_enabled": false,
+          "confidence_probability": null,
+          "data_status": "FAILED_SAFE",
+          "history": {
+            "raw_returned_last": 2,
+            "raw_returned_in_retained_snapshots": 55386,
+            "valid_returned_last": 2,
+            "valid_deduplicated_completed": 1242,
+            "contiguous_tail_bars": 1242,
+            "missing_intervals": [],
+            "earliest_ms": 1792337760000,
+            "latest_ms": 1792412220000,
+            "latest_completed_ms": 1792412280000,
+            "cache_age_ms": 807414,
+            "last_collection_ms": 1792413087407,
+            "warmup_required": 300,
+            "strategy_history_ready": false,
+            "warmup_satisfied": true,
+            "data_freshness_satisfied": false,
+            "failure_classification": "UPSTREAM_DATA_UNAVAILABLE",
+            "failure_reasons": [
+              "COMPLETED_CANDLE_STALE_OR_MISSING"
+            ],
+            "request_diagnostics": {
+              "rest": {
+                "request": {
+                  "coin": "pas:BTC",
+                  "interval": "1m",
+                  "startTime": 1792412160000,
+                  "endTime": 1792413059999
+                },
+                "received_ms": 1792413087406,
+                "returned_count": 2,
+                "first_returned_ms": 1792412160000,
+                "last_returned_ms": 1792412220000,
+                "expected_intervals": 15,
+                "normalization_succeeded": true,
+                "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl"
+              },
+              "stream": {
+                "received_ms": 1792412259536,
+                "candle_open_ms": 1792412220000,
+                "candle_close_ms": 1792412279999
+              }
+            },
+            "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+            "database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/history.sqlite"
+          },
+          "approved_quantity": null,
+          "execution_preflight": "NOT_AUTHORIZED",
+          "protection": "ACTUAL_NATIVE_TRIGGER_QUALIFICATION_REQUIRED"
+        },
+        {
+          "symbol": "pas:EWY",
+          "observed_ms": 1792413088594,
+          "decision": "NO_TRADE",
+          "reasons": [
+            "COMPLETED_CANDLE_STALE"
+          ],
+          "metrics": {},
+          "baseline_strategy_unchanged": true,
+          "order_submission_enabled": false,
+          "confidence_probability": null,
+          "data_status": "FAILED_SAFE",
+          "history": {
+            "raw_returned_last": 2,
+            "raw_returned_in_retained_snapshots": 60012,
+            "valid_returned_last": 2,
+            "valid_deduplicated_completed": 4319,
+            "contiguous_tail_bars": 4319,
+            "missing_intervals": [],
+            "earliest_ms": 1792153680000,
+            "latest_ms": 1792412760000,
+            "latest_completed_ms": 1792412820000,
+            "cache_age_ms": 268064,
+            "last_collection_ms": 1792413088040,
+            "warmup_required": 300,
+            "strategy_history_ready": false,
+            "warmup_satisfied": true,
+            "data_freshness_satisfied": false,
+            "failure_classification": "UPSTREAM_DATA_UNAVAILABLE",
+            "failure_reasons": [
+              "COMPLETED_CANDLE_STALE_OR_MISSING"
+            ],
+            "request_diagnostics": {
+              "rest": {
+                "request": {
+                  "coin": "pas:EWY",
+                  "interval": "1m",
+                  "startTime": 1792412700000,
+                  "endTime": 1792413059999
+                },
+                "received_ms": 1792413088038,
+                "returned_count": 2,
+                "first_returned_ms": 1792412700000,
+                "last_returned_ms": 1792412760000,
+                "expected_intervals": 6,
+                "normalization_succeeded": true,
+                "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl"
+              },
+              "stream": {
+                "received_ms": 1792412787106,
+                "candle_open_ms": 1792412760000,
+                "candle_close_ms": 1792412819999
+              }
+            },
+            "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+            "database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/history.sqlite"
+          },
+          "approved_quantity": null,
+          "execution_preflight": "NOT_AUTHORIZED",
+          "protection": "ACTUAL_NATIVE_TRIGGER_QUALIFICATION_REQUIRED"
+        }
+      ],
+      "liquidity": {
+        "pas:BTC": {
+          "quantity": "0.00060",
+          "notional": "49.509000",
+          "bid": "82465.0",
+          "ask": "82515.0",
+          "book_ms": 1792413087194,
+          "observed_ms": 1792413087607,
+          "active_asset_ms": 1792413087782,
+          "context_ms": 1792413087607,
+          "market_context": {
+            "funding": "-0.0000582881",
+            "openInterest": "2.25504",
+            "prevDayPx": "81066.0",
+            "dayNtlVlm": "98854.5776",
+            "premium": "-0.00104564",
+            "oraclePx": "82581.0",
+            "markPx": "82496.0",
+            "midPx": "82490.0",
+            "impactPxs": [
+              "82447.5",
+              "82541.8"
+            ],
+            "dayBaseVlm": "1.21822"
+          },
+          "size_step": "0.00001",
+          "one_lot_bid_notional": "0.824650",
+          "partial_minimum_admissible": false,
+          "partial_protection_qualified": false,
+          "native_protection_qualified": false,
+          "partial_path": {
+            "entry_admissible_under_documented_minimum": false,
+            "blocker": "FROZEN_STOP_PLAN_UNAVAILABLE"
+          },
+          "targets": {
+            "1000": false,
+            "2500": false,
+            "5000": false,
+            "10000": false,
+            "25000": false,
+            "50000": false
+          },
+          "qualified_unattended_notional": "0",
+          "active_asset": {
+            "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+            "coin": "pas:BTC",
+            "leverage": {
+              "type": "cross",
+              "value": 20
+            },
+            "maxTradeSzs": [
+              "24.24359",
+              "24.24359"
+            ],
+            "availableToTrade": [
+              "100000.0",
+              "100000.0"
+            ],
+            "markPx": "82496.0"
+          },
+          "evidence_evaluation": {
+            "symbol": "pas:BTC",
+            "liquidity_only_quantity": "0",
+            "liquidity_only_notional": "0",
+            "economically_viable_notional": "0",
+            "authorized_executable_notional": "0",
+            "expected_net_pnl": null,
+            "expected_return_probability": null,
+            "decision": "OBSERVE",
+            "reasons": [
+              "ONE_X_CROSS_REQUIRED"
+            ],
+            "observed_ms": 1792413087782
+          },
+          "fee_scenarios": {
+            "base_taker_rate": "0.00045",
+            "documented_pas_rate_estimate": "0.00090",
+            "unchanged_signing_stress_rate": "0.00270",
+            "actual_charged_rate": null,
+            "documented_source": "https://perpetual-alpha26.github.io/docs/#venue-mechanics",
+            "expected_net_pnl": null,
+            "scenario_only": true,
+            "production_fee_policy_changed": false,
+            "assumption": "Published PAS positive base-rate multiplier=2; actual fill fee/feeToken govern charges",
+            "documented_target_scenario": null,
+            "stress_target_scenario": null,
+            "quantity": "0.00060",
+            "hourly_funding": "-0.0000582881",
+            "mark_oracle_divergence_bps": "-10.29292452258994199634298446",
+            "book_mid_oracle_divergence_bps": "-11.01948390065511437255543043",
+            "documented_taker_roundtrip_fee": "0.08908920000",
+            "stress_taker_roundtrip_fee": "0.26726760000",
+            "immediate_roundtrip_spread": "0.030000",
+            "maker_sensitivity_assumption": "Hypothetical maker entry and taker exit; no maker fill or execution switch implied",
+            "documented_maker_entry_taker_exit_fee": "0.05938380000"
+          }
+        },
+        "pas:EWY": {
+          "quantity": "0.314",
+          "notional": "49.90088",
+          "bid": "158.91",
+          "ask": "158.92",
+          "book_ms": 1792413087194,
+          "observed_ms": 1792413088418,
+          "active_asset_ms": 1792413088594,
+          "context_ms": 1792413088418,
+          "market_context": {
+            "funding": "0.00000625",
+            "openInterest": "114.948",
+            "prevDayPx": "153.99",
+            "dayNtlVlm": "78915.02553",
+            "premium": "-0.0002987609",
+            "oraclePx": "158.99",
+            "markPx": "158.96",
+            "midPx": "158.915",
+            "impactPxs": [
+              "158.876",
+              "159.009"
+            ],
+            "dayBaseVlm": "519.142"
+          },
+          "size_step": "0.001",
+          "one_lot_bid_notional": "0.15891",
+          "partial_minimum_admissible": false,
+          "partial_protection_qualified": false,
+          "native_protection_qualified": false,
+          "partial_path": {
+            "entry_admissible_under_documented_minimum": false,
+            "blocker": "FROZEN_STOP_PLAN_UNAVAILABLE"
+          },
+          "targets": {
+            "1000": false,
+            "2500": false,
+            "5000": false,
+            "10000": false,
+            "25000": false,
+            "50000": false
+          },
+          "qualified_unattended_notional": "0",
+          "active_asset": {
+            "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+            "coin": "pas:EWY",
+            "leverage": {
+              "type": "cross",
+              "value": 20
+            },
+            "maxTradeSzs": [
+              "12581.781",
+              "12581.781"
+            ],
+            "availableToTrade": [
+              "100000.0",
+              "100000.0"
+            ],
+            "markPx": "158.96"
+          },
+          "evidence_evaluation": {
+            "symbol": "pas:EWY",
+            "liquidity_only_quantity": "0",
+            "liquidity_only_notional": "0",
+            "economically_viable_notional": "0",
+            "authorized_executable_notional": "0",
+            "expected_net_pnl": null,
+            "expected_return_probability": null,
+            "decision": "OBSERVE",
+            "reasons": [
+              "ONE_X_CROSS_REQUIRED"
+            ],
+            "observed_ms": 1792413088594
+          },
+          "fee_scenarios": {
+            "base_taker_rate": "0.00045",
+            "documented_pas_rate_estimate": "0.00090",
+            "unchanged_signing_stress_rate": "0.00270",
+            "actual_charged_rate": null,
+            "documented_source": "https://perpetual-alpha26.github.io/docs/#venue-mechanics",
+            "expected_net_pnl": null,
+            "scenario_only": true,
+            "production_fee_policy_changed": false,
+            "assumption": "Published PAS positive base-rate multiplier=2; actual fill fee/feeToken govern charges",
+            "documented_target_scenario": null,
+            "stress_target_scenario": null,
+            "quantity": "0.314",
+            "hourly_funding": "0.00000625",
+            "mark_oracle_divergence_bps": "-1.886911126485942512107679728",
+            "book_mid_oracle_divergence_bps": "-4.717277816214856280269199321",
+            "documented_taker_roundtrip_fee": "0.0898187580",
+            "stress_taker_roundtrip_fee": "0.2694562740",
+            "immediate_roundtrip_spread": "0.00314",
+            "maker_sensitivity_assumption": "Hypothetical maker entry and taker exit; no maker fill or execution switch implied",
+            "documented_maker_entry_taker_exit_fee": "0.0598782300"
+          }
+        }
+      },
+      "funding": {
+        "status": "USDP_POSITIVE_VERIFIED",
+        "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+        "network": "testnet",
+        "dex": "pas",
+        "collateral": "USDP",
+        "account_mode": "unifiedAccount",
+        "token": 3307,
+        "observed_ms": 1792413010872,
+        "exchange_time_ms": 1792413011068,
+        "balance": "100000.0",
+        "age_ms": 114811,
+        "organizer_credit_amount": null,
+        "organizer_credit_provenance": "UNKNOWN",
+        "signing_authority": "NONE",
+        "reasons": [],
+        "response_hashes": {
+          "spot": "1b53cc1b5d50cbc4d32da7b9a35a0374cce3d4807876bfad58e272e368e811df",
+          "state": "00ab5848bdf5f4dd4cce0e0d6073326fe108df0a008c0aa869e28b934e1e0422"
+        },
+        "provenance": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl",
+        "equity_basis": "Unified USDP total once; no addition of per-DEX equity or unrealized PnL",
+        "evidence_hash": "572451c8e7ab2bd3e756682f4825a564989f68be7a83cc736fe1475ac8a44146"
+      },
+      "account": {
+        "source": "EXCHANGE_REPORTED_ACCOUNT_OBSERVER",
+        "exchange_orders_submitted": 0,
+        "entries_paused": false,
+        "reasons": [],
+        "positions": [],
+        "open_orders": [],
+        "fills": [],
+        "funding_events": [],
+        "reported_account_equity": {
+          "reported_account_value": "100000.0",
+          "collateral_balance": "100000.0",
+          "margin_used": "0",
+          "withdrawable": null,
+          "valuation_source": "spotClearinghouseState.USDP.total"
+        },
+        "accounting_window_ms": [
+          0,
+          1792413009489
+        ],
+        "latest_query_window_ms": [
+          1792412919400,
+          1792413009489
+        ],
+        "realized": {
+          "gross_closed_pnl": "0",
+          "actual_fill_fees": "0",
+          "actual_funding_cashflow": "0",
+          "net_after_fees_and_funding": "0",
+          "scope": "ONLY_OBSERVED_ACCOUNT_EVENTS; excludes deposits/transfers and unknown historical events"
+        },
+        "corrections": []
+      },
+      "account_observed_ms": 1792413010694,
+      "TRADING_AUTHORIZED": false,
+      "AUTO_TRADING_ACTIVE": false
+    },
+    {
+      "observed_ms": 1792413135701,
+      "status": "OBSERVING",
+      "status_age_ms": 214,
+      "worker_running": true,
+      "public_source_matches": true,
+      "market_stream": true,
+      "account_stream": true,
+      "history": {
+        "pas:BTC": {
+          "raw_returned_last": 2,
+          "raw_returned_in_retained_snapshots": 55386,
+          "valid_returned_last": 2,
+          "valid_deduplicated_completed": 1242,
+          "contiguous_tail_bars": 1242,
+          "missing_intervals": [],
+          "earliest_ms": 1792337760000,
+          "latest_ms": 1792412220000,
+          "latest_completed_ms": 1792412280000,
+          "cache_age_ms": 855701,
+          "last_collection_ms": 1792413087407,
+          "warmup_required": 300,
+          "strategy_history_ready": false,
+          "warmup_satisfied": true,
+          "data_freshness_satisfied": false,
+          "failure_classification": "UPSTREAM_DATA_UNAVAILABLE",
+          "failure_reasons": [
+            "COMPLETED_CANDLE_STALE_OR_MISSING"
+          ],
+          "request_diagnostics": {
+            "rest": {
+              "request": {
+                "coin": "pas:BTC",
+                "interval": "1m",
+                "startTime": 1792412160000,
+                "endTime": 1792413059999
+              },
+              "received_ms": 1792413087406,
+              "returned_count": 2,
+              "first_returned_ms": 1792412160000,
+              "last_returned_ms": 1792412220000,
+              "expected_intervals": 15,
+              "normalization_succeeded": true,
+              "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl"
+            },
+            "stream": {
+              "received_ms": 1792412259536,
+              "candle_open_ms": 1792412220000,
+              "candle_close_ms": 1792412279999
+            }
+          },
+          "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+          "database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/history.sqlite"
+        },
+        "pas:EWY": {
+          "raw_returned_last": 2,
+          "raw_returned_in_retained_snapshots": 60012,
+          "valid_returned_last": 2,
+          "valid_deduplicated_completed": 4319,
+          "contiguous_tail_bars": 4319,
+          "missing_intervals": [],
+          "earliest_ms": 1792153680000,
+          "latest_ms": 1792412760000,
+          "latest_completed_ms": 1792412820000,
+          "cache_age_ms": 315701,
+          "last_collection_ms": 1792413088040,
+          "warmup_required": 300,
+          "strategy_history_ready": false,
+          "warmup_satisfied": true,
+          "data_freshness_satisfied": false,
+          "failure_classification": "UPSTREAM_DATA_UNAVAILABLE",
+          "failure_reasons": [
+            "COMPLETED_CANDLE_STALE_OR_MISSING"
+          ],
+          "request_diagnostics": {
+            "rest": {
+              "request": {
+                "coin": "pas:EWY",
+                "interval": "1m",
+                "startTime": 1792412700000,
+                "endTime": 1792413059999
+              },
+              "received_ms": 1792413088038,
+              "returned_count": 2,
+              "first_returned_ms": 1792412700000,
+              "last_returned_ms": 1792412760000,
+              "expected_intervals": 6,
+              "normalization_succeeded": true,
+              "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl"
+            },
+            "stream": {
+              "received_ms": 1792412787106,
+              "candle_open_ms": 1792412760000,
+              "candle_close_ms": 1792412819999
+            }
+          },
+          "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+          "database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/history.sqlite"
+        }
+      },
+      "signals": [
+        {
+          "symbol": "pas:BTC",
+          "observed_ms": 1792413087782,
+          "decision": "NO_TRADE",
+          "reasons": [
+            "COMPLETED_CANDLE_STALE"
+          ],
+          "metrics": {},
+          "baseline_strategy_unchanged": true,
+          "order_submission_enabled": false,
+          "confidence_probability": null,
+          "data_status": "FAILED_SAFE",
+          "history": {
+            "raw_returned_last": 2,
+            "raw_returned_in_retained_snapshots": 55386,
+            "valid_returned_last": 2,
+            "valid_deduplicated_completed": 1242,
+            "contiguous_tail_bars": 1242,
+            "missing_intervals": [],
+            "earliest_ms": 1792337760000,
+            "latest_ms": 1792412220000,
+            "latest_completed_ms": 1792412280000,
+            "cache_age_ms": 807414,
+            "last_collection_ms": 1792413087407,
+            "warmup_required": 300,
+            "strategy_history_ready": false,
+            "warmup_satisfied": true,
+            "data_freshness_satisfied": false,
+            "failure_classification": "UPSTREAM_DATA_UNAVAILABLE",
+            "failure_reasons": [
+              "COMPLETED_CANDLE_STALE_OR_MISSING"
+            ],
+            "request_diagnostics": {
+              "rest": {
+                "request": {
+                  "coin": "pas:BTC",
+                  "interval": "1m",
+                  "startTime": 1792412160000,
+                  "endTime": 1792413059999
+                },
+                "received_ms": 1792413087406,
+                "returned_count": 2,
+                "first_returned_ms": 1792412160000,
+                "last_returned_ms": 1792412220000,
+                "expected_intervals": 15,
+                "normalization_succeeded": true,
+                "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl"
+              },
+              "stream": {
+                "received_ms": 1792412259536,
+                "candle_open_ms": 1792412220000,
+                "candle_close_ms": 1792412279999
+              }
+            },
+            "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+            "database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/history.sqlite"
+          },
+          "approved_quantity": null,
+          "execution_preflight": "NOT_AUTHORIZED",
+          "protection": "ACTUAL_NATIVE_TRIGGER_QUALIFICATION_REQUIRED"
+        },
+        {
+          "symbol": "pas:EWY",
+          "observed_ms": 1792413088594,
+          "decision": "NO_TRADE",
+          "reasons": [
+            "COMPLETED_CANDLE_STALE"
+          ],
+          "metrics": {},
+          "baseline_strategy_unchanged": true,
+          "order_submission_enabled": false,
+          "confidence_probability": null,
+          "data_status": "FAILED_SAFE",
+          "history": {
+            "raw_returned_last": 2,
+            "raw_returned_in_retained_snapshots": 60012,
+            "valid_returned_last": 2,
+            "valid_deduplicated_completed": 4319,
+            "contiguous_tail_bars": 4319,
+            "missing_intervals": [],
+            "earliest_ms": 1792153680000,
+            "latest_ms": 1792412760000,
+            "latest_completed_ms": 1792412820000,
+            "cache_age_ms": 268064,
+            "last_collection_ms": 1792413088040,
+            "warmup_required": 300,
+            "strategy_history_ready": false,
+            "warmup_satisfied": true,
+            "data_freshness_satisfied": false,
+            "failure_classification": "UPSTREAM_DATA_UNAVAILABLE",
+            "failure_reasons": [
+              "COMPLETED_CANDLE_STALE_OR_MISSING"
+            ],
+            "request_diagnostics": {
+              "rest": {
+                "request": {
+                  "coin": "pas:EWY",
+                  "interval": "1m",
+                  "startTime": 1792412700000,
+                  "endTime": 1792413059999
+                },
+                "received_ms": 1792413088038,
+                "returned_count": 2,
+                "first_returned_ms": 1792412700000,
+                "last_returned_ms": 1792412760000,
+                "expected_intervals": 6,
+                "normalization_succeeded": true,
+                "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl"
+              },
+              "stream": {
+                "received_ms": 1792412787106,
+                "candle_open_ms": 1792412760000,
+                "candle_close_ms": 1792412819999
+              }
+            },
+            "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+            "database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/history.sqlite"
+          },
+          "approved_quantity": null,
+          "execution_preflight": "NOT_AUTHORIZED",
+          "protection": "ACTUAL_NATIVE_TRIGGER_QUALIFICATION_REQUIRED"
+        }
+      ],
+      "liquidity": {
+        "pas:BTC": {
+          "quantity": "0.00060",
+          "notional": "49.509000",
+          "bid": "82465.0",
+          "ask": "82515.0",
+          "book_ms": 1792413087194,
+          "observed_ms": 1792413087607,
+          "active_asset_ms": 1792413087782,
+          "context_ms": 1792413087607,
+          "market_context": {
+            "funding": "-0.0000582881",
+            "openInterest": "2.25504",
+            "prevDayPx": "81066.0",
+            "dayNtlVlm": "98854.5776",
+            "premium": "-0.00104564",
+            "oraclePx": "82581.0",
+            "markPx": "82496.0",
+            "midPx": "82490.0",
+            "impactPxs": [
+              "82447.5",
+              "82541.8"
+            ],
+            "dayBaseVlm": "1.21822"
+          },
+          "size_step": "0.00001",
+          "one_lot_bid_notional": "0.824650",
+          "partial_minimum_admissible": false,
+          "partial_protection_qualified": false,
+          "native_protection_qualified": false,
+          "partial_path": {
+            "entry_admissible_under_documented_minimum": false,
+            "blocker": "FROZEN_STOP_PLAN_UNAVAILABLE"
+          },
+          "targets": {
+            "1000": false,
+            "2500": false,
+            "5000": false,
+            "10000": false,
+            "25000": false,
+            "50000": false
+          },
+          "qualified_unattended_notional": "0",
+          "active_asset": {
+            "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+            "coin": "pas:BTC",
+            "leverage": {
+              "type": "cross",
+              "value": 20
+            },
+            "maxTradeSzs": [
+              "24.24359",
+              "24.24359"
+            ],
+            "availableToTrade": [
+              "100000.0",
+              "100000.0"
+            ],
+            "markPx": "82496.0"
+          },
+          "evidence_evaluation": {
+            "symbol": "pas:BTC",
+            "liquidity_only_quantity": "0",
+            "liquidity_only_notional": "0",
+            "economically_viable_notional": "0",
+            "authorized_executable_notional": "0",
+            "expected_net_pnl": null,
+            "expected_return_probability": null,
+            "decision": "OBSERVE",
+            "reasons": [
+              "ONE_X_CROSS_REQUIRED"
+            ],
+            "observed_ms": 1792413087782
+          },
+          "fee_scenarios": {
+            "base_taker_rate": "0.00045",
+            "documented_pas_rate_estimate": "0.00090",
+            "unchanged_signing_stress_rate": "0.00270",
+            "actual_charged_rate": null,
+            "documented_source": "https://perpetual-alpha26.github.io/docs/#venue-mechanics",
+            "expected_net_pnl": null,
+            "scenario_only": true,
+            "production_fee_policy_changed": false,
+            "assumption": "Published PAS positive base-rate multiplier=2; actual fill fee/feeToken govern charges",
+            "documented_target_scenario": null,
+            "stress_target_scenario": null,
+            "quantity": "0.00060",
+            "hourly_funding": "-0.0000582881",
+            "mark_oracle_divergence_bps": "-10.29292452258994199634298446",
+            "book_mid_oracle_divergence_bps": "-11.01948390065511437255543043",
+            "documented_taker_roundtrip_fee": "0.08908920000",
+            "stress_taker_roundtrip_fee": "0.26726760000",
+            "immediate_roundtrip_spread": "0.030000",
+            "maker_sensitivity_assumption": "Hypothetical maker entry and taker exit; no maker fill or execution switch implied",
+            "documented_maker_entry_taker_exit_fee": "0.05938380000"
+          }
+        },
+        "pas:EWY": {
+          "quantity": "0.314",
+          "notional": "49.90088",
+          "bid": "158.91",
+          "ask": "158.92",
+          "book_ms": 1792413087194,
+          "observed_ms": 1792413088418,
+          "active_asset_ms": 1792413088594,
+          "context_ms": 1792413088418,
+          "market_context": {
+            "funding": "0.00000625",
+            "openInterest": "114.948",
+            "prevDayPx": "153.99",
+            "dayNtlVlm": "78915.02553",
+            "premium": "-0.0002987609",
+            "oraclePx": "158.99",
+            "markPx": "158.96",
+            "midPx": "158.915",
+            "impactPxs": [
+              "158.876",
+              "159.009"
+            ],
+            "dayBaseVlm": "519.142"
+          },
+          "size_step": "0.001",
+          "one_lot_bid_notional": "0.15891",
+          "partial_minimum_admissible": false,
+          "partial_protection_qualified": false,
+          "native_protection_qualified": false,
+          "partial_path": {
+            "entry_admissible_under_documented_minimum": false,
+            "blocker": "FROZEN_STOP_PLAN_UNAVAILABLE"
+          },
+          "targets": {
+            "1000": false,
+            "2500": false,
+            "5000": false,
+            "10000": false,
+            "25000": false,
+            "50000": false
+          },
+          "qualified_unattended_notional": "0",
+          "active_asset": {
+            "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+            "coin": "pas:EWY",
+            "leverage": {
+              "type": "cross",
+              "value": 20
+            },
+            "maxTradeSzs": [
+              "12581.781",
+              "12581.781"
+            ],
+            "availableToTrade": [
+              "100000.0",
+              "100000.0"
+            ],
+            "markPx": "158.96"
+          },
+          "evidence_evaluation": {
+            "symbol": "pas:EWY",
+            "liquidity_only_quantity": "0",
+            "liquidity_only_notional": "0",
+            "economically_viable_notional": "0",
+            "authorized_executable_notional": "0",
+            "expected_net_pnl": null,
+            "expected_return_probability": null,
+            "decision": "OBSERVE",
+            "reasons": [
+              "ONE_X_CROSS_REQUIRED"
+            ],
+            "observed_ms": 1792413088594
+          },
+          "fee_scenarios": {
+            "base_taker_rate": "0.00045",
+            "documented_pas_rate_estimate": "0.00090",
+            "unchanged_signing_stress_rate": "0.00270",
+            "actual_charged_rate": null,
+            "documented_source": "https://perpetual-alpha26.github.io/docs/#venue-mechanics",
+            "expected_net_pnl": null,
+            "scenario_only": true,
+            "production_fee_policy_changed": false,
+            "assumption": "Published PAS positive base-rate multiplier=2; actual fill fee/feeToken govern charges",
+            "documented_target_scenario": null,
+            "stress_target_scenario": null,
+            "quantity": "0.314",
+            "hourly_funding": "0.00000625",
+            "mark_oracle_divergence_bps": "-1.886911126485942512107679728",
+            "book_mid_oracle_divergence_bps": "-4.717277816214856280269199321",
+            "documented_taker_roundtrip_fee": "0.0898187580",
+            "stress_taker_roundtrip_fee": "0.2694562740",
+            "immediate_roundtrip_spread": "0.00314",
+            "maker_sensitivity_assumption": "Hypothetical maker entry and taker exit; no maker fill or execution switch implied",
+            "documented_maker_entry_taker_exit_fee": "0.0598782300"
+          }
+        }
+      },
+      "funding": {
+        "status": "USDP_POSITIVE_VERIFIED",
+        "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+        "network": "testnet",
+        "dex": "pas",
+        "collateral": "USDP",
+        "account_mode": "unifiedAccount",
+        "token": 3307,
+        "observed_ms": 1792413010872,
+        "exchange_time_ms": 1792413011068,
+        "balance": "100000.0",
+        "age_ms": 124829,
+        "organizer_credit_amount": null,
+        "organizer_credit_provenance": "UNKNOWN",
+        "signing_authority": "NONE",
+        "reasons": [],
+        "response_hashes": {
+          "spot": "1b53cc1b5d50cbc4d32da7b9a35a0374cce3d4807876bfad58e272e368e811df",
+          "state": "00ab5848bdf5f4dd4cce0e0d6073326fe108df0a008c0aa869e28b934e1e0422"
+        },
+        "provenance": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl",
+        "equity_basis": "Unified USDP total once; no addition of per-DEX equity or unrealized PnL",
+        "evidence_hash": "572451c8e7ab2bd3e756682f4825a564989f68be7a83cc736fe1475ac8a44146"
+      },
+      "account": {
+        "source": "EXCHANGE_REPORTED_ACCOUNT_OBSERVER",
+        "exchange_orders_submitted": 0,
+        "entries_paused": false,
+        "reasons": [],
+        "positions": [],
+        "open_orders": [],
+        "fills": [],
+        "funding_events": [],
+        "reported_account_equity": {
+          "reported_account_value": "100000.0",
+          "collateral_balance": "100000.0",
+          "margin_used": "0",
+          "withdrawable": null,
+          "valuation_source": "spotClearinghouseState.USDP.total"
+        },
+        "accounting_window_ms": [
+          0,
+          1792413009489
+        ],
+        "latest_query_window_ms": [
+          1792412919400,
+          1792413009489
+        ],
+        "realized": {
+          "gross_closed_pnl": "0",
+          "actual_fill_fees": "0",
+          "actual_funding_cashflow": "0",
+          "net_after_fees_and_funding": "0",
+          "scope": "ONLY_OBSERVED_ACCOUNT_EVENTS; excludes deposits/transfers and unknown historical events"
+        },
+        "corrections": []
+      },
+      "account_observed_ms": 1792413010694,
+      "TRADING_AUTHORIZED": false,
+      "AUTO_TRADING_ACTIVE": false
+    },
+    {
+      "observed_ms": 1792413145725,
+      "status": "OBSERVING",
+      "status_age_ms": 5134,
+      "worker_running": true,
+      "public_source_matches": true,
+      "market_stream": true,
+      "account_stream": true,
+      "history": {
+        "pas:BTC": {
+          "raw_returned_last": 2,
+          "raw_returned_in_retained_snapshots": 55386,
+          "valid_returned_last": 2,
+          "valid_deduplicated_completed": 1242,
+          "contiguous_tail_bars": 1242,
+          "missing_intervals": [],
+          "earliest_ms": 1792337760000,
+          "latest_ms": 1792412220000,
+          "latest_completed_ms": 1792412280000,
+          "cache_age_ms": 865725,
+          "last_collection_ms": 1792413087407,
+          "warmup_required": 300,
+          "strategy_history_ready": false,
+          "warmup_satisfied": true,
+          "data_freshness_satisfied": false,
+          "failure_classification": "UPSTREAM_DATA_UNAVAILABLE",
+          "failure_reasons": [
+            "COMPLETED_CANDLE_STALE_OR_MISSING"
+          ],
+          "request_diagnostics": {
+            "rest": {
+              "request": {
+                "coin": "pas:BTC",
+                "interval": "1m",
+                "startTime": 1792412160000,
+                "endTime": 1792413059999
+              },
+              "received_ms": 1792413087406,
+              "returned_count": 2,
+              "first_returned_ms": 1792412160000,
+              "last_returned_ms": 1792412220000,
+              "expected_intervals": 15,
+              "normalization_succeeded": true,
+              "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl"
+            },
+            "stream": {
+              "received_ms": 1792412259536,
+              "candle_open_ms": 1792412220000,
+              "candle_close_ms": 1792412279999
+            }
+          },
+          "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+          "database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/history.sqlite"
+        },
+        "pas:EWY": {
+          "raw_returned_last": 2,
+          "raw_returned_in_retained_snapshots": 60012,
+          "valid_returned_last": 2,
+          "valid_deduplicated_completed": 4319,
+          "contiguous_tail_bars": 4319,
+          "missing_intervals": [],
+          "earliest_ms": 1792153680000,
+          "latest_ms": 1792412760000,
+          "latest_completed_ms": 1792412820000,
+          "cache_age_ms": 325725,
+          "last_collection_ms": 1792413088040,
+          "warmup_required": 300,
+          "strategy_history_ready": false,
+          "warmup_satisfied": true,
+          "data_freshness_satisfied": false,
+          "failure_classification": "UPSTREAM_DATA_UNAVAILABLE",
+          "failure_reasons": [
+            "COMPLETED_CANDLE_STALE_OR_MISSING"
+          ],
+          "request_diagnostics": {
+            "rest": {
+              "request": {
+                "coin": "pas:EWY",
+                "interval": "1m",
+                "startTime": 1792412700000,
+                "endTime": 1792413059999
+              },
+              "received_ms": 1792413088038,
+              "returned_count": 2,
+              "first_returned_ms": 1792412700000,
+              "last_returned_ms": 1792412760000,
+              "expected_intervals": 6,
+              "normalization_succeeded": true,
+              "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl"
+            },
+            "stream": {
+              "received_ms": 1792412787106,
+              "candle_open_ms": 1792412760000,
+              "candle_close_ms": 1792412819999
+            }
+          },
+          "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+          "database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/history.sqlite"
+        }
+      },
+      "signals": [
+        {
+          "symbol": "pas:BTC",
+          "observed_ms": 1792413087782,
+          "decision": "NO_TRADE",
+          "reasons": [
+            "COMPLETED_CANDLE_STALE"
+          ],
+          "metrics": {},
+          "baseline_strategy_unchanged": true,
+          "order_submission_enabled": false,
+          "confidence_probability": null,
+          "data_status": "FAILED_SAFE",
+          "history": {
+            "raw_returned_last": 2,
+            "raw_returned_in_retained_snapshots": 55386,
+            "valid_returned_last": 2,
+            "valid_deduplicated_completed": 1242,
+            "contiguous_tail_bars": 1242,
+            "missing_intervals": [],
+            "earliest_ms": 1792337760000,
+            "latest_ms": 1792412220000,
+            "latest_completed_ms": 1792412280000,
+            "cache_age_ms": 807414,
+            "last_collection_ms": 1792413087407,
+            "warmup_required": 300,
+            "strategy_history_ready": false,
+            "warmup_satisfied": true,
+            "data_freshness_satisfied": false,
+            "failure_classification": "UPSTREAM_DATA_UNAVAILABLE",
+            "failure_reasons": [
+              "COMPLETED_CANDLE_STALE_OR_MISSING"
+            ],
+            "request_diagnostics": {
+              "rest": {
+                "request": {
+                  "coin": "pas:BTC",
+                  "interval": "1m",
+                  "startTime": 1792412160000,
+                  "endTime": 1792413059999
+                },
+                "received_ms": 1792413087406,
+                "returned_count": 2,
+                "first_returned_ms": 1792412160000,
+                "last_returned_ms": 1792412220000,
+                "expected_intervals": 15,
+                "normalization_succeeded": true,
+                "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl"
+              },
+              "stream": {
+                "received_ms": 1792412259536,
+                "candle_open_ms": 1792412220000,
+                "candle_close_ms": 1792412279999
+              }
+            },
+            "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+            "database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/history.sqlite"
+          },
+          "approved_quantity": null,
+          "execution_preflight": "NOT_AUTHORIZED",
+          "protection": "ACTUAL_NATIVE_TRIGGER_QUALIFICATION_REQUIRED"
+        },
+        {
+          "symbol": "pas:EWY",
+          "observed_ms": 1792413088594,
+          "decision": "NO_TRADE",
+          "reasons": [
+            "COMPLETED_CANDLE_STALE"
+          ],
+          "metrics": {},
+          "baseline_strategy_unchanged": true,
+          "order_submission_enabled": false,
+          "confidence_probability": null,
+          "data_status": "FAILED_SAFE",
+          "history": {
+            "raw_returned_last": 2,
+            "raw_returned_in_retained_snapshots": 60012,
+            "valid_returned_last": 2,
+            "valid_deduplicated_completed": 4319,
+            "contiguous_tail_bars": 4319,
+            "missing_intervals": [],
+            "earliest_ms": 1792153680000,
+            "latest_ms": 1792412760000,
+            "latest_completed_ms": 1792412820000,
+            "cache_age_ms": 268064,
+            "last_collection_ms": 1792413088040,
+            "warmup_required": 300,
+            "strategy_history_ready": false,
+            "warmup_satisfied": true,
+            "data_freshness_satisfied": false,
+            "failure_classification": "UPSTREAM_DATA_UNAVAILABLE",
+            "failure_reasons": [
+              "COMPLETED_CANDLE_STALE_OR_MISSING"
+            ],
+            "request_diagnostics": {
+              "rest": {
+                "request": {
+                  "coin": "pas:EWY",
+                  "interval": "1m",
+                  "startTime": 1792412700000,
+                  "endTime": 1792413059999
+                },
+                "received_ms": 1792413088038,
+                "returned_count": 2,
+                "first_returned_ms": 1792412700000,
+                "last_returned_ms": 1792412760000,
+                "expected_intervals": 6,
+                "normalization_succeeded": true,
+                "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl"
+              },
+              "stream": {
+                "received_ms": 1792412787106,
+                "candle_open_ms": 1792412760000,
+                "candle_close_ms": 1792412819999
+              }
+            },
+            "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+            "database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/history.sqlite"
+          },
+          "approved_quantity": null,
+          "execution_preflight": "NOT_AUTHORIZED",
+          "protection": "ACTUAL_NATIVE_TRIGGER_QUALIFICATION_REQUIRED"
+        }
+      ],
+      "liquidity": {
+        "pas:BTC": {
+          "quantity": "0.00060",
+          "notional": "49.509000",
+          "bid": "82465.0",
+          "ask": "82515.0",
+          "book_ms": 1792413087194,
+          "observed_ms": 1792413087607,
+          "active_asset_ms": 1792413087782,
+          "context_ms": 1792413087607,
+          "market_context": {
+            "funding": "-0.0000582881",
+            "openInterest": "2.25504",
+            "prevDayPx": "81066.0",
+            "dayNtlVlm": "98854.5776",
+            "premium": "-0.00104564",
+            "oraclePx": "82581.0",
+            "markPx": "82496.0",
+            "midPx": "82490.0",
+            "impactPxs": [
+              "82447.5",
+              "82541.8"
+            ],
+            "dayBaseVlm": "1.21822"
+          },
+          "size_step": "0.00001",
+          "one_lot_bid_notional": "0.824650",
+          "partial_minimum_admissible": false,
+          "partial_protection_qualified": false,
+          "native_protection_qualified": false,
+          "partial_path": {
+            "entry_admissible_under_documented_minimum": false,
+            "blocker": "FROZEN_STOP_PLAN_UNAVAILABLE"
+          },
+          "targets": {
+            "1000": false,
+            "2500": false,
+            "5000": false,
+            "10000": false,
+            "25000": false,
+            "50000": false
+          },
+          "qualified_unattended_notional": "0",
+          "active_asset": {
+            "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+            "coin": "pas:BTC",
+            "leverage": {
+              "type": "cross",
+              "value": 20
+            },
+            "maxTradeSzs": [
+              "24.24359",
+              "24.24359"
+            ],
+            "availableToTrade": [
+              "100000.0",
+              "100000.0"
+            ],
+            "markPx": "82496.0"
+          },
+          "evidence_evaluation": {
+            "symbol": "pas:BTC",
+            "liquidity_only_quantity": "0",
+            "liquidity_only_notional": "0",
+            "economically_viable_notional": "0",
+            "authorized_executable_notional": "0",
+            "expected_net_pnl": null,
+            "expected_return_probability": null,
+            "decision": "OBSERVE",
+            "reasons": [
+              "ONE_X_CROSS_REQUIRED"
+            ],
+            "observed_ms": 1792413087782
+          },
+          "fee_scenarios": {
+            "base_taker_rate": "0.00045",
+            "documented_pas_rate_estimate": "0.00090",
+            "unchanged_signing_stress_rate": "0.00270",
+            "actual_charged_rate": null,
+            "documented_source": "https://perpetual-alpha26.github.io/docs/#venue-mechanics",
+            "expected_net_pnl": null,
+            "scenario_only": true,
+            "production_fee_policy_changed": false,
+            "assumption": "Published PAS positive base-rate multiplier=2; actual fill fee/feeToken govern charges",
+            "documented_target_scenario": null,
+            "stress_target_scenario": null,
+            "quantity": "0.00060",
+            "hourly_funding": "-0.0000582881",
+            "mark_oracle_divergence_bps": "-10.29292452258994199634298446",
+            "book_mid_oracle_divergence_bps": "-11.01948390065511437255543043",
+            "documented_taker_roundtrip_fee": "0.08908920000",
+            "stress_taker_roundtrip_fee": "0.26726760000",
+            "immediate_roundtrip_spread": "0.030000",
+            "maker_sensitivity_assumption": "Hypothetical maker entry and taker exit; no maker fill or execution switch implied",
+            "documented_maker_entry_taker_exit_fee": "0.05938380000"
+          }
+        },
+        "pas:EWY": {
+          "quantity": "0.314",
+          "notional": "49.90088",
+          "bid": "158.91",
+          "ask": "158.92",
+          "book_ms": 1792413087194,
+          "observed_ms": 1792413088418,
+          "active_asset_ms": 1792413088594,
+          "context_ms": 1792413088418,
+          "market_context": {
+            "funding": "0.00000625",
+            "openInterest": "114.948",
+            "prevDayPx": "153.99",
+            "dayNtlVlm": "78915.02553",
+            "premium": "-0.0002987609",
+            "oraclePx": "158.99",
+            "markPx": "158.96",
+            "midPx": "158.915",
+            "impactPxs": [
+              "158.876",
+              "159.009"
+            ],
+            "dayBaseVlm": "519.142"
+          },
+          "size_step": "0.001",
+          "one_lot_bid_notional": "0.15891",
+          "partial_minimum_admissible": false,
+          "partial_protection_qualified": false,
+          "native_protection_qualified": false,
+          "partial_path": {
+            "entry_admissible_under_documented_minimum": false,
+            "blocker": "FROZEN_STOP_PLAN_UNAVAILABLE"
+          },
+          "targets": {
+            "1000": false,
+            "2500": false,
+            "5000": false,
+            "10000": false,
+            "25000": false,
+            "50000": false
+          },
+          "qualified_unattended_notional": "0",
+          "active_asset": {
+            "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+            "coin": "pas:EWY",
+            "leverage": {
+              "type": "cross",
+              "value": 20
+            },
+            "maxTradeSzs": [
+              "12581.781",
+              "12581.781"
+            ],
+            "availableToTrade": [
+              "100000.0",
+              "100000.0"
+            ],
+            "markPx": "158.96"
+          },
+          "evidence_evaluation": {
+            "symbol": "pas:EWY",
+            "liquidity_only_quantity": "0",
+            "liquidity_only_notional": "0",
+            "economically_viable_notional": "0",
+            "authorized_executable_notional": "0",
+            "expected_net_pnl": null,
+            "expected_return_probability": null,
+            "decision": "OBSERVE",
+            "reasons": [
+              "ONE_X_CROSS_REQUIRED"
+            ],
+            "observed_ms": 1792413088594
+          },
+          "fee_scenarios": {
+            "base_taker_rate": "0.00045",
+            "documented_pas_rate_estimate": "0.00090",
+            "unchanged_signing_stress_rate": "0.00270",
+            "actual_charged_rate": null,
+            "documented_source": "https://perpetual-alpha26.github.io/docs/#venue-mechanics",
+            "expected_net_pnl": null,
+            "scenario_only": true,
+            "production_fee_policy_changed": false,
+            "assumption": "Published PAS positive base-rate multiplier=2; actual fill fee/feeToken govern charges",
+            "documented_target_scenario": null,
+            "stress_target_scenario": null,
+            "quantity": "0.314",
+            "hourly_funding": "0.00000625",
+            "mark_oracle_divergence_bps": "-1.886911126485942512107679728",
+            "book_mid_oracle_divergence_bps": "-4.717277816214856280269199321",
+            "documented_taker_roundtrip_fee": "0.0898187580",
+            "stress_taker_roundtrip_fee": "0.2694562740",
+            "immediate_roundtrip_spread": "0.00314",
+            "maker_sensitivity_assumption": "Hypothetical maker entry and taker exit; no maker fill or execution switch implied",
+            "documented_maker_entry_taker_exit_fee": "0.0598782300"
+          }
+        }
+      },
+      "funding": {
+        "status": "USDP_POSITIVE_VERIFIED",
+        "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+        "network": "testnet",
+        "dex": "pas",
+        "collateral": "USDP",
+        "account_mode": "unifiedAccount",
+        "token": 3307,
+        "observed_ms": 1792413010872,
+        "exchange_time_ms": 1792413011068,
+        "balance": "100000.0",
+        "age_ms": 134853,
+        "organizer_credit_amount": null,
+        "organizer_credit_provenance": "UNKNOWN",
+        "signing_authority": "NONE",
+        "reasons": [],
+        "response_hashes": {
+          "spot": "1b53cc1b5d50cbc4d32da7b9a35a0374cce3d4807876bfad58e272e368e811df",
+          "state": "00ab5848bdf5f4dd4cce0e0d6073326fe108df0a008c0aa869e28b934e1e0422"
+        },
+        "provenance": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl",
+        "equity_basis": "Unified USDP total once; no addition of per-DEX equity or unrealized PnL",
+        "evidence_hash": "572451c8e7ab2bd3e756682f4825a564989f68be7a83cc736fe1475ac8a44146"
+      },
+      "account": {
+        "source": "EXCHANGE_REPORTED_ACCOUNT_OBSERVER",
+        "exchange_orders_submitted": 0,
+        "entries_paused": false,
+        "reasons": [],
+        "positions": [],
+        "open_orders": [],
+        "fills": [],
+        "funding_events": [],
+        "reported_account_equity": {
+          "reported_account_value": "100000.0",
+          "collateral_balance": "100000.0",
+          "margin_used": "0",
+          "withdrawable": null,
+          "valuation_source": "spotClearinghouseState.USDP.total"
+        },
+        "accounting_window_ms": [
+          0,
+          1792413009489
+        ],
+        "latest_query_window_ms": [
+          1792412919400,
+          1792413009489
+        ],
+        "realized": {
+          "gross_closed_pnl": "0",
+          "actual_fill_fees": "0",
+          "actual_funding_cashflow": "0",
+          "net_after_fees_and_funding": "0",
+          "scope": "ONLY_OBSERVED_ACCOUNT_EVENTS; excludes deposits/transfers and unknown historical events"
+        },
+        "corrections": []
+      },
+      "account_observed_ms": 1792413010694,
+      "TRADING_AUTHORIZED": false,
+      "AUTO_TRADING_ACTIVE": false
+    },
+    {
+      "observed_ms": 1792413155743,
+      "status": "OBSERVING",
+      "status_age_ms": 4972,
+      "worker_running": true,
+      "public_source_matches": true,
+      "market_stream": true,
+      "account_stream": true,
+      "history": {
+        "pas:BTC": {
+          "raw_returned_last": 2,
+          "raw_returned_in_retained_snapshots": 55388,
+          "valid_returned_last": 2,
+          "valid_deduplicated_completed": 1242,
+          "contiguous_tail_bars": 1242,
+          "missing_intervals": [],
+          "earliest_ms": 1792337760000,
+          "latest_ms": 1792412220000,
+          "latest_completed_ms": 1792412280000,
+          "cache_age_ms": 875743,
+          "last_collection_ms": 1792413147660,
+          "warmup_required": 300,
+          "strategy_history_ready": false,
+          "warmup_satisfied": true,
+          "data_freshness_satisfied": false,
+          "failure_classification": "UPSTREAM_DATA_UNAVAILABLE",
+          "failure_reasons": [
+            "COMPLETED_CANDLE_STALE_OR_MISSING"
+          ],
+          "request_diagnostics": {
+            "rest": {
+              "request": {
+                "coin": "pas:BTC",
+                "interval": "1m",
+                "startTime": 1792412160000,
+                "endTime": 1792413119999
+              },
+              "received_ms": 1792413147658,
+              "returned_count": 2,
+              "first_returned_ms": 1792412160000,
+              "last_returned_ms": 1792412220000,
+              "expected_intervals": 16,
+              "normalization_succeeded": true,
+              "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl"
+            },
+            "stream": {
+              "received_ms": 1792412259536,
+              "candle_open_ms": 1792412220000,
+              "candle_close_ms": 1792412279999
+            }
+          },
+          "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+          "database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/history.sqlite"
+        },
+        "pas:EWY": {
+          "raw_returned_last": 7,
+          "raw_returned_in_retained_snapshots": 60915,
+          "valid_returned_last": 7,
+          "valid_deduplicated_completed": 4324,
+          "contiguous_tail_bars": 4324,
+          "missing_intervals": [],
+          "earliest_ms": 1792153680000,
+          "latest_ms": 1792413060000,
+          "latest_completed_ms": 1792413120000,
+          "cache_age_ms": 35743,
+          "last_collection_ms": 1792413148318,
+          "warmup_required": 300,
+          "strategy_history_ready": true,
+          "warmup_satisfied": true,
+          "data_freshness_satisfied": true,
+          "failure_classification": "READY",
+          "failure_reasons": [],
+          "request_diagnostics": {
+            "rest": {
+              "request": {
+                "coin": "pas:EWY",
+                "interval": "1m",
+                "startTime": 1792412700000,
+                "endTime": 1792413119999
+              },
+              "received_ms": 1792413148315,
+              "returned_count": 7,
+              "first_returned_ms": 1792412700000,
+              "last_returned_ms": 1792413060000,
+              "expected_intervals": 7,
+              "normalization_succeeded": true,
+              "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl"
+            },
+            "stream": {
+              "received_ms": 1792413135820,
+              "candle_open_ms": 1792413120000,
+              "candle_close_ms": 1792413179999
+            }
+          },
+          "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+          "database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/history.sqlite"
+        }
+      },
+      "signals": [
+        {
+          "symbol": "pas:BTC",
+          "observed_ms": 1792413148042,
+          "decision": "NO_TRADE",
+          "reasons": [
+            "COMPLETED_CANDLE_STALE"
+          ],
+          "metrics": {},
+          "baseline_strategy_unchanged": true,
+          "order_submission_enabled": false,
+          "confidence_probability": null,
+          "data_status": "FAILED_SAFE",
+          "history": {
+            "raw_returned_last": 2,
+            "raw_returned_in_retained_snapshots": 55388,
+            "valid_returned_last": 2,
+            "valid_deduplicated_completed": 1242,
+            "contiguous_tail_bars": 1242,
+            "missing_intervals": [],
+            "earliest_ms": 1792337760000,
+            "latest_ms": 1792412220000,
+            "latest_completed_ms": 1792412280000,
+            "cache_age_ms": 867668,
+            "last_collection_ms": 1792413147660,
+            "warmup_required": 300,
+            "strategy_history_ready": false,
+            "warmup_satisfied": true,
+            "data_freshness_satisfied": false,
+            "failure_classification": "UPSTREAM_DATA_UNAVAILABLE",
+            "failure_reasons": [
+              "COMPLETED_CANDLE_STALE_OR_MISSING"
+            ],
+            "request_diagnostics": {
+              "rest": {
+                "request": {
+                  "coin": "pas:BTC",
+                  "interval": "1m",
+                  "startTime": 1792412160000,
+                  "endTime": 1792413119999
+                },
+                "received_ms": 1792413147658,
+                "returned_count": 2,
+                "first_returned_ms": 1792412160000,
+                "last_returned_ms": 1792412220000,
+                "expected_intervals": 16,
+                "normalization_succeeded": true,
+                "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl"
+              },
+              "stream": {
+                "received_ms": 1792412259536,
+                "candle_open_ms": 1792412220000,
+                "candle_close_ms": 1792412279999
+              }
+            },
+            "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+            "database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/history.sqlite"
+          },
+          "approved_quantity": null,
+          "execution_preflight": "NOT_AUTHORIZED",
+          "protection": "ACTUAL_NATIVE_TRIGGER_QUALIFICATION_REQUIRED"
+        },
+        {
+          "symbol": "pas:EWY",
+          "observed_ms": 1792413148737,
+          "decision": "NO_TRADE",
+          "reasons": [
+            "ATR_BELOW_UNCHANGED_0_40_PERCENT_FLOOR",
+            "NO_FROZEN_STRATEGY_SETUP"
+          ],
+          "metrics": {
+            "atr": "0.009285714285713962",
+            "atr_fraction": "0.00005845586582130287692791942084",
+            "close": "158.85",
+            "vwap": "153.41975828984675",
+            "vwap_slope": "0.05181178133616697",
+            "ema9": "158.81622321485875",
+            "ema21": "158.58127466621713",
+            "trend": "BULLISH",
+            "volume_ratio": "0E+5",
+            "realized_volatility": 0.0009250117690527303,
+            "spread_bps": "5.031130117602666498962329413",
+            "mark_oracle_bps": "1.886673794100999937110873530",
+            "book_imbalance": "-0.01366268917935079406962591391",
+            "bid_depth_notional": "249008.28885",
+            "ask_depth_notional": "260803.12744",
+            "bbo_notional": "492.17112",
+            "window_notional_approx": "8328.04625",
+            "hourly_funding": "0.00000625",
+            "mark": "158.98",
+            "oracle": "159.01"
+          },
+          "baseline_strategy_unchanged": true,
+          "order_submission_enabled": false,
+          "confidence_probability": null,
+          "baseline_long": false,
+          "baseline_short": false,
+          "higher_timeframe": {
+            "status": "READY",
+            "completed_bars": 59,
+            "ema9": 157.86737781594624,
+            "ema21": 157.1346366484316,
+            "trend": "BULLISH",
+            "latest_complete_ms": 1792413000000,
+            "scope": "RESEARCH_CONFIRMATION_VETO_ONLY"
+          },
+          "candle_count": 900,
+          "latest_completed_candle_ms": 1792413060000,
+          "source": "HASH_VERIFIED_FROZEN_STRATEGY_PLUS_ISOLATED_HTF_VETO",
+          "history": {
+            "raw_returned_last": 7,
+            "raw_returned_in_retained_snapshots": 60915,
+            "valid_returned_last": 7,
+            "valid_deduplicated_completed": 4324,
+            "contiguous_tail_bars": 4324,
+            "missing_intervals": [],
+            "earliest_ms": 1792153680000,
+            "latest_ms": 1792413060000,
+            "latest_completed_ms": 1792413120000,
+            "cache_age_ms": 28346,
+            "last_collection_ms": 1792413148318,
+            "warmup_required": 300,
+            "strategy_history_ready": true,
+            "warmup_satisfied": true,
+            "data_freshness_satisfied": true,
+            "failure_classification": "READY",
+            "failure_reasons": [],
+            "request_diagnostics": {
+              "rest": {
+                "request": {
+                  "coin": "pas:EWY",
+                  "interval": "1m",
+                  "startTime": 1792412700000,
+                  "endTime": 1792413119999
+                },
+                "received_ms": 1792413148315,
+                "returned_count": 7,
+                "first_returned_ms": 1792412700000,
+                "last_returned_ms": 1792413060000,
+                "expected_intervals": 7,
+                "normalization_succeeded": true,
+                "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl"
+              },
+              "stream": {
+                "received_ms": 1792413135820,
+                "candle_open_ms": 1792413120000,
+                "candle_close_ms": 1792413179999
+              }
+            },
+            "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+            "database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/history.sqlite"
+          },
+          "approved_quantity": null,
+          "execution_preflight": "NOT_AUTHORIZED",
+          "protection": "ACTUAL_NATIVE_TRIGGER_QUALIFICATION_REQUIRED"
+        }
+      ],
+      "liquidity": {
+        "pas:BTC": {
+          "quantity": "0.00060",
+          "notional": "49.513200",
+          "bid": "82489.0",
+          "ask": "82522.0",
+          "book_ms": 1792413145210,
+          "observed_ms": 1792413147853,
+          "active_asset_ms": 1792413148042,
+          "context_ms": 1792413147853,
+          "market_context": {
+            "funding": "-0.0000585531",
+            "openInterest": "2.25504",
+            "prevDayPx": "81066.0",
+            "dayNtlVlm": "98854.5776",
+            "premium": "-0.0008168629",
+            "oraclePx": "82572.0",
+            "markPx": "82489.0",
+            "midPx": "82505.5",
+            "impactPxs": [
+              "82464.5",
+              "82544.6"
+            ],
+            "dayBaseVlm": "1.21822"
+          },
+          "size_step": "0.00001",
+          "one_lot_bid_notional": "0.824890",
+          "partial_minimum_admissible": false,
+          "partial_protection_qualified": false,
+          "native_protection_qualified": false,
+          "partial_path": {
+            "entry_admissible_under_documented_minimum": false,
+            "blocker": "FROZEN_STOP_PLAN_UNAVAILABLE"
+          },
+          "targets": {
+            "1000": false,
+            "2500": false,
+            "5000": false,
+            "10000": false,
+            "25000": false,
+            "50000": false
+          },
+          "qualified_unattended_notional": "0",
+          "active_asset": {
+            "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+            "coin": "pas:BTC",
+            "leverage": {
+              "type": "cross",
+              "value": 20
+            },
+            "maxTradeSzs": [
+              "24.24565",
+              "24.24565"
+            ],
+            "availableToTrade": [
+              "100000.0",
+              "100000.0"
+            ],
+            "markPx": "82489.0"
+          },
+          "evidence_evaluation": {
+            "symbol": "pas:BTC",
+            "liquidity_only_quantity": "0",
+            "liquidity_only_notional": "0",
+            "economically_viable_notional": "0",
+            "authorized_executable_notional": "0",
+            "expected_net_pnl": null,
+            "expected_return_probability": null,
+            "decision": "OBSERVE",
+            "reasons": [
+              "ONE_X_CROSS_REQUIRED"
+            ],
+            "observed_ms": 1792413148042
+          },
+          "fee_scenarios": {
+            "base_taker_rate": "0.00045",
+            "documented_pas_rate_estimate": "0.00090",
+            "unchanged_signing_stress_rate": "0.00270",
+            "actual_charged_rate": null,
+            "documented_source": "https://perpetual-alpha26.github.io/docs/#venue-mechanics",
+            "expected_net_pnl": null,
+            "scenario_only": true,
+            "production_fee_policy_changed": false,
+            "assumption": "Published PAS positive base-rate multiplier=2; actual fill fee/feeToken govern charges",
+            "documented_target_scenario": null,
+            "stress_target_scenario": null,
+            "quantity": "0.00060",
+            "hourly_funding": "-0.0000585531",
+            "mark_oracle_divergence_bps": "-10.05183355132490432592161992",
+            "book_mid_oracle_divergence_bps": "-8.053577483892845032214309936",
+            "documented_taker_roundtrip_fee": "0.08910594000",
+            "stress_taker_roundtrip_fee": "0.26731782000",
+            "immediate_roundtrip_spread": "0.019800",
+            "maker_sensitivity_assumption": "Hypothetical maker entry and taker exit; no maker fill or execution switch implied",
+            "documented_maker_entry_taker_exit_fee": "0.05939802000"
+          }
+        },
+        "pas:EWY": {
+          "quantity": "0.309",
+          "notional": "49.14645",
+          "bid": "158.97",
+          "ask": "159.05",
+          "book_ms": 1792413145210,
+          "observed_ms": 1792413148566,
+          "active_asset_ms": 1792413148737,
+          "context_ms": 1792413148566,
+          "market_context": {
+            "funding": "0.00000625",
+            "openInterest": "114.948",
+            "prevDayPx": "153.99",
+            "dayNtlVlm": "81417.06201",
+            "premium": "-0.000110056",
+            "oraclePx": "159.01",
+            "markPx": "158.98",
+            "midPx": "159.01",
+            "impactPxs": [
+              "158.896",
+              "159.089"
+            ],
+            "dayBaseVlm": "534.886"
+          },
+          "size_step": "0.001",
+          "one_lot_bid_notional": "0.15897",
+          "partial_minimum_admissible": false,
+          "partial_protection_qualified": false,
+          "native_protection_qualified": false,
+          "partial_path": {
+            "entry_admissible_under_documented_minimum": false,
+            "blocker": "FROZEN_STOP_PLAN_UNAVAILABLE"
+          },
+          "targets": {
+            "1000": false,
+            "2500": false,
+            "5000": false,
+            "10000": false,
+            "25000": false,
+            "50000": false
+          },
+          "qualified_unattended_notional": "0",
+          "active_asset": {
+            "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+            "coin": "pas:EWY",
+            "leverage": {
+              "type": "cross",
+              "value": 20
+            },
+            "maxTradeSzs": [
+              "12580.198",
+              "12580.198"
+            ],
+            "availableToTrade": [
+              "100000.0",
+              "100000.0"
+            ],
+            "markPx": "158.98"
+          },
+          "evidence_evaluation": {
+            "symbol": "pas:EWY",
+            "liquidity_only_quantity": "0",
+            "liquidity_only_notional": "0",
+            "economically_viable_notional": "0",
+            "authorized_executable_notional": "0",
+            "expected_net_pnl": null,
+            "expected_return_probability": null,
+            "decision": "OBSERVE",
+            "reasons": [
+              "ONE_X_CROSS_REQUIRED"
+            ],
+            "observed_ms": 1792413148867
+          },
+          "fee_scenarios": {
+            "base_taker_rate": "0.00045",
+            "documented_pas_rate_estimate": "0.00090",
+            "unchanged_signing_stress_rate": "0.00270",
+            "actual_charged_rate": null,
+            "documented_source": "https://perpetual-alpha26.github.io/docs/#venue-mechanics",
+            "expected_net_pnl": null,
+            "scenario_only": true,
+            "production_fee_policy_changed": false,
+            "assumption": "Published PAS positive base-rate multiplier=2; actual fill fee/feeToken govern charges",
+            "documented_target_scenario": null,
+            "stress_target_scenario": null,
+            "quantity": "0.309",
+            "hourly_funding": "0.00000625",
+            "mark_oracle_divergence_bps": "-1.886673794100999937110873530",
+            "book_mid_oracle_divergence_bps": "0",
+            "documented_taker_roundtrip_fee": "0.0884413620",
+            "stress_taker_roundtrip_fee": "0.2653240860",
+            "immediate_roundtrip_spread": "0.02472",
+            "maker_sensitivity_assumption": "Hypothetical maker entry and taker exit; no maker fill or execution switch implied",
+            "documented_maker_entry_taker_exit_fee": "0.0589534920"
+          }
+        }
+      },
+      "funding": {
+        "status": "USDP_POSITIVE_VERIFIED",
+        "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+        "network": "testnet",
+        "dex": "pas",
+        "collateral": "USDP",
+        "account_mode": "unifiedAccount",
+        "token": 3307,
+        "observed_ms": 1792413010872,
+        "exchange_time_ms": 1792413011068,
+        "balance": "100000.0",
+        "age_ms": 144871,
+        "organizer_credit_amount": null,
+        "organizer_credit_provenance": "UNKNOWN",
+        "signing_authority": "NONE",
+        "reasons": [],
+        "response_hashes": {
+          "spot": "1b53cc1b5d50cbc4d32da7b9a35a0374cce3d4807876bfad58e272e368e811df",
+          "state": "00ab5848bdf5f4dd4cce0e0d6073326fe108df0a008c0aa869e28b934e1e0422"
+        },
+        "provenance": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl",
+        "equity_basis": "Unified USDP total once; no addition of per-DEX equity or unrealized PnL",
+        "evidence_hash": "572451c8e7ab2bd3e756682f4825a564989f68be7a83cc736fe1475ac8a44146"
+      },
+      "account": {
+        "source": "EXCHANGE_REPORTED_ACCOUNT_OBSERVER",
+        "exchange_orders_submitted": 0,
+        "entries_paused": false,
+        "reasons": [],
+        "positions": [],
+        "open_orders": [],
+        "fills": [],
+        "funding_events": [],
+        "reported_account_equity": {
+          "reported_account_value": "100000.0",
+          "collateral_balance": "100000.0",
+          "margin_used": "0",
+          "withdrawable": null,
+          "valuation_source": "spotClearinghouseState.USDP.total"
+        },
+        "accounting_window_ms": [
+          0,
+          1792413009489
+        ],
+        "latest_query_window_ms": [
+          1792412919400,
+          1792413009489
+        ],
+        "realized": {
+          "gross_closed_pnl": "0",
+          "actual_fill_fees": "0",
+          "actual_funding_cashflow": "0",
+          "net_after_fees_and_funding": "0",
+          "scope": "ONLY_OBSERVED_ACCOUNT_EVENTS; excludes deposits/transfers and unknown historical events"
+        },
+        "corrections": []
+      },
+      "account_observed_ms": 1792413010694,
+      "TRADING_AUTHORIZED": false,
+      "AUTO_TRADING_ACTIVE": false
+    },
+    {
+      "observed_ms": 1792413165760,
+      "status": "OBSERVING",
+      "status_age_ms": 4742,
+      "worker_running": true,
+      "public_source_matches": true,
+      "market_stream": true,
+      "account_stream": true,
+      "history": {
+        "pas:BTC": {
+          "raw_returned_last": 2,
+          "raw_returned_in_retained_snapshots": 55388,
+          "valid_returned_last": 2,
+          "valid_deduplicated_completed": 1242,
+          "contiguous_tail_bars": 1242,
+          "missing_intervals": [],
+          "earliest_ms": 1792337760000,
+          "latest_ms": 1792412220000,
+          "latest_completed_ms": 1792412280000,
+          "cache_age_ms": 885760,
+          "last_collection_ms": 1792413147660,
+          "warmup_required": 300,
+          "strategy_history_ready": false,
+          "warmup_satisfied": true,
+          "data_freshness_satisfied": false,
+          "failure_classification": "UPSTREAM_DATA_UNAVAILABLE",
+          "failure_reasons": [
+            "COMPLETED_CANDLE_STALE_OR_MISSING"
+          ],
+          "request_diagnostics": {
+            "rest": {
+              "request": {
+                "coin": "pas:BTC",
+                "interval": "1m",
+                "startTime": 1792412160000,
+                "endTime": 1792413119999
+              },
+              "received_ms": 1792413147658,
+              "returned_count": 2,
+              "first_returned_ms": 1792412160000,
+              "last_returned_ms": 1792412220000,
+              "expected_intervals": 16,
+              "normalization_succeeded": true,
+              "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl"
+            },
+            "stream": {
+              "received_ms": 1792412259536,
+              "candle_open_ms": 1792412220000,
+              "candle_close_ms": 1792412279999
+            }
+          },
+          "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+          "database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/history.sqlite"
+        },
+        "pas:EWY": {
+          "raw_returned_last": 7,
+          "raw_returned_in_retained_snapshots": 60915,
+          "valid_returned_last": 7,
+          "valid_deduplicated_completed": 4324,
+          "contiguous_tail_bars": 4324,
+          "missing_intervals": [],
+          "earliest_ms": 1792153680000,
+          "latest_ms": 1792413060000,
+          "latest_completed_ms": 1792413120000,
+          "cache_age_ms": 45760,
+          "last_collection_ms": 1792413148318,
+          "warmup_required": 300,
+          "strategy_history_ready": true,
+          "warmup_satisfied": true,
+          "data_freshness_satisfied": true,
+          "failure_classification": "READY",
+          "failure_reasons": [],
+          "request_diagnostics": {
+            "rest": {
+              "request": {
+                "coin": "pas:EWY",
+                "interval": "1m",
+                "startTime": 1792412700000,
+                "endTime": 1792413119999
+              },
+              "received_ms": 1792413148315,
+              "returned_count": 7,
+              "first_returned_ms": 1792412700000,
+              "last_returned_ms": 1792413060000,
+              "expected_intervals": 7,
+              "normalization_succeeded": true,
+              "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl"
+            },
+            "stream": {
+              "received_ms": 1792413135820,
+              "candle_open_ms": 1792413120000,
+              "candle_close_ms": 1792413179999
+            }
+          },
+          "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+          "database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/history.sqlite"
+        }
+      },
+      "signals": [
+        {
+          "symbol": "pas:BTC",
+          "observed_ms": 1792413148042,
+          "decision": "NO_TRADE",
+          "reasons": [
+            "COMPLETED_CANDLE_STALE"
+          ],
+          "metrics": {},
+          "baseline_strategy_unchanged": true,
+          "order_submission_enabled": false,
+          "confidence_probability": null,
+          "data_status": "FAILED_SAFE",
+          "history": {
+            "raw_returned_last": 2,
+            "raw_returned_in_retained_snapshots": 55388,
+            "valid_returned_last": 2,
+            "valid_deduplicated_completed": 1242,
+            "contiguous_tail_bars": 1242,
+            "missing_intervals": [],
+            "earliest_ms": 1792337760000,
+            "latest_ms": 1792412220000,
+            "latest_completed_ms": 1792412280000,
+            "cache_age_ms": 867668,
+            "last_collection_ms": 1792413147660,
+            "warmup_required": 300,
+            "strategy_history_ready": false,
+            "warmup_satisfied": true,
+            "data_freshness_satisfied": false,
+            "failure_classification": "UPSTREAM_DATA_UNAVAILABLE",
+            "failure_reasons": [
+              "COMPLETED_CANDLE_STALE_OR_MISSING"
+            ],
+            "request_diagnostics": {
+              "rest": {
+                "request": {
+                  "coin": "pas:BTC",
+                  "interval": "1m",
+                  "startTime": 1792412160000,
+                  "endTime": 1792413119999
+                },
+                "received_ms": 1792413147658,
+                "returned_count": 2,
+                "first_returned_ms": 1792412160000,
+                "last_returned_ms": 1792412220000,
+                "expected_intervals": 16,
+                "normalization_succeeded": true,
+                "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl"
+              },
+              "stream": {
+                "received_ms": 1792412259536,
+                "candle_open_ms": 1792412220000,
+                "candle_close_ms": 1792412279999
+              }
+            },
+            "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+            "database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/history.sqlite"
+          },
+          "approved_quantity": null,
+          "execution_preflight": "NOT_AUTHORIZED",
+          "protection": "ACTUAL_NATIVE_TRIGGER_QUALIFICATION_REQUIRED"
+        },
+        {
+          "symbol": "pas:EWY",
+          "observed_ms": 1792413148737,
+          "decision": "NO_TRADE",
+          "reasons": [
+            "ATR_BELOW_UNCHANGED_0_40_PERCENT_FLOOR",
+            "NO_FROZEN_STRATEGY_SETUP"
+          ],
+          "metrics": {
+            "atr": "0.009285714285713962",
+            "atr_fraction": "0.00005845586582130287692791942084",
+            "close": "158.85",
+            "vwap": "153.41975828984675",
+            "vwap_slope": "0.05181178133616697",
+            "ema9": "158.81622321485875",
+            "ema21": "158.58127466621713",
+            "trend": "BULLISH",
+            "volume_ratio": "0E+5",
+            "realized_volatility": 0.0009250117690527303,
+            "spread_bps": "5.031130117602666498962329413",
+            "mark_oracle_bps": "1.886673794100999937110873530",
+            "book_imbalance": "-0.01366268917935079406962591391",
+            "bid_depth_notional": "249008.28885",
+            "ask_depth_notional": "260803.12744",
+            "bbo_notional": "492.17112",
+            "window_notional_approx": "8328.04625",
+            "hourly_funding": "0.00000625",
+            "mark": "158.98",
+            "oracle": "159.01"
+          },
+          "baseline_strategy_unchanged": true,
+          "order_submission_enabled": false,
+          "confidence_probability": null,
+          "baseline_long": false,
+          "baseline_short": false,
+          "higher_timeframe": {
+            "status": "READY",
+            "completed_bars": 59,
+            "ema9": 157.86737781594624,
+            "ema21": 157.1346366484316,
+            "trend": "BULLISH",
+            "latest_complete_ms": 1792413000000,
+            "scope": "RESEARCH_CONFIRMATION_VETO_ONLY"
+          },
+          "candle_count": 900,
+          "latest_completed_candle_ms": 1792413060000,
+          "source": "HASH_VERIFIED_FROZEN_STRATEGY_PLUS_ISOLATED_HTF_VETO",
+          "history": {
+            "raw_returned_last": 7,
+            "raw_returned_in_retained_snapshots": 60915,
+            "valid_returned_last": 7,
+            "valid_deduplicated_completed": 4324,
+            "contiguous_tail_bars": 4324,
+            "missing_intervals": [],
+            "earliest_ms": 1792153680000,
+            "latest_ms": 1792413060000,
+            "latest_completed_ms": 1792413120000,
+            "cache_age_ms": 28346,
+            "last_collection_ms": 1792413148318,
+            "warmup_required": 300,
+            "strategy_history_ready": true,
+            "warmup_satisfied": true,
+            "data_freshness_satisfied": true,
+            "failure_classification": "READY",
+            "failure_reasons": [],
+            "request_diagnostics": {
+              "rest": {
+                "request": {
+                  "coin": "pas:EWY",
+                  "interval": "1m",
+                  "startTime": 1792412700000,
+                  "endTime": 1792413119999
+                },
+                "received_ms": 1792413148315,
+                "returned_count": 7,
+                "first_returned_ms": 1792412700000,
+                "last_returned_ms": 1792413060000,
+                "expected_intervals": 7,
+                "normalization_succeeded": true,
+                "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl"
+              },
+              "stream": {
+                "received_ms": 1792413135820,
+                "candle_open_ms": 1792413120000,
+                "candle_close_ms": 1792413179999
+              }
+            },
+            "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+            "database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/history.sqlite"
+          },
+          "approved_quantity": null,
+          "execution_preflight": "NOT_AUTHORIZED",
+          "protection": "ACTUAL_NATIVE_TRIGGER_QUALIFICATION_REQUIRED"
+        }
+      ],
+      "liquidity": {
+        "pas:BTC": {
+          "quantity": "0.00060",
+          "notional": "49.513200",
+          "bid": "82489.0",
+          "ask": "82522.0",
+          "book_ms": 1792413145210,
+          "observed_ms": 1792413147853,
+          "active_asset_ms": 1792413148042,
+          "context_ms": 1792413147853,
+          "market_context": {
+            "funding": "-0.0000585531",
+            "openInterest": "2.25504",
+            "prevDayPx": "81066.0",
+            "dayNtlVlm": "98854.5776",
+            "premium": "-0.0008168629",
+            "oraclePx": "82572.0",
+            "markPx": "82489.0",
+            "midPx": "82505.5",
+            "impactPxs": [
+              "82464.5",
+              "82544.6"
+            ],
+            "dayBaseVlm": "1.21822"
+          },
+          "size_step": "0.00001",
+          "one_lot_bid_notional": "0.824890",
+          "partial_minimum_admissible": false,
+          "partial_protection_qualified": false,
+          "native_protection_qualified": false,
+          "partial_path": {
+            "entry_admissible_under_documented_minimum": false,
+            "blocker": "FROZEN_STOP_PLAN_UNAVAILABLE"
+          },
+          "targets": {
+            "1000": false,
+            "2500": false,
+            "5000": false,
+            "10000": false,
+            "25000": false,
+            "50000": false
+          },
+          "qualified_unattended_notional": "0",
+          "active_asset": {
+            "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+            "coin": "pas:BTC",
+            "leverage": {
+              "type": "cross",
+              "value": 20
+            },
+            "maxTradeSzs": [
+              "24.24565",
+              "24.24565"
+            ],
+            "availableToTrade": [
+              "100000.0",
+              "100000.0"
+            ],
+            "markPx": "82489.0"
+          },
+          "evidence_evaluation": {
+            "symbol": "pas:BTC",
+            "liquidity_only_quantity": "0",
+            "liquidity_only_notional": "0",
+            "economically_viable_notional": "0",
+            "authorized_executable_notional": "0",
+            "expected_net_pnl": null,
+            "expected_return_probability": null,
+            "decision": "OBSERVE",
+            "reasons": [
+              "ONE_X_CROSS_REQUIRED"
+            ],
+            "observed_ms": 1792413148042
+          },
+          "fee_scenarios": {
+            "base_taker_rate": "0.00045",
+            "documented_pas_rate_estimate": "0.00090",
+            "unchanged_signing_stress_rate": "0.00270",
+            "actual_charged_rate": null,
+            "documented_source": "https://perpetual-alpha26.github.io/docs/#venue-mechanics",
+            "expected_net_pnl": null,
+            "scenario_only": true,
+            "production_fee_policy_changed": false,
+            "assumption": "Published PAS positive base-rate multiplier=2; actual fill fee/feeToken govern charges",
+            "documented_target_scenario": null,
+            "stress_target_scenario": null,
+            "quantity": "0.00060",
+            "hourly_funding": "-0.0000585531",
+            "mark_oracle_divergence_bps": "-10.05183355132490432592161992",
+            "book_mid_oracle_divergence_bps": "-8.053577483892845032214309936",
+            "documented_taker_roundtrip_fee": "0.08910594000",
+            "stress_taker_roundtrip_fee": "0.26731782000",
+            "immediate_roundtrip_spread": "0.019800",
+            "maker_sensitivity_assumption": "Hypothetical maker entry and taker exit; no maker fill or execution switch implied",
+            "documented_maker_entry_taker_exit_fee": "0.05939802000"
+          }
+        },
+        "pas:EWY": {
+          "quantity": "0.309",
+          "notional": "49.14645",
+          "bid": "158.97",
+          "ask": "159.05",
+          "book_ms": 1792413145210,
+          "observed_ms": 1792413148566,
+          "active_asset_ms": 1792413148737,
+          "context_ms": 1792413148566,
+          "market_context": {
+            "funding": "0.00000625",
+            "openInterest": "114.948",
+            "prevDayPx": "153.99",
+            "dayNtlVlm": "81417.06201",
+            "premium": "-0.000110056",
+            "oraclePx": "159.01",
+            "markPx": "158.98",
+            "midPx": "159.01",
+            "impactPxs": [
+              "158.896",
+              "159.089"
+            ],
+            "dayBaseVlm": "534.886"
+          },
+          "size_step": "0.001",
+          "one_lot_bid_notional": "0.15897",
+          "partial_minimum_admissible": false,
+          "partial_protection_qualified": false,
+          "native_protection_qualified": false,
+          "partial_path": {
+            "entry_admissible_under_documented_minimum": false,
+            "blocker": "FROZEN_STOP_PLAN_UNAVAILABLE"
+          },
+          "targets": {
+            "1000": false,
+            "2500": false,
+            "5000": false,
+            "10000": false,
+            "25000": false,
+            "50000": false
+          },
+          "qualified_unattended_notional": "0",
+          "active_asset": {
+            "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+            "coin": "pas:EWY",
+            "leverage": {
+              "type": "cross",
+              "value": 20
+            },
+            "maxTradeSzs": [
+              "12580.198",
+              "12580.198"
+            ],
+            "availableToTrade": [
+              "100000.0",
+              "100000.0"
+            ],
+            "markPx": "158.98"
+          },
+          "evidence_evaluation": {
+            "symbol": "pas:EWY",
+            "liquidity_only_quantity": "0",
+            "liquidity_only_notional": "0",
+            "economically_viable_notional": "0",
+            "authorized_executable_notional": "0",
+            "expected_net_pnl": null,
+            "expected_return_probability": null,
+            "decision": "OBSERVE",
+            "reasons": [
+              "ONE_X_CROSS_REQUIRED"
+            ],
+            "observed_ms": 1792413148867
+          },
+          "fee_scenarios": {
+            "base_taker_rate": "0.00045",
+            "documented_pas_rate_estimate": "0.00090",
+            "unchanged_signing_stress_rate": "0.00270",
+            "actual_charged_rate": null,
+            "documented_source": "https://perpetual-alpha26.github.io/docs/#venue-mechanics",
+            "expected_net_pnl": null,
+            "scenario_only": true,
+            "production_fee_policy_changed": false,
+            "assumption": "Published PAS positive base-rate multiplier=2; actual fill fee/feeToken govern charges",
+            "documented_target_scenario": null,
+            "stress_target_scenario": null,
+            "quantity": "0.309",
+            "hourly_funding": "0.00000625",
+            "mark_oracle_divergence_bps": "-1.886673794100999937110873530",
+            "book_mid_oracle_divergence_bps": "0",
+            "documented_taker_roundtrip_fee": "0.0884413620",
+            "stress_taker_roundtrip_fee": "0.2653240860",
+            "immediate_roundtrip_spread": "0.02472",
+            "maker_sensitivity_assumption": "Hypothetical maker entry and taker exit; no maker fill or execution switch implied",
+            "documented_maker_entry_taker_exit_fee": "0.0589534920"
+          }
+        }
+      },
+      "funding": {
+        "status": "USDP_POSITIVE_VERIFIED",
+        "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+        "network": "testnet",
+        "dex": "pas",
+        "collateral": "USDP",
+        "account_mode": "unifiedAccount",
+        "token": 3307,
+        "observed_ms": 1792413010872,
+        "exchange_time_ms": 1792413011068,
+        "balance": "100000.0",
+        "age_ms": 154888,
+        "organizer_credit_amount": null,
+        "organizer_credit_provenance": "UNKNOWN",
+        "signing_authority": "NONE",
+        "reasons": [],
+        "response_hashes": {
+          "spot": "1b53cc1b5d50cbc4d32da7b9a35a0374cce3d4807876bfad58e272e368e811df",
+          "state": "00ab5848bdf5f4dd4cce0e0d6073326fe108df0a008c0aa869e28b934e1e0422"
+        },
+        "provenance": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl",
+        "equity_basis": "Unified USDP total once; no addition of per-DEX equity or unrealized PnL",
+        "evidence_hash": "572451c8e7ab2bd3e756682f4825a564989f68be7a83cc736fe1475ac8a44146"
+      },
+      "account": {
+        "source": "EXCHANGE_REPORTED_ACCOUNT_OBSERVER",
+        "exchange_orders_submitted": 0,
+        "entries_paused": false,
+        "reasons": [],
+        "positions": [],
+        "open_orders": [],
+        "fills": [],
+        "funding_events": [],
+        "reported_account_equity": {
+          "reported_account_value": "100000.0",
+          "collateral_balance": "100000.0",
+          "margin_used": "0",
+          "withdrawable": null,
+          "valuation_source": "spotClearinghouseState.USDP.total"
+        },
+        "accounting_window_ms": [
+          0,
+          1792413009489
+        ],
+        "latest_query_window_ms": [
+          1792412919400,
+          1792413009489
+        ],
+        "realized": {
+          "gross_closed_pnl": "0",
+          "actual_fill_fees": "0",
+          "actual_funding_cashflow": "0",
+          "net_after_fees_and_funding": "0",
+          "scope": "ONLY_OBSERVED_ACCOUNT_EVENTS; excludes deposits/transfers and unknown historical events"
+        },
+        "corrections": []
+      },
+      "account_observed_ms": 1792413010694,
+      "TRADING_AUTHORIZED": false,
+      "AUTO_TRADING_ACTIVE": false
+    },
+    {
+      "observed_ms": 1792413175778,
+      "status": "OBSERVING",
+      "status_age_ms": 4518,
+      "worker_running": true,
+      "public_source_matches": true,
+      "market_stream": true,
+      "account_stream": true,
+      "history": {
+        "pas:BTC": {
+          "raw_returned_last": 2,
+          "raw_returned_in_retained_snapshots": 55388,
+          "valid_returned_last": 2,
+          "valid_deduplicated_completed": 1242,
+          "contiguous_tail_bars": 1242,
+          "missing_intervals": [],
+          "earliest_ms": 1792337760000,
+          "latest_ms": 1792412220000,
+          "latest_completed_ms": 1792412280000,
+          "cache_age_ms": 895778,
+          "last_collection_ms": 1792413147660,
+          "warmup_required": 300,
+          "strategy_history_ready": false,
+          "warmup_satisfied": true,
+          "data_freshness_satisfied": false,
+          "failure_classification": "UPSTREAM_DATA_UNAVAILABLE",
+          "failure_reasons": [
+            "COMPLETED_CANDLE_STALE_OR_MISSING"
+          ],
+          "request_diagnostics": {
+            "rest": {
+              "request": {
+                "coin": "pas:BTC",
+                "interval": "1m",
+                "startTime": 1792412160000,
+                "endTime": 1792413119999
+              },
+              "received_ms": 1792413147658,
+              "returned_count": 2,
+              "first_returned_ms": 1792412160000,
+              "last_returned_ms": 1792412220000,
+              "expected_intervals": 16,
+              "normalization_succeeded": true,
+              "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl"
+            },
+            "stream": {
+              "received_ms": 1792412259536,
+              "candle_open_ms": 1792412220000,
+              "candle_close_ms": 1792412279999
+            }
+          },
+          "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+          "database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/history.sqlite"
+        },
+        "pas:EWY": {
+          "raw_returned_last": 7,
+          "raw_returned_in_retained_snapshots": 60915,
+          "valid_returned_last": 7,
+          "valid_deduplicated_completed": 4324,
+          "contiguous_tail_bars": 4324,
+          "missing_intervals": [],
+          "earliest_ms": 1792153680000,
+          "latest_ms": 1792413060000,
+          "latest_completed_ms": 1792413120000,
+          "cache_age_ms": 55778,
+          "last_collection_ms": 1792413148318,
+          "warmup_required": 300,
+          "strategy_history_ready": true,
+          "warmup_satisfied": true,
+          "data_freshness_satisfied": true,
+          "failure_classification": "READY",
+          "failure_reasons": [],
+          "request_diagnostics": {
+            "rest": {
+              "request": {
+                "coin": "pas:EWY",
+                "interval": "1m",
+                "startTime": 1792412700000,
+                "endTime": 1792413119999
+              },
+              "received_ms": 1792413148315,
+              "returned_count": 7,
+              "first_returned_ms": 1792412700000,
+              "last_returned_ms": 1792413060000,
+              "expected_intervals": 7,
+              "normalization_succeeded": true,
+              "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl"
+            },
+            "stream": {
+              "received_ms": 1792413135820,
+              "candle_open_ms": 1792413120000,
+              "candle_close_ms": 1792413179999
+            }
+          },
+          "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+          "database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/history.sqlite"
+        }
+      },
+      "signals": [
+        {
+          "symbol": "pas:BTC",
+          "observed_ms": 1792413148042,
+          "decision": "NO_TRADE",
+          "reasons": [
+            "COMPLETED_CANDLE_STALE"
+          ],
+          "metrics": {},
+          "baseline_strategy_unchanged": true,
+          "order_submission_enabled": false,
+          "confidence_probability": null,
+          "data_status": "FAILED_SAFE",
+          "history": {
+            "raw_returned_last": 2,
+            "raw_returned_in_retained_snapshots": 55388,
+            "valid_returned_last": 2,
+            "valid_deduplicated_completed": 1242,
+            "contiguous_tail_bars": 1242,
+            "missing_intervals": [],
+            "earliest_ms": 1792337760000,
+            "latest_ms": 1792412220000,
+            "latest_completed_ms": 1792412280000,
+            "cache_age_ms": 867668,
+            "last_collection_ms": 1792413147660,
+            "warmup_required": 300,
+            "strategy_history_ready": false,
+            "warmup_satisfied": true,
+            "data_freshness_satisfied": false,
+            "failure_classification": "UPSTREAM_DATA_UNAVAILABLE",
+            "failure_reasons": [
+              "COMPLETED_CANDLE_STALE_OR_MISSING"
+            ],
+            "request_diagnostics": {
+              "rest": {
+                "request": {
+                  "coin": "pas:BTC",
+                  "interval": "1m",
+                  "startTime": 1792412160000,
+                  "endTime": 1792413119999
+                },
+                "received_ms": 1792413147658,
+                "returned_count": 2,
+                "first_returned_ms": 1792412160000,
+                "last_returned_ms": 1792412220000,
+                "expected_intervals": 16,
+                "normalization_succeeded": true,
+                "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl"
+              },
+              "stream": {
+                "received_ms": 1792412259536,
+                "candle_open_ms": 1792412220000,
+                "candle_close_ms": 1792412279999
+              }
+            },
+            "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+            "database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/history.sqlite"
+          },
+          "approved_quantity": null,
+          "execution_preflight": "NOT_AUTHORIZED",
+          "protection": "ACTUAL_NATIVE_TRIGGER_QUALIFICATION_REQUIRED"
+        },
+        {
+          "symbol": "pas:EWY",
+          "observed_ms": 1792413148737,
+          "decision": "NO_TRADE",
+          "reasons": [
+            "ATR_BELOW_UNCHANGED_0_40_PERCENT_FLOOR",
+            "NO_FROZEN_STRATEGY_SETUP"
+          ],
+          "metrics": {
+            "atr": "0.009285714285713962",
+            "atr_fraction": "0.00005845586582130287692791942084",
+            "close": "158.85",
+            "vwap": "153.41975828984675",
+            "vwap_slope": "0.05181178133616697",
+            "ema9": "158.81622321485875",
+            "ema21": "158.58127466621713",
+            "trend": "BULLISH",
+            "volume_ratio": "0E+5",
+            "realized_volatility": 0.0009250117690527303,
+            "spread_bps": "5.031130117602666498962329413",
+            "mark_oracle_bps": "1.886673794100999937110873530",
+            "book_imbalance": "-0.01366268917935079406962591391",
+            "bid_depth_notional": "249008.28885",
+            "ask_depth_notional": "260803.12744",
+            "bbo_notional": "492.17112",
+            "window_notional_approx": "8328.04625",
+            "hourly_funding": "0.00000625",
+            "mark": "158.98",
+            "oracle": "159.01"
+          },
+          "baseline_strategy_unchanged": true,
+          "order_submission_enabled": false,
+          "confidence_probability": null,
+          "baseline_long": false,
+          "baseline_short": false,
+          "higher_timeframe": {
+            "status": "READY",
+            "completed_bars": 59,
+            "ema9": 157.86737781594624,
+            "ema21": 157.1346366484316,
+            "trend": "BULLISH",
+            "latest_complete_ms": 1792413000000,
+            "scope": "RESEARCH_CONFIRMATION_VETO_ONLY"
+          },
+          "candle_count": 900,
+          "latest_completed_candle_ms": 1792413060000,
+          "source": "HASH_VERIFIED_FROZEN_STRATEGY_PLUS_ISOLATED_HTF_VETO",
+          "history": {
+            "raw_returned_last": 7,
+            "raw_returned_in_retained_snapshots": 60915,
+            "valid_returned_last": 7,
+            "valid_deduplicated_completed": 4324,
+            "contiguous_tail_bars": 4324,
+            "missing_intervals": [],
+            "earliest_ms": 1792153680000,
+            "latest_ms": 1792413060000,
+            "latest_completed_ms": 1792413120000,
+            "cache_age_ms": 28346,
+            "last_collection_ms": 1792413148318,
+            "warmup_required": 300,
+            "strategy_history_ready": true,
+            "warmup_satisfied": true,
+            "data_freshness_satisfied": true,
+            "failure_classification": "READY",
+            "failure_reasons": [],
+            "request_diagnostics": {
+              "rest": {
+                "request": {
+                  "coin": "pas:EWY",
+                  "interval": "1m",
+                  "startTime": 1792412700000,
+                  "endTime": 1792413119999
+                },
+                "received_ms": 1792413148315,
+                "returned_count": 7,
+                "first_returned_ms": 1792412700000,
+                "last_returned_ms": 1792413060000,
+                "expected_intervals": 7,
+                "normalization_succeeded": true,
+                "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl"
+              },
+              "stream": {
+                "received_ms": 1792413135820,
+                "candle_open_ms": 1792413120000,
+                "candle_close_ms": 1792413179999
+              }
+            },
+            "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+            "database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/history.sqlite"
+          },
+          "approved_quantity": null,
+          "execution_preflight": "NOT_AUTHORIZED",
+          "protection": "ACTUAL_NATIVE_TRIGGER_QUALIFICATION_REQUIRED"
+        }
+      ],
+      "liquidity": {
+        "pas:BTC": {
+          "quantity": "0.00060",
+          "notional": "49.513200",
+          "bid": "82489.0",
+          "ask": "82522.0",
+          "book_ms": 1792413145210,
+          "observed_ms": 1792413147853,
+          "active_asset_ms": 1792413148042,
+          "context_ms": 1792413147853,
+          "market_context": {
+            "funding": "-0.0000585531",
+            "openInterest": "2.25504",
+            "prevDayPx": "81066.0",
+            "dayNtlVlm": "98854.5776",
+            "premium": "-0.0008168629",
+            "oraclePx": "82572.0",
+            "markPx": "82489.0",
+            "midPx": "82505.5",
+            "impactPxs": [
+              "82464.5",
+              "82544.6"
+            ],
+            "dayBaseVlm": "1.21822"
+          },
+          "size_step": "0.00001",
+          "one_lot_bid_notional": "0.824890",
+          "partial_minimum_admissible": false,
+          "partial_protection_qualified": false,
+          "native_protection_qualified": false,
+          "partial_path": {
+            "entry_admissible_under_documented_minimum": false,
+            "blocker": "FROZEN_STOP_PLAN_UNAVAILABLE"
+          },
+          "targets": {
+            "1000": false,
+            "2500": false,
+            "5000": false,
+            "10000": false,
+            "25000": false,
+            "50000": false
+          },
+          "qualified_unattended_notional": "0",
+          "active_asset": {
+            "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+            "coin": "pas:BTC",
+            "leverage": {
+              "type": "cross",
+              "value": 20
+            },
+            "maxTradeSzs": [
+              "24.24565",
+              "24.24565"
+            ],
+            "availableToTrade": [
+              "100000.0",
+              "100000.0"
+            ],
+            "markPx": "82489.0"
+          },
+          "evidence_evaluation": {
+            "symbol": "pas:BTC",
+            "liquidity_only_quantity": "0",
+            "liquidity_only_notional": "0",
+            "economically_viable_notional": "0",
+            "authorized_executable_notional": "0",
+            "expected_net_pnl": null,
+            "expected_return_probability": null,
+            "decision": "OBSERVE",
+            "reasons": [
+              "ONE_X_CROSS_REQUIRED"
+            ],
+            "observed_ms": 1792413148042
+          },
+          "fee_scenarios": {
+            "base_taker_rate": "0.00045",
+            "documented_pas_rate_estimate": "0.00090",
+            "unchanged_signing_stress_rate": "0.00270",
+            "actual_charged_rate": null,
+            "documented_source": "https://perpetual-alpha26.github.io/docs/#venue-mechanics",
+            "expected_net_pnl": null,
+            "scenario_only": true,
+            "production_fee_policy_changed": false,
+            "assumption": "Published PAS positive base-rate multiplier=2; actual fill fee/feeToken govern charges",
+            "documented_target_scenario": null,
+            "stress_target_scenario": null,
+            "quantity": "0.00060",
+            "hourly_funding": "-0.0000585531",
+            "mark_oracle_divergence_bps": "-10.05183355132490432592161992",
+            "book_mid_oracle_divergence_bps": "-8.053577483892845032214309936",
+            "documented_taker_roundtrip_fee": "0.08910594000",
+            "stress_taker_roundtrip_fee": "0.26731782000",
+            "immediate_roundtrip_spread": "0.019800",
+            "maker_sensitivity_assumption": "Hypothetical maker entry and taker exit; no maker fill or execution switch implied",
+            "documented_maker_entry_taker_exit_fee": "0.05939802000"
+          }
+        },
+        "pas:EWY": {
+          "quantity": "0.309",
+          "notional": "49.14645",
+          "bid": "158.97",
+          "ask": "159.05",
+          "book_ms": 1792413145210,
+          "observed_ms": 1792413148566,
+          "active_asset_ms": 1792413148737,
+          "context_ms": 1792413148566,
+          "market_context": {
+            "funding": "0.00000625",
+            "openInterest": "114.948",
+            "prevDayPx": "153.99",
+            "dayNtlVlm": "81417.06201",
+            "premium": "-0.000110056",
+            "oraclePx": "159.01",
+            "markPx": "158.98",
+            "midPx": "159.01",
+            "impactPxs": [
+              "158.896",
+              "159.089"
+            ],
+            "dayBaseVlm": "534.886"
+          },
+          "size_step": "0.001",
+          "one_lot_bid_notional": "0.15897",
+          "partial_minimum_admissible": false,
+          "partial_protection_qualified": false,
+          "native_protection_qualified": false,
+          "partial_path": {
+            "entry_admissible_under_documented_minimum": false,
+            "blocker": "FROZEN_STOP_PLAN_UNAVAILABLE"
+          },
+          "targets": {
+            "1000": false,
+            "2500": false,
+            "5000": false,
+            "10000": false,
+            "25000": false,
+            "50000": false
+          },
+          "qualified_unattended_notional": "0",
+          "active_asset": {
+            "user": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+            "coin": "pas:EWY",
+            "leverage": {
+              "type": "cross",
+              "value": 20
+            },
+            "maxTradeSzs": [
+              "12580.198",
+              "12580.198"
+            ],
+            "availableToTrade": [
+              "100000.0",
+              "100000.0"
+            ],
+            "markPx": "158.98"
+          },
+          "evidence_evaluation": {
+            "symbol": "pas:EWY",
+            "liquidity_only_quantity": "0",
+            "liquidity_only_notional": "0",
+            "economically_viable_notional": "0",
+            "authorized_executable_notional": "0",
+            "expected_net_pnl": null,
+            "expected_return_probability": null,
+            "decision": "OBSERVE",
+            "reasons": [
+              "ONE_X_CROSS_REQUIRED"
+            ],
+            "observed_ms": 1792413148867
+          },
+          "fee_scenarios": {
+            "base_taker_rate": "0.00045",
+            "documented_pas_rate_estimate": "0.00090",
+            "unchanged_signing_stress_rate": "0.00270",
+            "actual_charged_rate": null,
+            "documented_source": "https://perpetual-alpha26.github.io/docs/#venue-mechanics",
+            "expected_net_pnl": null,
+            "scenario_only": true,
+            "production_fee_policy_changed": false,
+            "assumption": "Published PAS positive base-rate multiplier=2; actual fill fee/feeToken govern charges",
+            "documented_target_scenario": null,
+            "stress_target_scenario": null,
+            "quantity": "0.309",
+            "hourly_funding": "0.00000625",
+            "mark_oracle_divergence_bps": "-1.886673794100999937110873530",
+            "book_mid_oracle_divergence_bps": "0",
+            "documented_taker_roundtrip_fee": "0.0884413620",
+            "stress_taker_roundtrip_fee": "0.2653240860",
+            "immediate_roundtrip_spread": "0.02472",
+            "maker_sensitivity_assumption": "Hypothetical maker entry and taker exit; no maker fill or execution switch implied",
+            "documented_maker_entry_taker_exit_fee": "0.0589534920"
+          }
+        }
+      },
+      "funding": {
+        "status": "USDP_POSITIVE_VERIFIED",
+        "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+        "network": "testnet",
+        "dex": "pas",
+        "collateral": "USDP",
+        "account_mode": "unifiedAccount",
+        "token": 3307,
+        "observed_ms": 1792413010872,
+        "exchange_time_ms": 1792413011068,
+        "balance": "100000.0",
+        "age_ms": 164906,
+        "organizer_credit_amount": null,
+        "organizer_credit_provenance": "UNKNOWN",
+        "signing_authority": "NONE",
+        "reasons": [],
+        "response_hashes": {
+          "spot": "1b53cc1b5d50cbc4d32da7b9a35a0374cce3d4807876bfad58e272e368e811df",
+          "state": "00ab5848bdf5f4dd4cce0e0d6073326fe108df0a008c0aa869e28b934e1e0422"
+        },
+        "provenance": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/pas-btc-ewy-v6-public/sessions/f32c0fab3b1747a9970cd2237e9b3c07/info_receipts.jsonl",
+        "equity_basis": "Unified USDP total once; no addition of per-DEX equity or unrealized PnL",
+        "evidence_hash": "572451c8e7ab2bd3e756682f4825a564989f68be7a83cc736fe1475ac8a44146"
+      },
+      "account": {
+        "source": "EXCHANGE_REPORTED_ACCOUNT_OBSERVER",
+        "exchange_orders_submitted": 0,
+        "entries_paused": false,
+        "reasons": [],
+        "positions": [],
+        "open_orders": [],
+        "fills": [],
+        "funding_events": [],
+        "reported_account_equity": {
+          "reported_account_value": "100000.0",
+          "collateral_balance": "100000.0",
+          "margin_used": "0",
+          "withdrawable": null,
+          "valuation_source": "spotClearinghouseState.USDP.total"
+        },
+        "accounting_window_ms": [
+          0,
+          1792413009489
+        ],
+        "latest_query_window_ms": [
+          1792412919400,
+          1792413009489
+        ],
+        "realized": {
+          "gross_closed_pnl": "0",
+          "actual_fill_fees": "0",
+          "actual_funding_cashflow": "0",
+          "net_after_fees_and_funding": "0",
+          "scope": "ONLY_OBSERVED_ACCOUNT_EVENTS; excludes deposits/transfers and unknown historical events"
+        },
+        "corrections": []
+      },
+      "account_observed_ms": 1792413010694,
+      "TRADING_AUTHORIZED": false,
+      "AUTO_TRADING_ACTIVE": false
+    }
+  ]
+}

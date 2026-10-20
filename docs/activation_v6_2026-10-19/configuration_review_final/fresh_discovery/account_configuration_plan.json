@@ -1,0 +1,70 @@
+{
+  "status": "UNSIGNED_CONFIGURATION_PLAN_ONLY",
+  "network": "testnet",
+  "dex": "pas",
+  "collateral": "USDP",
+  "source_hash": "c6a61c2059e5c33b0e9e8dcbd94ed8faf4860c22d716e87bed8448dd0014b0a7",
+  "observed_ms": 1792413067823,
+  "entry_markets": [
+    "pas:BTC",
+    "pas:EWY"
+  ],
+  "account_reconciliation_scope": "ALL_CANONICAL_PAS_MARKETS",
+  "policy_basis": "V4 BTC/EWY entries only; leverage is per market, not an all-ten venue obligation",
+  "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+  "discovery_hash": "bc885ae2ba82040f3353398b55ae0f43bdbc1970e4c70cc1ad5f3f8c47d6fd34",
+  "changes": [
+    {
+      "symbol": "pas:BTC",
+      "observed_ms": 1792413059254,
+      "before": {
+        "type": "cross",
+        "value": 20
+      },
+      "requested_action": {
+        "type": "updateLeverage",
+        "asset": 2810000,
+        "isCross": true,
+        "leverage": 1
+      }
+    },
+    {
+      "symbol": "pas:EWY",
+      "observed_ms": 1792413060506,
+      "before": {
+        "type": "cross",
+        "value": 20
+      },
+      "requested_action": {
+        "type": "updateLeverage",
+        "asset": 2810004,
+        "isCross": true,
+        "leverage": 1
+      }
+    }
+  ],
+  "already_one_x_cross": [],
+  "collateral_balance": "100000.0",
+  "organizer_credit_amount": null,
+  "organizer_credit_status": "ORIGINAL_ORGANIZER_CREDIT_RECORD_REQUIRED; balance is not funding provenance",
+  "blockers": [
+    "SEPARATE_EXACT_OPERATOR_CONFIGURATION_APPROVAL_REQUIRED",
+    "SHARED_UNKNOWN_AND_CONSUMED_INVOCATION_REVIEW_REQUIRED",
+    "REGISTERED_TEAM_ORGANIZER_RECORD_REQUIRED"
+  ],
+  "signing_authority": "NONE",
+  "signatures_created": 0,
+  "exchange_writes": 0,
+  "transfers_allowed": false,
+  "configuration_approval_created": false,
+  "required_before_execution": [
+    "Fresh funded Unified account/agent/identity checks",
+    "Prior UNKNOWN/invocation review",
+    "Exact new configuration-only approval",
+    "Shared sole host/signer/nonce ownership",
+    "Per-action exact permit and durable uncertainty",
+    "Fresh readback of every requested 1x CROSS value"
+  ],
+  "note": "Unsigned evidence only. The separate exact PAS configuration-only approval/route is required; existing par approval never authorizes PAS.",
+  "plan_hash": "7f11e89e984dcfedad78e3332c971b1b2779c2a5cabb3164e7290f17ee3b8c30"
+}

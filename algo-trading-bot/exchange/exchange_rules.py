@@ -178,10 +178,17 @@ class HyperliquidOrderValidator:
                 current=decimal(context.contexts[request.symbol]['openInterest'],nonnegative=True)
                 size_cap=decimal(limits['oiSzCapPerPerp'],positive=True)
                 total_cap=decimal(limits['totalOiCap'],positive=True)
+                if getattr(self.client,'dex','par')=='pas':
+                    # V6 scored limits are independent ceilings. Continue to
+                    # read runtime limits and honor any stricter venue value.
+                    audit.update(reported_market_oi_cap=str(cap),reported_total_oi_cap=str(total_cap))
+                    cap=min(cap,Decimal('10000000'))
+                    total_cap=min(total_cap,Decimal('50000000'))
                 total=sum((decimal(c['openInterest'],nonnegative=True)*decimal(c['oraclePx'],positive=True)
                            for c in context.contexts.values()),Decimal(0))
                 audit.update(current_open_interest_notional=str(current*oracle_reference),
-                             open_interest_cap=str(cap),proposed_exposure_increase=str(increase*oracle_reference))
+                             open_interest_cap=str(cap),total_open_interest_cap=str(total_cap),
+                             total_open_interest_notional=str(total),proposed_exposure_increase=str(increase*oracle_reference))
                 if increase and (current+increase>size_cap or (current+increase)*oracle_reference>cap or
                                  total+increase*oracle_reference>total_cap):
                     return reject('OPEN_INTEREST_CAPACITY')

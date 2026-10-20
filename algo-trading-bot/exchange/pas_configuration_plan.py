@@ -34,8 +34,17 @@ def configuration_plan(discovery):
     if discovery.get('account_mode')!='unifiedAccount':blockers.append('HUMAN_VERIFIED_UNIFIED_MODE_REQUIRED')
     if discovery.get('terminal_flat') is not True:blockers.append('TWO_FRESH_FLAT_ZERO_ORDER_READBACKS_REQUIRED')
     local=discovery.get('local_execution_state',{})
-    if local.get('status')!='NO_LOCAL_UNRESOLVED_INTENT':blockers.append('SHARED_UNKNOWN_AND_CONSUMED_INVOCATION_REVIEW_REQUIRED')
-    if discovery.get('registration_evidence',{}).get('status')!='OPERATOR_REVIEWED_ORGANIZER_RECORD':
+    isolation=discovery.get('configuration_isolation')
+    if isolation is not None:
+        from .configuration_isolation import assess,CLOID,INTENT
+        if not assess(isolation,discovery['source_hash'],discovery['finished_ms'])['admissible']:
+            raise ExchangeError('INVALID_CONFIGURATION_ONLY_ISOLATION_REVIEW')
+        if local.get('unresolved')!=[dict(journal='qualification',cloid=CLOID,state='UNKNOWN',intent_key=INTENT)]:
+            raise ExchangeError('ONLY_EXACT_ORIGINAL_UNKNOWN_MAY_BE_ISOLATED_FOR_CONFIGURATION')
+    if local.get('status')!='NO_LOCAL_UNRESOLVED_INTENT' and isolation is None:
+        blockers.append('SHARED_UNKNOWN_AND_CONSUMED_INVOCATION_REVIEW_REQUIRED')
+    if discovery.get('registration_evidence',{}).get('status') not in {
+            'OPERATOR_REVIEWED_ORGANIZER_RECORD','DIRECT_OPERATOR_CONFIRMED_ACCOUNT_IDENTITY'}:
         blockers.append('REGISTERED_TEAM_ORGANIZER_RECORD_REQUIRED')
     plan=dict(status='UNSIGNED_CONFIGURATION_PLAN_ONLY',network='testnet',dex='pas',collateral='USDP',
         source_hash=discovery['source_hash'],observed_ms=discovery['finished_ms'],
@@ -51,5 +60,9 @@ def configuration_plan(discovery):
             'Exact new configuration-only approval','Shared sole host/signer/nonce ownership','Per-action exact permit and durable uncertainty',
             'Fresh readback of every requested 1x CROSS value'],
         note='Unsigned evidence only. The separate exact PAS configuration-only approval/route is required; existing par approval never authorizes PAS.')
+    if isolation is not None:
+        plan.update(configuration_isolation=isolation,
+            historical_disposition='UNKNOWN_PRESERVED; finite configuration-only isolation. No order, qualification, cancellation or transfer authority.',
+            isolation_acceptance='The exact plan approval includes this displayed isolation only for the two 1x CROSS changes; ordinary order barriers remain.')
     plan['plan_hash']=fingerprint(plan)
     return plan

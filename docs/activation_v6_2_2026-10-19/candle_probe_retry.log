@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "/Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v6_2_2026-10-19/probe_live_candles.py", line 13, in <module>
+    j=ExecutionJournal(O/'public.sqlite',session_id='public:v6.2-candle-probe',team_address='PUBLIC_ONLY');rates=HyperliquidRateLimitManager(j)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adesh/Autonomous Trading Bot - Crypto /algo-trading-bot/exchange/execution_journal.py", line 50, in __init__
+    raise ExchangeError('JOURNAL_IDENTITY_REQUIRED')
+exchange.base_exchange.ExchangeError: JOURNAL_IDENTITY_REQUIRED

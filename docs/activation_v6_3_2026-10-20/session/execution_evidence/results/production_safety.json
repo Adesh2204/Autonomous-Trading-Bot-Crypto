@@ -1,0 +1,182 @@
+{
+  "network": "testnet",
+  "dex": "par",
+  "api_budget": "CAUTION",
+  "account_request_budget": {
+    "used": 21,
+    "cap": 10081,
+    "remaining": 10060,
+    "last_refresh_ms": 1792503763258
+  },
+  "daily_actions": {
+    "used": 0,
+    "maximum": 50000
+  },
+  "nonce_manager": "HEALTHY",
+  "api_wallet_ownership": "EXCLUSIVE",
+  "clock": {
+    "state": "HEALTHY",
+    "reason": null,
+    "offset_ms": -401,
+    "last_reference_ms": 1792503792175,
+    "fresh_confirmations": 2
+  },
+  "position_state": "FLAT",
+  "positions": {},
+  "catastrophic_protection": "VERIFIED",
+  "websocket": "HEALTHY",
+  "reconciliation": "HEALTHY",
+  "new_entries": "PAUSED",
+  "live_orders_permitted": false,
+  "infrastructure_implemented": {
+    "rate_limits": true,
+    "nonces": true,
+    "clock": true,
+    "protection": true
+  },
+  "source": "READ_ONLY_SAFETY_SNAPSHOT",
+  "exchange_ts": null,
+  "received_ts": "2026-10-20T13:43:17.013+00:00",
+  "processed_ts": "2026-10-20T13:43:17.013+00:00",
+  "timestamp_source": "LOCAL_PROCESS",
+  "exchange_to_receive_ms": null,
+  "receive_to_process_ms": 0,
+  "clock_skew_detected": false,
+  "account_truth_window": [
+    1792503625757,
+    1792503747049
+  ],
+  "protection": {
+    "policy": {
+      "enabled": true,
+      "approval_reference": "docs/practice_setup_2026-10-07/protection_configuration_approval.md",
+      "atr_distance_multiple": "1",
+      "execution_slippage_fraction": "0.005"
+    },
+    "healthy": true,
+    "entries_allowed": true,
+    "last_verified_ms": 1792503793975,
+    "positions": {
+      "pas:BTC": {
+        "status": "NOT_REQUIRED",
+        "reason": null,
+        "observed_ms": 1792503793975
+      }
+    },
+    "accounting_source": "EXCHANGE_REPORTED",
+    "normal_strategy_stop_changed": false
+  },
+  "single_position_guard": {
+    "entry_key": null,
+    "generation": 257,
+    "max_global_positions": 1,
+    "observed_ms": 1792503747049,
+    "reason": "AUTHORITATIVE_FLAT_RECONCILED",
+    "state": "FLAT",
+    "team_address": "0x94ea16ece139e246a1d84e71aacf7dd1f47cb12c",
+    "runtime_state": "FLAT",
+    "runtime_reason": "AUTHORITATIVE_FLAT_RECONCILED",
+    "entry_permission": true
+  },
+  "max_global_positions": 1,
+  "compliance": {
+    "execution_mode": "LIVE_TESTNET",
+    "source": "LOCAL_DURABLE_COMPLIANCE_EVIDENCE",
+    "orders_evaluated": 0,
+    "strategy_orders_evaluated": 0,
+    "orders_allowed": 0,
+    "orders_blocked": 0,
+    "self_cross_blocks": 0,
+    "duplicate_blocks": 0,
+    "abnormal_price_blocks": 0,
+    "unknown_order_blocks": 0,
+    "position_limit_blocks": 0,
+    "block_codes": {},
+    "maximum_simultaneous_positions_observed": 0,
+    "max_global_positions_enforced": 1,
+    "autonomous_usdpr_external_transfers": 0,
+    "external_wallet_transfers_observed": null,
+    "unexplained_order_permits": 0,
+    "authorized_order_actions": 0,
+    "compliance_state": "REVIEW_REQUIRED",
+    "committee_verdict": "NOT_ASSESSED",
+    "account_verified": null,
+    "limits": [
+      "This is local bot evidence, not organizer certification.",
+      "Manual activity, other computers/accounts and cross-team intent are not observable here.",
+      "Allowed means preflight permission; it does not establish an exchange fill or trading profit.",
+      "Synthetic fixtures cannot establish funded-account readiness."
+    ]
+  },
+  "api": {
+    "state": "CAUTION",
+    "policy": {
+      "ip_weight_per_minute": 1200,
+      "ip_safety_reserve": 120,
+      "daily_actions": 50000,
+      "daily_safety_reserve": 500,
+      "account_action_reserve": 10,
+      "max_open_orders": 1000,
+      "max_ws_connections": 10,
+      "max_ws_subscriptions": 1000,
+      "max_ws_unique_users": 10,
+      "venue_ws_connections_per_minute": 30,
+      "max_ws_messages_per_minute": 2000,
+      "ws_reconnects_per_minute": 5,
+      "budget_max_age_ms": 60000,
+      "optional_poll_interval_ms": 5000,
+      "read_retry_attempts": 3,
+      "backoff_base_ms": 1000,
+      "backoff_max_ms": 30000,
+      "exhausted_safety_action_interval_ms": 10000,
+      "caution_fraction": 0.75,
+      "throttle_fraction": 0.9
+    },
+    "ip_weight": 940,
+    "public_read_blocked": false,
+    "account_requests_used": 21,
+    "account_requests_cap": 10081,
+    "remaining_budget": 10060,
+    "budget_observed_ms": 1792503763258,
+    "daily_actions": 0,
+    "daily_limit": 50000,
+    "entries_allowed": true,
+    "open_orders": 0,
+    "backoff_until_ms": 0,
+    "websocket": {
+      "connections": 2,
+      "subscriptions": 8,
+      "outgoing_messages": 4,
+      "heartbeats": 4,
+      "reconnects_last_minute": 0
+    },
+    "public_reads": {
+      "upstream_by_operation": {
+        "perpDexs": 14,
+        "meta": 14,
+        "spotMeta": 14,
+        "clearinghouseState": 248,
+        "openOrders": 64,
+        "frontendOpenOrders": 161,
+        "userAbstraction": 64,
+        "spotClearinghouseState": 43,
+        "exchangeStatus": 1,
+        "perpDexStatus": 1,
+        "userFees": 22,
+        "userFillsByTime": 21,
+        "userFunding": 21,
+        "l2Book": 261,
+        "extraAgents": 21,
+        "userRateLimit": 21,
+        "metaAndAssetCtxs": 12,
+        "candleSnapshot": 12,
+        "activeAssetData": 188
+      },
+      "failures": {},
+      "pending": 0,
+      "coalesced": 3,
+      "max_seconds": 36.62483029207215,
+      "failure_details": []
+    }
+  }
+}

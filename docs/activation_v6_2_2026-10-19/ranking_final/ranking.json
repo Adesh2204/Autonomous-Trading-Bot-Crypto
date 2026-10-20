@@ -1,0 +1,1289 @@
+{
+  "status": "READ_ONLY_PAS_RANKING_COMPLETE",
+  "observed_ms": 1792419148778,
+  "source_hash": "8bb636e708306673f327384fc451519e5e74d526ff3dbd81c17620973bb13bad",
+  "source_hash_after": "8bb636e708306673f327384fc451519e5e74d526ff3dbd81c17620973bb13bad",
+  "network": "testnet",
+  "dex": "pas",
+  "collateral": "USDP",
+  "strategy": "UNCHANGED_FROZEN_BRAIN_AND_SCANNER_RANKING",
+  "policy": {
+    "atr_fraction": "0.004",
+    "spread_bps": "15",
+    "history_bars": 300,
+    "top_n": 3,
+    "percentile_factors": [
+      "atr_fraction",
+      "spread_bps_inverse",
+      "window_notional_approx",
+      "bbo_notional"
+    ]
+  },
+  "observational_top_three": [],
+  "rows": [
+    {
+      "symbol": "pas:BRENT",
+      "rank": null,
+      "score": "0",
+      "scanner_qualified": false,
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "metrics": {},
+      "signal": null,
+      "evidence": {
+        "request_time_ms": null,
+        "request_cycle_observed_ms": 1792419140452,
+        "request_time_basis": "EXACT_SEND_TIME_UNAVAILABLE_NO_ADDITIONAL_CLOCK_READ",
+        "expected_last_completed_candle_ms": 1792419060000,
+        "actual_last_completed_candle_ms": 1792418640000,
+        "lag_seconds": 420.0,
+        "root_cause": "UNDETERMINED",
+        "source": "SerializedPublicMarket",
+        "source_timestamp_ms": 1792418640000,
+        "received_timestamp_ms": 1792419141097
+      },
+      "timing": {
+        "exchange_ts": null,
+        "received_ts": "2026-10-19T14:12:21.130+00:00",
+        "processed_ts": "2026-10-19T14:12:21.130+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      "production_entry_market": false,
+      "strategy_signal_present": false,
+      "signed_entry_authorized": false,
+      "expected_profit": null
+    },
+    {
+      "symbol": "pas:BTC",
+      "rank": null,
+      "score": "0",
+      "scanner_qualified": false,
+      "reasons": [
+        "ATR_BELOW_BASELINE_SCANNER_FLOOR"
+      ],
+      "metrics": {
+        "vwap": "82245.9158188382",
+        "ema9": "81835.14342944697",
+        "ema21": "81926.32275614807",
+        "atr": "53.785714285714285",
+        "close": "81809.0",
+        "atr_fraction": "0.0006574547334121464019851116625",
+        "atr_percent": "0.06574547334121464019851116625",
+        "spread_bps": "4.035438487077425390245244603",
+        "window_notional_approx": "111520.398940",
+        "bbo_notional": "498.93120",
+        "best_bid": "81759.0",
+        "best_ask": "81792.0",
+        "spread": "33.0",
+        "bid_depth_notional": "213650.062940",
+        "ask_depth_notional": "259535.138980",
+        "orderbook_imbalance": "-0.09697064881533985905422965599",
+        "ema_strength_fraction": "0.001114539069064528352626239167",
+        "trend": "BEARISH",
+        "vwap_distance_fraction": "-0.005312310216115626712819344652",
+        "realized_volatility": "0.0005875837939724918",
+        "hourly_funding": "-0.0000580217",
+        "open_interest": "4.23804",
+        "daily_notional_volume": "208559.2900999999",
+        "candle_count": 866
+      },
+      "signal": {
+        "symbol": "pas:BTC",
+        "timestamp_ms": 1792419060000,
+        "reference": "82245.9158188382",
+        "atr": "53.785714285714285",
+        "bias": "SHORT_BIAS",
+        "long": false,
+        "short": false,
+        "signal_type": null
+      },
+      "evidence": {
+        "request_time_ms": null,
+        "request_cycle_observed_ms": 1792419140452,
+        "request_time_basis": "EXACT_SEND_TIME_UNAVAILABLE_NO_ADDITIONAL_CLOCK_READ",
+        "expected_last_completed_candle_ms": 1792419060000,
+        "actual_last_completed_candle_ms": 1792419060000,
+        "lag_seconds": 0.0,
+        "root_cause": "UNDETERMINED",
+        "source": "SerializedPublicMarket",
+        "source_timestamp_ms": 1792419060000,
+        "received_timestamp_ms": 1792419141372,
+        "market_health": "HEALTHY",
+        "brain": {
+          "status": "OBSERVED_FROZEN_LOCALS",
+          "anti_spam_pass": true,
+          "warmup_pass": true,
+          "brain_atr_pass": true,
+          "raw_setup": false
+        },
+        "numeric_fields": {
+          "Close": {
+            "field": "Close",
+            "operand_type": "float64",
+            "operand": "81809.0",
+            "valid": true
+          },
+          "ATR_14": {
+            "field": "ATR_14",
+            "operand_type": "float64",
+            "operand": "53.785714285714285",
+            "valid": true
+          },
+          "EMA_9": {
+            "field": "EMA_9",
+            "operand_type": "float64",
+            "operand": "81835.14342944697",
+            "valid": true
+          },
+          "EMA_21": {
+            "field": "EMA_21",
+            "operand_type": "float64",
+            "operand": "81926.32275614807",
+            "valid": true
+          },
+          "VWAP": {
+            "field": "VWAP",
+            "operand_type": "float64",
+            "operand": "82245.9158188382",
+            "valid": true
+          }
+        }
+      },
+      "timing": {
+        "exchange_ts": null,
+        "received_ts": "2026-10-19T14:12:21.372+00:00",
+        "processed_ts": "2026-10-19T14:12:21.985+00:00",
+        "timestamp_source": "LOCAL_FROZEN_STRATEGY",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 613,
+        "clock_skew_detected": false
+      },
+      "production_entry_market": true,
+      "strategy_signal_present": false,
+      "signed_entry_authorized": false,
+      "expected_profit": null
+    },
+    {
+      "symbol": "pas:ETH",
+      "rank": null,
+      "score": "0",
+      "scanner_qualified": false,
+      "reasons": [
+        "ATR_BELOW_BASELINE_SCANNER_FLOOR"
+      ],
+      "metrics": {
+        "vwap": "2410.174441707419",
+        "ema9": "2391.8940255224097",
+        "ema21": "2395.271225208189",
+        "atr": "3.2928571428571365",
+        "close": "2392.0",
+        "atr_fraction": "0.001376612517916863085284280936",
+        "atr_percent": "0.1376612517916863085284280936",
+        "spread_bps": "5.450390960736222040542523531",
+        "window_notional_approx": "120859.58993",
+        "bbo_notional": "498.3605",
+        "best_bid": "2384.5",
+        "best_ask": "2385.8",
+        "spread": "1.3",
+        "bid_depth_notional": "224034.12686",
+        "ask_depth_notional": "259871.69638",
+        "orderbook_imbalance": "-0.07405897552554527923890912340",
+        "ema_strength_fraction": "0.001411872778335827759197324415",
+        "trend": "BEARISH",
+        "vwap_distance_fraction": "-0.007540716303731043512933381459",
+        "realized_volatility": "0.0006615400233351082",
+        "hourly_funding": "-0.0000653939",
+        "open_interest": "115.6194",
+        "daily_notional_volume": "214692.3932500001",
+        "candle_count": 866
+      },
+      "signal": {
+        "symbol": "pas:ETH",
+        "timestamp_ms": 1792419060000,
+        "reference": "2410.174441707419",
+        "atr": "3.2928571428571365",
+        "bias": "SHORT_BIAS",
+        "long": false,
+        "short": false,
+        "signal_type": null
+      },
+      "evidence": {
+        "request_time_ms": null,
+        "request_cycle_observed_ms": 1792419140452,
+        "request_time_basis": "EXACT_SEND_TIME_UNAVAILABLE_NO_ADDITIONAL_CLOCK_READ",
+        "expected_last_completed_candle_ms": 1792419060000,
+        "actual_last_completed_candle_ms": 1792419060000,
+        "lag_seconds": 0.0,
+        "root_cause": "UNDETERMINED",
+        "source": "SerializedPublicMarket",
+        "source_timestamp_ms": 1792419060000,
+        "received_timestamp_ms": 1792419142769,
+        "market_health": "HEALTHY",
+        "brain": {
+          "status": "OBSERVED_FROZEN_LOCALS",
+          "anti_spam_pass": false,
+          "warmup_pass": true,
+          "brain_atr_pass": true,
+          "raw_setup": false
+        },
+        "numeric_fields": {
+          "Close": {
+            "field": "Close",
+            "operand_type": "float64",
+            "operand": "2392.0",
+            "valid": true
+          },
+          "ATR_14": {
+            "field": "ATR_14",
+            "operand_type": "float64",
+            "operand": "3.2928571428571365",
+            "valid": true
+          },
+          "EMA_9": {
+            "field": "EMA_9",
+            "operand_type": "float64",
+            "operand": "2391.8940255224097",
+            "valid": true
+          },
+          "EMA_21": {
+            "field": "EMA_21",
+            "operand_type": "float64",
+            "operand": "2395.271225208189",
+            "valid": true
+          },
+          "VWAP": {
+            "field": "VWAP",
+            "operand_type": "float64",
+            "operand": "2410.174441707419",
+            "valid": true
+          }
+        }
+      },
+      "timing": {
+        "exchange_ts": null,
+        "received_ts": "2026-10-19T14:12:22.769+00:00",
+        "processed_ts": "2026-10-19T14:12:23.165+00:00",
+        "timestamp_source": "LOCAL_FROZEN_STRATEGY",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 396,
+        "clock_skew_detected": false
+      },
+      "production_entry_market": false,
+      "strategy_signal_present": false,
+      "signed_entry_authorized": false,
+      "expected_profit": null
+    },
+    {
+      "symbol": "pas:EWJ",
+      "rank": null,
+      "score": "0",
+      "scanner_qualified": false,
+      "reasons": [
+        "COMPLETED_CANDLE_STALE"
+      ],
+      "metrics": {},
+      "signal": null,
+      "evidence": {
+        "request_time_ms": null,
+        "request_cycle_observed_ms": 1792419140452,
+        "request_time_basis": "EXACT_SEND_TIME_UNAVAILABLE_NO_ADDITIONAL_CLOCK_READ",
+        "expected_last_completed_candle_ms": 1792419060000,
+        "actual_last_completed_candle_ms": 1792418760000,
+        "lag_seconds": 300.0,
+        "root_cause": "UNDETERMINED",
+        "source": "SerializedPublicMarket",
+        "source_timestamp_ms": 1792418760000,
+        "received_timestamp_ms": 1792419143817
+      },
+      "timing": {
+        "exchange_ts": null,
+        "received_ts": "2026-10-19T14:12:23.850+00:00",
+        "processed_ts": "2026-10-19T14:12:23.850+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      "production_entry_market": false,
+      "strategy_signal_present": false,
+      "signed_entry_authorized": false,
+      "expected_profit": null
+    },
+    {
+      "symbol": "pas:EWY",
+      "rank": null,
+      "score": "0",
+      "scanner_qualified": false,
+      "reasons": [
+        "ATR_BELOW_BASELINE_SCANNER_FLOOR"
+      ],
+      "metrics": {
+        "vwap": "156.2141028814754",
+        "ema9": "157.71913503085185",
+        "ema21": "157.80708121276155",
+        "atr": "0.15357142857142694",
+        "close": "157.82",
+        "atr_fraction": "0.0009730796386479973387403370929",
+        "atr_percent": "0.09730796386479973387403370929",
+        "spread_bps": "5.075820062178795761690248081",
+        "window_notional_approx": "63684.60636",
+        "bbo_notional": "19.85382",
+        "best_bid": "157.57",
+        "best_ask": "157.65",
+        "spread": "0.08",
+        "bid_depth_notional": "253567.16407",
+        "ask_depth_notional": "259450.15433",
+        "orderbook_imbalance": "-0.01146743014124335651277693786",
+        "ema_strength_fraction": "0.0005572562533880370041819794703",
+        "trend": "BEARISH",
+        "vwap_distance_fraction": "0.01028010332551757592984828316",
+        "realized_volatility": "0.0007472179902131704",
+        "hourly_funding": "0.00000625",
+        "open_interest": "276.476",
+        "daily_notional_volume": "138061.47121",
+        "candle_count": 866
+      },
+      "signal": {
+        "symbol": "pas:EWY",
+        "timestamp_ms": 1792419060000,
+        "reference": "156.2141028814754",
+        "atr": "0.15357142857142694",
+        "bias": "LONG_BIAS",
+        "long": false,
+        "short": false,
+        "signal_type": null
+      },
+      "evidence": {
+        "request_time_ms": null,
+        "request_cycle_observed_ms": 1792419140452,
+        "request_time_basis": "EXACT_SEND_TIME_UNAVAILABLE_NO_ADDITIONAL_CLOCK_READ",
+        "expected_last_completed_candle_ms": 1792419060000,
+        "actual_last_completed_candle_ms": 1792419060000,
+        "lag_seconds": 0.0,
+        "root_cause": "UNDETERMINED",
+        "source": "SerializedPublicMarket",
+        "source_timestamp_ms": 1792419060000,
+        "received_timestamp_ms": 1792419144486,
+        "market_health": "HEALTHY",
+        "brain": {
+          "status": "OBSERVED_FROZEN_LOCALS",
+          "anti_spam_pass": true,
+          "warmup_pass": true,
+          "brain_atr_pass": true,
+          "raw_setup": false
+        },
+        "numeric_fields": {
+          "Close": {
+            "field": "Close",
+            "operand_type": "float64",
+            "operand": "157.82",
+            "valid": true
+          },
+          "ATR_14": {
+            "field": "ATR_14",
+            "operand_type": "float64",
+            "operand": "0.15357142857142694",
+            "valid": true
+          },
+          "EMA_9": {
+            "field": "EMA_9",
+            "operand_type": "float64",
+            "operand": "157.71913503085185",
+            "valid": true
+          },
+          "EMA_21": {
+            "field": "EMA_21",
+            "operand_type": "float64",
+            "operand": "157.80708121276155",
+            "valid": true
+          },
+          "VWAP": {
+            "field": "VWAP",
+            "operand_type": "float64",
+            "operand": "156.2141028814754",
+            "valid": true
+          }
+        }
+      },
+      "timing": {
+        "exchange_ts": null,
+        "received_ts": "2026-10-19T14:12:24.486+00:00",
+        "processed_ts": "2026-10-19T14:12:24.884+00:00",
+        "timestamp_source": "LOCAL_FROZEN_STRATEGY",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 398,
+        "clock_skew_detected": false
+      },
+      "production_entry_market": true,
+      "strategy_signal_present": false,
+      "signed_entry_authorized": false,
+      "expected_profit": null
+    },
+    {
+      "symbol": "pas:GOLD",
+      "rank": null,
+      "score": "0",
+      "scanner_qualified": false,
+      "reasons": [
+        "INSUFFICIENT_COMPLETED_HISTORY"
+      ],
+      "metrics": {},
+      "signal": null,
+      "evidence": {
+        "request_time_ms": null,
+        "request_cycle_observed_ms": 1792419140452,
+        "request_time_basis": "EXACT_SEND_TIME_UNAVAILABLE_NO_ADDITIONAL_CLOCK_READ",
+        "expected_last_completed_candle_ms": 1792419060000,
+        "actual_last_completed_candle_ms": 1792418520000,
+        "lag_seconds": 540.0,
+        "root_cause": "UNDETERMINED",
+        "source": "SerializedPublicMarket",
+        "source_timestamp_ms": 1792418520000,
+        "received_timestamp_ms": 1792419145095
+      },
+      "timing": {
+        "exchange_ts": null,
+        "received_ts": "2026-10-19T14:12:25.100+00:00",
+        "processed_ts": "2026-10-19T14:12:25.100+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      "production_entry_market": false,
+      "strategy_signal_present": false,
+      "signed_entry_authorized": false,
+      "expected_profit": null
+    },
+    {
+      "symbol": "pas:HYPE",
+      "rank": null,
+      "score": "0",
+      "scanner_qualified": false,
+      "reasons": [
+        "ATR_BELOW_BASELINE_SCANNER_FLOOR"
+      ],
+      "metrics": {
+        "vwap": "78.97250449029522",
+        "ema9": "78.34240562556765",
+        "ema21": "78.59688218976318",
+        "atr": "0.14057142857142882",
+        "close": "78.376",
+        "atr_fraction": "0.001793551961970868888435235276",
+        "atr_percent": "0.1793551961970868888435235276",
+        "spread_bps": "5.500937078234838841732923108",
+        "window_notional_approx": "153190.25592",
+        "bbo_notional": "499.6341",
+        "best_bid": "78.147",
+        "best_ask": "78.19",
+        "spread": "0.043",
+        "bid_depth_notional": "238526.79595",
+        "ask_depth_notional": "259877.48429",
+        "orderbook_imbalance": "-0.04283809185932122804756593436",
+        "ema_strength_fraction": "0.003246868482641752577319587629",
+        "trend": "BEARISH",
+        "vwap_distance_fraction": "-0.007553318641028071937126882078",
+        "realized_volatility": "0.001028085220022337",
+        "hourly_funding": "-0.000080311",
+        "open_interest": "2575.18",
+        "daily_notional_volume": "182908.11405",
+        "candle_count": 865
+      },
+      "signal": {
+        "symbol": "pas:HYPE",
+        "timestamp_ms": 1792419000000,
+        "reference": "78.97250449029522",
+        "atr": "0.14057142857142882",
+        "bias": "SHORT_BIAS",
+        "long": false,
+        "short": false,
+        "signal_type": null
+      },
+      "evidence": {
+        "request_time_ms": null,
+        "request_cycle_observed_ms": 1792419140452,
+        "request_time_basis": "EXACT_SEND_TIME_UNAVAILABLE_NO_ADDITIONAL_CLOCK_READ",
+        "expected_last_completed_candle_ms": 1792419060000,
+        "actual_last_completed_candle_ms": 1792419000000,
+        "lag_seconds": 60.0,
+        "root_cause": "UNDETERMINED",
+        "source": "SerializedPublicMarket",
+        "source_timestamp_ms": 1792419000000,
+        "received_timestamp_ms": 1792419145749,
+        "market_health": "HEALTHY",
+        "brain": {
+          "status": "OBSERVED_FROZEN_LOCALS",
+          "anti_spam_pass": true,
+          "warmup_pass": true,
+          "brain_atr_pass": true,
+          "raw_setup": false
+        },
+        "numeric_fields": {
+          "Close": {
+            "field": "Close",
+            "operand_type": "float64",
+            "operand": "78.376",
+            "valid": true
+          },
+          "ATR_14": {
+            "field": "ATR_14",
+            "operand_type": "float64",
+            "operand": "0.14057142857142882",
+            "valid": true
+          },
+          "EMA_9": {
+            "field": "EMA_9",
+            "operand_type": "float64",
+            "operand": "78.34240562556765",
+            "valid": true
+          },
+          "EMA_21": {
+            "field": "EMA_21",
+            "operand_type": "float64",
+            "operand": "78.59688218976318",
+            "valid": true
+          },
+          "VWAP": {
+            "field": "VWAP",
+            "operand_type": "float64",
+            "operand": "78.97250449029522",
+            "valid": true
+          }
+        }
+      },
+      "timing": {
+        "exchange_ts": null,
+        "received_ts": "2026-10-19T14:12:25.749+00:00",
+        "processed_ts": "2026-10-19T14:12:26.147+00:00",
+        "timestamp_source": "LOCAL_FROZEN_STRATEGY",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 398,
+        "clock_skew_detected": false
+      },
+      "production_entry_market": false,
+      "strategy_signal_present": false,
+      "signed_entry_authorized": false,
+      "expected_profit": null
+    },
+    {
+      "symbol": "pas:SP500",
+      "rank": null,
+      "score": "0",
+      "scanner_qualified": false,
+      "reasons": [
+        "ATR_BELOW_BASELINE_SCANNER_FLOOR"
+      ],
+      "metrics": {
+        "vwap": "7686.2900446458325",
+        "ema9": "7674.302152982926",
+        "ema21": "7677.496018332018",
+        "atr": "0.8928571428571429",
+        "close": "7672.8",
+        "atr_fraction": "0.0001163665341019110233552288604",
+        "atr_percent": "0.01163665341019110233552288604",
+        "spread_bps": "1.693954536866314410992461902",
+        "window_notional_approx": "83390.5912",
+        "bbo_notional": "997.750",
+        "best_bid": "7673.7",
+        "best_ask": "7675.0",
+        "spread": "1.3",
+        "bid_depth_notional": "250504.3409",
+        "ask_depth_notional": "258372.4533",
+        "orderbook_imbalance": "-0.01546172372110105546644319746",
+        "ema_strength_fraction": "0.0004162581259894692941299134605",
+        "trend": "BEARISH",
+        "vwap_distance_fraction": "-0.001755078791910732776417630549",
+        "realized_volatility": "0.00015019183524502883",
+        "hourly_funding": "-0.0001110834",
+        "open_interest": "41.984",
+        "daily_notional_volume": "161787.4298999999",
+        "candle_count": 865
+      },
+      "signal": {
+        "symbol": "pas:SP500",
+        "timestamp_ms": 1792419000000,
+        "reference": "7686.2900446458325",
+        "atr": "0.8928571428571429",
+        "bias": "SHORT_BIAS",
+        "long": false,
+        "short": false,
+        "signal_type": null
+      },
+      "evidence": {
+        "request_time_ms": null,
+        "request_cycle_observed_ms": 1792419140452,
+        "request_time_basis": "EXACT_SEND_TIME_UNAVAILABLE_NO_ADDITIONAL_CLOCK_READ",
+        "expected_last_completed_candle_ms": 1792419060000,
+        "actual_last_completed_candle_ms": 1792419000000,
+        "lag_seconds": 60.0,
+        "root_cause": "UNDETERMINED",
+        "source": "SerializedPublicMarket",
+        "source_timestamp_ms": 1792419000000,
+        "received_timestamp_ms": 1792419146780,
+        "market_health": "HEALTHY",
+        "brain": {
+          "status": "OBSERVED_FROZEN_LOCALS",
+          "anti_spam_pass": true,
+          "warmup_pass": true,
+          "brain_atr_pass": false,
+          "raw_setup": true
+        },
+        "numeric_fields": {
+          "Close": {
+            "field": "Close",
+            "operand_type": "float64",
+            "operand": "7672.8",
+            "valid": true
+          },
+          "ATR_14": {
+            "field": "ATR_14",
+            "operand_type": "float64",
+            "operand": "0.8928571428571429",
+            "valid": true
+          },
+          "EMA_9": {
+            "field": "EMA_9",
+            "operand_type": "float64",
+            "operand": "7674.302152982926",
+            "valid": true
+          },
+          "EMA_21": {
+            "field": "EMA_21",
+            "operand_type": "float64",
+            "operand": "7677.496018332018",
+            "valid": true
+          },
+          "VWAP": {
+            "field": "VWAP",
+            "operand_type": "float64",
+            "operand": "7686.2900446458325",
+            "valid": true
+          }
+        }
+      },
+      "timing": {
+        "exchange_ts": null,
+        "received_ts": "2026-10-19T14:12:26.780+00:00",
+        "processed_ts": "2026-10-19T14:12:27.178+00:00",
+        "timestamp_source": "LOCAL_FROZEN_STRATEGY",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 398,
+        "clock_skew_detected": false
+      },
+      "production_entry_market": false,
+      "strategy_signal_present": false,
+      "signed_entry_authorized": false,
+      "expected_profit": null
+    },
+    {
+      "symbol": "pas:USDEUR",
+      "rank": null,
+      "score": "0",
+      "scanner_qualified": false,
+      "reasons": [
+        "INSUFFICIENT_COMPLETED_HISTORY"
+      ],
+      "metrics": {},
+      "signal": null,
+      "evidence": {
+        "request_time_ms": null,
+        "request_cycle_observed_ms": 1792419140452,
+        "request_time_basis": "EXACT_SEND_TIME_UNAVAILABLE_NO_ADDITIONAL_CLOCK_READ",
+        "expected_last_completed_candle_ms": 1792419060000,
+        "actual_last_completed_candle_ms": 1792416300000,
+        "lag_seconds": 2760.0,
+        "root_cause": "UNDETERMINED",
+        "source": "SerializedPublicMarket",
+        "source_timestamp_ms": 1792416300000,
+        "received_timestamp_ms": 1792419147352
+      },
+      "timing": {
+        "exchange_ts": null,
+        "received_ts": "2026-10-19T14:12:27.356+00:00",
+        "processed_ts": "2026-10-19T14:12:27.356+00:00",
+        "timestamp_source": "LOCAL_PROCESS",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 0,
+        "clock_skew_detected": false
+      },
+      "production_entry_market": false,
+      "strategy_signal_present": false,
+      "signed_entry_authorized": false,
+      "expected_profit": null
+    },
+    {
+      "symbol": "pas:USDJPY",
+      "rank": null,
+      "score": "0",
+      "scanner_qualified": false,
+      "reasons": [
+        "ATR_BELOW_BASELINE_SCANNER_FLOOR"
+      ],
+      "metrics": {
+        "vwap": "158.4693775911269",
+        "ema9": "158.457886315466",
+        "ema21": "158.46100302341858",
+        "atr": "0.03428571428571762",
+        "close": "158.48",
+        "atr_fraction": "0.0002163409533424887682988389702",
+        "atr_percent": "0.02163409533424887682988389702",
+        "spread_bps": "5.677696117086711036810396492",
+        "window_notional_approx": "49058.9956",
+        "bbo_notional": "499.1805",
+        "best_bid": "158.47",
+        "best_ask": "158.56",
+        "spread": "0.09",
+        "bid_depth_notional": "259561.5588",
+        "ask_depth_notional": "193288.1770",
+        "orderbook_imbalance": "0.1463474008280518908497506073",
+        "ema_strength_fraction": "0.00001966625411774356385663806159",
+        "trend": "BEARISH",
+        "vwap_distance_fraction": "0.00006703130304775536302146136599",
+        "realized_volatility": "0.0001540158278083289",
+        "hourly_funding": "0.0000539258",
+        "open_interest": "1974.0",
+        "daily_notional_volume": "181030.6532",
+        "candle_count": 866
+      },
+      "signal": {
+        "symbol": "pas:USDJPY",
+        "timestamp_ms": 1792419060000,
+        "reference": "158.4693775911269",
+        "atr": "0.03428571428571762",
+        "bias": "SHORT_BIAS",
+        "long": false,
+        "short": false,
+        "signal_type": null
+      },
+      "evidence": {
+        "request_time_ms": null,
+        "request_cycle_observed_ms": 1792419140452,
+        "request_time_basis": "EXACT_SEND_TIME_UNAVAILABLE_NO_ADDITIONAL_CLOCK_READ",
+        "expected_last_completed_candle_ms": 1792419060000,
+        "actual_last_completed_candle_ms": 1792419060000,
+        "lag_seconds": 0.0,
+        "root_cause": "UNDETERMINED",
+        "source": "SerializedPublicMarket",
+        "source_timestamp_ms": 1792419060000,
+        "received_timestamp_ms": 1792419148142,
+        "market_health": "HEALTHY",
+        "brain": {
+          "status": "OBSERVED_FROZEN_LOCALS",
+          "anti_spam_pass": true,
+          "warmup_pass": true,
+          "brain_atr_pass": false,
+          "raw_setup": false
+        },
+        "numeric_fields": {
+          "Close": {
+            "field": "Close",
+            "operand_type": "float64",
+            "operand": "158.48",
+            "valid": true
+          },
+          "ATR_14": {
+            "field": "ATR_14",
+            "operand_type": "float64",
+            "operand": "0.03428571428571762",
+            "valid": true
+          },
+          "EMA_9": {
+            "field": "EMA_9",
+            "operand_type": "float64",
+            "operand": "158.457886315466",
+            "valid": true
+          },
+          "EMA_21": {
+            "field": "EMA_21",
+            "operand_type": "float64",
+            "operand": "158.46100302341858",
+            "valid": true
+          },
+          "VWAP": {
+            "field": "VWAP",
+            "operand_type": "float64",
+            "operand": "158.4693775911269",
+            "valid": true
+          }
+        }
+      },
+      "timing": {
+        "exchange_ts": null,
+        "received_ts": "2026-10-19T14:12:28.142+00:00",
+        "processed_ts": "2026-10-19T14:12:28.778+00:00",
+        "timestamp_source": "LOCAL_FROZEN_STRATEGY",
+        "exchange_to_receive_ms": null,
+        "receive_to_process_ms": 636,
+        "clock_skew_detected": false
+      },
+      "production_entry_market": false,
+      "strategy_signal_present": false,
+      "signed_entry_authorized": false,
+      "expected_profit": null
+    }
+  ],
+  "production_entry_markets": [
+    "pas:BTC",
+    "pas:EWY"
+  ],
+  "signing_authority": "NONE",
+  "signatures_created": 0,
+  "exchange_writes": 0,
+  "note": "All ten are observed only. Ranking never expands BTC/EWY entry policy, supplies a signal, qualifies protection, or creates mandate acceptance.",
+  "histories": {
+    "pas:BRENT": {
+      "raw_returned_last": 859,
+      "raw_returned_in_retained_snapshots": 859,
+      "valid_returned_last": 859,
+      "valid_deduplicated_completed": 859,
+      "contiguous_tail_bars": 859,
+      "missing_intervals": [],
+      "earliest_ms": 1792367160000,
+      "latest_ms": 1792418640000,
+      "latest_completed_ms": 1792418700000,
+      "cache_age_ms": 448835,
+      "last_collection_ms": 1792419140278,
+      "warmup_required": 300,
+      "strategy_history_ready": false,
+      "warmup_satisfied": true,
+      "data_freshness_satisfied": false,
+      "failure_classification": "UPSTREAM_DATA_UNAVAILABLE",
+      "failure_reasons": [
+        "COMPLETED_CANDLE_STALE_OR_MISSING"
+      ],
+      "request_diagnostics": {
+        "rest": {
+          "request": {
+            "coin": "pas:BRENT",
+            "interval": "1m",
+            "startTime": 1792367160000,
+            "endTime": 1792419119999
+          },
+          "received_ms": 1792419141097,
+          "returned_count": 859,
+          "first_returned_ms": 1792367160000,
+          "last_returned_ms": 1792418640000,
+          "expected_intervals": 866,
+          "normalization_succeeded": true,
+          "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v6_2_2026-10-19/ranking_final/info_receipts.jsonl"
+        }
+      },
+      "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+      "database": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v6_2_2026-10-19/ranking_final/history.sqlite"
+    },
+    "pas:BTC": {
+      "raw_returned_last": 866,
+      "raw_returned_in_retained_snapshots": 866,
+      "valid_returned_last": 866,
+      "valid_deduplicated_completed": 866,
+      "contiguous_tail_bars": 866,
+      "missing_intervals": [],
+      "earliest_ms": 1792367160000,
+      "latest_ms": 1792419060000,
+      "latest_completed_ms": 1792419120000,
+      "cache_age_ms": 28840,
+      "last_collection_ms": 1792419140278,
+      "warmup_required": 300,
+      "strategy_history_ready": true,
+      "warmup_satisfied": true,
+      "data_freshness_satisfied": true,
+      "failure_classification": "READY",
+      "failure_reasons": [],
+      "request_diagnostics": {
+        "rest": {
+          "request": {
+            "coin": "pas:BTC",
+            "interval": "1m",
+            "startTime": 1792367160000,
+            "endTime": 1792419119999
+          },
+          "received_ms": 1792419141372,
+          "returned_count": 866,
+          "first_returned_ms": 1792367160000,
+          "last_returned_ms": 1792419060000,
+          "expected_intervals": 866,
+          "normalization_succeeded": true,
+          "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v6_2_2026-10-19/ranking_final/info_receipts.jsonl"
+        }
+      },
+      "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+      "database": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v6_2_2026-10-19/ranking_final/history.sqlite"
+    },
+    "pas:ETH": {
+      "raw_returned_last": 866,
+      "raw_returned_in_retained_snapshots": 866,
+      "valid_returned_last": 866,
+      "valid_deduplicated_completed": 866,
+      "contiguous_tail_bars": 866,
+      "missing_intervals": [],
+      "earliest_ms": 1792367160000,
+      "latest_ms": 1792419060000,
+      "latest_completed_ms": 1792419120000,
+      "cache_age_ms": 28847,
+      "last_collection_ms": 1792419140278,
+      "warmup_required": 300,
+      "strategy_history_ready": true,
+      "warmup_satisfied": true,
+      "data_freshness_satisfied": true,
+      "failure_classification": "READY",
+      "failure_reasons": [],
+      "request_diagnostics": {
+        "rest": {
+          "request": {
+            "coin": "pas:ETH",
+            "interval": "1m",
+            "startTime": 1792367160000,
+            "endTime": 1792419119999
+          },
+          "received_ms": 1792419142769,
+          "returned_count": 866,
+          "first_returned_ms": 1792367160000,
+          "last_returned_ms": 1792419060000,
+          "expected_intervals": 866,
+          "normalization_succeeded": true,
+          "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v6_2_2026-10-19/ranking_final/info_receipts.jsonl"
+        }
+      },
+      "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+      "database": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v6_2_2026-10-19/ranking_final/history.sqlite"
+    },
+    "pas:EWJ": {
+      "raw_returned_last": 861,
+      "raw_returned_in_retained_snapshots": 861,
+      "valid_returned_last": 861,
+      "valid_deduplicated_completed": 861,
+      "contiguous_tail_bars": 861,
+      "missing_intervals": [],
+      "earliest_ms": 1792367160000,
+      "latest_ms": 1792418760000,
+      "latest_completed_ms": 1792418820000,
+      "cache_age_ms": 328851,
+      "last_collection_ms": 1792419140278,
+      "warmup_required": 300,
+      "strategy_history_ready": false,
+      "warmup_satisfied": true,
+      "data_freshness_satisfied": false,
+      "failure_classification": "UPSTREAM_DATA_UNAVAILABLE",
+      "failure_reasons": [
+        "COMPLETED_CANDLE_STALE_OR_MISSING"
+      ],
+      "request_diagnostics": {
+        "rest": {
+          "request": {
+            "coin": "pas:EWJ",
+            "interval": "1m",
+            "startTime": 1792367160000,
+            "endTime": 1792419119999
+          },
+          "received_ms": 1792419143817,
+          "returned_count": 861,
+          "first_returned_ms": 1792367160000,
+          "last_returned_ms": 1792418760000,
+          "expected_intervals": 866,
+          "normalization_succeeded": true,
+          "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v6_2_2026-10-19/ranking_final/info_receipts.jsonl"
+        }
+      },
+      "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+      "database": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v6_2_2026-10-19/ranking_final/history.sqlite"
+    },
+    "pas:EWY": {
+      "raw_returned_last": 866,
+      "raw_returned_in_retained_snapshots": 866,
+      "valid_returned_last": 866,
+      "valid_deduplicated_completed": 866,
+      "contiguous_tail_bars": 866,
+      "missing_intervals": [],
+      "earliest_ms": 1792367160000,
+      "latest_ms": 1792419060000,
+      "latest_completed_ms": 1792419120000,
+      "cache_age_ms": 28855,
+      "last_collection_ms": 1792419140278,
+      "warmup_required": 300,
+      "strategy_history_ready": true,
+      "warmup_satisfied": true,
+      "data_freshness_satisfied": true,
+      "failure_classification": "READY",
+      "failure_reasons": [],
+      "request_diagnostics": {
+        "rest": {
+          "request": {
+            "coin": "pas:EWY",
+            "interval": "1m",
+            "startTime": 1792367160000,
+            "endTime": 1792419119999
+          },
+          "received_ms": 1792419144486,
+          "returned_count": 866,
+          "first_returned_ms": 1792367160000,
+          "last_returned_ms": 1792419060000,
+          "expected_intervals": 866,
+          "normalization_succeeded": true,
+          "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v6_2_2026-10-19/ranking_final/info_receipts.jsonl"
+        }
+      },
+      "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+      "database": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v6_2_2026-10-19/ranking_final/history.sqlite"
+    },
+    "pas:GOLD": {
+      "raw_returned_last": 99,
+      "raw_returned_in_retained_snapshots": 99,
+      "valid_returned_last": 99,
+      "valid_deduplicated_completed": 99,
+      "contiguous_tail_bars": 99,
+      "missing_intervals": [],
+      "earliest_ms": 1792412640000,
+      "latest_ms": 1792418520000,
+      "latest_completed_ms": 1792418580000,
+      "cache_age_ms": 568860,
+      "last_collection_ms": 1792419140278,
+      "warmup_required": 300,
+      "strategy_history_ready": false,
+      "warmup_satisfied": false,
+      "data_freshness_satisfied": false,
+      "failure_classification": "UPSTREAM_DATA_UNAVAILABLE",
+      "failure_reasons": [
+        "INSUFFICIENT_CONTIGUOUS_300_BAR_WARMUP",
+        "COMPLETED_CANDLE_STALE_OR_MISSING"
+      ],
+      "request_diagnostics": {
+        "rest": {
+          "request": {
+            "coin": "pas:GOLD",
+            "interval": "1m",
+            "startTime": 1792367160000,
+            "endTime": 1792419119999
+          },
+          "received_ms": 1792419145095,
+          "returned_count": 99,
+          "first_returned_ms": 1792412640000,
+          "last_returned_ms": 1792418520000,
+          "expected_intervals": 866,
+          "normalization_succeeded": true,
+          "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v6_2_2026-10-19/ranking_final/info_receipts.jsonl"
+        }
+      },
+      "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+      "database": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v6_2_2026-10-19/ranking_final/history.sqlite"
+    },
+    "pas:HYPE": {
+      "raw_returned_last": 865,
+      "raw_returned_in_retained_snapshots": 865,
+      "valid_returned_last": 865,
+      "valid_deduplicated_completed": 865,
+      "contiguous_tail_bars": 865,
+      "missing_intervals": [],
+      "earliest_ms": 1792367160000,
+      "latest_ms": 1792419000000,
+      "latest_completed_ms": 1792419060000,
+      "cache_age_ms": 88860,
+      "last_collection_ms": 1792419140278,
+      "warmup_required": 300,
+      "strategy_history_ready": true,
+      "warmup_satisfied": true,
+      "data_freshness_satisfied": true,
+      "failure_classification": "READY",
+      "failure_reasons": [],
+      "request_diagnostics": {
+        "rest": {
+          "request": {
+            "coin": "pas:HYPE",
+            "interval": "1m",
+            "startTime": 1792367160000,
+            "endTime": 1792419119999
+          },
+          "received_ms": 1792419145749,
+          "returned_count": 865,
+          "first_returned_ms": 1792367160000,
+          "last_returned_ms": 1792419000000,
+          "expected_intervals": 866,
+          "normalization_succeeded": true,
+          "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v6_2_2026-10-19/ranking_final/info_receipts.jsonl"
+        }
+      },
+      "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+      "database": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v6_2_2026-10-19/ranking_final/history.sqlite"
+    },
+    "pas:SP500": {
+      "raw_returned_last": 865,
+      "raw_returned_in_retained_snapshots": 865,
+      "valid_returned_last": 865,
+      "valid_deduplicated_completed": 865,
+      "contiguous_tail_bars": 865,
+      "missing_intervals": [],
+      "earliest_ms": 1792367160000,
+      "latest_ms": 1792419000000,
+      "latest_completed_ms": 1792419060000,
+      "cache_age_ms": 88864,
+      "last_collection_ms": 1792419140278,
+      "warmup_required": 300,
+      "strategy_history_ready": true,
+      "warmup_satisfied": true,
+      "data_freshness_satisfied": true,
+      "failure_classification": "READY",
+      "failure_reasons": [],
+      "request_diagnostics": {
+        "rest": {
+          "request": {
+            "coin": "pas:SP500",
+            "interval": "1m",
+            "startTime": 1792367160000,
+            "endTime": 1792419119999
+          },
+          "received_ms": 1792419146780,
+          "returned_count": 865,
+          "first_returned_ms": 1792367160000,
+          "last_returned_ms": 1792419000000,
+          "expected_intervals": 866,
+          "normalization_succeeded": true,
+          "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v6_2_2026-10-19/ranking_final/info_receipts.jsonl"
+        }
+      },
+      "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+      "database": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v6_2_2026-10-19/ranking_final/history.sqlite"
+    },
+    "pas:USDEUR": {
+      "raw_returned_last": 80,
+      "raw_returned_in_retained_snapshots": 80,
+      "valid_returned_last": 80,
+      "valid_deduplicated_completed": 80,
+      "contiguous_tail_bars": 80,
+      "missing_intervals": [],
+      "earliest_ms": 1792411560000,
+      "latest_ms": 1792416300000,
+      "latest_completed_ms": 1792416360000,
+      "cache_age_ms": 2788868,
+      "last_collection_ms": 1792419140278,
+      "warmup_required": 300,
+      "strategy_history_ready": false,
+      "warmup_satisfied": false,
+      "data_freshness_satisfied": false,
+      "failure_classification": "UPSTREAM_DATA_UNAVAILABLE",
+      "failure_reasons": [
+        "INSUFFICIENT_CONTIGUOUS_300_BAR_WARMUP",
+        "COMPLETED_CANDLE_STALE_OR_MISSING"
+      ],
+      "request_diagnostics": {
+        "rest": {
+          "request": {
+            "coin": "pas:USDEUR",
+            "interval": "1m",
+            "startTime": 1792367160000,
+            "endTime": 1792419119999
+          },
+          "received_ms": 1792419147352,
+          "returned_count": 80,
+          "first_returned_ms": 1792411560000,
+          "last_returned_ms": 1792416300000,
+          "expected_intervals": 866,
+          "normalization_succeeded": true,
+          "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v6_2_2026-10-19/ranking_final/info_receipts.jsonl"
+        }
+      },
+      "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+      "database": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v6_2_2026-10-19/ranking_final/history.sqlite"
+    },
+    "pas:USDJPY": {
+      "raw_returned_last": 866,
+      "raw_returned_in_retained_snapshots": 866,
+      "valid_returned_last": 866,
+      "valid_deduplicated_completed": 866,
+      "contiguous_tail_bars": 866,
+      "missing_intervals": [],
+      "earliest_ms": 1792367160000,
+      "latest_ms": 1792419060000,
+      "latest_completed_ms": 1792419120000,
+      "cache_age_ms": 28869,
+      "last_collection_ms": 1792419140278,
+      "warmup_required": 300,
+      "strategy_history_ready": true,
+      "warmup_satisfied": true,
+      "data_freshness_satisfied": true,
+      "failure_classification": "READY",
+      "failure_reasons": [],
+      "request_diagnostics": {
+        "rest": {
+          "request": {
+            "coin": "pas:USDJPY",
+            "interval": "1m",
+            "startTime": 1792367160000,
+            "endTime": 1792419119999
+          },
+          "received_ms": 1792419148142,
+          "returned_count": 866,
+          "first_returned_ms": 1792367160000,
+          "last_returned_ms": 1792419060000,
+          "expected_intervals": 866,
+          "normalization_succeeded": true,
+          "receipt_file": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v6_2_2026-10-19/ranking_final/info_receipts.jsonl"
+        }
+      },
+      "provenance": "CANONICAL_EXCHANGE_COMPLETED_CANDLES_ONLY",
+      "database": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/activation_v6_2_2026-10-19/ranking_final/history.sqlite"
+    }
+  },
+  "journal_integrity": "ok",
+  "history_integrity": "ok",
+  "rate_report": {
+    "state": "UNKNOWN",
+    "policy": {
+      "ip_weight_per_minute": 1200,
+      "ip_safety_reserve": 120,
+      "daily_actions": 50000,
+      "daily_safety_reserve": 500,
+      "account_action_reserve": 10,
+      "max_open_orders": 1000,
+      "max_ws_connections": 10,
+      "max_ws_subscriptions": 1000,
+      "max_ws_unique_users": 10,
+      "venue_ws_connections_per_minute": 30,
+      "max_ws_messages_per_minute": 2000,
+      "ws_reconnects_per_minute": 5,
+      "budget_max_age_ms": 60000,
+      "optional_poll_interval_ms": 5000,
+      "read_retry_attempts": 3,
+      "backoff_base_ms": 1000,
+      "backoff_max_ms": 30000,
+      "exhausted_safety_action_interval_ms": 10000,
+      "caution_fraction": 0.75,
+      "throttle_fraction": 0.9
+    },
+    "ip_weight": 492,
+    "public_read_blocked": false,
+    "account_requests_used": null,
+    "account_requests_cap": null,
+    "remaining_budget": null,
+    "budget_observed_ms": null,
+    "daily_actions": 0,
+    "daily_limit": 50000,
+    "entries_allowed": false,
+    "open_orders": null,
+    "backoff_until_ms": 0,
+    "websocket": {
+      "connections": 0,
+      "subscriptions": 0,
+      "outgoing_messages": 0,
+      "heartbeats": 0,
+      "reconnects_last_minute": 0
+    },
+    "public_reads": {
+      "upstream_by_operation": {
+        "perpDexs": 2,
+        "meta": 2,
+        "spotMeta": 2,
+        "metaAndAssetCtxs": 1,
+        "candleSnapshot": 10,
+        "l2Book": 6
+      },
+      "failures": {},
+      "pending": 0,
+      "coalesced": 0,
+      "max_seconds": 0.8829407496377826,
+      "failure_details": []
+    }
+  }
+}

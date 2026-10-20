@@ -144,7 +144,7 @@ def bridge(live,monkeypatch):
     contract=ScoredLimits if symbol.startswith('pas:') else DailyMandate
     now=live.fixture.now
     d=contract('offline:two-cycles',live.account.team_address,live.signer.address,(symbol,),('LONG',),
-        now-1000,now+3600000,'a'*64,'fixture','1000','1000','1000','2000')
+        now-1000,now+(3599000 if symbol.startswith('pas:') else 3600000),'a'*64,'fixture','1000','1000','1000','2000')
     daily=DailyLifecycle(live.journal,d,clock_ms=live.client.clock_ms,source_hash=lambda:'a'*64,mode='OFFLINE_FIXTURE')
     risk=AllocatedLongRisk(PortfolioRisk(POLICY,FEES),live.market,live.account,daily)
     auth=OfflineDailyAuthority(daily);live.executor.attach_daily(daily,auth,risk)

@@ -32,6 +32,10 @@ class WaitingAuthority:
             raise ExchangeError('LONG_PROTECTION_PROOF_CHANGED')
         proof=require_native_evidence(args.native_protection_evidence,self.m.daily)
         self.bound=require_scored_evidence(self.m,Path(args.mandate).parent)
+        self.historical_isolation=None
+        if self.m.trading_isolation_policy_sha256:
+            from .trading_isolation import FiniteTradingIsolation
+            self.historical_isolation=FiniteTradingIsolation(self.root,Path(args.mandate).parent/'trading_isolation/policy.json',self.m)
         self.bound.update({str(args.mandate):sha(args.mandate),str(args.acceptance):sha(args.acceptance),
             str(args.release):self.m.release_sha256,
             str(Path(args.release).parent/'regression.xml'):json.loads(Path(args.release).read_text())['xml_sha256'],
@@ -40,6 +44,7 @@ class WaitingAuthority:
         self.require()
 
     def require(self):
+        if getattr(self,'historical_isolation',None) is not None:self.historical_isolation.require(self.clock_ms())
         return require_long_acceptance(self.m,self.args.acceptance,now_ms=self.clock_ms(),
             team=self.m.daily.team_wallet,signer=self.m.daily.api_wallet,
             source_hash=lambda:active_source_hash(self.root),
@@ -66,6 +71,18 @@ def readiness_to_dispatch(report, authority, now_ms):
     if set(report.get('markets',[]))!=set(authority.m.daily.markets):return False
     if report.get('source_hash')!=authority.m.daily.source_hash:return False
     gates=assess(report,now_ms)['gates']
+    if (type(authority) is WaitingAuthority and getattr(authority,'historical_isolation',None) is not None
+            and not gates['HISTORICAL_ORDER_SAFETY_VERIFIED']):
+        from .terminal_evidence import local_execution_state
+        from .configuration_isolation import CLOID,INTENT
+        # Never rewrite UNKNOWN or trust a report-level exemption boolean.
+        # This only admits dispatch to the runtime builder, which repeats live
+        # PAR/PAS checks before loading a key and at every signing boundary.
+        authority.historical_isolation.require(now_ms)
+        expected=[dict(journal='qualification',cloid=CLOID,state='UNKNOWN',intent_key=INTENT)]
+        current=local_execution_state(authority.root)
+        gates['HISTORICAL_ORDER_SAFETY_VERIFIED']=(current.get('status')=='BLOCKED_UNRESOLVED_INTENT'
+            and current.get('unresolved')==expected and (report.get('local_execution_state') or {}).get('unresolved')==expected)
     if not all(v for k,v in gates.items() if k!='EXACT_SESSION_APPROVAL_ACCEPTED'):return False
     account=report.get('account') or {}
     return (report.get('status')=='OBSERVING' and report.get('stream_connected') is True

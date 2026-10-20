@@ -173,7 +173,7 @@ class DailyLifecycle:
                 or D(self.data['quantity']) or len(readbacks)!=2):
             raise ExchangeError('TWO_AUTHORITATIVE_FLAT_READBACKS_REQUIRED')
         previous=-1
-        source='OFFLINE_FIXTURE' if self.mode=='OFFLINE_FIXTURE' else 'EXCHANGE_DIRECT_TESTNET_PAR_INFO'
+        source='OFFLINE_FIXTURE' if self.mode=='OFFLINE_FIXTURE' else ('EXCHANGE_DIRECT_TESTNET_'+getattr(self.m,'dex','par').upper()+'_INFO')
         for r in readbacks:
             if (r.get('source')!=source or r.get('team','').lower()!=self.m.team_wallet.lower()
                     or r.get('positions') or r.get('orders') or r.get('ready') is not True
@@ -271,7 +271,10 @@ class DailyLifecycle:
         self.data['quantity']=str(held-filled)
         if filled<held:self._state(TradeState.RECOVERY_REQUIRED,'PARTIAL_OR_REJECTED_EXIT_NO_RETRY');return
         self.data['realized_net']=str(D(self.data['realized_net'])+net)
-        equity=D(self.m.bankroll)+D(self.data['realized_net']);peak=max(D(self.data['peak_equity']),equity)
+        equity=D(self.m.bankroll)+D(self.data['realized_net'])
+        # Preserve an actually sampled intracycle peak after the position closes.
+        # Otherwise a close could conceal drawdown before the next entry check.
+        peak=max(D(self.data['peak_equity']),D(self.data.get('sampled_peak',self.data['peak_equity'])),equity)
         self.data.update(equity=str(equity),peak_equity=str(peak),drawdown=str(peak-equity))
         self.data['exit'].update(order_id=str(order_id),fill_id=str(fill_id))
         self._state(TradeState.EXIT_RECONCILIATION,'ACTUAL_OR_FIXTURE_CLOSING_FILL_RECONCILED')
