@@ -79,7 +79,7 @@ def test_profile_exactly_two_assets_but_one_global_position(tmp_path):
     path = ROOT / 'configs/pas_btc_production.example.json'
     profile, risk, scanner = runner.load_profile(path)
     assert profile['base_assets'] == ['BTC', 'EWY']
-    assert risk.max_positions == 1 and risk.leverage == 20 and scanner.top_n == 1
+    assert risk.max_positions == 1 and risk.leverage == 1 and scanner.top_n == 1
     profile['base_assets'].append('ETH')
     changed = tmp_path / 'expanded.json'
     changed.write_text(json.dumps(profile))
@@ -87,13 +87,13 @@ def test_profile_exactly_two_assets_but_one_global_position(tmp_path):
         runner.load_profile(changed)
 
 
-@pytest.mark.parametrize('leverage', [1, 19, 21])
+@pytest.mark.parametrize('leverage', [0, 2, 20, True, 1.0])
 def test_profile_cannot_override_exact_pas_target_leverage(tmp_path, leverage):
     profile = json.loads((ROOT / 'configs/pas_btc_production.example.json').read_text())
     profile['risk']['leverage'] = leverage
     changed = tmp_path / f'leverage-{leverage}.json'
     changed.write_text(json.dumps(profile))
-    with pytest.raises(ExchangeError, match='SINGLE_POSITION_20X_PROFILE_REQUIRED'):
+    with pytest.raises(ExchangeError, match='SINGLE_POSITION_1X_PROFILE_REQUIRED'):
         runner.load_profile(changed)
 
 

@@ -336,7 +336,28 @@ class ParMarketDataEngine:
                     self.client.candle_audit.record('AVAILABILITY_REPAIR_PLAN',symbol=symbol,
                         missing_timestamps_ms=missing,request_start_ms=repair_start,request_end_ms=end)
             try:
-                fresh=self.market.get_candles(symbol,repair_start,end,now_ms=now)
+                if pas and getattr(self.client,'fair_candle_scheduling',False):
+                    # Equal per-market turns under the unchanged shared 300-slot
+                    # budget. Repair genuine holes, retaining progress across turns.
+                    present={b.timestamp_ms for b in completed}
+                    missing=sorted(set(range(start,end+1,60000))-present)
+                    fresh=[]
+                    remaining=150
+                    while missing and remaining:
+                        first=missing[0];last=first
+                        take=1
+                        while take<min(remaining,len(missing)) and missing[take]==last+60000:
+                            last=missing[take];take+=1
+                        rows=self.market.get_candles(symbol,first,last+59999,now_ms=now)
+                        fresh.extend(rows)
+                        # Commit each validated chunk even if the next is deferred.
+                        with self._lock:
+                            for b in rows:
+                                self.candles[symbol][b.timestamp_ms]=merge_candle(
+                                    self.candles[symbol].get(b.timestamp_ms),b,now)
+                        missing=missing[take:];remaining-=take
+                else:
+                    fresh=self.market.get_candles(symbol,repair_start,end,now_ms=now)
                 # Preserve genuine older stream rows: the scanner may request
                 # farther back than the narrower health-recovery REST window.
                 combined={b.timestamp_ms:b for b in previous

@@ -5,13 +5,15 @@ from .hyperliquid_market_data import HyperliquidMarketData, timestamp
 
 MINUTE_MS = 60_000
 PAS_REST_CHUNK_BARS = 300
+PAS_FAIR_REST_CHUNK_BARS = 150
 PAS_MAX_REQUEST_BARS = 5000
 
 
 class StreamFirstMarketData(HyperliquidMarketData):
-    def __init__(self, client, engine):
+    def __init__(self, client, engine, *, require_warmup=False):
         super().__init__(client)
         self.engine = engine
+        self.require_warmup = require_warmup
 
     def get_quote(self, symbol):
         try:
@@ -40,13 +42,13 @@ class StreamFirstMarketData(HyperliquidMarketData):
                     rows[0].timestamp_ms, rows[-1].close_timestamp_ms)
 
     @staticmethod
-    def _missing_chunks(expected, present):
+    def _missing_chunks(expected, present, chunk_bars=PAS_REST_CHUNK_BARS):
         """Only contiguous missing starts; no request includes invented bars."""
         chunks = []
         for stamp in expected:
             if stamp in present:
                 continue
-            if (chunks and len(chunks[-1]) < PAS_REST_CHUNK_BARS
+            if (chunks and len(chunks[-1]) < chunk_bars
                     and stamp == chunks[-1][-1] + MINUTE_MS):
                 chunks[-1].append(stamp)
             else:
@@ -62,6 +64,14 @@ class StreamFirstMarketData(HyperliquidMarketData):
         stream_usable = interval == '1m' and self.engine.connected and self.engine.reconciled
         pas = bool(getattr(self.client, 'competition_mode', False))
         if pas:
+            if self.require_warmup:
+                # Mandatory current-window recovery owns the scarce candle slots
+                # before optional older UTC-anchor history is requested.
+                from .market_health import validate_history
+                warm=self.engine.get_completed_candles(symbol)
+                validate_history(symbol,warm,now,self.engine.history_bars)
+                if not 0<=now-(warm[-1].timestamp_ms+MINUTE_MS)<=120000:
+                    raise ExchangeError('COMPLETED_CANDLE_STALE')
             integrity_errors = (self.engine.scanner_errors.get(symbol),
                 self.engine.input_errors[symbol].get('history_health'),
                 self.engine.recovery_errors.get(symbol))
@@ -85,11 +95,13 @@ class StreamFirstMarketData(HyperliquidMarketData):
             return super().get_candles(symbol, start_ms, end_ms, interval=interval, now_ms=now_ms)
         merged = {c.timestamp_ms: c for c in retained}
         try:
-            chunks = self._missing_chunks(expected, merged)
+            chunk_bars=(PAS_FAIR_REST_CHUNK_BARS
+                if getattr(self.client,'fair_candle_scheduling',False) else PAS_REST_CHUNK_BARS)
+            chunks = self._missing_chunks(expected, merged, chunk_bars)
             for chunk in chunks:
                 read_first, read_last = chunk[0], chunk[-1]
                 # Re-check an adjacent retained source fact when capacity permits.
-                if len(chunk) < PAS_REST_CHUNK_BARS:
+                if len(chunk) < chunk_bars:
                     if read_last + MINUTE_MS in merged:
                         read_last += MINUTE_MS
                     elif read_first - MINUTE_MS in merged:

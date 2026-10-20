@@ -48,7 +48,7 @@ def configuration_plan(discovery):
     plan=dict(status='UNSIGNED_CONFIGURATION_PLAN_ONLY',network='testnet',dex='pas',collateral='USDP',
         source_hash=discovery['source_hash'],observed_ms=discovery['finished_ms'],
         entry_markets=sorted(PAS_ENTRY_MARKETS),account_reconciliation_scope='ALL_CANONICAL_PAS_MARKETS',
-        policy_basis='PAS BTC/EWY only; exact 20x CROSS per active market',
+        policy_basis='PAS BTC/EWY only; exact 1x CROSS per active market',
         team_wallet=TEAM,target_leverage=PAS_TARGET_LEVERAGE,margin_mode='cross',
         discovery_hash=fingerprint(discovery),changes=changes,already_target_cross=sorted(verified),
         collateral_balance=str(balance),organizer_credit_amount=None,
@@ -57,7 +57,7 @@ def configuration_plan(discovery):
         transfers_allowed=False,configuration_approval_created=False,
         required_before_execution=['Fresh funded Unified account/agent/identity checks','Prior UNKNOWN/invocation review',
             'Exact new configuration-only approval','Shared sole host/signer/nonce ownership','Per-action exact permit and durable uncertainty',
-            'Fresh readback of every requested 20x CROSS value'],
-        note='Unsigned evidence only. Legacy 1x approval/execution routes cannot apply this proposal; no exchange write is authorized.')
+            'Fresh readback of every requested 1x CROSS value'],
+        note='Unsigned evidence only. Retired configuration approval/execution routes remain blocked; no exchange write is authorized.')
     plan['plan_hash']=fingerprint(plan)
     return plan

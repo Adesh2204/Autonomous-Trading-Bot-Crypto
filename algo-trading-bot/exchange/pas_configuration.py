@@ -63,8 +63,8 @@ def approval_preflight(root,plan,discovery,release,now):
 
 def approve_configuration(root,plan_path,discovery_path,release,output):
     """Actual terminal input is the only acceptance writer. No auto-approval flag."""
-    # Historical 1x scopes cannot be retargeted to the owner's 20x policy.
-    # Only an unsigned proposal is supported by the current code-side task.
+    # Historical configuration approvals grant no current write authority.
+    # Configuration writes remain retired; only unsigned reporting is permitted.
     raise ExchangeError('RETIRED_PAS_1X_CONFIGURATION_WRITE_ROUTE')
     import sys
     from dataclasses import asdict

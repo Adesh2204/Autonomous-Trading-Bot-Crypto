@@ -17,7 +17,7 @@ class AccountFixture(PasFixture):
     def __init__(self):
         super().__init__()
         self.orders = []
-        self.active_leverages = {'pas:BTC': 20, 'pas:EWY': 20}
+        self.active_leverages = {'pas:BTC': 1, 'pas:EWY': 1}
         self.active_margin_modes = {'pas:BTC': 'cross', 'pas:EWY': 'cross'}
         self.agents = [dict(address=SIGNER, validUntil=NOW + 86_400_000)]
         self.fees = dict(userCrossRate='.00045', userAddRate='.00015')
@@ -73,8 +73,8 @@ def readiness(account):
 
 
 @pytest.mark.parametrize('symbol', ['pas:BTC', 'pas:EWY'])
-@pytest.mark.parametrize('wrong_target', [1, 19, 21, 'isolated'])
-def test_pas_readiness_requires_exact_cross_20x_for_both_markets(pas_account, symbol, wrong_target):
+@pytest.mark.parametrize('wrong_target', [0, 2, 20, True, 'isolated'])
+def test_pas_readiness_requires_exact_cross_1x_for_both_markets(pas_account, symbol, wrong_target):
     fixture, _, account = pas_account
     if wrong_target == 'isolated':
         fixture.active_margin_modes[symbol] = 'isolated'
@@ -82,12 +82,12 @@ def test_pas_readiness_requires_exact_cross_20x_for_both_markets(pas_account, sy
         fixture.active_leverages[symbol] = wrong_target
     result = readiness(account)
     assert not result.account_ready
-    assert 'PAS_ACTIVE_ASSET_CROSS_20X_REQUIRED' in result.reasons
+    assert 'PAS_ACTIVE_ASSET_CROSS_1X_REQUIRED' in result.reasons
     assert not result.report(market_ready=True)['live_orders_permitted']
     assert not fixture.calls or all(call['type'] != 'exchange' for call in fixture.calls)
 
 
-def test_pas_readiness_accepts_verified_exact_cross_20x_for_both_markets(pas_account):
+def test_pas_readiness_accepts_verified_exact_cross_1x_for_both_markets(pas_account):
     fixture, _, account = pas_account
     result = readiness(account)
     assert result.account_ready
@@ -98,7 +98,7 @@ def test_pas_readiness_accepts_verified_exact_cross_20x_for_both_markets(pas_acc
 
 def test_entry_leverage_gate_does_not_disable_existing_critical_reduce_only_recovery(pas_account):
     fixture, _, account = pas_account
-    fixture.active_leverages = {'pas:BTC': 1, 'pas:EWY': 1}
+    fixture.active_leverages = {'pas:BTC': 20, 'pas:EWY': 20}
     rates = RateState()
     try:
         result = verify_live_account_readiness(
@@ -112,14 +112,15 @@ def test_entry_leverage_gate_does_not_disable_existing_critical_reduce_only_reco
     assert not readiness(account).account_ready
 
 
-@pytest.mark.parametrize('damage', ['null', 'user', 'coin', 'isolated', 'bool', 'missing', 'unavailable'])
-def test_pas_readiness_rejects_invalid_active_leverage_observations(pas_account, monkeypatch, damage):
+@pytest.mark.parametrize('symbol', ['pas:BTC', 'pas:EWY'])
+@pytest.mark.parametrize('damage', ['null', 'user', 'coin', 'isolated', 'wrong_value', 'bool', 'missing', 'unavailable'])
+def test_pas_readiness_rejects_invalid_active_leverage_observations(pas_account, monkeypatch, symbol, damage):
     from exchange.base_exchange import ExchangeError
     _, _, account = pas_account
     query = account._query
     def damaged_query(name, **parameters):
         value = query(name, **parameters)
-        if name != 'activeAssetData' or parameters['coin'] != 'pas:EWY':
+        if name != 'activeAssetData' or parameters['coin'] != symbol:
             return value
         if damage == 'null':
             return None
@@ -133,12 +134,16 @@ def test_pas_readiness_rejects_invalid_active_leverage_observations(pas_account,
             value['leverage']['type'] = 'isolated'
         elif damage == 'bool':
             value['leverage']['value'] = True
+        elif damage == 'wrong_value':
+            value['leverage']['value'] = 20
         elif damage == 'missing':
             value.pop('leverage')
         return value
     monkeypatch.setattr(account, '_query', damaged_query)
     result = readiness(account)
     assert not result.account_ready
+    assert ('PAS_ACTIVE_ASSET_READBACK_UNAVAILABLE' in result.reasons if damage == 'unavailable'
+            else 'PAS_ACTIVE_ASSET_CROSS_1X_REQUIRED' in result.reasons)
     assert not result.report(market_ready=True)['live_orders_permitted']
 
 

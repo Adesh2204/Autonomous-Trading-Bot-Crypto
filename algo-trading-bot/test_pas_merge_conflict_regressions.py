@@ -32,7 +32,7 @@ def test_configuration_plan_retains_registration_blocker_without_exact_review(re
     assert {change["symbol"] for change in plan["changes"]} == PAS_ENTRY_MARKETS
     assert all(change["requested_action"]["type"] == "updateLeverage"
                and change["requested_action"]["isCross"] is True
-               and change["requested_action"]["leverage"] == 20
+               and change["requested_action"]["leverage"] == 1
                for change in plan["changes"])
 
 
@@ -52,17 +52,17 @@ def test_configuration_plan_drops_registration_blocker_only_for_exact_review_sta
     assert "REGISTERED_TEAM_ORGANIZER_RECORD_REQUIRED" not in plan["blockers"]
     assert plan["entry_markets"] == sorted(PAS_ENTRY_MARKETS)
     assert {change["symbol"] for change in plan["changes"]} == PAS_ENTRY_MARKETS
-    assert all(change["requested_action"]["leverage"] == 20
+    assert all(change["requested_action"]["leverage"] == 1
                and change["requested_action"]["isCross"] is True
                for change in plan["changes"])
     assert plan["signing_authority"] == "NONE"
     assert plan["signatures_created"] == plan["exchange_writes"] == 0
 
 
-def test_configuration_plan_recognizes_only_exact_twenty_cross_for_both_entries():
+def test_configuration_plan_recognizes_only_exact_one_cross_for_both_entries():
     observation = configuration_observation()
     for row in observation["markets"]:
-        row["active_asset"]["leverage"] = {"type": "cross", "value": 20}
+        row["active_asset"]["leverage"] = {"type": "cross", "value": 1}
     before = deepcopy(observation)
 
     plan = configuration_plan(observation)
@@ -75,8 +75,8 @@ def test_configuration_plan_recognizes_only_exact_twenty_cross_for_both_entries(
     assert plan["signatures_created"] == plan["exchange_writes"] == 0
 
 
-@pytest.mark.parametrize("damage", ["missing", "one_x", "isolated", "stale", "boolean_20"])
-def test_btc_only_selection_still_requires_fresh_exact_twenty_cross_on_both_assets(damage):
+@pytest.mark.parametrize("damage", ["missing", "twenty_x", "isolated", "stale", "boolean_one"])
+def test_btc_only_selection_still_requires_fresh_exact_one_cross_on_both_assets(damage):
     from exchange.pas_controller import assess
     from test_activation_v5_2 import NOW, ready_report
 
@@ -84,8 +84,8 @@ def test_btc_only_selection_still_requires_fresh_exact_twenty_cross_on_both_asse
     report["markets"] = ["pas:BTC"]
     if damage == "missing":
         del report["liquidity"]["pas:EWY"]
-    elif damage == "one_x":
-        report["liquidity"]["pas:EWY"]["active_asset"]["leverage"]["value"] = 1
+    elif damage == "twenty_x":
+        report["liquidity"]["pas:EWY"]["active_asset"]["leverage"]["value"] = 20
     elif damage == "isolated":
         report["liquidity"]["pas:EWY"]["active_asset"]["leverage"]["type"] = "isolated"
     elif damage == "stale":
@@ -100,7 +100,7 @@ def test_btc_only_selection_still_requires_fresh_exact_twenty_cross_on_both_asse
     assert result["signing_authority"] == "NONE"
 
 
-def test_both_fresh_twenty_cross_readbacks_open_configuration_gate_not_session_approval():
+def test_both_fresh_one_cross_readbacks_open_configuration_gate_not_session_approval():
     from exchange.pas_controller import assess
     from test_activation_v5_2 import NOW, ready_report
 
@@ -245,7 +245,7 @@ class _ComplianceJournal:
         self.events.append((kind, timestamp, data))
 
 
-def _direct_compliance_evaluate(*, symbol="pas:BTC", leverage=20, competition_mode=True,
+def _direct_compliance_evaluate(*, symbol="pas:BTC", leverage=1, competition_mode=True,
                                 position_allowed=True):
     from exchange.compliance_guard import ComplianceGuard, OrderProvenance
     from exchange.order_lifecycle import OrderRequest
@@ -285,13 +285,13 @@ def _direct_compliance_evaluate(*, symbol="pas:BTC", leverage=20, competition_mo
 
 @pytest.mark.parametrize("symbol", ["pas:BTC", "pas:EWY"])
 def test_competition_pas_target_leverage_passes_leverage_gate_then_checks_provenance(symbol):
-    decision = _direct_compliance_evaluate(symbol=symbol, leverage=20, competition_mode=True)
+    decision = _direct_compliance_evaluate(symbol=symbol, leverage=1, competition_mode=True)
 
     assert not decision.allowed
     assert decision.code == "MISSING_STRATEGY_PROVENANCE"
 
 
-@pytest.mark.parametrize("leverage", [1, 19, 21, True, "20"])
+@pytest.mark.parametrize("leverage", [0, 2, 20, True, "1"])
 def test_competition_pas_non_target_leverage_is_rejected(leverage):
     decision = _direct_compliance_evaluate(leverage=leverage, competition_mode=True)
 
@@ -308,7 +308,7 @@ def test_noncompetition_context_retains_exact_one_x_leverage_semantics():
 
 
 def test_competition_target_leverage_does_not_override_rejected_position_snapshot():
-    decision = _direct_compliance_evaluate(leverage=20, competition_mode=True, position_allowed=False)
+    decision = _direct_compliance_evaluate(leverage=1, competition_mode=True, position_allowed=False)
 
     assert not decision.allowed
     assert decision.code == "POSITION_LIMIT"

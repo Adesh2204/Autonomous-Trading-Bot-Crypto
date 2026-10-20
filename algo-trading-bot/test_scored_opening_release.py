@@ -44,7 +44,7 @@ def test_calendar_has_one_shared_exact_utc_source():
 
 def configuration_observation():
     rows=[dict(symbol=s,spec=dict(symbol=s,asset_id=2810000+i,max_leverage=20),
-        active_asset=dict(user=TEAM,coin=s,leverage=dict(type='cross',value=1)),observed_ms=SCORED_START_MS)
+        active_asset=dict(user=TEAM,coin=s,leverage=dict(type='cross',value=20)),observed_ms=SCORED_START_MS)
         for i,s in enumerate(sorted(SCORED.markets))]
     return dict(dex='pas',collateral='USDP',venue_identity=SCORED.identity,status='READ_ONLY_DISCOVERY_COMPLETE',
         source_hash='a'*64,source_hash_after='a'*64,journal_integrity='ok',markets=rows,
@@ -58,7 +58,7 @@ def test_configuration_is_only_source_bound_unsigned_plan_not_organizer_credit()
     assert len(p['changes'])==len(SCORED.markets)==2 and p['organizer_credit_amount'] is None and not p['transfers_allowed']
     assert {c['symbol'] for c in p['changes']}=={'pas:BTC','pas:EWY'}
     assert 'PAS_USDP_FUNDING_REQUIRED_BEFORE_CONFIGURATION' in p['blockers']
-    for c in p['changes']:assert c['requested_action']==dict(type='updateLeverage',asset=c['requested_action']['asset'],isCross=True,leverage=20)
+    for c in p['changes']:assert c['requested_action']==dict(type='updateLeverage',asset=c['requested_action']['asset'],isCross=True,leverage=1)
 
 
 @pytest.mark.parametrize('damage',['source','dex','coin','team','incomplete','duplicate',
@@ -70,19 +70,19 @@ def test_invalid_configuration_evidence_cannot_propose_actions(damage):
     elif damage=='coin':o['markets'][0]['active_asset']['coin']='par:BTC'
     elif damage=='team':o['markets'][0]['active_asset']['user']=API
     elif damage=='incomplete':o['markets'].pop()
-    elif damage=='low_max_leverage':o['markets'][0]['spec']['max_leverage']=19
+    elif damage=='low_max_leverage':o['markets'][0]['spec']['max_leverage']=0
     elif damage=='boolean_max_leverage':o['markets'][0]['spec']['max_leverage']=True
     elif damage=='duplicate_asset_id':o['markets'][1]['spec']['asset_id']=o['markets'][0]['spec']['asset_id']
     else:o['markets'].append(o['markets'][0])
     with pytest.raises(ExchangeError):configuration_plan(o)
 
 
-def test_existing_twenty_x_cross_markets_are_not_planned_again():
+def test_existing_one_x_cross_markets_are_not_planned_again():
     o=configuration_observation()
-    for r in o['markets']:r['active_asset']['leverage']=dict(type='cross',value=20)
+    for r in o['markets']:r['active_asset']['leverage']=dict(type='cross',value=1)
     p=configuration_plan(o)
     assert p['changes']==[] and {r['symbol'] for r in o['markets']}=={'pas:BTC','pas:EWY'}
-    assert all(r['active_asset']['leverage']==dict(type='cross',value=20) for r in o['markets'])
+    assert all(r['active_asset']['leverage']==dict(type='cross',value=1) for r in o['markets'])
 
 
 def test_scored_preparation_observes_signals_even_before_native_proof(monkeypatch,tmp_path):

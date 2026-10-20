@@ -27,7 +27,7 @@ def ready_report():
         native_proof_verification=dict(verified=True,markets=['pas:BTC','pas:EWY'],residual_scope_verified=True),
         market_history={s:dict(strategy_history_ready=True,latest_completed_ms=NOW) for s in ('pas:BTC','pas:EWY')},
         signals=[dict(symbol='pas:BTC',decision='LONG',observed_ms=NOW)],
-        liquidity={s:dict(active_asset=dict(leverage=dict(type='cross',value=20)),active_asset_ms=NOW,
+        liquidity={s:dict(active_asset=dict(leverage=dict(type='cross',value=1)),active_asset_ms=NOW,
             evidence_evaluation=dict(observed_ms=NOW,economically_viable_notional='10')) for s in ('pas:BTC','pas:EWY')})
 
 
@@ -76,7 +76,7 @@ def test_conditional_dispatch_requires_every_gate_and_no_exposure(fault):
     r=ready_report();a=fake_authority();assert readiness_to_dispatch(r,a,NOW)
     if fault=='funding':r['funding']['status']='USDP_ZERO'
     elif fault=='unknown':r['local_execution_state']['status']='BLOCKED_UNRESOLVED_INTENT'
-    elif fault=='leverage':r['liquidity']['pas:BTC']['active_asset']['leverage']['value']=1
+    elif fault=='leverage':r['liquidity']['pas:BTC']['active_asset']['leverage']['value']=20
     elif fault=='history':r['market_history']={}
     elif fault=='native':r['native_proof_verification']={}
     elif fault=='source':r['release_verification']['source_hash']='b'*64
