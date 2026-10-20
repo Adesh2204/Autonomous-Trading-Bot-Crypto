@@ -12,6 +12,7 @@ def review_history(root,output):
     from .execution_journal import ExecutionJournal
     from .rate_limits import HyperliquidRateLimitManager
     from .durable_history import DurableHistory
+    from .candle_audit import PublicCandleAudit
     from .testnet_certification import TEAM
     p=Path(output);p.mkdir(parents=True,exist_ok=False)
     source=active_source_hash(Path(root));stop=threading.Event()
@@ -23,7 +24,12 @@ def review_history(root,output):
     history=engine=thread=None
     result=dict(source_hash=source,signing_authority='NONE',exchange_writes=0,signatures_created=0,markets={})
     try:
-        client.startup();history=DurableHistory(p/'history.sqlite',client,p/'info_receipts.jsonl');client.candle_audit=history
+        client.startup();history=DurableHistory(p/'history.sqlite',client,p/'info_receipts.jsonl')
+        raw_audit=PublicCandleAudit(p/'candle_wire.jsonl')
+        class Audit:
+            def record(self,stage,**values):
+                raw_audit.record(stage,**values);history.record(stage,**values)
+        client.candle_audit=Audit()
         market=SerializedPublicMarket(client)
         for symbol in sorted(PAS_ENTRY_MARKETS):
             now=client.clock_ms();end=now//60000*60000-1;start=end+1-5000*60000
@@ -48,6 +54,9 @@ def review_history(root,output):
         # Read-only stream sample, bounded independently of the total read budget.
         stop.wait(30)
         result['stream_transport']=engine.transport_health.report()
+        result['candle_availability']=engine.availability.snapshot(include_records=True)
+        result['completion_policy']='ACTUAL_POST_CLOSE_OBSERVATION; open updates are not finalized by local clock passage'
+        result['wire_receipts_file']='candle_wire.jsonl'
         for symbol,row in result['markets'].items():
             row['history']=history.report(symbol,client.clock_ms())
             row['strategy_signal']='UNKNOWN'

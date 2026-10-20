@@ -18,6 +18,8 @@ def validate_history(symbol, candles, now_ms, required):
             raise ExchangeError('INVALID_CANDLE_BOUNDARIES')
         if c.timestamp_ms+60000 > now_ms:
             raise ExchangeError('FUTURE_OR_OPEN_COMPLETED_CANDLE')
+        if c.received_timestamp_ms is not None and c.received_timestamp_ms<c.timestamp_ms+60000:
+            raise ExchangeError('POST_CLOSE_CANDLE_OBSERVATION_REQUIRED')
         o,h,l,p=(decimal(v,positive=True) for v in (c.open,c.high,c.low,c.close))
         if h < max(o,l,p) or l > min(o,h,p):
             raise ExchangeError('INVALID_CANDLE_PRICES')

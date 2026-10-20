@@ -1,0 +1,52 @@
+"""Read-only old-intent verification, optional tested append-only local resolution."""
+import argparse,json,sys
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'algo-trading-bot'))
+from exchange.execution_journal import ExecutionJournal
+from exchange.hyperliquid_client import HyperliquidClient
+from exchange.hyperliquid_account import HyperliquidAccount
+from exchange.certification_runtime import CertificationRecovery
+from exchange.execution_safety import HyperliquidRateLimitManager
+from exchange.reliability_policy import load_reliability_policy
+from exchange.paper_operations import atomic_json,active_source_hash
+from exchange.qualification_intent_recovery import collect,assess,append_resolution,effective_rows
+from exchange.testnet_certification import TEAM
+from exchange.emergency_qualification import require_emergency_regression
+from venue_config import require_paper_migration
+from strategy_freeze import verify_strategy_freeze
+
+
+def inspect(directory,*,certify=False,receipt=None):
+    require_paper_migration();verify_strategy_freeze()
+    if certify:
+        path=require_emergency_regression(ROOT,receipt)
+        if json.loads(path.read_text())['totals']['tests']<2194:raise RuntimeError('FULL_CURRENT_BASELINE_REQUIRED')
+    directory=Path(directory).resolve();directory.mkdir(parents=True,exist_ok=False)
+    original=ExecutionJournal(ROOT/'runtime/testnet/anchorium-bot-1/qualification.sqlite',
+        session_id='anchorium-one-qualification-v1',team_address=TEAM)
+    observer_journal=ExecutionJournal(directory/'observer.sqlite',session_id='read-only-intent-recovery',team_address=TEAM)
+    rate,_,_=load_reliability_policy(ROOT/'configs/reliability_policy.json')
+    rates=HyperliquidRateLimitManager(observer_journal,policy=rate);rates.read_budget_wait_seconds=65
+    client=HyperliquidClient(rate_limits=rates)
+    result=dict(exchange_actions=0,signatures=0,nonce_allocations=0,source_hash=active_source_hash(ROOT))
+    try:
+        client.startup();account=HyperliquidAccount(client,TEAM)
+        observer=CertificationRecovery(account,observer_journal,initial_start_ms=0)
+        proof=collect(account,original,observer,ROOT/'runtime/testnet/anchorium-bot-1/nonces.sqlite')
+        result.update(assessment=assess(proof,now_ms=client.clock_ms()),proof=proof)
+        atomic_json(directory/'recovery_report.json',result)
+        if certify:
+            result['resolution']=append_resolution(original,proof,client.clock_ms())
+            result['remaining_actionable_intents']=len(effective_rows(original.db))
+        observer.checkpoint(clean=True)
+    finally:
+        client.close();observer_journal.close();original.close()
+        atomic_json(directory/'recovery_report.json',result)
+    return result
+
+
+if __name__=='__main__':
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output-directory',required=True)
+    p.add_argument('--certify',action='store_true');p.add_argument('--test-receipt');a=p.parse_args()
+    r=inspect(a.output_directory,certify=a.certify,receipt=a.test_receipt)
+    print(json.dumps({k:r.get(k) for k in ['assessment','resolution','remaining_actionable_intents','exchange_actions','signatures']},indent=2))

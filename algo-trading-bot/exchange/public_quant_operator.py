@@ -47,12 +47,11 @@ class SerializedPublicMarket(HyperliquidMarketData):
 
 
 class SerializedStreamMarket(StreamFirstMarketData,SerializedPublicMarket):
-    def get_candles(self,*a,**k):
-        with self.client.request_lock:return super().get_candles(*a,**k)
-    def get_asset_contexts(self):
-        with self.client.request_lock:return super().get_asset_contexts()
-    def get_orderbook(self,symbol):
-        with self.client.request_lock:return super().get_orderbook(symbol)
+    # StreamFirst acquires only the cache lock. Its REST fallbacks resolve to
+    # SerializedPublicMarket through this MRO and serialize actual HTTP reads.
+    # Holding request_lock around a cache read inverts the WS persistence path
+    # (engine lock -> canonical client binding lock), risking a deadlock.
+    pass
 
 
 class ReadOnlyReceipts(RequestsInfoTransport):

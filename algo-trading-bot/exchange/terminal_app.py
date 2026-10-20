@@ -360,6 +360,9 @@ def approve(root,args):
         from .scored_session import SCORED_ACKS,require_scored_evidence
         require_scored_evidence(m,Path(args.mandate).parent)
         extra_acks=SCORED_ACKS
+        if m.trading_isolation_policy_sha256:
+            from .trading_isolation import FiniteTradingIsolation
+            FiniteTradingIsolation(root,Path(args.mandate).parent/'trading_isolation/policy.json',m).require(time.time_ns()//1000000)
         print('PAS/USDP approval binds reviewed organizer provenance, shared UNKNOWN/nonce checks, actual PAS native/residual qualification, finite scored window and no automatic renewal. Practice evidence cannot qualify PAS.')
     if m.mode=='EXACT_APPROVED_OVERNIGHT_LONG_TESTNET_V1':
         from .overnight_session import OVERNIGHT_ACKS
@@ -485,6 +488,10 @@ def main(root):
     prep=sub.add_parser('prepare');prep.add_argument('--output',required=True);prep.add_argument('--markets',nargs='*',default=[])
     prep.add_argument('--venue',choices=('par','pas'),default='pas')
     prep.add_argument('--organizer-confirmation',help='Reviewed organizer provenance JSON with retained original record; PAS only')
+    prep.add_argument('--venue',choices=('par','pas'),default='par')
+    identity=prep.add_mutually_exclusive_group()
+    identity.add_argument('--organizer-confirmation',help='Reviewed organizer provenance JSON with retained original record; PAS only')
+    identity.add_argument('--operator-confirmation',help='Retained direct human named-wallet identity evidence; not session consent')
     prep.add_argument('--minutes',type=int,default=60);prep.add_argument('--maximum-notional',default='1000')
     prep.add_argument('--release');prep.add_argument('--native-protection-evidence')
     contract=prep.add_mutually_exclusive_group()
@@ -507,21 +514,36 @@ def main(root):
                 q.add_argument('--'+flag)
         if name=='dashboard':
             q.add_argument('--refresh',type=int,default=5);q.add_argument('--once',action='store_true')
-    for name in ('funding','configuration-review','native-prepare','history-review'):
+    prep.add_argument('--trading-isolation-policy',help='Unaccepted exact finite historical policy; grants no order authority')
+    for name in ('funding','configuration-review','native-prepare','history-review','pas-ranking','trading-isolation-review','trading-isolation-prepare'):
         q=sub.add_parser(name);q.add_argument('--output',required=True)
-        if name=='native-prepare':q.add_argument('--market',default='pas:BTC')
-        if name=='configuration-review':q.add_argument('--organizer-confirmation')
+        if name in {'trading-isolation-review','trading-isolation-prepare'}:q.add_argument('--minutes',type=int,default=60)
+        if name=='native-prepare':
+            q.add_argument('--market',default='pas:BTC')
+            q.add_argument('--operator-confirmation',help='Retained operator identity confirmation')
+            q.add_argument('--trading-isolation-policy',help='Historical isolation policy')
+        if name=='configuration-review':
+            identity=q.add_mutually_exclusive_group()
+            identity.add_argument('--organizer-confirmation')
+            identity.add_argument('--operator-confirmation',help='Retained direct human named-wallet confirmation; configuration identity only, never order consent')
+            q.add_argument('--isolate-original-for-configuration',action='store_true',help='Prepare exact original-UNKNOWN isolation for the two non-order 1x changes only; genuine plan approval is still required')
     for name in ('configuration-approve','configuration-apply'):
         q=sub.add_parser(name)
         for flag in ('plan','discovery','release','output'):q.add_argument('--'+flag,required=True)
         if name=='configuration-apply':q.add_argument('--acceptance',required=True)
+    for name in ('native-approve','native-execute'):
+        q=sub.add_parser(name)
+        for flag in ('proposal','discovery','release','output'):q.add_argument('--'+flag,required=True)
+        if name=='native-execute':q.add_argument('--acceptance',required=True)
+    q=sub.add_parser('trading-isolation-approve',help='Interactive local historical isolation only; never order approval')
+    for name in ('policy','mandate','release'):q.add_argument('--'+name,required=True)
     args=p.parse_args()
     try:
         if args.command=='opening-check':
             from .opening_audit import opening_check
             result=opening_check(root,args);print(json.dumps(result,indent=2,default=str))
             return 0 if result['statuses']['TRADING_AUTHORIZED'] else 1
-        if args.command in {'funding','configuration-review','native-prepare','history-review','configuration-approve','configuration-apply'}:
+        if args.command in {'funding','configuration-review','native-prepare','history-review','configuration-approve','configuration-apply','pas-ranking','trading-isolation-review','trading-isolation-prepare','trading-isolation-approve','native-approve','native-execute'}:
             from .pas_operations import dispatch
             result=dispatch(root,args);print(json.dumps(result,indent=2,default=str))
             failed = {'CONFIGURATION_REQUIRES_REVIEW', 'HISTORY_REVIEW_INCOMPLETE',

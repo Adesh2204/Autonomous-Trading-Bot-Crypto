@@ -42,8 +42,17 @@ def configuration_plan(discovery):
     if discovery.get('account_mode')!='unifiedAccount':blockers.append('HUMAN_VERIFIED_UNIFIED_MODE_REQUIRED')
     if discovery.get('terminal_flat') is not True:blockers.append('TWO_FRESH_FLAT_ZERO_ORDER_READBACKS_REQUIRED')
     local=discovery.get('local_execution_state',{})
-    if local.get('status')!='NO_LOCAL_UNRESOLVED_INTENT':blockers.append('SHARED_UNKNOWN_AND_CONSUMED_INVOCATION_REVIEW_REQUIRED')
-    if discovery.get('registration_evidence',{}).get('status')!='OPERATOR_REVIEWED_ORGANIZER_RECORD':
+    isolation=discovery.get('configuration_isolation')
+    if isolation is not None:
+        from .configuration_isolation import assess,CLOID,INTENT
+        if not assess(isolation,discovery['source_hash'],discovery['finished_ms'])['admissible']:
+            raise ExchangeError('INVALID_CONFIGURATION_ONLY_ISOLATION_REVIEW')
+        if local.get('unresolved')!=[dict(journal='qualification',cloid=CLOID,state='UNKNOWN',intent_key=INTENT)]:
+            raise ExchangeError('ONLY_EXACT_ORIGINAL_UNKNOWN_MAY_BE_ISOLATED_FOR_CONFIGURATION')
+    if local.get('status')!='NO_LOCAL_UNRESOLVED_INTENT' and isolation is None:
+        blockers.append('SHARED_UNKNOWN_AND_CONSUMED_INVOCATION_REVIEW_REQUIRED')
+    if discovery.get('registration_evidence',{}).get('status') not in {
+            'OPERATOR_REVIEWED_ORGANIZER_RECORD','DIRECT_OPERATOR_CONFIRMED_ACCOUNT_IDENTITY'}:
         blockers.append('REGISTERED_TEAM_ORGANIZER_RECORD_REQUIRED')
     plan=dict(status='UNSIGNED_CONFIGURATION_PLAN_ONLY',network='testnet',dex='pas',collateral='USDP',
         source_hash=discovery['source_hash'],observed_ms=discovery['finished_ms'],

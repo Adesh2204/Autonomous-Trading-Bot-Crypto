@@ -33,13 +33,28 @@ def copy_organizer_record(path,output):
 def prepare_scored(root,args):
     if getattr(args,'overnight',False) or getattr(args,'practice_weekend',False):
         raise ExchangeError('PAS_CANNOT_REUSE_PRACTICE_CONTRACT')
-    root=Path(root);output=Path(args.output).resolve();output.mkdir(parents=True,exist_ok=False)
+    root=Path(root);output=Path(args.output).resolve();output.mkdir(parents=True,exist_ok=True)
     observation=discover(root,output/'fresh_discovery',venue='pas')
     atomic_json(output/'venue_discovery.json',observation)
     now=time.time_ns()//1000000;expires=min(now+args.minutes*60000,SCORED_END_MS)
     blockers=[]
+    isolation_path=getattr(args,'trading_isolation_policy',None)
+    isolation=None
+    if isolation_path:
+        from .trading_isolation import validate_policy
+        isolation=validate_policy(root,isolation_path,source=active_source_hash(root),reference_ms=now)
+        target=output/'trading_isolation'
+        shutil.copytree(Path(isolation_path).parent,target,dirs_exist_ok=True)
+        if Path(isolation_path).name!='policy.json':raise ExchangeError('CANONICAL_TRADING_ISOLATION_POLICY_FILE_REQUIRED')
+        # A copied old acceptance must never be treated as acceptance of the new
+        # mandate. This command only assembles an unsigned proposal.
+        if (target/'acceptance.json').exists():raise ExchangeError('NEW_UNACCEPTED_ISOLATION_POLICY_REQUIRED')
+        expires=min(expires,isolation['expires_ms'])
     if not SCORED_START_MS<=now<expires<=SCORED_END_MS:blockers.append('SCORED_PHASE_NOT_OPEN')
-    if local_execution_state(root)['status']!='NO_LOCAL_UNRESOLVED_INTENT':blockers.append('SHARED_ACCOUNT_UNKNOWN_UNRESOLVED')
+    local=local_execution_state(root)
+    from .configuration_isolation import CLOID,INTENT
+    only_original=local.get('unresolved')==[dict(journal='qualification',cloid=CLOID,state='UNKNOWN',intent_key=INTENT)]
+    if local['status']!='NO_LOCAL_UNRESOLVED_INTENT' and not (isolation and only_original):blockers.append('SHARED_ACCOUNT_UNKNOWN_UNRESOLVED')
     if observation['status']!='READ_ONLY_DISCOVERY_COMPLETE' or observation.get('terminal_flat') is not True:
         blockers.append('COMPLETE_FRESH_ACCOUNT_DISCOVERY_REQUIRED')
     equity=observation.get('account',{}).get('reported_account_equity',{})
@@ -75,9 +90,13 @@ def prepare_scored(root,args):
     blockers.extend(sorted({r for row in observation.get('markets',[]) for r in row.get('proposal_exclusions',[])}))
     # Evidence is reviewed even when other prerequisites fail, so every remaining
     # issue is visible in a single concrete proposal. No dummy mandate is saved.
-    organizer=getattr(args,'organizer_confirmation',None)
+    organizer=getattr(args,'operator_confirmation',None) or getattr(args,'organizer_confirmation',None)
     if organizer:
-        try:copy_organizer_record(organizer,output)
+        try:
+            if getattr(args,'operator_confirmation',None):
+                from .operator_account_confirmation import copy_confirmation
+                copy_confirmation(organizer,output)
+            else:copy_organizer_record(organizer,output)
         except (OSError,ValueError,ExchangeError) as exc:blockers.append(str(exc))
     else:blockers.append('ORIGINAL_REVIEWED_PAS_ORGANIZER_CONFIRMATION_REQUIRED')
     if not args.release:blockers.append('FINAL_SOURCE_MATCHED_REGRESSION_REQUIRED')
@@ -94,10 +113,12 @@ def prepare_scored(root,args):
         try:
             require_native_evidence(args.native_protection_evidence,limits)
             _,_,policy=load_reliability_policy(root/'configs/reliability_policy.json')
+            identity_record=output/('operator_confirmation.json' if getattr(args,'operator_confirmation',None) else 'organizer_confirmation.json')
             mandate=ScoredLongMandate(limits,now,now+300000,sha(args.release),sha(root/'configs/reliability_policy.json'),
                 sha(args.native_protection_evidence),fingerprint(asdict(replace(policy,enabled=True))),
-                organizer_evidence_sha256=sha(output/'organizer_confirmation.json'),
-                discovery_evidence_sha256=sha(output/'venue_discovery.json')).require()
+                organizer_evidence_sha256=sha(identity_record),
+                discovery_evidence_sha256=sha(output/'venue_discovery.json'),
+                trading_isolation_policy_sha256=sha(output/'trading_isolation/policy.json') if isolation else '').require()
             require_scored_evidence(mandate,output)
         except (OSError,ValueError,ExchangeError) as exc:
             mandate=None;blockers.append(str(exc))
@@ -109,6 +130,11 @@ def prepare_scored(root,args):
         maximum_concurrent_positions=1,maximum_signed_actions=12,maximum_owned_cancellations=2,
         risk_fraction='.005',session_loss_fraction='.01',execution_slippage_bps='5',depth_participation='.1',
         maximum_spread_bps='15',maximum_fee_rate='.003',approval_granted=False,
+        maximum_cumulative_notional=str(D(args.maximum_notional)*2),
+        risk_denominator='ALLOCATED_BANKROLL_20000_USDP; NOT_ACCOUNT_BALANCE_OR_ENTRY_NOTIONAL',
+        maximum_intended_trade_loss_usdp='100',session_loss_stop_usdp='200',
+        loss_basis='RECONCILED_REALIZED_PLUS_REPORTED_UNREALIZED_MINUS_FEES_PLUS_FUNDING; conservative exit-cost reserve; peak drawdown and initial-bankroll loss use the tighter bound',
+        trading_isolation_status='POLICY_BOUND_NOT_ACCEPTED' if isolation else 'NONE',
         midnight_policy='CARRY_ATTEMPTS_ALLOCATION_PNL_DRAWDOWN_NO_RESET',
         blockers=sorted(set(blockers)),market_assessments=observation.get('markets',[]),
         signing_authority='NONE',native_protection_qualified=False,

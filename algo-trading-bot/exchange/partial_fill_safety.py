@@ -23,14 +23,18 @@ def partial_path_assessment(spec, proposal):
     prices = {name: decimal(getattr(proposal, name), positive=True)
               for name in ('entry_limit', 'stop_limit', 'exit_bound')}
     notionals = {name: spec.size_step * price for name, price in prices.items()}
+    full_notionals = {name: quantity * price for name, price in prices.items()}
     ready = all(value >= MIN_NOTIONAL for value in notionals.values())
+    full_ready = all(value >= MIN_NOTIONAL for value in full_notionals.values())
     return dict(symbol=spec.symbol, asset_id=spec.asset_id, size_step=str(spec.size_step),
         minimum_order_notional=str(MIN_NOTIONAL), smallest_possible_fill=str(spec.size_step),
         smallest_possible_exit_remainder=str(spec.size_step),
         one_lot_notionals={name: str(value) for name, value in notionals.items()},
+        full_order_notionals={name: str(value) for name, value in full_notionals.items()},
         subminimum_full_close_exception=VENUE_EXCEPTION_STATUS,
         subminimum_protection_exception=VENUE_EXCEPTION_STATUS,
         entry_admissible_under_documented_minimum=ready,
+        full_order_admissible=full_ready,
         blocker=None if ready else 'SUB_MINIMUM_PARTIAL_FILL_EXIT_NOT_VERIFIED',
         scope='REVIEWED_LIMIT_PRICES_ONLY_NOT_A_FILL_OR_PROTECTION_GUARANTEE')
 

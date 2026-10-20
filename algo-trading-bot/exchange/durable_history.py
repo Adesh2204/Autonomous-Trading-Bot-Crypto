@@ -49,6 +49,12 @@ class DurableHistory:
                     c=value['candle'];diagnostic['stream']=dict(received_ms=c.received_timestamp_ms,
                         candle_open_ms=c.timestamp_ms,candle_close_ms=c.close_timestamp_ms)
                 self.db.execute('insert or replace into diagnostics values(?,?)',(symbol,json.dumps(diagnostic)))
+            if stage=='WS_MERGE':
+                # Only an actual post-close observation is a completed fact.
+                # Wall-clock passage alone must never finalize an open update.
+                c=value['candle']
+                if c.received_timestamp_ms is not None and c.received_timestamp_ms>=c.timestamp_ms+60000:
+                    self.ingest(symbol,[c],now_ms=c.received_timestamp_ms,source='NORMALIZED_WS_POST_CLOSE')
             return
         if stage!='NORMALIZED_REST':return
         self.ingest(value['symbol'],value['candles'],now_ms=value['as_of_ms'],raw_count=value['raw_count'],source='NORMALIZED_REST')

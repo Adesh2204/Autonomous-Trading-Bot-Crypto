@@ -208,18 +208,24 @@ def observe(root, output, stop, publish, *, markets=(), scan_seconds=60, account
                             D('10000')/a['best_price']))
                         # This is a capacity observation; strategy/protection/approval are independent.
                         partial=dict(entry_admissible_under_documented_minimum=False,blocker='FROZEN_STOP_PLAN_UNAVAILABLE')
-                        if row.get('baseline_stop') is not None and row.get('metrics',{}).get('atr') is not None:
+                        if q>0:
+                            if row.get('baseline_stop') is not None and row.get('metrics',{}).get('atr') is not None:
+                                stop_limit=spec.normalize_price((row['baseline_stop']-row['metrics']['atr'])*D('.995'),'SELL')
+                            elif row.get('metrics',{}).get('atr') is not None:
+                                stop_limit=spec.normalize_price((b['best_price']-D('3')*row['metrics']['atr'])*D('.995'),'SELL')
+                            else:
+                                stop_limit=spec.normalize_price(b['best_price']*D('.98'),'SELL')
                             proposed=SimpleNamespace(symbol=symbol,asset_id=spec.asset_id,quantity=q,
                                 entry_limit=spec.normalize_price(a['best_price']*D('1.0005'),'BUY'),
-                                stop_limit=spec.normalize_price((row['baseline_stop']-row['metrics']['atr'])*D('.995'),'SELL'),
+                                stop_limit=stop_limit,
                                 exit_bound=spec.normalize_price(b['best_price']*D('.9995'),'SELL'))
-                            if q>0:partial=partial_path_assessment(spec,proposed)
+                            partial=partial_path_assessment(spec,proposed)
                         capacity[symbol] = dict(quantity=str(q), notional=str(q*a['best_price']),
                             bid=str(book.bids[0].price), ask=str(book.asks[0].price), book_ms=book.timestamp_ms,
                             observed_ms=at, active_asset_ms=active_ms, context_ms=context_ms,
                             market_context=context,size_step=str(spec.size_step), one_lot_bid_notional=str(spec.size_step*book.bids[0].price),
-                            partial_minimum_admissible=partial['entry_admissible_under_documented_minimum'],
-                            partial_protection_qualified=partial['entry_admissible_under_documented_minimum'] if profile.dex=='par' else False,
+                            partial_minimum_admissible=partial['entry_admissible_under_documented_minimum'] or (partial.get('full_order_admissible', False) and profile.dex == 'pas'),
+                            partial_protection_qualified=partial['entry_admissible_under_documented_minimum'] if profile.dex=='par' else bool(partial.get('full_order_admissible', False)),
                             native_protection_qualified=False,partial_path=partial,
                             targets={str(t):q*a['best_price']>=t for t in (1000,2500,5000,10000,25000,50000)},
                             qualified_unattended_notional='0', active_asset=active)
