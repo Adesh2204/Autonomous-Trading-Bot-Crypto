@@ -106,8 +106,19 @@ class StreamFirstMarketData(HyperliquidMarketData):
                         read_last += MINUTE_MS
                     elif read_first - MINUTE_MS in merged:
                         read_first -= MINUTE_MS
-                rows = super().get_candles(symbol, read_first,
-                    min(end_ms, read_last + MINUTE_MS - 1), interval=interval, now_ms=as_of)
+                try:
+                    rows = super().get_candles(symbol, read_first,
+                        min(end_ms, read_last + MINUTE_MS - 1), interval=interval, now_ms=as_of)
+                except ExchangeError as exc:
+                    # Local quota refusal happens before HTTP and charges no
+                    # candle slots. Optional adjacency must not prevent an
+                    # essential missing-only read that still fits both caps.
+                    if (str(exc) not in {'PAS_CANDLE_MARKET_SHARE_EXHAUSTED',
+                            'PAS_CANDLE_BUDGET_EXHAUSTED'} or
+                            (read_first, read_last) == (chunk[0], chunk[-1])):
+                        raise
+                    rows = super().get_candles(symbol, chunk[0],
+                        min(end_ms, chunk[-1] + MINUTE_MS - 1), interval=interval, now_ms=as_of)
                 # A cap/backoff on the next chunk must not discard this one.
                 self._cache_pas_rows(symbol, rows, self.client.clock_ms())
                 for candle in rows:
