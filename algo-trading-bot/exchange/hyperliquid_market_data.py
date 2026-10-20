@@ -254,6 +254,7 @@ class ParMarketDataEngine:
         self._recovery_cancel=threading.Event()
         self._recovery_worker=None
         self.recovery_errors={}
+        self.recovery_retry_deadlines_ms={}
         self.recovery_status='UNKNOWN'
         self.health_manager=MarketHealthManager(self.symbols,history_bars=history_bars)
         self.input_errors=defaultdict(dict)
@@ -284,6 +285,7 @@ class ParMarketDataEngine:
 
     def reconcile_history(self, generation=None, symbols=None):
         selected=self.symbols if symbols is None else tuple(symbols)
+        for symbol in selected:self.recovery_retry_deadlines_ms.pop(symbol,None)
         self.health_manager.begin_recovery(selected,self.client.clock_ms())
         for symbol in selected:self.availability.recovery_begin(symbol,self.client.clock_ms())
         failure=None
@@ -293,8 +295,11 @@ class ParMarketDataEngine:
             failure=str(exc)
             raise
         finally:
+            delay_hints={s:self.availability.retry_hint_ms(s) for s in selected}
+            retry_deadlines={s:self.recovery_retry_deadlines_ms[s] for s in selected
+                if s in self.recovery_retry_deadlines_ms}
             self.health_manager.finish_recovery(selected,self.client.clock_ms(),
-                delay_hints={s:self.availability.retry_hint_ms(s) for s in selected})
+                delay_hints=delay_hints,retry_deadlines_ms=retry_deadlines)
             self.market_health()
             for symbol in selected:
                 event=self.availability.recovery_finish(symbol,self.client.clock_ms(),failure or self.recovery_errors.get(symbol))
@@ -372,6 +377,9 @@ class ParMarketDataEngine:
                 raise
             except ExchangeError as exc:
                 errors[symbol]=str(exc)
+                retry_after_ms=getattr(exc,'retry_after_ms',None)
+                if type(retry_after_ms) is int and retry_after_ms>=0:
+                    self.recovery_retry_deadlines_ms[symbol]=self.client.clock_ms()+retry_after_ms
         books={}
         unavailable={}
         for symbol in selected:
