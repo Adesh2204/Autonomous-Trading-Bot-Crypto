@@ -300,7 +300,13 @@ class ParMarketDataEngine:
                 if s in self.recovery_retry_deadlines_ms}
             self.health_manager.finish_recovery(selected,self.client.clock_ms(),
                 delay_hints=delay_hints,retry_deadlines_ms=retry_deadlines)
-            self.market_health()
+            health=self.market_health()
+            # The successful attempt was counted before health could reset its
+            # failure streak. Rebase only healthy, non-quota schedules; otherwise
+            # a restored but aging tail inherits the old exponential delay.
+            restored=tuple(s for s in selected if health[s]['healthy'] and s not in retry_deadlines)
+            if restored:
+                self.health_manager.finish_recovery(restored,self.client.clock_ms(),delay_hints=delay_hints)
             for symbol in selected:
                 event=self.availability.recovery_finish(symbol,self.client.clock_ms(),failure or self.recovery_errors.get(symbol))
                 if getattr(self.client,'candle_audit',None) is not None:
