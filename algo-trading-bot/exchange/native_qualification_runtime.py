@@ -88,6 +88,8 @@ def require_prior_certification_settled(state):
 
 def build_native_qualification(root, proposal, approval, *, test_receipt, output,organizer_permission=None):
     """No private key or nonce allocation until exact consent and all fresh gates."""
+    from .par_retirement import reject_retired_par_write
+    reject_retired_par_write()
     from strategy_freeze import verify_strategy_freeze
     from venue_config import require_paper_migration
     root, output = Path(root).resolve(), Path(output).resolve()

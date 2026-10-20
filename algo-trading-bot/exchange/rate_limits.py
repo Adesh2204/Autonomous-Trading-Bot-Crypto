@@ -9,6 +9,75 @@ from .base_exchange import ExchangeError
 from .reliability_policy import HyperliquidRatePolicy,RequestPriority,RateState
 
 
+class PasCandleBudget:
+    """Internal aggregate PAS candle-slot guard (not an exchange rate limit)."""
+    CAP=300
+    WINDOW_MS=60_000
+
+    def __init__(self,*,clock_ms=None):
+        self.clock_ms=clock_ms or (lambda:time.time_ns()//1_000_000)
+        self.lock=threading.RLock()
+        self._reservations=[]
+        self._market_reservations=[]
+
+    def _prune(self,now):
+        self._reservations=[(stamp,count) for stamp,count in self._reservations
+                            if stamp>now-self.WINDOW_MS]
+
+    def _retry_after(self,now,needed):
+        if needed>self.CAP:return None
+        released=0
+        for stamp,count in sorted(self._reservations):
+            released+=count
+            if released>=needed:return max(0,stamp+self.WINDOW_MS-now)
+        return self.WINDOW_MS
+
+    def reserve(self,slots,*,symbol=None):
+        """Charge a request before HTTP; reservations are never refunded."""
+        with self.lock:
+            now=self.clock_ms();self._prune(now)
+            self._market_reservations=[r for r in self._market_reservations
+                if r[0]>now-self.WINDOW_MS]
+            if symbol is not None:
+                if symbol not in {'pas:BTC','pas:EWY'}:
+                    raise ExchangeError('PAS_CANDLE_MARKET_REQUIRED')
+                own=[(t,n) for t,s,n in self._market_reservations if s==symbol]
+                own_used=sum(n for _,n in own)
+                if type(slots) is int and slots>0 and own_used+slots>self.CAP//2:
+                    error=ExchangeError('PAS_CANDLE_MARKET_SHARE_EXHAUSTED')
+                    error.retry_after_ms=(max(0,min(t for t,_ in own)+self.WINDOW_MS-now)
+                        if own and slots<=self.CAP//2 else None)
+                    error.requested_slots=slots;error.used_slots=own_used;error.cap=self.CAP//2
+                    raise error
+            used=sum(count for _,count in self._reservations)
+            valid=type(slots) is int and 1<=slots<=self.CAP
+            if not valid or used+slots>self.CAP:
+                needed=max(1,used+slots-self.CAP) if type(slots) is int and slots>0 else self.CAP+1
+                error=ExchangeError('PAS_CANDLE_BUDGET_EXHAUSTED')
+                error.retry_after_ms=self._retry_after(now,needed) if valid else None
+                error.requested_slots=slots
+                error.used_slots=used
+                error.cap=self.CAP
+                raise error
+            self._reservations.append((now,slots))
+            if symbol is not None:self._market_reservations.append((now,symbol,slots))
+            return self.report()
+
+    def report(self):
+        with self.lock:
+            now=self.clock_ms();self._prune(now)
+            used=sum(count for _,count in self._reservations)
+            retry_after=(max(0,min(stamp for stamp,_ in self._reservations)+self.WINDOW_MS-now)
+                         if used else 0)
+            return dict(used=used,cap=self.CAP,remaining=self.CAP-used,
+                        window_ms=self.WINDOW_MS,observed_ms=now,
+                        retry_after_ms=retry_after,reservations=len(self._reservations))
+
+
+# PAS BTC and EWY share this budget across default clients and rate managers.
+PAS_CANDLE_BUDGET=PasCandleBudget()
+
+
 class HyperliquidRateLimitManager:
     SMALL_INFO={'l2Book','allMids','clearinghouseState','orderStatus','spotClearinghouseState','exchangeStatus'}
     SAFETY_INFO={'orderStatus','clearinghouseState','openOrders','frontendOpenOrders',
@@ -281,7 +350,8 @@ class HyperliquidRateLimitManager:
     def success(self):
         self.recent_errors=0
 
-    def read(self,query,operation,*,priority=None,request_key=None,expected_items=0,cancel_event=None):
+    def read(self,query,operation,*,priority=None,request_key=None,expected_items=0,cancel_event=None,
+             candle_budget=None,candle_symbol=None):
         """Share identical concurrent public reads; never cache a stale result."""
         from .hyperliquid_client import DEX_QUERIES,COIN_QUERIES,ACCOUNT_QUERIES
         if query not in DEX_QUERIES|COIN_QUERIES|ACCOUNT_QUERIES|{'perpDexs','candleSnapshot','userRole','exchangeStatus','spotMeta','allPerpMetas'}:
@@ -306,7 +376,8 @@ class HyperliquidRateLimitManager:
                 return entry['value']
         started=time.monotonic()
         try:
-            value=self._read_owned(query,operation,priority=priority,expected_items=expected_items,cancel_event=cancel_event)
+            value=self._read_owned(query,operation,priority=priority,expected_items=expected_items,
+                cancel_event=cancel_event,candle_budget=candle_budget,candle_symbol=candle_symbol)
             if entry is not None:entry['value']=value
             return value
         except BaseException as exc:
@@ -321,7 +392,8 @@ class HyperliquidRateLimitManager:
                     self.inflight_reads.pop(request_key,None)
                     entry['done'].set()
 
-    def _read_owned(self,query,operation,*,priority=None,expected_items=0,cancel_event=None):
+    def _read_owned(self,query,operation,*,priority=None,expected_items=0,cancel_event=None,
+                    candle_budget=None,candle_symbol=None):
         """Only idempotent /info reads; no signed operation can enter this API."""
         priority=RequestPriority(priority) if priority is not None else (
             RequestPriority.SAFETY if query in self.SAFETY_INFO else RequestPriority.DECISION)
@@ -344,6 +416,8 @@ class HyperliquidRateLimitManager:
                 self.wait_for_read_budget(weight,priority=priority,
                     max_wait_seconds=min(self.read_budget_wait_seconds,self.read_deadline_seconds-(time.monotonic()-started)),
                     cancel_event=cancel_event,progress=self.read_progress)
+            if query=='candleSnapshot' and candle_budget is not None:
+                candle_budget.reserve(expected_items,**({'symbol':candle_symbol} if candle_symbol else {}))
             self.reserve_info(query,priority=priority,response_weight=response_weight)
             with self.lock:self.read_counts[query]=self.read_counts.get(query,0)+1
             try:

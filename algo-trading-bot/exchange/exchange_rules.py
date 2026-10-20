@@ -5,6 +5,9 @@ from decimal import Decimal
 from .base_exchange import ExchangeError, decimal
 from .execution_journal import fingerprint
 from .order_lifecycle import OrderRequest
+from .competition_market import (COMPETITION_MARKET_OI_CAP_USD, COMPETITION_DEX_OI_CAP_USD,
+                                INTERNAL_OI_HEADROOM_FRACTION, PAS_TARGET_LEVERAGE,
+                                is_scored_phase)
 
 
 @dataclass(frozen=True)
@@ -53,6 +56,9 @@ class ValidationContext:
     fills: tuple = ()
     reconciled: bool = True
     oracle_ms: int | None = None
+    dex_total_oi_notional: Decimal | None = None
+    dex_oi_observed_ms: int | None = None
+    journal_only_entry_pending: bool = False
 
 
 @dataclass(frozen=True)
@@ -66,8 +72,10 @@ class ValidationResult:
 
 
 class HyperliquidOrderValidator:
-    def __init__(self, client, *, policy_leverage=1):
+    def __init__(self, client, *, policy_leverage=None):
         self.client = client
+        if policy_leverage is None:
+            policy_leverage = (PAS_TARGET_LEVERAGE if getattr(client, 'competition_mode', False) else 1)
         self.policy_leverage = policy_leverage
 
     def validate(self, request, context, permission, now_ms, *, operation='ORDER'):
@@ -80,7 +88,22 @@ class HyperliquidOrderValidator:
             from .full_position_close import FULL_POSITION_CLOSE, normalize_exact_full_close
             if operation not in {'ORDER', FULL_POSITION_CLOSE}:
                 return reject('INVALID_EXECUTION_OPERATION')
-            if not isinstance(request, OrderRequest) or not request.symbol.startswith(getattr(self.client,'dex','par')+':'):
+            if not isinstance(request, OrderRequest):
+                return reject('INVALID_MARKET')
+            journal_pending = getattr(context, 'journal_only_entry_pending', False)
+            if type(journal_pending) is not bool:
+                return reject('EXCHANGE_RULE_DATA_UNAVAILABLE')
+            if not request.reduce_only and journal_pending:
+                return reject('UNRESOLVED_JOURNAL_ENTRY_NOT_VISIBLE')
+            if getattr(self.client, 'competition_mode', False):
+                api_markets=getattr(self.client,'api_markets',None)
+                if (not isinstance(api_markets,dict) or set(api_markets)!={'BTC','EWY'} or
+                        api_markets.get('BTC')!=self.client.api_market or
+                        any(not isinstance(symbol,str) or not symbol.endswith(':'+base)
+                            for base,symbol in api_markets.items()) or
+                        request.symbol not in set(api_markets.values())):
+                    return reject('INVALID_MARKET')
+            elif not request.symbol.startswith(getattr(self.client, 'dex', 'par') + ':'):
                 return reject('INVALID_MARKET')
             if not self.client.ready or request.symbol not in self.client.markets:
                 return reject('INVALID_MARKET')
@@ -92,6 +115,8 @@ class HyperliquidOrderValidator:
                 return reject('MARKET_METADATA_CHANGED')
             if not 0 <= now_ms-context.metadata_ms <= 60000:
                 return reject('STALE_METADATA')
+            if not request.reduce_only and getattr(self.client, 'competition_mode', False) and not is_scored_phase(now_ms):
+                return reject('OUTSIDE_SCORED_PHASE')
             if request.side not in {'BUY','SELL'}:
                 return reject('INVALID_SIDE')
             if request.order_type != 'LIMIT' or request.tif not in {'Gtc','Ioc','Alo'}:
@@ -129,8 +154,11 @@ class HyperliquidOrderValidator:
                 return reject('PRICE_BAND_VIOLATION')
             if request.tif == 'Alo' and (request.side == 'BUY' and price >= q.ask or request.side == 'SELL' and price <= q.bid):
                 return reject('POST_ONLY_WOULD_CROSS')
-            if (type(context.leverage) is not int or context.leverage < 1 or
-                    context.leverage > spec.maximum_leverage_at(notional) or context.leverage != self.policy_leverage):
+            expected_leverage = (PAS_TARGET_LEVERAGE if getattr(self.client, 'competition_mode', False)
+                                 else self.policy_leverage)
+            if (self.policy_leverage != expected_leverage or type(context.leverage) is not int or
+                    context.leverage < 1 or context.leverage > spec.maximum_leverage_at(notional) or
+                    context.leverage != expected_leverage):
                 return reject('INVALID_LEVERAGE')
             if not context.readiness.account_ready or not 0 <= now_ms-context.readiness.observed_ms <= 5000:
                 return reject('ACCOUNT_NOT_READY')
@@ -148,6 +176,18 @@ class HyperliquidOrderValidator:
             if permission.limit_price is None or (request.side=='BUY' and price>permission.limit_price or
                                                  request.side=='SELL' and price<permission.limit_price):
                 return reject('RISK_PRICE_PERMISSION_DENIED')
+            # Preserve the independent self-cross rule even for minimal synthetic
+            # contexts whose open-order rows omit OI reservation fields.
+            for own in context.open_orders:
+                if own['coin']!=request.symbol:
+                    continue
+                if own.get('isTrigger') is True:
+                    continue  # dormant conditional orders cannot cross the current book
+                opposite = own.get('side') == ('A' if request.side=='BUY' else 'B')
+                if opposite:
+                    own_price=decimal(own['limitPx'],positive=True)
+                    if request.side=='BUY' and price>=own_price or request.side=='SELL' and price<=own_price:
+                        return reject('SELF_CROSS_PROHIBITED')
             held = context.positions.get(request.symbol)
             held_size = held.quantity if held else Decimal(0)
             if request.reduce_only:
@@ -172,36 +212,110 @@ class HyperliquidOrderValidator:
                 signed=quantity if request.side=='BUY' else -quantity
                 increase=max(Decimal(0),abs(held_size+signed)-abs(held_size))
                 limits=context.limits
-                caps=dict(limits['coinToOiCap'])
+                raw_caps=limits['coinToOiCap']
+                if isinstance(raw_caps,dict):
+                    caps=raw_caps
+                elif isinstance(raw_caps,list):
+                    caps={}
+                    for pair in raw_caps:
+                        if (not isinstance(pair,(list,tuple)) or len(pair)!=2 or
+                                not isinstance(pair[0],str) or not pair[0] or pair[0] in caps):
+                            return reject('EXCHANGE_RULE_DATA_UNAVAILABLE')
+                        caps[pair[0]]=pair[1]
+                else:
+                    return reject('EXCHANGE_RULE_DATA_UNAVAILABLE')
                 # The raw limits schema names coins with or without the DEX prefix.
-                cap=decimal(caps.get(request.symbol,caps.get(request.symbol.split(':')[1])),positive=True)
+                aliases=(request.symbol,request.symbol.split(':',1)[1])
+                cap_values=[decimal(caps[name],positive=True) for name in aliases if name in caps]
+                if not cap_values or any(value!=cap_values[0] for value in cap_values[1:]):
+                    return reject('EXCHANGE_RULE_DATA_UNAVAILABLE')
+                cap=cap_values[0]
+                competition_mode=getattr(self.client, 'competition_mode', False)
+                if competition_mode:
+                    # The identity gate above restricts this path to BTC/EWY.
+                    cap=min(cap,Decimal(COMPETITION_MARKET_OI_CAP_USD))
                 current=decimal(context.contexts[request.symbol]['openInterest'],nonnegative=True)
                 size_cap=decimal(limits['oiSzCapPerPerp'],positive=True)
-                total_cap=decimal(limits['totalOiCap'],positive=True)
-                if getattr(self.client,'dex','par')=='pas':
-                    # V6 scored limits are independent ceilings. Continue to
-                    # read runtime limits and honor any stricter venue value.
-                    audit.update(reported_market_oi_cap=str(cap),reported_total_oi_cap=str(total_cap))
-                    cap=min(cap,Decimal('10000000'))
-                    total_cap=min(total_cap,Decimal('50000000'))
-                total=sum((decimal(c['openInterest'],nonnegative=True)*decimal(c['oraclePx'],positive=True)
-                           for c in context.contexts.values()),Decimal(0))
+                api_total_cap=decimal(limits['totalOiCap'],positive=True)
+                if getattr(self.client, 'competition_mode', False):
+                    total_cap=min(api_total_cap,Decimal(COMPETITION_DEX_OI_CAP_USD))
+                    if (context.dex_total_oi_notional is None or context.dex_oi_observed_ms is None or
+                            not 0<=now_ms-context.dex_oi_observed_ms<=5000):
+                        return reject('DEX_OI_AGGREGATE_STALE_OR_UNVERIFIED')
+                    total=decimal(context.dex_total_oi_notional,nonnegative=True)
+                else:
+                    total_cap=api_total_cap
+                    total=sum((decimal(c['openInterest'],nonnegative=True)*
+                               decimal(c['oraclePx'],positive=True)
+                               for c in context.contexts.values()),Decimal(0))
+                # openOrders/frontendOpenOrders are the authoritative current
+                # reservations. Count each non-reduce-only order once, even if
+                # the same order is repeated under its oid/cloid in a batch view.
+                reserved_by_symbol={}
+                reserved_dex_notional=Decimal(0)
+                seen_order_ids={}
+                for own in context.open_orders:
+                    coin=own['coin']
+                    reduce_only=own.get('reduceOnly',False)
+                    if type(reduce_only) is not bool:
+                        return reject('EXCHANGE_RULE_DATA_UNAVAILABLE')
+                    if reduce_only:
+                        continue
+                    side=own['side']
+                    if side not in {'B','A'}:
+                        return reject('EXCHANGE_RULE_DATA_UNAVAILABLE')
+                    reserved_size=decimal(own['sz'],positive=True)
+                    identity=tuple((name,str(own[name])) for name in ('oid','cloid')
+                                   if own.get(name) is not None)
+                    if not identity:
+                        return reject('EXCHANGE_RULE_DATA_UNAVAILABLE')
+                    signature=(coin,side,reserved_size,reduce_only,
+                               str(own.get('limitPx')),own.get('isTrigger',False))
+                    prior_signatures=[seen_order_ids[name] for name in identity if name in seen_order_ids]
+                    if prior_signatures:
+                        if any(value!=signature for value in prior_signatures):
+                            return reject('EXCHANGE_RULE_DATA_UNAVAILABLE')
+                        continue
+                    for name in identity:
+                        seen_order_ids[name]=signature
+                    if coin not in context.contexts:
+                        return reject('EXCHANGE_RULE_DATA_UNAVAILABLE')
+                    reserved_by_symbol[coin]=reserved_by_symbol.get(coin,Decimal(0))+reserved_size
+                    reserve_oracle=decimal(context.contexts[coin]['oraclePx'],positive=True)
+                    reserved_dex_notional+=reserved_size*reserve_oracle
+                reserved_symbol=reserved_by_symbol.get(request.symbol,Decimal(0))
+                total+=reserved_dex_notional
+                headroom=INTERNAL_OI_HEADROOM_FRACTION if competition_mode else Decimal(0)
+                available_fraction=Decimal(1)-headroom
+                market_entry_limit=cap*available_fraction
+                size_entry_limit=size_cap*available_fraction
+                dex_entry_limit=total_cap*available_fraction
+                projected_size=current+reserved_symbol+increase
+                projected_market=projected_size*oracle_reference
+                projected_dex=total+increase*oracle_reference
                 audit.update(current_open_interest_notional=str(current*oracle_reference),
-                             open_interest_cap=str(cap),total_open_interest_cap=str(total_cap),
-                             total_open_interest_notional=str(total),proposed_exposure_increase=str(increase*oracle_reference))
-                if increase and (current+increase>size_cap or (current+increase)*oracle_reference>cap or
-                                 total+increase*oracle_reference>total_cap):
+                             open_interest_cap=str(cap),dex_open_interest_notional=str(total),
+                             dex_open_interest_cap=str(total_cap),
+                             proposed_exposure_increase=str(increase*oracle_reference),
+                             reserved_open_order_quantity=str(reserved_symbol),
+                             reserved_open_order_dex_notional=str(reserved_dex_notional),
+                             symbol_oi_cap=str(cap),dex_oi_cap=str(total_cap),
+                             oi_headroom_fraction=str(headroom),
+                             symbol_oi_entry_limit=str(market_entry_limit),
+                             symbol_oi_size_entry_limit=str(size_entry_limit),
+                             dex_oi_entry_limit=str(dex_entry_limit),
+                             projected_symbol_oi_notional=str(projected_market),
+                             projected_dex_oi_notional=str(projected_dex))
+                # Competition entries must stay STRICTLY below the buffered
+                # ceilings. Preserve historical offline protocol semantics.
+                exhausted=(projected_size>=size_entry_limit or
+                           projected_market>=market_entry_limit or
+                           projected_dex>=dex_entry_limit) if competition_mode else (
+                           projected_size>size_entry_limit or
+                           projected_market>market_entry_limit or
+                           projected_dex>dex_entry_limit)
+                if increase and exhausted:
                     return reject('OPEN_INTEREST_CAPACITY')
-            for own in context.open_orders:
-                if own['coin']!=request.symbol:
-                    continue
-                if own.get('isTrigger') is True:
-                    continue  # dormant conditional orders cannot cross the current book
-                opposite = own.get('side') == ('A' if request.side=='BUY' else 'B')
-                if opposite:
-                    own_price=decimal(own['limitPx'],positive=True)
-                    if request.side=='BUY' and price>=own_price or request.side=='SELL' and price<=own_price:
-                        return reject('SELF_CROSS_PROHIBITED')
             normalized=exact_close or spec.normalize_order(request.side,quantity,price,reduce_only=request.reduce_only,tif=request.tif)
             return ValidationResult(True,'ALLOWED','All pre-trade checks passed',now_ms,normalized,audit)
         except ExchangeError as exc:
@@ -230,6 +344,14 @@ class LiveContextProvider:
     def load(self, request, *, critical=False):
         from .live_readiness import verify_live_account_readiness
         from .hyperliquid_market_data import make_quote
+        if getattr(self.client,'competition_mode',False):
+            api_markets=getattr(self.client,'api_markets',None)
+            if (not isinstance(api_markets,dict) or set(api_markets)!={'BTC','EWY'} or
+                    api_markets.get('BTC')!=self.client.api_market or
+                    set(api_markets.values())!=set(self.client.markets) or
+                    any(not isinstance(symbol,str) or not symbol.endswith(':'+base)
+                        for base,symbol in api_markets.items())):
+                raise ExchangeError('PAS_ACTIVE_MARKET_MAPPING_UNVERIFIED')
         sent=self.client.clock_ms()
         book=self.market.get_orderbook(request.symbol)
         received=self.client.clock_ms()
@@ -242,14 +364,47 @@ class LiveContextProvider:
             self.clock_health.observe(reference.timestamp_ms,sent,self.client.clock_ms())
         metadata,values=self.client.post_info('metaAndAssetCtxs')
         self.client.validate_metadata(metadata)
+        metadata=self.client._canonical_metadata(metadata, self.client.api_dex or getattr(self.client, 'dex', 'par'))
         current_hash=fingerprint(metadata)
         if current_hash!=self.metadata_hash:
             raise ExchangeError('MARKET_METADATA_CHANGED')
         self.client.metadata_timestamp_ms=self.client.clock_ms()
         if len(values)!=len(metadata['universe']):
             raise ExchangeError('ASSET_CONTEXT_COUNT_MISMATCH')
-        contexts={row['name']:value for row,value in zip(metadata['universe'],values)
-                  if not row.get('isDelisted')}
+        contexts={}
+        dex_total_oi=decimal(0)
+        for row,value in zip(metadata['universe'],values):
+            if not isinstance(row,dict) or not isinstance(value,dict):
+                raise ExchangeError('ASSET_CONTEXT_INVALID')
+            symbol=row['name']
+            if row.get('isDelisted'):
+                if (getattr(self.client, 'competition_mode', False) and
+                        symbol in set(self.client.api_markets.values())):
+                    raise ExchangeError('PAS_ACTIVE_MARKET_DELISTED')
+                if not getattr(self.client, 'competition_mode', False) and symbol==request.symbol:raise ExchangeError('MARKET_DELISTED')
+                continue
+            try:
+                oi=decimal(value['openInterest'],nonnegative=True)
+                oracle=decimal(value['oraclePx'],positive=True)
+            except (KeyError,TypeError,ValueError) as exc:
+                raise ExchangeError('DEX_OI_AGGREGATE_UNVERIFIABLE') from exc
+            dex_total_oi+=oi*oracle
+            if getattr(self.client, 'competition_mode', False):
+                if symbol in set(self.client.api_markets.values()):
+                    if symbol in contexts:raise ExchangeError('AMBIGUOUS_BTC_ASSET_CONTEXT')
+                    contexts[symbol]=value
+            else:
+                if symbol in contexts:raise ExchangeError('AMBIGUOUS_ASSET_CONTEXT')
+                contexts[symbol]=value
+        if getattr(self.client, 'competition_mode', False):
+            if set(contexts)!=set(self.client.api_markets.values()):
+                raise ExchangeError('PAS_ACTIVE_ASSET_CONTEXT_UNAVAILABLE')
+        elif request.symbol not in contexts:
+            raise ExchangeError('ASSET_CONTEXT_UNAVAILABLE')
+        oi_observed=self.client.clock_ms()
+        self.client.dex_total_oi_notional=dex_total_oi
+        self.client.dex_oi_observed_ms=oi_observed
+        self.client.dex_oi_market_count=len(metadata['universe'])
         quote=make_quote(book,contexts[request.symbol],self.client.clock_ms(),
                          mark_timestamp_ms=self.client.clock_ms())
         readiness=verify_live_account_readiness(self.account,self.signer_address,
@@ -273,4 +428,4 @@ class LiveContextProvider:
         return ValidationContext(self.client.market(request.symbol),current_hash,self.metadata_hash,
             self.client.metadata_timestamp_ms,quote,readiness,positions,orders,active,account_ms,
             limits,contexts,bool(self.feed_ready()) or critical,self.policy_leverage,fills,
-            bool(self.reconciliation_ready()),quote.mark_timestamp_ms)
+            bool(self.reconciliation_ready()),quote.mark_timestamp_ms,dex_total_oi,oi_observed)

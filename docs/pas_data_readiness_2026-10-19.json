@@ -1,0 +1,172 @@
+{
+  "status": "NO_GO_NOT_LIVE_CERTIFIED",
+  "starting_head": "a73f4181b982b427099480f968718aefe1dc052c",
+  "endpoint": "https://api.hyperliquid-testnet.xyz/info",
+  "mapping": {
+    "competition_market": "pas",
+    "api_dex": "pas",
+    "api_market": "pas:BTC",
+    "api_markets": {
+      "BTC": "pas:BTC",
+      "EWY": "pas:EWY"
+    },
+    "collateral_token_name": "USDP",
+    "metadata_timestamp_ms": 1792390129951,
+    "verification": "VERIFIED_FROM_LIVE_PERP_DEX_AND_MARKET_METADATA"
+  },
+  "guarded_observed_utc": "2026-10-19T06:08:49.951948+00:00",
+  "guarded_completed_at_ms": 1792390190444,
+  "markets": {
+    "pas:BTC": {
+      "completed_bars": 0,
+      "consecutive": false,
+      "consecutive_tail_bars": 0,
+      "first_start_ms": null,
+      "last_start_ms": null,
+      "last_close_age_ms": null,
+      "missing_bars": 300,
+      "requested_start_ms": 1792372080000,
+      "requested_end_ms": 1792390079999,
+      "evaluated_at_ms": 1792390130349,
+      "data_gate_passed": false,
+      "reasons": [
+        "INSUFFICIENT_COMPLETED_HISTORY",
+        "COMPLETED_CANDLE_STALE_OR_MISSING",
+        "REQUESTED_COMPLETED_WINDOW_INCOMPLETE"
+      ]
+    },
+    "pas:EWY": {
+      "completed_bars": 47,
+      "consecutive": true,
+      "consecutive_tail_bars": 47,
+      "first_start_ms": 1792372140000,
+      "last_start_ms": 1792374900000,
+      "last_close_age_ms": 15230444,
+      "missing_bars": 253,
+      "requested_start_ms": 1792372140000,
+      "requested_end_ms": 1792390139999,
+      "evaluated_at_ms": 1792390190444,
+      "data_gate_passed": false,
+      "reasons": [
+        "INSUFFICIENT_COMPLETED_HISTORY",
+        "COMPLETED_CANDLE_STALE_OR_MISSING",
+        "REQUESTED_COMPLETED_WINDOW_INCOMPLETE"
+      ]
+    }
+  },
+  "initial_300_window": {
+    "observed_utc": "2026-10-19T06:03:10.810836+00:00",
+    "start_ms": 1792371780000,
+    "end_ms": 1792389779999,
+    "markets": {
+      "pas:BTC": {
+        "completed_count": 0,
+        "first_start_ms": null,
+        "last_start_ms": null,
+        "last_close_age_ms": null,
+        "consecutive": true
+      },
+      "pas:EWY": {
+        "completed_count": 53,
+        "first_start_ms": 1792371780000,
+        "last_start_ms": 1792374900000,
+        "last_close_age_ms": 14830810,
+        "consecutive": true
+      }
+    }
+  },
+  "expanded_probe_before_cap": {
+    "observed_utc": "2026-10-19T06:03:44.652996+00:00",
+    "markets": {
+      "pas:BTC": {
+        "bars": 281,
+        "first_start_ms": 1792337760000,
+        "last_start_ms": 1792354560000,
+        "last_close_age_ms": 35204652
+      },
+      "pas:EWY": {
+        "bars": 3688,
+        "first_start_ms": 1792153680000,
+        "last_start_ms": 1792374900000,
+        "last_close_age_ms": 14864652
+      }
+    }
+  },
+  "oi_limits": {
+    "totalOiCap": "50000000.0",
+    "oiSzCapPerPerp": "10000000000.0",
+    "maxTransferNtl": "1000000000.0",
+    "coinToOiCap": [
+      [
+        "pas:BRENT",
+        "10000000.0"
+      ],
+      [
+        "pas:BTC",
+        "10000000.0"
+      ],
+      [
+        "pas:ETH",
+        "10000000.0"
+      ],
+      [
+        "pas:EWJ",
+        "10000000.0"
+      ],
+      [
+        "pas:EWY",
+        "10000000.0"
+      ],
+      [
+        "pas:GOLD",
+        "10000000.0"
+      ],
+      [
+        "pas:HYPE",
+        "10000000.0"
+      ],
+      [
+        "pas:SP500",
+        "10000000.0"
+      ],
+      [
+        "pas:USDEUR",
+        "10000000.0"
+      ],
+      [
+        "pas:USDJPY",
+        "10000000.0"
+      ]
+    ]
+  },
+  "account_observation": {
+    "identity_certified": false,
+    "funding_verified": false,
+    "account_mode": "unifiedAccount",
+    "spot_collateral_symbols": [
+      "USDPR"
+    ],
+    "pas_positions": 0,
+    "pas_open_orders": 0,
+    "historical_par_fill_count": 2
+  },
+  "stream": {
+    "requested_seconds": 65,
+    "stopped": true,
+    "in_memory_only": true,
+    "cache_automatically_activates_live": false,
+    "live_ready": false,
+    "messages": 147,
+    "reconnections": 0,
+    "errors": [],
+    "last_error": null,
+    "note": "Stopped public collector. A 300-bar pass alone is not the full UTC scanner, account, liquidity or activation gate."
+  },
+  "raw_evidence_sha256": {
+    "initial-public-probe.json": "e89b3d0ebf9c60e67373cf3334b961842b304f292d5238add2c86c6426374bf8",
+    "expanded-and-account-probe.json": "9384b04f2427007c20d19c6df93ba4a58d1e2e1ab27599df8f217380a11095f3",
+    "ws-probe.jsonl": "fef0cac8647a919e608628d909d9bf389c98670d854e10dcde8689b0defce1df",
+    "guarded-candles.jsonl": "a94f6d03d64ffcbeab845861025c5f8647611f4f7bde218fe34195c7a21e6713",
+    "guarded-diagnostic.json": "8721c7517908bad985024d8273e3c16009a3c70eb2bd6ac6ee9d98c3141195f3"
+  }
+}

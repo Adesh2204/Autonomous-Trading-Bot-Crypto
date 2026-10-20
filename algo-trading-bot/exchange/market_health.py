@@ -8,7 +8,7 @@ from .base_exchange import ExchangeError, decimal
 
 def validate_history(symbol, candles, now_ms, required):
     """Validate actual completed UTC bars before they can reach the frozen brain."""
-    if not symbol.startswith(('par:', 'pas:')):
+    if not isinstance(symbol,str) or symbol.count(':') != 1:
         raise ExchangeError('MARKET_IDENTITY_INVALID')
     for c in candles:
         if c.symbol != symbol or c.interval != '1m':
@@ -37,8 +37,7 @@ class MarketHealthManager:
     def __init__(self,symbols,*,history_bars=300,max_candle_age_ms=120000,
                  max_book_age_ms=5000,max_context_age_ms=60000,retry_ms=30000):
         self.symbols=tuple(symbols)
-        if (not self.symbols or any(not s.startswith(('par:', 'pas:')) for s in self.symbols)
-                or len({s.split(':')[0] for s in self.symbols})!=1):
+        if not self.symbols or any(not isinstance(s,str) or s.count(':') != 1 for s in self.symbols):
             raise ExchangeError('MARKET_IDENTITY_INVALID')
         self.history_bars=history_bars
         self.max_candle_age_ms=max_candle_age_ms
@@ -125,7 +124,7 @@ class MarketHealthManager:
                 r.update(healthy=False,quarantined=True)
                 self._transition(s,'RECOVERING',now_ms,tuple(r['reasons'])+('REST_RECOVERY_PENDING',))
 
-    def finish_recovery(self,symbols,now_ms,*,delay_hints=None):
+    def finish_recovery(self,symbols,now_ms,*,delay_hints=None,retry_deadlines_ms=None):
         with self._lock:
             for s in symbols:
                 self.pending.discard(s)
@@ -134,7 +133,9 @@ class MarketHealthManager:
                 delay=min(300000,self.retry_ms*2**min(4,max(0,r.get('consecutive_recovery_attempts',1)-1)))
                 hint=(delay_hints or {}).get(s)
                 if hint is not None:delay=min(300000,max(delay,int(hint)))
-                r['next_retry_at_ms']=now_ms+delay
+                deadline=(retry_deadlines_ms or {}).get(s)
+                if deadline is None:r['next_retry_at_ms']=now_ms+delay
+                else:r['next_retry_at_ms']=min(now_ms+300000,max(now_ms,int(deadline)))
 
     def due(self,now_ms):
         with self._lock:

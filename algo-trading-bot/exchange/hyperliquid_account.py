@@ -26,11 +26,11 @@ class HyperliquidAccount:
             raise ExchangeError('ACCOUNT_NOT_CONFIGURED')
         self.client = client
         self.team_address = team_address
-        self.venue = venue_profile(getattr(client,'dex','par'))
+        self.venue = venue_profile('pas' if getattr(client,'competition_mode',False) else getattr(client,'dex','par'))
 
     def _query(self, query, **parameters):
         if not self.client.ready:
-            raise VenueMismatch('PAR_STARTUP_CHECK_REQUIRED')
+            raise VenueMismatch('PAS_STARTUP_CHECK_REQUIRED' if getattr(self.client,'competition_mode',False) else self.client.dex.upper()+'_STARTUP_CHECK_REQUIRED')
         return self.client.post_info(query, user=self.team_address, **parameters)
 
     def get_positions(self):
@@ -104,10 +104,13 @@ class HyperliquidAccount:
                 # userFills spans venues and has no dex argument. Filter explicitly.
                 if not isinstance(symbol, str):
                     raise ExchangeError('INVALID_ACCOUNT_FILLS')
-                if not symbol.startswith(self.venue.prefix):
+                if getattr(self.client,'competition_mode',False):
+                    if symbol not in self.client.api_markets.values():
+                        continue
+                elif not symbol.startswith(self.venue.prefix):
                     continue
                 self.client.market(symbol)
-                if row['side'] not in {'B', 'A'} or row['feeToken'] != self.venue.collateral:
+                if row['side'] not in {'B', 'A'} or row['feeToken'] != self.client.collateral_token_name:
                     raise ExchangeError('INVALID_ACCOUNT_FILLS')
                 fill = Fill(symbol, timestamp(row['time']), event_id(row['tid']), event_id(row['oid']),
                             'BUY' if row['side'] == 'B' else 'SELL',
@@ -168,14 +171,17 @@ class HyperliquidAccount:
                 symbol=delta['coin']
                 if not isinstance(symbol,str):
                     raise ExchangeError('INVALID_ACCOUNT_FUNDING')
-                if not symbol.startswith(self.venue.prefix):
+                if getattr(self.client,'competition_mode',False):
+                    if symbol not in self.client.api_markets.values():
+                        continue
+                elif not symbol.startswith(self.venue.prefix):
                     continue
                 self.client.market(symbol)
                 if delta['type']!='funding' or not start_ms<=timestamp(row['time'])<=end_ms:
                     raise ExchangeError('INVALID_ACCOUNT_FUNDING')
                 # The protocol calls the collateral amount "usdc" even for
                 # HIP-3 collateral. Use the reported signed amount verbatim.
-                event=AccountFunding(symbol,row['time'],row['hash'],delta['usdc'],delta['szi'],delta['fundingRate'],self.venue.collateral)
+                event=AccountFunding(symbol,row['time'],row['hash'],delta['usdc'],delta['szi'],delta['fundingRate'],self.client.collateral_token_name)
                 clocks=timing(self.client.clock_ms(),exchange_ms=event.timestamp_ms,received_ms=self.client.last_received_ms,source='EXCHANGE_REPORTED_USER_FUNDING')
                 event=replace(event,**{k:clocks[k] for k in ('exchange_ts','received_ts','processed_ts')})
                 prior=events.get(event.identity)
@@ -221,7 +227,7 @@ class HyperliquidAccount:
 
     def get_equity(self):
         mode = self._query('userAbstraction')
-        if self.venue.dex == 'pas' and mode == 'disabled':
+        if getattr(self.client,'competition_mode',False) and mode == 'disabled':
             state = self._query('clearinghouseState')
             try:
                 margin = state['marginSummary']
@@ -235,26 +241,34 @@ class HyperliquidAccount:
         state = self._query('clearinghouseState')
         spot = self._query('spotClearinghouseState')
         try:
+            if self.client.collateral_token_name != self.venue.collateral:
+                raise ExchangeError('COLLATERAL_TOKEN_MAPPING_REQUIRED')
             token = self.client.collateral_token_id
             if type(token) is not int or token < 0:
                 raise ExchangeError('COLLATERAL_TOKEN_MAPPING_REQUIRED')
-            balances = [row for row in spot['balances'] if row['coin'] == self.venue.collateral]
-            if len(balances) > 1:
+            spot_balances = spot['balances']
+            if not isinstance(spot_balances, list) or any(not isinstance(row, dict) for row in spot_balances):
+                raise ExchangeError('COLLATERAL_BALANCE_UNAVAILABLE')
+            balances = [row for row in spot_balances if row.get('coin') == self.client.collateral_token_name]
+            token_balances = [row for row in spot_balances if row.get('token') == token]
+            if len(balances) > 1 or len(token_balances) > 1:
                 raise ExchangeError('AMBIGUOUS_COLLATERAL_BALANCE')
-            token_balances = [row for row in spot['balances'] if row.get('token') == token]
-            if balances and (type(balances[0].get('token')) is not int or
-                             balances[0]['token'] != token or len(token_balances) != 1):
+            if not balances and not token_balances:
+                # Zero balances may be omitted by the endpoint. Keep zero as
+                # zero; never infer collateral from another coin/token row.
+                collateral = decimal(0)
+            elif (len(balances) != 1 or len(token_balances) != 1 or balances[0] is not token_balances[0] or
+                    type(balances[0].get('token')) is not int or balances[0]['token'] != token):
                 raise ExchangeError('COLLATERAL_TOKEN_MISMATCH')
-            if not balances and token_balances:
-                raise ExchangeError('COLLATERAL_TOKEN_MISMATCH')
-            collateral = decimal(balances[0]['total'], nonnegative=True) if balances else decimal(0)
-            # Hyperliquid unified balances/holds live in spotClearinghouseState;
-            # per-DEX marginSummary/accountValue and withdrawable are not
-            # meaningful. Preserve the reported USDPR balance once, without
-            # adding per-DEX equity or unrealized P&L to it. Trading capacity
-            # still comes separately from activeAssetData for the exact side.
+            else:
+                collateral = decimal(balances[0]['total'], nonnegative=True)
+            # Unified mode's documented source of truth is spotClearinghouseState;
+            # per-DEX equity summaries and unrealized PnL are not extra unified
+            # NAV components and adding them would misstate/double-count equity.
             margin = decimal(0)
             seen = set()
+            if not isinstance(state, dict) or not isinstance(state.get('assetPositions'), list):
+                raise ExchangeError('ACCOUNT_EQUITY_UNAVAILABLE')
             for row in state['assetPositions']:
                 position = row['position']
                 symbol = position['coin']
@@ -265,12 +279,12 @@ class HyperliquidAccount:
                 if decimal(position['szi']):
                     margin += decimal(position['marginUsed'], nonnegative=True)
             return AccountEquity(collateral, collateral, margin, None,
-                                 'spotClearinghouseState.'+self.venue.collateral+'.total')
+                                 'spotClearinghouseState.' + str(self.client.collateral_token_name) + '.total')
         except (KeyError, TypeError) as exc:
             raise ExchangeError('ACCOUNT_EQUITY_UNAVAILABLE') from exc
 
     def get_balance(self):
-        """Reported USDPR collateral; never inferred free margin."""
+        """Reported runtime-discovered PAS collateral; never inferred free margin."""
         return self.get_equity().collateral_balance
 
     def get_funding_history(self, start_ms, end_ms=None):

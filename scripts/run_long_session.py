@@ -9,6 +9,8 @@ def main():
     p.add_argument('--mandate',required=True);p.add_argument('--acceptance',required=True)
     p.add_argument('--release',required=True);p.add_argument('--native-protection-evidence',required=True)
     a=p.parse_args()
+    from exchange.par_retirement import reject_retired_scored_session_route
+    reject_retired_scored_session_route()
     # Skip dotenv wallet settings until the exact-approved builder explicitly
     # calls the existing signer loader after all evidence gates have passed.
     os.environ['ANCHORIUM_PUBLIC_ONLY']='true'

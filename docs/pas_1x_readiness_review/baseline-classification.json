@@ -1,0 +1,1055 @@
+{
+  "source_revision": {
+    "repository": "/workspace/postmerge-audit/repo",
+    "commit": "d629e1bdecfeecfd70f4815dd82c3d1235ec1cd5"
+  },
+  "input_xml": "/workspace/pas-readiness-current/main-broad-venv.xml",
+  "classification_scope": "Read-only review of test outcomes and source at the stated commit; no production code, signing, network, secrets, or gates were changed.",
+  "counts": {
+    "passed": 1982,
+    "failed": 121,
+    "errors": 1278,
+    "skipped": 0,
+    "total": 3381
+  },
+  "failure_classifications": [
+    {
+      "category": "legacy_fixture_or_policy_mismatch",
+      "count": 85,
+      "subgroups": {
+        "stale/incomplete fixture, environment, mutation, or policy assertion": 14,
+        "non-active PAS market expected by test": 8,
+        "missing_explicit_PAS_DEX_mapping (test blocked)": 60,
+        "missing_fresh_DEX_discovery_fixture": 3
+      },
+      "interpretation": "Tests are blocked by missing/mismatched static fixtures or stale policy expectations. In particular, the 60 PAS_DEX_MAPPING_UNVERIFIED failures are not proof of live mapping readiness; live metadata was not queried."
+    },
+    {
+      "category": "intentional_lockout_or_signing_route_incompatibility",
+      "count": 7,
+      "subgroups": {
+        "RETIRED_PAR_WRITE_ROUTE": 3,
+        "RETIRED_SCORED_SESSION_ROUTE": 2,
+        "PAS_CANNOT_REUSE_PRACTICE_CONTRACT": 1,
+        "RETIRED_AUTHORIZED_TERMINAL_ROUTE": 1
+      },
+      "interpretation": "Retired routes/old contract are rejected by explicit source guards. This does not prove replacement route readiness."
+    },
+    {
+      "category": "possible_actual_pas_runtime_regression",
+      "count": 3,
+      "interpretation": "Three entry-fault variants report FLAT_VERIFIED instead of REJECTED/UNKNOWN/RECOVERY_REQUIRED. Potential PAS behavior defect; not proven harmless and not fixed."
+    },
+    {
+      "category": "genuinely_unresolved_safety_lockout",
+      "count": 25,
+      "subgroups": {
+        "UNKNOWN_INTENT_REMAINS_LOCKED": 13,
+        "STARTUP_ENTRY_LOCK_REQUIRED": 12
+      },
+      "interpretation": "Do not waive these as obsolete tests. Startup lock readiness has not been demonstrated; UNKNOWN recovery remains locked because the proof fails certification. Keep both guards; investigate with valid evidence."
+    },
+    {
+      "category": "confirmed_non_pas_paper_collateral_defect",
+      "count": 1,
+      "interpretation": "One concrete PAR paper-ledger collateral mismatch (USDPR expected, USDP emitted), outside PAS live runtime."
+    }
+  ],
+  "error_classification": {
+    "count": 1278,
+    "root_cause": "PAS_DEX_MAPPING_UNVERIFIED",
+    "count_by_signature": {
+      "PAS_DEX_MAPPING_UNVERIFIED": 1278
+    },
+    "interpretation": "All setup errors terminate at the fail-closed PAS DEX identity resolver. Static fixtures do not provide a unique explicit PAS mapping. No live mapping claim is made."
+  },
+  "failure_cases": [
+    {
+      "id": "test_activation_v3::test_configuration_evidence_rejected_before_key_access[action]",
+      "classname": "test_activation_v3",
+      "testcase": "test_configuration_evidence_rejected_before_key_access[action]",
+      "observed": "Failed: DID NOT RAISE <class 'exchange.base_exchange.ExchangeError'>",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Test fails on stale/incomplete fixture, environment snapshot, no-op mutation, or old policy expectation; source/test mismatch prevents a meaningful runtime assertion."
+    },
+    {
+      "id": "test_activation_v3::test_configuration_transport_offline_pas_exact_action_one_use",
+      "classname": "test_activation_v3",
+      "testcase": "test_configuration_transport_offline_pas_exact_action_one_use",
+      "observed": "exchange.base_exchange.ExchangeError: RETIRED_PAR_WRITE_ROUTE",
+      "classification": "intentional_lockout_or_signing_route_incompatibility",
+      "basis": "Current source explicitly retires this legacy write/authorized-session route or disallows reusing a practice contract; tests expect the retired contract. Keep the lockout; this is not evidence that the replacement path works."
+    },
+    {
+      "id": "test_activation_v3::test_serialized_discovery_embeds_the_original_plan_without_hash_recursion",
+      "classname": "test_activation_v3",
+      "testcase": "test_serialized_discovery_embeds_the_original_plan_without_hash_recursion",
+      "observed": "Failed: DID NOT RAISE <class 'exchange.base_exchange.ExchangeError'>",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Test fails on stale/incomplete fixture, environment snapshot, no-op mutation, or old policy expectation; source/test mismatch prevents a meaningful runtime assertion."
+    },
+    {
+      "id": "test_btc_ewy_v4::test_v4_scope_and_runtime_metadata_not_hardcoded[pas:BTC]",
+      "classname": "test_btc_ewy_v4",
+      "testcase": "test_v4_scope_and_runtime_metadata_not_hardcoded[pas:BTC]",
+      "observed": "AssertionError: assert (2 == 10) + where 2 = len(mappingproxy({'pas:BTC': MarketSpec(symbol='pas:BTC', size_decimals=5, max_leverage=10, asset_id=130000, margin_tiers=...: MarketSpec(symbol='pas:EWY', size_decimals=5, max_leverage=10, asset_id=130001, margin_tiers=((Decimal('0'), 10),))})) + where mappingproxy({'pas:BTC': MarketSpec(symbol='pas:BTC', size_decimals=5, max_leverage=10, asset_id=130000, margin_tiers=...: MarketSpec(symbol='pas:EWY', size_decimals=5, max_leverage=10, asset_id=130001",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Test fails on stale/incomplete fixture, environment snapshot, no-op mutation, or old policy expectation; source/test mismatch prevents a meaningful runtime assertion."
+    },
+    {
+      "id": "test_btc_ewy_v4::test_v4_scope_and_runtime_metadata_not_hardcoded[pas:EWY]",
+      "classname": "test_btc_ewy_v4",
+      "testcase": "test_v4_scope_and_runtime_metadata_not_hardcoded[pas:EWY]",
+      "observed": "AssertionError: assert (2 == 10) + where 2 = len(mappingproxy({'pas:BTC': MarketSpec(symbol='pas:BTC', size_decimals=5, max_leverage=10, asset_id=130000, margin_tiers=...: MarketSpec(symbol='pas:EWY', size_decimals=5, max_leverage=10, asset_id=130001, margin_tiers=((Decimal('0'), 10),))})) + where mappingproxy({'pas:BTC': MarketSpec(symbol='pas:BTC', size_decimals=5, max_leverage=10, asset_id=130000, margin_tiers=...: MarketSpec(symbol='pas:EWY', size_decimals=5, max_leverage=10, asset_id=130001",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Test fails on stale/incomplete fixture, environment snapshot, no-op mutation, or old policy expectation; source/test mismatch prevents a meaningful runtime assertion."
+    },
+    {
+      "id": "test_btc_ewy_v4::test_v4_actual_signer_boundary_blocks_unapproved_entries_before_any_signature[pas:ETH]",
+      "classname": "test_btc_ewy_v4",
+      "testcase": "test_v4_actual_signer_boundary_blocks_unapproved_entries_before_any_signature[pas:ETH]",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_ACTIVE_MARKET_REQUIRED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Test requests a non-active PAS market; source policy is BTC/EWY only, so market resolution rejects before the signer-boundary assertion."
+    },
+    {
+      "id": "test_btc_ewy_v4::test_v4_actual_signer_boundary_blocks_unapproved_entries_before_any_signature[pas:HYPE]",
+      "classname": "test_btc_ewy_v4",
+      "testcase": "test_v4_actual_signer_boundary_blocks_unapproved_entries_before_any_signature[pas:HYPE]",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_ACTIVE_MARKET_REQUIRED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Test requests a non-active PAS market; source policy is BTC/EWY only, so market resolution rejects before the signer-boundary assertion."
+    },
+    {
+      "id": "test_btc_ewy_v4::test_v4_actual_signer_boundary_blocks_unapproved_entries_before_any_signature[pas:SP500]",
+      "classname": "test_btc_ewy_v4",
+      "testcase": "test_v4_actual_signer_boundary_blocks_unapproved_entries_before_any_signature[pas:SP500]",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_ACTIVE_MARKET_REQUIRED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Test requests a non-active PAS market; source policy is BTC/EWY only, so market resolution rejects before the signer-boundary assertion."
+    },
+    {
+      "id": "test_btc_ewy_v4::test_v4_actual_signer_boundary_blocks_unapproved_entries_before_any_signature[pas:GOLD]",
+      "classname": "test_btc_ewy_v4",
+      "testcase": "test_v4_actual_signer_boundary_blocks_unapproved_entries_before_any_signature[pas:GOLD]",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_ACTIVE_MARKET_REQUIRED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Test requests a non-active PAS market; source policy is BTC/EWY only, so market resolution rejects before the signer-boundary assertion."
+    },
+    {
+      "id": "test_btc_ewy_v4::test_v4_actual_signer_boundary_blocks_unapproved_entries_before_any_signature[pas:EWJ]",
+      "classname": "test_btc_ewy_v4",
+      "testcase": "test_v4_actual_signer_boundary_blocks_unapproved_entries_before_any_signature[pas:EWJ]",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_ACTIVE_MARKET_REQUIRED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Test requests a non-active PAS market; source policy is BTC/EWY only, so market resolution rejects before the signer-boundary assertion."
+    },
+    {
+      "id": "test_btc_ewy_v4::test_v4_actual_signer_boundary_blocks_unapproved_entries_before_any_signature[pas:BRENT]",
+      "classname": "test_btc_ewy_v4",
+      "testcase": "test_v4_actual_signer_boundary_blocks_unapproved_entries_before_any_signature[pas:BRENT]",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_ACTIVE_MARKET_REQUIRED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Test requests a non-active PAS market; source policy is BTC/EWY only, so market resolution rejects before the signer-boundary assertion."
+    },
+    {
+      "id": "test_btc_ewy_v4::test_v4_actual_signer_boundary_blocks_unapproved_entries_before_any_signature[pas:USDJPY]",
+      "classname": "test_btc_ewy_v4",
+      "testcase": "test_v4_actual_signer_boundary_blocks_unapproved_entries_before_any_signature[pas:USDJPY]",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_ACTIVE_MARKET_REQUIRED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Test requests a non-active PAS market; source policy is BTC/EWY only, so market resolution rejects before the signer-boundary assertion."
+    },
+    {
+      "id": "test_btc_ewy_v4::test_v4_actual_signer_boundary_blocks_unapproved_entries_before_any_signature[pas:USDEUR]",
+      "classname": "test_btc_ewy_v4",
+      "testcase": "test_v4_actual_signer_boundary_blocks_unapproved_entries_before_any_signature[pas:USDEUR]",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_ACTIVE_MARKET_REQUIRED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Test requests a non-active PAS market; source policy is BTC/EWY only, so market resolution rejects before the signer-boundary assertion."
+    },
+    {
+      "id": "test_btc_ewy_v4::test_v4_targeted_configuration_preserves_full_account_evidence",
+      "classname": "test_btc_ewy_v4",
+      "testcase": "test_v4_targeted_configuration_preserves_full_account_evidence",
+      "observed": "AssertionError: assert ({'pas:BTC', 'pas:EWY'} == frozenset({'p...', 'pas:EWY'}) Use -v to get more diff and 2 == 10) + where 2 = len([{'active_asset': {'coin': 'pas:BTC', 'leverage': {'type': 'cross', 'value': 1}, 'user': '0x94EA16ecE139e246A1D84E71aa...erved_ms': 1792411200000, 'spec': {'asset_id': 2810001, 'max_leverage': 20, 'symbol': 'pas:EWY'}, 'symbol': 'pas:EWY'}])",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Test fails on stale/incomplete fixture, environment snapshot, no-op mutation, or old policy expectation; source/test mismatch prevents a meaningful runtime assertion."
+    },
+    {
+      "id": "test_btc_ewy_v4::test_v4_idle_pas_buying_power_refresh_never_queries_par",
+      "classname": "test_btc_ewy_v4",
+      "testcase": "test_v4_idle_pas_buying_power_refresh_never_queries_par",
+      "observed": "AttributeError: 'LiveExecutionSession' object has no attribute 'primary_market'",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Test fails on stale/incomplete fixture, environment snapshot, no-op mutation, or old policy expectation; source/test mismatch prevents a meaningful runtime assertion."
+    },
+    {
+      "id": "test_btc_ewy_v4::test_v4_actual_pas_result_manifest_uses_pas_usdp_and_two_market_scope",
+      "classname": "test_btc_ewy_v4",
+      "testcase": "test_v4_actual_pas_result_manifest_uses_pas_usdp_and_two_market_scope",
+      "observed": "AssertionError: assert (2 == 10) + where 2 = len(['pas:BTC', 'pas:EWY'])",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Test fails on stale/incomplete fixture, environment snapshot, no-op mutation, or old policy expectation; source/test mismatch prevents a meaningful runtime assertion."
+    },
+    {
+      "id": "test_candle_availability_v7::test_adaptive_hint_is_bounded_and_requires_twenty_live_intervals",
+      "classname": "test_candle_availability_v7",
+      "testcase": "test_adaptive_hint_is_bounded_and_requires_twenty_live_intervals",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_candle_availability_v7::test_healthy_symbol_independent_and_genuine_gap_recovery_recorded",
+      "classname": "test_candle_availability_v7",
+      "testcase": "test_healthy_symbol_independent_and_genuine_gap_recovery_recorded",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_candle_availability_v7::test_dashboard_has_exact_candle_reasons_and_independent_transport",
+      "classname": "test_candle_availability_v7",
+      "testcase": "test_dashboard_has_exact_candle_reasons_and_independent_transport",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_candle_availability_v7::test_recovery_cache_repair_is_distinct_from_first_source_observation",
+      "classname": "test_candle_availability_v7",
+      "testcase": "test_recovery_cache_repair_is_distinct_from_first_source_observation",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_candle_integrity_v6::test_recorded_zero_atr_is_valid_but_never_qualified[brent]",
+      "classname": "test_candle_integrity_v6",
+      "testcase": "test_recorded_zero_atr_is_valid_but_never_qualified[brent]",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_candle_integrity_v6::test_recorded_zero_atr_is_valid_but_never_qualified[ewy]",
+      "classname": "test_candle_integrity_v6",
+      "testcase": "test_recorded_zero_atr_is_valid_but_never_qualified[ewy]",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_candle_integrity_v6::test_gapped_rest_response_can_join_retained_genuine_rows",
+      "classname": "test_candle_integrity_v6",
+      "testcase": "test_gapped_rest_response_can_join_retained_genuine_rows",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_candle_integrity_v6::test_completed_conflict_preserves_cache_and_blocks_only_affected_symbol[WS]",
+      "classname": "test_candle_integrity_v6",
+      "testcase": "test_completed_conflict_preserves_cache_and_blocks_only_affected_symbol[WS]",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_candle_integrity_v6::test_completed_conflict_preserves_cache_and_blocks_only_affected_symbol[REST]",
+      "classname": "test_candle_integrity_v6",
+      "testcase": "test_completed_conflict_preserves_cache_and_blocks_only_affected_symbol[REST]",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_candle_integrity_v6::test_completed_conflict_preserves_cache_and_blocks_only_affected_symbol[SCANNER]",
+      "classname": "test_candle_integrity_v6",
+      "testcase": "test_completed_conflict_preserves_cache_and_blocks_only_affected_symbol[SCANNER]",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_candle_integrity_v6::test_open_row_can_evolve_but_cannot_replace_final_fact",
+      "classname": "test_candle_integrity_v6",
+      "testcase": "test_open_row_can_evolve_but_cannot_replace_final_fact",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_candle_integrity_v6::test_audit_stages_use_same_request_and_never_capture_account_payload",
+      "classname": "test_candle_integrity_v6",
+      "testcase": "test_audit_stages_use_same_request_and_never_capture_account_payload",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_candle_integrity_v6::test_ws_batch_audit_preserves_original_payload_once",
+      "classname": "test_candle_integrity_v6",
+      "testcase": "test_ws_batch_audit_preserves_original_payload_once",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_candle_integrity_v6::test_scanner_integrity_latch_requires_validated_snapshot_to_restore[CONFLICTING_COMPLETED_CANDLES]",
+      "classname": "test_candle_integrity_v6",
+      "testcase": "test_scanner_integrity_latch_requires_validated_snapshot_to_restore[CONFLICTING_COMPLETED_CANDLES]",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_candle_integrity_v6::test_scanner_integrity_latch_requires_validated_snapshot_to_restore[SCANNER_NUMERIC_INVALID:VWAP:NONFINITE_OR_NOT_DECIMAL]",
+      "classname": "test_candle_integrity_v6",
+      "testcase": "test_scanner_integrity_latch_requires_validated_snapshot_to_restore[SCANNER_NUMERIC_INVALID:VWAP:NONFINITE_OR_NOT_DECIMAL]",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_crypto_audit_replay::test_explicit_wrong_network_or_dex_revokes_local_execution[HL_DEX-xyz-PAR_DEX_REQUIRED]",
+      "classname": "test_crypto_audit_replay",
+      "testcase": "test_explicit_wrong_network_or_dex_revokes_local_execution[HL_DEX-xyz-PAR_DEX_REQUIRED]",
+      "observed": "Failed: DID NOT RAISE <class 'venue_config.MigrationPolicyError'>",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Test fails on stale/incomplete fixture, environment snapshot, no-op mutation, or old policy expectation; source/test mismatch prevents a meaningful runtime assertion."
+    },
+    {
+      "id": "test_crypto_audit_replay::test_account_future_aliases_are_read_only_and_preserve_actual_cash",
+      "classname": "test_crypto_audit_replay",
+      "testcase": "test_account_future_aliases_are_read_only_and_preserve_actual_cash",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_crypto_paper_infrastructure::test_runtime_universe_includes_new_par_markets_and_skips_delisted_nonrequired",
+      "classname": "test_crypto_paper_infrastructure",
+      "testcase": "test_runtime_universe_includes_new_par_markets_and_skips_delisted_nonrequired",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_crypto_paper_infrastructure::test_runtime_margin_table_is_used_and_changes_revoke_registry",
+      "classname": "test_crypto_paper_infrastructure",
+      "testcase": "test_runtime_margin_table_is_used_and_changes_revoke_registry",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_crypto_paper_infrastructure::test_paper_account_implements_generic_positions_fills_and_equity",
+      "classname": "test_crypto_paper_infrastructure",
+      "testcase": "test_paper_account_implements_generic_positions_fills_and_equity",
+      "observed": "AssertionError: assert (1 == 1 and 'USDP' == 'USDPR' + where 1 = len([Fill(symbol='par:BTC', timestamp_ms=1790942400000, trade_id='paper-fill-e9a6358329b146559a9dce7edde6dad3', order_id='...d_pnl=None, start_position=None, source='LOCAL_PAPER_BBO_FILL', exchange_ts=None, received_ts=None, processed_ts=None)]) - USDPR ? - + USDP)",
+      "classification": "confirmed_non_pas_paper_collateral_defect",
+      "basis": "PAR paper-account test expects USDPR, but PaperExecution/PaperFill currently default to USDP and the valuation source reports PAPER_USDPR_MARK_ACCOUNTING; this is a concrete non-PAS collateral mismatch."
+    },
+    {
+      "id": "test_exit_nontransmission_barrier::test_valid_certificate_settles_only_historical_intent_and_records_identity",
+      "classname": "test_exit_nontransmission_barrier",
+      "testcase": "test_valid_certificate_settles_only_historical_intent_and_records_identity",
+      "observed": "exchange.base_exchange.ExchangeError: UNKNOWN_INTENT_REMAINS_LOCKED",
+      "classification": "genuinely_unresolved_safety_lockout",
+      "basis": "Append-only proof did not certify, so UNKNOWN remained locked. The archived proof embeds an obsolete absolute archive path while verifier compares the entire source descriptor; positive recovery semantics remain unverified."
+    },
+    {
+      "id": "test_exit_nontransmission_barrier::test_wrong_or_contradicted_certificate_never_settles_exit[tampered_row]",
+      "classname": "test_exit_nontransmission_barrier",
+      "testcase": "test_wrong_or_contradicted_certificate_never_settles_exit[tampered_row]",
+      "observed": "exchange.base_exchange.ExchangeError: UNKNOWN_INTENT_REMAINS_LOCKED",
+      "classification": "genuinely_unresolved_safety_lockout",
+      "basis": "Append-only proof did not certify, so UNKNOWN remained locked. The archived proof embeds an obsolete absolute archive path while verifier compares the entire source descriptor; positive recovery semantics remain unverified."
+    },
+    {
+      "id": "test_exit_nontransmission_barrier::test_wrong_or_contradicted_certificate_never_settles_exit[later_transmission]",
+      "classname": "test_exit_nontransmission_barrier",
+      "testcase": "test_wrong_or_contradicted_certificate_never_settles_exit[later_transmission]",
+      "observed": "exchange.base_exchange.ExchangeError: UNKNOWN_INTENT_REMAINS_LOCKED",
+      "classification": "genuinely_unresolved_safety_lockout",
+      "basis": "Append-only proof did not certify, so UNKNOWN remained locked. The archived proof embeds an obsolete absolute archive path while verifier compares the entire source descriptor; positive recovery semantics remain unverified."
+    },
+    {
+      "id": "test_exit_nontransmission_barrier::test_valid_certificate_cannot_suppress_other_unresolved_order[PREPARED]",
+      "classname": "test_exit_nontransmission_barrier",
+      "testcase": "test_valid_certificate_cannot_suppress_other_unresolved_order[PREPARED]",
+      "observed": "exchange.base_exchange.ExchangeError: UNKNOWN_INTENT_REMAINS_LOCKED",
+      "classification": "genuinely_unresolved_safety_lockout",
+      "basis": "Append-only proof did not certify, so UNKNOWN remained locked. The archived proof embeds an obsolete absolute archive path while verifier compares the entire source descriptor; positive recovery semantics remain unverified."
+    },
+    {
+      "id": "test_exit_nontransmission_barrier::test_valid_certificate_cannot_suppress_other_unresolved_order[SUBMITTED]",
+      "classname": "test_exit_nontransmission_barrier",
+      "testcase": "test_valid_certificate_cannot_suppress_other_unresolved_order[SUBMITTED]",
+      "observed": "exchange.base_exchange.ExchangeError: UNKNOWN_INTENT_REMAINS_LOCKED",
+      "classification": "genuinely_unresolved_safety_lockout",
+      "basis": "Append-only proof did not certify, so UNKNOWN remained locked. The archived proof embeds an obsolete absolute archive path while verifier compares the entire source descriptor; positive recovery semantics remain unverified."
+    },
+    {
+      "id": "test_exit_nontransmission_barrier::test_valid_certificate_cannot_suppress_other_unresolved_order[UNKNOWN]",
+      "classname": "test_exit_nontransmission_barrier",
+      "testcase": "test_valid_certificate_cannot_suppress_other_unresolved_order[UNKNOWN]",
+      "observed": "exchange.base_exchange.ExchangeError: UNKNOWN_INTENT_REMAINS_LOCKED",
+      "classification": "genuinely_unresolved_safety_lockout",
+      "basis": "Append-only proof did not certify, so UNKNOWN remained locked. The archived proof embeds an obsolete absolute archive path while verifier compares the entire source descriptor; positive recovery semantics remain unverified."
+    },
+    {
+      "id": "test_exit_nontransmission_barrier::test_valid_certificate_cannot_suppress_other_unresolved_order[OPEN]",
+      "classname": "test_exit_nontransmission_barrier",
+      "testcase": "test_valid_certificate_cannot_suppress_other_unresolved_order[OPEN]",
+      "observed": "exchange.base_exchange.ExchangeError: UNKNOWN_INTENT_REMAINS_LOCKED",
+      "classification": "genuinely_unresolved_safety_lockout",
+      "basis": "Append-only proof did not certify, so UNKNOWN remained locked. The archived proof embeds an obsolete absolute archive path while verifier compares the entire source descriptor; positive recovery semantics remain unverified."
+    },
+    {
+      "id": "test_exit_nontransmission_barrier::test_valid_certificate_cannot_suppress_other_unresolved_order[CANCEL_PENDING]",
+      "classname": "test_exit_nontransmission_barrier",
+      "testcase": "test_valid_certificate_cannot_suppress_other_unresolved_order[CANCEL_PENDING]",
+      "observed": "exchange.base_exchange.ExchangeError: UNKNOWN_INTENT_REMAINS_LOCKED",
+      "classification": "genuinely_unresolved_safety_lockout",
+      "basis": "Append-only proof did not certify, so UNKNOWN remained locked. The archived proof embeds an obsolete absolute archive path while verifier compares the entire source descriptor; positive recovery semantics remain unverified."
+    },
+    {
+      "id": "test_exit_nontransmission_barrier::test_valid_certificate_cannot_suppress_other_unresolved_order[PARTIALLY_FILLED]",
+      "classname": "test_exit_nontransmission_barrier",
+      "testcase": "test_valid_certificate_cannot_suppress_other_unresolved_order[PARTIALLY_FILLED]",
+      "observed": "exchange.base_exchange.ExchangeError: UNKNOWN_INTENT_REMAINS_LOCKED",
+      "classification": "genuinely_unresolved_safety_lockout",
+      "basis": "Append-only proof did not certify, so UNKNOWN remained locked. The archived proof embeds an obsolete absolute archive path while verifier compares the entire source descriptor; positive recovery semantics remain unverified."
+    },
+    {
+      "id": "test_exit_nontransmission_barrier::test_valid_certificate_does_not_override_open_orders_or_management",
+      "classname": "test_exit_nontransmission_barrier",
+      "testcase": "test_valid_certificate_does_not_override_open_orders_or_management",
+      "observed": "exchange.base_exchange.ExchangeError: UNKNOWN_INTENT_REMAINS_LOCKED",
+      "classification": "genuinely_unresolved_safety_lockout",
+      "basis": "Append-only proof did not certify, so UNKNOWN remained locked. The archived proof embeds an obsolete absolute archive path while verifier compares the entire source descriptor; positive recovery semantics remain unverified."
+    },
+    {
+      "id": "test_external_data_v7::test_external_record_cannot_overwrite_native_cache_or_account_truth",
+      "classname": "test_external_data_v7",
+      "testcase": "test_external_record_cannot_overwrite_native_cache_or_account_truth",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_external_data_v7::test_as_of_reception_prevents_future_leakage_and_stale_signal",
+      "classname": "test_external_data_v7",
+      "testcase": "test_as_of_reception_prevents_future_leakage_and_stale_signal",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_external_data_v7::test_research_outage_does_not_change_native_engine",
+      "classname": "test_external_data_v7",
+      "testcase": "test_research_outage_does_not_change_native_engine",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_external_data_v7::test_native_quote_mark_context_must_also_be_fresh",
+      "classname": "test_external_data_v7",
+      "testcase": "test_native_quote_mark_context_must_also_be_fresh",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_feed_hardening::test_open_bar_does_not_evict_completed_history",
+      "classname": "test_feed_hardening",
+      "testcase": "test_open_bar_does_not_evict_completed_history",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_feed_hardening::test_old_generation_callbacks_cannot_mutate_current_book",
+      "classname": "test_feed_hardening",
+      "testcase": "test_old_generation_callbacks_cannot_mutate_current_book",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_feed_hardening::test_single_reconnect_owner",
+      "classname": "test_feed_hardening",
+      "testcase": "test_single_reconnect_owner",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_feed_hardening::test_subscription_set_is_reset_and_idempotent",
+      "classname": "test_feed_hardening",
+      "testcase": "test_subscription_set_is_reset_and_idempotent",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_feed_hardening::test_actual_venue_acknowledgement_defaults_match_requested_book",
+      "classname": "test_feed_hardening",
+      "testcase": "test_actual_venue_acknowledgement_defaults_match_requested_book",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_feed_hardening::test_read_cancellation_is_cleared_before_next_connection_startup",
+      "classname": "test_feed_hardening",
+      "testcase": "test_read_cancellation_is_cleared_before_next_connection_startup",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_feed_hardening::test_receiver_stays_responsive_during_slow_rest_repair",
+      "classname": "test_feed_hardening",
+      "testcase": "test_receiver_stays_responsive_during_slow_rest_repair",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_feed_hardening::test_rest_retry_exhaustion_does_not_reconnect_a_healthy_socket",
+      "classname": "test_feed_hardening",
+      "testcase": "test_rest_retry_exhaustion_does_not_reconnect_a_healthy_socket",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_feed_hardening::test_history_repair_is_bounded_and_never_fills_a_missing_bar",
+      "classname": "test_feed_hardening",
+      "testcase": "test_history_repair_is_bounded_and_never_fills_a_missing_bar",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_feed_hardening::test_close_frame_retains_server_code_and_reason",
+      "classname": "test_feed_hardening",
+      "testcase": "test_close_frame_retains_server_code_and_reason",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_hackathon_certification::test_runtime_exports_after_cycle_and_before_close",
+      "classname": "test_hackathon_certification",
+      "testcase": "test_runtime_exports_after_cycle_and_before_close",
+      "observed": "AttributeError: 'types.SimpleNamespace' object has no attribute 'journal'",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Test fails on stale/incomplete fixture, environment snapshot, no-op mutation, or old policy expectation; source/test mismatch prevents a meaningful runtime assertion."
+    },
+    {
+      "id": "test_hackathon_certification::test_audit_missing_measurements_are_null_and_cannot_activate",
+      "classname": "test_hackathon_certification",
+      "testcase": "test_audit_missing_measurements_are_null_and_cannot_activate",
+      "observed": "AssertionError: assert 'NOT_READY' == 'ACCOUNT_SETUP_REQUIRED' - ACCOUNT_SETUP_REQUIRED + NOT_READY",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Test fails on stale/incomplete fixture, environment snapshot, no-op mutation, or old policy expectation; source/test mismatch prevents a meaningful runtime assertion."
+    },
+    {
+      "id": "test_leverage_configuration_pacing::test_complete_ten_market_cli_paces_without_retrying_signed_actions",
+      "classname": "test_leverage_configuration_pacing",
+      "testcase": "test_complete_ten_market_cli_paces_without_retrying_signed_actions",
+      "observed": "exchange.base_exchange.ExchangeError: RETIRED_PAR_WRITE_ROUTE",
+      "classification": "intentional_lockout_or_signing_route_incompatibility",
+      "basis": "Current source explicitly retires this legacy write/authorized-session route or disallows reusing a practice contract; tests expect the retired contract. Keep the lockout; this is not evidence that the replacement path works."
+    },
+    {
+      "id": "test_long_session::test_all_approval_checks_happen_before_key_or_signer_access",
+      "classname": "test_long_session",
+      "testcase": "test_all_approval_checks_happen_before_key_or_signer_access",
+      "observed": "AssertionError: Regex pattern did not match. Regex: 'RELEASE' Input: 'RETIRED_SCORED_SESSION_ROUTE'",
+      "classification": "intentional_lockout_or_signing_route_incompatibility",
+      "basis": "Current source explicitly retires this legacy write/authorized-session route or disallows reusing a practice contract; tests expect the retired contract. Keep the lockout; this is not evidence that the replacement path works."
+    },
+    {
+      "id": "test_market_resilience::test_stale_btc_does_not_quarantine_healthy_eth_and_restores",
+      "classname": "test_market_resilience",
+      "testcase": "test_stale_btc_does_not_quarantine_healthy_eth_and_restores",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_market_resilience::test_tail_repair_backfills_older_gap_without_fabrication",
+      "classname": "test_market_resilience",
+      "testcase": "test_tail_repair_backfills_older_gap_without_fabrication",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_market_resilience::test_unavailable_rest_never_creates_candles_or_restores_market[empty]",
+      "classname": "test_market_resilience",
+      "testcase": "test_unavailable_rest_never_creates_candles_or_restores_market[empty]",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_market_resilience::test_unavailable_rest_never_creates_candles_or_restores_market[csv]",
+      "classname": "test_market_resilience",
+      "testcase": "test_unavailable_rest_never_creates_candles_or_restores_market[csv]",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_market_resilience::test_unavailable_rest_never_creates_candles_or_restores_market[invalid]",
+      "classname": "test_market_resilience",
+      "testcase": "test_unavailable_rest_never_creates_candles_or_restores_market[invalid]",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_market_resilience::test_unavailable_rest_never_creates_candles_or_restores_market[error]",
+      "classname": "test_market_resilience",
+      "testcase": "test_unavailable_rest_never_creates_candles_or_restores_market[error]",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_market_resilience::test_future_rest_timestamp_rejected_and_identical_duplicates_deduplicated",
+      "classname": "test_market_resilience",
+      "testcase": "test_future_rest_timestamp_rejected_and_identical_duplicates_deduplicated",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_market_resilience::test_invalid_known_stream_symbol_is_local_but_wrong_venue_still_fatal",
+      "classname": "test_market_resilience",
+      "testcase": "test_invalid_known_stream_symbol_is_local_but_wrong_venue_still_fatal",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_market_resilience::test_mixed_stream_batch_keeps_other_real_bars",
+      "classname": "test_market_resilience",
+      "testcase": "test_mixed_stream_batch_keeps_other_real_bars",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_market_resilience::test_malformed_context_is_symbol_local",
+      "classname": "test_market_resilience",
+      "testcase": "test_malformed_context_is_symbol_local",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_market_resilience::test_unknown_protocol_channel_still_fails_connection_closed",
+      "classname": "test_market_resilience",
+      "testcase": "test_unknown_protocol_channel_still_fails_connection_closed",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_market_resilience::test_future_book_cannot_poison_cache[REST]",
+      "classname": "test_market_resilience",
+      "testcase": "test_future_book_cannot_poison_cache[REST]",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_market_resilience::test_future_book_cannot_poison_cache[WS]",
+      "classname": "test_market_resilience",
+      "testcase": "test_future_book_cannot_poison_cache[WS]",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_market_resilience::test_quarantine_blocks_scanner_brain_signal_and_paper_order",
+      "classname": "test_market_resilience",
+      "testcase": "test_quarantine_blocks_scanner_brain_signal_and_paper_order",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_market_resilience::test_pending_repair_pauses_only_selected_symbol_and_finishes_without_account_restart",
+      "classname": "test_market_resilience",
+      "testcase": "test_pending_repair_pauses_only_selected_symbol_and_finishes_without_account_restart",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_market_resilience::test_automatic_retry_worker_recovers_empty_history_on_existing_socket",
+      "classname": "test_market_resilience",
+      "testcase": "test_automatic_retry_worker_recovers_empty_history_on_existing_socket",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_market_resilience::test_expiry_reconnect_restores_40_subscriptions_while_bad_symbol_stays_quarantined",
+      "classname": "test_market_resilience",
+      "testcase": "test_expiry_reconnect_restores_40_subscriptions_while_bad_symbol_stays_quarantined",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_overnight_session::test_frozen_long_sdk_cycles_across_ist_midnight",
+      "classname": "test_overnight_session",
+      "testcase": "test_frozen_long_sdk_cycles_across_ist_midnight",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_overnight_terminal_evidence::test_actual_runtime_gap_check_precedes_release_and_key_access",
+      "classname": "test_overnight_terminal_evidence",
+      "testcase": "test_actual_runtime_gap_check_precedes_release_and_key_access",
+      "observed": "AssertionError: Regex pattern did not match. Regex: 'TRADING_WINDOW_PERMISSION' Input: 'RETIRED_SCORED_SESSION_ROUTE'",
+      "classification": "intentional_lockout_or_signing_route_incompatibility",
+      "basis": "Current source explicitly retires this legacy write/authorized-session route or disallows reusing a practice contract; tests expect the retired contract. Keep the lockout; this is not evidence that the replacement path works."
+    },
+    {
+      "id": "test_pas_execution_faults::test_pas_frozen_signal_sdk_protection_close_and_realized_accounting",
+      "classname": "test_pas_execution_faults",
+      "testcase": "test_pas_frozen_signal_sdk_protection_close_and_realized_accounting",
+      "observed": "exchange.base_exchange.ExchangeError: STARTUP_ENTRY_LOCK_REQUIRED",
+      "classification": "genuinely_unresolved_safety_lockout",
+      "basis": "Startup coordinator denied entry. No valid startup-ready evidence is demonstrated in this run; preserve the lock and do not treat this as an obsolete-test pass."
+    },
+    {
+      "id": "test_pas_execution_faults::test_pas_uncertain_entry_is_never_repeated[reject]",
+      "classname": "test_pas_execution_faults",
+      "testcase": "test_pas_uncertain_entry_is_never_repeated[reject]",
+      "observed": "AssertionError: assert <TradeState.FLAT_VERIFIED: 'FLAT_VERIFIED'> in {<TradeState.RECOVERY_REQUIRED: 'RECOVERY_REQUIRED'>, <TradeState.REJECTED: 'REJECTED'>, <TradeState.UNKNOWN: 'UNKNOWN'>} + where <TradeState.FLAT_VERIFIED: 'FLAT_VERIFIED'> = <exchange.bounded_daily_session.DailyLifecycle object at 0x7f24393636b0>.state + where <exchange.bounded_daily_session.DailyLifecycle object at 0x7f24393636b0> = namespace(symbol='pas:BTC', live=namespace(fixture=<test_pas_execution_faults.PasLiveFixture",
+      "classification": "possible_actual_pas_runtime_regression",
+      "basis": "All three simulated entry fault variants end in FLAT_VERIFIED although the test requires REJECTED/UNKNOWN/RECOVERY_REQUIRED. Duplicate-signature assertion did not fail; the state transition still needs investigation."
+    },
+    {
+      "id": "test_pas_execution_faults::test_pas_uncertain_entry_is_never_repeated[timeout_before]",
+      "classname": "test_pas_execution_faults",
+      "testcase": "test_pas_uncertain_entry_is_never_repeated[timeout_before]",
+      "observed": "AssertionError: assert <TradeState.FLAT_VERIFIED: 'FLAT_VERIFIED'> in {<TradeState.RECOVERY_REQUIRED: 'RECOVERY_REQUIRED'>, <TradeState.REJECTED: 'REJECTED'>, <TradeState.UNKNOWN: 'UNKNOWN'>} + where <TradeState.FLAT_VERIFIED: 'FLAT_VERIFIED'> = <exchange.bounded_daily_session.DailyLifecycle object at 0x7f24393e4380>.state + where <exchange.bounded_daily_session.DailyLifecycle object at 0x7f24393e4380> = namespace(symbol='pas:BTC', live=namespace(fixture=<test_pas_execution_faults.PasLiveFixture",
+      "classification": "possible_actual_pas_runtime_regression",
+      "basis": "All three simulated entry fault variants end in FLAT_VERIFIED although the test requires REJECTED/UNKNOWN/RECOVERY_REQUIRED. Duplicate-signature assertion did not fail; the state transition still needs investigation."
+    },
+    {
+      "id": "test_pas_execution_faults::test_pas_uncertain_entry_is_never_repeated[entry_internet_after_fill]",
+      "classname": "test_pas_execution_faults",
+      "testcase": "test_pas_uncertain_entry_is_never_repeated[entry_internet_after_fill]",
+      "observed": "AssertionError: assert <TradeState.FLAT_VERIFIED: 'FLAT_VERIFIED'> in {<TradeState.RECOVERY_REQUIRED: 'RECOVERY_REQUIRED'>, <TradeState.REJECTED: 'REJECTED'>, <TradeState.UNKNOWN: 'UNKNOWN'>} + where <TradeState.FLAT_VERIFIED: 'FLAT_VERIFIED'> = <exchange.bounded_daily_session.DailyLifecycle object at 0x7f2458383cb0>.state + where <exchange.bounded_daily_session.DailyLifecycle object at 0x7f2458383cb0> = namespace(symbol='pas:BTC', live=namespace(fixture=<test_pas_execution_faults.PasLiveFixture",
+      "classification": "possible_actual_pas_runtime_regression",
+      "basis": "All three simulated entry fault variants end in FLAT_VERIFIED although the test requires REJECTED/UNKNOWN/RECOVERY_REQUIRED. Duplicate-signature assertion did not fail; the state transition still needs investigation."
+    },
+    {
+      "id": "test_pas_execution_faults::test_pas_failed_native_stop_does_not_rearm_or_hide_exposure[reject]",
+      "classname": "test_pas_execution_faults",
+      "testcase": "test_pas_failed_native_stop_does_not_rearm_or_hide_exposure[reject]",
+      "observed": "exchange.base_exchange.ExchangeError: STARTUP_ENTRY_LOCK_REQUIRED",
+      "classification": "genuinely_unresolved_safety_lockout",
+      "basis": "Startup coordinator denied entry. No valid startup-ready evidence is demonstrated in this run; preserve the lock and do not treat this as an obsolete-test pass."
+    },
+    {
+      "id": "test_pas_execution_faults::test_pas_failed_native_stop_does_not_rearm_or_hide_exposure[timeout_before]",
+      "classname": "test_pas_execution_faults",
+      "testcase": "test_pas_failed_native_stop_does_not_rearm_or_hide_exposure[timeout_before]",
+      "observed": "exchange.base_exchange.ExchangeError: STARTUP_ENTRY_LOCK_REQUIRED",
+      "classification": "genuinely_unresolved_safety_lockout",
+      "basis": "Startup coordinator denied entry. No valid startup-ready evidence is demonstrated in this run; preserve the lock and do not treat this as an obsolete-test pass."
+    },
+    {
+      "id": "test_pas_execution_faults::test_pas_failed_native_stop_does_not_rearm_or_hide_exposure[wrong_quantity]",
+      "classname": "test_pas_execution_faults",
+      "testcase": "test_pas_failed_native_stop_does_not_rearm_or_hide_exposure[wrong_quantity]",
+      "observed": "exchange.base_exchange.ExchangeError: STARTUP_ENTRY_LOCK_REQUIRED",
+      "classification": "genuinely_unresolved_safety_lockout",
+      "basis": "Startup coordinator denied entry. No valid startup-ready evidence is demonstrated in this run; preserve the lock and do not treat this as an obsolete-test pass."
+    },
+    {
+      "id": "test_pas_execution_faults::test_pas_partial_or_full_native_closing_fill_uses_actual_remaining_position[.5]",
+      "classname": "test_pas_execution_faults",
+      "testcase": "test_pas_partial_or_full_native_closing_fill_uses_actual_remaining_position[.5]",
+      "observed": "exchange.base_exchange.ExchangeError: STARTUP_ENTRY_LOCK_REQUIRED",
+      "classification": "genuinely_unresolved_safety_lockout",
+      "basis": "Startup coordinator denied entry. No valid startup-ready evidence is demonstrated in this run; preserve the lock and do not treat this as an obsolete-test pass."
+    },
+    {
+      "id": "test_pas_execution_faults::test_pas_partial_or_full_native_closing_fill_uses_actual_remaining_position[1]",
+      "classname": "test_pas_execution_faults",
+      "testcase": "test_pas_partial_or_full_native_closing_fill_uses_actual_remaining_position[1]",
+      "observed": "exchange.base_exchange.ExchangeError: STARTUP_ENTRY_LOCK_REQUIRED",
+      "classification": "genuinely_unresolved_safety_lockout",
+      "basis": "Startup coordinator denied entry. No valid startup-ready evidence is demonstrated in this run; preserve the lock and do not treat this as an obsolete-test pass."
+    },
+    {
+      "id": "test_pas_execution_faults::test_pas_partial_close_retains_global_exposure",
+      "classname": "test_pas_execution_faults",
+      "testcase": "test_pas_partial_close_retains_global_exposure",
+      "observed": "exchange.base_exchange.ExchangeError: STARTUP_ENTRY_LOCK_REQUIRED",
+      "classification": "genuinely_unresolved_safety_lockout",
+      "basis": "Startup coordinator denied entry. No valid startup-ready evidence is demonstrated in this run; preserve the lock and do not treat this as an obsolete-test pass."
+    },
+    {
+      "id": "test_pas_execution_faults::test_pas_subminimum_partial_is_blocked_before_entry",
+      "classname": "test_pas_execution_faults",
+      "testcase": "test_pas_subminimum_partial_is_blocked_before_entry",
+      "observed": "exchange.base_exchange.ExchangeError: STARTUP_ENTRY_LOCK_REQUIRED",
+      "classification": "genuinely_unresolved_safety_lockout",
+      "basis": "Startup coordinator denied entry. No valid startup-ready evidence is demonstrated in this run; preserve the lock and do not treat this as an obsolete-test pass."
+    },
+    {
+      "id": "test_pas_execution_faults::test_pas_gap_with_unfilled_stop_never_reports_flat",
+      "classname": "test_pas_execution_faults",
+      "testcase": "test_pas_gap_with_unfilled_stop_never_reports_flat",
+      "observed": "exchange.base_exchange.ExchangeError: STARTUP_ENTRY_LOCK_REQUIRED",
+      "classification": "genuinely_unresolved_safety_lockout",
+      "basis": "Startup coordinator denied entry. No valid startup-ready evidence is demonstrated in this run; preserve the lock and do not treat this as an obsolete-test pass."
+    },
+    {
+      "id": "test_pas_execution_faults::test_pas_disconnect_with_stop_keeps_exposure_and_no_retry",
+      "classname": "test_pas_execution_faults",
+      "testcase": "test_pas_disconnect_with_stop_keeps_exposure_and_no_retry",
+      "observed": "exchange.base_exchange.ExchangeError: STARTUP_ENTRY_LOCK_REQUIRED",
+      "classification": "genuinely_unresolved_safety_lockout",
+      "basis": "Startup coordinator denied entry. No valid startup-ready evidence is demonstrated in this run; preserve the lock and do not treat this as an obsolete-test pass."
+    },
+    {
+      "id": "test_pas_execution_faults::test_pas_dynamic_position_stop_readback_cannot_qualify_fixed_route",
+      "classname": "test_pas_execution_faults",
+      "testcase": "test_pas_dynamic_position_stop_readback_cannot_qualify_fixed_route",
+      "observed": "exchange.base_exchange.ExchangeError: STARTUP_ENTRY_LOCK_REQUIRED",
+      "classification": "genuinely_unresolved_safety_lockout",
+      "basis": "Startup coordinator denied entry. No valid startup-ready evidence is demonstrated in this run; preserve the lock and do not treat this as an obsolete-test pass."
+    },
+    {
+      "id": "test_pas_execution_faults::test_pas_native_fill_outside_fixed_stop_limit_is_a_conflict",
+      "classname": "test_pas_execution_faults",
+      "testcase": "test_pas_native_fill_outside_fixed_stop_limit_is_a_conflict",
+      "observed": "exchange.base_exchange.ExchangeError: STARTUP_ENTRY_LOCK_REQUIRED",
+      "classification": "genuinely_unresolved_safety_lockout",
+      "basis": "Startup coordinator denied entry. No valid startup-ready evidence is demonstrated in this run; preserve the lock and do not treat this as an obsolete-test pass."
+    },
+    {
+      "id": "test_phase0_order_lock::test_signal_source_matches_the_tagged_baseline",
+      "classname": "test_phase0_order_lock",
+      "testcase": "test_signal_source_matches_the_tagged_baseline",
+      "observed": "subprocess.CalledProcessError: Command '['git', 'show', 'nse-working-baseline:algo-trading-bot/signal_brain.py']' returned non-zero exit status 128.",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Test fails on stale/incomplete fixture, environment snapshot, no-op mutation, or old policy expectation; source/test mismatch prevents a meaningful runtime assertion."
+    },
+    {
+      "id": "test_phase0_order_lock::test_clone_environment_retains_development_locks_with_account_configuration",
+      "classname": "test_phase0_order_lock",
+      "testcase": "test_clone_environment_retains_development_locks_with_account_configuration",
+      "observed": "AssertionError: assert {'ALLOW_LIVE_..._VENUE': None} == {'ALLOW_LIVE_...QUID_TESTNET'} Differing items: {'EXECUTION_MODE': None} != {'EXECUTION_MODE': 'PAPER'} {'ALLOW_LIVE_ORDERS': None} != {'ALLOW_LIVE_ORDERS': 'false'} {'TRADING_VENUE': None} != {'TRADING_VENUE': 'HYPERLIQUID_TESTNET'} Use -v to get more diff",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Test fails on stale/incomplete fixture, environment snapshot, no-op mutation, or old policy expectation; source/test mismatch prevents a meaningful runtime assertion."
+    },
+    {
+      "id": "test_practice_operations::test_runtime_spaces_scans_and_keeps_management_cycles",
+      "classname": "test_practice_operations",
+      "testcase": "test_runtime_spaces_scans_and_keeps_management_cycles",
+      "observed": "AttributeError: 'types.SimpleNamespace' object has no attribute 'journal'",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Test fails on stale/incomplete fixture, environment snapshot, no-op mutation, or old policy expectation; source/test mismatch prevents a meaningful runtime assertion."
+    },
+    {
+      "id": "test_practice_preflight::test_apply_without_manual_file_stops_before_client_or_private_signer",
+      "classname": "test_practice_preflight",
+      "testcase": "test_apply_without_manual_file_stops_before_client_or_private_signer",
+      "observed": "exchange.base_exchange.ExchangeError: RETIRED_PAR_WRITE_ROUTE",
+      "classification": "intentional_lockout_or_signing_route_incompatibility",
+      "basis": "Current source explicitly retires this legacy write/authorized-session route or disallows reusing a practice contract; tests expect the retired contract. Keep the lockout; this is not evidence that the replacement path works."
+    },
+    {
+      "id": "test_practice_weekend_session::test_cli_new_contract_stays_blocked_without_native_evidence",
+      "classname": "test_practice_weekend_session",
+      "testcase": "test_cli_new_contract_stays_blocked_without_native_evidence",
+      "observed": "exchange.base_exchange.ExchangeError: PAS_CANNOT_REUSE_PRACTICE_CONTRACT",
+      "classification": "intentional_lockout_or_signing_route_incompatibility",
+      "basis": "Current source explicitly retires this legacy write/authorized-session route or disallows reusing a practice contract; tests expect the retired contract. Keep the lockout; this is not evidence that the replacement path works."
+    },
+    {
+      "id": "test_qualification_freshness_repair::test_append_only_resolution_keeps_unknown_row_and_all_events",
+      "classname": "test_qualification_freshness_repair",
+      "testcase": "test_append_only_resolution_keeps_unknown_row_and_all_events",
+      "observed": "exchange.base_exchange.ExchangeError: UNKNOWN_INTENT_REMAINS_LOCKED",
+      "classification": "genuinely_unresolved_safety_lockout",
+      "basis": "Append-only proof did not certify, so UNKNOWN remained locked. The archived proof embeds an obsolete absolute archive path while verifier compares the entire source descriptor; positive recovery semantics remain unverified."
+    },
+    {
+      "id": "test_qualification_freshness_repair::test_resolution_invalidates_if_original_row_or_transmission_evidence_changes",
+      "classname": "test_qualification_freshness_repair",
+      "testcase": "test_resolution_invalidates_if_original_row_or_transmission_evidence_changes",
+      "observed": "exchange.base_exchange.ExchangeError: UNKNOWN_INTENT_REMAINS_LOCKED",
+      "classification": "genuinely_unresolved_safety_lockout",
+      "basis": "Append-only proof did not certify, so UNKNOWN remained locked. The archived proof embeds an obsolete absolute archive path while verifier compares the entire source descriptor; positive recovery semantics remain unverified."
+    },
+    {
+      "id": "test_qualification_freshness_repair::test_synthetic_resolution_cannot_be_applied_to_real_session_identity",
+      "classname": "test_qualification_freshness_repair",
+      "testcase": "test_synthetic_resolution_cannot_be_applied_to_real_session_identity",
+      "observed": "AssertionError: Regex pattern did not match. Regex: 'ACTUAL_NONTRANSMISSION' Input: 'UNKNOWN_INTENT_REMAINS_LOCKED'",
+      "classification": "genuinely_unresolved_safety_lockout",
+      "basis": "Append-only proof did not certify, so UNKNOWN remained locked. The archived proof embeds an obsolete absolute archive path while verifier compares the entire source descriptor; positive recovery semantics remain unverified."
+    },
+    {
+      "id": "test_qualification_stability_v8_8::test_account_truth_and_histories_are_never_snapshot_cached[clearinghouseState]",
+      "classname": "test_qualification_stability_v8_8",
+      "testcase": "test_account_truth_and_histories_are_never_snapshot_cached[clearinghouseState]",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_DISCOVERY_REQUIRED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "The test cache/read fixture lacks required fresh DEX discovery; reads are rejected before the tested cache assertion."
+    },
+    {
+      "id": "test_qualification_stability_v8_8::test_account_truth_and_histories_are_never_snapshot_cached[openOrders]",
+      "classname": "test_qualification_stability_v8_8",
+      "testcase": "test_account_truth_and_histories_are_never_snapshot_cached[openOrders]",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_DISCOVERY_REQUIRED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "The test cache/read fixture lacks required fresh DEX discovery; reads are rejected before the tested cache assertion."
+    },
+    {
+      "id": "test_qualification_stability_v8_8::test_account_truth_and_histories_are_never_snapshot_cached[frontendOpenOrders]",
+      "classname": "test_qualification_stability_v8_8",
+      "testcase": "test_account_truth_and_histories_are_never_snapshot_cached[frontendOpenOrders]",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_DISCOVERY_REQUIRED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "The test cache/read fixture lacks required fresh DEX discovery; reads are rejected before the tested cache assertion."
+    },
+    {
+      "id": "test_research_readiness::test_recorded_market_cannot_read_exchange_or_user",
+      "classname": "test_research_readiness",
+      "testcase": "test_recorded_market_cannot_read_exchange_or_user",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_research_readiness::test_missing_book_and_old_context_fail_safe",
+      "classname": "test_research_readiness",
+      "testcase": "test_missing_book_and_old_context_fail_safe",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_research_readiness::test_existing_kernel_entry_exit_and_audited_aftercost_label",
+      "classname": "test_research_readiness",
+      "testcase": "test_existing_kernel_entry_exit_and_audited_aftercost_label",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_research_readiness::test_stale_exit_tick_does_not_invent_fill",
+      "classname": "test_research_readiness",
+      "testcase": "test_stale_exit_tick_does_not_invent_fill",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_research_readiness::test_reconnect_and_gap_pause_new_entries",
+      "classname": "test_research_readiness",
+      "testcase": "test_reconnect_and_gap_pause_new_entries",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_research_readiness::test_small_public_labelled_fixture_insufficient_and_not_double_counted",
+      "classname": "test_research_readiness",
+      "testcase": "test_small_public_labelled_fixture_insufficient_and_not_double_counted",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_research_readiness::test_seal_insufficient_explicit_gate_no_models",
+      "classname": "test_research_readiness",
+      "testcase": "test_seal_insufficient_explicit_gate_no_models",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_research_readiness::test_history_deltas_merge_and_retain_bounded_completed_window",
+      "classname": "test_research_readiness",
+      "testcase": "test_history_deltas_merge_and_retain_bounded_completed_window",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_research_readiness::test_research_scanner_uses_exact_baseline_window_for_all_other_logic",
+      "classname": "test_research_readiness",
+      "testcase": "test_research_scanner_uses_exact_baseline_window_for_all_other_logic",
+      "observed": "exchange.base_exchange.VenueMismatch: PAS_DEX_MAPPING_UNVERIFIED",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_terminal_app::test_complete_cli_simulation",
+      "classname": "test_terminal_app",
+      "testcase": "test_complete_cli_simulation",
+      "observed": "AssertionError: {\"status\": \"FAILED_SAFE\", \"error\": \"PAS_DEX_MAPPING_UNVERIFIED\", \"signing_authority\": \"NONE_CREATED_BY_THIS_COMMAND\"} assert 1 == 0 + where 1 = CompletedProcess(args=['/workspace/anchorium-scored-audit/.venv-audit/bin/python', '/workspace/postmerge-audit/repo/sc...status\": \"FAILED_SAFE\", \"error\": \"PAS_DEX_MAPPING_UNVERIFIED\", \"signing_authority\": \"NONE_CREATED_BY_THIS_COMMAND\"}\\n').returncode",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Static test metadata lacks a uniquely explicit PAS DEX identity; execution stops at resolve_competition_dex. This proves the tests were blocked, not that current live metadata is valid."
+    },
+    {
+      "id": "test_terminal_app::test_authorized_start_without_exact_evidence_fails_before_key",
+      "classname": "test_terminal_app",
+      "testcase": "test_authorized_start_without_exact_evidence_fails_before_key",
+      "observed": "FileNotFoundError: [Errno 2] No such file or directory: '/tmp/pytest-of-ubuntu/pytest-90/test_authorized_start_without_0/current.json'",
+      "classification": "legacy_fixture_or_policy_mismatch",
+      "basis": "Test fails on stale/incomplete fixture, environment snapshot, no-op mutation, or old policy expectation; source/test mismatch prevents a meaningful runtime assertion."
+    },
+    {
+      "id": "test_terminal_app::test_signer_deadline_does_not_stop_outer_observer",
+      "classname": "test_terminal_app",
+      "testcase": "test_signer_deadline_does_not_stop_outer_observer",
+      "observed": "exchange.base_exchange.ExchangeError: RETIRED_AUTHORIZED_TERMINAL_ROUTE",
+      "classification": "intentional_lockout_or_signing_route_incompatibility",
+      "basis": "Current source explicitly retires this legacy write/authorized-session route or disallows reusing a practice contract; tests expect the retired contract. Keep the lockout; this is not evidence that the replacement path works."
+    }
+  ],
+  "important_findings": [
+    {
+      "finding": "No confirmed actual PAS defect was proven from this baseline run.",
+      "detail": "Three PAS uncertain-entry state transitions are possible runtime regressions requiring investigation; startup-lock and unknown-intent cases remain unresolved, not waived."
+    },
+    {
+      "finding": "UNKNOWN recovery proof portability issue observed.",
+      "detail": "The proof archive/receipt content hashes satisfy archived_transport_source(), but the proof records an old absolute archive path (/Users/adesh/...) whereas verifier compares the full source descriptor to the current /workspace path. assess() therefore returns uncertified and UNKNOWN stays locked."
+    },
+    {
+      "finding": "PAS mapping remains unverified for readiness.",
+      "detail": "No network was used. The 1278 errors plus 60 failures only show fixture-level mapping rejection; this is not live readiness evidence."
+    },
+    {
+      "finding": "Excluded setup issue.",
+      "detail": "Initial system-python collection had four missing-pyotp errors; these were remedied by using the audit venv and are not among the 121 failures or 1278 errors."
+    }
+  ],
+  "live_readiness_claim": false
+}

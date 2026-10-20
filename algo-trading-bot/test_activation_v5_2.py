@@ -172,15 +172,15 @@ def test_cli_rejects_wait_without_real_authorized_files_before_state_creation(tm
     assert not (tmp_path/'state').exists()
 
 
-def test_failed_wait_persists_terminal_unknown_and_never_builds_signer(tmp_path):
+def test_retired_authorized_wait_rejects_before_state_or_signer_creation(tmp_path):
     from test_terminal_app import command
     state=tmp_path/'state'
     p=command('start','--venue','pas','--authorized','--wait-for-readiness','--state',state)
     assert p.returncode==1
-    current=json.loads((state/'current.json').read_text())
-    terminal=json.loads((Path(current['output'])/'terminal_result.json').read_text())
-    assert not terminal['authorized_builder_attempted'] and terminal['signing_authority']=='NONE'
-    assert terminal['terminal_flat'] is None and not terminal['AUTO_TRADING_ACTIVE']
+    failure=json.loads(p.stderr)
+    assert failure['error']=='RETIRED_AUTHORIZED_TERMINAL_ROUTE'
+    assert failure['signing_authority']=='NONE_CREATED_BY_THIS_COMMAND'
+    assert not state.exists()
 
 
 @pytest.mark.parametrize('at',[None,True,'bad',{},NOW+1,NOW-360001])

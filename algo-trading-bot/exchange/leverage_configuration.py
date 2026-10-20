@@ -103,6 +103,8 @@ class LeverageConfigurationTransport:
     before the SDK allocates a durable nonce and again before HTTP transmission.
     """
     def __init__(self, client, signer, team, nonces, approval, *, rates, readiness_guard, approved_plan=None):
+        from .par_retirement import reject_retired_par_write
+        reject_retired_par_write()
         from eth_account.signers.local import LocalAccount
         from .pas_configuration import PasConfigurationApproval
         expected = PasConfigurationApproval if getattr(client,'dex','par')=='pas' else LeverageConfigurationApproval

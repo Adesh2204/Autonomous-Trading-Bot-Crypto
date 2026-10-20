@@ -111,7 +111,7 @@ def test_opening_check_independent_states_and_no_cached_claims(monkeypatch,tmp_p
     monkeypatch.setattr(terminal_app,'locked',lambda _:True)
     result=opening_audit.opening_check(tmp_path,SimpleNamespace(state=tmp_path))
     s=result['statuses'];assert len(s)==14
-    assert s['OBSERVER_HEALTHY'] and s['FUNDING_VERIFIED'] and s['BTC_1X_VERIFIED'] and s['EWY_1X_VERIFIED']
+    assert s['OBSERVER_HEALTHY'] and s['FUNDING_VERIFIED'] and s['BTC_1X_CROSS_VERIFIED'] and s['EWY_1X_CROSS_VERIFIED']
     assert s['MARKET_DATA_FRESH'] and s['HISTORICAL_ORDER_SAFE']
     assert not s['RELEASE_VERIFIED'] and not s['ACCOUNT_IDENTITY_VERIFIED']
     assert not s['BTC_NATIVE_AND_RESIDUAL_QUALIFIED'] and not s['EWY_NATIVE_AND_RESIDUAL_QUALIFIED']

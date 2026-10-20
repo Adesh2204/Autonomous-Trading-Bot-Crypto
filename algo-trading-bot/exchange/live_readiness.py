@@ -4,11 +4,40 @@ import re
 
 from .base_exchange import ExchangeError, decimal
 from .execution_journal import safe_reason
+from .competition_market import PAS_TARGET_LEVERAGE
 
 
 def valid_address(value):
     return (isinstance(value, str) and re.fullmatch(r'0x[0-9a-fA-F]{40}', value) is not None
             and int(value[2:], 16) != 0)
+
+
+def require_pas_cross_1x(account):
+    """Require fresh per-market 1x CROSS readbacks; this grants no write authority."""
+    client = account.client
+    api_markets = getattr(client, 'api_markets', None)
+    api_dex = getattr(client, 'api_dex', None)
+    if (not isinstance(api_markets, dict) or set(api_markets) != {'BTC', 'EWY'} or
+            not isinstance(api_dex, str) or
+            any(api_markets.get(base) != f'{api_dex}:{base}' for base in ('BTC', 'EWY')) or
+            getattr(client, 'api_market', None) != api_markets.get('BTC')):
+        raise ExchangeError('PAS_ACTIVE_ASSET_MAPPING_UNVERIFIED')
+    observed = {}
+    for base in ('BTC', 'EWY'):
+        symbol = api_markets[base]
+        try:
+            active = account._query('activeAssetData', coin=symbol)
+        except Exception as exc:
+            raise ExchangeError('PAS_ACTIVE_ASSET_READBACK_UNAVAILABLE') from exc
+        leverage = active.get('leverage') if isinstance(active, dict) else None
+        user = active.get('user') if isinstance(active, dict) else None
+        if (not isinstance(user, str) or user.lower() != account.team_address.lower()
+                or active.get('coin') != symbol or not isinstance(leverage, dict)
+                or leverage.get('type') != 'cross' or type(leverage.get('value')) is not int
+                or leverage.get('value') != PAS_TARGET_LEVERAGE):
+            raise ExchangeError('PAS_ACTIVE_ASSET_CROSS_1X_REQUIRED')
+        observed[symbol] = dict(leverage)
+    return observed
 
 
 @dataclass(frozen=True)
@@ -27,8 +56,10 @@ class LiveReadiness:
     clock_healthy: bool = False
     rate_limits_healthy: bool = False
     signed_transport_implemented: bool = True
-    dex: str = 'par'
-    collateral_token_name: str = 'USDPR'
+    competition_market: str = 'pas'
+    api_dex: str | None = None
+    api_market: str | None = None
+    collateral_token_name: str | None = None
 
     @property
     def account_ready(self):
@@ -57,7 +88,10 @@ class LiveReadiness:
             except Exception:
                 pass
         result = asdict(self)
-        result.update(network='testnet', dex=self.dex, market_data_ready=bool(market_ready),
+        result.update(network='testnet', competition_market=self.competition_market,
+                      dex=self.api_dex, api_market=self.api_market,
+                      collateral=self.collateral_token_name, market_data_ready=bool(market_ready),
+                      target_leverage=PAS_TARGET_LEVERAGE, margin_mode='cross',
                       paper_ready=bool(market_ready), live_orders_permitted=bool(live_permitted),
                       controlled_execution_certified=False,
                       live_ready=False,
@@ -73,6 +107,15 @@ def verify_live_account_readiness(account, signer_address, *, clock_health, rate
     now = client.clock_ms()
     reasons = []
     expiry = collateral = mode = fees = budget = None
+    if client.competition_mode:
+        api_markets = getattr(client, 'api_markets', None)
+        if (client.api_dex is None or not isinstance(api_markets, dict) or
+                set(api_markets) != {'BTC', 'EWY'} or
+                api_markets.get('BTC') != client.api_market or
+                any(not isinstance(symbol, str) or not symbol.endswith(':'+base)
+                    for base, symbol in api_markets.items()) or
+                set(client.markets) != set(api_markets.values())):
+            reasons.append('PAS_ASSET_MAPPING_UNVERIFIED')
     if not valid_address(account.team_address) or not valid_address(signer_address):
         reasons.append('TEAM_AND_API_WALLET_REQUIRED')
     elif account.team_address.lower() == signer_address.lower():
@@ -81,11 +124,11 @@ def verify_live_account_readiness(account, signer_address, *, clock_health, rate
         reasons.append('MARKET_METADATA_NOT_READY')
     if reasons:
         return LiveReadiness('NOT_READY', tuple(reasons), account.team_address,
-                             signer_address, now,dex=getattr(client,'dex','par'),
-                             collateral_token_name=getattr(client,'collateral','USDPR'))
+                             signer_address, now, api_dex=client.api_dex, api_market=client.api_market,
+                             collateral_token_name=client.collateral_token_name)
     try:
         mode = account._query('userAbstraction')
-        if mode != 'unifiedAccount' and not (getattr(client,'dex','par')=='pas' and mode=='disabled'):
+        if mode != 'unifiedAccount':
             reasons.append('UNIFIED_ACCOUNT_REQUIRED')
         agents = account._query('extraAgents')
         if not isinstance(agents, list):
@@ -111,11 +154,24 @@ def verify_live_account_readiness(account, signer_address, *, clock_health, rate
                 lifecycle='VERIFIED'
             with rate_limits.journal.transaction():
                 rate_limits.journal.db.execute('INSERT OR REPLACE INTO controls VALUES (?,?)',(lifecycle_key,lifecycle))
-        if mode == 'unifiedAccount' or getattr(client,'dex','par')=='pas' and mode=='disabled':
+        if mode == 'unifiedAccount':
             eq = account.get_equity()
             collateral = str(eq.collateral_balance)
             if eq.collateral_balance <= 0 or eq.reported_account_value <= 0:
                 reasons.append('ACCOUNT_NOT_FUNDED')
+        if client.competition_mode and not critical:
+            # Readiness is a market-wide statement: inspect both active PAS
+            # markets before entry, not only the requested symbol. Preserve
+            # existing critical reduce-only/cancel recovery; those actions
+            # still require every identity, approval and exact-action check.
+            try:
+                require_pas_cross_1x(account)
+            except ExchangeError as exc:
+                if str(exc) not in {'PAS_ACTIVE_ASSET_CROSS_1X_REQUIRED',
+                                    'PAS_ACTIVE_ASSET_READBACK_UNAVAILABLE',
+                                    'PAS_ACTIVE_ASSET_MAPPING_UNVERIFIED'}:
+                    raise
+                reasons.append(str(exc))
         fees = account._query('userFees')
         if not isinstance(fees,dict):
             raise ExchangeError('USER_FEES_UNAVAILABLE')
@@ -138,4 +194,5 @@ def verify_live_account_readiness(account, signer_address, *, clock_health, rate
                          account.team_address, signer_address, client.clock_ms(), expiry,
                          collateral, mode, fees, budget, bool(reconciliation_ready),
                          clock_health.healthy, rate_limits.safety_ready if critical else rate_limits.healthy,
-                         dex=getattr(client,'dex','par'),collateral_token_name=getattr(client,'collateral','USDPR'))
+                         competition_market='pas', api_dex=client.api_dex, api_market=client.api_market,
+                         collateral_token_name=client.collateral_token_name)

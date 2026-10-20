@@ -33,7 +33,7 @@ class OrderRequest:
     client_order_id: str | None=None
 
     def __post_init__(self):
-        if (not isinstance(self.symbol,str) or not self.symbol.startswith(('par:', 'pas:')) or
+        if (not isinstance(self.symbol,str) or self.symbol.count(':') != 1 or
                 self.side not in {'BUY','SELL'} or self.order_type!='LIMIT' or
                 type(self.reduce_only) is not bool or self.tif not in {'Gtc','Ioc','Alo'} or
                 not isinstance(self.strategy_id,str) or not self.strategy_id or

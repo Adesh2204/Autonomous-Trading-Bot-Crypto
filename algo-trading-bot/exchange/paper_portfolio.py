@@ -1,4 +1,4 @@
-"""One USDPR paper collateral pool for fractional perpetual positions."""
+"""One explicitly labelled paper collateral pool for perpetual positions."""
 from dataclasses import dataclass
 from decimal import Decimal
 import time
@@ -29,7 +29,7 @@ class PortfolioSnapshot:
     realized_pnl: Decimal
     fees_paid: Decimal
     funding_cashflow: Decimal
-    collateral: str='USDPR'
+    collateral: str='USDP'
 
 
 @dataclass(frozen=True)
@@ -50,9 +50,12 @@ class FundingSettlement:
 
 
 class PaperPortfolio:
-    def __init__(self, specifications, starting_collateral, *, clock_ms=None):
+    def __init__(self, specifications, starting_collateral, *, clock_ms=None, collateral='USDP'):
         self.clock_ms=clock_ms or (lambda:time.time_ns()//1_000_000)
         self.specs=dict(specifications)
+        if not isinstance(collateral,str) or not collateral.strip():
+            raise ExchangeError('PAPER_COLLATERAL_IDENTITY_REQUIRED')
+        self.collateral=collateral.strip()
         self.starting_collateral=decimal(starting_collateral,positive=True)
         self.cash=self.starting_collateral
         self.positions={}
@@ -158,4 +161,4 @@ class PaperPortfolio:
         reservations=sum(self.reservations.values(),Decimal(0))
         return PortfolioSnapshot(now_ms,self.cash,unrealized,equity,margin,maintenance,
             reservations,max(Decimal(0),equity-margin-reservations),gross,self.realized_pnl,
-            self.fees_paid,self.funding_cashflow)
+            self.fees_paid,self.funding_cashflow,self.collateral)

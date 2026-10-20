@@ -1,0 +1,71 @@
+{
+  "status": "OFFLINE_REGRESSIONS_PASS_LIVE_NO_GO",
+  "starting_head": "a73f4181b982b427099480f968718aefe1dc052c",
+  "focused": {
+    "passed": 182,
+    "failed": 0,
+    "errors": 0,
+    "network_and_signing_prohibited": true,
+    "subprocess_guard": true
+  },
+  "broad_baseline": {
+    "passed": 1250,
+    "failed": 98,
+    "errors": 233
+  },
+  "broad_final": {
+    "passed": 1302,
+    "failed": 91,
+    "errors": 233,
+    "excluded_modules": 34
+  },
+  "new_failed_node_ids": [],
+  "new_error_node_ids": [],
+  "baseline_failures_not_failing_in_final": [
+    "algo-trading-bot/test_overnight_session.py::test_live_recovery_retains_original_cause_and_sanitized_trace",
+    "algo-trading-bot/test_research_intelligence.py::test_baseline_no_ml_and_heuristic_same_cost_and_split",
+    "algo-trading-bot/test_research_intelligence.py::test_complete_synthetic_fit_pipeline_not_promotion",
+    "algo-trading-bot/test_research_intelligence.py::test_insufficient_data_generates_full_honest_matrix",
+    "algo-trading-bot/test_research_readiness.py::test_positive_training_seal_uses_only_earlier_data_and_refuses_model_edit",
+    "algo-trading-bot/test_research_readiness.py::test_sealed_source_edit_rejected",
+    "algo-trading-bot/test_research_readiness.py::test_source_seal_covers_collector_and_management"
+  ],
+  "strategy_freeze": {
+    "passed": true,
+    "files": 1,
+    "methods": 8,
+    "parameters": 32
+  },
+  "negative_control": {
+    "original_head": "a73f4181b982b427099480f968718aefe1dc052c",
+    "test": "test_real_budget_deferral_retains_chunks_and_resumes_at_missing_history",
+    "expected_failure_observed": true,
+    "original_retained_bars": 0,
+    "required_first_chunk_bars": 300
+  },
+  "source_sha256": {
+    ".github/workflows/pas-btc-safety.yml": "22d7578b2abb02432c7bf42857a96a4407b3c9648d3339991b6d94a0cb2026f2",
+    "algo-trading-bot/exchange/hyperliquid_client.py": "6b27228623f4f570f084683e0030b4c9a658b07198f370bf4528089935aa3616",
+    "algo-trading-bot/exchange/hyperliquid_market_data.py": "3da8551083d8a21dbc8385b35c02828f35278e88526cdb62f5575bd7effe04c0",
+    "algo-trading-bot/exchange/rate_limits.py": "cca982ae4f5e9e24066cf28230baa8e6fcbf5d98aa8af9d44362634d4b204cdf",
+    "algo-trading-bot/exchange/stream_first.py": "fcf1542f0322111b16baec0fa0c566aefc9b8df2fe4d0c819218ed699d4cf752",
+    "algo-trading-bot/test_pas_launcher_regressions.py": "bf6c27759258ef68b5b4128aa5c33ed619a4ad119eae27a50ed1c3a8a4d4312a",
+    "scripts/run_pas_btc.py": "98449b739bd1b93f452ed19745ed331253724a506aa40c6f94e674f11bd8731b",
+    "algo-trading-bot/test_pas_candle_budget.py": "200b4d1d7103e22d96cffcfd3d08269af0be86b67075edaa1d53dda4f24aea1d",
+    "algo-trading-bot/test_pas_candle_diagnostics.py": "5a275ccdd5dffb5ce719eac67b2217c9649aaea741fee9d3a95e30dead60b2a0",
+    "algo-trading-bot/test_pas_liquidity_selection.py": "c313d5e81308f15c41e47e0bf57151474087eac807b84be7e05c5651198d8488",
+    "algo-trading-bot/test_pas_stream_warmup.py": "1e7005845854811027f079d5fd4cd5668d9873ac6a9abd80ee5276589772beeb",
+    "scripts/check_pas_candles.py": "3262095983e032ea48a229e8a6800b3ff60b37281c983379bcc7a7b9e6dc464d"
+  },
+  "log_sha256": {
+    "pas-pr2-clean-baseline.log": "04fb57dc29ce3a3c468079faf08c857f84bd989951f0e0e94770812947cbce20",
+    "pas-pr2-final-broad.log": "826be0bf283ece107457f8feb4a28df0dbfc43c2aaa37e49b7d4b3d1b808191c",
+    "pas-pr2-final-focused.log": "2f00b4339c1c6cf3411b0da0526bfe91c4d1a392464f6a07987efb648811ff49",
+    "pas-pr2-negative-control.log": "9f03cc8cf29ff4fa4619d1f26373347abcb9b559116df49889ccb271c6b4242c"
+  },
+  "live_ready": false,
+  "orders_submitted": 0,
+  "signatures_created": 0,
+  "deployed": false,
+  "account_settings_changed": false
+}

@@ -73,10 +73,51 @@ class PublicInfoFixture:
         return deepcopy(responses[query])
 
 
+class PasIdentityInfoFixture:
+    """Explicit PAS-only startup fixture; the legacy PAR fixture stays unchanged."""
+    def __init__(self, damage=None):
+        self.damage = damage
+        self.calls = []
+        self.dexes = [None, {'name': 'runtime-pas', 'competition_market': 'pas',
+                             'fullName': 'PAS'}]
+        if damage == 'ambiguous_dex':
+            self.dexes.append({'name': 'another-pas', 'fullName': 'PAS'})
+        elif damage == 'wrong_dex':
+            self.dexes[1] = {'name': 'runtime-other', 'competition_market': 'other'}
+        names = ['BTC', 'EWY']
+        if damage == 'missing_btc':
+            names.remove('BTC')
+        elif damage == 'missing_ewy':
+            names.remove('EWY')
+        if damage == 'wrong_coin_dex':
+            names[0] = 'other:BTC'
+        self.metadata = {
+            'universe': [dict(name=name, szDecimals=4, maxLeverage=20) for name in names],
+            'marginTables': [],
+            'collateralToken': 7,
+        }
+        collateral = 'USDPR' if damage == 'wrong_collateral' else 'USDP'
+        self.spot_metadata = {'tokens': [{'index': 7, 'name': collateral}]}
+
+    def __call__(self, payload):
+        self.calls.append(deepcopy(payload))
+        query = payload['type']
+        if query == 'perpDexs':
+            return deepcopy(self.dexes)
+        if query == 'meta':
+            assert payload.get('dex') == self.dexes[1]['name']
+            return deepcopy(self.metadata)
+        if query == 'spotMeta':
+            return deepcopy(self.spot_metadata)
+        raise AssertionError(f'unexpected offline PAS fixture query: {query}')
+
+
 @pytest.fixture
 def public():
     transport = PublicInfoFixture()
-    client = HyperliquidClient(transport, clock_ms=lambda: transport.now)
+    # Historical PAR tests use an injected callable; never let this fixture
+    # inherit the current PAS default or stand in for a production route.
+    client = HyperliquidClient(transport, clock_ms=lambda: transport.now, venue='par')
     client.startup()
     return transport, client, HyperliquidMarketData(client)
 

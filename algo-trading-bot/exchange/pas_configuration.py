@@ -66,6 +66,9 @@ def approval_preflight(root,plan,discovery,release,now):
 
 def approve_configuration(root,plan_path,discovery_path,release,output):
     """Actual terminal input is the only acceptance writer. No auto-approval flag."""
+    # Historical configuration approvals grant no current write authority.
+    # Configuration writes remain retired; only unsigned reporting is permitted.
+    raise ExchangeError('RETIRED_PAS_1X_CONFIGURATION_WRITE_ROUTE')
     import sys
     from dataclasses import asdict
     plan=json.loads(Path(plan_path).read_text());d=json.loads(Path(discovery_path).read_text())
@@ -97,6 +100,8 @@ def execute_configuration(root,plan_path,discovery_path,release,acceptance,outpu
     One durable attempt per approved plan; ambiguity consumes it. The shared
     UNKNOWN policy applies even though configuration does not submit an order.
     """
+    # Fail before imports, credentials, state directories, or a network client.
+    raise ExchangeError('RETIRED_PAS_1X_CONFIGURATION_WRITE_ROUTE')
     from .long_session import sha,require_release
     from .leverage_configuration import LeverageConfigurationTransport,wait_for_configuration_reads
     from .execution_journal import ExecutionJournal

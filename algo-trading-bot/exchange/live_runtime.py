@@ -1,6 +1,7 @@
 """Explicit future-session assembly; no key creation, approval, funding or activation."""
 from pathlib import Path
 import os
+from decimal import Decimal
 
 from .base_exchange import ExchangeError
 from .execution_journal import ExecutionJournal
@@ -16,11 +17,12 @@ from .sdk_transport import OfficialSDKTransport
 from .live_account_stream import LiveAccountStream
 from .perpetual_economics import FeeSchedule
 from .position_protection import ExchangeProtectionManager,ProtectionPolicy
-from .hyperliquid_market_data import ParMarketDataEngine
+from .hyperliquid_market_data import PasMarketDataEngine
 from .stream_first import StreamFirstMarketData
 import threading
 import time
 from .runtime_schedule import RuntimeSchedule
+from .competition_snapshot import CompetitionSnapshotRecorder
 
 
 class LiveRuntime:
@@ -37,6 +39,7 @@ class LiveRuntime:
         self.results=results
         self.schedule=schedule or RuntimeSchedule()
         self.monotonic=monotonic or time.monotonic
+        self.snapshot_recorder=CompetitionSnapshotRecorder(session)
 
     def save_results(self):
         if self.results is None:
@@ -57,7 +60,7 @@ class LiveRuntime:
             except Exception as exc:
                 self.session.execution.entries_paused=True
                 self.journal.event('MARKET_STREAM_FAILED',self.session.clock_ms(),error_type=type(exc).__name__)
-        self.market_thread=threading.Thread(target=run,name='par-public-stream',daemon=True)
+        self.market_thread=threading.Thread(target=run,name='pas-btc-ewy-public-stream',daemon=True)
         self.market_thread.start()
 
     def deactivate(self):
@@ -81,15 +84,21 @@ class LiveRuntime:
         try:
             while not stop.is_set():
                 try:
+                    snapshot = self.snapshot_recorder.observe()
+                    snapshot_blocked = (isinstance(snapshot, dict) and
+                                        snapshot.get('status') != 'RECORDED')
                     now=self.monotonic()
                     due=now>=next_scan
                     if due:
-                        # Failed scans also consume their scheduling slot.
+                        # Failed or blocked scans also consume their scheduling slot.
                         next_scan=now+self.schedule.scan_interval_seconds
-                    if due:
-                        self.session.cycle()
-                    else:
-                        self.session.cycle(scan=False)
+                    # Continue risk/position management, but never evaluate fresh entries
+                    # after a missed or unreconciled scoring snapshot.
+                    self.session.cycle(scan=bool(due and not snapshot_blocked))
+                    if snapshot_blocked:
+                        # Account reconciliation may recompute the general pause flag.
+                        # Re-latch snapshot failure after the cycle has completed.
+                        self.session.execution.entries_paused=True
                     if now>=next_export:
                         self.save_results()
                         next_export=now+self.schedule.export_interval_seconds
@@ -134,6 +143,36 @@ class LiveRuntime:
         self.journal.close()
 
 
+def verified_fee_scale(client, manually_verified):
+    """Use active asset metadata, never the perpDexs identity object.
+
+    A shared FeeSchedule is safe only when both active markets report exactly
+    the manually verified scale. Missing, duplicate, unequal or stale metadata
+    is a startup blocker, not a reason to guess fees.
+    """
+    from .base_exchange import decimal
+    from .competition_market import canonical_api_market
+    now = client.clock_ms()
+    if (not client.ready or client.metadata_timestamp_ms is None or
+            not 0 <= now-client.metadata_timestamp_ms <= 60000):
+        raise ExchangeError('PAS_FEE_METADATA_NOT_CURRENT')
+    active = set(client.markets)
+    scales = {}
+    for row in (client.metadata or {}).get('universe', []):
+        symbol = canonical_api_market(client.api_dex, row.get('name'))
+        if symbol not in active:
+            continue
+        if symbol in scales or row.get('deployerFeeScale') is None:
+            raise ExchangeError('PAS_DEPLOYER_FEE_SCALE_UNAVAILABLE')
+        scales[symbol] = decimal(row['deployerFeeScale'], nonnegative=True)
+    if set(scales) != active or len(set(scales.values())) != 1:
+        raise ExchangeError('PAS_ACTIVE_MARKET_FEE_SCALES_MISMATCH')
+    scale = next(iter(scales.values()))
+    if manually_verified is None or decimal(manually_verified, nonnegative=True) != scale:
+        raise ExchangeError('PAS_DEPLOYER_FEE_SCALE_MANUAL_VERIFICATION_MISMATCH')
+    return scale
+
+
 def build_live_runtime(*,team_address,approval,session_id,initial_start_ms,risk_policy,
                        scanner_policy,state_directory,fee_scale_verified=None,rate_policy=None,
                        protection_policy=None,clock_policy=None,schedule=None):
@@ -141,8 +180,8 @@ def build_live_runtime(*,team_address,approval,session_id,initial_start_ms,risk_
 
     PAPER/false stops before reading a key or opening an exchange client.
     The team key is never accepted. Account administration stays outside this API.
-    fee_scale_verified is a manually verified venue fee-scale observation, not a
-    profitability setting. It must currently equal the venue's published scale 1.
+    fee_scale_verified is manually checked against the current DEX deployerFeeScale;
+    it is not a profitability setting and cannot override venue-reported rates.
     """
     from eth_account import Account
     from market_regime_scanner import MarketRegimeScanner
@@ -156,8 +195,6 @@ def build_live_runtime(*,team_address,approval,session_id,initial_start_ms,risk_
     authorization.require(team_address,approval.signer_address)
     protection_policy=protection_policy or ProtectionPolicy()
     protection_policy.require()
-    if fee_scale_verified!=1:
-        raise ExchangeError('VENUE_FEE_SCALE_REVERIFICATION_REQUIRED')
     key=os.environ.get('API_WALLET_PRIVATE_KEY')
     if not key:
         raise ExchangeError('API_WALLET_SIGNER_REQUIRED')
@@ -178,11 +215,11 @@ def build_live_runtime(*,team_address,approval,session_id,initial_start_ms,risk_
     try:
         nonces=NonceManager(root/'nonces.sqlite',signer.address,journal=journal)
         rates=HyperliquidRateLimitManager(journal,policy=rate_policy,signer_address=signer.address)
-        client=HyperliquidClient(rate_limits=rates)
+        client=HyperliquidClient(rate_limits=rates,venue='pas')
         client.startup()
         account=HyperliquidAccount(client,team_address)
         public_market=HyperliquidMarketData(client)
-        market_stream=ParMarketDataEngine(public_market,include_trades=True)
+        market_stream=PasMarketDataEngine(public_market,include_trades=True)
         market=StreamFirstMarketData(client,market_stream)
         clock=ClockHealthMonitor(journal=journal,**(clock_policy or {}))
         recovery=LiveAccountRecovery(account,journal,initial_start_ms=initial_start_ms)
@@ -191,17 +228,20 @@ def build_live_runtime(*,team_address,approval,session_id,initial_start_ms,risk_
             reconciliation_ready=lambda:recovery.last_report.ready,
             feed_ready=lambda:bool(holder.get('stream') and holder['stream'].healthy),
             policy_leverage=risk_policy.leverage)
+        venue_scale=verified_fee_scale(client,fee_scale_verified)
         transport=OfficialSDKTransport(client,signer,team_address,nonces,authorization,rate_limits=rates)
         executor=HyperliquidExecution(client,transport=transport,account=account,journal=journal,
             context_provider=provider,validator=HyperliquidOrderValidator(client,policy_leverage=risk_policy.leverage),
             recovery=recovery,clock_health=clock,rate_limits=rates)
         ExchangeProtectionManager(executor,policy=protection_policy,managers=recovery.managers)
         base_fees=account._query('userFees')
-        multiplier=1+fee_scale_verified
         from .base_exchange import decimal
+        from .competition_market import COMPETITION_MARKET
+        venue_scale=verified_fee_scale(client,fee_scale_verified)
+        multiplier=Decimal(1)+venue_scale
         fees=FeeSchedule(decimal(base_fees['userAddRate'],nonnegative=True)*multiplier,
                          decimal(base_fees['userCrossRate'],nonnegative=True)*multiplier,
-                         'VERIFIED_PAR_DEPLOYER_SCALE_1_TIMES_REPORTED_USER_BASE_RATES')
+                         'VERIFIED_RUNTIME_'+COMPETITION_MARKET.upper()+'_DEPLOYER_FEE_SCALE')
         scanner=MarketRegimeScanner(market,scanner_policy,live_authorization=authorization,
                                    team_address=team_address,signer_address=signer.address)
         session=LiveExecutionSession(market,scanner,executor,

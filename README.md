@@ -1,10 +1,67 @@
 # Anchorium — Perpetual Alpha
 
-This is Team Anchorium's isolated Hyperliquid testnet migration repository.
-The existing cloned directory is the project root; the original NSE repository
-is not used or modified by this project.
+## Current model: PAS only, BTC and EWY
 
-## Final engineering audit — 4 October 2026
+The current/future route supports **BTC and EWY only on PAS, Hyperliquid
+Testnet**. This is a narrowed subset of the announced PAS markets, not permission
+to add other assets. The client discovers and verifies the API DEX and both coin
+identifiers at startup. PAR is retired from production; old practice/fill records
+and audit evidence below remain history, not activation evidence.
+
+Runtime metadata must identify **USDP** collateral. Both active assets must be
+present and valid. Unknown venues, ambiguous mappings, missing data, non-USDP
+collateral and unsupported assets fail closed; there is no PAR/native fallback.
+The frozen strategy is unchanged. Both assets are scanned, but only one candidate
+and one global position at exactly 1x CROSS are allowed. The conservative profile caps gross
+exposure at 25% of actual account equity; $100,000 is only a reference, not assumed
+funding. Both BTC and EWY have a $10m per-market OI ceiling; total PAS OI has a
+$50m ceiling. Lower authoritative exchange caps also apply. Increasing entries,
+including pending non-reduce-only orders, must remain strictly below 99% of each
+effective market USD, market size and DEX USD cap. This 1% headroom is an internal
+engineering safeguard, **not an official competition percentage**. Reduce-only
+exits retain their independent position, authorization and freshness checks.
+
+The exact 1x target is a policy gate, not exchange-setting authority. This change
+is code-side only and does not change either exchange setting. Readiness requires
+fresh, well-formed 1x CROSS readbacks for both BTC and EWY and rejects 20x,
+isolated margin, missing data, or malformed per-market observations. PAPER mode
+and `ALLOW_LIVE_ORDERS=false` remain mandatory; unsigned reports grant no signing
+or order authority. Retired configuration/order routes remain blocked.
+
+### Offline review and read-only startup
+
+The existing entrypoint and profile filenames remain compatible; their scope is
+now BTC/EWY, not BTC alone:
+
+```sh
+python -m pip install -r algo-trading-bot/requirements.txt
+python scripts/check_strategy_freeze.py
+python scripts/run_pas_btc.py --output /tmp/pas-btc-ewy-preflight.json
+```
+
+Preflight never loads a private key or submits an order. `BLOCKED` is expected:
+public data and offline tests do not certify live readiness. `SAFE_HALT` indicates
+a failed venue/data/account probe. Normal development remains `PAPER` with
+`ALLOW_LIVE_ORDERS=false`. No service is installed or enabled by this change.
+
+Future explicit live startup also requires an unexpired human approval, current
+fee-scale verification from **each active asset's universe metadata**, verified
+funded unified-account NAV and API wallet, enabled/certified protection, and a
+commit-bound certification report identifying both active coin mappings. A BTC-only
+certificate is invalid for BTC/EWY. Per-market controlled lifecycle, fills, exit,
+partial-fill, protection and restart checks are required for **both** assets.
+Existing disabled protection remains disabled. No certification artifact is
+provided, and this branch is **not live-ready**.
+
+The scored entry window remains 19 October 2026 12:00 UTC through 6 November 2026
+12:00 UTC (end exclusive). Auditable 12:00 UTC snapshots must use fresh post-read
+clock checks and reconciled account truth; a failed/missed snapshot pauses entries.
+
+Run the no-sign review suite using the CI command in
+[`.github/workflows/pas-btc-safety.yml`](.github/workflows/pas-btc-safety.yml).
+The detailed fix/review notes are in [PAS BTC/EWY review fixes](docs/pas_btc_ewy_review_fixes.md).
+
+## Historical engineering audit — 4 October 2026 (superseded for the PAS BTC scored phase)
 
 The current verdict is **ACCOUNT_SETUP_REQUIRED**. PAPER/false remains enforced.
 Passing unit tests and public-data probes do not certify a funded account,
@@ -64,7 +121,7 @@ The original `signal_brain.py` is preserved byte for byte. A separate public dat
 runner now feeds completed UTC crypto candles into that unchanged brain. Existing
 NSE research modules remain as classified legacy references.
 
-## Phases 1–5: frozen strategy and public par data
+## Historical multi-market migration notes — PAR (not the current production route)
 
 The [strategy manifest](docs/strategy_freeze.json) locks the signal file, eight
 strategy methods and 32 parameters to the tagged baseline. Verification runs
@@ -431,3 +488,10 @@ funded-account readiness. `LIVE_READY` remains false pending real certification.
 The [single-position/compliance report](docs/single_position_compliance_report_2026-10-04.md)
 explains the audit, policy, tests, limits and future roadmap. `MAX_GLOBAL_POSITIONS=1`,
 `EXECUTION_MODE=PAPER` and `ALLOW_LIVE_ORDERS=false` remain enforced.
+
+
+## PAS BTC release hardening
+
+The production profile loader now enforces risk ceilings even if the example JSON is edited: risk per trade, daily loss, gross exposure, margin utilization, funding cost, spread, slippage, depth participation, drawdown and the competition OI caps cannot be relaxed above the reviewed profile limits. The example starting equity remains a reference only; account-reported equity and available margin determine live sizing.
+
+The opt-in `deploy/anchorium-pas-btc.service` systemd unit restarts a crashed process, persists state outside the repository and uses restrictive filesystem settings. Install and enable it only after controlled testnet order/fill/exit and protection certification. A restart is not permission to trade: startup still reconciles account state and verifies protection before entries can resume. The unit is not enabled automatically. No certification artifact is included in this branch, and the system remains blocked from scored-phase readiness until every required gate is evidenced.
