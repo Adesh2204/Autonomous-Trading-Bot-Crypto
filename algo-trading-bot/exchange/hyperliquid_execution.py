@@ -116,18 +116,21 @@ class HyperliquidExecution:
                 self.position_guard.revoke('EXACT_FULL_CLOSE_POSITION_CHANGED_BEFORE_SIGNING')
                 raise ExchangeError('EXACT_FULL_CLOSE_POSITION_CHANGED_BEFORE_SIGNING')
         if entry:
-            # Re-read account truth at the SDK boundary as well as during the
-            # full preflight. Never substitute a local manager's flat flag.
-            before=self.account.get_positions()
-            orders=self.account.get_frontend_open_orders()
-            after=self.account.get_positions()
-            if before or after or orders:
-                self.entries_paused=True
-                self.position_guard.revoke('ACCOUNT_CHANGED_BEFORE_SIGNING')
-                self.journal.event('COMPLIANCE_SIGNING_BLOCK',now,
-                    code='POSITION_LIMIT',reason='ACCOUNT_CHANGED_BEFORE_SIGNING',
-                    actual_position_count=len(after),open_order_count=len(orders))
-                raise ExchangeError('ACCOUNT_CHANGED_BEFORE_SIGNING')
+            self._require_entry_account(now,entry_request)
+
+    def _require_entry_account(self, now, entry_request):
+        # Re-read account truth at the SDK boundary as well as during the
+        # full preflight. Never substitute a local manager's flat flag.
+        before=self.account.get_positions()
+        orders=self.account.get_frontend_open_orders()
+        after=self.account.get_positions()
+        if before or after or orders:
+            self.entries_paused=True
+            self.position_guard.revoke('ACCOUNT_CHANGED_BEFORE_SIGNING')
+            self.journal.event('COMPLIANCE_SIGNING_BLOCK',now,
+                code='POSITION_LIMIT',reason='ACCOUNT_CHANGED_BEFORE_SIGNING',
+                actual_position_count=len(after),open_order_count=len(orders))
+            raise ExchangeError('ACCOUNT_CHANGED_BEFORE_SIGNING')
 
     def preview_order(self, symbol, side, quantity, price, *, reduce_only=False, tif='Gtc'):
         return self.client.market(symbol).normalize_order(side, quantity, price,

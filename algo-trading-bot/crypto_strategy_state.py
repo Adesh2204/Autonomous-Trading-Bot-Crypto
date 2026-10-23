@@ -4,6 +4,7 @@ from decimal import Decimal
 import threading
 
 from exchange.base_exchange import ExchangeError
+from exchange.market_health import bar_step
 from session_manager import SessionManager
 from strategy_contract import ManagementState, baseline_parameters, frozen_management_class
 
@@ -80,12 +81,13 @@ class CryptoStrategyState(frozen_management_class()):
             raise ExchangeError('STRATEGY_CANDLE_IDENTITY_MISMATCH')
         if self.last_candle_ms is not None and candle.timestamp_ms<=self.last_candle_ms:
             return None
-        if self.last_candle_ms is not None and candle.timestamp_ms-self.last_candle_ms!=60000:
+        step=bar_step([candle])
+        if self.last_candle_ms is not None and candle.timestamp_ms-self.last_candle_ms!=step:
             raise ExchangeError('STRATEGY_STATE_CANDLE_GAP')
-        if candle.timestamp_ms+60000>self.clock_ms():
+        if candle.timestamp_ms+step>self.clock_ms():
             raise ExchangeError('OPEN_CANDLE_NOT_ELIGIBLE')
         self.last_candle_ms=candle.timestamp_ms
-        ts=datetime.fromtimestamp((candle.timestamp_ms+60000)/1000,timezone.utc)
+        ts=datetime.fromtimestamp((candle.timestamp_ms+step)/1000,timezone.utc)
         self._check_day_reset(ts)
         return self.notify_candle_close({'Timestamp':ts,'Close':float(candle.close)})
 

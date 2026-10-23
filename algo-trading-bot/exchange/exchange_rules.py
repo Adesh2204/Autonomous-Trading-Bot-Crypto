@@ -21,14 +21,15 @@ class RiskPermission:
 
     @classmethod
     def from_decision(cls, decision, request, candidate_id, now_ms, *, signal_timestamp_ms=None,
-                      setup_type=None):
+                      setup_type=None, signal_interval_ms=60000):
         if decision.allowed is not True or request.quantity > decision.quantity:
             raise ExchangeError('RISK_PERMISSION_DENIED')
         from .compliance_guard import OrderProvenance
         provenance = (OrderProvenance(candidate_id, request.strategy_id, setup_type,
             signal_timestamp_ms, request.symbol, request.side, 'FROZEN_VWAP_SIGNAL_AND_BASELINE_RISK',
             asdict(decision), dict(allowed=True, quantity=str(request.quantity), price=str(request.price),
-                                 order_type=request.order_type, tif=request.tif))
+                                 order_type=request.order_type, tif=request.tif),
+            signal_interval_ms=signal_interval_ms)
             if signal_timestamp_ms is not None and setup_type is not None else None)
         return cls(candidate_id, request.symbol, request.side, decision.quantity, now_ms,
                    limit_price=request.price, provenance=provenance)

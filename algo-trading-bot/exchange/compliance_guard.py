@@ -39,6 +39,11 @@ class OrderProvenance:
     source_position_id: str | None = None
     input_source: str = 'OWN_STRATEGY_PUBLIC_MARKET'
     test_authorization: dict | None = None
+    signal_interval_ms: int = 60000
+
+
+# Entry window after the signal bar completes, per strategy bar interval.
+SIGNAL_AGE_ALLOWANCE_MS = {60000: 120000, 3600000: 300000}
 
 
 @dataclass(frozen=True)
@@ -119,6 +124,8 @@ class ComplianceGuard:
             if type(qualification_scope) is not EmergencyComplianceScope:
                 raise ExchangeError('P0_EXACT_COMPLIANCE_SCOPE_REQUIRED')
         self.qualification_scope = qualification_scope
+        self.l2_entry_capacity = None
+        self.extra_setup_types = frozenset()
         self._approved = {}
         self._permits = {}
 
@@ -201,9 +208,12 @@ class ComplianceGuard:
                 if not request.reduce_only or not p.source_position_id or held is None:
                     return finish(False, 'MISSING_SOURCE_POSITION')
             elif classification == 'STRATEGY_ENTRY':
-                if request.reduce_only or p.action_type != 'STRATEGY' or not 60000 <= now-p.signal_timestamp_ms <= 180000:
+                interval = p.signal_interval_ms
+                allowance = SIGNAL_AGE_ALLOWANCE_MS.get(interval) if type(interval) is int else None
+                if (request.reduce_only or p.action_type != 'STRATEGY' or allowance is None or
+                        not interval <= now-p.signal_timestamp_ms <= interval+allowance):
                     return finish(False, 'MISSING_STRATEGY_PROVENANCE')
-                if p.setup_type not in {'PULLBACK_LONG','PULLBACK_SHORT','BREAKOUT_LONG','BREAKDOWN_SHORT'}:
+                if p.setup_type not in {'PULLBACK_LONG','PULLBACK_SHORT','BREAKOUT_LONG','BREAKDOWN_SHORT'} | self.extra_setup_types:
                     return finish(False, 'UNEXPLAINED_ORDER')
             elif classification == 'CONTROLLED_TEST_ORDER':
                 a = p.test_authorization or {}
@@ -303,7 +313,14 @@ class ComplianceGuard:
                 checks.update(executable_depth=str(depth), order_size=str(request.quantity),
                               participation=str(request.quantity/depth) if depth else None)
                 separate_l2 = classification == 'CONTROLLED_TEST_ORDER' and self.qualification_scope is not None
-                if not separate_l2 and (depth <= 0 or request.quantity > depth*self.policy.depth_participation):
+                if self.l2_entry_capacity is not None and classification == 'STRATEGY_ENTRY':
+                    # Opt-in owner check: displayed depth up to the order's own
+                    # limit, at the owner's participation; replaces the BBO rule.
+                    capacity = self.l2_entry_capacity(request)
+                    checks.update(l2_entry_capacity=str(capacity), liquidity_policy='L2_DEPTH_WITHIN_LIMIT')
+                    if capacity <= 0 or request.quantity > capacity:
+                        return finish(False, 'BOOK_MANIPULATION_RISK')
+                elif not separate_l2 and (depth <= 0 or request.quantity > depth*self.policy.depth_participation):
                     return finish(False, 'BOOK_MANIPULATION_RISK')
                 if separate_l2:
                     checks['liquidity_policy'] = 'P0_EXACT_SCOPE_L2_CHECK; NOT_OLD_BBO_RULE'
