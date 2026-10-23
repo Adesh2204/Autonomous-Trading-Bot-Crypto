@@ -187,7 +187,8 @@ class Fake(OvernightRuntime):
         self.last_heartbeat = 0
         self.bars = {}
         self.legs = {s: ScalpLeg(s) for s in self.m.markets}
-        self.executor = SimpleNamespace(entries_paused=False, journal=SimpleNamespace(event=lambda *a, **k: None))
+        self.executor = SimpleNamespace(entries_paused=False, journal=SimpleNamespace(event=lambda *a, **k: None),
+                                        _after_action=lambda: setattr(self.executor, 'entries_paused', False))
         self.protection = SimpleNamespace(states={}, entries_allowed=True, ensure_all=lambda **k: None)
         self.stream = SimpleNamespace(connected=True, poll=lambda: None, pending=False, ready=True, healthy=True)
         self.auth = SimpleNamespace(require=lambda *a: None)
@@ -212,8 +213,15 @@ class Fake(OvernightRuntime):
         self.state['entries'].append(self.now)
         self.state['last_entry_ms'] = self.now
 
+    stale = False
+
     def _bars(self, symbol, interval, count):
-        return {'5m': five(101), '15m': UP15}[interval]
+        if interval == '15m':
+            return UP15
+        b = five(101)
+        close = self.now // 300000 * 300000
+        shift = close - 300000 - b[-1]['t'] - (600000 if self.stale else 0)
+        return [dict(x, t=x['t'] + shift) for x in b]
 
     def most_liquid(self):
         return 'pas:BTC'
@@ -380,3 +388,58 @@ def test_startup_starts_background_account_receiver_and_reconciles_events(tmp_pa
     r._event = lambda *a, **k: None
     r.startup()
     assert started == [1] and reconciled
+
+
+def test_stale_5m_bar_never_signals(tmp_path):
+    r = Fake(tmp_path, now=T0 + 3 * 300000 + 20000)
+    r.stale = True
+    r.state['last_entry_ms'] = r.now          # no guarantee trade either
+    r.decide()
+    assert not any(c[0] == 'enter' for c in r.calls)
+
+
+def test_paused_gate_is_rederived_from_account_truth_before_entry(tmp_path):
+    r = Fake(tmp_path, now=T0 + 3 * 300000 + 20000)
+    r.executor.entries_paused = True
+    r.decide()
+    assert any(c[0] == 'enter' for c in r.calls)
+
+
+# ---------- runtime provenance through the real compliance guard (offline fixture) ----------
+from test_live_exchange_execution import live          # noqa: E402
+from test_single_position_compliance import evaluate   # noqa: E402
+from test_exchange_migration import NOW as FIXTURE_NOW # noqa: E402
+from exchange.exchange_rules import RiskPermission     # noqa: E402
+from exchange.order_lifecycle import OrderRequest      # noqa: E402
+
+
+def runtime_permission(req, *, setup, signal_ms, classification='STRATEGY_ENTRY', action='STRATEGY', reason='R',
+                       source=None):
+    prov = OvernightRuntime._provenance(None, 'k', req, setup=setup, signal_ms=signal_ms,
+                                        classification=classification, action=action, reason=reason, source=source)
+    return RiskPermission('k', req.symbol, req.side, req.quantity, FIXTURE_NOW, reduce_only=req.reduce_only,
+                          reason=None if not req.reduce_only else reason, limit_price=req.price, provenance=prov)
+
+
+def test_runtime_entry_provenance_passes_compliance_only_with_opt_in(live):
+    req = OrderRequest('par:BTC', 'BUY', D('.2'), D('100'), tif='Ioc', strategy_id='MOMENTUM_LONG', client_order_id='k')
+    token = runtime_permission(req, setup='MOMENTUM_LONG', signal_ms=FIXTURE_NOW - 90000)
+    assert evaluate(live, req, token=token).code == 'UNEXPLAINED_ORDER'
+    live.executor.compliance_guard.extra_setup_types = frozenset({'MOMENTUM_LONG'})
+    assert evaluate(live, req, token=token).allowed
+    stale = runtime_permission(req, setup='MOMENTUM_LONG', signal_ms=FIXTURE_NOW - 181000)
+    assert evaluate(live, req, token=stale).code == 'MISSING_STRATEGY_PROVENANCE'
+
+
+def test_runtime_take_profit_and_protective_exit_pass_compliance(live):
+    live.fixture.position('.2')
+    tp = OrderRequest('par:BTC', 'SELL', D('.2'), D('100'), reduce_only=True, tif='Gtc', strategy_id='MOMENTUM_TP',
+                      client_order_id='k')
+    token = runtime_permission(tp, setup='MOMENTUM_TP', signal_ms=FIXTURE_NOW - 60000, classification='STRATEGY_EXIT',
+                               reason='TAKE_PROFIT_1_5_ATR', source='par:BTC')
+    assert evaluate(live, tp, token=token).allowed
+    ex = OrderRequest('par:BTC', 'SELL', D('.2'), D('100'), reduce_only=True, tif='Ioc', strategy_id='MOMENTUM_EXIT',
+                      client_order_id='k')
+    token = runtime_permission(ex, setup='MOMENTUM_EXIT', signal_ms=FIXTURE_NOW - 60000, classification='PROTECTIVE_EXIT',
+                               action='RISK_PROTECTION', reason='TIME_STOP_60_MIN', source='par:BTC')
+    assert evaluate(live, ex, token=token).allowed

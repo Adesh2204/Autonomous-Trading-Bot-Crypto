@@ -251,9 +251,9 @@ class OvernightRuntime:
                         top_ask_qty=quote.ask_quantity, slippage_bps=slip_bps)
             return None
         limit = spec.normalize_price(entry_ref, 'BUY')
-        # Signal time: the last completed 1m bar inside the completed 5m bar.
-        signal_ms = decision['bar_ms'] + 4 * MIN_MS
-        key = f'scalp:{symbol}:{decision["bar_ms"]}'
+        # Signal time: the last completed 1m bar before the decision (set by decide()).
+        signal_ms = decision['signal_ms']
+        key = f'scalp:{symbol}:{signal_ms}'
         request = OrderRequest(symbol, 'BUY', quantity, limit, tif='Ioc', strategy_id='MOMENTUM_LONG',
                                client_order_id=key)
         permission = RiskPermission(key, symbol, 'BUY', quantity, self.clock_ms(), limit_price=limit,
@@ -453,8 +453,13 @@ class OvernightRuntime:
         half = self.guard.size_factor_half()
         found = []
         for symbol in self.m.markets:
-            decision = setup(self._bars(symbol, '5m', 40), self._bars(symbol, '15m', 60), self.p)
+            bars5 = self._bars(symbol, '5m', 40)
+            # pas markets skip empty 5m candles; only the bar that just closed may signal.
+            if not bars5 or bars5[-1]['t'] != bar_close - 5 * MIN_MS:
+                continue
+            decision = setup(bars5, self._bars(symbol, '15m', 60), self.p)
             if decision:
+                decision['signal_ms'] = bar_close - MIN_MS
                 self._event('SIGNAL', symbol=symbol, **decision)
                 if decision['side'] == 'LONG':
                     found.append((symbol, decision))
@@ -462,6 +467,8 @@ class OvernightRuntime:
         if not found and now - last >= self.p.guarantee_ms:
             symbol = self.most_liquid()
             decision = guaranteed(self._bars(symbol, '5m', 40), self._bars(symbol, '15m', 60), self.p)
+            if decision:
+                decision['signal_ms'] = bar_close - MIN_MS
             self._event('TRADE_GUARANTEE_CHECK', symbol=symbol, decision=decision)
             if decision and decision['side'] == 'LONG':
                 found.append((symbol, decision))
@@ -471,6 +478,9 @@ class OvernightRuntime:
                 self._stream_health()
                 self.protection.ensure_all()
                 self.cleanup_orders()
+                if self.executor.entries_paused:
+                    # A compliance block pauses entries until account truth is re-read.
+                    self.executor._after_action()
                 if self.executor.entries_paused or not self.protection.entries_allowed:
                     self._event('ENTRY_SKIPPED', symbol=symbol, reason='ENTRY_GATE',
                                 entries_paused=self.executor.entries_paused)
