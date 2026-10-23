@@ -359,3 +359,24 @@ def test_barrier_blocks_any_other_unresolved_intent(monkeypatch, row):
 def test_barrier_blocks_par_exposure(monkeypatch):
     with pytest.raises(ExchangeError, match='OTHER_DEX_EXPOSURE'):
         barrier(monkeypatch, [], par_positions=['0.1']).require()
+
+
+def test_decision_window_closes_forty_seconds_after_the_bar(tmp_path):
+    r = Fake(tmp_path, now=T0 + 3 * 300000 + 41000)
+    r.decide()
+    assert not any(c[0] == 'enter' for c in r.calls)
+    r = Fake(tmp_path, now=T0 + 3 * 300000 + 40000)
+    r.decide()
+    assert any(c[0] == 'enter' for c in r.calls)
+
+
+def test_startup_starts_background_account_receiver_and_reconciles_events(tmp_path):
+    r = Fake(tmp_path, now=T0)
+    started, reconciled = [], []
+    r.stream = SimpleNamespace(background_receiving=False, start_receiver=lambda: started.append(1),
+                               receiver_fatal=None, pending=True, connected=True, ready=False, healthy=True,
+                               reconcile=lambda: reconciled.append(1))
+    r.cleanup_orders = lambda: None
+    r._event = lambda *a, **k: None
+    r.startup()
+    assert started == [1] and reconciled

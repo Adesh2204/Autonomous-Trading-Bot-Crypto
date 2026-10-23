@@ -385,12 +385,13 @@ class OvernightRuntime:
             self.halt('CONSECUTIVE_ORDER_ERRORS')
 
     def _stream_health(self):
+        # The receiver thread connects, pings and polls continuously; the owner
+        # thread only reconciles after events or reconnects.
         stream = self.stream
         try:
-            if not stream.connected:
-                stream.connect()
-            stream.poll()
-            if stream.pending or (stream.connected and not getattr(stream, 'ready', True)):
+            if getattr(stream, 'receiver_fatal', None):
+                self._event('STREAM_ERROR', error='RECEIVER_FATAL:' + str(stream.receiver_fatal))
+            elif stream.pending or (stream.connected and not getattr(stream, 'ready', True)):
                 stream.reconcile()
         except ExchangeError as exc:
             self._event('STREAM_ERROR', error=str(exc))
@@ -436,8 +437,9 @@ class OvernightRuntime:
         now = self.clock_ms()
         bar_close = now // (5 * MIN_MS) * (5 * MIN_MS)
         # The signal is stamped at the last 1m bar (close - 60 s); compliance accepts
-        # 60-180 s of age, so act 5-100 s after the 5m close (headroom for submission).
-        if not 5000 <= now - bar_close <= 100000 or self.state.get('decided_bar') == bar_close:
+        # 60-180 s of age. Decide 5-40 s after the 5m close: a slow context load
+        # (~40 s observed) still signs well inside the window.
+        if not 5000 <= now - bar_close <= 40000 or self.state.get('decided_bar') == bar_close:
             return
         self.state['decided_bar'] = bar_close
         if self.positions() or self.state['halted'] or now >= self.m.flatten_ms:
@@ -466,6 +468,7 @@ class OvernightRuntime:
                 half = True
         for symbol, decision in found[:1]:
             try:
+                self._stream_health()
                 self.protection.ensure_all()
                 self.cleanup_orders()
                 if self.executor.entries_paused or not self.protection.entries_allowed:
@@ -556,7 +559,9 @@ class OvernightRuntime:
         if trade:
             self.legs[trade['symbol']].plan_stop = decimal(trade['stop'], positive=True)
         self.recovery.recover()
-        for _ in range(20):
+        if not getattr(self.stream, 'background_receiving', True):
+            self.stream.start_receiver()
+        for _ in range(30):
             if self._stream_health():
                 break
             time.sleep(1)
@@ -592,7 +597,7 @@ class OvernightRuntime:
                         if self.state['trade'] and not self.positions():
                             self._closed_trade(self.state['trade'])
                     self.heartbeat()
-                    stop.wait(15)
+                    stop.wait(5)
                     continue
                 self._stream_health()
                 self.manage()
@@ -608,7 +613,7 @@ class OvernightRuntime:
                 self._event('CYCLE_ERROR', error=str(exc))
             except Exception as exc:
                 self._event('CYCLE_EXCEPTION', error=f'{type(exc).__name__}:{exc}')
-            stop.wait(15)
+            stop.wait(5)
         # 08:50 IST: final verification, report, and a clean exit (no restart).
         if self.positions() or self.own_orders():
             self.flatten_all('FINAL_EXIT_FLATTEN')
