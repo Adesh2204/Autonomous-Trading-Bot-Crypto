@@ -127,3 +127,16 @@
   This configuration approval is not live-order activation. Preserve the
   original historical ZIP/source proof if supplied; absent provenance evidence
   does not block genuine public market-data PAPER collection.
+
+- The 24 October overnight directive authorizes, for 2026-10-24 00:30-09:00 IST only,
+  an unattended momentum scalper on testnet PAS inside the committed limits: BTC/EWY,
+  LONG-only (SHORT setups are detected and logged but never traded), one position,
+  <= $1,000 per entry, <= 2 entries per hour, 1x cross, default 10% top-of-book
+  compliance rule, 0.4% risk sizing, exchange-side reduce-only stop and take-profit,
+  flat by 08:45 IST, verified exit at 08:50 IST with no restart. Live orders go only
+  through `scripts/run_overnight.py`, bound to `docs/overnight_2026-10-24/mandate.json`
+  and its matching release receipt. The shared-account barrier stays in force with one
+  exact exemption: the historical qualification intent (configuration_isolation CLOID
+  and INTENT) while the exchange reports that cloid as unknownOid. The user's 23-Oct
+  work is preserved in `stash@{0}` (backup-23oct-directive) and
+  `~/backup-23oct-20261024-0025.patch`.
