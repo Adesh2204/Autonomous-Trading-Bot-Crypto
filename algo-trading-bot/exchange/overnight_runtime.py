@@ -177,6 +177,7 @@ class OvernightRuntime:
         self.disconnected_since = None
         self.last_heartbeat = 0
         self.bars = {}
+        self.preflight = lambda: None
 
     # ---------- durable state ----------
     def _load_state(self):
@@ -254,6 +255,7 @@ class OvernightRuntime:
         # Signal time: the last completed 1m bar before the decision (set by decide()).
         signal_ms = decision['signal_ms']
         key = f'scalp:{symbol}:{signal_ms}'
+        self.preflight()
         request = OrderRequest(symbol, 'BUY', quantity, limit, tif='Ioc', strategy_id='MOMENTUM_LONG',
                                client_order_id=key)
         permission = RiskPermission(key, symbol, 'BUY', quantity, self.clock_ms(), limit_price=limit,
@@ -294,6 +296,7 @@ class OvernightRuntime:
         spec = self.client.market(trade['symbol'])
         target = spec.normalize_price(decimal(trade['target'], positive=True), 'SELL')
         key = f'scalp-tp:{trade["symbol"]}:{trade["entry_ms"]}'
+        self.preflight()
         request = OrderRequest(trade['symbol'], 'SELL', abs(position.quantity), target, reduce_only=True,
                                tif='Gtc', strategy_id='MOMENTUM_TP', client_order_id=key)
         permission = RiskPermission(key, trade['symbol'], 'SELL', abs(position.quantity), self.clock_ms(),
@@ -329,6 +332,7 @@ class OvernightRuntime:
         slip = decimal(self.m.exit_slippage)
         limit = spec.normalize_price(quote.bid * (1 - slip) if side == 'SELL' else quote.ask * (1 + slip), side)
         key = f'scalp-exit:{symbol}:{self.clock_ms()}'
+        self.preflight()
         request = OrderRequest(symbol, side, abs(position.quantity), limit, reduce_only=True, tif='Ioc',
                                strategy_id='MOMENTUM_EXIT', client_order_id=key)
         permission = RiskPermission(key, symbol, side, abs(position.quantity), self.clock_ms(), reduce_only=True,
@@ -648,8 +652,13 @@ class SharedAccountBarrier:
         self.root, self.account, self.client, self.owned = Path(root), account, client, owned
         self.recheck_ms = recheck_ms
         self.historical_checked_ms = None
+        self.passed_ms = None
 
-    def require(self):
+    def require(self, *, fresh_within_ms=0):
+        """Full check; inside a context load, reuse a pass at most `fresh_within_ms` old."""
+        if (fresh_within_ms and self.passed_ms is not None and
+                0 <= self.client.clock_ms() - self.passed_ms <= fresh_within_ms):
+            return
         from .terminal_evidence import local_execution_state
         from .configuration_isolation import CLOID, INTENT
         from .hyperliquid_client import RequestsInfoTransport
@@ -685,6 +694,9 @@ class SharedAccountBarrier:
                 occupied = bool(value)
             if occupied:
                 raise ExchangeError('OTHER_DEX_EXPOSURE_OR_ORDERS_BLOCK_PAS_SIGNING')
+        from .pas_readiness import require_pas_market_status
+        require_pas_market_status(self.client)
+        self.passed_ms = self.client.clock_ms()
 
 
 def build_overnight_runtime(root, mandate_path, release_path, *, state_dir):
@@ -726,7 +738,6 @@ def build_overnight_runtime(root, mandate_path, release_path, *, state_dir):
     owned = lambda: {r['intent_key'] for r in journal.intents() if r['created_ms'] >= m.starts_ms}
     barrier = SharedAccountBarrier(root, account, client, owned)
     barrier.require()
-    require_pas_market_status(client)
     # All evidence and barriers pass before the key is touched.
     key, _ = read_api_key(root)
     try:
@@ -748,8 +759,9 @@ def build_overnight_runtime(root, mandate_path, release_path, *, state_dir):
     original_load = provider.load
 
     def guarded_load(request, *, critical=False):
-        barrier.require()
-        require_pas_market_status(client)
+        # The runtime runs the full barrier right before issuing each permission;
+        # the 5 s permission must survive the ~4 s context load that follows.
+        barrier.require(fresh_within_ms=10000)
         return original_load(request, critical=critical)
     provider.load = guarded_load
     transport = OfficialSDKTransport(client, signer, TEAM, nonces, auth, rate_limits=rates)
@@ -767,6 +779,8 @@ def build_overnight_runtime(root, mandate_path, release_path, *, state_dir):
     protection = ScalpProtection(executor, policy=policy, managers=legs)
     stream = LiveAccountStream(TEAM, recovery, executor, clock_ms=client.clock_ms)
     holder['stream'] = stream
-    return OvernightRuntime(mandate=m, executor=executor, protection=protection, recovery=recovery,
-                            account=account, client=client, market=public, stream=stream, auth=auth,
-                            legs=legs, state_dir=state_dir)
+    runtime = OvernightRuntime(mandate=m, executor=executor, protection=protection, recovery=recovery,
+                               account=account, client=client, market=public, stream=stream, auth=auth,
+                               legs=legs, state_dir=state_dir)
+    runtime.preflight = barrier.require
+    return runtime

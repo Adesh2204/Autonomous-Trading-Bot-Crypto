@@ -334,7 +334,9 @@ def test_short_position_is_closed_because_scope_is_long_only(tmp_path):
 # ---------- shared-account barrier ----------
 def barrier(monkeypatch, unresolved, status='unknownOid', par_positions=(), owned=()):
     import exchange.terminal_evidence as te
+    import exchange.pas_readiness as pr
     from exchange.overnight_runtime import SharedAccountBarrier
+    monkeypatch.setattr(pr, 'require_pas_market_status', lambda client: None)
     monkeypatch.setattr(te, 'local_execution_state', lambda root: dict(
         status='BLOCKED_UNRESOLVED_INTENT' if unresolved else 'NO_LOCAL_UNRESOLVED_INTENT', unresolved=list(unresolved)))
     reads = dict(clearinghouseState=dict(assetPositions=[dict(position=dict(szi=s)) for s in par_positions]),
@@ -443,3 +445,18 @@ def test_runtime_take_profit_and_protective_exit_pass_compliance(live):
     token = runtime_permission(ex, setup='MOMENTUM_EXIT', signal_ms=FIXTURE_NOW - 60000, classification='PROTECTIVE_EXIT',
                                action='RISK_PROTECTION', reason='TIME_STOP_60_MIN', source='par:BTC')
     assert evaluate(live, ex, token=token).allowed
+
+
+def test_barrier_pass_is_reused_only_inside_the_freshness_window(monkeypatch):
+    b = barrier(monkeypatch, [])
+    clock = [T0]
+    b.client.clock_ms = lambda: clock[0]
+    b.require()
+    reads = []
+    b.client.rate_limits.read = lambda kind, op, **k: reads.append(kind) or op()
+    clock[0] = T0 + 10000
+    b.require(fresh_within_ms=10000)
+    assert reads == []                     # reused: verified 10 s ago
+    clock[0] = T0 + 10001
+    b.require(fresh_within_ms=10000)
+    assert len(reads) == 3                 # stale pass: full re-check
