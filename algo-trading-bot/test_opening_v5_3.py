@@ -104,6 +104,7 @@ def test_opening_check_independent_states_and_no_cached_claims(monkeypatch,tmp_p
         updated_ms=NOW,session_id='session',pid=123,team_wallet=TEAM,
         TRADING_AUTHORIZED=True,AUTO_TRADING_ACTIVE=True,authorization_valid=True)
     value['account'].update(source='EXCHANGE_REPORTED_ACCOUNT_OBSERVER',entries_paused=False)
+    value['market_history']['pas:HYPE']=dict(strategy_history_ready=True,latest_completed_ms=NOW)
     atomic_json(tmp_path/'current.json',dict(session_id='session',output=str(tmp_path),pid=123))
     atomic_json(tmp_path/'status.json',value);before=(tmp_path/'status.json').read_bytes()
     monkeypatch.setattr(opening_audit.time,'time_ns',lambda:NOW*1000000)
