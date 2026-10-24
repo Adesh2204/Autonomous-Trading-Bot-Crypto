@@ -254,6 +254,10 @@ class OvernightRuntime:
     def pnl_pct(self, equity):
         return (equity / self.start_equity - 1) * 100
 
+    def guard_return(self, equity):
+        """The return the guard's locks and loss cap are measured on."""
+        return self.pnl_pct(equity)
+
     # ---------- orders ----------
     def _provenance(self, key, request, *, setup, signal_ms, classification='STRATEGY_ENTRY', action='STRATEGY',
                     reason='MOMENTUM_BREAKOUT_15M_TREND', source=None):
@@ -685,7 +689,7 @@ class OvernightRuntime:
                     self.last_account_ms = now
                     self.manage()
                     equity = self.equity()
-                    self._apply_verdict(self.guard.check(self.pnl_pct(equity)))
+                    self._apply_verdict(self.guard.check(self.guard_return(equity)))
                 if not self.state['halted']:
                     self.decide()
                 self._save()

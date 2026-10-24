@@ -149,3 +149,15 @@
   verified on the exchange (position side/size, exchange stop, take-profit); any
   mismatch flattens, cancels and halts without retry. Rank protection uses the
   published fractional score; LOCK flattens and pauses, -0.30% halts for the day.
+
+- The 24 October continuous directive (approved 16:24 IST, mission step 4) runs the same
+  momentum scalper from the end of the day session to 2026-11-06 11:30 UTC (flatten before the
+  final 12:00 UTC sample) with the committed limits unchanged: BTC/EWY, LONG and SHORT, one
+  position, <= $1,000 per entry, <= 2 entries per hour, 1x cross, 10% top-of-book, 0.4% risk.
+  No compliance limit was changed; options a/b/c (other markets, order slicing, 25% of the
+  book) were NOT approved. Live orders go only through `scripts/run_continuous.py`, bound to
+  `docs/continuous_2026-10-24/mandate.json` and its release receipt. Each period runs from one
+  12:00 UTC sample to the next: LOCK (the official-score #5 threshold plus buffer) and a -0.30%
+  period loss cap flatten and pause until after the next sample; 3 consecutive order errors,
+  a failed entry verification or a long stream disconnect halt permanently. A fresh exchange
+  read precedes every order. Heartbeat every 15 min, report at 17:45 IST.
