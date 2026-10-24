@@ -264,6 +264,37 @@ def test_background_receiver_keeps_polling_and_stops_without_restarting():
     assert not stream.receiver_thread.is_alive() and not stream.healthy
 
 
+def test_background_receiver_reconnects_after_repeated_connect_failures():
+    from exchange.live_account_stream import LiveAccountStream
+    import queue
+    q=queue.Queue();events=[];tick=[10000];attempts=[]
+    class Socket:
+        def send(self,message):
+            m=json.loads(message)
+            if m['method']=='subscribe':q.put(json.dumps(dict(channel='subscriptionResponse',data={'subscription':m['subscription']})))
+        def recv(self):
+            try:return q.get(timeout=.02)
+            except queue.Empty:raise TimeoutError()
+        def close(self):pass
+    def connector(*a,**k):
+        attempts.append(tick[0])
+        if len(attempts)<=8:raise OSError('network down')
+        return Socket()
+    def clock():
+        if not stream.connected:tick[0]+=31000      # outage time passes the capped backoff
+        return tick[0]
+    recovery=SimpleNamespace(account=SimpleNamespace(team_address=TEAM),revoke=lambda _:None,
+        recover=lambda:SimpleNamespace(ready=True),journal=SimpleNamespace(event=lambda *a,**k:events.append(a)))
+    stream=LiveAccountStream(TEAM,recovery,SimpleNamespace(entries_paused=True),clock_ms=clock,connector=connector)
+    stream.start_receiver()
+    try:
+        until=time.monotonic()+5
+        while stream.subscribed!=set(stream.CHANNELS) and time.monotonic()<until:time.sleep(.01)
+        assert len(attempts)==9 and stream.receiver_fatal is None and stream.receiver_thread.is_alive()
+        assert stream.reconnect_failures==0 and stream.reconcile() and stream.healthy
+    finally:stream.stop_receiver()
+
+
 def test_sleep_wake_gap_revokes_account_readiness():
     from exchange.live_account_stream import LiveAccountStream
     tick=[10000]
