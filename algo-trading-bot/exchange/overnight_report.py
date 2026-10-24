@@ -57,7 +57,8 @@ def write_report(state_dir, mandate, account=None, *, rank=None):
                  f"samples daily at 12:00 UTC)") if rank.get('rank') else f"unavailable ({rank.get('error')})"
     out = [
         f"Net P&L: {pnl_pct:+.4f}% ({equity - start:+.2f} USDP) | Current rank: {rank_text}",
-        f"Trades: {len(trades)} (long {len(trades)} / short 0 - committed scope is LONG-only)",
+        f"Trades: {len(trades)} (long {sum(1 for t in trades if t.get('side', 'LONG') == 'LONG')} / "
+        f"short {sum(1 for t in trades if t.get('side') == 'SHORT')}; permitted: {', '.join(mandate.directions)})",
         f"Wins/losses: {len(wins)}/{len(losses)} | Biggest win: {max(nets):+.2f} | Biggest loss: {min(nets):+.2f}"
         if nets else 'Wins/losses: 0/0 | Biggest win: none | Biggest loss: none',
         f"Night ended by: {ended_by(state)}",

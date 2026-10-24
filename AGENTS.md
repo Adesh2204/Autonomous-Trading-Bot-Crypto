@@ -140,3 +140,12 @@
   and INTENT) while the exchange reports that cloid as unknownOid. The user's 23-Oct
   work is preserved in `stash@{0}` (backup-23oct-directive) and
   `~/backup-23oct-20261024-0025.patch`.
+
+- The 24 October day-session directive (13:00-18:00 IST) permits SHORT for the momentum
+  scalper. That is the only limit change: BTC/EWY, one position, <= $1,000 per entry,
+  <= 2 entries per hour, 1x cross, 10% top-of-book compliance rule and the 180 s signal
+  window stay as committed. Live orders go only through `scripts/run_day.py`, bound to
+  `docs/day_2026-10-24/mandate.json` and its release receipt. Every live entry is
+  verified on the exchange (position side/size, exchange stop, take-profit); any
+  mismatch flattens, cancels and halts without retry. Rank protection uses the
+  published fractional score; LOCK flattens and pauses, -0.30% halts for the day.

@@ -138,8 +138,15 @@ def test_valid_overnight_mandate():
     assert mandate().require().identity == mandate().identity
 
 
+def test_mandate_allows_short_but_rejects_invalid_directions():
+    # 24 Oct day-session directive: SHORT is permitted; the direction set must stay valid.
+    assert mandate(directions=('LONG', 'SHORT')).require().directions == ('LONG', 'SHORT')
+    assert mandate(directions=('SHORT',)).require().directions == ('SHORT',)
+
+
 @pytest.mark.parametrize('change', [dict(markets=('pas:BTC', 'pas:EWY', 'pas:ETH')), dict(markets=('pas:ETH',)),
-    dict(directions=('LONG', 'SHORT')), dict(max_positions=2), dict(leverage=3), dict(max_notional='1001'),
+    dict(directions=('HEDGE',)), dict(directions=()), dict(directions=('LONG', 'LONG')),
+    dict(max_positions=2), dict(leverage=3), dict(max_notional='1001'),
     dict(max_entries_per_hour=3), dict(risk_fraction='0.006'), dict(participation='0.25'),
     dict(loss_cap_pct='-2.5'), dict(t2_pct='0.2'), dict(exit_ms=10 ** 13), dict(dex='par')])
 def test_mandate_stays_inside_committed_limits(change):

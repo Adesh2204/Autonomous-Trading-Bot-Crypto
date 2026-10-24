@@ -165,3 +165,53 @@ class NightGuard:
 def official_q(r, sigma, *, lam=D('1.5'), c=D('0.05'), eps=D('0.005')):
     """Competition financial score Q = (max(R,0)+eps) / (|R| + lam*sigma + c)."""
     return (max(r, D(0)) + eps) / (abs(r) + lam * sigma + c)
+
+
+@dataclass
+class DayGuard:
+    """Rank protection for a volatility-adjusted score: lock gains, cap losses.
+
+    `check` takes the competition return in % (prior official R plus today's).
+    Returns ('HALT', reason), ('LOCK', reason) or None.
+    """
+    lock: D
+    loss_cap: D = D('-0.30')
+    locked: bool = False
+    resumed_half: bool = False
+    losing_streak: int = 0
+    paused_until_ms: int = 0
+    half_size: bool = False
+    events: list = field(default_factory=list)
+
+    def check(self, return_pct):
+        if return_pct <= self.loss_cap:
+            return 'HALT', 'LOSS_CAP_0_30_PCT'
+        if return_pct >= self.lock and not self.locked:
+            self.locked = True
+            self.resumed_half = False
+            self.events.append('LOCK_REACHED')
+            return 'LOCK', 'LOCK_REACHED'
+        return None
+
+    def resume_if_below(self, estimated_rank, target_rank=6):
+        """While locked, resume at half size only if the estimated rank fell below target."""
+        if self.locked and estimated_rank is not None and estimated_rank > target_rank:
+            self.locked = False
+            self.resumed_half = True
+            self.events.append('LOCK_RESUMED_HALF_SIZE')
+            return True
+        return False
+
+    def trade_closed(self, net, now_ms):
+        NightGuard.trade_closed(self, net, now_ms)
+
+    def size_factor_half(self):
+        return self.half_size or self.resumed_half
+
+    def paused(self, now_ms):
+        return self.locked or now_ms < self.paused_until_ms
+
+
+def estimated_rank(my_q, others):
+    """Rank if my Q were published now; `others` are the other teams' published Q values."""
+    return 1 + sum(1 for q in others if q > my_q)

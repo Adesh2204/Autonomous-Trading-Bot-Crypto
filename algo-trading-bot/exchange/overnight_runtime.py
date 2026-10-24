@@ -76,7 +76,8 @@ class OvernightMandate:
                 or self.team_wallet.lower() == self.api_wallet.lower()
                 or not self.markets or len(set(self.markets)) != len(self.markets)
                 or not set(self.markets) <= PAS_ENTRY_MARKETS
-                or self.directions != ('LONG',)                      # committed scored scope
+                or not self.directions or len(set(self.directions)) != len(self.directions)
+                or not set(self.directions) <= {'LONG', 'SHORT'}
                 or self.max_positions != 1 or self.leverage != 1
                 or not D(10) < decimal(self.max_notional) <= D(1000)
                 or not 1 <= self.max_entries_per_hour <= 2
@@ -239,30 +240,34 @@ class OvernightRuntime:
         from strategies.momentum_scalper import levels, size
         quote = self.market.get_quote(symbol)
         spec = self.client.market(symbol)
-        entry_ref = quote.ask
-        stop, target = levels(entry_ref, decision['atr'], 'LONG', self.p)
+        side = decision['side']
+        order_side = 'BUY' if side == 'LONG' else 'SELL'
+        # Take the touch: ask for a long, bid for a short; size against that side's top level.
+        entry_ref, top = (quote.ask, quote.ask_quantity) if side == 'LONG' else (quote.bid, quote.bid_quantity)
+        stop, target = levels(entry_ref, decision['atr'], side, self.p)
         equity = self.equity()
-        quantity = size(equity=equity, risk_fraction=self.p.risk_fraction, stop_distance=entry_ref - stop,
+        quantity = size(equity=equity, risk_fraction=self.p.risk_fraction, stop_distance=abs(entry_ref - stop),
                         price=entry_ref, max_notional=decimal(self.m.max_notional),
-                        top_quantity=quote.ask_quantity, participation=decimal(self.m.participation), half=half)
+                        top_quantity=top, participation=decimal(self.m.participation), half=half)
         quantity = spec.normalize_size(quantity) if quantity * entry_ref >= 11 else D(0)
-        slip_bps = (entry_ref - quote.mid) / quote.mid * 10000
+        slip_bps = abs(entry_ref - quote.mid) / quote.mid * 10000
         if quantity * entry_ref < 11 or slip_bps > decimal(self.m.max_slippage_bps):
-            self._event('ENTRY_SKIPPED', symbol=symbol, reason='SIZE_OR_SLIPPAGE', quantity=quantity,
-                        top_ask_qty=quote.ask_quantity, slippage_bps=slip_bps)
+            self._event('ENTRY_SKIPPED', symbol=symbol, side=side, reason='SIZE_OR_SLIPPAGE', quantity=quantity,
+                        top_qty=top, slippage_bps=slip_bps)
             return None
-        limit = spec.normalize_price(entry_ref, 'BUY')
+        limit = spec.normalize_price(entry_ref, order_side)
         # Signal time: the last completed 1m bar before the decision (set by decide()).
         signal_ms = decision['signal_ms']
         key = f'scalp:{symbol}:{signal_ms}'
         self.preflight()
-        request = OrderRequest(symbol, 'BUY', quantity, limit, tif='Ioc', strategy_id='MOMENTUM_LONG',
+        setup = 'MOMENTUM_' + side
+        request = OrderRequest(symbol, order_side, quantity, limit, tif='Ioc', strategy_id=setup,
                                client_order_id=key)
-        permission = RiskPermission(key, symbol, 'BUY', quantity, self.clock_ms(), limit_price=limit,
-            provenance=self._provenance(key, request, setup='MOMENTUM_LONG', signal_ms=signal_ms,
+        permission = RiskPermission(key, symbol, order_side, quantity, self.clock_ms(), limit_price=limit,
+            provenance=self._provenance(key, request, setup=setup, signal_ms=signal_ms,
                                         reason=decision['reason']))
         self.legs[symbol].plan_stop = stop
-        self._event('ENTRY_ATTEMPT', symbol=symbol, reason=decision['reason'], quantity=quantity, limit=limit,
+        self._event('ENTRY_ATTEMPT', symbol=symbol, side=side, reason=decision['reason'], quantity=quantity, limit=limit,
                     notional=quantity * limit, stop=stop, target=target, half=half, mid=quote.mid)
         self.state['entries'].append(self.clock_ms())
         self.state['last_entry_ms'] = self.clock_ms()
@@ -277,10 +282,11 @@ class OvernightRuntime:
             return result
         # Keep the planned 1.5:1 geometry relative to the actual fill.
         actual = decimal(position.entry_price, positive=True)
-        stop, target = levels(actual, decision['atr'], 'LONG', self.p)
+        held = 'LONG' if position.quantity > 0 else 'SHORT'
+        stop, target = levels(actual, decision['atr'], held, self.p)
         self.legs[symbol].plan_stop = stop
         self.legs[symbol].sync(position)
-        self.state['trade'] = dict(symbol=symbol, entry_ms=self.clock_ms(), entry=str(actual), stop=str(stop),
+        self.state['trade'] = dict(symbol=symbol, side=held, entry_ms=self.clock_ms(), entry=str(actual), stop=str(stop),
                                    target=str(target), quantity=str(position.quantity), reason=decision['reason'],
                                    tp_key=None, half=half)
         self._save()
@@ -294,12 +300,13 @@ class OvernightRuntime:
         if position is None or trade.get('tp_key'):
             return
         spec = self.client.market(trade['symbol'])
-        target = spec.normalize_price(decimal(trade['target'], positive=True), 'SELL')
+        tp_side = 'SELL' if position.quantity > 0 else 'BUY'
+        target = spec.normalize_price(decimal(trade['target'], positive=True), tp_side)
         key = f'scalp-tp:{trade["symbol"]}:{trade["entry_ms"]}'
         self.preflight()
-        request = OrderRequest(trade['symbol'], 'SELL', abs(position.quantity), target, reduce_only=True,
+        request = OrderRequest(trade['symbol'], tp_side, abs(position.quantity), target, reduce_only=True,
                                tif='Gtc', strategy_id='MOMENTUM_TP', client_order_id=key)
-        permission = RiskPermission(key, trade['symbol'], 'SELL', abs(position.quantity), self.clock_ms(),
+        permission = RiskPermission(key, trade['symbol'], tp_side, abs(position.quantity), self.clock_ms(),
             reduce_only=True, reason='TAKE_PROFIT_1_5_ATR', limit_price=target,
             provenance=self._provenance(key, request, setup='MOMENTUM_TP', signal_ms=self.clock_ms() - MIN_MS,
                 classification='STRATEGY_EXIT', reason='TAKE_PROFIT_1_5_ATR', source=trade['symbol']))
@@ -465,7 +472,7 @@ class OvernightRuntime:
             if decision:
                 decision['signal_ms'] = bar_close - MIN_MS
                 self._event('SIGNAL', symbol=symbol, **decision)
-                if decision['side'] == 'LONG':
+                if decision['side']:
                     found.append((symbol, decision))
         last = self.state['last_entry_ms'] or self.m.starts_ms
         if not found and now - last >= self.p.guarantee_ms:
@@ -474,7 +481,7 @@ class OvernightRuntime:
             if decision:
                 decision['signal_ms'] = bar_close - MIN_MS
             self._event('TRADE_GUARANTEE_CHECK', symbol=symbol, decision=decision)
-            if decision and decision['side'] == 'LONG':
+            if decision and decision['side']:
                 found.append((symbol, decision))
                 half = True
         for symbol, decision in found[:1]:
@@ -512,7 +519,7 @@ class OvernightRuntime:
             self.protection.ensure_all()      # cancels the now-obsolete exchange stop
             return
         for symbol, position in positions.items():
-            if symbol not in self.m.markets or position.quantity < 0:
+            if symbol not in self.m.markets or ('LONG' if position.quantity > 0 else 'SHORT') not in self.m.directions:
                 self.exit(symbol, 'OUTSIDE_COMMITTED_SCOPE')
                 continue
             status = self.protection.states.get(symbol, {}).get('status')
@@ -585,9 +592,11 @@ class OvernightRuntime:
             # Restart without a durable plan: adopt with the default stop, never re-enter.
             symbol, position = next(iter(positions.items()))
             self.legs[symbol].sync(position)
-            self.state['trade'] = dict(symbol=symbol, entry_ms=self.clock_ms(), entry=str(position.entry_price),
+            self.state['trade'] = dict(symbol=symbol, side='LONG' if position.quantity > 0 else 'SHORT',
+                                       entry_ms=self.clock_ms(), entry=str(position.entry_price),
                                        stop=str(self.legs[symbol]._open_position['stop_loss_price']),
-                                       target=str(decimal(position.entry_price) * D('1.0075')),
+                                       target=str(decimal(position.entry_price) *
+                                                  (D('1.0075') if position.quantity > 0 else D('0.9925'))),
                                        quantity=str(position.quantity), reason='ADOPTED_ON_RESTART', tp_key=None)
             self._save()
         self.cleanup_orders()
@@ -596,7 +605,6 @@ class OvernightRuntime:
         self.heartbeat(force=True)
 
     def run(self, stop):
-        from .overnight_report import write_report
         self.startup()
         while not stop.is_set():
             now = self.clock_ms()
@@ -616,9 +624,7 @@ class OvernightRuntime:
                 self._stream_health()
                 self.manage()
                 equity = self.equity()
-                verdict = self.guard.check(self.pnl_pct(equity))
-                if verdict and not self.state['halted']:
-                    self.halt(verdict[1])
+                self._apply_verdict(self.guard.check(self.pnl_pct(equity)))
                 if not self.state['halted']:
                     self.decide()
                 self._save()
@@ -635,9 +641,17 @@ class OvernightRuntime:
         self.heartbeat(force=True)
         self.state['finished'] = dict(ms=self.clock_ms(), flat=flat, readings=readings)
         self._save()
-        path = write_report(self.state_dir, self.m, self.account)
+        path = self._write_report()
         self._event('FINISHED', flat=flat, report=str(path))
         return flat
+
+    def _apply_verdict(self, verdict):
+        if verdict and not self.state['halted']:
+            self.halt(verdict[1])
+
+    def _write_report(self):
+        from .overnight_report import write_report
+        return write_report(self.state_dir, self.m, self.account)
 
 
 class SharedAccountBarrier:
@@ -699,7 +713,7 @@ class SharedAccountBarrier:
         self.passed_ms = self.client.clock_ms()
 
 
-def build_overnight_runtime(root, mandate_path, release_path, *, state_dir):
+def build_overnight_runtime(root, mandate_path, release_path, *, state_dir, runtime_cls=None, **extra):
     """Construction gate: evidence before key; the committed guards stay in force."""
     from venue_config import require_paper_migration
     from .execution_journal import ExecutionJournal
@@ -772,15 +786,15 @@ def build_overnight_runtime(root, mandate_path, release_path, *, state_dir):
     executor.allowed_markets = frozenset(m.markets)
     executor.position_guard = BasketPositionGuard(journal, clock_ms=client.clock_ms, max_positions=1)
     executor.compliance_guard.position_guard = executor.position_guard
-    executor.compliance_guard.extra_setup_types = frozenset({'MOMENTUM_LONG'})
+    executor.compliance_guard.extra_setup_types = frozenset('MOMENTUM_' + d for d in m.directions)
     # No L2 hook: the default 10%-of-top-of-book compliance rule stays in force.
     policy = replace(base_policy, enabled=True, approval_reference=m.approval_reference,
                      execution_slippage_fraction=decimal(m.stop_slippage, positive=True))
     protection = ScalpProtection(executor, policy=policy, managers=legs)
     stream = LiveAccountStream(TEAM, recovery, executor, clock_ms=client.clock_ms)
     holder['stream'] = stream
-    runtime = OvernightRuntime(mandate=m, executor=executor, protection=protection, recovery=recovery,
-                               account=account, client=client, market=public, stream=stream, auth=auth,
-                               legs=legs, state_dir=state_dir)
+    runtime = (runtime_cls or OvernightRuntime)(mandate=m, executor=executor, protection=protection,
+                               recovery=recovery, account=account, client=client, market=public, stream=stream,
+                               auth=auth, legs=legs, state_dir=state_dir, **extra)
     runtime.preflight = barrier.require
     return runtime
