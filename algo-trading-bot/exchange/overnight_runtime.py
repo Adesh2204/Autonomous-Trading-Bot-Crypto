@@ -553,6 +553,7 @@ class OvernightRuntime:
                 self.cleanup_orders()
                 if self.executor.entries_paused:
                     # A compliance block pauses entries until account truth is re-read.
+                    self._refresh_account_budget()
                     self.executor._after_action()
                 if self.executor.entries_paused or not self.protection.entries_allowed:
                     self._event('ENTRY_SKIPPED', symbol=symbol, reason='ENTRY_GATE',
@@ -562,6 +563,18 @@ class OvernightRuntime:
                 self.order_errors = 0
             except Exception as exc:
                 self._note_order_error(exc, 'entry:' + symbol)
+
+    def _refresh_account_budget(self):
+        """The account-budget snapshot reads UNKNOWN 60 s after the last order, so after a
+        trade entries stayed paused until a stream reconnect re-read it. Re-read it here;
+        a failed read only leaves entries paused."""
+        rates = getattr(self.executor, 'rate_limits', None)
+        if rates is None:
+            return
+        try:
+            rates.observe_info('userRateLimit', self.account._query('userRateLimit'))
+        except ExchangeError as exc:
+            self._event('BUDGET_REFRESH_SKIPPED', error=str(exc))
 
     def most_liquid(self):
         depth = {}

@@ -414,6 +414,37 @@ def test_paused_gate_is_rederived_from_account_truth_before_entry(tmp_path):
     assert any(c[0] == 'enter' for c in r.calls)
 
 
+def budget_gate(tmp_path, query):
+    """2026-10-25 03:50 IST: after a trade the stale budget snapshot kept entries paused."""
+    r = Fake(tmp_path, now=T0 + 3 * 300000 + 20000)
+    observed = []
+    rates = SimpleNamespace(observe_info=lambda q, v: observed.append((q, v)))
+    # Account truth only clears the pause once the budget snapshot is fresh.
+    r.executor = SimpleNamespace(entries_paused=True, rate_limits=rates, journal=r.executor.journal,
+                                 _after_action=lambda: setattr(r.executor, 'entries_paused', not observed))
+    r.account = SimpleNamespace(get_frontend_open_orders=lambda: [], _query=query)
+    r._event = lambda kind, **data: r.calls.append(('event', kind))
+    return r, observed
+
+
+def test_paused_gate_refreshes_a_stale_account_budget_before_rederiving(tmp_path):
+    r, observed = budget_gate(tmp_path, lambda q: dict(nRequestsUsed=52, nRequestsCap=11752))
+    r.decide()
+    assert observed == [('userRateLimit', dict(nRequestsUsed=52, nRequestsCap=11752))]
+    assert any(c[0] == 'enter' for c in r.calls)
+
+
+def test_failed_budget_refresh_leaves_entries_paused_without_an_order_error(tmp_path):
+    from exchange.base_exchange import ExchangeError
+
+    def fail(q):
+        raise ExchangeError('INFO_READ_WAIT_DEADLINE')
+    r, observed = budget_gate(tmp_path, fail)
+    r.decide()
+    assert observed == [] and not any(c[0] == 'enter' for c in r.calls)
+    assert ('event', 'BUDGET_REFRESH_SKIPPED') in r.calls and r.order_errors == 0
+
+
 # ---------- runtime provenance through the real compliance guard (offline fixture) ----------
 from test_live_exchange_execution import live          # noqa: E402
 from test_single_position_compliance import evaluate   # noqa: E402
