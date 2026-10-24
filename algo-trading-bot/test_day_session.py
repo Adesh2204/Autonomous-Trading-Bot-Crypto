@@ -26,7 +26,8 @@ class Exchange(Fake):
         self.m = mandate(directions=('LONG', 'SHORT')).require()
         self.p = BOTH
         self.requests = []
-        self.preflight = lambda: None
+        self.preflight = lambda **k: None
+        self.last_account_ms = 0
         self.client = SimpleNamespace(market=lambda s: MarketSpec(s, 2, 20, 1))
         self.market = SimpleNamespace(get_quote=lambda s: SimpleNamespace(
             bid=D('99.9'), ask=D('100.1'), mid=D('100'), bid_quantity=D(80), ask_quantity=D(80)))
@@ -263,13 +264,27 @@ def test_entry_boundary_reverifies_protection_read_only_when_stale(monkeypatch, 
     assert calls == ([('ensure_all', dict(allow_actions=False)), 'base'] if refreshed else ['base'])
 
 
-def test_barrier_is_refreshed_right_before_the_exchange_stop_is_placed(tmp_path):
+def test_fresh_read_precedes_the_entry_quote_and_the_take_profit(tmp_path):
     r = Exchange(tmp_path)
     order = []
-    r.preflight = lambda: order.append('preflight')
+    r.preflight = lambda **k: order.append(('fresh', k.get('entry', False)))
+    quote = r.market.get_quote
+    r.market = SimpleNamespace(get_quote=lambda s: order.append('quote') or quote(s))
     r.protection = SimpleNamespace(states={}, entries_allowed=True, ensure_all=lambda **k: order.append('stop'))
     OvernightRuntime.enter(r, 'pas:EWY', short_decision(), half=False)
-    assert order[:3] == ['preflight', 'preflight', 'stop']      # entry permission, then stop permission
+    # entry: fresh read (entry budget) -> quote; stop: protection hook; TP: fresh read before its permission
+    assert order == [('fresh', True), 'quote', 'stop', ('fresh', False)]
+
+
+def test_entry_is_skipped_not_errored_when_the_read_budget_has_no_room(tmp_path):
+    from exchange.base_exchange import ExchangeError
+    r = Exchange(tmp_path)
+
+    def short(**k):
+        raise ExchangeError('ENTRY_READ_BUDGET_HEADROOM_UNAVAILABLE')
+    r.preflight = short
+    assert OvernightRuntime.enter(r, 'pas:EWY', short_decision(), half=False) is None
+    assert r.requests == [] and r.state['entries'] == []
 
 
 def test_real_submit_path_signs_entry_after_slow_context_load(live):

@@ -24,6 +24,21 @@ STRATEGY = 'MOMENTUM_SCALPER_OVERNIGHT_V1'
 MIN_MS = 60000
 log = logging.getLogger('overnight')
 
+# Rolling Hyperliquid IP weight (reads cost 2 or 20) that must be free before an
+# order's permission is issued. One guarded order: shared barrier ~66 + context
+# load ~252 + post-action reconciliation ~132. An entry also covers the exchange
+# stop that _after_action places inside the entry's own submit.
+ORDER_WEIGHT = 450
+ENTRY_WEIGHT = 880
+ENTRY_WAIT_MS = 25000        # the signal must still sign inside its 60-180 s window
+PROTECT_WAIT_MS = 65000      # protective actions wait for budget, then try anyway
+FLAT_POLL_MS = 15000         # account polling while flat; keeps budget for the next entry
+# Rejections that only mean a snapshot aged inside the 5 s window; a flatten retries these.
+STALE_CODES = frozenset({'STALE_PRICE_CONTEXT', 'STALE_MARKET_DATA', 'STALE_ACCOUNT_STATE', 'ACCOUNT_NOT_READY',
+                         'RISK_PERMISSION_DENIED', 'EXCHANGE_CONTEXT_UNAVAILABLE', 'STALE_PROTECTION_POSITION',
+                         'ACCOUNT_CHANGED_DURING_PREFLIGHT', 'PROTECTION_POSITION_CHANGED_OR_STALE'})
+EXIT_ATTEMPTS = 4
+
 
 @dataclass(frozen=True)
 class OvernightMandate:
@@ -129,6 +144,21 @@ class ScalpLeg:
 
 class ScalpProtection(ExchangeProtectionManager):
     """Stop-market at the trade's planned stop (1.0 ATR, 0.15% floor)."""
+    before_action = None
+
+    def ensure_all(self, *, allow_actions=True):
+        # A held leg without an active stop (or an active stop on a flat leg) is
+        # about to be signed: take the fresh read first, before the position is
+        # observed and the stop's permission is issued.
+        if (allow_actions and self.before_action is not None and not self.running and
+                any(m.has_open_position != (self.states.get(s, {}).get('status') == 'ACTIVE')
+                    for s, m in self.managers.items())):
+            try:
+                self.before_action()
+            except ExchangeError as exc:
+                log.warning('PROTECTION_FRESH_READ_FAILED %s', exc)
+        return super().ensure_all(allow_actions=allow_actions)
+
     def _plan(self, symbol, position, manager, observed_ms):
         self.policy.require()
         managed = manager._open_position if manager else None
@@ -177,8 +207,9 @@ class OvernightRuntime:
         self.order_errors = 0
         self.disconnected_since = None
         self.last_heartbeat = 0
+        self.last_account_ms = 0
         self.bars = {}
-        self.preflight = lambda: None
+        self.preflight = lambda **k: None     # build_overnight_runtime installs the FreshReadGate
 
     # ---------- durable state ----------
     def _load_state(self):
@@ -238,6 +269,15 @@ class OvernightRuntime:
 
     def enter(self, symbol, decision, *, half):
         from strategies.momentum_scalper import levels, size
+        # Fresh read first (budget for the entry and its stop, clock, barrier); the
+        # quote and sizing below then come from the same fresh moment.
+        try:
+            self.preflight(entry=True)
+        except ExchangeError as exc:
+            if str(exc) != 'ENTRY_READ_BUDGET_HEADROOM_UNAVAILABLE':
+                raise
+            self._event('ENTRY_SKIPPED', symbol=symbol, side=decision['side'], reason=str(exc))
+            return None
         quote = self.market.get_quote(symbol)
         spec = self.client.market(symbol)
         side = decision['side']
@@ -259,7 +299,6 @@ class OvernightRuntime:
         # Signal time: the last completed 1m bar before the decision (set by decide()).
         signal_ms = decision['signal_ms']
         key = f'scalp:{symbol}:{signal_ms}'
-        self.preflight()
         setup = 'MOMENTUM_' + side
         request = OrderRequest(symbol, order_side, quantity, limit, tif='Ioc', strategy_id=setup,
                                client_order_id=key)
@@ -272,8 +311,9 @@ class OvernightRuntime:
         self.state['entries'].append(self.clock_ms())
         self.state['last_entry_ms'] = self.clock_ms()
         self._save()
+        # The executor's post-action reconciliation already re-read account truth
+        # and, through the protection hook, placed the exchange stop.
         result = self.executor.submit(request, permission=permission)
-        self.recovery.recover()
         position = self.positions().get(symbol)
         self._event('ENTRY_RESULT', symbol=symbol, state=result.state.value,
                     filled=position.quantity if position else 0, entry=position.entry_price if position else None)
@@ -290,22 +330,25 @@ class OvernightRuntime:
                                    target=str(target), quantity=str(position.quantity), reason=decision['reason'],
                                    tp_key=None, half=half)
         self._save()
-        # The stop's risk permission must survive its ~4 s context load: refresh the barrier first.
-        self.preflight()
+        # Re-plans the stop at the actual fill; the protection hook reads fresh before any change.
         self.protection.ensure_all()
+        self._event('STOP_CHECKED', symbol=symbol, elapsed_ms=self.clock_ms() - self.state['trade']['entry_ms'],
+                    status=self.protection.states.get(symbol, {}).get('status'))
         self.place_take_profit()
         return result
 
     def place_take_profit(self):
         trade = self.state['trade']
-        position = self.positions().get(trade['symbol']) if trade else None
-        if position is None or trade.get('tp_key'):
+        if not trade or trade.get('tp_key'):
+            return
+        self.preflight()
+        position = self.positions().get(trade['symbol'])
+        if position is None:
             return
         spec = self.client.market(trade['symbol'])
         tp_side = 'SELL' if position.quantity > 0 else 'BUY'
         target = spec.normalize_price(decimal(trade['target'], positive=True), tp_side)
         key = f'scalp-tp:{trade["symbol"]}:{trade["entry_ms"]}'
-        self.preflight()
         request = OrderRequest(trade['symbol'], tp_side, abs(position.quantity), target, reduce_only=True,
                                tif='Gtc', strategy_id='MOMENTUM_TP', client_order_id=key)
         permission = RiskPermission(key, trade['symbol'], tp_side, abs(position.quantity), self.clock_ms(),
@@ -317,7 +360,7 @@ class OvernightRuntime:
         trade['tp_oid'] = result.exchange_order_id
         self._save()
         self._event('TAKE_PROFIT_PLACED', symbol=trade['symbol'], price=target, state=result.state.value,
-                    oid=result.exchange_order_id)
+                    oid=result.exchange_order_id, elapsed_ms=self.clock_ms() - trade['entry_ms'])
 
     def cancel_take_profit(self):
         trade = self.state['trade']
@@ -325,23 +368,35 @@ class OvernightRuntime:
             return
         open_ids = {str(o['oid']) for o in self.own_orders() if not o.get('isTrigger')}
         if trade.get('tp_oid') and str(trade['tp_oid']) in open_ids:
+            self.preflight()
             self.executor.cancel_order(trade['symbol'], trade['tp_oid'], critical=True)
             self._event('TAKE_PROFIT_CANCELLED', symbol=trade['symbol'], oid=trade['tp_oid'])
         self.executor.recover_uncertain(trade['tp_key'])
 
     def exit(self, symbol, reason):
+        """Flatten fast path: a fresh read before every attempt, retried only when a snapshot went stale."""
+        for attempt in range(1, EXIT_ATTEMPTS + 1):
+            try:
+                return self._exit_once(symbol, reason)
+            except ExchangeError as exc:
+                if str(exc) not in STALE_CODES or attempt == EXIT_ATTEMPTS:
+                    raise
+                self._event('EXIT_RETRY_AFTER_STALE_SNAPSHOT', symbol=symbol, reason=reason, attempt=attempt,
+                            error=str(exc))
+
+    def _exit_once(self, symbol, reason):
         if self.state['trade'] and self.state['trade']['symbol'] == symbol:
             self.cancel_take_profit()
         position = self.positions().get(symbol)
         if position is None:
             return None
+        self.preflight()
         quote = self.market.get_quote(symbol)
         spec = self.client.market(symbol)
         side = 'SELL' if position.quantity > 0 else 'BUY'
         slip = decimal(self.m.exit_slippage)
         limit = spec.normalize_price(quote.bid * (1 - slip) if side == 'SELL' else quote.ask * (1 + slip), side)
         key = f'scalp-exit:{symbol}:{self.clock_ms()}'
-        self.preflight()
         request = OrderRequest(symbol, side, abs(position.quantity), limit, reduce_only=True, tif='Ioc',
                                strategy_id='MOMENTUM_EXIT', client_order_id=key)
         permission = RiskPermission(key, symbol, side, abs(position.quantity), self.clock_ms(), reduce_only=True,
@@ -350,7 +405,6 @@ class OvernightRuntime:
                 classification='PROTECTIVE_EXIT', action='RISK_PROTECTION', reason=reason, source=symbol))
         self._event('EXIT_ATTEMPT', symbol=symbol, reason=reason, quantity=abs(position.quantity), limit=limit)
         result = self.executor.submit(request, permission=permission)
-        self.recovery.recover()
         self.protection.ensure_all()
         self._event('EXIT_RESULT', symbol=symbol, state=result.state.value,
                     remaining=(self.positions().get(symbol).quantity if self.positions().get(symbol) else 0))
@@ -371,6 +425,7 @@ class OvernightRuntime:
         for o in self.own_orders():
             if not o.get('isTrigger') and o['coin'] not in held:
                 try:
+                    self.preflight()
                     self.executor.cancel_order(o['coin'], o['oid'], critical=True)
                     self._event('ORPHAN_ORDER_CANCELLED', symbol=o['coin'], oid=o['oid'])
                 except Exception as exc:
@@ -526,8 +581,7 @@ class OvernightRuntime:
                 continue
             status = self.protection.states.get(symbol, {}).get('status')
             if status != 'ACTIVE':
-                self.preflight()
-                self.protection.ensure_all()
+                self.protection.ensure_all()          # the protection hook reads fresh before signing
                 if self.protection.states.get(symbol, {}).get('status') != 'ACTIVE':
                     self.exit(symbol, 'EXCHANGE_STOP_NOT_ACTIVE')
                     continue
@@ -625,9 +679,13 @@ class OvernightRuntime:
                     stop.wait(5)
                     continue
                 self._stream_health()
-                self.manage()
-                equity = self.equity()
-                self._apply_verdict(self.guard.check(self.pnl_pct(equity)))
+                # Flat and untracked: poll the account every 15 s, not every cycle, so the
+                # rolling read budget has room for the next entry and its stop.
+                if self.state['trade'] or now - self.last_account_ms >= FLAT_POLL_MS:
+                    self.last_account_ms = now
+                    self.manage()
+                    equity = self.equity()
+                    self._apply_verdict(self.guard.check(self.pnl_pct(equity)))
                 if not self.state['halted']:
                     self.decide()
                 self._save()
@@ -716,6 +774,54 @@ class SharedAccountBarrier:
         self.passed_ms = self.client.clock_ms()
 
 
+class FreshReadGate:
+    """Fresh exchange read immediately before every order, outside the 5 s signing window.
+
+    The permission is issued just before the guarded context load, and the
+    compliance and validator rules allow 5 s for the book, the account state,
+    the readiness and the permission. On 2026-10-24 the stop and the flatten
+    waited inside that window (rolling read budget, a clock needing two fresh
+    confirmations, a revoked reconciliation) and failed STALE_PRICE_CONTEXT /
+    ACCOUNT_NOT_READY. Every such wait now happens here, before the permission
+    exists. The rules themselves are unchanged.
+    """
+    CLOCK_FRESH_MS = 2000
+
+    def __init__(self, *, barrier, recovery, rates, clock, client, market, symbol, sleep=time.sleep, event=None):
+        self.barrier, self.recovery, self.rates, self.clock = barrier, recovery, rates, clock
+        self.client, self.market, self.symbol, self.sleep = client, market, symbol, sleep
+        self.event = event or (lambda kind, **data: None)
+
+    def __call__(self, *, entry=False):
+        started = self.client.clock_ms()
+        if not self.recovery.last_report.ready:
+            self.recovery.recover()
+        weight, limit_ms = (ENTRY_WEIGHT, ENTRY_WAIT_MS) if entry else (ORDER_WEIGHT, PROTECT_WAIT_MS)
+        waited = 0
+        while True:
+            delay = self.rates.read_budget_delay_ms(weight)
+            if not delay:
+                break
+            if waited + delay > limit_ms:
+                self.event('FRESH_READ_BUDGET_SHORT', entry=entry, weight=weight, delay_ms=delay, waited_ms=waited)
+                if entry:
+                    raise ExchangeError('ENTRY_READ_BUDGET_HEADROOM_UNAVAILABLE')
+                break
+            step = min(delay, 1000)
+            self.sleep(step / 1000)
+            waited += step
+        for _ in range(3):
+            observed = self.clock.observed_ms
+            if self.clock.healthy and observed is not None and 0 <= self.client.clock_ms() - observed <= self.CLOCK_FRESH_MS:
+                break
+            sent = self.client.clock_ms()
+            book = self.market.get_orderbook(self.symbol)
+            self.clock.observe(book.timestamp_ms, sent, self.client.clock_ms())
+        self.barrier.require()
+        self.event('FRESH_READ', entry=entry, budget_wait_ms=waited, elapsed_ms=self.client.clock_ms() - started,
+                   clock=self.clock.state.value)
+
+
 def build_overnight_runtime(root, mandate_path, release_path, *, state_dir, runtime_cls=None, **extra):
     """Construction gate: evidence before key; the committed guards stay in force."""
     from venue_config import require_paper_migration
@@ -799,5 +905,8 @@ def build_overnight_runtime(root, mandate_path, release_path, *, state_dir, runt
     runtime = (runtime_cls or OvernightRuntime)(mandate=m, executor=executor, protection=protection,
                                recovery=recovery, account=account, client=client, market=public, stream=stream,
                                auth=auth, legs=legs, state_dir=state_dir, **extra)
-    runtime.preflight = barrier.require
+    gate = FreshReadGate(barrier=barrier, recovery=recovery, rates=rates, clock=clock, client=client, market=public,
+                         symbol=m.markets[0], event=runtime._event)
+    runtime.preflight = gate
+    protection.before_action = gate
     return runtime
