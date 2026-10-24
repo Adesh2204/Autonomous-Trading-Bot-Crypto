@@ -34,7 +34,11 @@ def write_day_report(runtime, path):
         f"short {sum(1 for t in trades if t.get('side') == 'SHORT')}) | wins/losses {wins}/{len(nets) - wins}"
         + (f" | best {max(nets):+.3f} / worst {min(nets):+.3f} USDP" if nets else ''),
         f"Session ended by: {ended_by(state)}",
-        f"First live entry verification: {'PASSED ' + str(first) if first else 'no live entry occurred'}",
+        f"First live entry verification: " + (
+            'PASSED ' + str(first) if first else
+            'FAILED -> flattened, orders cancelled, halted (' + str((state.get('halted') or {}).get('reason')) + ')'
+            if str((state.get('halted') or {}).get('reason', '')).startswith('ENTRY_VERIFICATION_FAILED') else
+            'no live entry occurred') + (' | manual guarded flatten completed' if finished.get('manual_flatten') else ''),
         f"Targets: R6 {runtime.targets['r6_pct']}% / R5 {runtime.targets['r5_pct']}% / LOCK {runtime.targets['lock_pct']}%",
         f"Exchange check: positions = {readings[-1]['positions'] if readings else '?'}, orders = "
         f"{readings[-1]['orders'] if readings else '?'} -> {'FLAT VERIFIED' if flat else 'NOT VERIFIED - CHECK MANUALLY'}",
