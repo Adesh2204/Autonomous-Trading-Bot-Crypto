@@ -229,14 +229,24 @@ class CarryExecution(HyperliquidExecution):
     max_positions = 1
     allowed_markets = frozenset()
 
-    def _guard(self, context, checked_ms, *, critical=False, entry=False, exact_full_close=None, entry_request=None):
-        # The SDK-boundary reliability gate needs protection verified within 5 s;
-        # the preceding ~4 s context load ages it. Re-verify read-only (no orders)
-        # when the last verification is older than 3 s.
-        if entry and self.protection is not None:
+    def _fresh_protection(self):
+        # Both entry reliability gates (after validation in _submit, and in _guard)
+        # need protection verified within 5 s; the ~4 s context load ages it.
+        # Re-verify read-only (no orders) when the last verification is over 3 s old.
+        if self.protection is not None:
             last = self.protection.last_verified_ms
             if last is None or self.client.clock_ms() - last > 3000:
                 self.protection.ensure_all(allow_actions=False)
+
+    def _validated(self, request, permission, **kwargs):
+        validated = super()._validated(request, permission, **kwargs)
+        if not request.reduce_only:
+            self._fresh_protection()
+        return validated
+
+    def _guard(self, context, checked_ms, *, critical=False, entry=False, exact_full_close=None, entry_request=None):
+        if entry:
+            self._fresh_protection()
         return super()._guard(context, checked_ms, critical=critical, entry=entry,
                               exact_full_close=exact_full_close, entry_request=entry_request)
 

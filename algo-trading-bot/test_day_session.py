@@ -9,6 +9,7 @@ from exchange.day_runtime import DayRuntime, live_q
 from exchange.overnight_runtime import OvernightRuntime, ScalpLeg
 from strategies.momentum_scalper import DayGuard, ScalpParams, estimated_rank, guaranteed, setup
 from test_momentum_scalper import DOWN15, T0, Fake, five, mandate
+from test_live_exchange_execution import live  # noqa: F401  (offline signed fixture)
 
 BOTH = ScalpParams(directions=('LONG', 'SHORT'))
 
@@ -269,3 +270,38 @@ def test_barrier_is_refreshed_right_before_the_exchange_stop_is_placed(tmp_path)
     r.protection = SimpleNamespace(states={}, entries_allowed=True, ensure_all=lambda **k: order.append('stop'))
     OvernightRuntime.enter(r, 'pas:EWY', short_decision(), half=False)
     assert order[:3] == ['preflight', 'preflight', 'stop']      # entry permission, then stop permission
+
+
+def test_real_submit_path_signs_entry_after_slow_context_load(live):
+    """Real CarryExecution + ScalpProtection + compliance + validator on the offline signed fixture."""
+    from exchange.carry_runtime import BasketPositionGuard, CarryExecution
+    from exchange.order_lifecycle import OrderRequest
+    from exchange.overnight_runtime import OvernightRuntime as O, ScalpProtection
+    from exchange.exchange_rules import RiskPermission
+    from exchange.position_protection import ProtectionPolicy
+    from test_live_exchange_execution import response
+    e = CarryExecution(live.client, transport=live.transport, account=live.account, journal=live.journal,
+                       context_provider=live.provider, validator=live.validator, recovery=live.executor.recovery,
+                       clock_health=live.clock, rate_limits=live.rate)
+    e.entries_paused, e.max_positions, e.allowed_markets = False, 1, frozenset({'par:BTC'})
+    e.position_guard = BasketPositionGuard(live.journal, clock_ms=live.client.clock_ms, max_positions=1)
+    e.compliance_guard.position_guard = e.position_guard
+    e.compliance_guard.extra_setup_types = frozenset({'MOMENTUM_LONG'})
+    protection = ScalpProtection(e, policy=ProtectionPolicy(True, 'x', D(1), D('0.01')), managers={})
+    protection.ensure_all(allow_actions=False)
+    assert protection.entries_allowed
+    live.fixture.now += 3000                                   # preflight barrier, sizing, quote
+    live.fixture.book['time'] = live.fixture.now
+    original = live.provider.load
+
+    def slow_load(request, **k):                               # ~4.2 s of sequential reads, as measured live
+        live.fixture.now += 4200
+        live.fixture.book['time'] = live.fixture.now           # the exchange returns a fresh book
+        return original(request, **k)
+    live.provider.load = slow_load
+    req = OrderRequest('par:BTC', 'BUY', D('.2'), D('100'), tif='Ioc', strategy_id='MOMENTUM_LONG', client_order_id='k1')
+    prov = O._provenance(None, 'k1', req, setup='MOMENTUM_LONG', signal_ms=live.fixture.now - 90000)
+    perm = RiskPermission('k1', 'par:BTC', 'BUY', D('.2'), live.fixture.now, limit_price=D('100'), provenance=prov)
+    live.transport.responses = [response({'filled': {'oid': 11, 'totalSz': '.2', 'avgPx': '99.98'}})]
+    e.submit(req, permission=perm)
+    assert len(live.transport.signed_payloads) == 1
