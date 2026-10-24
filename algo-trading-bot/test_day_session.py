@@ -246,3 +246,26 @@ def test_full_day_lifecycle_runs_real_code_paths_end_to_end(tmp_path, monkeypatc
     assert report[0].startswith('Final return:') and 'published #10' in report[0]
     assert 'FLAT VERIFIED' in report[-1] and 'PASSED' in report[3]
     assert (tmp_path / 'status.json').exists()
+
+
+@pytest.mark.parametrize('entry,age_ms,refreshed', [(True, 3001, True), (True, 3000, False), (False, 10000, False)])
+def test_entry_boundary_reverifies_protection_read_only_when_stale(monkeypatch, entry, age_ms, refreshed):
+    from exchange.carry_runtime import CarryExecution
+    from exchange.hyperliquid_execution import HyperliquidExecution
+    calls = []
+    monkeypatch.setattr(HyperliquidExecution, '_guard', lambda self, *a, **k: calls.append('base'))
+    e = CarryExecution.__new__(CarryExecution)
+    e.client = SimpleNamespace(clock_ms=lambda: T0)
+    e.protection = SimpleNamespace(last_verified_ms=T0 - age_ms,
+                                   ensure_all=lambda **k: calls.append(('ensure_all', k)))
+    e._guard(None, T0, entry=entry)
+    assert calls == ([('ensure_all', dict(allow_actions=False)), 'base'] if refreshed else ['base'])
+
+
+def test_barrier_is_refreshed_right_before_the_exchange_stop_is_placed(tmp_path):
+    r = Exchange(tmp_path)
+    order = []
+    r.preflight = lambda: order.append('preflight')
+    r.protection = SimpleNamespace(states={}, entries_allowed=True, ensure_all=lambda **k: order.append('stop'))
+    OvernightRuntime.enter(r, 'pas:EWY', short_decision(), half=False)
+    assert order[:3] == ['preflight', 'preflight', 'stop']      # entry permission, then stop permission

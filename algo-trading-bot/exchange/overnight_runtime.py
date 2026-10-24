@@ -290,6 +290,8 @@ class OvernightRuntime:
                                    target=str(target), quantity=str(position.quantity), reason=decision['reason'],
                                    tp_key=None, half=half)
         self._save()
+        # The stop's risk permission must survive its ~4 s context load: refresh the barrier first.
+        self.preflight()
         self.protection.ensure_all()
         self.place_take_profit()
         return result
@@ -524,6 +526,7 @@ class OvernightRuntime:
                 continue
             status = self.protection.states.get(symbol, {}).get('status')
             if status != 'ACTIVE':
+                self.preflight()
                 self.protection.ensure_all()
                 if self.protection.states.get(symbol, {}).get('status') != 'ACTIVE':
                     self.exit(symbol, 'EXCHANGE_STOP_NOT_ACTIVE')
