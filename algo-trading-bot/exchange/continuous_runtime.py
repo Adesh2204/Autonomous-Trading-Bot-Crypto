@@ -1,6 +1,6 @@
 """Continuous scalper to the end of the scored window, one scoring period at a time.
 
-Same committed limits as the day session (BTC/EWY, LONG and SHORT, one position,
+Same committed limits as the day session (BTC/EWY, plus HYPE from 25 Oct; LONG and SHORT, one position,
 <= $1,000 per entry, <= 2 entries per hour, 1x, 10% top-of-book, 0.4% risk).
 The competition samples equity daily at 12:00 UTC (+240 s), so each period runs
 from one sample to the next:

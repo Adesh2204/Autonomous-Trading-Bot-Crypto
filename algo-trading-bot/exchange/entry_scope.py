@@ -5,7 +5,7 @@ exact authorization and exchange checks; this filter never hides exposure.
 """
 from .base_exchange import ExchangeError
 
-PAS_ENTRY_MARKETS = frozenset(('pas:BTC', 'pas:EWY'))
+PAS_ENTRY_MARKETS = frozenset(('pas:BTC', 'pas:EWY', 'pas:HYPE'))
 
 
 def require_entry(symbol):

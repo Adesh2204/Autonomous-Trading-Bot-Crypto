@@ -1,6 +1,6 @@
 """Continuous scalper CLI to the end of the scored window: prepare | start | supervise | status.
 
-Committed limits unchanged: BTC/EWY, LONG and SHORT, one position, <= $1,000 per
+Committed limits; HYPE added 25 Oct: BTC/EWY/HYPE, LONG and SHORT, one position, <= $1,000 per
 entry, <= 2 entries per hour, 1x, 10% of top-of-book, 0.4% risk per trade.
 LOCK and a -0.30% period loss cap pause until after the next 12:00 UTC sample.
 """
@@ -17,14 +17,15 @@ DOCS = ROOT / 'docs' / 'continuous_2026-10-24'
 MANDATE = DOCS / 'mandate.json'
 TARGETS = DOCS / 'targets.json'
 RELEASE = DOCS / 'regression_release' / 'test_receipt.json'
-MARKETS = ('pas:BTC', 'pas:EWY')
+MARKETS = ('pas:BTC', 'pas:EWY', 'pas:HYPE')
 FLATTEN = datetime(2026, 11, 6, 11, 30, tzinfo=timezone.utc)    # before the final 12:00 UTC sample
 EXIT = datetime(2026, 11, 6, 11, 40, tzinfo=timezone.utc)
 EXPIRES = datetime(2026, 11, 6, 11, 55, tzinfo=timezone.utc)
 APPROVAL = ('User approval 2026-10-24 16:24 IST (mission step 4, recommendation kept): continuous momentum scalper '
             'to 2026-11-06 inside the committed limits: BTC/EWY, LONG+SHORT, 1 position, <=$1,000 per entry, '
             '2 entries/hour, 1x, 10% top-of-book, 0.4% risk; LOCK and -0.30% period loss cap pause until after '
-            'the next 12:00 UTC sample; 3 consecutive order errors halt.')
+            'the next 12:00 UTC sample; 3 consecutive order errors halt. User approval 2026-10-25 01:05 IST: add pas:HYPE '
+            '(1x cross) as a third market; every other limit unchanged.')
 
 
 def ms(dt):

@@ -77,7 +77,7 @@ def approve_configuration(root,plan_path,discovery_path,release,output):
         from .configuration_isolation import verify_receipts
         verify_receipts(plan['configuration_isolation'],Path(discovery_path).parent/'configuration_isolation')
     if not sys.stdin.isatty():raise ExchangeError('GENUINE_INTERACTIVE_CONFIGURATION_APPROVAL_REQUIRED')
-    print(json.dumps(plan,indent=2));print('Confirm team/API identities, sole signing Mac, exact BTC/EWY changes only. No order/transfer authority.')
+    print(json.dumps(plan,indent=2));print('Confirm team/API identities, sole signing Mac, exact 1x CROSS changes shown above only. No order/transfer authority.')
     if plan.get('configuration_isolation'):
         print('This exact configuration approval also accepts the displayed finite CONFIGURATION-ONLY isolation. Original UNKNOWN and consumed attempt remain unchanged and still block all order/qualification paths.')
     phrase='APPROVE PAS CONFIGURATION '+plan['plan_hash']
