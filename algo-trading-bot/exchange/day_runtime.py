@@ -163,7 +163,7 @@ class DayRuntime(OvernightRuntime):
         now = self.clock_ms()
         if not force and now - self.last_heartbeat < 15 * MIN_MS:
             return
-        super().heartbeat(force=True)
+        self.last_heartbeat = now
         positions = self.positions()
         ret = self.pnl_pct(self.equity(positions))
         q, est, published = self.estimate(ret)
@@ -177,7 +177,9 @@ class DayRuntime(OvernightRuntime):
                       halted=self.state['halted'], stream_healthy=self.stream.healthy)
         with (self.state_dir / 'day_heartbeat.jsonl').open('a') as f:
             f.write(json.dumps(record, default=str) + '\n')
-        self._event('DAY_HEARTBEAT', **record)
+        from .paper_operations import atomic_json
+        atomic_json(self.state_dir / 'status.json', record)
+        self._event('DAY_HEARTBEAT', **{k: v for k, v in record.items() if k not in {'utc', 'ms', 'kind'}})
 
     def _write_report(self):
         from .day_report import write_day_report

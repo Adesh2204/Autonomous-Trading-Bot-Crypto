@@ -131,6 +131,7 @@ class Verify(DayRuntime):
 
     positions = Fake.positions
     flatten_all = Fake.flatten_all
+    equity = Fake.equity
 
 
 SHORT_POS = {'pas:EWY': Position('pas:EWY', D(-8), D('99.9'), D(0), D(0), None)}
@@ -157,3 +158,91 @@ def test_wrong_side_is_a_verification_failure(tmp_path):
     r = Verify(tmp_path, {'pas:EWY': Position('pas:EWY', D(8), D('99.9'), D(0), D(0), None)},
                [dict(STOP, side='A'), dict(TP, side='A')])
     assert not r.verify_entry('pas:EWY', first=True) and 'POSITION_SIDE LONG' in r.state['halted']['reason']
+
+
+def test_real_day_heartbeat_writes_status_with_score_rank_and_lock(tmp_path, monkeypatch):
+    import json
+    import exchange.day_runtime as dr
+    board = dict(generated_at='g', teams=[dict(name='Team Anchorium', rank=10, q=0.1),
+                 dict(name='A', rank=1, q=0.2), dict(name='B', rank=2, q=0.105)])
+    monkeypatch.setattr(dr, 'fetch_leaderboard', lambda: board)
+    r = Verify(tmp_path, dict(SHORT_POS), [STOP, TP])
+    r.targets = dict(lock_pct='0.0808', days=5)
+    r.prior_return_pct = D(0)
+    r.start_equity = D(100000)
+    r._equity = D(100010)
+    r.board = None
+    r.stream = SimpleNamespace(healthy=True)
+    r.state['trades'] = [dict(net='1')]
+    DayRuntime.heartbeat(r, force=True)
+    status = json.loads((tmp_path / 'status.json').read_text())
+    assert status['return_pct'] == '0.01000' and status['estimated_rank'] == 3 and status['published_rank'] == 10
+    assert status['lock'] == dict(target_pct='0.0808', locked=False, resumed_half=False)
+    assert status['position'][0]['side'] == 'SHORT' and status['trades'] == 1
+
+
+def test_full_day_lifecycle_runs_real_code_paths_end_to_end(tmp_path, monkeypatch):
+    """startup -> heartbeat -> decide -> entry -> exchange verification -> 17:45 flatten -> 17:50 report."""
+    import threading
+    import exchange.day_runtime as dr
+    from exchange.overnight_runtime import OvernightRuntime as O
+    board = dict(generated_at='g', teams=[dict(name='Team Anchorium', rank=10, q=0.1), dict(name='A', rank=1, q=0.2)])
+    monkeypatch.setattr(dr, 'fetch_leaderboard', lambda: board)
+
+    class Live(Exchange, DayRuntime):
+        enter = DayRuntime.enter
+        verify_entry = DayRuntime.verify_entry
+        heartbeat = DayRuntime.heartbeat
+        _write_report = DayRuntime._write_report
+        _apply_verdict = DayRuntime._apply_verdict
+        _save = DayRuntime._save
+        decide = DayRuntime.decide
+        pnl_pct = DayRuntime.pnl_pct
+        leaderboard = DayRuntime.leaderboard
+        estimate = DayRuntime.estimate
+        startup = O.startup
+        cleanup_orders = O.cleanup_orders
+        flatten_all = O.flatten_all
+        exit = O.exit
+        manage = O.manage
+
+    r = Live(tmp_path)
+    r.targets = dict(lock_pct='0.0808', r6_pct='0.0413', r5_pct='0.0651', days=5)
+    r.report_path = tmp_path / 'report.md'
+    r.guard = DayGuard(lock=D('0.0808'), loss_cap=D('-0.30'))
+    r.prior_return_pct, r.board, r.board_ms = D(0), None, None
+    r.stream = SimpleNamespace(healthy=True, background_receiving=True, receiver_fatal=None, pending=False,
+                               connected=True, ready=True)
+    r.account = SimpleNamespace(get_frontend_open_orders=lambda: r._orders, get_fills=lambda **k: [])
+
+    def ensure_all(**k):            # exchange-side stop appears for any open position, vanishes when flat
+        r._orders = [o for o in r._orders if not o.get('isTrigger')]
+        for s, p in r._positions.items():
+            r._orders.append(dict(coin=s, oid=9, isTrigger=True, reduceOnly=True, side='A' if p.quantity > 0 else 'B',
+                                  sz=str(abs(p.quantity))))
+        for s in [o['coin'] for o in r._orders if o['coin'] not in r._positions]:
+            r._orders = [o for o in r._orders if o['coin'] in r._positions]
+    class Protection:
+        entries_allowed = True
+        states = property(lambda self: {s: dict(status='ACTIVE') for s in r._positions})
+
+        def ensure_all(self, **k):
+            ensure_all()
+    r.protection = Protection()
+    flatten, exit_ms = r.m.flatten_ms, r.m.exit_ms
+    r.now = T0 + 300000 * 7 + 20000                          # inside a post-close decision window
+    times = iter([flatten, flatten + 30000, exit_ms])
+    stop = threading.Event()
+
+    def wait(seconds):
+        r.now = next(times, exit_ms)
+    stop.wait = wait
+    assert r.run(stop) is True
+    events = [__import__('json').loads(x) for x in (tmp_path / 'overnight_events.jsonl').read_text().splitlines()]
+    kinds = [e['kind'] for e in events]
+    assert 'ENTRY_VERIFIED' in kinds and 'SCHEDULED_FLATTEN_0845_IST' in kinds and kinds[-1] == 'FINISHED'
+    assert r.state['first_trade_verified'] and r.state['finished']['flat'] and r._positions == {} and r._orders == []
+    report = r.report_path.read_text().splitlines()
+    assert report[0].startswith('Final return:') and 'published #10' in report[0]
+    assert 'FLAT VERIFIED' in report[-1] and 'PASSED' in report[3]
+    assert (tmp_path / 'status.json').exists()
