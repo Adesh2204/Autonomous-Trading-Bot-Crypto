@@ -160,3 +160,28 @@ def test_entry_gate_refuses_without_headroom_and_never_waits_past_the_signal_win
     with pytest.raises(ExchangeError, match='ENTRY_READ_BUDGET_HEADROOM_UNAVAILABLE'):
         gate(entry=True)
     assert sum(slept) == 0                              # the wait would exceed 25 s: refuse at once
+
+
+def test_entry_gate_waits_for_headroom_until_the_signal_sign_by_time(live):
+    from exchange.base_exchange import ExchangeError
+    from exchange.overnight_runtime import ENTRY_SIGN_BY_AGE_MS
+    import pytest
+    fx = live.fixture
+    slept = []
+    gate = FreshReadGate(barrier=SimpleNamespace(require=lambda **k: None),
+                         recovery=SimpleNamespace(last_report=SimpleNamespace(ready=True)), rates=live.rate,
+                         clock=live.clock, client=live.client, market=live.market, symbol='par:BTC',
+                         sleep=lambda s: (slept.append(s), setattr(fx, 'now', fx.now + int(s * 1000))))
+    # 2026-10-25 02:40 IST: decided 6 s after the 5m close; headroom 25.7 s away.
+    bar_close = fx.now - 6000
+    signal_ms = bar_close - 60000
+    live.rate.weights = [(fx.now - 34300, 600)]         # 600 + 880 > 1080 until it ages out
+    gate(entry=True, sign_by_ms=signal_ms + ENTRY_SIGN_BY_AGE_MS)
+    assert 25 <= sum(slept) <= 27
+    assert fx.now <= signal_ms + ENTRY_SIGN_BY_AGE_MS < signal_ms + 180000
+    # A late decision whose sign-by time is too close still refuses at once.
+    slept.clear()
+    live.rate.weights = [(fx.now - 1000, 600)]
+    with pytest.raises(ExchangeError, match='ENTRY_READ_BUDGET_HEADROOM_UNAVAILABLE'):
+        gate(entry=True, sign_by_ms=fx.now + 30000)
+    assert sum(slept) == 0

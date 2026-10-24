@@ -31,6 +31,7 @@ log = logging.getLogger('overnight')
 ORDER_WEIGHT = 450
 ENTRY_WEIGHT = 880
 ENTRY_WAIT_MS = 25000        # the signal must still sign inside its 60-180 s window
+ENTRY_SIGN_BY_AGE_MS = 130000  # with a signal time, wait until this age: 50 s before the 180 s limit
 PROTECT_WAIT_MS = 65000      # protective actions wait for budget, then try anyway
 FLAT_POLL_MS = 15000         # account polling while flat; keeps budget for the next entry
 # Rejections that only mean a snapshot aged inside the 5 s window; a flatten retries these.
@@ -276,7 +277,7 @@ class OvernightRuntime:
         # Fresh read first (budget for the entry and its stop, clock, barrier); the
         # quote and sizing below then come from the same fresh moment.
         try:
-            self.preflight(entry=True)
+            self.preflight(entry=True, sign_by_ms=decision['signal_ms'] + ENTRY_SIGN_BY_AGE_MS)
         except ExchangeError as exc:
             if str(exc) != 'ENTRY_READ_BUDGET_HEADROOM_UNAVAILABLE':
                 raise
@@ -796,11 +797,14 @@ class FreshReadGate:
         self.client, self.market, self.symbol, self.sleep = client, market, symbol, sleep
         self.event = event or (lambda kind, **data: None)
 
-    def __call__(self, *, entry=False):
+    def __call__(self, *, entry=False, sign_by_ms=None):
         started = self.client.clock_ms()
         if not self.recovery.last_report.ready:
             self.recovery.recover()
         weight, limit_ms = (ENTRY_WEIGHT, ENTRY_WAIT_MS) if entry else (ORDER_WEIGHT, PROTECT_WAIT_MS)
+        if entry and sign_by_ms is not None:
+            # Wait for budget only while the signal can still sign well inside its window.
+            limit_ms = max(0, sign_by_ms - started)
         waited = 0
         while True:
             delay = self.rates.read_budget_delay_ms(weight)
