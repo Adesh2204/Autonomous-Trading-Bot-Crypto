@@ -527,3 +527,21 @@ def test_runtime_uses_the_background_receiver_like_the_scalper(tmp_path, monkeyp
     w.step()
     w.r.shutdown('TEST')
     assert w.r.stream.started == 1 and w.r.stream.stopped == 1
+
+
+def test_final_sdk_boundary_scope_matches_the_validator_scope():
+    from exchange.entry_scope import require_entry_action
+    from exchange.sdk_transport import OfficialSDKTransport
+    import inspect
+    specs = {s: MarketSpec(s, 2, 20, i) for i, s in enumerate(('pas:BTC', 'pas:ETH', 'pas:SP500', 'pas:USDJPY', 'pas:EWY'))}
+    client = SimpleNamespace(markets=specs, dex='pas')
+    order = lambda s, reduce=False: dict(type='order', orders=[dict(a=specs[s].asset_id, r=reduce)])
+    for symbol in ('pas:ETH', 'pas:SP500', 'pas:USDJPY'):
+        with pytest.raises(ExchangeError, match='V4_PAS_BTC_EWY_NEW_ENTRIES_ONLY'):
+            require_entry_action(client, order(symbol))                             # every other runtime
+        require_entry_action(client, order(symbol), 'CARRY')
+        require_entry_action(client, order(symbol, reduce=True))                    # exits never blocked
+    with pytest.raises(ExchangeError, match='CARRY_BASKET_NEW_ENTRIES_ONLY'):
+        require_entry_action(client, order('pas:EWY'), 'CARRY')
+    assert "getattr(self,'entry_scope',None)" in inspect.getsource(OfficialSDKTransport.check)
+    assert 'transport.entry_scope = CARRY_SCOPE' in inspect.getsource(carry_basket.build_carry_basket_runtime)

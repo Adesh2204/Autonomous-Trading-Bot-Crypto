@@ -135,7 +135,8 @@ class OfficialSDKTransport:
 
     def check(self, action):
         from .entry_scope import require_entry_action
-        require_entry_action(self.client,action)
+        # Only the carry runtime sets entry_scope on its transport (and on its validator).
+        require_entry_action(self.client,action,getattr(self,'entry_scope',None))
         self._require_venue(self.client,self.authorization)
         if self._expected is None or self._guard is None or fingerprint(action)!=self._expected:
             raise ExchangeError('UNVALIDATED_SIGNED_ACTION')

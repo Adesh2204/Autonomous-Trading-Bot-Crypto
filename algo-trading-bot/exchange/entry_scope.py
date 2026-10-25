@@ -31,7 +31,7 @@ def signal_markets(client, requested=()):
     return selected
 
 
-def require_entry_action(client, action):
+def require_entry_action(client, action, scope=None):
     """Final actual SDK boundary; asset IDs always resolve from runtime metadata."""
     rows = action.get('orders', ()) if action.get('type') == 'order' else (
         [r.get('order', {}) for r in action.get('modifies', ())]
@@ -42,4 +42,4 @@ def require_entry_action(client, action):
         matches = [s for s, spec in client.markets.items() if spec.asset_id == wire.get('a')]
         if client.dex != 'pas' or len(matches) != 1:
             raise ExchangeError('V4_EXACT_PAS_ENTRY_ASSET_REQUIRED')
-        require_entry(matches[0])
+        require_entry(matches[0], scope)

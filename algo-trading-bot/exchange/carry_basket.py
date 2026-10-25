@@ -1012,6 +1012,9 @@ def build_carry_basket_runtime(root, mandate_path, release_path, *, state_dir, r
         return original_load(request, critical=critical)
     provider.load = guarded_load
     transport = OfficialSDKTransport(client, signer, TEAM, nonces, auth, rate_limits=rates)
+    # The final pre-HTTP check carries the same carry scope as the validator (26 Oct: an SP500
+    # child passed the validator and was refused here, before sending, as V4_PAS_BTC_EWY_NEW_ENTRIES_ONLY).
+    transport.entry_scope = CARRY_SCOPE
     validator = HyperliquidOrderValidator(client, policy_leverage=1)
     validator.entry_scope = CARRY_SCOPE
     executor = CarryExecution(client, transport=transport, account=account, journal=journal,
