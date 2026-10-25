@@ -202,3 +202,16 @@
   error keeps a valid existing full-size stop and flattens only after 2 fresh-read retries, and a stop next to our
   resting take-profit is not a DUPLICATE_ORDER (bug #12); per-entry-cycle read weight is logged; stop-fill slippage
   is recorded per trade. Tests: test_fill_truth_and_stop_update.py. VPS kit (prepared, not enabled): deploy/vps/.
+- 25 October 23:35 IST (user mission "Final release, then carry"): the user chose "YES, CARRY" ("We wanna move with
+  Carry Strategy"). Half-size funding-carry basket: LONG BTC, ETH, HYPE, SP500 and SHORT USDJPY, <= $9,500 per leg,
+  1x, 5 positions, held to the 6 Nov flatten; NO basket stop (the -1.5% stop was rejected), the existing 8% per-leg
+  exchange stop, and the -5% account catastrophe halt kept (answered question). The user and co-founder accept a
+  ~43% chance of finishing negative. Organizer rule (no moving a thin book): each leg is built/unwound with one child
+  at a time, post-only at the touch for 2 h (10-min re-price), then IOC children limited to the touch and <= 25% of
+  it (answered question); never a sweep. 3 consecutive order errors halt AND flatten (touch-limited); a failed leg
+  verification flattens that leg and halts. These limits live only in the carry profile (CarryMandate.profile,
+  exchange/carry_basket.py, entry scope 'CARRY', CarryPositionGuard); every other runtime keeps its committed limits.
+  Live orders only through `scripts/run_carry.py`, bound to `docs/carry_2026-10-25/mandate.json` and its release.
+  ETH/SP500/USDJPY were 20x cross on 25 Oct and need the human-typed 1x CROSS route
+  (`docs/carry_2026-10-25/Set carry markets 1x.command`, configuration only, no orders). The momentum scalper and the
+  1h pullback stay off. Tests: test_carry_profile.py.

@@ -2,15 +2,23 @@
 
 No runtime flag expands this scope. Reduce-only management retains its own
 exact authorization and exchange checks; this filter never hides exposure.
+The carry basket (user directive 25 Oct 2026, "YES, CARRY") has its own fixed
+scope, selected only by the carry runtime's validator; every other runtime
+keeps PAS_ENTRY_MARKETS.
 """
 from .base_exchange import ExchangeError
 
 PAS_ENTRY_MARKETS = frozenset(('pas:BTC', 'pas:EWY', 'pas:HYPE'))
+CARRY_ENTRY_MARKETS = frozenset(('pas:BTC', 'pas:ETH', 'pas:HYPE', 'pas:SP500', 'pas:USDJPY'))
+CARRY_SCOPE = 'CARRY'
 
 
-def require_entry(symbol):
-    if symbol not in PAS_ENTRY_MARKETS:
-        raise ExchangeError('V4_PAS_BTC_EWY_NEW_ENTRIES_ONLY')
+def require_entry(symbol, scope=None):
+    if scope is None:
+        if symbol not in PAS_ENTRY_MARKETS:
+            raise ExchangeError('V4_PAS_BTC_EWY_NEW_ENTRIES_ONLY')
+    elif scope != CARRY_SCOPE or symbol not in CARRY_ENTRY_MARKETS:
+        raise ExchangeError('CARRY_BASKET_NEW_ENTRIES_ONLY')
 
 
 def signal_markets(client, requested=()):

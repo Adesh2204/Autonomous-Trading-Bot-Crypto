@@ -69,3 +69,31 @@ def write_report(state_dir, mandate, account=None, *, since_ms=None):
     path = state_dir / f"morning_report_{now.date().isoformat()}.md"
     path.write_text('\n'.join(out) + '\n')
     return path
+
+
+def basket_status(snapshot, mandate, events):
+    """10:00 IST status for the carry basket (exchange truth: equity, fills, funding)."""
+    D_ = lambda k: D(str(snapshot.get(k) or 0))
+    errors = [e for e in events if e.get('kind') in {'ORDER_ERROR', 'CYCLE_ERROR', 'STOP_CHECK_ERROR', 'HALT',
+                                                      'LEG_VERIFICATION_FAILED', 'FLATTEN_ERROR', 'STREAM_ERROR'}]
+    out = [
+        f"Equity {D_('change_pct'):+.3f}% since entry ({D_('change'):+.2f} USDP) = price P&L {D_('price_pnl'):+.2f} "
+        f"+ funding earned {D_('funding'):+.2f} - fees {D_('fees'):.2f}",
+        '',
+        f"Report time: {snapshot.get('utc')}  Equity: {snapshot.get('equity')}  Start equity: {snapshot.get('start_equity')}",
+        f"Halted: {snapshot.get('halted') or 'no'}",
+        '',
+        '| Leg | Side | Filled / target | Avg price | uPnL | Funding | Stop in place |',
+        '|---|---|---|---|---|---|---|',
+    ]
+    for leg in snapshot.get('legs', []):
+        stop = 'yes' if leg.get('stop') == 'ACTIVE' else ('n/a (flat)' if leg.get('stop') == 'NOT_REQUIRED' else 'NO')
+        out.append(f"| {leg['symbol']} | {leg['side']} | {leg['size']} / {leg.get('target') or '-'} | "
+                   f"{leg.get('entry') or '-'} | {D(str(leg.get('upnl') or 0)):+.2f} | "
+                   f"{D(str(leg.get('funding') or 0)):+.2f} | {stop} ({leg.get('mode')}) |")
+    out += ['', f"Errors in the last 24 h: {len(errors)}"]
+    out += [f"  - {e['kind']} {e.get('error') or e.get('reason') or e.get('problems') or ''} at {e.get('utc')}"
+            for e in errors[-10:]]
+    out += ['', 'Reminder: entry costs (fees and spread) make the first days look red; judge the carry on '
+                '6 Nov, not tomorrow.']
+    return '\n'.join(out) + '\n'

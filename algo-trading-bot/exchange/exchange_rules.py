@@ -87,7 +87,8 @@ class HyperliquidOrderValidator:
                 return reject('INVALID_MARKET')
             if getattr(self.client,'dex','par')=='pas' and not request.reduce_only:
                 from .entry_scope import require_entry
-                require_entry(request.symbol)
+                # Only the carry runtime's validator sets entry_scope (the carry basket).
+                require_entry(request.symbol, getattr(self, 'entry_scope', None))
             spec = self.client.market(request.symbol)
             if spec != context.spec or context.metadata_hash != context.expected_metadata_hash:
                 return reject('MARKET_METADATA_CHANGED')

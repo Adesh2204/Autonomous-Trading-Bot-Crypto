@@ -52,6 +52,8 @@ def dispatch(root,args):
             isolation=collect(root,output/'configuration_isolation')
             d=discover(root,output/'fresh_discovery',venue='pas')
         else:d=discover(root,args.output,venue='pas')
+        if getattr(args,'configuration_scope',None) is not None:
+            d['configuration_scope']=args.configuration_scope
         if getattr(args,'operator_confirmation',None):
             from .operator_account_confirmation import copy_confirmation
             from .team_registration import registration_evidence

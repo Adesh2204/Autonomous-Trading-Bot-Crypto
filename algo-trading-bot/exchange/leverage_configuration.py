@@ -119,8 +119,9 @@ class LeverageConfigurationTransport:
             plan=dict(approved_plan);identity=plan.pop('plan_hash',None)
             if identity!=approval.plan_hash or fingerprint(plan)!=identity or plan.get('source_hash')!=approval.source_hash:
                 raise ExchangeError('HASH_BOUND_PAS_CONFIGURATION_PLAN_REQUIRED')
-            from .entry_scope import PAS_ENTRY_MARKETS
-            allowed_assets={client.market(s).asset_id for s in PAS_ENTRY_MARKETS}
+            from .entry_scope import PAS_ENTRY_MARKETS, CARRY_ENTRY_MARKETS, CARRY_SCOPE
+            markets=PAS_ENTRY_MARKETS|CARRY_ENTRY_MARKETS if plan.get('configuration_scope')==CARRY_SCOPE else PAS_ENTRY_MARKETS
+            allowed_assets={client.market(s).asset_id for s in markets}
             if any(r['requested_action'] not in [dict(type='updateLeverage',asset=a,isCross=True,leverage=1) for a in allowed_assets] for r in plan['changes']):
                 raise ExchangeError('V4_BTC_EWY_CONFIGURATION_ACTIONS_ONLY')
             self._approved_actions=frozenset(fingerprint(r['requested_action']) for r in plan['changes'])

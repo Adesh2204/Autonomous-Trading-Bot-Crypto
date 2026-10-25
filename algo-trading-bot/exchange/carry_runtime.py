@@ -30,6 +30,16 @@ STRATEGY = 'FUNDING_CARRY_V1'
 HOUR_MS = 3600000
 log = logging.getLogger('carry')
 
+# Carry profile (user directive 25 Oct 2026, "YES, CARRY"): a fixed half-size basket held to
+# the 6 Nov flatten, built and unwound with sliced child orders. These limits apply only to a
+# mandate that names this profile, i.e. only to the carry runtime; every other runtime keeps
+# its committed limits.
+CARRY_PROFILE = 'HALF_SIZE_FIXED_BASKET_2026_10_25'
+CARRY_BASKET = (('pas:BTC', 'LONG'), ('pas:ETH', 'LONG'), ('pas:HYPE', 'LONG'), ('pas:SP500', 'LONG'),
+                ('pas:USDJPY', 'SHORT'))
+CARRY_MAX_LEG_NOTIONAL = D('9500')
+CARRY_CHILD_STRATEGIES = frozenset({'CARRY_LONG', 'CARRY_SHORT', 'CARRY_EXIT'})
+
 
 def sha(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
@@ -66,9 +76,18 @@ class CarryMandate:
     strategy: str = STRATEGY
     network: str = 'testnet'
     dex: str = 'pas'
+    # Carry profile only (empty profile = the original funding-signal runtime).
+    profile: str = ''
+    sides: tuple = ()
+    unwind_starts_ms: int = 0
+    maker_window_ms: int = 7200000
+    reprice_ms: int = 600000
+    taker_gap_ms: int = 30000
+    book_share: str = '0.25'
 
     def __post_init__(self):
         object.__setattr__(self, 'markets', tuple(self.markets))
+        object.__setattr__(self, 'sides', tuple(tuple(x) for x in self.sides))
 
     def require(self):
         import re
@@ -93,7 +112,25 @@ class CarryMandate:
                 or self.venue_identity != venue_profile('pas').identity
                 or not self.approval_reference.strip()):
             raise ExchangeError('INVALID_CARRY_MANDATE')
+        if self.profile or self.sides or self.unwind_starts_ms:
+            self._require_profile(leg)
         return self
+
+    def _require_profile(self, leg):
+        if (self.profile != CARRY_PROFILE or self.sides != CARRY_BASKET
+                or self.markets != tuple(s for s, _ in CARRY_BASKET)
+                or leg > CARRY_MAX_LEG_NOTIONAL or self.max_positions != len(CARRY_BASKET)
+                or not self.starts_ms < self.unwind_starts_ms < self.flatten_ms
+                or self.maker_window_ms != 7200000 or self.reprice_ms != 600000
+                or not 0 < self.taker_gap_ms <= 300000
+                or not D(0) < decimal(self.book_share) <= D('0.25')
+                or decimal(self.position_stop) != D('0.08')
+                or decimal(self.account_loss_halt) != D('0.05')):
+            raise ExchangeError('INVALID_CARRY_MANDATE')
+
+    @property
+    def basket(self):
+        return dict(self.sides)
 
     @property
     def identity(self):
@@ -230,6 +267,9 @@ class CarryExecution(HyperliquidExecution):
     allowed_markets = frozenset()
     # The scalper's resting reduce-only take-profit on a held market is not a pending entry.
     resting_take_profits = False
+    # Carry profile: a leg is built by several children, so an entry may add to a held leg
+    # on its own side, and our own resting children on other legs are not foreign orders.
+    sliced_legs = False
 
     def _fresh_protection(self):
         # Both entry reliability gates (after validation in _submit, and in _guard)
@@ -252,17 +292,36 @@ class CarryExecution(HyperliquidExecution):
         return super()._guard(context, checked_ms, critical=critical, entry=entry,
                               exact_full_close=exact_full_close, entry_request=entry_request)
 
+    def _sliced_entry_ok(self, entry_request, held, orders):
+        # Adding to a held leg needs the held leg on the request's side; a new leg needs room.
+        symbol, long = entry_request.symbol, entry_request.side == 'BUY'
+        if symbol in held:
+            room = (held[symbol].quantity > 0) == long
+        else:
+            room = len(held) < self.max_positions
+        known = {str(r['oid']): json.loads(r['request']).get('strategy_id')
+                 for r in self.journal.intents() if r['oid'] is not None}
+        own_child = lambda o: (o.get('isTrigger') is not True and o.get('coin') in self.allowed_markets
+                               and o.get('coin') != symbol and known.get(str(o.get('oid'))) in CARRY_CHILD_STRATEGIES)
+        stop = lambda o: o.get('isTrigger') is True and o.get('reduceOnly') is True and o.get('coin') in held
+        return room and all(stop(o) or own_child(o) for o in orders)
+
     def _require_entry_account(self, now, entry_request):
         before = self.account.get_positions()
         orders = self.account.get_frontend_open_orders()
         after = self.account.get_positions()
         held = {s for s, p in after.items() if p.quantity}
         signature = lambda ps: {s: p.quantity for s, p in ps.items()}
-        ok = (entry_request is not None and signature(before) == signature(after)
-              and entry_request.symbol not in held and len(held) < self.max_positions
-              and held <= set(self.allowed_markets)
-              and all((o.get('isTrigger') is True or self.resting_take_profits) and o.get('reduceOnly') is True
-                      and o.get('coin') in held for o in orders))
+        if self.sliced_legs:
+            ok = (entry_request is not None and signature(before) == signature(after)
+                  and held <= set(self.allowed_markets)
+                  and self._sliced_entry_ok(entry_request, {s: after[s] for s in held}, orders))
+        else:
+            ok = (entry_request is not None and signature(before) == signature(after)
+                  and entry_request.symbol not in held and len(held) < self.max_positions
+                  and held <= set(self.allowed_markets)
+                  and all((o.get('isTrigger') is True or self.resting_take_profits) and o.get('reduceOnly') is True
+                          and o.get('coin') in held for o in orders))
         if not ok:
             self.entries_paused = True
             self.position_guard.revoke('BASKET_ACCOUNT_CHANGED_BEFORE_SIGNING')

@@ -2,7 +2,7 @@
 from .base_exchange import ExchangeError,decimal
 from .execution_journal import fingerprint
 from .venue_profiles import SCORED
-from .entry_scope import PAS_ENTRY_MARKETS
+from .entry_scope import PAS_ENTRY_MARKETS, CARRY_ENTRY_MARKETS, CARRY_SCOPE
 from .testnet_certification import TEAM
 import re
 
@@ -17,13 +17,19 @@ def configuration_plan(discovery):
             or len(discovery.get('markets',[]))!=10
             or {r.get('symbol') for r in discovery.get('markets',[])}!=SCORED.markets):
         raise ExchangeError('COMPLETE_SOURCE_BOUND_PAS_CONFIGURATION_OBSERVATIONS_REQUIRED')
+    # The carry configuration route (25 Oct 2026) adds the carry basket's markets; any other
+    # scope value is refused. Without a scope the plan is exactly the scalper's.
+    scope=discovery.get('configuration_scope')
+    if scope not in (None,CARRY_SCOPE):
+        raise ExchangeError('UNKNOWN_PAS_CONFIGURATION_SCOPE')
+    targets=PAS_ENTRY_MARKETS|CARRY_ENTRY_MARKETS if scope==CARRY_SCOPE else PAS_ENTRY_MARKETS
     changes=[];verified=[]
     for row in discovery['markets']:
         active=row['active_asset'];spec=row['spec'];symbol=row['symbol']
         if (spec['symbol']!=symbol or type(spec['asset_id']) is not int or spec['max_leverage']<1
                 or active.get('coin')!=symbol or active.get('user','').lower()!=TEAM.lower()):
             raise ExchangeError('EXACT_PAS_CONFIGURATION_MAPPING_REQUIRED')
-        if symbol not in PAS_ENTRY_MARKETS:continue
+        if symbol not in targets:continue
         if active.get('leverage')==dict(type='cross',value=1):verified.append(symbol)
         else:changes.append(dict(symbol=symbol,observed_ms=row['observed_ms'],before=active.get('leverage'),
             requested_action=dict(type='updateLeverage',asset=spec['asset_id'],isCross=True,leverage=1)))
@@ -48,7 +54,7 @@ def configuration_plan(discovery):
         blockers.append('REGISTERED_TEAM_ORGANIZER_RECORD_REQUIRED')
     plan=dict(status='UNSIGNED_CONFIGURATION_PLAN_ONLY',network='testnet',dex='pas',collateral='USDP',
         source_hash=discovery['source_hash'],observed_ms=discovery['finished_ms'],
-        entry_markets=sorted(PAS_ENTRY_MARKETS),account_reconciliation_scope='ALL_CANONICAL_PAS_MARKETS',
+        entry_markets=sorted(targets),account_reconciliation_scope='ALL_CANONICAL_PAS_MARKETS',
         policy_basis='V4 BTC/EWY entries only; leverage is per market, not an all-ten venue obligation',
         team_wallet=TEAM,
         discovery_hash=fingerprint(discovery),changes=changes,already_one_x_cross=sorted(verified),
@@ -60,6 +66,9 @@ def configuration_plan(discovery):
             'Exact new configuration-only approval','Shared sole host/signer/nonce ownership','Per-action exact permit and durable uncertainty',
             'Fresh readback of every requested 1x CROSS value'],
         note='Unsigned evidence only. The separate exact PAS configuration-only approval/route is required; existing par approval never authorizes PAS.')
+    if scope is not None:
+        plan.update(configuration_scope=scope,
+            scope_basis='Carry basket 1x CROSS (user directive 25 Oct 2026, YES, CARRY); configuration only, no orders.')
     if isolation is not None:
         plan.update(configuration_isolation=isolation,
             historical_disposition='UNKNOWN_PRESERVED; finite configuration-only isolation. No order, qualification, cancellation or transfer authority.',
