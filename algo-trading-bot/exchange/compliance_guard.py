@@ -125,6 +125,9 @@ class ComplianceGuard:
                 raise ExchangeError('P0_EXACT_COMPLIANCE_SCOPE_REQUIRED')
         self.qualification_scope = qualification_scope
         self.l2_entry_capacity = None
+        # Opt-in owner share of top-of-book for strategy entries (<= 25%), checked on
+        # the same quote snapshot as the price checks; None keeps the policy's 10%.
+        self.entry_depth_participation = None
         self.extra_setup_types = frozenset()
         self._approved = {}
         self._permits = {}
@@ -320,8 +323,15 @@ class ComplianceGuard:
                     checks.update(l2_entry_capacity=str(capacity), liquidity_policy='L2_DEPTH_WITHIN_LIMIT')
                     if capacity <= 0 or request.quantity > capacity:
                         return finish(False, 'BOOK_MANIPULATION_RISK')
-                elif not separate_l2 and (depth <= 0 or request.quantity > depth*self.policy.depth_participation):
-                    return finish(False, 'BOOK_MANIPULATION_RISK')
+                elif not separate_l2:
+                    share = self.policy.depth_participation
+                    if self.entry_depth_participation is not None and classification == 'STRATEGY_ENTRY':
+                        share = decimal(self.entry_depth_participation, positive=True)
+                        if share > Decimal('0.25'):
+                            raise ExchangeError('CONSERVATIVE_COMPLIANCE_POLICY_REQUIRED')
+                        checks.update(liquidity_policy='BBO_OWNER_PARTICIPATION', depth_share=str(share))
+                    if depth <= 0 or request.quantity > depth*share:
+                        return finish(False, 'BOOK_MANIPULATION_RISK')
                 if separate_l2:
                     checks['liquidity_policy'] = 'P0_EXACT_SCOPE_L2_CHECK; NOT_OLD_BBO_RULE'
             checks['liquidity'] = 'PASS' if not request.reduce_only else 'REDUCE_ONLY_RISK_ACTION'

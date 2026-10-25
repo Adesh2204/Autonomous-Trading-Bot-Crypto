@@ -336,3 +336,17 @@ def test_l2_hook_replaces_bbo_rule_only_when_installed(live):
     assert evaluate(live, req, context=thin).allowed                                      # enough L2 depth
     live.executor.compliance_guard.l2_entry_capacity = lambda r: D('.1')
     assert evaluate(live, req, context=thin).code == 'BOOK_MANIPULATION_RISK'
+
+
+def test_owner_top_of_book_share_uses_the_context_quote(live):
+    # Scalper 25 Oct: 25% of the same top-of-book snapshot the price checks read.
+    req = request()
+    ctx = live.provider.load(req)
+    book = lambda q: replace(ctx, quote=replace(ctx.quote, ask_quantity=D(q)))
+    exact = req.quantity / D('0.25')
+    assert evaluate(live, req, context=book(exact)).code == 'BOOK_MANIPULATION_RISK'      # 10% default
+    live.executor.compliance_guard.entry_depth_participation = D('0.25')
+    assert evaluate(live, req, context=book(exact)).allowed
+    assert evaluate(live, req, context=book(exact - D('0.001'))).code == 'BOOK_MANIPULATION_RISK'
+    live.executor.compliance_guard.entry_depth_participation = D('0.26')
+    assert evaluate(live, req, context=book(exact * 2)).code == 'COMPLIANCE_CONTEXT_INVALID'

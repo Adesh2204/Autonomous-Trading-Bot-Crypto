@@ -190,6 +190,6 @@
   after a backtest showed "never exit at a loss" lost more (-12.6% vs -48% summed, but trades stuck
   3-9% down for days). Approved: up to 3 concurrent positions (one per market, `MultiPositionGuard`;
   the one-position `SinglePositionGuard` is unchanged and still used when max_positions = 1) and 25% of
-  top-of-book, checked on L2 depth up to the order's limit. Every other limit is unchanged ($1,000 per
+  top-of-book on the same quote snapshot the price checks use. Every other limit is unchanged ($1,000 per
   entry, 2 entries/hour, 1x, 0.4% risk, LOCK, -0.30% period loss cap). No profit is guaranteed: the
   backtest still loses on average per trade after fees.

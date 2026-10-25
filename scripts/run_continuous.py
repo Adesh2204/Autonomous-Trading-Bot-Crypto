@@ -2,7 +2,7 @@
 
 Committed limits; HYPE added 25 Oct: BTC/EWY/HYPE, LONG and SHORT, <= $1,000 per entry, <= 2 entries
 per hour, 1x, 0.4% risk per trade. 25 Oct (user directive): up to 3 concurrent positions (one per
-market), 25% of top-of-book (checked on L2 depth), no 60-min time exit, no 45-min forced trade, and a
+market), 25% of top-of-book, no 60-min time exit, no 45-min forced trade, and a
 take-profit floored above round-trip taker fees.
 LOCK and a -0.30% period loss cap pause until after the next 12:00 UTC sample.
 """

@@ -4,7 +4,7 @@ Committed scope enforced by the mandate and the central guards: the mandate's
 markets and directions, up to `max_positions` concurrent positions (at most one
 per market, at most 3), <= $1,000 per entry, <= 2 entries per clock hour, 1x
 cross, and `participation` of top-of-book (10% default BBO rule; above 10% the
-compliance guard checks L2 depth up to the order's limit instead, at most 25%).
+compliance guard applies the higher share to the same top-of-book snapshot, at most 25%).
 Every entry gets an exchange-side reduce-only stop (trigger) and a resting
 reduce-only take-profit limit, so the position stays protected if the bot dies.
 """
@@ -938,11 +938,10 @@ def build_overnight_runtime(root, mandate_path, release_path, *, state_dir, runt
     executor.compliance_guard.extra_setup_types = frozenset('MOMENTUM_' + d for d in m.directions)
     participation = decimal(m.participation, positive=True)
     if participation > D('0.1'):
-        # Above the default 10% BBO rule, entries are checked against displayed L2
-        # depth up to their own limit at the mandate's participation (as the carry runtime).
-        from .carry_runtime import l2_capacity
-        executor.compliance_guard.l2_entry_capacity = lambda request: l2_capacity(
-            public.get_orderbook(request.symbol), request.side, request.price, participation)
+        # Above the default 10% BBO rule, entries may take the mandate's share of the
+        # same top-of-book snapshot the price checks use. A separately fetched L2 book
+        # raced the context quote: on 25 Oct a one-tick move left 0 depth at the limit.
+        executor.compliance_guard.entry_depth_participation = participation
     policy = replace(base_policy, enabled=True, approval_reference=m.approval_reference,
                      execution_slippage_fraction=decimal(m.stop_slippage, positive=True))
     protection = ScalpProtection(executor, policy=policy, managers=legs)
