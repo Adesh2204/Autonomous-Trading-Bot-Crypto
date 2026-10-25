@@ -1,7 +1,9 @@
 """Continuous scalper CLI to the end of the scored window: prepare | start | supervise | status.
 
-Committed limits; HYPE added 25 Oct: BTC/EWY/HYPE, LONG and SHORT, one position, <= $1,000 per
-entry, <= 2 entries per hour, 1x, 10% of top-of-book, 0.4% risk per trade.
+Committed limits; HYPE added 25 Oct: BTC/EWY/HYPE, LONG and SHORT, <= $1,000 per entry, <= 2 entries
+per hour, 1x, 0.4% risk per trade. 25 Oct (user directive): up to 3 concurrent positions (one per
+market), 25% of top-of-book (checked on L2 depth), no 60-min time exit, no 45-min forced trade, and a
+take-profit floored above round-trip taker fees.
 LOCK and a -0.30% period loss cap pause until after the next 12:00 UTC sample.
 """
 import argparse, json, logging, signal, subprocess, sys, threading, time
@@ -25,7 +27,10 @@ APPROVAL = ('User approval 2026-10-24 16:24 IST (mission step 4, recommendation 
             'to 2026-11-06 inside the committed limits: BTC/EWY, LONG+SHORT, 1 position, <=$1,000 per entry, '
             '2 entries/hour, 1x, 10% top-of-book, 0.4% risk; LOCK and -0.30% period loss cap pause until after '
             'the next 12:00 UTC sample; 3 consecutive order errors halt. User approval 2026-10-25 01:05 IST: add pas:HYPE '
-            '(1x cross) as a third market; every other limit unchanged.')
+            '(1x cross) as a third market; every other limit unchanged. User directive 2026-10-25 (answered '
+            'question): up to 3 concurrent positions (one per market) and 25% of top-of-book; remove the 60-min '
+            'time exit and the 45-min forced trade; floor the take-profit above round-trip taker fees; the 1-ATR '
+            'exchange stop is kept; every other limit unchanged.')
 
 
 def ms(dt):
@@ -69,7 +74,7 @@ def prepare(args):
                          expires_ms=ms(EXPIRES), starting_equity=str(equity), source_hash=active_source_hash(ROOT),
                          release_sha256=sha(RELEASE), venue_identity=venue_profile('pas').identity,
                          approval_reference=APPROVAL, t1_pct=str(t1), t2_pct=str(t2), t3_pct=str(t3),
-                         target_notes=notes, loss_cap_pct='-0.30').require()
+                         target_notes=notes, loss_cap_pct='-0.30', max_positions=3, participation='0.25').require()
     targets = dict(t, history=history, days=len(history) + 1, prior_return_pct=t['published_return_pct'])
     DOCS.mkdir(parents=True, exist_ok=True)
     atomic_json(MANDATE, asdict(m))

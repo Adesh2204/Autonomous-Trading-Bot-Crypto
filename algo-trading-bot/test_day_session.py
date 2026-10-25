@@ -63,7 +63,7 @@ def test_short_entry_sells_at_bid_with_stop_above_and_reduce_only_tp_below(tmp_p
     assert (entry.side, entry.price, entry.reduce_only, entry.tif, entry.strategy_id) == \
         ('SELL', D('99.9'), False, 'Ioc', 'MOMENTUM_SHORT')
     assert entry.quantity == D('8') and eperm.provenance.setup_type == 'MOMENTUM_SHORT'   # 10% of 80 at top of book
-    trade = r.state['trade']
+    trade = r.state['open']['pas:EWY']
     assert trade['side'] == 'SHORT' and D(trade['stop']) > D('99.9') > D(trade['target'])
     assert (tp.side, tp.reduce_only, tp.tif, tp.price) == ('BUY', True, 'Gtc', D(trade['target']).quantize(D('0.01')))
     assert tperm.provenance.classification == 'STRATEGY_EXIT'
@@ -72,7 +72,7 @@ def test_short_entry_sells_at_bid_with_stop_above_and_reduce_only_tp_below(tmp_p
 def test_short_exit_is_a_reduce_only_buy(tmp_path):
     r = Exchange(tmp_path)
     r._positions = {'pas:EWY': Position('pas:EWY', D(-8), D('99.9'), D(0), D(0), None)}
-    r.state['trade'] = None
+    r.state['open'] = {}
     OvernightRuntime.exit(r, 'pas:EWY', 'TIME_STOP_60_MIN')
     request, permission = r.requests[-1]
     assert (request.side, request.reduce_only, request.quantity) == ('BUY', True, D(8))
@@ -94,7 +94,7 @@ def test_short_position_is_kept_when_short_is_permitted(tmp_path):
     r = Exchange(tmp_path)
     r._positions = {'pas:EWY': Position('pas:EWY', D(-8), D('99.9'), D(0), D(0), None)}
     r.protection = SimpleNamespace(states={'pas:EWY': dict(status='ACTIVE')}, ensure_all=lambda **k: None)
-    r.state['trade'] = dict(symbol='pas:EWY', side='SHORT', entry_ms=T0, tp_key='k', target='99')
+    r.state['open'] = {'pas:EWY': dict(symbol='pas:EWY', side='SHORT', entry_ms=T0, tp_key='k', target='99')}
     exits = []
     r.exit = lambda s, why: exits.append(why)
     r.manage()
@@ -129,7 +129,7 @@ class Verify(DayRuntime):
         self.m = mandate(directions=('LONG', 'SHORT')).require()
         self.guard = DayGuard(lock=D('0.08'))
         self.account = SimpleNamespace(get_frontend_open_orders=lambda: self._orders)
-        self.state['trade'] = dict(symbol='pas:EWY', side='SHORT', quantity='-8', entry_ms=T0 - 6000)
+        self.state['open'] = {'pas:EWY': dict(symbol='pas:EWY', side='SHORT', quantity='-8', entry_ms=T0 - 6000)}
 
     positions = Fake.positions
     flatten_all = Fake.flatten_all

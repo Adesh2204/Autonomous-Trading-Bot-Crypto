@@ -66,7 +66,8 @@ def test_take_profit_is_one_and_a_half_times_stop_with_floor():
     stop, target = levels(D(100), D('1'), 'LONG', P)
     assert (stop, target) == (D(99), D('101.5'))
     stop, target = levels(D(100), D('0.01'), 'LONG', P)     # ATR inside the 0.15% floor
-    assert (100 - stop, target - 100) == (D('0.15'), D('0.225'))
+    # 1.5 x 0.15% = 0.225% would not clear 2 x 0.09% taker fees + 0.05% net: floored at 0.23%.
+    assert (100 - stop, target - 100) == (D('0.15'), D('0.23'))
     assert levels(D(100), D(1), 'SHORT', P) == (D(101), D('98.5'))
 
 
@@ -146,12 +147,18 @@ def test_mandate_allows_short_but_rejects_invalid_directions():
 
 @pytest.mark.parametrize('change', [dict(markets=('pas:BTC', 'pas:EWY', 'pas:ETH')), dict(markets=('pas:ETH',)),
     dict(directions=('HEDGE',)), dict(directions=()), dict(directions=('LONG', 'LONG')),
-    dict(max_positions=2), dict(leverage=3), dict(max_notional='1001'),
-    dict(max_entries_per_hour=3), dict(risk_fraction='0.006'), dict(participation='0.25'),
+    dict(max_positions=0), dict(max_positions=3), dict(leverage=3), dict(max_notional='1001'),
+    dict(max_entries_per_hour=3), dict(risk_fraction='0.006'), dict(participation='0.26'),
     dict(loss_cap_pct='-2.5'), dict(t2_pct='0.2'), dict(exit_ms=10 ** 13), dict(dex='par')])
 def test_mandate_stays_inside_committed_limits(change):
     with pytest.raises(ExchangeError, match='INVALID_OVERNIGHT_MANDATE'):
         mandate(**change).require()
+
+
+def test_mandate_allows_one_position_per_market_and_a_quarter_of_the_book():
+    # User directive 2026-10-25: up to 3 concurrent positions (one per market), 25% of top-of-book.
+    m = mandate(markets=('pas:BTC', 'pas:EWY', 'pas:HYPE'), max_positions=3, participation='0.25').require()
+    assert (m.max_positions, m.participation) == (3, '0.25')
 
 
 # ---------- protection geometry ----------
@@ -186,7 +193,7 @@ class Fake(OvernightRuntime):
         self._positions = positions or {}
         self._orders = orders or []
         self.calls = []
-        self.state = state or dict(mandate='x', halted=None, finished=None, trade=None, trades=[], entries=[],
+        self.state = state or dict(mandate='x', halted=None, finished=None, open={}, trades=[], entries=[],
                                    last_entry_ms=None, guard={})
         self.guard = guard()
         self.order_errors = 0
@@ -263,13 +270,76 @@ def test_never_enters_while_holding_or_beyond_two_entries_per_hour(tmp_path):
     assert not any(c[0] == 'enter' for c in r.calls)
 
 
-def test_trade_guarantee_half_size_after_45_quiet_minutes(tmp_path, monkeypatch):
+def test_no_forced_trade_after_quiet_hours(tmp_path, monkeypatch):
     import strategies.momentum_scalper as s
     monkeypatch.setattr(s, 'setup', lambda *a: None)
     r = Fake(tmp_path, now=T0 + 300000 + 30000)
+    r.state['last_entry_ms'] = r.now - 6 * 60 * 60000
+    r.decide()
+    assert not any(c[0] == 'enter' for c in r.calls)
+
+
+def test_trade_guarantee_half_size_when_explicitly_enabled(tmp_path, monkeypatch):
+    import dataclasses
+    import strategies.momentum_scalper as s
+    monkeypatch.setattr(s, 'setup', lambda *a: None)
+    r = Fake(tmp_path, now=T0 + 300000 + 30000)
+    r.p = dataclasses.replace(P, guarantee_ms=45 * 60000)
     r.state['last_entry_ms'] = r.now - 46 * 60000
     r.decide()
     assert ('enter', 'pas:BTC', True) in r.calls
+
+
+def test_enters_every_signalling_market_up_to_the_position_limit(tmp_path):
+    r = Fake(tmp_path, now=T0 + 300000 + 30000)
+    r.m = mandate(max_positions=2).require()
+    r.decide()
+    assert [c[1] for c in r.calls if c[0] == 'enter'] == ['pas:BTC', 'pas:EWY']
+
+
+def test_a_held_market_is_skipped_and_the_free_one_entered(tmp_path):
+    r = Fake(tmp_path, now=T0 + 300000 + 30000, positions=held('pas:BTC'))
+    r.m = mandate(max_positions=2).require()
+    r.decide()
+    assert [c[1] for c in r.calls if c[0] == 'enter'] == ['pas:EWY']
+
+
+def test_full_book_of_positions_blocks_new_entries(tmp_path):
+    both = dict(held('pas:BTC'), **held('pas:EWY'))
+    r = Fake(tmp_path, now=T0 + 300000 + 30000, positions=both)
+    r.m = mandate(max_positions=2).require()
+    r.decide()
+    assert not any(c[0] == 'enter' for c in r.calls)
+
+
+def test_concurrent_entries_still_respect_the_hourly_entry_cap(tmp_path):
+    r = Fake(tmp_path, now=T0 + 300000 + 30000)
+    r.m = mandate(max_positions=2).require()
+    r.state['entries'] = [r.now - 10 * 60000]
+    r.decide()
+    assert [c[1] for c in r.calls if c[0] == 'enter'] == ['pas:BTC']
+
+
+def test_one_trade_closing_leaves_the_other_tracked(tmp_path):
+    r = Fake(tmp_path, now=T0, positions=held('pas:EWY'))
+    r.m = mandate(max_positions=2).require()
+    r.protection.states = {'pas:EWY': dict(status='ACTIVE')}
+    r.state['open'] = {s: dict(symbol=s, entry_ms=T0, tp_key='tp') for s in ('pas:BTC', 'pas:EWY')}
+    closed, exits = [], []
+    r._closed_trade = lambda t: (closed.append(t['symbol']), r.state['open'].pop(t['symbol']))
+    r.exit = lambda s, why: exits.append((s, why))
+    r.manage()
+    assert closed == ['pas:BTC'] and list(r.state['open']) == ['pas:EWY'] and exits == []
+
+
+def test_no_time_exit_for_a_trade_held_for_hours(tmp_path):
+    r = Fake(tmp_path, now=T0, positions=held())
+    r.protection.states = {'pas:BTC': dict(status='ACTIVE')}
+    r.state['open'] = {'pas:BTC': dict(symbol='pas:BTC', entry_ms=T0 - 5 * 60 * 60000, tp_key='tp')}
+    exits = []
+    r.exit = lambda s, why: exits.append((s, why))
+    r.manage()
+    assert exits == []
 
 
 def test_loss_cap_halts_and_flattens_in_run_loop(tmp_path):
@@ -317,7 +387,7 @@ def test_restart_adopts_open_position_and_never_double_enters(tmp_path):
     r.cleanup_orders = lambda: None
     r._event = lambda *a, **k: None
     r.startup()
-    assert r.state['trade']['reason'] == 'ADOPTED_ON_RESTART' and r.state['trade']['symbol'] == 'pas:BTC'
+    assert r.state['open']['pas:BTC']['reason'] == 'ADOPTED_ON_RESTART'
     r.decide()
     assert not any(c[0] == 'enter' for c in r.calls)
 

@@ -161,3 +161,35 @@
   period loss cap flatten and pause until after the next sample; 3 consecutive order errors,
   a failed entry verification or a long stream disconnect halt permanently. A fresh exchange
   read precedes every order. Heartbeat every 15 min, report at 17:45 IST.
+
+- 25 October 00:30 IST: an overnight PnL-push profile ($20k, 25% of top-of-book, slicing,
+  2 positions, 6 entries/h, 2x) was authorized but NOT adopted; the user chose to keep the
+  continuous limits above unchanged. The organizer pages set none of those limits (only
+  leverage <= market maxLeverage, $10 minimum order, $10M open interest per market, and
+  thin-book manipulation monitoring). The continuous run was relaunched under a new mandate
+  and release after a fix: the account receiver keeps reconnecting instead of dying after
+  five connect failures; the 3-minute disconnect halt is unchanged.
+- 25 October 01:05 IST: the user approved adding pas:HYPE as a third entry market
+  (`PAS_ENTRY_MARKETS`, run_continuous MARKETS); every other limit is unchanged. HYPE was set
+  10x -> 1x CROSS through the human-typed configuration route (plan ef19e60b..., 1 action,
+  0 orders). The completed 19 Oct BTC/EWY configuration journal was archived as
+  `runtime/testnet/anchorium-bot-1/pas-configuration_btc_ewy_2026-10-19.sqlite` because the
+  journal is bound to one plan session. Relaunched 01:56 IST from commit bfd83ec.
+- 25 October 02:53 IST: relaunched from aa458ed (branch codex/entry-deadline). An entry now waits for
+  read headroom until its signal is 130 s old (compliance still 60-180 s; 880 headroom unchanged), after a
+  02:40 BTC signal was skipped 0.7 s short of the fixed 25 s wait.
+- 25 October 04:08 IST: relaunched from a01d33e (codex/budget-refresh). The entry gate re-reads
+  userRateLimit before re-deriving paused entries; a stale (>60 s) budget snapshot reads UNKNOWN and had
+  kept entries paused after every closed trade until a random stream reconnect.
+- 25 October 09:07 IST: relaunched from 059521f (codex/entry-paused-skip). An entry the executor refuses
+  with ENTRY_PAUSED before signing (stream reconnect) is logged ENTRY_SKIPPED, not an order error; all
+  other entry failures still count toward the 3-consecutive-error halt.
+- 25 October 12:30 IST (user directive, answered questions): the scalper no longer has the 60-minute
+  time exit or the 45-minute forced trade (`ScalpParams.time_stop_ms`/`guarantee_ms` = None), and the
+  take-profit is floored at 2 x 0.09% taker fees + 0.05% net. The user kept the 1-ATR exchange stop
+  after a backtest showed "never exit at a loss" lost more (-12.6% vs -48% summed, but trades stuck
+  3-9% down for days). Approved: up to 3 concurrent positions (one per market, `MultiPositionGuard`;
+  the one-position `SinglePositionGuard` is unchanged and still used when max_positions = 1) and 25% of
+  top-of-book, checked on L2 depth up to the order's limit. Every other limit is unchanged ($1,000 per
+  entry, 2 entries/hour, 1x, 0.4% risk, LOCK, -0.30% period loss cap). No profit is guaranteed: the
+  backtest still loses on average per trade after fees.

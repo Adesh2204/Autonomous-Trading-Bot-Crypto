@@ -1,8 +1,10 @@
 """Unattended overnight momentum scalper inside the committed scored limits.
 
-Committed scope enforced by the mandate and the unchanged central guards:
-BTC/EWY only, LONG only, one position, <= $1,000 per entry, <= 2 entries per
-clock hour, 1x cross, 10% of top-of-book (default compliance BBO rule).
+Committed scope enforced by the mandate and the central guards: the mandate's
+markets and directions, up to `max_positions` concurrent positions (at most one
+per market, at most 3), <= $1,000 per entry, <= 2 entries per clock hour, 1x
+cross, and `participation` of top-of-book (10% default BBO rule; above 10% the
+compliance guard checks L2 depth up to the order's limit instead, at most 25%).
 Every entry gets an exchange-side reduce-only stop (trigger) and a resting
 reduce-only take-profit limit, so the position stays protected if the bot dies.
 """
@@ -94,11 +96,11 @@ class OvernightMandate:
                 or not set(self.markets) <= PAS_ENTRY_MARKETS
                 or not self.directions or len(set(self.directions)) != len(self.directions)
                 or not set(self.directions) <= {'LONG', 'SHORT'}
-                or self.max_positions != 1 or self.leverage != 1
+                or not 1 <= self.max_positions <= min(3, len(self.markets)) or self.leverage != 1
                 or not D(10) < decimal(self.max_notional) <= D(1000)
                 or not 1 <= self.max_entries_per_hour <= 2
                 or not D(0) < decimal(self.risk_fraction) <= D('0.005')
-                or not D(0) < decimal(self.participation) <= D('0.1')
+                or not D(0) < decimal(self.participation) <= D('0.25')
                 or not D('-2.0') <= decimal(self.loss_cap_pct) < 0
                 or not 0 < t1 < t2 < t3
                 or not SCORED_START_MS <= self.starts_ms < self.flatten_ms < self.exit_ms < self.expires_ms <= SCORED_END_MS
@@ -219,7 +221,7 @@ class OvernightRuntime:
             value = json.loads(path.read_text())
             if value.get('mandate') == self.m.identity:
                 return value
-        return dict(mandate=self.m.identity, halted=None, finished=None, trade=None, trades=[], entries=[],
+        return dict(mandate=self.m.identity, halted=None, finished=None, open={}, trades=[], entries=[],
                     last_entry_ms=None, guard=dict(hit_t1=False, hit_t2=False, losing_streak=0,
                                                    paused_until_ms=0, half_size=False))
 
@@ -331,19 +333,19 @@ class OvernightRuntime:
         stop, target = levels(actual, decision['atr'], held, self.p)
         self.legs[symbol].plan_stop = stop
         self.legs[symbol].sync(position)
-        self.state['trade'] = dict(symbol=symbol, side=held, entry_ms=self.clock_ms(), entry=str(actual), stop=str(stop),
-                                   target=str(target), quantity=str(position.quantity), reason=decision['reason'],
-                                   tp_key=None, half=half)
+        self.state['open'][symbol] = dict(symbol=symbol, side=held, entry_ms=self.clock_ms(), entry=str(actual),
+                                          stop=str(stop), target=str(target), quantity=str(position.quantity),
+                                          reason=decision['reason'], tp_key=None, half=half)
         self._save()
         # Re-plans the stop at the actual fill; the protection hook reads fresh before any change.
         self.protection.ensure_all()
-        self._event('STOP_CHECKED', symbol=symbol, elapsed_ms=self.clock_ms() - self.state['trade']['entry_ms'],
+        self._event('STOP_CHECKED', symbol=symbol, elapsed_ms=self.clock_ms() - self.state['open'][symbol]['entry_ms'],
                     status=self.protection.states.get(symbol, {}).get('status'))
-        self.place_take_profit()
+        self.place_take_profit(symbol)
         return result
 
-    def place_take_profit(self):
-        trade = self.state['trade']
+    def place_take_profit(self, symbol):
+        trade = self.state['open'].get(symbol)
         if not trade or trade.get('tp_key'):
             return
         self.preflight()
@@ -367,8 +369,8 @@ class OvernightRuntime:
         self._event('TAKE_PROFIT_PLACED', symbol=trade['symbol'], price=target, state=result.state.value,
                     oid=result.exchange_order_id, elapsed_ms=self.clock_ms() - trade['entry_ms'])
 
-    def cancel_take_profit(self):
-        trade = self.state['trade']
+    def cancel_take_profit(self, symbol):
+        trade = self.state['open'].get(symbol)
         if not trade or not trade.get('tp_key'):
             return
         open_ids = {str(o['oid']) for o in self.own_orders() if not o.get('isTrigger')}
@@ -390,8 +392,8 @@ class OvernightRuntime:
                             error=str(exc))
 
     def _exit_once(self, symbol, reason):
-        if self.state['trade'] and self.state['trade']['symbol'] == symbol:
-            self.cancel_take_profit()
+        if symbol in self.state['open']:
+            self.cancel_take_profit(symbol)
         position = self.positions().get(symbol)
         if position is None:
             return None
@@ -435,12 +437,12 @@ class OvernightRuntime:
                     self._event('ORPHAN_ORDER_CANCELLED', symbol=o['coin'], oid=o['oid'])
                 except Exception as exc:
                     self._event('CANCEL_ERROR', symbol=o['coin'], error=f'{type(exc).__name__}:{exc}')
-        trade = self.state['trade']
-        if trade and trade.get('tp_key') and trade['symbol'] not in held:
-            try:
-                self.executor.recover_uncertain(trade['tp_key'])
-            except Exception as exc:
-                self._event('TP_RECOVERY_ERROR', error=f'{type(exc).__name__}:{exc}')
+        for trade in list(self.state['open'].values()):
+            if trade.get('tp_key') and trade['symbol'] not in held:
+                try:
+                    self.executor.recover_uncertain(trade['tp_key'])
+                except Exception as exc:
+                    self._event('TP_RECOVERY_ERROR', symbol=trade['symbol'], error=f'{type(exc).__name__}:{exc}')
 
     # ---------- guardrails ----------
     def halt(self, reason):
@@ -485,7 +487,7 @@ class OvernightRuntime:
                 net += (f.closed_pnl or D(0)) - f.fee
         trade = dict(trade, exit_ms=self.clock_ms(), net=str(net))
         self.state['trades'].append(trade)
-        self.state['trade'] = None
+        self.state['open'].pop(trade['symbol'], None)
         self.legs[trade['symbol']].plan_stop = None
         self.guard.trade_closed(net, self.clock_ms())
         self._save()
@@ -515,7 +517,8 @@ class OvernightRuntime:
         if not 5000 <= now - bar_close <= 40000 or self.state.get('decided_bar') == bar_close:
             return
         self.state['decided_bar'] = bar_close
-        if self.positions() or self.state['halted'] or now >= self.m.flatten_ms:
+        held = self.positions()
+        if len(held) >= self.m.max_positions or self.state['halted'] or now >= self.m.flatten_ms:
             return
         if self.guard.paused(now):
             self._event('PAUSED_AFTER_LOSS_STREAK', until_ms=self.guard.paused_until_ms)
@@ -526,6 +529,8 @@ class OvernightRuntime:
         half = self.guard.size_factor_half()
         found = []
         for symbol in self.m.markets:
+            if symbol in held or symbol in self.state['open']:
+                continue                      # at most one position per market
             bars5 = self._bars(symbol, '5m', 40)
             # pas markets skip empty 5m candles; only the bar that just closed may signal.
             if not bars5 or bars5[-1]['t'] != bar_close - 5 * MIN_MS:
@@ -537,7 +542,7 @@ class OvernightRuntime:
                 if decision['side']:
                     found.append((symbol, decision))
         last = self.state['last_entry_ms'] or self.m.starts_ms
-        if not found and now - last >= self.p.guarantee_ms:
+        if not found and self.p.guarantee_ms is not None and now - last >= self.p.guarantee_ms:
             symbol = self.most_liquid()
             decision = guaranteed(self._bars(symbol, '5m', 40), self._bars(symbol, '15m', 60), self.p)
             if decision:
@@ -546,7 +551,8 @@ class OvernightRuntime:
             if decision and decision['side']:
                 found.append((symbol, decision))
                 half = True
-        for symbol, decision in found[:1]:
+        slots = min(self.m.max_positions - len(held), self.m.max_entries_per_hour - self._entries_last_hour())
+        for symbol, decision in found[:slots]:
             try:
                 self._stream_health()
                 self.protection.ensure_all()
@@ -590,14 +596,15 @@ class OvernightRuntime:
         return max(depth, key=depth.get)
 
     def manage(self):
-        """Time stop, protection repair, flat detection for the tracked trade."""
-        trade = self.state['trade']
+        """Optional time stop, protection repair, flat detection for every tracked trade."""
         positions = self.positions()
-        if trade and trade['symbol'] not in positions:
+        closed = [t for s, t in self.state['open'].items() if s not in positions]
+        if closed:
             self.cleanup_orders()
-            self._closed_trade(trade)
-            self.protection.ensure_all()      # cancels the now-obsolete exchange stop
-            return
+            for trade in closed:
+                self._closed_trade(trade)
+            self.protection.ensure_all()      # cancels the now-obsolete exchange stops
+            positions = self.positions()
         for symbol, position in positions.items():
             if symbol not in self.m.markets or ('LONG' if position.quantity > 0 else 'SHORT') not in self.m.directions:
                 self.exit(symbol, 'OUTSIDE_COMMITTED_SCOPE')
@@ -608,10 +615,11 @@ class OvernightRuntime:
                 if self.protection.states.get(symbol, {}).get('status') != 'ACTIVE':
                     self.exit(symbol, 'EXCHANGE_STOP_NOT_ACTIVE')
                     continue
-            if trade and trade['symbol'] == symbol:
+            trade = self.state['open'].get(symbol)
+            if trade:
                 if not trade.get('tp_key'):
-                    self.place_take_profit()
-                if self.clock_ms() - trade['entry_ms'] >= self.p.time_stop_ms:
+                    self.place_take_profit(symbol)
+                if self.p.time_stop_ms is not None and self.clock_ms() - trade['entry_ms'] >= self.p.time_stop_ms:
                     self.exit(symbol, 'TIME_STOP_60_MIN')
 
     # ---------- reporting ----------
@@ -656,8 +664,7 @@ class OvernightRuntime:
         self.auth.require(self.m.team_wallet, self.m.api_wallet)
         self._event('TARGETS', t1_pct=self.m.t1_pct, t2_pct=self.m.t2_pct, t3_pct=self.m.t3_pct,
                     notes=self.m.target_notes, start_equity=self.m.starting_equity)
-        trade = self.state['trade']
-        if trade:
+        for trade in self.state['open'].values():
             self.legs[trade['symbol']].plan_stop = decimal(trade['stop'], positive=True)
         self.recovery.recover()
         if not getattr(self.stream, 'background_receiving', True):
@@ -668,16 +675,17 @@ class OvernightRuntime:
             time.sleep(1)
         self.protection.ensure_all()
         positions = self.positions()
-        if positions and not trade:
+        for symbol, position in positions.items():
+            if symbol in self.state['open'] or symbol not in self.legs:
+                continue
             # Restart without a durable plan: adopt with the default stop, never re-enter.
-            symbol, position = next(iter(positions.items()))
             self.legs[symbol].sync(position)
-            self.state['trade'] = dict(symbol=symbol, side='LONG' if position.quantity > 0 else 'SHORT',
-                                       entry_ms=self.clock_ms(), entry=str(position.entry_price),
-                                       stop=str(self.legs[symbol]._open_position['stop_loss_price']),
-                                       target=str(decimal(position.entry_price) *
-                                                  (D('1.0075') if position.quantity > 0 else D('0.9925'))),
-                                       quantity=str(position.quantity), reason='ADOPTED_ON_RESTART', tp_key=None)
+            self.state['open'][symbol] = dict(symbol=symbol, side='LONG' if position.quantity > 0 else 'SHORT',
+                                              entry_ms=self.clock_ms(), entry=str(position.entry_price),
+                                              stop=str(self.legs[symbol]._open_position['stop_loss_price']),
+                                              target=str(decimal(position.entry_price) *
+                                                         (D('1.0075') if position.quantity > 0 else D('0.9925'))),
+                                              quantity=str(position.quantity), reason='ADOPTED_ON_RESTART', tp_key=None)
             self._save()
         self.cleanup_orders()
         self._event('STARTUP', positions=sorted(positions), equity=self.equity(), halted=self.state['halted'],
@@ -696,15 +704,16 @@ class OvernightRuntime:
                     if self.positions() or self.own_orders():
                         self._event('SCHEDULED_FLATTEN_0845_IST')
                         self.flatten_all('SCHEDULED_FLATTEN_0845_IST')
-                        if self.state['trade'] and not self.positions():
-                            self._closed_trade(self.state['trade'])
+                        held = self.positions()
+                        for trade in [t for s, t in self.state['open'].items() if s not in held]:
+                            self._closed_trade(trade)
                     self.heartbeat()
                     stop.wait(5)
                     continue
                 self._stream_health()
                 # Flat and untracked: poll the account every 15 s, not every cycle, so the
                 # rolling read budget has room for the next entry and its stop.
-                if self.state['trade'] or now - self.last_account_ms >= FLAT_POLL_MS:
+                if self.state['open'] or now - self.last_account_ms >= FLAT_POLL_MS:
                     self.last_account_ms = now
                     self.manage()
                     equity = self.equity()
@@ -900,7 +909,7 @@ def build_overnight_runtime(root, mandate_path, release_path, *, state_dir, runt
     clock = ClockHealthMonitor(journal=journal, **clock_config)
     legs = {s: ScalpLeg(s) for s in m.markets}
     recovery = CarryAccountRecovery(account, journal, initial_start_ms=0, managers=legs,
-                                    markets=m.markets, max_positions=1)
+                                    markets=m.markets, max_positions=m.max_positions)
     holder = {}
     provider = LiveContextProvider(public, account, API, clock, rates,
         reconciliation_ready=lambda: recovery.last_report.ready,
@@ -917,12 +926,23 @@ def build_overnight_runtime(root, mandate_path, release_path, *, state_dir, runt
     executor = CarryExecution(client, transport=transport, account=account, journal=journal,
         context_provider=provider, validator=HyperliquidOrderValidator(client, policy_leverage=1),
         recovery=recovery, clock_health=clock, rate_limits=rates)
-    executor.max_positions = 1
+    executor.max_positions = m.max_positions
     executor.allowed_markets = frozenset(m.markets)
-    executor.position_guard = BasketPositionGuard(journal, clock_ms=client.clock_ms, max_positions=1)
+    if m.max_positions > 1:
+        from .multi_position_guard import MultiPositionGuard
+        executor.position_guard = MultiPositionGuard(journal, clock_ms=client.clock_ms, max_positions=m.max_positions)
+        executor.resting_take_profits = True
+    else:
+        executor.position_guard = BasketPositionGuard(journal, clock_ms=client.clock_ms)
     executor.compliance_guard.position_guard = executor.position_guard
     executor.compliance_guard.extra_setup_types = frozenset('MOMENTUM_' + d for d in m.directions)
-    # No L2 hook: the default 10%-of-top-of-book compliance rule stays in force.
+    participation = decimal(m.participation, positive=True)
+    if participation > D('0.1'):
+        # Above the default 10% BBO rule, entries are checked against displayed L2
+        # depth up to their own limit at the mandate's participation (as the carry runtime).
+        from .carry_runtime import l2_capacity
+        executor.compliance_guard.l2_entry_capacity = lambda request: l2_capacity(
+            public.get_orderbook(request.symbol), request.side, request.price, participation)
     policy = replace(base_policy, enabled=True, approval_reference=m.approval_reference,
                      execution_slippage_fraction=decimal(m.stop_slippage, positive=True))
     protection = ScalpProtection(executor, policy=policy, managers=legs)

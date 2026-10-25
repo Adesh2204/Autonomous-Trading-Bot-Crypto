@@ -128,7 +128,7 @@ def dry_run(args):
             if sim:
                 q = md.get_quote(sim['symbol'])
                 why = ('STOP' if q.bid <= sim['stop'] else 'TAKE_PROFIT' if q.bid >= sim['target'] else
-                       'TIME_STOP' if now - sim['ms'] >= p.time_stop_ms else None)
+                       'TIME_STOP' if p.time_stop_ms is not None and now - sim['ms'] >= p.time_stop_ms else None)
                 if why:
                     px = sim['stop'] if why == 'STOP' else sim['target'] if why == 'TAKE_PROFIT' else q.bid
                     net = (px - sim['entry']) * sim['qty'] - (px + sim['entry']) * sim['qty'] * D('0.0009')

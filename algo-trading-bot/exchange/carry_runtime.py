@@ -228,6 +228,8 @@ class CarryExecution(HyperliquidExecution):
     """Basket boundary check: this market empty, room left, only our stops resting."""
     max_positions = 1
     allowed_markets = frozenset()
+    # The scalper's resting reduce-only take-profit on a held market is not a pending entry.
+    resting_take_profits = False
 
     def _fresh_protection(self):
         # Both entry reliability gates (after validation in _submit, and in _guard)
@@ -259,8 +261,8 @@ class CarryExecution(HyperliquidExecution):
         ok = (entry_request is not None and signature(before) == signature(after)
               and entry_request.symbol not in held and len(held) < self.max_positions
               and held <= set(self.allowed_markets)
-              and all(o.get('isTrigger') is True and o.get('reduceOnly') is True and o.get('coin') in held
-                      for o in orders))
+              and all((o.get('isTrigger') is True or self.resting_take_profits) and o.get('reduceOnly') is True
+                      and o.get('coin') in held for o in orders))
         if not ok:
             self.entries_paused = True
             self.position_guard.revoke('BASKET_ACCOUNT_CHANGED_BEFORE_SIGNING')

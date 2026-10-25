@@ -6,7 +6,8 @@ Runs inside the committed scored limits: BTC/EWY, LONG-only, one position,
 reported but never traded while the committed scope is LONG-only.
 
 Research note (2026-10-23): 5m breakouts did not clear costs out of sample.
-This strategy was chosen by the user to guarantee overnight activity.
+This strategy was chosen by the user to guarantee overnight activity. 2026-10-25:
+the time stop and the forced trade are off by default (user directive).
 """
 from dataclasses import dataclass, field
 from decimal import Decimal as D
@@ -27,8 +28,14 @@ class ScalpParams:
     # A 1-ATR stop on 5m bars can sit inside the spread; the exchange stop must
     # rest below the mark, so the stop distance has a 0.15% floor (TP keeps 1.5:1).
     min_stop_fraction: D = D('0.0015')
-    time_stop_ms: int = 60 * MIN_MS
-    guarantee_ms: int = 45 * MIN_MS
+    # User directive 2026-10-25: no 60-minute time exit and no 45-minute forced
+    # trade. None disables each; a trade leaves only by its stop or take-profit.
+    time_stop_ms: int | None = None
+    guarantee_ms: int | None = None
+    # The take-profit must clear a taker entry and a taker exit (0.09% each on
+    # pas, userCrossRate x2) plus a minimum net gain, so a win is never eaten by fees.
+    fee_rate: D = D('0.0009')
+    min_net_fraction: D = D('0.0005')
     risk_fraction: D = D('0.004')
 
     def __post_init__(self):
@@ -97,9 +104,9 @@ def guaranteed(bars5, bars15, p):
 
 
 def levels(entry, atr_value, side, p):
-    """Stop and take-profit at a fixed 1.5:1 ratio."""
+    """Stop and take-profit at 1.5:1, with the take-profit floored above round-trip fees."""
     distance = max(p.sl_atr * atr_value, p.min_stop_fraction * entry)
-    reward = distance * p.tp_atr / p.sl_atr
+    reward = max(distance * p.tp_atr / p.sl_atr, entry * (2 * p.fee_rate + p.min_net_fraction))
     if side == 'LONG':
         return entry - distance, entry + reward
     return entry + distance, entry - reward

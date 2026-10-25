@@ -108,7 +108,7 @@ def test_stop_is_signed_inside_the_freshness_window_after_an_idle_hot_period(liv
 def runtime_for_exit(live, e, protection, fresh, tmp_path):
     r = OvernightRuntime.__new__(OvernightRuntime)
     r.m = SimpleNamespace(exit_slippage='0.005', markets=('par:BTC',))
-    r.state = dict(trade=None, halted=None)
+    r.state = dict(open={}, halted=None)
     r.state_dir = tmp_path
     r.executor, r.protection, r.account, r.client, r.market = e, protection, live.account, live.client, live.market
     r.recovery = live.executor.recovery

@@ -119,7 +119,7 @@ class DayRuntime(OvernightRuntime):
         return result
 
     def verify_entry(self, symbol, *, first, error=None):
-        trade = self.state.get('trade') or {}
+        trade = self.state['open'].get(symbol) or {}
         started = trade.get('entry_ms') or self.clock_ms()
         position = self.positions().get(symbol)
         orders = [o for o in self.account.get_frontend_open_orders() if o['coin'] == symbol]

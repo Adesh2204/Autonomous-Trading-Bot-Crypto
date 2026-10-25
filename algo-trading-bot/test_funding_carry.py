@@ -192,6 +192,18 @@ def test_basket_entry_blocked(positions, orders, symbol, max_positions):
     assert e.entries_paused
 
 
+def test_scalper_resting_take_profit_on_a_held_leg_allows_the_next_market():
+    tp = dict(STOP, isTrigger=False)
+    e = basket({'pas:BTC': pos('pas:BTC', '1')}, [STOP, tp])
+    e.resting_take_profits = True
+    e._require_entry_account(NOW, request(symbol='pas:ETH'))
+    for bad in (dict(tp, reduceOnly=False), dict(tp, coin='pas:SP500')):     # an entry, or a flat market's order
+        e = basket({'pas:BTC': pos('pas:BTC', '1')}, [STOP, bad])
+        e.resting_take_profits = True
+        with pytest.raises(ExchangeError, match='ACCOUNT_CHANGED_BEFORE_SIGNING'):
+            e._require_entry_account(NOW, request(symbol='pas:ETH'))
+
+
 def test_only_our_resting_stops_are_filtered_from_pending_exits():
     stop = dict(state='OPEN', request=json.dumps(dict(strategy_id='CATASTROPHIC_STOP')))
     exit_order = dict(state='OPEN', request=json.dumps(dict(strategy_id='CARRY_EXIT')))
