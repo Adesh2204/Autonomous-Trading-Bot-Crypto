@@ -484,3 +484,46 @@ def test_a_compliance_leverage_refusal_is_a_skip_and_rechecks_later(tmp_path, mo
     assert w.r.leverage_ok['pas:BTC'] is False and w.r.order_errors == 0
     w.clock[0] += 300001
     assert w.r.one_x('pas:BTC')
+
+
+def test_entries_wait_while_the_account_stream_is_unhealthy_and_data_not_ready_is_a_skip(tmp_path, monkeypatch):
+    w = World(tmp_path, monkeypatch)
+    w.r.startup()
+    w.r.stream.healthy = False
+    for _ in range(5):
+        w.step()
+    assert not w.children() and w.r.order_errors == 0 and not w.r.state['halted']
+    assert 'DATA_NOT_READY' in carry_basket.SKIP_CODES
+    w.r.stream.healthy = True
+    w.step()
+    assert len(w.children()) == 1
+
+
+class ReceiverStream:
+    def __init__(self):
+        self.receiver_thread, self.started, self.stopped = None, 0, 0
+        self.healthy, self.pending, self.connected, self.ready, self.receiver_fatal = True, False, True, True, None
+
+    @property
+    def background_receiving(self):
+        return self.receiver_thread is not None
+
+    def start_receiver(self):
+        self.receiver_thread, self.started = object(), self.started + 1
+
+    def stop_receiver(self):
+        self.stopped += 1
+
+    def connect(self):
+        raise AssertionError('the owner thread must not connect when a receiver runs')
+
+    poll = connect
+
+
+def test_runtime_uses_the_background_receiver_like_the_scalper(tmp_path, monkeypatch):
+    w = World(tmp_path, monkeypatch)
+    w.r.stream = ReceiverStream()
+    w.r.startup()
+    w.step()
+    w.r.shutdown('TEST')
+    assert w.r.stream.started == 1 and w.r.stream.stopped == 1

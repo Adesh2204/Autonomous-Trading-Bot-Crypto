@@ -39,7 +39,8 @@ SKIP_CODES = frozenset({
     'POST_ONLY_WOULD_CROSS', 'BOOK_MANIPULATION_RISK', 'ENTRY_PAUSED', 'ENTRY_RELIABILITY_GATE_REQUIRED',
     'ENTRY_READ_BUDGET_HEADROOM_UNAVAILABLE', 'EXCHANGE_CONTEXT_UNAVAILABLE', 'STALE_PRICE_CONTEXT',
     'STALE_MARKET_DATA', 'RATE_LIMITED', 'IOC_NO_LIQUIDITY', 'ACCOUNT_CHANGED_BEFORE_SIGNING',
-    'GLOBAL_POSITION_LEASE_REVOKED', 'ACCOUNT_PREFLIGHT_INVALIDATED', 'INVALID_LEVERAGE'})
+    'GLOBAL_POSITION_LEASE_REVOKED', 'ACCOUNT_PREFLIGHT_INVALIDATED', 'INVALID_LEVERAGE', 'DATA_NOT_READY',
+    'ACCOUNT_NOT_READY', 'SIGNING_READINESS_REVOKED', 'UNKNOWN_ACCOUNT_STATE'})
 ONE_X = dict(type='cross', value=1)
 LEVERAGE_RECHECK_MS = 300000
 
@@ -270,6 +271,28 @@ class CarryBasketRuntime(CarryRuntime):
     def _qty(self, positions, symbol):
         p = positions.get(symbol)
         return abs(p.quantity) if p is not None and p.quantity else D(0)
+
+    def _stream_health(self):
+        # As in the scalper: a receiver thread connects, pings and polls continuously; the owner
+        # thread only reconciles. (Polling once per cycle let the stream go stale: DATA_NOT_READY.)
+        stream = self.stream
+        if not getattr(stream, 'background_receiving', True):
+            return super()._stream_health()
+        try:
+            if getattr(stream, 'receiver_fatal', None):
+                self._event('STREAM_ERROR', error='RECEIVER_FATAL:' + str(stream.receiver_fatal))
+            elif stream.pending or (stream.connected and not getattr(stream, 'ready', True)):
+                stream.reconcile()
+        except ExchangeError as exc:
+            self._event('STREAM_ERROR', error=str(exc))
+        now = self.clock_ms()
+        if stream.healthy:
+            self.disconnected_since = None
+        elif self.disconnected_since is None:
+            self.disconnected_since = now
+        elif now - self.disconnected_since > self.m.max_disconnect_ms:
+            self.halt('API_DISCONNECT_OVER_LIMIT', flatten=False)
+        return stream.healthy
 
     def _note_order_error(self, exc, where):
         # Carry profile: 3 consecutive order errors halt AND flatten (sliced, touch-limited).
@@ -652,6 +675,9 @@ class CarryBasketRuntime(CarryRuntime):
                 continue
             if entry and not self.one_x(symbol):
                 continue
+            if entry and not self.stream.healthy:
+                self._skip(symbol, 'STREAM_NOT_HEALTHY')
+                continue
             if entry:
                 if self.executor.entries_paused:
                     self.executor._after_action()       # re-derive from fresh account truth
@@ -812,7 +838,9 @@ class CarryBasketRuntime(CarryRuntime):
     def startup(self):
         self.auth.require(self.m.team_wallet, self.m.api_wallet)
         self.recovery.recover()
-        for _ in range(20):
+        if hasattr(self.stream, 'start_receiver') and not self.stream.background_receiving:
+            self.stream.start_receiver()
+        for _ in range(30):
             if self._stream_health():
                 break
             time.sleep(1)
@@ -891,6 +919,8 @@ class CarryBasketRuntime(CarryRuntime):
         except ExchangeError as exc:
             self._event('SHUTDOWN_STOP_CHECK_ERROR', error=str(exc))
         self.heartbeat(force=True)
+        if hasattr(self.stream, 'stop_receiver') and getattr(self.stream, 'background_receiving', False):
+            self.stream.stop_receiver()
         self._event('STOPPED', reason=reason, halted=self.state['halted'])
 
     def run(self, stop):
