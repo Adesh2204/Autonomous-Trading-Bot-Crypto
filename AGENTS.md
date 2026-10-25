@@ -193,3 +193,12 @@
   top-of-book on the same quote snapshot the price checks use. Every other limit is unchanged ($1,000 per
   entry, 2 entries/hour, 1x, 0.4% risk, LOCK, -0.30% period loss cap). No profit is guaranteed: the
   backtest still loses on average per trade after fees.
+- 25 October 22:30 IST (user mission "stop the fee bleed"): the bot stays FLAT (stop.flag kept; last run finished
+  11:19 UTC, 0 positions / 0 orders verified on the exchange) unless a strategy passes the pre-registered Phase 3
+  out-of-sample gate AND the user approves. The fee-aware 1h trend-pullback (maker-only) FAILED that gate
+  (docs/fee_bleed_2026-10-25/research_results.md): NO-GO. Funding carry is NOT approved (needs an explicit
+  "yes, carry"). Runtime fixes, no limit or strategy change: exchange fills are the source of truth for trade
+  records (exchange/fill_ledger.py; 30 s and boot reconcile, adoption of untracked positions; bug #11); a stop-update
+  error keeps a valid existing full-size stop and flattens only after 2 fresh-read retries, and a stop next to our
+  resting take-profit is not a DUPLICATE_ORDER (bug #12); per-entry-cycle read weight is logged; stop-fill slippage
+  is recorded per trade. Tests: test_fill_truth_and_stop_update.py. VPS kit (prepared, not enabled): deploy/vps/.
