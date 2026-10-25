@@ -498,3 +498,31 @@ def test_barrier_pass_is_reused_only_inside_the_freshness_window(monkeypatch):
     clock[0] = T0 + 10001
     b.require(fresh_within_ms=10000)
     assert len(reads) == 3                 # stale pass: full re-check
+
+
+def test_entry_refused_before_signing_is_a_skip_not_an_order_error(tmp_path):
+    """2026-10-25 08:45/08:55 IST: stream reconnects revoked entries just before submit."""
+    from exchange.base_exchange import ExchangeError
+    r = Fake(tmp_path, now=T0 + 3 * 300000 + 20000)
+    events = []
+    r._event = lambda kind, **data: events.append((kind, data.get('reason')))
+
+    def refused(symbol, decision, *, half):
+        raise ExchangeError('ENTRY_PAUSED')
+    r.enter = refused
+    r.order_errors = 2
+    r.decide()
+    assert ('ENTRY_SKIPPED', 'ENTRY_PAUSED_BEFORE_SIGNING') in events
+    assert r.order_errors == 2 and r.state['halted'] is None
+
+
+def test_other_entry_failures_still_count_toward_the_halt(tmp_path):
+    from exchange.base_exchange import ExchangeError
+    r = Fake(tmp_path, now=T0 + 3 * 300000 + 20000)
+    r._event = lambda kind, **data: None
+
+    def rejected(symbol, decision, *, half):
+        raise ExchangeError('ORDER_REJECTED')
+    r.enter = rejected
+    r.decide()
+    assert r.order_errors == 1

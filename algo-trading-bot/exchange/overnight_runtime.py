@@ -562,6 +562,11 @@ class OvernightRuntime:
                 self.enter(symbol, decision, half=half)
                 self.order_errors = 0
             except Exception as exc:
+                if str(exc) == 'ENTRY_PAUSED':
+                    # The executor refused before signing (a stream reconnect revoked
+                    # entries): nothing was sent, so it is a skip, not an order error.
+                    self._event('ENTRY_SKIPPED', symbol=symbol, reason='ENTRY_PAUSED_BEFORE_SIGNING')
+                    continue
                 self._note_order_error(exc, 'entry:' + symbol)
 
     def _refresh_account_budget(self):
