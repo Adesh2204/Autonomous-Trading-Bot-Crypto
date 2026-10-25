@@ -27,6 +27,8 @@ class HyperliquidRateLimitManager:
         self.wait=wait or (lambda ms:time.sleep(ms/1000))
         self.lock=threading.RLock()
         self.weights=[]
+        self.total_weight=0                 # cumulative IP weight, for per-cycle measurement (Phase 1.3)
+        self.weight_by_query={}
         self.budget=None
         self.n_requests_used=None
         self.n_requests_cap=None
@@ -176,6 +178,7 @@ class HyperliquidRateLimitManager:
         if not observed and (usage+weight>limit or self.clock_ms()<self.backoff_until and priority!=RequestPriority.SAFETY):
             raise ExchangeError('RATE_LIMITED')
         self.weights.append((self.clock_ms(),weight))
+        self.total_weight=getattr(self,'total_weight',0)+weight
         if observed and usage+weight>self.ip_weight_limit:
             self._event('RATE_LIMIT_THROTTLED',reason='HISTORY_RESPONSE_EXCEEDED_RESERVED_WEIGHT')
 
@@ -192,7 +195,10 @@ class HyperliquidRateLimitManager:
                     raise ExchangeError('OPTIONAL_API_THROTTLED')
                 self.optional_times[query]=self.clock_ms()
             weight=(2 if query in self.SMALL_INFO else 60 if query=='userRole' else 20)+response_weight
-            try:self._weight(weight,priority)
+            try:
+                self._weight(weight,priority)
+                counts=getattr(self,'weight_by_query',None)
+                if counts is not None:counts[query]=counts.get(query,0)+weight
             except ExchangeError as exc:
                 if str(exc)=='RATE_LIMITED':
                     self._event('INFO_RATE_BUDGET_REJECTED',query=query,weight=weight,

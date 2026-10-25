@@ -14,6 +14,15 @@ from .execution_journal import fingerprint, safe_data
 from .single_position_guard import unresolved
 
 
+
+def stop_beside_resting_take_profit(request, old, row, open_orders):
+    """Bug #12: a protective stop (trigger) next to our resting reduce-only take-profit (a
+    non-trigger limit) on the same side is a different order, not a duplicate."""
+    return (request.strategy_id == 'CATASTROPHIC_STOP' and request.reduce_only and
+            old.get('strategy_id') != 'CATASTROPHIC_STOP' and bool(old.get('reduce_only')) and
+            any(str(o.get('oid')) == str(row['oid']) and o.get('isTrigger') is not True and
+                o.get('reduceOnly') is True for o in open_orders))
+
 class OrderClassification(str, Enum):
     STRATEGY_ENTRY = 'STRATEGY_ENTRY'
     STRATEGY_EXIT = 'STRATEGY_EXIT'
@@ -272,7 +281,12 @@ class ComplianceGuard:
                         request.strategy_id != 'CATASTROPHIC_STOP' and request.reduce_only and
                         any(str(o['oid']) == str(row['oid']) and o.get('isTrigger') is True and
                             o.get('reduceOnly') is True for o in context.open_orders))
-                    if dormant_protection:
+                    # Bug #12 (25 Oct): the reverse case. Re-planning the exchange stop while the
+                    # strategy's resting reduce-only take-profit (a non-trigger limit) is open is
+                    # not a duplicate: a trigger stop and a resting limit are different orders.
+                    # It was rejected as DUPLICATE_ORDER and the runtime flattened a protected
+                    # position. Only that exact pair is exempt; a second stop is still blocked.
+                    if dormant_protection or stop_beside_resting_take_profit(request, old, row, context.open_orders):
                         continue
                     return finish(False, 'DUPLICATE_ORDER')
             known = {str(r['oid']): r for r in self.journal.intents() if r['oid'] is not None}

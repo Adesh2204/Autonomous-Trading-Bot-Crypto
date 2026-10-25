@@ -6,7 +6,7 @@ market), 25% of top-of-book, no 60-min time exit, no 45-min forced trade, and a
 take-profit floored above round-trip taker fees.
 LOCK and a -0.30% period loss cap pause until after the next 12:00 UTC sample.
 """
-import argparse, json, logging, signal, subprocess, sys, threading, time
+import argparse, json, logging, shutil, signal, subprocess, sys, threading, time
 from dataclasses import asdict
 from datetime import datetime, timezone
 from decimal import Decimal as D
@@ -103,7 +103,9 @@ def supervise(args):
     while True:
         log.info('starting continuous runtime (reconciles with the exchange first)')
         started = time.time()
-        code = subprocess.call(['caffeinate', '-is', sys.executable, __file__, 'start'], cwd=str(ROOT))
+        # macOS: caffeinate keeps the Mac awake; on a Linux VPS (systemd/Docker) run directly.
+        keep_awake = ['caffeinate', '-is'] if shutil.which('caffeinate') else []
+        code = subprocess.call(keep_awake + [sys.executable, __file__, 'start'], cwd=str(ROOT))
         state = json.loads((STATE / 'overnight_state.json').read_text()) if (STATE / 'overnight_state.json').exists() else {}
         if state.get('finished') or time.time() * 1000 >= ms(FLATTEN) or (STATE / 'stop.flag').exists():
             log.info('run finished, past the final flatten, or stop.flag present (code=%s); no restart', code)

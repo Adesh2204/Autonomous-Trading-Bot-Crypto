@@ -19,7 +19,8 @@ from .execution_journal import fingerprint
 from .exchange_rules import RiskPermission
 from .compliance_guard import OrderProvenance
 from .order_lifecycle import OrderRequest
-from .position_protection import ExchangeProtectionManager, ProtectionPlan
+from .position_protection import ExchangeProtectionManager, ProtectionPlan, ProtectionStatus
+from .fill_ledger import entry_fills, missing_trades
 from .carry_runtime import (BasketPositionGuard, CarryAccountRecovery, CarryAuthorization, CarryExecution, sha)
 
 STRATEGY = 'MOMENTUM_SCALPER_OVERNIGHT_V1'
@@ -41,6 +42,8 @@ STALE_CODES = frozenset({'STALE_PRICE_CONTEXT', 'STALE_MARKET_DATA', 'STALE_ACCO
                          'RISK_PERMISSION_DENIED', 'EXCHANGE_CONTEXT_UNAVAILABLE', 'STALE_PROTECTION_POSITION',
                          'ACCOUNT_CHANGED_DURING_PREFLIGHT', 'PROTECTION_POSITION_CHANGED_OR_STALE'})
 EXIT_ATTEMPTS = 4
+FILL_RECONCILE_MS = 30000    # exchange fills vs journal (bug #11)
+STOP_REPAIR_READS = 2        # fresh-read retries before a missing stop forces an exit (bug #12)
 
 
 @dataclass(frozen=True)
@@ -160,7 +163,51 @@ class ScalpProtection(ExchangeProtectionManager):
                 self.before_action()
             except ExchangeError as exc:
                 log.warning('PROTECTION_FRESH_READ_FAILED %s', exc)
-        return super().ensure_all(allow_actions=allow_actions)
+        super().ensure_all(allow_actions=allow_actions)
+        if allow_actions:
+            self.keep_valid_existing_stops()
+        return self.report()
+
+    @staticmethod
+    def valid_stop(order, position):
+        """A resting reduce-only stop-market that closes the whole position on the loss side."""
+        try:
+            long = position.quantity > 0
+            trigger = decimal(order['triggerPx'], positive=True)
+            liquidation = position.liquidation_price
+            return (order.get('isTrigger') is True and order.get('reduceOnly') is True and
+                    order.get('orderType') in {'Stop Market', 'StopMarket'} and
+                    order.get('side') == ('A' if long else 'B') and decimal(order['sz']) == abs(position.quantity) and
+                    (liquidation is None or (trigger > liquidation if long else trigger < liquidation)))
+        except (KeyError, TypeError, ExchangeError):
+            return False
+
+    def keep_valid_existing_stops(self):
+        """Bug #12: a failed stop update (any error, e.g. DUPLICATE_ORDER) is not a missing stop.
+
+        Re-read the position and the open orders; if exactly one owned stop already protects the full
+        position, keep the position (status ACTIVE, warning logged) instead of reporting ERROR, which
+        the runtime used to answer with a flatten."""
+        for symbol, state in list(self.states.items()):
+            if symbol == '__account__' or state.get('status') != 'ERROR':
+                continue
+            try:
+                position = self.account.get_position(symbol)
+                if position is None or not position.quantity:
+                    continue
+                owned, _ = self._discover(self.account.get_frontend_open_orders())
+                stops = [o for o in owned.get(symbol, []) if self.valid_stop(o, position)]
+            except Exception as exc:
+                log.warning('STOP_KEEP_CHECK_FAILED %s %s', symbol, exc)
+                continue
+            if len(stops) != 1:
+                continue
+            stop = stops[0]
+            log.warning('STOP_UPDATE_FAILED_EXISTING_STOP_KEPT %s %s (update error: %s)', symbol, stop['oid'],
+                        state.get('reason'))
+            self._status(symbol, ProtectionStatus.ACTIVE, 'KEPT_EXISTING_STOP_AFTER_UPDATE_ERROR',
+                         order_id=str(stop['oid']), cloid=stop.get('cloid'), trigger_price=str(stop['triggerPx']),
+                         quantity=str(abs(position.quantity)), update_error=state.get('reason'))
 
     def _plan(self, symbol, position, manager, observed_ms):
         self.policy.require()
@@ -211,6 +258,7 @@ class OvernightRuntime:
         self.disconnected_since = None
         self.last_heartbeat = 0
         self.last_account_ms = 0
+        self.last_fill_reconcile_ms = 0
         self.bars = {}
         self.preflight = lambda **k: None     # build_overnight_runtime installs the FreshReadGate
 
@@ -320,12 +368,24 @@ class OvernightRuntime:
         self._save()
         # The executor's post-action reconciliation already re-read account truth
         # and, through the protection hook, placed the exchange stop.
+        attempt_ms = self.state['last_entry_ms']
         result = self.executor.submit(request, permission=permission)
         position = self.positions().get(symbol)
-        self._event('ENTRY_RESULT', symbol=symbol, state=result.state.value,
-                    filled=position.quantity if position else 0, entry=position.entry_price if position else None)
+        # Bug #11: the exchange's fills decide whether the entry filled, never the placement
+        # response or one position snapshot (the HYPE short filled and was stopped out before
+        # the first read, and was logged "filled 0").
+        fills = self._entry_fills(symbol, result, attempt_ms)
+        filled = sum((f['signed'] for f in fills if (f['signed'] > 0) == (order_side == 'BUY')), D(0))
+        self._event('ENTRY_RESULT', symbol=symbol, state=result.state.value, filled=filled,
+                    position=position.quantity if position else 0, entry=position.entry_price if position else None,
+                    fills=len(fills))
         if position is None:
-            self.legs[symbol].plan_stop = None
+            if fills:
+                # Filled and already closed (exchange stop) before the read: book it from the fills now.
+                self._event('ENTRY_FILLED_AND_CLOSED_BEFORE_READ', symbol=symbol, fills=len(fills))
+                self.reconcile_fills(force=True)
+            else:
+                self.legs[symbol].plan_stop = None
             return result
         # Keep the planned 1.5:1 geometry relative to the actual fill.
         actual = decimal(position.entry_price, positive=True)
@@ -343,6 +403,96 @@ class OvernightRuntime:
                     status=self.protection.states.get(symbol, {}).get('status'))
         self.place_take_profit(symbol)
         return result
+
+    def _exchange_fills(self, start_ms):
+        """Exchange-reported fills since start_ms; an account adapter without fill history (some
+        offline doubles) reports FILL_READ_UNAVAILABLE instead of inventing anything."""
+        getter = getattr(self.account, 'get_fills', None)
+        if getter is None:
+            raise ExchangeError('FILL_READ_UNAVAILABLE')
+        return getter(start_ms=start_ms)
+
+    def _entry_fills(self, symbol, result, attempt_ms):
+        try:
+            fills = self._exchange_fills(max(0, attempt_ms - 5000))
+        except ExchangeError as exc:
+            self._event('ENTRY_FILL_READ_FAILED', symbol=symbol, error=str(exc))
+            return []
+        oid = getattr(result, 'exchange_order_id', None)
+        return entry_fills(fills, oid=oid, symbol=symbol, since_ms=attempt_ms - 5000) if oid else \
+            entry_fills(fills, symbol=symbol, since_ms=attempt_ms - 5000)
+
+    # ---------- fills: exchange truth vs journal (bug #11) ----------
+    def _recorded_tids(self, fills):
+        """Fill ids already attributed to a journal trade (older trades have only a time window)."""
+        from .fill_ledger import normalize
+        tids = {t for trade in self.state['trades'] for t in trade.get('fill_tids', ())}
+        windows = [(t['symbol'], t['entry_ms'] - MIN_MS, t.get('exit_ms', t['entry_ms']) + 5000)
+                   for t in self.state['trades'] if not t.get('fill_tids')]
+        for f in map(normalize, fills):
+            if any(f['symbol'] == s and a <= f['ms'] <= b for s, a, b in windows):
+                tids.add(f['tid'])
+        return tids
+
+    def reconcile_fills(self, force=False):
+        """Every 30 s: any round trip the exchange reports but the journal lacks is inserted, and
+        its net P&L goes to the losing streak (the loss cap already reads exchange equity)."""
+        now = self.clock_ms()
+        if not force and now - getattr(self, 'last_fill_reconcile_ms', 0) < FILL_RECONCILE_MS:
+            return []
+        self.last_fill_reconcile_ms = now
+        start = self.state.get('session_start_ms') or self.m.starts_ms
+        try:
+            fills = self._exchange_fills(start)
+        except ExchangeError as exc:
+            if str(exc) == 'FILL_READ_UNAVAILABLE':
+                return []
+            raise
+        missing, conflicts, _open = missing_trades(fills, self._recorded_tids(fills))
+        for c in conflicts:
+            self._event('FILL_JOURNAL_CONFLICT', symbol=c['symbol'], tids=c['tids'], recorded=c['recorded'])
+        booked = []
+        for trip in missing:
+            tracked = self.state['open'].get(trip['symbol'])
+            if tracked and trip['entry_ms'] >= tracked['entry_ms'] - MIN_MS:
+                continue                      # closes through manage() -> _closed_trade
+            trade = dict(symbol=trip['symbol'], side=trip['side'], entry_ms=trip['entry_ms'],
+                         exit_ms=trip['exit_ms'], entry=str(trip['entry']), exit=str(trip['exit']),
+                         quantity=str(trip['quantity']), net=str(trip['net']), fees=str(trip['fees']),
+                         reason='RECONCILED_FROM_EXCHANGE_FILLS', fill_tids=trip['tids'], oids=trip['oids'])
+            self.state['trades'].append(trade)
+            self.guard.trade_closed(trip['net'], now)
+            booked.append(trade)
+            self._event('FILL_RECONCILED', symbol=trip['symbol'], side=trip['side'], net=trip['net'],
+                        fills=len(trip['tids']), streak=self.guard.losing_streak)
+        if booked:
+            self._save()
+        return booked
+
+    def adopt_untracked(self, positions):
+        """A position the exchange holds but the journal does not track (a fill the first read
+        missed) is adopted so it gets an exchange stop and a take-profit; never re-entered."""
+        untracked = {s: p for s, p in positions.items() if s not in self.state['open'] and s in self.legs}
+        opened = {}
+        if untracked:
+            from .fill_ledger import round_trips
+            try:
+                _, opened = round_trips(self._exchange_fills(self.state.get('session_start_ms') or self.m.starts_ms))
+            except ExchangeError as exc:
+                self._event('ADOPTION_FILL_READ_FAILED', error=str(exc))
+        for symbol, position in untracked.items():
+            self.legs[symbol].sync(position)
+            entry_ms = opened[symbol]['entry_ms'] if symbol in opened else self.clock_ms()
+            stop = self.legs[symbol]._open_position['stop_loss_price']
+            long = position.quantity > 0
+            entry = decimal(position.entry_price)
+            target = entry + (entry - stop) * D('1.5') if long else entry - (stop - entry) * D('1.5')
+            self.state['open'][symbol] = dict(symbol=symbol, side='LONG' if long else 'SHORT',
+                                              entry_ms=entry_ms, entry=str(entry), stop=str(stop),
+                                              target=str(target), quantity=str(position.quantity),
+                                              reason='ADOPTED_FROM_EXCHANGE_FILL', tp_key=None)
+            self._save()
+            self._event('POSITION_ADOPTED', symbol=symbol, size=position.quantity, entry=entry, stop=stop)
 
     def place_take_profit(self, symbol):
         trade = self.state['open'].get(symbol)
@@ -482,10 +632,17 @@ class OvernightRuntime:
     def _closed_trade(self, trade):
         """A tracked trade went flat: book its net P&L from exchange fills."""
         net = D(0)
-        for f in self.account.get_fills(start_ms=trade['entry_ms'] - MIN_MS):
-            if f.symbol == trade['symbol']:
+        fills = self.account.get_fills(start_ms=trade['entry_ms'] - MIN_MS)
+        recorded = {t for done in self.state['trades'] for t in done.get('fill_tids', ())}
+        tids = []
+        for f in fills:
+            tid = getattr(f, 'trade_id', None)
+            if f.symbol == trade['symbol'] and (tid is None or str(tid) not in recorded):
                 net += (f.closed_pnl or D(0)) - f.fee
-        trade = dict(trade, exit_ms=self.clock_ms(), net=str(net))
+                if tid is not None:
+                    tids.append(str(tid))
+        trade = dict(trade, exit_ms=self.clock_ms(), net=str(net), fill_tids=tids)
+        trade.update(self._stop_fill_record(trade, [f for f in fills if f.symbol == trade['symbol']]))
         self.state['trades'].append(trade)
         self.state['open'].pop(trade['symbol'], None)
         self.legs[trade['symbol']].plan_stop = None
@@ -493,6 +650,26 @@ class OvernightRuntime:
         self._save()
         self._event('TRADE_CLOSED', symbol=trade['symbol'], net=net, reason=trade.get('reason'),
                     streak=self.guard.losing_streak, half_size=self.guard.half_size)
+
+    def _stop_fill_record(self, trade, fills):
+        """Phase 1.4: expected (trigger) vs actual stop-fill price, measured, never assumed."""
+        from .fill_ledger import stop_slippage_bps
+        state = self.protection.states.get(trade['symbol'], {}) if hasattr(self.protection, 'states') else {}
+        oid, trigger = state.get('order_id'), state.get('trigger_price')
+        if not oid or not trigger:
+            return {}
+        stop_fills = [f for f in fills if str(getattr(f, 'order_id', '')) == str(oid)]
+        qty = sum((f.quantity for f in stop_fills), D(0))
+        if not qty:
+            return {}
+        px = sum((f.quantity * f.price for f in stop_fills), D(0)) / qty
+        bps = stop_slippage_bps(px, trigger, trade.get('side') or ('LONG' if decimal(trade['quantity']) > 0 else 'SHORT'))
+        samples = self.state.setdefault('stop_slippage_bps', [])
+        samples.append(str(round(bps, 3)))
+        mean = sum(D(x) for x in samples) / len(samples)
+        self._event('STOP_FILL_MEASURED', symbol=trade['symbol'], trigger=trigger, fill=px, slippage_bps=round(bps, 3),
+                    samples=len(samples), mean_bps=round(mean, 3))
+        return dict(stop_trigger=str(trigger), stop_fill=str(px), stop_slippage_bps=str(round(bps, 3)))
 
     # ---------- decisions ----------
     def _bars(self, symbol, interval, count):
@@ -565,7 +742,9 @@ class OvernightRuntime:
                     self._event('ENTRY_SKIPPED', symbol=symbol, reason='ENTRY_GATE',
                                 entries_paused=self.executor.entries_paused)
                     return
+                before = self._weight_mark()
                 self.enter(symbol, decision, half=half)
+                self._event('ENTRY_CYCLE_WEIGHT', symbol=symbol, **self._weight_since(before))
                 self.order_errors = 0
             except Exception as exc:
                 if str(exc) == 'ENTRY_PAUSED':
@@ -574,6 +753,20 @@ class OvernightRuntime:
                     self._event('ENTRY_SKIPPED', symbol=symbol, reason='ENTRY_PAUSED_BEFORE_SIGNING')
                     continue
                 self._note_order_error(exc, 'entry:' + symbol)
+
+    # ---------- request budget measurement (Phase 1.3) ----------
+    def _weight_mark(self):
+        rates = getattr(self.executor, 'rate_limits', None)
+        return (getattr(rates, 'total_weight', None), dict(getattr(rates, 'weight_by_query', {}) or {}))
+
+    def _weight_since(self, mark):
+        rates = getattr(self.executor, 'rate_limits', None)
+        total, by_query = mark
+        if rates is None or total is None:
+            return dict(weight=None)
+        now = dict(getattr(rates, 'weight_by_query', {}) or {})
+        delta = {q: w - by_query.get(q, 0) for q, w in now.items() if w != by_query.get(q, 0)}
+        return dict(weight=rates.total_weight - total, by_query=delta)
 
     def _refresh_account_budget(self):
         """The account-budget snapshot reads UNKNOWN 60 s after the last order, so after a
@@ -605,13 +798,24 @@ class OvernightRuntime:
                 self._closed_trade(trade)
             self.protection.ensure_all()      # cancels the now-obsolete exchange stops
             positions = self.positions()
+        self.adopt_untracked({s: p for s, p in positions.items()
+                              if s in self.m.markets and ('LONG' if p.quantity > 0 else 'SHORT') in self.m.directions})
         for symbol, position in positions.items():
             if symbol not in self.m.markets or ('LONG' if position.quantity > 0 else 'SHORT') not in self.m.directions:
                 self.exit(symbol, 'OUTSIDE_COMMITTED_SCOPE')
                 continue
             status = self.protection.states.get(symbol, {}).get('status')
             if status != 'ACTIVE':
-                self.protection.ensure_all()          # the protection hook reads fresh before signing
+                # Bug #12: a stop-update error is not a missing stop. Each ensure_all re-reads the
+                # position and open orders (and keeps a valid existing stop); flatten only when no
+                # valid stop exists after STOP_REPAIR_READS fresh reads.
+                for attempt in range(1, STOP_REPAIR_READS + 1):
+                    self.protection.ensure_all()      # the protection hook reads fresh before signing
+                    if self.protection.states.get(symbol, {}).get('status') == 'ACTIVE':
+                        break
+                    self._event('STOP_REPAIR_RETRY', symbol=symbol, attempt=attempt,
+                                status=self.protection.states.get(symbol, {}).get('status'),
+                                reason=self.protection.states.get(symbol, {}).get('reason'))
                 if self.protection.states.get(symbol, {}).get('status') != 'ACTIVE':
                     self.exit(symbol, 'EXCHANGE_STOP_NOT_ACTIVE')
                     continue
@@ -688,6 +892,10 @@ class OvernightRuntime:
                                               quantity=str(position.quantity), reason='ADOPTED_ON_RESTART', tp_key=None)
             self._save()
         self.cleanup_orders()
+        try:
+            self.reconcile_fills(force=True)          # exchange fills vs journal on every boot
+        except ExchangeError as exc:
+            self._event('FILL_RECONCILE_FAILED', error=str(exc))
         self._event('STARTUP', positions=sorted(positions), equity=self.equity(), halted=self.state['halted'],
                     protection={s: v.get('status') for s, v in self.protection.states.items()})
         self.heartbeat(force=True)
@@ -718,6 +926,7 @@ class OvernightRuntime:
                     self.manage()
                     equity = self.equity()
                     self._apply_verdict(self.guard.check(self.guard_return(equity)))
+                self.reconcile_fills()
                 if not self.state['halted']:
                     self.decide()
                 self._save()
