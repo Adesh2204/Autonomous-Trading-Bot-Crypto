@@ -457,3 +457,30 @@ def test_stop_flag_shuts_down_cleanly_without_leaving_children(tmp_path, monkeyp
     monkeypatch.setattr(w.r, 'cycle', cycle)
     w.r.run(threading.Event())
     assert len(calls) == 3 and not w.children() and w.events('STOPPED')[-1]['reason'] == 'STOP_FLAG'
+
+
+def test_a_leg_not_at_one_x_waits_without_errors_and_starts_once_configured(tmp_path, monkeypatch):
+    w = World(tmp_path, monkeypatch)
+    for symbol in ('pas:ETH', 'pas:SP500', 'pas:USDJPY'):
+        w.venue.leverage[symbol] = dict(type='cross', value=20)
+    w.r.startup()
+    for _ in range(10):
+        w.step()
+    assert {o['coin'] for o in w.children()} == {'pas:BTC', 'pas:HYPE'}
+    assert w.r.order_errors == 0 and not w.r.state['halted']
+    assert {e['symbol'] for e in w.events('LEG_WAITING_FOR_1X')} == {'pas:ETH', 'pas:SP500', 'pas:USDJPY'}
+    w.venue.leverage.clear()                                                        # the human 1x route ran
+    w.step(300000)
+    for _ in range(5):
+        w.step()
+    assert {o['coin'] for o in w.children()} == set(SPECS)
+    assert {e['symbol'] for e in w.events('LEG_LEVERAGE_READY')} == set(SPECS)
+
+
+def test_a_compliance_leverage_refusal_is_a_skip_and_rechecks_later(tmp_path, monkeypatch):
+    w = World(tmp_path, monkeypatch)
+    w.r.startup()
+    w.r._skip('pas:BTC', 'INVALID_LEVERAGE')
+    assert w.r.leverage_ok['pas:BTC'] is False and w.r.order_errors == 0
+    w.clock[0] += 300001
+    assert w.r.one_x('pas:BTC')

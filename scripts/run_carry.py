@@ -65,7 +65,9 @@ def prepare(args):
     leverage = {s: client.post_info('activeAssetData', user=TEAM, coin=s).get('leverage') for s, _ in CARRY_BASKET}
     not_one_x = {s: v for s, v in leverage.items() if v != dict(type='cross', value=1)}
     if not_one_x:
-        raise SystemExit(f'Not 1x CROSS yet: {not_one_x}. Run docs/carry_2026-10-25/"Set carry markets 1x.command".')
+        # Those legs wait (no orders, no errors) and start by themselves once they read 1x CROSS.
+        print(f'WARNING not 1x CROSS yet, these legs will wait: {not_one_x}. '
+              'Run docs/carry_2026-10-25/"Set carry markets 1x.command" to start them.')
     equity = marked_equity(account.get_equity().collateral_balance, positions)
     m = CarryMandate(team_wallet=TEAM, api_wallet=API, markets=tuple(s for s, _ in CARRY_BASKET),
                      starts_ms=int(time.time() * 1000), flatten_ms=ms(FLATTEN), expires_ms=ms(EXPIRES),

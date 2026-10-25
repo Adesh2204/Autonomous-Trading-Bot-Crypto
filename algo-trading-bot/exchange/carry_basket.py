@@ -39,7 +39,9 @@ SKIP_CODES = frozenset({
     'POST_ONLY_WOULD_CROSS', 'BOOK_MANIPULATION_RISK', 'ENTRY_PAUSED', 'ENTRY_RELIABILITY_GATE_REQUIRED',
     'ENTRY_READ_BUDGET_HEADROOM_UNAVAILABLE', 'EXCHANGE_CONTEXT_UNAVAILABLE', 'STALE_PRICE_CONTEXT',
     'STALE_MARKET_DATA', 'RATE_LIMITED', 'IOC_NO_LIQUIDITY', 'ACCOUNT_CHANGED_BEFORE_SIGNING',
-    'GLOBAL_POSITION_LEASE_REVOKED', 'ACCOUNT_PREFLIGHT_INVALIDATED'})
+    'GLOBAL_POSITION_LEASE_REVOKED', 'ACCOUNT_PREFLIGHT_INVALIDATED', 'INVALID_LEVERAGE'})
+ONE_X = dict(type='cross', value=1)
+LEVERAGE_RECHECK_MS = 300000
 
 
 def request_of(row):
@@ -226,10 +228,16 @@ class CarryBasketRuntime(CarryRuntime):
     ENTRY_SIGN_BY_AGE_MS = 130000     # entry signal is the previous minute; sign well inside 60-180 s
     REPORT_UTC = (4, 30)              # 10:00 IST status
 
-    def __init__(self, *, legs, preflight=None, **kwargs):
+    def __init__(self, *, legs, preflight=None, leverage_reader=None, **kwargs):
         super().__init__(strategy=None, **kwargs)
         self.legs = legs
         self.preflight = preflight or (lambda **k: None)
+        # A leg starts only once its market reads 1x CROSS on the exchange (the compliance
+        # guard refuses anything else); until then it waits without counting as an error.
+        self.leverage_reader = leverage_reader or (lambda symbol: self.client.post_info(
+            'activeAssetData', user=self.m.team_wallet, coin=symbol).get('leverage'))
+        self.leverage_ok = {}
+        self.leverage_checked = {}
         m = self.m
         self.params = SliceParams(book_share=decimal(m.book_share, positive=True), maker_window_ms=m.maker_window_ms,
                                   reprice_ms=m.reprice_ms, taker_gap_ms=m.taker_gap_ms)
@@ -444,7 +452,27 @@ class CarryBasketRuntime(CarryRuntime):
         self._ok()
         return True
 
+    def one_x(self, symbol):
+        """True once the market reads 1x CROSS; re-read every 5 minutes while it does not."""
+        if self.leverage_ok.get(symbol):
+            return True
+        now = self.clock_ms()
+        if now - self.leverage_checked.get(symbol, -LEVERAGE_RECHECK_MS) < LEVERAGE_RECHECK_MS:
+            return False
+        self.leverage_checked[symbol] = now
+        try:
+            value = self.leverage_reader(symbol)
+        except ExchangeError as exc:
+            value = 'READ_FAILED:' + str(exc)
+        self.leverage_ok[symbol] = value == ONE_X
+        self._event('LEG_LEVERAGE_READY' if self.leverage_ok[symbol] else 'LEG_WAITING_FOR_1X', symbol=symbol,
+                    leverage=value)
+        return self.leverage_ok[symbol]
+
     def _skip(self, symbol, code):
+        if code == 'INVALID_LEVERAGE':
+            self.leverage_ok[symbol] = False
+            self.leverage_checked[symbol] = self.clock_ms()
         leg = self._leg(symbol)
         leg['skips'] = leg.get('skips', 0) + 1
         if leg['skips'] in (1, 10, 100) or leg['skips'] % 500 == 0:
@@ -621,6 +649,8 @@ class CarryBasketRuntime(CarryRuntime):
             entry = leg['mode'] == 'BUILD' and building
             unwind = leg['mode'] == 'UNWIND' and self._qty(positions, symbol) > 0
             if not entry and not unwind:
+                continue
+            if entry and not self.one_x(symbol):
                 continue
             if entry:
                 if self.executor.entries_paused:

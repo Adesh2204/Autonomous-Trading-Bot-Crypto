@@ -30,6 +30,7 @@ class SimVenue:
         self.maker_fill_chance = maker_fill_chance
         self.random = random.Random(seed)
         self.fail_next_protection = None
+        self.leverage = {}          # symbol -> leverage dict; default 1x CROSS
         self.lock = threading.RLock()
 
     # ---------- matching ----------
@@ -277,5 +278,6 @@ def build_simulated_runtime(mandate, *, client, books, clock_ms, state_dir, jour
     runtime = (runtime_cls or CarryBasketRuntime)(
         mandate=mandate, executor=executor, protection=protection, recovery=recovery, account=account,
         client=client, market=SimpleNamespace(get_orderbook=books), public=None, stream=SimStream(),
-        auth=SimpleNamespace(require=lambda *a: None), state_dir=state_dir, legs=legs, clock_ms=clock_ms)
+        auth=SimpleNamespace(require=lambda *a: None), state_dir=state_dir, legs=legs, clock_ms=clock_ms,
+        leverage_reader=lambda symbol: venue.leverage.get(symbol, dict(type='cross', value=1)))
     return runtime, venue
