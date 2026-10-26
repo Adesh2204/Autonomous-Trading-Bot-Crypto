@@ -88,6 +88,17 @@ def build_exchange(signer,client,nonce_manager,sink,*,offline=False):
     return exchange
 
 
+class PreDispatchRefusal(ExchangeError):
+    """A guarded action refused before any HTTP request and before its DISPATCHED audit.
+
+    Raised only by the transport's own checks (the permit, venue, authority and exact-action
+    checks) that run before session.post: the action was not transmitted. A failure after the
+    post starts stays an ordinary exception, i.e. TRANSMISSION_UNCERTAIN.
+    26 Oct: two carry children refused here (V4_PAS_BTC_EWY_NEW_ENTRIES_ONLY at 01:19 IST,
+    ENTRY_RELIABILITY_GATE_REQUIRED at 16:30 IST) were journalled UNKNOWN and froze the account.
+    """
+
+
 class OfficialSDKTransport:
     is_offline=False
     def __init__(self,client,signer,team_address,nonce_manager,authorization,*,rate_limits):
@@ -150,7 +161,10 @@ class OfficialSDKTransport:
         self._guard.require(self, action)
 
     def transmit(self, payload):
-        self.check(payload['action'])
+        try:
+            self.check(payload['action'])
+        except ExchangeError as exc:
+            raise PreDispatchRefusal(str(exc)) from exc
         # No SDK debug logger and no automatic HTTP retries or redirects.
         record=getattr(self,'record_transport_boundary',None)
         if record:record('HTTP_POST_STARTED',payload)
@@ -182,14 +196,17 @@ class OfficialSDKTransport:
 
     def perform(self, method, args, kwargs, expected_action, guard):
         with self._lock:
-            if type(self) is not OfflineSDKTransport:
-                self.authorization.require(self.team_address,self.signer_address)
-            from .compliance_guard import ActionPermit
-            if type(guard) is not ActionPermit:
-                raise ExchangeError('COMPLIANCE_ACTION_PERMIT_REQUIRED')
-            if method not in {'order','modify_order','cancel','cancel_by_cloid','update_leverage'}:
-                raise ExchangeError('ACCOUNT_ADMINISTRATION_PROHIBITED')
-            guard.require(self, expected_action)
+            try:
+                if type(self) is not OfflineSDKTransport:
+                    self.authorization.require(self.team_address,self.signer_address)
+                from .compliance_guard import ActionPermit
+                if type(guard) is not ActionPermit:
+                    raise ExchangeError('COMPLIANCE_ACTION_PERMIT_REQUIRED')
+                if method not in {'order','modify_order','cancel','cancel_by_cloid','update_leverage'}:
+                    raise ExchangeError('ACCOUNT_ADMINISTRATION_PROHIBITED')
+                guard.require(self, expected_action)
+            except ExchangeError as exc:
+                raise PreDispatchRefusal(str(exc)) from exc
             self._expected=fingerprint(expected_action)
             self._guard=guard
             self._current_action=expected_action

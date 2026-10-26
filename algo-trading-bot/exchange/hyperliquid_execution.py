@@ -8,7 +8,7 @@ import order_guard
 from .base_exchange import ExchangeError, decimal
 from .exchange_rules import RiskPermission
 from .order_lifecycle import OrderRequest, OrderState, parse_exchange_action_result
-from .sdk_transport import OfflineSDKTransport, sdk_number
+from .sdk_transport import OfflineSDKTransport, PreDispatchRefusal, sdk_number
 from .reliability_policy import RequestPriority
 
 
@@ -33,6 +33,9 @@ class LiveOrder:
 class HyperliquidExecution:
     is_live = True
     venue = 'HYPERLIQUID_TESTNET'
+    # Opt-in (carry runtime only): a PreDispatchRefusal, raised by the transport's own checks before
+    # any HTTP request, is journalled REJECTED (not transmitted) instead of UNKNOWN. Default: UNKNOWN.
+    pre_dispatch_is_rejection = False
 
     def __init__(self, client, *, transport=None, account=None, journal=None,
                  context_provider=None, validator=None, recovery=None,
@@ -352,24 +355,39 @@ class HyperliquidExecution:
                     self.transport.nonces.degrade()
                 else:
                     self.rate_limits.success()
+            except PreDispatchRefusal as exc:
+                if not self.pre_dispatch_is_rejection:
+                    self._transmission_uncertain(key,row,permission,exc)
+                else:
+                    # Opt-in (carry runtime): refused by the transport's own checks before any
+                    # HTTP request, so it was not transmitted.
+                    self.journal.update(key, 'REJECTED', self.client.clock_ms(),
+                                        outcome=dict(code='PRE_DISPATCH_REFUSED', reason=str(exc), transmitted=False))
+                    self.entries_paused = True
+                    self.journal.event('EXCHANGE_ORDER_RESULT',self.client.clock_ms(),
+                        intent_key=key,cloid=row['cloid'],candidate_id=permission.candidate_id,
+                        state='REJECTED',code='PRE_DISPATCH_REFUSED',reason=str(exc),transmitted=False)
             except Exception as exc:
-                from .terminal_recovery import exception_evidence
-                self.journal.update(key, 'UNKNOWN', self.client.clock_ms(),
-                                    outcome=dict(code='TRANSMISSION_UNCERTAIN',reason=type(exc).__name__,
-                                                 error_details=exception_evidence(exc)))
-                self.entries_paused = True
-                self.rate_limits.error(status=getattr(exc,'status_code',None))
-                self.journal.event('EXCHANGE_ORDER_RESULT',self.client.clock_ms(),
-                    intent_key=key,cloid=row['cloid'],candidate_id=permission.candidate_id,
-                    state='UNKNOWN',code='TRANSMISSION_UNCERTAIN',error_type=type(exc).__name__,
-                    error_details=exception_evidence(exc))
-                self.journal.event('AMBIGUOUS_ORDER_RESULT',self.client.clock_ms(),intent_key=key,
-                                   blind_retry=False,cloid=row['cloid'])
+                self._transmission_uncertain(key,row,permission,exc)
             self._after_action()
             outcome_code=json.loads(self.journal.intent(key)['outcome'] or '{}').get('code')
             if self.journal.intent(key)['state']=='UNKNOWN' or outcome_code in {'RATE_LIMITED','NONCE_ERROR','API_WALLET_NOT_APPROVED'}:
                 self.entries_paused = True
             return self._restore_order(self.journal.intent(key))
+
+    def _transmission_uncertain(self, key, row, permission, exc):
+        from .terminal_recovery import exception_evidence
+        self.journal.update(key, 'UNKNOWN', self.client.clock_ms(),
+                            outcome=dict(code='TRANSMISSION_UNCERTAIN',reason=type(exc).__name__,
+                                         error_details=exception_evidence(exc)))
+        self.entries_paused = True
+        self.rate_limits.error(status=getattr(exc,'status_code',None))
+        self.journal.event('EXCHANGE_ORDER_RESULT',self.client.clock_ms(),
+            intent_key=key,cloid=row['cloid'],candidate_id=permission.candidate_id,
+            state='UNKNOWN',code='TRANSMISSION_UNCERTAIN',error_type=type(exc).__name__,
+            error_details=exception_evidence(exc))
+        self.journal.event('AMBIGUOUS_ORDER_RESULT',self.client.clock_ms(),intent_key=key,
+                           blind_retry=False,cloid=row['cloid'])
 
     submit_order = submit
 
@@ -473,6 +491,11 @@ class HyperliquidExecution:
             self.rate_limits.success()
         except Exception as exc:
             self.entries_paused=True
+            if isinstance(exc,PreDispatchRefusal) and self.pre_dispatch_is_rejection:
+                self.journal.update_management(action_id,'REJECTED_BEFORE_TRANSMISSION',self.client.clock_ms())
+                self.journal.event('MANAGEMENT_REFUSED_BEFORE_DISPATCH',self.client.clock_ms(),
+                                   action=action,action_id=action_id,reason=str(exc))
+                raise
             self.rate_limits.error()
             self.journal.event('MANAGEMENT_UNCERTAIN',self.client.clock_ms(),
                                action=action,action_id=action_id,error_type=type(exc).__name__,blind_retry=False)
@@ -664,15 +687,22 @@ class HyperliquidExecution:
                 else:
                     self.rate_limits.success()
             except Exception as exc:
-                from .terminal_recovery import exception_evidence
-                self.journal.update(intent_key,'UNKNOWN',self.client.clock_ms(),
-                                    outcome=dict(code='TRANSMISSION_UNCERTAIN',reason=type(exc).__name__,error_details=exception_evidence(exc)))
-                self.rate_limits.error(status=getattr(exc,'status_code',None))
-                self.entries_paused=True
-                self.journal.event('PROTECTION_UNCERTAIN',self.client.clock_ms(),intent_key=intent_key,
-                                   blind_retry=False,error_type=type(exc).__name__)
-                self.journal.event('AMBIGUOUS_ORDER_RESULT',self.client.clock_ms(),intent_key=intent_key,
-                                   classification='CATASTROPHIC_STOP',blind_retry=False)
+                if isinstance(exc,PreDispatchRefusal) and self.pre_dispatch_is_rejection:
+                    self.journal.update(intent_key,'REJECTED',self.client.clock_ms(),
+                                        outcome=dict(code='PRE_DISPATCH_REFUSED',reason=str(exc),transmitted=False))
+                    self.entries_paused=True
+                    self.journal.event('PROTECTION_REFUSED_BEFORE_DISPATCH',self.client.clock_ms(),
+                                       intent_key=intent_key,reason=str(exc))
+                else:
+                    from .terminal_recovery import exception_evidence
+                    self.journal.update(intent_key,'UNKNOWN',self.client.clock_ms(),
+                                        outcome=dict(code='TRANSMISSION_UNCERTAIN',reason=type(exc).__name__,error_details=exception_evidence(exc)))
+                    self.rate_limits.error(status=getattr(exc,'status_code',None))
+                    self.entries_paused=True
+                    self.journal.event('PROTECTION_UNCERTAIN',self.client.clock_ms(),intent_key=intent_key,
+                                       blind_retry=False,error_type=type(exc).__name__)
+                    self.journal.event('AMBIGUOUS_ORDER_RESULT',self.client.clock_ms(),intent_key=intent_key,
+                                       classification='CATASTROPHIC_STOP',blind_retry=False)
             self._after_action()
             return self._restore_order(self.journal.intent(intent_key))
 

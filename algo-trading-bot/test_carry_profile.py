@@ -582,3 +582,45 @@ def test_no_new_entry_while_a_leg_exceeds_its_stop(tmp_path, monkeypatch):
     w.r._place_children(w.r.positions())
     assert len(w.events('CHILD_ATTEMPT')) == before
     assert w.events('CHILD_SKIPPED')[-1]['code'] == 'STOP_RESIZE_PENDING:pas:BTC'
+
+
+# ---------- refusals before dispatch (26 Oct 16:30 IST) ----------
+def test_transport_refusal_before_http_is_a_pre_dispatch_refusal_and_never_posts():
+    from exchange.sdk_transport import OfficialSDKTransport, PreDispatchRefusal
+    t = OfficialSDKTransport.__new__(OfficialSDKTransport)
+    posts = []
+    t._sdk = SimpleNamespace(session=SimpleNamespace(post=lambda *a, **k: posts.append(1)))
+
+    def refuse(action):
+        raise ExchangeError('ENTRY_RELIABILITY_GATE_REQUIRED')
+    t.check = refuse
+    with pytest.raises(PreDispatchRefusal, match='ENTRY_RELIABILITY_GATE_REQUIRED'):
+        t.transmit(dict(action=dict(type='order', orders=[])))
+    assert posts == [] and issubclass(PreDispatchRefusal, ExchangeError)
+
+
+@pytest.mark.parametrize('opt_in,state,code', [(False, 'UNKNOWN', 'TRANSMISSION_UNCERTAIN'),
+                                               (True, 'REJECTED', 'PRE_DISPATCH_REFUSED')])
+def test_pre_dispatch_refusal_is_rejected_only_for_the_carry_executor(live, monkeypatch, opt_in, state, code):
+    from exchange.sdk_transport import PreDispatchRefusal
+    from test_single_position_compliance import request
+
+    def refuse(*a, **k):
+        raise PreDispatchRefusal('ENTRY_RELIABILITY_GATE_REQUIRED')
+    monkeypatch.setattr(live.transport, 'perform', refuse)
+    live.executor.pre_dispatch_is_rejection = opt_in
+    req = request(key='pre-dispatch-' + str(opt_in))
+    order = live.executor.submit(req, permission=permission(req))
+    row = live.journal.intent(req.client_order_id)
+    assert order.state.value == row['state'] == state
+    # UNKNOWN keeps entries paused; a clean not-sent rejection is re-derived from account truth.
+    assert live.executor.entries_paused is (not opt_in)
+    assert json.loads(row['outcome'])['code'] == code
+
+
+def test_carry_builder_opts_in_and_counts_it_as_a_skip():
+    import inspect
+    from exchange.hyperliquid_execution import HyperliquidExecution
+    assert HyperliquidExecution.pre_dispatch_is_rejection is False
+    assert 'executor.pre_dispatch_is_rejection = True' in inspect.getsource(carry_basket.build_carry_basket_runtime)
+    assert 'PRE_DISPATCH_REFUSED' in carry_basket.SKIP_CODES

@@ -40,7 +40,7 @@ SKIP_CODES = frozenset({
     'ENTRY_READ_BUDGET_HEADROOM_UNAVAILABLE', 'EXCHANGE_CONTEXT_UNAVAILABLE', 'STALE_PRICE_CONTEXT',
     'STALE_MARKET_DATA', 'RATE_LIMITED', 'IOC_NO_LIQUIDITY', 'ACCOUNT_CHANGED_BEFORE_SIGNING',
     'GLOBAL_POSITION_LEASE_REVOKED', 'ACCOUNT_PREFLIGHT_INVALIDATED', 'INVALID_LEVERAGE', 'DATA_NOT_READY',
-    'ACCOUNT_NOT_READY', 'SIGNING_READINESS_REVOKED', 'UNKNOWN_ACCOUNT_STATE'})
+    'ACCOUNT_NOT_READY', 'SIGNING_READINESS_REVOKED', 'UNKNOWN_ACCOUNT_STATE', 'PRE_DISPATCH_REFUSED'})
 ONE_X = dict(type='cross', value=1)
 LEVERAGE_RECHECK_MS = 300000
 
@@ -1107,6 +1107,9 @@ def build_carry_basket_runtime(root, mandate_path, release_path, *, state_dir, r
     executor.max_positions = m.max_positions
     executor.allowed_markets = frozenset(m.markets)
     executor.sliced_legs = True
+    # 26 Oct 16:30 IST an ETH child refused at the transport's final permit check (before any HTTP
+    # request) was journalled UNKNOWN and froze the account; for the carry it is a not-sent rejection.
+    executor.pre_dispatch_is_rejection = True
     executor.position_guard = CarryPositionGuard(journal, clock_ms=client.clock_ms, sides=m.sides,
                                                  max_positions=m.max_positions)
     executor.compliance_guard.position_guard = executor.position_guard
