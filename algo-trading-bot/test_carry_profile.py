@@ -551,3 +551,34 @@ def test_full_size_leg_is_the_limit_and_the_basket_fits_the_equity():
     assert basket_mandate(leg_notional='19000', starting_equity='99996').require()
     with pytest.raises(ExchangeError, match='INVALID_CARRY_MANDATE'):
         basket_mandate(leg_notional='19000', starting_equity='94999').require()       # 5 legs must fit equity at 1x
+
+
+def test_a_stop_resize_takes_the_fresh_read_first_and_a_matching_stop_does_not(tmp_path, monkeypatch):
+    w = World(tmp_path, monkeypatch)
+    calls = []
+    w.r.protection.before_action = lambda: calls.append(1)
+    start_legs(w)
+    for _ in range(30):
+        w.step(31000)
+    assert calls                                                                    # stops placed/re-sized
+    w.r.protection.ensure_all()                                                     # settle any fill from the last cycle
+    n = len(calls)
+    w.r.protection.ensure_all()
+    assert len(calls) == n                                                          # all stops already match
+    btc = w.venue.positions['pas:BTC']
+    btc[0] += D('0.001')                                                            # a fill grew the leg
+    w.r.protection.ensure_all()
+    assert len(calls) == n + 1 and [D(s['sz']) for s in w.stops('pas:BTC')] == [btc[0]]
+    import inspect
+    assert 'protection.before_action = gate' in inspect.getsource(carry_basket.build_carry_basket_runtime)
+
+
+def test_no_new_entry_while_a_leg_exceeds_its_stop(tmp_path, monkeypatch):
+    w = World(tmp_path, monkeypatch)
+    w.r.startup()
+    w.step()
+    w.venue.positions['pas:BTC'] = [D('0.002'), D('80000')]                        # filled, stop not yet sized
+    before = len(w.events('CHILD_ATTEMPT'))
+    w.r._place_children(w.r.positions())
+    assert len(w.events('CHILD_ATTEMPT')) == before
+    assert w.events('CHILD_SKIPPED')[-1]['code'] == 'STOP_RESIZE_PENDING:pas:BTC'

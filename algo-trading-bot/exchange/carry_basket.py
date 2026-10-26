@@ -192,11 +192,30 @@ class CarryBasketProtection(CarryProtection):
     that filled since the runtime's last read re-sizes the stop instead of erroring. A
     failed stop update keeps an existing full-size valid stop (keep_valid_existing_stops).
     """
+    before_action = None    # build_carry_basket_runtime installs the FreshReadGate
+
+    def _needs_action(self):
+        for symbol, leg in self.managers.items():
+            state = self.states.get(symbol, {})
+            active = state.get('status') == 'ACTIVE'
+            if leg.has_open_position != active or (active and leg.has_open_position and
+                                                    str(state.get('quantity')) != str(leg._open_position['quantity'])):
+                return True
+        return False
+
     def ensure_all(self, *, allow_actions=True):
         if not self.running:
             positions = self.account.get_positions()
             for symbol, leg in self.managers.items():
                 leg.sync(positions.get(symbol))
+            # As in ScalpProtection: a stop about to be placed or re-sized takes the fresh read
+            # (budget, clock, barrier) first, outside the 5 s signing window. 26 Oct 12:28 IST the
+            # HYPE stop re-size failed ACCOUNT_NOT_READY / STALE_PRICE_CONTEXT without it.
+            if allow_actions and self.before_action is not None and self._needs_action():
+                try:
+                    self.before_action()
+                except ExchangeError as exc:
+                    log.warning('PROTECTION_FRESH_READ_FAILED %s', exc)
         super().ensure_all(allow_actions=allow_actions)
         if allow_actions:
             self.keep_valid_existing_stops()
@@ -226,6 +245,9 @@ class CarryBasketRuntime(CarryRuntime):
     FILL_RECONCILE_MS = 30000
     FUNDING_RECONCILE_MS = 300000
     PROTECTION_RETRIES = 2
+    CANCEL_ATTEMPTS = 3               # bug #13: a failed cancel is retried after a fresh account read
+    SHUTDOWN_DEADLINE_MS = 600000     # shutdown keeps cancelling resting children for up to 10 min
+    SHUTDOWN_RETRY_S = 15
     ENTRY_SIGN_BY_AGE_MS = 130000     # entry signal is the previous minute; sign well inside 60-180 s
     REPORT_UTC = (4, 30)              # 10:00 IST status
 
@@ -535,17 +557,34 @@ class CarryBasketRuntime(CarryRuntime):
         leg = self._leg(symbol)
         c = leg['child']
         self._event('CHILD_CANCEL', symbol=symbol, key=c['key'], reason=why, price=c['price'])
-        try:
-            self.executor.cancel_order(symbol, c['oid'], critical=not c['entry'])
-            self._ok()
-        except ExchangeError as exc:
-            # It may have filled or been cancelled meanwhile; the settle below decides.
-            self._event('CHILD_CANCEL_ERROR', symbol=symbol, key=c['key'], error=str(exc))
+        # Bug #13 (25 Oct 19:50 UTC): the shutdown cancel of two resting entry children failed once
+        # with ACCOUNT_NOT_READY, the process exited, and both filled minutes later with no bot
+        # running and no stop. A cancel only removes exposure: retry it after re-reading account
+        # truth (stream reconcile + fresh-read gate), and give it the safety priority.
+        for attempt in range(1, self.CANCEL_ATTEMPTS + 1):
+            try:
+                if attempt > 1:
+                    self._stream_health()
+                    self.preflight()
+                self.executor.cancel_order(symbol, c['oid'], critical=True)
+                self._ok()
+                break
+            except ExchangeError as exc:
+                # It may have filled or been cancelled meanwhile; the settle below decides.
+                self._event('CHILD_CANCEL_ERROR', symbol=symbol, key=c['key'], error=str(exc), attempt=attempt)
+                if self._child_gone(c):
+                    break
         state = self._settle(symbol)
         if leg['child'] is not None and state not in {'OPEN', 'PARTIALLY_FILLED'}:
             raise ExchangeError('CHILD_CANCEL_UNSETTLED:' + str(state))
         if leg['child'] is not None:
             raise ExchangeError('CHILD_STILL_RESTING_AFTER_CANCEL')
+
+    def _child_gone(self, c):
+        try:
+            return str(c.get('oid')) not in {str(o['oid']) for o in self.account.get_frontend_open_orders()}
+        except ExchangeError:
+            return False
 
     def manage_children(self, positions, orders):
         """Settle finished children; cancel resting ones that must change. Returns legs touched."""
@@ -663,6 +702,9 @@ class CarryBasketRuntime(CarryRuntime):
         """At most one new child per cycle, rotating over the legs that need one."""
         now = self.clock_ms()
         building = (not self.state['halted'] and now < self.m.unwind_starts_ms)
+        # Protection first: no new entry while any leg holds more or less than its stop covers.
+        unprotected = sorted(s for s, l in self.state['legs'].items()
+                             if self._qty(positions, s) != D(l['protected_qty']))
         order = list(self.state['legs'])
         start = self.state['rotation'] % len(order)
         for symbol in order[start:] + order[:start]:
@@ -672,6 +714,9 @@ class CarryBasketRuntime(CarryRuntime):
             entry = leg['mode'] == 'BUILD' and building
             unwind = leg['mode'] == 'UNWIND' and self._qty(positions, symbol) > 0
             if not entry and not unwind:
+                continue
+            if entry and unprotected:
+                self._skip(symbol, 'STOP_RESIZE_PENDING:' + ','.join(unprotected))
                 continue
             if entry and not self.one_x(symbol):
                 continue
@@ -905,6 +950,8 @@ class CarryBasketRuntime(CarryRuntime):
 
     def shutdown(self, reason):
         """Clean stop: no resting child is left unattended; stops stay; final heartbeat."""
+        ours = {s: leg['child']['oid'] for s, leg in self.state['legs'].items()
+                if leg['child'] and leg['child'].get('oid')}
         for symbol, leg in self.state['legs'].items():
             if leg['child']:
                 try:
@@ -914,6 +961,7 @@ class CarryBasketRuntime(CarryRuntime):
                         self._settle(symbol)
                 except ExchangeError as exc:
                     self._event('SHUTDOWN_CHILD_ERROR', symbol=symbol, error=str(exc))
+        complete = self._shutdown_until_no_child_rests(ours)
         try:
             self.check_stops(force=True)
         except ExchangeError as exc:
@@ -921,7 +969,44 @@ class CarryBasketRuntime(CarryRuntime):
         self.heartbeat(force=True)
         if hasattr(self.stream, 'stop_receiver') and getattr(self.stream, 'background_receiving', False):
             self.stream.stop_receiver()
-        self._event('STOPPED', reason=reason, halted=self.state['halted'])
+        self._event('STOPPED', reason=reason, halted=self.state['halted'], complete=complete)
+        return complete
+
+    def _shutdown_until_no_child_rests(self, ours):
+        """Never exit while one of our orders still rests on the exchange (bug #13).
+
+        `ours` is every child order id known when shutdown began, so a child the journal already
+        calls settled is still checked against the exchange's own open orders."""
+        rounds = max(1, self.SHUTDOWN_DEADLINE_MS // (self.SHUTDOWN_RETRY_S * 1000))
+        resting = None
+        for attempt in range(rounds + 1):
+            try:
+                open_oids = {str(o['oid']) for o in self.account.get_frontend_open_orders()}
+                resting = {s: oid for s, oid in ours.items() if str(oid) in open_oids}
+            except ExchangeError as exc:
+                self._event('SHUTDOWN_ORDER_READ_ERROR', error=str(exc))
+                resting = None
+            if resting == {}:
+                return True
+            if attempt == rounds:
+                break
+            for symbol, oid in (resting or {}).items():
+                try:
+                    leg = self._leg(symbol)
+                    if leg['child'] and str(leg['child'].get('oid')) == str(oid):
+                        self._cancel(symbol, 'SHUTDOWN_RETRY')
+                    else:                                  # journal settled it, the exchange did not
+                        self._stream_health()
+                        self.preflight()
+                        self.executor.cancel_order(symbol, oid, critical=True)
+                except ExchangeError as exc:
+                    self._event('SHUTDOWN_CHILD_ERROR', symbol=symbol, error=str(exc), round=attempt + 1)
+            time.sleep(self.SHUTDOWN_RETRY_S)
+        self.state['shutdown_incomplete'] = dict(ms=self.clock_ms(), resting=resting)
+        self._save_state()
+        self._event('SHUTDOWN_INCOMPLETE_RESTING_ORDERS', resting=resting)
+        (self.state_dir / 'SHUTDOWN_INCOMPLETE').write_text(json.dumps(dict(resting=resting), default=str))
+        return False
 
     def run(self, stop):
         self.startup()
@@ -938,7 +1023,7 @@ class CarryBasketRuntime(CarryRuntime):
             except ExchangeError as exc:
                 self._event('CYCLE_ERROR', error=str(exc))
             stop.wait(self.CYCLE_S)
-        self.shutdown(reason)
+        return self.shutdown(reason)
 
 
 def build_carry_basket_runtime(root, mandate_path, release_path, *, state_dir, runtime_cls=None, **extra):
@@ -1040,4 +1125,5 @@ def build_carry_basket_runtime(root, mandate_path, release_path, *, state_dir, r
     gate = FreshReadGate(barrier=barrier, recovery=recovery, rates=rates, clock=clock, client=client, market=public,
                          symbol=m.markets[0], event=runtime._event)
     runtime.preflight = gate
+    protection.before_action = gate
     return runtime
