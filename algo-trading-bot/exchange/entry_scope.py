@@ -11,6 +11,8 @@ from .base_exchange import ExchangeError
 PAS_ENTRY_MARKETS = frozenset(('pas:BTC', 'pas:EWY', 'pas:HYPE'))
 CARRY_ENTRY_MARKETS = frozenset(('pas:BTC', 'pas:ETH', 'pas:HYPE', 'pas:SP500', 'pas:USDJPY'))
 CARRY_SCOPE = 'CARRY'
+# Configuration-only scope (27 Oct, user): set the carry markets to 2x CROSS, never more.
+CARRY_2X_SCOPE = 'CARRY_2X'
 
 
 def require_entry(symbol, scope=None):

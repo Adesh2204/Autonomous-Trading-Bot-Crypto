@@ -120,6 +120,9 @@ class ActionPermit:
 
 
 class ComplianceGuard:
+    # Account leverage setting an entry requires. Only the carry builder raises it (user decision
+    # 27 Oct 01:05 IST: 2x cross setting, exposure capped at 1.5x equity by the carry mandate).
+    entry_leverage = 1
     def __init__(self, journal, position_guard, *, clock_ms, transport, policy=None, execution_owner=None,
                  qualification_scope=None):
         self.journal = journal
@@ -197,7 +200,7 @@ class ComplianceGuard:
                 return finish(False, 'UNEXPLAINED_ORDER')
             if not position.allowed:
                 return finish(False, position.code, position.reason)
-            if not request.reduce_only and (type(context.leverage) is not int or context.leverage!=1):
+            if not request.reduce_only and (type(context.leverage) is not int or context.leverage!=self.entry_leverage):
                 return finish(False, 'INVALID_LEVERAGE')
             if (p.candidate_id != candidate or p.strategy_id != request.strategy_id or
                     p.source_market != request.symbol or p.direction != request.side or

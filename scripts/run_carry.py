@@ -26,8 +26,10 @@ FLATTEN = datetime(2026, 11, 6, 11, 30, tzinfo=timezone.utc)   # flat-by target;
 EXPIRES = datetime(2026, 11, 6, 11, 55, tzinfo=timezone.utc)
 LEG_NOTIONAL = '19000'
 # 26 Oct 22:35 IST (user): HYPE is the priority leg; the rest follow their 24 h funding; total $95k at 1x.
-LEG_NOTIONALS = (('pas:BTC', '18000'), ('pas:ETH', '17000'), ('pas:HYPE', '35000'), ('pas:SP500', '20000'),
+# 27 Oct 01:05 IST (user: more risk, HYPE heavy): 2x cross setting, $142.5k exposure (1.5x equity), HYPE $60k.
+LEG_NOTIONALS = (('pas:BTC', '25000'), ('pas:ETH', '22500'), ('pas:HYPE', '60000'), ('pas:SP500', '30000'),
                  ('pas:USDJPY', '5000'))
+LEVERAGE = 2
 TAKER_DEPTH_BPS = 5               # IOC children: up to 25% of the depth within 5 bps of the touch
 APPROVAL = ('User directive 2026-10-25 23:35 IST, "We wanna move with Carry Strategy" (YES, CARRY): half size, '
             '$9,500 per leg, LONG BTC/ETH/HYPE/SP500 and SHORT USDJPY at 1x, NO basket stop, existing 8% per-leg '
@@ -37,7 +39,10 @@ APPROVAL = ('User directive 2026-10-25 23:35 IST, "We wanna move with Carry Stra
             'FULL SIZE, $19,000 per leg ("trade with big money"), after the model numbers: median +0.91%, P(loss) '
             '~43%, 5th percentile about -4.2%. 26 Oct 22:35 IST the user made HYPE the priority leg ($35k; '
             'BTC $18k, ETH $17k, SP500 $20k, USDJPY $5k by funding; total $95k at 1x) and allowed IOC '
-            'children of up to 25% of the depth within 5 bps of the touch.')
+            'children of up to 25% of the depth within 5 bps of the touch. 27 Oct 01:05 IST the user asked for more '
+            'risk, HYPE heavy: 2x cross setting, exposure 1.5x equity ($142.5k: HYPE $60k, SP500 $30k, BTC $25k, ETH '
+            '$22.5k, USDJPY $5k), after the model numbers (P(profit) 44%, P(#1) 34%, -5% halt hit in ~46% of paths); '
+            'the -5% account halt and 8% leg stops are kept.')
 
 
 def ms(dt):
@@ -72,7 +77,7 @@ def prepare(args):
     if positions or orders:
         raise SystemExit(f'Account is not flat (positions={sorted(positions)}, orders={len(orders)}); refusing to prepare.')
     leverage = {s: client.post_info('activeAssetData', user=TEAM, coin=s).get('leverage') for s, _ in CARRY_BASKET}
-    not_one_x = {s: v for s, v in leverage.items() if v != dict(type='cross', value=1)}
+    not_one_x = {s: v for s, v in leverage.items() if v != dict(type='cross', value=LEVERAGE)}
     if not_one_x:
         # Those legs wait (no orders, no errors) and start by themselves once they read 1x CROSS.
         print(f'WARNING not 1x CROSS yet, these legs will wait: {not_one_x}. '
@@ -84,7 +89,7 @@ def prepare(args):
                      release_sha256=sha(RELEASE), venue_identity=venue_profile('pas').identity,
                      approval_reference=APPROVAL, profile=CARRY_PROFILE, sides=CARRY_BASKET,
                      unwind_starts_ms=ms(UNWIND), leg_notionals=LEG_NOTIONALS,
-                     taker_depth_bps=TAKER_DEPTH_BPS).require()
+                     taker_depth_bps=TAKER_DEPTH_BPS, leverage=LEVERAGE).require()
     atomic_json(MANDATE, asdict(m))
     print(json.dumps(dict(mandate=str(MANDATE), identity=m.identity, starting_equity=str(equity),
                           leg_notional=LEG_NOTIONAL, legs=dict(CARRY_BASKET), leverage=leverage,

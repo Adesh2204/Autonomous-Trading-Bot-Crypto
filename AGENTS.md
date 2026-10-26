@@ -228,3 +228,9 @@
   guard sizes IOC children by depth inside their own limit, post-only children by the touch). Recent-price momentum
   allocation and leverage above 1x were offered and NOT chosen. A leg already partly built resumes with IOC children
   after a restart instead of a new 2 h maker window. No profit or rank is guaranteed.
+- 27 October 01:05 IST: the user asked for more risk ("now or never", "invest heavily on HYPE") after the model numbers for
+  1x / 1.5x / 2x (1.5x: P(profit) 44%, P(#1) 34%, -5% halt hit in ~46% of paths). Implemented the best of those: the five
+  carry markets at a 2x CROSS leverage SETTING (human-typed configuration route, scope CARRY_2X, configuration only) and
+  exposure capped at 1.5x equity by the carry mandate: HYPE $60k, SP500 $30k, BTC $25k, ETH $22.5k, USDJPY $5k ($142.5k);
+  each leg at most $60k. ComplianceGuard.entry_leverage (default 1) and the validator/provider policy leverage follow the
+  carry mandate only; every other runtime still requires 1x. The 8% leg stops and the -5% account halt are kept.

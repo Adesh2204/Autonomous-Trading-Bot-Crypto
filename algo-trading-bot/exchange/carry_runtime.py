@@ -42,6 +42,11 @@ CARRY_MAX_LEG_NOTIONAL = D('19000')
 # $35,000, with the basket total still at most the starting equity (1x).
 CARRY_MAX_TILTED_LEG = D('35000')
 CARRY_TAKER_DEPTH_BPS = (0, 5)    # IOC children: the touch only, or up to 5 bps past it
+# 27 Oct 01:05 IST (user: "take more risk, invest heavily on HYPE"): the carry profile may use a 2x
+# cross leverage SETTING with total exposure capped at 1.5x equity and each leg at most $60,000.
+CARRY_LEVERAGE_SETTINGS = (1, 2)
+CARRY_MAX_EXPOSURE_2X = D('1.5')
+CARRY_MAX_LEG_2X = D('60000')
 CARRY_CHILD_STRATEGIES = frozenset({'CARRY_LONG', 'CARRY_SHORT', 'CARRY_EXIT'})
 
 
@@ -110,7 +115,8 @@ class CarryMandate:
                 or self.team_wallet.lower() == self.api_wallet.lower()
                 or not self.markets or len(set(self.markets)) != len(self.markets)
                 or any(not m.startswith('pas:') for m in self.markets)
-                or self.leverage != 1 or not 1 <= self.max_positions <= 5
+                or not (self.leverage == 1 or self.profile and self.leverage in CARRY_LEVERAGE_SETTINGS)
+                or not 1 <= self.max_positions <= 5
                 or leg * self.max_positions > equity
                 or not SCORED_START_MS <= self.starts_ms < self.flatten_ms < self.expires_ms <= SCORED_END_MS
                 or not D(0) < decimal(self.account_loss_halt) <= D('0.05')
@@ -138,12 +144,16 @@ class CarryMandate:
                 or decimal(self.account_loss_halt) != D('0.05')
                 or self.taker_depth_bps not in CARRY_TAKER_DEPTH_BPS):
             raise ExchangeError('INVALID_CARRY_MANDATE')
+        if self.leverage == 2 and not self.leg_notionals:
+            raise ExchangeError('INVALID_CARRY_MANDATE')
         if self.leg_notionals:
             tilted = dict(self.leg_notionals)
             amounts = [decimal(v, positive=True) for v in tilted.values()]
+            leg_cap, exposure = ((CARRY_MAX_LEG_2X, CARRY_MAX_EXPOSURE_2X) if self.leverage == 2
+                                 else (CARRY_MAX_TILTED_LEG, D(1)))
             if (len(tilted) != len(self.leg_notionals) or set(tilted) != set(self.markets)
-                    or any(a > CARRY_MAX_TILTED_LEG for a in amounts)
-                    or sum(amounts, D(0)) > decimal(self.starting_equity, positive=True)):
+                    or any(a > leg_cap for a in amounts)
+                    or sum(amounts, D(0)) > decimal(self.starting_equity, positive=True) * exposure):
                 raise ExchangeError('INVALID_CARRY_MANDATE')
 
     @property

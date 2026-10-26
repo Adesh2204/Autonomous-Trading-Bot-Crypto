@@ -2,7 +2,7 @@
 from .base_exchange import ExchangeError,decimal
 from .execution_journal import fingerprint
 from .venue_profiles import SCORED
-from .entry_scope import PAS_ENTRY_MARKETS, CARRY_ENTRY_MARKETS, CARRY_SCOPE
+from .entry_scope import PAS_ENTRY_MARKETS, CARRY_ENTRY_MARKETS, CARRY_SCOPE, CARRY_2X_SCOPE
 from .testnet_certification import TEAM
 import re
 
@@ -20,9 +20,11 @@ def configuration_plan(discovery):
     # The carry configuration route (25 Oct 2026) adds the carry basket's markets; any other
     # scope value is refused. Without a scope the plan is exactly the scalper's.
     scope=discovery.get('configuration_scope')
-    if scope not in (None,CARRY_SCOPE):
+    if scope not in (None,CARRY_SCOPE,CARRY_2X_SCOPE):
         raise ExchangeError('UNKNOWN_PAS_CONFIGURATION_SCOPE')
-    targets=PAS_ENTRY_MARKETS|CARRY_ENTRY_MARKETS if scope==CARRY_SCOPE else PAS_ENTRY_MARKETS
+    targets=(PAS_ENTRY_MARKETS|CARRY_ENTRY_MARKETS if scope==CARRY_SCOPE else
+             CARRY_ENTRY_MARKETS if scope==CARRY_2X_SCOPE else PAS_ENTRY_MARKETS)
+    target_leverage=2 if scope==CARRY_2X_SCOPE else 1
     changes=[];verified=[]
     for row in discovery['markets']:
         active=row['active_asset'];spec=row['spec'];symbol=row['symbol']
@@ -30,9 +32,11 @@ def configuration_plan(discovery):
                 or active.get('coin')!=symbol or active.get('user','').lower()!=TEAM.lower()):
             raise ExchangeError('EXACT_PAS_CONFIGURATION_MAPPING_REQUIRED')
         if symbol not in targets:continue
-        if active.get('leverage')==dict(type='cross',value=1):verified.append(symbol)
+        if spec['max_leverage']<target_leverage:
+            raise ExchangeError('TARGET_LEVERAGE_ABOVE_MARKET_MAXIMUM')
+        if active.get('leverage')==dict(type='cross',value=target_leverage):verified.append(symbol)
         else:changes.append(dict(symbol=symbol,observed_ms=row['observed_ms'],before=active.get('leverage'),
-            requested_action=dict(type='updateLeverage',asset=spec['asset_id'],isCross=True,leverage=1)))
+            requested_action=dict(type='updateLeverage',asset=spec['asset_id'],isCross=True,leverage=target_leverage)))
     account=discovery.get('account',{});equity=account.get('reported_account_equity',{})
     balance=decimal(equity.get('collateral_balance') or '0',nonnegative=True)
     blockers=['SEPARATE_EXACT_OPERATOR_CONFIGURATION_APPROVAL_REQUIRED'] if changes else []
@@ -68,7 +72,12 @@ def configuration_plan(discovery):
         note='Unsigned evidence only. The separate exact PAS configuration-only approval/route is required; existing par approval never authorizes PAS.')
     if scope is not None:
         plan.update(configuration_scope=scope,
-            scope_basis='Carry basket 1x CROSS (user directive 25 Oct 2026, YES, CARRY); configuration only, no orders.')
+            scope_basis='Carry basket 1x CROSS (user directive 25 Oct 2026, YES, CARRY); configuration only, no orders.'
+            if scope==CARRY_SCOPE else
+            'Carry basket 2x CROSS setting (user directive 27 Oct 2026: more risk, HYPE heavy; exposure capped at 1.5x '
+            'equity by the carry mandate); configuration only, no orders.')
+    if target_leverage!=1:
+        plan.update(target_leverage=target_leverage)
     if isolation is not None:
         plan.update(configuration_isolation=isolation,
             historical_disposition='UNKNOWN_PRESERVED; finite configuration-only isolation. No order, qualification, cancellation or transfer authority.',

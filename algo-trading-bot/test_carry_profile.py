@@ -691,3 +691,69 @@ def test_targets_follow_the_tilt_and_a_partly_built_leg_resumes_with_ioc(tmp_pat
     hype = [e for e in w.events('CHILD_ATTEMPT') if e['symbol'] == 'pas:HYPE']
     assert hype and hype[0]['child_kind'] == TAKER                               # no second 2 h maker window
     assert [e for e in w.events('CHILD_ATTEMPT') if e['symbol'] == 'pas:BTC'][0]['child_kind'] == MAKER
+
+
+# ---------- 2x cross setting, exposure capped at 1.5x (27 Oct 01:05 IST) ----------
+TILT_2X = (('pas:BTC', '25000'), ('pas:ETH', '22500'), ('pas:HYPE', '60000'), ('pas:SP500', '30000'),
+           ('pas:USDJPY', '5000'))
+
+
+def test_two_x_setting_allows_one_and_a_half_x_exposure_hype_first():
+    m = basket_mandate(leverage=2, leg_notionals=TILT_2X, taker_depth_bps=5).require()
+    assert m.notional_for('pas:HYPE') == D('60000') and sum(D(v) for _, v in TILT_2X) == D('142500')
+
+
+@pytest.mark.parametrize('change', [
+    dict(leverage=2, leg_notionals=TILT_2X[:2] + (('pas:HYPE', '60001'),) + TILT_2X[3:]),      # leg above $60k
+    dict(leverage=2, leg_notionals=TILT_2X[:4] + (('pas:USDJPY', '12600'),)),                   # above 1.5x equity
+    dict(leverage=2),                                                                           # 2x needs explicit legs
+    dict(leverage=3, leg_notionals=TILT_2X),                                                    # never above 2x
+    dict(leverage=1, leg_notionals=TILT_2X),                                                    # 1x keeps the 1x caps
+])
+def test_two_x_profile_rejects_anything_else(change):
+    with pytest.raises(ExchangeError, match='INVALID_CARRY_MANDATE'):
+        basket_mandate(**change).require()
+
+
+def test_two_x_is_carry_profile_only():
+    from test_funding_carry import mandate as funding_mandate
+    with pytest.raises(ExchangeError, match='INVALID_CARRY_MANDATE'):
+        funding_mandate(leverage=2).require()
+    from exchange.compliance_guard import ComplianceGuard
+    assert ComplianceGuard.entry_leverage == 1
+
+
+def test_compliance_entry_leverage_follows_the_guard_setting(live):
+    from test_single_position_compliance import request
+    req = request()
+    assert evaluate(live, req).allowed                                              # fixture account is 1x
+    live.executor.compliance_guard.entry_leverage = 2
+    assert evaluate(live, req).code == 'INVALID_LEVERAGE'                          # a 2x guard refuses a 1x account
+
+
+def test_carry_two_x_configuration_plan_targets_only_the_carry_markets():
+    from exchange.pas_configuration_plan import configuration_plan
+    from test_post_funding_v6 import observation
+    o = observation()
+    o['configuration_scope'] = 'CARRY_2X'
+    plan = configuration_plan(o)
+    assert plan['target_leverage'] == 2 and plan['configuration_scope'] == 'CARRY_2X'
+    assert {c['symbol'] for c in plan['changes']} | set(plan['already_one_x_cross']) == set(CARRY_ENTRY_MARKETS)
+    assert all(c['requested_action']['leverage'] == 2 and c['requested_action']['isCross'] is True for c in plan['changes'])
+    o['configuration_scope'] = 'CARRY_3X'
+    with pytest.raises(ExchangeError, match='UNKNOWN_PAS_CONFIGURATION_SCOPE'):
+        configuration_plan(o)
+    plain = configuration_plan(observation())
+    assert 'target_leverage' not in plain and all(c['requested_action']['leverage'] == 1 for c in plain['changes'])
+
+
+def test_two_x_runtime_waits_for_two_x_markets(tmp_path, monkeypatch):
+    w = World(tmp_path, monkeypatch, leverage=2, leg_notionals=TILT_2X, taker_depth_bps=5)
+    w.venue.leverage.update({s: dict(type='cross', value=1) for s in SPECS})           # still 1x on the exchange
+    w.r.startup()
+    for _ in range(3):
+        w.step()
+    assert not w.children() and {e['symbol'] for e in w.events('LEG_WAITING_FOR_1X')} == set(SPECS)
+    w.venue.leverage.update({s: dict(type='cross', value=2) for s in SPECS})
+    w.step(300000)
+    assert w.children() and w.r.order_errors == 0

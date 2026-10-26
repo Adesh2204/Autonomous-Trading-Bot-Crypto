@@ -41,7 +41,6 @@ SKIP_CODES = frozenset({
     'STALE_MARKET_DATA', 'RATE_LIMITED', 'IOC_NO_LIQUIDITY', 'ACCOUNT_CHANGED_BEFORE_SIGNING',
     'GLOBAL_POSITION_LEASE_REVOKED', 'ACCOUNT_PREFLIGHT_INVALIDATED', 'INVALID_LEVERAGE', 'DATA_NOT_READY',
     'ACCOUNT_NOT_READY', 'SIGNING_READINESS_REVOKED', 'UNKNOWN_ACCOUNT_STATE', 'PRE_DISPATCH_REFUSED'})
-ONE_X = dict(type='cross', value=1)
 LEVERAGE_RECHECK_MS = 300000
 
 
@@ -515,7 +514,7 @@ class CarryBasketRuntime(CarryRuntime):
             value = self.leverage_reader(symbol)
         except ExchangeError as exc:
             value = 'READ_FAILED:' + str(exc)
-        self.leverage_ok[symbol] = value == ONE_X
+        self.leverage_ok[symbol] = value == dict(type='cross', value=self.m.leverage)
         self._event('LEG_LEVERAGE_READY' if self.leverage_ok[symbol] else 'LEG_WAITING_FOR_1X', symbol=symbol,
                     leverage=value)
         return self.leverage_ok[symbol]
@@ -1106,7 +1105,7 @@ def build_carry_basket_runtime(root, mandate_path, release_path, *, state_dir, r
     holder = {}
     provider = LiveContextProvider(public, account, API, clock, rates,
         reconciliation_ready=lambda: recovery.last_report.ready,
-        feed_ready=lambda: bool(holder.get('stream') and holder['stream'].healthy), policy_leverage=1)
+        feed_ready=lambda: bool(holder.get('stream') and holder['stream'].healthy), policy_leverage=m.leverage)
     original_load = provider.load
 
     def guarded_load(request, *, critical=False):
@@ -1119,7 +1118,7 @@ def build_carry_basket_runtime(root, mandate_path, release_path, *, state_dir, r
     # The final pre-HTTP check carries the same carry scope as the validator (26 Oct: an SP500
     # child passed the validator and was refused here, before sending, as V4_PAS_BTC_EWY_NEW_ENTRIES_ONLY).
     transport.entry_scope = CARRY_SCOPE
-    validator = HyperliquidOrderValidator(client, policy_leverage=1)
+    validator = HyperliquidOrderValidator(client, policy_leverage=m.leverage)
     validator.entry_scope = CARRY_SCOPE
     executor = CarryExecution(client, transport=transport, account=account, journal=journal,
         context_provider=provider, validator=validator, recovery=recovery, clock_health=clock, rate_limits=rates)
@@ -1133,6 +1132,9 @@ def build_carry_basket_runtime(root, mandate_path, release_path, *, state_dir, r
                                                  max_positions=m.max_positions)
     executor.compliance_guard.position_guard = executor.position_guard
     executor.compliance_guard.extra_setup_types = frozenset({'CARRY_LONG', 'CARRY_SHORT'})
+    # The mandate's leverage SETTING (1, or 2 for the 1.5x-exposure profile); exposure itself is
+    # bounded by the per-leg targets in the mandate.
+    executor.compliance_guard.entry_leverage = m.leverage
     # Book-impact rule: a child is at most this share of the same top-of-book snapshot the
     # price checks read (the L2-depth-within-limit hook would score a post-only child zero).
     executor.compliance_guard.entry_depth_participation = decimal(m.book_share, positive=True)

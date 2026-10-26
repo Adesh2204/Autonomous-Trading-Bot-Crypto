@@ -115,6 +115,7 @@ def execute_configuration(root,plan_path,discovery_path,release,acceptance,outpu
     from strategy_freeze import verify_strategy_freeze
     root=Path(root);out=Path(output);out.mkdir(parents=True,exist_ok=False)
     p=json.loads(Path(plan_path).read_text());d=json.loads(Path(discovery_path).read_text())
+    target=p.get('target_leverage',1)    # 2 only for the carry 2x configuration scope
     a=PasConfigurationApproval(**json.loads(Path(acceptance).read_text()));now=time.time_ns()//1000000
     a.require(TEAM,API,now)
     # Plan was fresh at genuine approval; all exchange checks repeat below.
@@ -181,19 +182,19 @@ def execute_configuration(root,plan_path,discovery_path,release,acceptance,outpu
             guard();symbol=row['symbol'];action=row['requested_action']
             if journal.pending_management(action):raise ExchangeError('CONFIGURATION_UNCERTAIN_ACTION_NO_RETRY')
             current=account._query('activeAssetData',coin=symbol)
-            if current.get('leverage')==dict(type='cross',value=1):continue
+            if current.get('leverage')==dict(type='cross',value=target):continue
             if current.get('leverage')!=row['before']:raise ExchangeError('CONFIGURATION_BEFORE_VALUE_CHANGED')
             action_id=journal.reserve_management(action,client.clock_ms())
             before=transport.transmission_attempts
             current_action[0]=action_id
             try:
-                rates.reserve_action(kind='updateLeverage');response=transport.set_one_x_cross(symbol)
+                rates.reserve_action(kind='updateLeverage');response=transport.set_target_cross(symbol)
                 result['configuration_actions_submitted']+=transport.transmission_attempts-before
                 outcome=parse_exchange_action_result(response,[None],action='updateLeverage')[0]
                 if outcome.code=='NONCE_ERROR':nonces.degrade()
                 if outcome.state!=OrderState.ACKNOWLEDGED:raise ExchangeError('CONFIGURATION_NOT_ACKNOWLEDGED')
                 current=account._query('activeAssetData',coin=symbol)
-                if current.get('user','').lower()!=TEAM.lower() or current.get('coin')!=symbol or current.get('leverage')!=dict(type='cross',value=1):
+                if current.get('user','').lower()!=TEAM.lower() or current.get('coin')!=symbol or current.get('leverage')!=dict(type='cross',value=target):
                     raise ExchangeError('AUTHORITATIVE_ONE_X_READBACK_REQUIRED')
                 journal.update_management(action_id,'ACKNOWLEDGED',client.clock_ms())
                 result['results'].append(dict(symbol=symbol,response=response,readback=current,observed_ms=client.clock_ms()))
@@ -205,9 +206,10 @@ def execute_configuration(root,plan_path,discovery_path,release,acceptance,outpu
         guard()
         for s in p['entry_markets']:
             r=account._query('activeAssetData',coin=s)
-            if r.get('coin')!=s or r.get('user','').lower()!=TEAM.lower() or r.get('leverage')!=dict(type='cross',value=1):
+            if r.get('coin')!=s or r.get('user','').lower()!=TEAM.lower() or r.get('leverage')!=dict(type='cross',value=target):
                 raise ExchangeError('SELECTED_MARKETS_ONE_X_READBACKS_REQUIRED')
-        result.update(status='SELECTED_MARKETS_ONE_X_CROSS_VERIFIED',verified_markets=p['entry_markets'],verified_ms=client.clock_ms())
+        result.update(status='SELECTED_MARKETS_ONE_X_CROSS_VERIFIED' if target==1 else 'SELECTED_MARKETS_TWO_X_CROSS_VERIFIED',
+                      verified_markets=p['entry_markets'],verified_ms=client.clock_ms(),target_leverage=target)
     except Exception as exc:
         result.update(status='CONFIGURATION_REQUIRES_REVIEW',error=str(exc),blind_retry=False)
     finally:
