@@ -240,3 +240,5 @@
   $50,000, SP500 $15,000, BTC $13,000, ETH $12,000, USDJPY $5,000 ($95k at 1x; 1x tilted leg cap raised to $50k).
   Legs above a lowered target are trimmed first with reduce-only IOC children (same 25%-of-depth-within-5-bps rule);
   entries wait until every trim is done. The 2x code stays in place but unused (mandate leverage 1, markets at 1x).
+- 27 October 02:45 IST: relaunched from 9f5e31f (codex/equity-fix). Carry equity is the unified USDP balance, which
+  already includes unrealized P&L; adding uPnL again double-counted it. No limit, leg, stop or strategy change.
