@@ -38,6 +38,10 @@ CARRY_PROFILE = 'HALF_SIZE_FIXED_BASKET_2026_10_25'
 CARRY_BASKET = (('pas:BTC', 'LONG'), ('pas:ETH', 'LONG'), ('pas:HYPE', 'LONG'), ('pas:SP500', 'LONG'),
                 ('pas:USDJPY', 'SHORT'))
 CARRY_MAX_LEG_NOTIONAL = D('19000')
+# 26 Oct 22:35 IST (user): HYPE is the priority leg. Per-leg targets may then differ, each at most
+# $35,000, with the basket total still at most the starting equity (1x).
+CARRY_MAX_TILTED_LEG = D('35000')
+CARRY_TAKER_DEPTH_BPS = (0, 5)    # IOC children: the touch only, or up to 5 bps past it
 CARRY_CHILD_STRATEGIES = frozenset({'CARRY_LONG', 'CARRY_SHORT', 'CARRY_EXIT'})
 
 
@@ -84,10 +88,16 @@ class CarryMandate:
     reprice_ms: int = 600000
     taker_gap_ms: int = 30000
     book_share: str = '0.25'
+    leg_notionals: tuple = ()        # ((symbol, notional), ...); empty = leg_notional for every leg
+    taker_depth_bps: int = 0
 
     def __post_init__(self):
         object.__setattr__(self, 'markets', tuple(self.markets))
         object.__setattr__(self, 'sides', tuple(tuple(x) for x in self.sides))
+        object.__setattr__(self, 'leg_notionals', tuple(tuple(x) for x in self.leg_notionals))
+
+    def notional_for(self, symbol):
+        return decimal(dict(self.leg_notionals).get(symbol, self.leg_notional), positive=True)
 
     def require(self):
         import re
@@ -125,8 +135,16 @@ class CarryMandate:
                 or not 0 < self.taker_gap_ms <= 300000
                 or not D(0) < decimal(self.book_share) <= D('0.25')
                 or decimal(self.position_stop) != D('0.08')
-                or decimal(self.account_loss_halt) != D('0.05')):
+                or decimal(self.account_loss_halt) != D('0.05')
+                or self.taker_depth_bps not in CARRY_TAKER_DEPTH_BPS):
             raise ExchangeError('INVALID_CARRY_MANDATE')
+        if self.leg_notionals:
+            tilted = dict(self.leg_notionals)
+            amounts = [decimal(v, positive=True) for v in tilted.values()]
+            if (len(tilted) != len(self.leg_notionals) or set(tilted) != set(self.markets)
+                    or any(a > CARRY_MAX_TILTED_LEG for a in amounts)
+                    or sum(amounts, D(0)) > decimal(self.starting_equity, positive=True)):
+                raise ExchangeError('INVALID_CARRY_MANDATE')
 
     @property
     def basket(self):

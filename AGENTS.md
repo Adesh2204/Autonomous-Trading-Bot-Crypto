@@ -221,3 +221,10 @@
   ~760 touch-limited slices finish before the 11:30 UTC flatten. The user also claimed the bot trades in the wrong
   direction; the 25 Oct shorts were the momentum scalper (both directions by design, now off) and its 16 round trips
   had gross P&L +$0.05 against $1.71 fees, i.e. no edge rather than an inverted one. No direction change was made.
+- 26 October 22:35 IST: the user made HYPE the priority carry leg ("best performing market"): HYPE $35,000, SP500
+  $20,000, BTC $18,000, ETH $17,000, USDJPY $5,000 (the others by 24 h funding; USDJPY funding had fallen to
+  0.06%/day); the total stays $95k at 1x (CarryMandate.leg_notionals, each <= $35k, sum <= equity). The user also
+  chose larger IOC children: up to 25% of the depth within 5 bps of the touch (taker_depth_bps=5; the compliance
+  guard sizes IOC children by depth inside their own limit, post-only children by the touch). Recent-price momentum
+  allocation and leverage above 1x were offered and NOT chosen. A leg already partly built resumes with IOC children
+  after a restart instead of a new 2 h maker window. No profit or rank is guaranteed.

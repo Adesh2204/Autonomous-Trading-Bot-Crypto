@@ -263,7 +263,8 @@ class CarryBasketRuntime(CarryRuntime):
         self.leverage_checked = {}
         m = self.m
         self.params = SliceParams(book_share=decimal(m.book_share, positive=True), maker_window_ms=m.maker_window_ms,
-                                  reprice_ms=m.reprice_ms, taker_gap_ms=m.taker_gap_ms)
+                                  reprice_ms=m.reprice_ms, taker_gap_ms=m.taker_gap_ms,
+                                  taker_depth_bps=m.taker_depth_bps)
         s = self.state
         s.setdefault('legs', {sym: _new_leg(side) for sym, side in m.sides})
         s.setdefault('fills', {})
@@ -286,6 +287,10 @@ class CarryBasketRuntime(CarryRuntime):
 
     def _book(self, symbol):
         return top(self.market.get_orderbook(symbol))
+
+    def _book_and_top(self, symbol):
+        book = self.market.get_orderbook(symbol)
+        return book, top(book)
 
     def _signal_ms(self):
         return (self.clock_ms() // MIN_MS - 1) * MIN_MS
@@ -418,7 +423,7 @@ class CarryBasketRuntime(CarryRuntime):
         emergency = bool(leg['unwind'] and leg['unwind']['kind'] == 'EMERGENCY')
         now = self.clock_ms()
         if entry:
-            kind = phase(leg['started_ms'] or now, now, self.params)
+            kind = phase(leg['started_ms'] or leg.get('resume_started_ms') or now, now, self.params)
         else:
             kind = phase(leg['unwind']['started_ms'], now, self.params, maker=not emergency and now < self.m.flatten_ms)
         if kind == TAKER and not taker_ready(leg['last_taker_ms'], now, self.params):
@@ -431,7 +436,7 @@ class CarryBasketRuntime(CarryRuntime):
                 self._skip(symbol, str(exc))
                 return False
             raise
-        quote = self._book(symbol)
+        book, quote = self._book_and_top(symbol)
         if quote is None:
             self._skip(symbol, 'EMPTY_BOOK_SIDE')
             return False
@@ -441,10 +446,11 @@ class CarryBasketRuntime(CarryRuntime):
         now = self.clock_ms()
         if entry:
             if leg['target'] is None:
-                leg['target'] = str(spec.normalize_size(decimal(self.m.leg_notional) / quote.mid))
-                leg['started_ms'] = now
+                leg['target'] = str(spec.normalize_size(self.m.notional_for(symbol) / quote.mid))
+                leg['started_ms'] = leg.get('resume_started_ms') or now
                 self._event('LEG_BUILD_STARTED', symbol=symbol, side=leg['side'], target=leg['target'],
-                            notional=self.m.leg_notional, mid=quote.mid)
+                            notional=self.m.notional_for(symbol), mid=quote.mid,
+                            maker_phase=phase(leg['started_ms'], now, self.params) == MAKER)
             left = remaining(D(leg['target']), held)
             order_side = 'BUY' if leg['side'] == 'LONG' else 'SELL'
             reason = 'CARRY_BASKET_LEG_BUILD_STEP'
@@ -452,7 +458,7 @@ class CarryBasketRuntime(CarryRuntime):
             left = held
             order_side = 'SELL' if leg['side'] == 'LONG' else 'BUY'
             reason = leg['unwind']['reason']
-        plan, why = child(order_side, left, quote, spec, kind, self.params)
+        plan, why = child(order_side, left, quote, spec, kind, self.params, book=book)
         if plan is None:
             if why == 'TOUCH_TOO_THIN' or why == 'REMAINDER_BELOW_MINIMUM' and not entry:
                 self._skip(symbol, why)
@@ -899,6 +905,10 @@ class CarryBasketRuntime(CarryRuntime):
         for symbol, leg in self.state['legs'].items():
             leg['last_qty'] = str(self._qty(positions, symbol))
             leg['protected_qty'] = '-1'          # unknown until the first stop check
+            if leg['started_ms'] is None and self._qty(positions, symbol) > 0:
+                # A leg already partly built under an earlier mandate has had its maker window:
+                # a restart continues with IOC children instead of opening another 2 h window.
+                leg['resume_started_ms'] = self.clock_ms() - self.params.maker_window_ms
         if self.state['basket_started_ms'] is None:
             self.state['basket_started_ms'] = self.clock_ms()
         self._save_state()
@@ -1026,6 +1036,15 @@ class CarryBasketRuntime(CarryRuntime):
         return self.shutdown(reason)
 
 
+def carry_entry_capacity(book, request, share):
+    """Compliance size cap for a carry child: IOC = share of depth inside its limit, else share of the touch."""
+    from .carry_slicer import depth_within
+    if request.tif == 'Ioc':
+        return depth_within(book, request.side, request.price) * share
+    levels = book.asks if request.side == 'BUY' else book.bids
+    return levels[0].quantity * share if levels else D(0)
+
+
 def build_carry_basket_runtime(root, mandate_path, release_path, *, state_dir, runtime_cls=None, **extra):
     """Only construction gate for the carry basket. Evidence is checked before the key is read."""
     from venue_config import require_paper_migration
@@ -1117,6 +1136,11 @@ def build_carry_basket_runtime(root, mandate_path, release_path, *, state_dir, r
     # Book-impact rule: a child is at most this share of the same top-of-book snapshot the
     # price checks read (the L2-depth-within-limit hook would score a post-only child zero).
     executor.compliance_guard.entry_depth_participation = decimal(m.book_share, positive=True)
+    if m.taker_depth_bps:
+        # 26 Oct (user): an IOC child may take up to book_share of the depth inside its own limit
+        # (at most 5 bps past the touch); a post-only child keeps book_share of the opposite touch.
+        executor.compliance_guard.l2_entry_capacity = lambda request: carry_entry_capacity(
+            public.get_orderbook(request.symbol), request, decimal(m.book_share, positive=True))
     policy = replace(base_policy, enabled=True, approval_reference=m.approval_reference,
                      execution_slippage_fraction=decimal(m.stop_slippage, positive=True))
     protection = CarryBasketProtection(executor, policy=policy, managers=legs, stop_fraction=m.position_stop)

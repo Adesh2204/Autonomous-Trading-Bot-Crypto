@@ -25,13 +25,19 @@ UNWIND = datetime(2026, 11, 5, 20, 0, tzinfo=timezone.utc)
 FLATTEN = datetime(2026, 11, 6, 11, 30, tzinfo=timezone.utc)   # flat-by target; taker only after it
 EXPIRES = datetime(2026, 11, 6, 11, 55, tzinfo=timezone.utc)
 LEG_NOTIONAL = '19000'
+# 26 Oct 22:35 IST (user): HYPE is the priority leg; the rest follow their 24 h funding; total $95k at 1x.
+LEG_NOTIONALS = (('pas:BTC', '18000'), ('pas:ETH', '17000'), ('pas:HYPE', '35000'), ('pas:SP500', '20000'),
+                 ('pas:USDJPY', '5000'))
+TAKER_DEPTH_BPS = 5               # IOC children: up to 25% of the depth within 5 bps of the touch
 APPROVAL = ('User directive 2026-10-25 23:35 IST, "We wanna move with Carry Strategy" (YES, CARRY): half size, '
             '$9,500 per leg, LONG BTC/ETH/HYPE/SP500 and SHORT USDJPY at 1x, NO basket stop, existing 8% per-leg '
             'exchange stop, hold until the 6 Nov flatten; the user and co-founder accept a ~43% chance of finishing '
             'negative. Answered questions: sliced post-only children for 2 h with a 10-min re-price, then IOC '
             'children <= 25% of the touch; keep the -5% account catastrophe halt. 26 Oct 11:55 IST the user chose '
             'FULL SIZE, $19,000 per leg ("trade with big money"), after the model numbers: median +0.91%, P(loss) '
-            '~43%, 5th percentile about -4.2%.')
+            '~43%, 5th percentile about -4.2%. 26 Oct 22:35 IST the user made HYPE the priority leg ($35k; '
+            'BTC $18k, ETH $17k, SP500 $20k, USDJPY $5k by funding; total $95k at 1x) and allowed IOC '
+            'children of up to 25% of the depth within 5 bps of the touch.')
 
 
 def ms(dt):
@@ -77,7 +83,8 @@ def prepare(args):
                      starting_equity=str(equity), leg_notional=LEG_NOTIONAL, source_hash=active_source_hash(ROOT),
                      release_sha256=sha(RELEASE), venue_identity=venue_profile('pas').identity,
                      approval_reference=APPROVAL, profile=CARRY_PROFILE, sides=CARRY_BASKET,
-                     unwind_starts_ms=ms(UNWIND)).require()
+                     unwind_starts_ms=ms(UNWIND), leg_notionals=LEG_NOTIONALS,
+                     taker_depth_bps=TAKER_DEPTH_BPS).require()
     atomic_json(MANDATE, asdict(m))
     print(json.dumps(dict(mandate=str(MANDATE), identity=m.identity, starting_equity=str(equity),
                           leg_notional=LEG_NOTIONAL, legs=dict(CARRY_BASKET), leverage=leverage,

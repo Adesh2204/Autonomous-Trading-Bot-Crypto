@@ -38,10 +38,13 @@ class SliceParams:
     taker_gap_ms: int = 30000
     # Exchange minimum is $10; stay clear of it after rounding down.
     min_notional: D = D('11')
+    # 0: an IOC child takes the touch only. 5 (user choice 26 Oct): its limit may sit up to 5 bps past
+    # the touch and it takes at most book_share of the depth posted inside that limit.
+    taker_depth_bps: int = 0
 
     def __post_init__(self):
         if (not D(0) < self.book_share <= D('0.25') or self.maker_window_ms < 0 or self.reprice_ms <= 0
-                or self.taker_gap_ms < 0 or self.min_notional < 10):
+                or self.taker_gap_ms < 0 or self.min_notional < 10 or self.taker_depth_bps not in (0, 5)):
             raise ValueError('INVALID_SLICE_PARAMS')
 
 
@@ -60,20 +63,33 @@ def _lots(spec, quantity):
     return spec.normalize_size(quantity) if quantity >= spec.size_step else D(0)
 
 
-def child(order_side, left, quote, spec, kind, params):
+def depth_within(book, order_side, limit):
+    """Displayed quantity an order on `order_side` with this limit could take."""
+    levels = book.asks if order_side == 'BUY' else book.bids
+    return sum((l.quantity for l in levels if (l.price <= limit if order_side == 'BUY' else l.price >= limit)), D(0))
+
+
+def child(order_side, left, quote, spec, kind, params, book=None):
     """Next child for `left` quantity, or (None, reason).
 
-    order_side: 'BUY' or 'SELL'; quote has bid/ask and bid_quantity/ask_quantity.
+    order_side: 'BUY' or 'SELL'; quote has bid/ask and bid_quantity/ask_quantity; `book` (the L2
+    book the quote came from) sizes an IOC child when params.taker_depth_bps is set.
     """
     if left <= 0:
         return None, 'LEG_COMPLETE'
     touch = min(quote.bid_quantity, quote.ask_quantity)
+    cap = touch * params.book_share
     if kind == MAKER:
         price, tif = (quote.bid if order_side == 'BUY' else quote.ask), 'Alo'
     else:
         price, tif = (quote.ask if order_side == 'BUY' else quote.bid), 'Ioc'
+        if params.taker_depth_bps and book is not None:
+            step = D(params.taker_depth_bps) / 10000
+            price = price * (1 + step) if order_side == 'BUY' else price * (1 - step)
     price = spec.normalize_price(price, order_side)
-    quantity = _lots(spec, min(left, touch * params.book_share))
+    if kind == TAKER and params.taker_depth_bps and book is not None:
+        cap = depth_within(book, order_side, price) * params.book_share
+    quantity = _lots(spec, min(left, cap))
     if left * price < params.min_notional:
         return None, 'REMAINDER_BELOW_MINIMUM'
     rest = left - quantity
@@ -85,7 +101,7 @@ def child(order_side, left, quote, spec, kind, params):
     if quantity <= 0 or quantity * price < params.min_notional:
         return None, 'TOUCH_TOO_THIN'
     return dict(side=order_side, quantity=quantity, price=price, tif=tif, kind=kind,
-                touch_quantity=touch), None
+                touch_quantity=touch, cap_quantity=cap), None
 
 
 def stale(child_row, quote, now_ms, params):

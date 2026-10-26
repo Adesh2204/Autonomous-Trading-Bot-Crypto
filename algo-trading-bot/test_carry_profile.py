@@ -223,9 +223,9 @@ def start_legs(w):
 
 
 class World:
-    def __init__(self, tmp_path, monkeypatch, *, venue=None, books=None, clock=None, maker_fill_chance=0.0):
+    def __init__(self, tmp_path, monkeypatch, *, venue=None, books=None, clock=None, maker_fill_chance=0.0, **mandate):
         monkeypatch.setattr(carry_basket.time, 'sleep', lambda s: None)
-        self.m = basket_mandate().require()
+        self.m = basket_mandate(**mandate).require()
         self.clock = clock or [self.m.starts_ms + 1000]
         self.books = books or {s: self.book(s) for s in SPECS}
         specs = {s: MarketSpec(s, d, 20, i) for i, (s, (d, _, _)) in enumerate(SPECS.items())}
@@ -624,3 +624,70 @@ def test_carry_builder_opts_in_and_counts_it_as_a_skip():
     assert HyperliquidExecution.pre_dispatch_is_rejection is False
     assert 'executor.pre_dispatch_is_rejection = True' in inspect.getsource(carry_basket.build_carry_basket_runtime)
     assert 'PRE_DISPATCH_REFUSED' in carry_basket.SKIP_CODES
+
+
+
+# ---------- HYPE-first allocation and depth slices (26 Oct 22:35 IST) ----------
+TILT = (('pas:BTC', '18000'), ('pas:ETH', '17000'), ('pas:HYPE', '35000'), ('pas:SP500', '20000'),
+        ('pas:USDJPY', '5000'))
+
+
+def test_tilted_legs_hype_first_within_one_x(tmp_path):
+    m = basket_mandate(leg_notionals=TILT, taker_depth_bps=5).require()
+    assert m.notional_for('pas:HYPE') == D('35000') and m.notional_for('pas:USDJPY') == D('5000')
+    path = tmp_path / 'm.json'
+    path.write_text(json.dumps(asdict(m)))
+    assert CarryMandate.read(path) == m
+
+
+@pytest.mark.parametrize('legs,bps', [
+    (TILT[:2] + (('pas:HYPE', '35001'),) + TILT[3:], 5),                  # above the $35k leg cap
+    (TILT[:4] + (('pas:USDJPY', '10001'),), 5),                            # basket above equity (1x)
+    (TILT[:4], 5),                                                         # a market missing
+    (TILT[:4] + (('pas:EWY', '5000'),), 5),                                # not a basket market
+    (TILT, 7),                                                             # depth beyond 5 bps
+])
+def test_tilted_legs_reject_anything_else(legs, bps):
+    with pytest.raises(ExchangeError, match='INVALID_CARRY_MANDATE'):
+        basket_mandate(leg_notionals=legs, taker_depth_bps=bps).require()
+
+
+def deep_book(symbol='pas:BTC'):
+    asks = tuple(BookLevel(D(p), D(q)) for p, q in (('80000', '0.006'), ('80010', '0.05'), ('80030', '0.05'), ('80100', '5')))
+    bids = tuple(BookLevel(D(p), D(q)) for p, q in (('79990', '0.006'), ('79980', '0.05'), ('79900', '5')))
+    return OrderBook(symbol, 0, bids, asks)
+
+
+def test_depth_child_takes_a_quarter_of_depth_within_five_bps_and_never_deeper():
+    from exchange.carry_slicer import depth_within, top
+    spec, book = MarketSpec('pas:BTC', 5, 40, 1), deep_book()
+    p = SliceParams(taker_depth_bps=5)
+    plan, _ = child('BUY', D('1'), top(book), spec, TAKER, p, book=book)
+    assert plan['price'] == D('80040') and plan['tif'] == 'Ioc'                   # 80000 * 1.0005
+    assert depth_within(book, 'BUY', plan['price']) == D('0.106')                 # the 80100 level is excluded
+    assert plan['quantity'] == D('0.0265')                                        # 25% of 0.106
+    short, _ = child('SELL', D('1'), top(book), spec, TAKER, p, book=book)
+    assert short['price'] == D('79951') and short['quantity'] == D('0.0140')     # 25% of bids within 5 bps (0.056)
+    touch_only, _ = child('BUY', D('1'), top(book), spec, TAKER, SliceParams(), book=book)
+    assert touch_only['price'] == D('80000') and touch_only['quantity'] == D('0.0015')
+
+
+def test_compliance_capacity_uses_depth_for_ioc_and_the_touch_for_post_only():
+    book = deep_book()
+    ioc = OrderRequest('pas:BTC', 'BUY', D('0.02'), D('80040'), tif='Ioc')
+    alo = OrderRequest('pas:BTC', 'BUY', D('0.0015'), D('79990'), tif='Alo')
+    assert carry_basket.carry_entry_capacity(book, ioc, D('0.25')) == D('0.0265')
+    assert carry_basket.carry_entry_capacity(book, alo, D('0.25')) == D('0.0015')
+
+
+def test_targets_follow_the_tilt_and_a_partly_built_leg_resumes_with_ioc(tmp_path, monkeypatch):
+    w = World(tmp_path, monkeypatch, leg_notionals=TILT, taker_depth_bps=5)
+    w.venue.positions['pas:HYPE'] = [D('10'), D('77')]                            # built under an earlier mandate
+    w.r.startup()
+    for _ in range(6):
+        w.step(31000)
+    targets = {s: D(l['target']) * D(str(SPECS[s][1])) for s, l in w.r.state['legs'].items() if l['target']}
+    assert targets['pas:HYPE'] > D('34000') and targets['pas:USDJPY'] < D('5100')
+    hype = [e for e in w.events('CHILD_ATTEMPT') if e['symbol'] == 'pas:HYPE']
+    assert hype and hype[0]['child_kind'] == TAKER                               # no second 2 h maker window
+    assert [e for e in w.events('CHILD_ATTEMPT') if e['symbol'] == 'pas:BTC'][0]['child_kind'] == MAKER
