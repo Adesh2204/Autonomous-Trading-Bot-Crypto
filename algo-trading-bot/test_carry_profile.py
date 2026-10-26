@@ -793,3 +793,14 @@ def test_reallocation_trims_over_target_legs_first_then_buys_hype_and_verifies(t
 
 def test_margin_refusal_before_signing_is_a_skip():
     assert {'INSUFFICIENT_MARGIN', 'MARGIN_UNAVAILABLE'} <= carry_basket.SKIP_CODES
+
+
+
+def test_equity_is_the_unified_balance_without_adding_upnl_again(tmp_path, monkeypatch):
+    w = World(tmp_path, monkeypatch)
+    w.r.account.get_equity = lambda: SimpleNamespace(collateral_balance=D('99456.74'))
+    w.venue.positions['pas:HYPE'] = [D('10'), D('80')]                             # uPnL is not added again
+    assert w.r.equity() == D('99456.74') and w.r.equity(w.r.positions()) == D('99456.74')
+    w.r.account.get_equity = lambda: SimpleNamespace(collateral_balance=D('94998'))
+    from strategies.funding_carry import loss_halt
+    assert loss_halt(w.r.start_equity, w.r.equity(), D('0.05'))                    # halt on the real -5%

@@ -299,6 +299,15 @@ class CarryBasketRuntime(CarryRuntime):
         p = positions.get(symbol)
         return abs(p.quantity) if p is not None and p.quantity else D(0)
 
+    def equity(self, positions=None):
+        """Account equity = the unified USDP balance, which already includes unrealized P&L.
+
+        27 Oct 01:45 IST, checked against exchange data: USDP total 99,456.74 = cash (start 99,998.34
+        - fees 80.56 + funding 27.69) + uPnL -488.73. marked_equity (collateral + uPnL) counted uPnL
+        twice, which skewed every heartbeat and made the -5% halt fire on a smaller real loss.
+        """
+        return self.account.get_equity().collateral_balance
+
     def _stream_health(self):
         # As in the scalper: a receiver thread connects, pings and polls continuously; the owner
         # thread only reconciles. (Polling once per cycle let the stream go stale: DATA_NOT_READY.)
