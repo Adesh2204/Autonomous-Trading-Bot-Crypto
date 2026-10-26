@@ -26,10 +26,11 @@ FLATTEN = datetime(2026, 11, 6, 11, 30, tzinfo=timezone.utc)   # flat-by target;
 EXPIRES = datetime(2026, 11, 6, 11, 55, tzinfo=timezone.utc)
 LEG_NOTIONAL = '19000'
 # 26 Oct 22:35 IST (user): HYPE is the priority leg; the rest follow their 24 h funding; total $95k at 1x.
-# 27 Oct 01:05 IST (user: more risk, HYPE heavy): 2x cross setting, $142.5k exposure (1.5x equity), HYPE $60k.
-LEG_NOTIONALS = (('pas:BTC', '25000'), ('pas:ETH', '22500'), ('pas:HYPE', '60000'), ('pas:SP500', '30000'),
+# 27 Oct 01:35 IST (user, after the 2x route turned out to need a flat account): more HYPE within 1x.
+# $95k: HYPE $50k, SP500 $15k, BTC $13k, ETH $12k, USDJPY $5k. Over-target legs are trimmed first.
+LEG_NOTIONALS = (('pas:BTC', '13000'), ('pas:ETH', '12000'), ('pas:HYPE', '50000'), ('pas:SP500', '15000'),
                  ('pas:USDJPY', '5000'))
-LEVERAGE = 2
+LEVERAGE = 1
 TAKER_DEPTH_BPS = 5               # IOC children: up to 25% of the depth within 5 bps of the touch
 APPROVAL = ('User directive 2026-10-25 23:35 IST, "We wanna move with Carry Strategy" (YES, CARRY): half size, '
             '$9,500 per leg, LONG BTC/ETH/HYPE/SP500 and SHORT USDJPY at 1x, NO basket stop, existing 8% per-leg '
@@ -42,7 +43,9 @@ APPROVAL = ('User directive 2026-10-25 23:35 IST, "We wanna move with Carry Stra
             'children of up to 25% of the depth within 5 bps of the touch. 27 Oct 01:05 IST the user asked for more '
             'risk, HYPE heavy: 2x cross setting, exposure 1.5x equity ($142.5k: HYPE $60k, SP500 $30k, BTC $25k, ETH '
             '$22.5k, USDJPY $5k), after the model numbers (P(profit) 44%, P(#1) 34%, -5% halt hit in ~46% of paths); '
-            'the -5% account halt and 8% leg stops are kept.')
+            'the -5% account halt and 8% leg stops are kept. The 2x route needs a flat account; 27 Oct 01:35 IST the user '
+            'chose instead more HYPE within 1x: HYPE $50k, SP500 $15k, BTC $13k, ETH $12k, USDJPY $5k, trimming '
+            'over-target legs first.')
 
 
 def ms(dt):

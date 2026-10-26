@@ -40,7 +40,8 @@ SKIP_CODES = frozenset({
     'ENTRY_READ_BUDGET_HEADROOM_UNAVAILABLE', 'EXCHANGE_CONTEXT_UNAVAILABLE', 'STALE_PRICE_CONTEXT',
     'STALE_MARKET_DATA', 'RATE_LIMITED', 'IOC_NO_LIQUIDITY', 'ACCOUNT_CHANGED_BEFORE_SIGNING',
     'GLOBAL_POSITION_LEASE_REVOKED', 'ACCOUNT_PREFLIGHT_INVALIDATED', 'INVALID_LEVERAGE', 'DATA_NOT_READY',
-    'ACCOUNT_NOT_READY', 'SIGNING_READINESS_REVOKED', 'UNKNOWN_ACCOUNT_STATE', 'PRE_DISPATCH_REFUSED'})
+    'ACCOUNT_NOT_READY', 'SIGNING_READINESS_REVOKED', 'UNKNOWN_ACCOUNT_STATE', 'PRE_DISPATCH_REFUSED',
+    'INSUFFICIENT_MARGIN', 'MARGIN_UNAVAILABLE'})
 LEVERAGE_RECHECK_MS = 300000
 
 
@@ -416,13 +417,17 @@ class CarryBasketRuntime(CarryRuntime):
                                classification=classification, action_type=action,
                                source_position_id=None if entry else request.symbol, signal_interval_ms=MIN_MS)
 
-    def _place(self, symbol, *, entry):
-        """Fresh read, then one child for this leg. Returns True when an order was sent."""
+    def _place(self, symbol, *, entry, trim=False):
+        """Fresh read, then one child for this leg. Returns True when an order was sent.
+
+        trim: a reduce-only IOC child selling a leg down to a lowered target (reallocation)."""
         leg = self._leg(symbol)
         emergency = bool(leg['unwind'] and leg['unwind']['kind'] == 'EMERGENCY')
         now = self.clock_ms()
         if entry:
             kind = phase(leg['started_ms'] or leg.get('resume_started_ms') or now, now, self.params)
+        elif trim:
+            kind = TAKER
         else:
             kind = phase(leg['unwind']['started_ms'], now, self.params, maker=not emergency and now < self.m.flatten_ms)
         if kind == TAKER and not taker_ready(leg['last_taker_ms'], now, self.params):
@@ -453,6 +458,10 @@ class CarryBasketRuntime(CarryRuntime):
             left = remaining(D(leg['target']), held)
             order_side = 'BUY' if leg['side'] == 'LONG' else 'SELL'
             reason = 'CARRY_BASKET_LEG_BUILD_STEP'
+        elif trim:
+            left = max(held - D(leg['target']), D(0))
+            order_side = 'SELL' if leg['side'] == 'LONG' else 'BUY'
+            reason = 'CARRY_REALLOCATION_TRIM'
         else:
             left = held
             order_side = 'SELL' if leg['side'] == 'LONG' else 'BUY'
@@ -463,7 +472,7 @@ class CarryBasketRuntime(CarryRuntime):
                 self._skip(symbol, why)
             return False
         leg['n'] += 1
-        key = f"carry-{'in' if entry else 'out'}:{symbol}:{self.m.identity[:12]}:{leg['n']}"
+        key = f"carry-{'in' if entry else 'trim' if trim else 'out'}:{symbol}:{self.m.identity[:12]}:{leg['n']}"
         strategy_id = ('CARRY_LONG' if leg['side'] == 'LONG' else 'CARRY_SHORT') if entry else 'CARRY_EXIT'
         request = OrderRequest(symbol, plan['side'], plan['quantity'], plan['price'], reduce_only=not entry,
                                tif=plan['tif'], strategy_id=strategy_id, client_order_id=key)
@@ -472,7 +481,8 @@ class CarryBasketRuntime(CarryRuntime):
                                     reason=None if entry else reason, limit_price=plan['price'], provenance=provenance)
         # Durable before signing: a crash after this line is settled from the journal at restart.
         leg['child'] = dict(key=key, side=plan['side'], price=str(plan['price']), quantity=str(plan['quantity']),
-                            tif=plan['tif'], kind=kind, entry=entry, placed_ms=now, oid=None, state='PREPARED')
+                            tif=plan['tif'], kind=kind, entry=entry, trim=trim, placed_ms=now, oid=None,
+                            state='PREPARED')
         if kind == TAKER:
             leg['last_taker_ms'] = now
         self._save_state()
@@ -609,7 +619,7 @@ class CarryBasketRuntime(CarryRuntime):
                 why = None
                 if c['entry'] and (leg['mode'] != 'BUILD' or self.state['halted'] or now >= self.m.unwind_starts_ms):
                     why = 'LEG_NO_LONGER_BUILDING'
-                elif not c['entry'] and leg['mode'] != 'UNWIND':
+                elif not c['entry'] and not c.get('trim') and leg['mode'] != 'UNWIND':
                     why = 'LEG_NO_LONGER_UNWINDING'
                 elif c['entry'] and qty != D(leg['protected_qty']):
                     # Re-size the stop first; it would self-cross our own resting entry child.
@@ -659,8 +669,8 @@ class CarryBasketRuntime(CarryRuntime):
             long = position.quantity > 0
             if long != (leg['side'] == 'LONG'):
                 problems.append('WRONG_SIDE')
-            if abs(position.quantity) > D(leg['target']):
-                problems.append('ABOVE_TARGET')
+            if (abs(position.quantity) - D(leg['target'])) * position.entry_price >= self.params.min_notional:
+                problems.append('ABOVE_TARGET')        # a residual below the $11 minimum cannot be trimmed
             if net != position.quantity:
                 problems.append(f'FILL_LEDGER_{net}_VS_POSITION_{position.quantity}')
             plan = self.protection._plan(symbol, position, self.legs[symbol], self.clock_ms())
@@ -683,8 +693,10 @@ class CarryBasketRuntime(CarryRuntime):
             quote = self._book(symbol)
             if quote is None:
                 continue
-            left = remaining(D(leg['target']), self._qty(positions, symbol))
-            if left * quote.mid >= self.params.min_notional:
+            held = self._qty(positions, symbol)
+            left = remaining(D(leg['target']), held)
+            if (left * quote.mid >= self.params.min_notional or
+                    (held - D(leg['target'])) * quote.mid >= self.params.min_notional):
                 continue
             for attempt in range(3):
                 if attempt:
@@ -703,10 +715,41 @@ class CarryBasketRuntime(CarryRuntime):
             self._start_unwind(symbol, 'EMERGENCY', 'LEG_VERIFICATION_FAILED')
             self.halt('LEG_VERIFICATION_FAILED:' + symbol, flatten=False)
 
+    def excess(self, symbol, positions):
+        """Quantity a leg holds above its target (0 when none or below the $11 minimum)."""
+        leg = self._leg(symbol)
+        if leg['target'] is None or leg['mode'] not in {'BUILD', 'HOLD'}:
+            return D(0)
+        over = self._qty(positions, symbol) - D(leg['target'])
+        price = self.m.notional_for(symbol) / D(leg['target'])
+        return over if over * price >= self.params.min_notional else D(0)
+
+    def _ensure_targets(self):
+        """Every building leg gets its target before anything is placed, so over-target legs are seen."""
+        for symbol, leg in self.state['legs'].items():
+            if leg['mode'] != 'BUILD' or leg['target'] is not None:
+                continue
+            quote = self._book(symbol)
+            if quote is None:
+                continue
+            now = self.clock_ms()
+            leg['target'] = str(self.client.market(symbol).normalize_size(self.m.notional_for(symbol) / quote.mid))
+            leg['started_ms'] = leg.get('resume_started_ms') or now
+            self._event('LEG_BUILD_STARTED', symbol=symbol, side=leg['side'], target=leg['target'],
+                        notional=self.m.notional_for(symbol), mid=quote.mid,
+                        maker_phase=phase(leg['started_ms'], now, self.params) == MAKER)
+        self._save_state()
+
     def _place_children(self, positions):
-        """At most one new child per cycle, rotating over the legs that need one."""
+        """At most one new child per cycle, rotating over the legs that need one.
+
+        Reallocation (27 Oct): legs above a lowered target are trimmed first, with reduce-only IOC
+        children; no entry is placed until every trim is done, so the freed margin funds the buys."""
         now = self.clock_ms()
         building = (not self.state['halted'] and now < self.m.unwind_starts_ms)
+        if building:
+            self._ensure_targets()
+        trims = [s for s in self.state['legs'] if building and self.excess(s, positions) > 0]
         # Protection first: no new entry while any leg holds more or less than its stop covers.
         unprotected = sorted(s for s, l in self.state['legs'].items()
                              if self._qty(positions, s) != D(l['protected_qty']))
@@ -716,9 +759,23 @@ class CarryBasketRuntime(CarryRuntime):
             leg = self._leg(symbol)
             if leg['child']:
                 continue
-            entry = leg['mode'] == 'BUILD' and building
+            trim = symbol in trims
+            entry = leg['mode'] == 'BUILD' and building and not trims
             unwind = leg['mode'] == 'UNWIND' and self._qty(positions, symbol) > 0
-            if not entry and not unwind:
+            if trims and not trim and not unwind:
+                continue
+            if not entry and not unwind and not trim:
+                continue
+            if trim:
+                try:
+                    sent = self._place(symbol, entry=False, trim=True)
+                except ExchangeError as exc:
+                    self._note_order_error(exc, 'trim:' + symbol)
+                    sent = True
+                if sent:
+                    self.state['rotation'] = order.index(symbol) + 1
+                    self._save_state()
+                    return
                 continue
             if entry and unprotected:
                 self._skip(symbol, 'STOP_RESIZE_PENDING:' + ','.join(unprotected))

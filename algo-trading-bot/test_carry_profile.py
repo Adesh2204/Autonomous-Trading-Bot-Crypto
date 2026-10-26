@@ -641,7 +641,7 @@ def test_tilted_legs_hype_first_within_one_x(tmp_path):
 
 
 @pytest.mark.parametrize('legs,bps', [
-    (TILT[:2] + (('pas:HYPE', '35001'),) + TILT[3:], 5),                  # above the $35k leg cap
+    (TILT[:2] + (('pas:HYPE', '50001'),) + TILT[3:], 5),                  # above the $50k leg cap
     (TILT[:4] + (('pas:USDJPY', '10001'),), 5),                            # basket above equity (1x)
     (TILT[:4], 5),                                                         # a market missing
     (TILT[:4] + (('pas:EWY', '5000'),), 5),                                # not a basket market
@@ -757,3 +757,39 @@ def test_two_x_runtime_waits_for_two_x_markets(tmp_path, monkeypatch):
     w.venue.leverage.update({s: dict(type='cross', value=2) for s in SPECS})
     w.step(300000)
     assert w.children() and w.r.order_errors == 0
+
+
+# ---------- reallocation within 1x: HYPE $50k (27 Oct 01:35 IST) ----------
+HYPE50 = (('pas:BTC', '13000'), ('pas:ETH', '12000'), ('pas:HYPE', '50000'), ('pas:SP500', '15000'),
+          ('pas:USDJPY', '5000'))
+
+
+def test_reallocation_trims_over_target_legs_first_then_buys_hype_and_verifies(tmp_path, monkeypatch):
+    w = World(tmp_path, monkeypatch, leg_notionals=HYPE50, taker_depth_bps=5)
+    held = {'pas:BTC': D('0.225'), 'pas:ETH': D('7.23'), 'pas:HYPE': D('454.5'), 'pas:SP500': D('2.62'),
+            'pas:USDJPY': D('-31.9')}                                               # tonight's $95k basket
+    for n, (s, q) in enumerate(held.items()):                                      # real (simulated) fills
+        order = dict(coin=s, side='B' if q > 0 else 'A', oid=8000 + n, origSz=str(abs(q)), sz=str(abs(q)))
+        w.venue._fill(order, abs(q), D(str(SPECS[s][1])), False)
+    w.r.startup()
+    for _ in range(600):
+        w.step(31000)
+        if all(w.leg(s)['mode'] == 'HOLD' for s in SPECS):
+            break
+    attempts = w.events('CHILD_ATTEMPT')
+    first_buy = next(i for i, e in enumerate(attempts) if e['entry'])
+    trims = [e for e in attempts if e['key'].startswith('carry-trim:')]
+    assert {e['symbol'] for e in trims} == {'pas:BTC', 'pas:ETH', 'pas:SP500'}
+    assert all(not e['entry'] and e['tif'] == 'Ioc' for e in trims)
+    assert max(i for i, e in enumerate(attempts) if e['key'].startswith('carry-trim:')) < first_buy   # trims first
+    assert all(e['symbol'] == 'pas:HYPE' for e in attempts if e['entry'])
+    for s in SPECS:
+        leg, qty = w.leg(s), abs(w.position(s))
+        assert leg['mode'] == 'HOLD' and leg['verified']['problems'] == []
+        assert abs(qty - D(leg['target'])) * D(str(SPECS[s][1])) < 11
+        assert [D(o['sz']) for o in w.stops(s)] == [qty]                           # stop sized to the new size
+    assert w.r.order_errors == 0 and not w.r.state['halted']
+
+
+def test_margin_refusal_before_signing_is_a_skip():
+    assert {'INSUFFICIENT_MARGIN', 'MARGIN_UNAVAILABLE'} <= carry_basket.SKIP_CODES

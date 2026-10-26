@@ -39,8 +39,8 @@ CARRY_BASKET = (('pas:BTC', 'LONG'), ('pas:ETH', 'LONG'), ('pas:HYPE', 'LONG'), 
                 ('pas:USDJPY', 'SHORT'))
 CARRY_MAX_LEG_NOTIONAL = D('19000')
 # 26 Oct 22:35 IST (user): HYPE is the priority leg. Per-leg targets may then differ, each at most
-# $35,000, with the basket total still at most the starting equity (1x).
-CARRY_MAX_TILTED_LEG = D('35000')
+# $50,000 (27 Oct 01:35 IST: HYPE $50k within 1x), with the basket total still at most the starting equity.
+CARRY_MAX_TILTED_LEG = D('50000')
 CARRY_TAKER_DEPTH_BPS = (0, 5)    # IOC children: the touch only, or up to 5 bps past it
 # 27 Oct 01:05 IST (user: "take more risk, invest heavily on HYPE"): the carry profile may use a 2x
 # cross leverage SETTING with total exposure capped at 1.5x equity and each leg at most $60,000.

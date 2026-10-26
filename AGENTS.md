@@ -234,3 +234,9 @@
   exposure capped at 1.5x equity by the carry mandate: HYPE $60k, SP500 $30k, BTC $25k, ETH $22.5k, USDJPY $5k ($142.5k);
   each leg at most $60k. ComplianceGuard.entry_leverage (default 1) and the validator/provider policy leverage follow the
   carry mandate only; every other runtime still requires 1x. The 8% leg stops and the -5% account halt are kept.
+- 27 October 01:35 IST: the 2x leverage change could not run: the human configuration route (isolation review,
+  plan, apply) requires a flat, order-free account and the basket was open. Of the options offered (more HYPE within
+  1x / flatten and rebuild at 1.5x / rework the approval route / keep), the user chose more HYPE within 1x: HYPE
+  $50,000, SP500 $15,000, BTC $13,000, ETH $12,000, USDJPY $5,000 ($95k at 1x; 1x tilted leg cap raised to $50k).
+  Legs above a lowered target are trimmed first with reduce-only IOC children (same 25%-of-depth-within-5-bps rule);
+  entries wait until every trim is done. The 2x code stays in place but unused (mandate leverage 1, markets at 1x).
