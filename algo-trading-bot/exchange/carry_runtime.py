@@ -30,14 +30,14 @@ STRATEGY = 'FUNDING_CARRY_V1'
 HOUR_MS = 3600000
 log = logging.getLogger('carry')
 
-# Carry profile (user directive 25 Oct 2026, "YES, CARRY"): a fixed half-size basket held to
+# Carry profile (user directive 25 Oct 2026, "YES, CARRY"; full size chosen 26 Oct 11:55 IST): a fixed basket held to
 # the 6 Nov flatten, built and unwound with sliced child orders. These limits apply only to a
 # mandate that names this profile, i.e. only to the carry runtime; every other runtime keeps
 # its committed limits.
 CARRY_PROFILE = 'HALF_SIZE_FIXED_BASKET_2026_10_25'
 CARRY_BASKET = (('pas:BTC', 'LONG'), ('pas:ETH', 'LONG'), ('pas:HYPE', 'LONG'), ('pas:SP500', 'LONG'),
                 ('pas:USDJPY', 'SHORT'))
-CARRY_MAX_LEG_NOTIONAL = D('9500')
+CARRY_MAX_LEG_NOTIONAL = D('19000')
 CARRY_CHILD_STRATEGIES = frozenset({'CARRY_LONG', 'CARRY_SHORT', 'CARRY_EXIT'})
 
 

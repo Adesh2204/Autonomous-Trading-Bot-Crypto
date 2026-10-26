@@ -47,7 +47,7 @@ def test_carry_profile_mandate_is_valid_and_survives_a_json_round_trip(tmp_path)
 
 
 @pytest.mark.parametrize('change', [
-    dict(leg_notional='9501'), dict(max_positions=4), dict(sides=CARRY_BASKET[:4] + (('pas:USDJPY', 'LONG'),)),
+    dict(leg_notional='19001'), dict(max_positions=4), dict(sides=CARRY_BASKET[:4] + (('pas:USDJPY', 'LONG'),)),
     dict(markets=('pas:BTC', 'pas:ETH', 'pas:HYPE', 'pas:SP500', 'pas:EWY')), dict(profile='OTHER'),
     dict(book_share='0.26'), dict(reprice_ms=300000), dict(maker_window_ms=3 * HOUR), dict(position_stop='0.07'),
     dict(account_loss_halt='0.015'), dict(unwind_starts_ms=1), dict(taker_gap_ms=0), dict(leverage=2)])
@@ -545,3 +545,9 @@ def test_final_sdk_boundary_scope_matches_the_validator_scope():
         require_entry_action(client, order('pas:EWY'), 'CARRY')
     assert "getattr(self,'entry_scope',None)" in inspect.getsource(OfficialSDKTransport.check)
     assert 'transport.entry_scope = CARRY_SCOPE' in inspect.getsource(carry_basket.build_carry_basket_runtime)
+
+
+def test_full_size_leg_is_the_limit_and_the_basket_fits_the_equity():
+    assert basket_mandate(leg_notional='19000', starting_equity='99996').require()
+    with pytest.raises(ExchangeError, match='INVALID_CARRY_MANDATE'):
+        basket_mandate(leg_notional='19000', starting_equity='94999').require()       # 5 legs must fit equity at 1x

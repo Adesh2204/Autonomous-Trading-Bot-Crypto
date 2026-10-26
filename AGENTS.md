@@ -215,3 +215,9 @@
   ETH/SP500/USDJPY were 20x cross on 25 Oct and need the human-typed 1x CROSS route
   (`docs/carry_2026-10-25/Set carry markets 1x.command`, configuration only, no orders). The momentum scalper and the
   1h pullback stay off. Tests: test_carry_profile.py.
+- 26 October 11:55 IST: the user chose FULL SIZE for the carry basket ("trade with big money"; answered question with
+  the model numbers: median +0.91%, P(loss) ~43%, 5th percentile about -4.2%): $19,000 per leg, $95k at 1x on ~$100k.
+  CARRY_MAX_LEG_NOTIONAL is 19,000; every other carry limit is unchanged. The unwind starts 2026-11-05 20:00 UTC so the
+  ~760 touch-limited slices finish before the 11:30 UTC flatten. The user also claimed the bot trades in the wrong
+  direction; the 25 Oct shorts were the momentum scalper (both directions by design, now off) and its 16 round trips
+  had gross P&L +$0.05 against $1.71 fees, i.e. no edge rather than an inverted one. No direction change was made.

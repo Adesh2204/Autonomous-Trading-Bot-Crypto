@@ -1,6 +1,6 @@
 """Carry basket CLI (user directive 25 Oct 2026, "YES, CARRY"): prepare | dry-run | start | supervise | status | report.
 
-Half size: LONG BTC, ETH, HYPE, SP500 and SHORT USDJPY, $9,500 per leg at 1x, held until the
+Full size (26 Oct): LONG BTC, ETH, HYPE, SP500 and SHORT USDJPY, $19,000 per leg at 1x, held until the
 6 Nov unwind; 8% exchange stop per leg, no basket stop, -5% account catastrophe halt.
 
 prepare   writes the mandate bound to the current source hash and release receipt
@@ -20,15 +20,18 @@ STATE = ROOT / 'runtime' / 'carry-basket'
 DOCS = ROOT / 'docs' / 'carry_2026-10-25'
 MANDATE = DOCS / 'mandate.json'
 RELEASE = DOCS / 'regression_release' / 'test_receipt.json'
-UNWIND = datetime(2026, 11, 6, 5, 30, tzinfo=timezone.utc)     # maker 2 h, then touch IOC slices
+# Full size needs ~760 touch-limited slices at ~1/min: maker 2 h, then ~13 h of IOC slices before 11:30.
+UNWIND = datetime(2026, 11, 5, 20, 0, tzinfo=timezone.utc)
 FLATTEN = datetime(2026, 11, 6, 11, 30, tzinfo=timezone.utc)   # flat-by target; taker only after it
 EXPIRES = datetime(2026, 11, 6, 11, 55, tzinfo=timezone.utc)
-LEG_NOTIONAL = '9500'
+LEG_NOTIONAL = '19000'
 APPROVAL = ('User directive 2026-10-25 23:35 IST, "We wanna move with Carry Strategy" (YES, CARRY): half size, '
             '$9,500 per leg, LONG BTC/ETH/HYPE/SP500 and SHORT USDJPY at 1x, NO basket stop, existing 8% per-leg '
             'exchange stop, hold until the 6 Nov flatten; the user and co-founder accept a ~43% chance of finishing '
             'negative. Answered questions: sliced post-only children for 2 h with a 10-min re-price, then IOC '
-            'children <= 25% of the touch; keep the -5% account catastrophe halt.')
+            'children <= 25% of the touch; keep the -5% account catastrophe halt. 26 Oct 11:55 IST the user chose '
+            'FULL SIZE, $19,000 per leg ("trade with big money"), after the model numbers: median +0.91%, P(loss) '
+            '~43%, 5th percentile about -4.2%.')
 
 
 def ms(dt):
@@ -86,7 +89,7 @@ def dry_run(args):
 
     No key is read and nothing is signed. The schedule is compressed so a short run covers the
     whole lifecycle: $1,000 legs, a 3-minute maker window, a 1-minute re-price and 10 s between
-    taker children (live: $9,500, 2 h, 10 min, 30 s). Resting maker children fill only when the
+    taker children (live: $19,000, 2 h, 10 min, 30 s). Resting maker children fill only when the
     live touch trades through them or, labelled as simulated flow, half their size with a 10%
     chance per cycle. Halfway through, a stop update is made to fail with DUPLICATE_ORDER while a
     valid full-size stop rests (bug #12). At the end the run touches stop.flag.
@@ -176,7 +179,8 @@ def start(args):
     stop = threading.Event()
     for sig in (signal.SIGINT, signal.SIGTERM):
         signal.signal(sig, lambda *_: stop.set())
-    runtime.run(stop)
+    # Exit 4 when an order of ours still rests after shutdown (bug #13): never a silent clean exit.
+    sys.exit(0 if runtime.run(stop) is not False else 4)
 
 
 def supervise(args):
@@ -188,6 +192,9 @@ def supervise(args):
         log.info('starting carry basket runtime (reconciles with the exchange first)')
         code = subprocess.call(keep_awake + [sys.executable, __file__, 'start'], cwd=str(ROOT))
         if (STATE / 'stop.flag').exists():
+            if code == 4 or (STATE / 'SHUTDOWN_INCOMPLETE').exists():
+                log.error('SHUTDOWN_INCOMPLETE: an order still rests on the exchange; cancel it or restart to '
+                          'retry (code=%s)', code)
             log.info('stop.flag present (code=%s); supervisor exiting', code)
             return
         if time.time() * 1000 >= ms(EXPIRES):
