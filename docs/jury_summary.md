@@ -1,6 +1,6 @@
 # Team Anchorium — final report for the Perpetual Alpha jury
 
-*Hyperliquid testnet, `pas` dex, account `0x94EA…B12C`. Final version written 25 October 2026. Every number comes from the exchange (fills, orders, positions) or from our own journal. Where we could not measure something, we say so.*
+*Hyperliquid testnet, `pas` dex, account `0x94EA…B12C`. Final version written 26 October 2026. Every number comes from the exchange (fills, orders, positions) or from our own journal. Where we could not measure something, we say so.*
 
 ## 0. Summary
 
@@ -8,7 +8,9 @@ We built a fail-closed execution stack and a research process that does not let 
 
 That process told us something uncomfortable: **none of our strategies has an edge after Hyperliquid's fees.** Our live record shows why. Across 16 `pas` round trips, gross P&L was **+$0.05** and fees were **$1.71**. We were trading for the venue.
 
-So we stopped. The bot has been flat since 25 Oct 11:19 UTC (0 positions, 0 orders, read from the exchange). It stays flat unless a strategy passes a pre-registered gate out of sample. The competition's score puts any negative return below every flat team, so flat is a deliberate position.
+So we stopped trading price patterns. The bot went flat on 25 Oct 11:19 UTC (0 positions, 0 orders, read from the exchange). Our last price strategy, a fee-aware maker-only trend-pullback, failed its pre-registered out-of-sample gate: 117 trades, −0.285% per trade net (§6).
+
+What remained was one structural effect: funding. On 25 Oct we chose, as a team and with the odds written down, to hold a **funding-carry basket** until the end of the competition (§6.1); on 26 Oct we raised it from half to full size. It is a sized risk bet, not a discovered edge. Our model gives it a median of +0.91% and a 42.7% chance of finishing below zero, which under this score ranks below every flat team. We took that bet knowingly. We did not add a basket stop, because the model shows it would *raise* the chance of a negative finish (to 48% at half size and 67% at full size).
 
 We also found and fixed two live bugs. One corrupted our trade records; the other forced an exit from a protected position.
 
@@ -69,6 +71,13 @@ Anything missing, stale or ambiguous blocks the order.
 - the rank-protection LOCK.
 
 Each run ends with two exchange readings that confirm the account is flat.
+
+**The carry basket adds its own rules** (§6.1), in a profile that only the carry runtime can load. The scalper keeps its committed limits.
+
+- Each leg is checked on the exchange as soon as it is complete: position side and size, the fill ledger and exactly one 8% stop sized to the filled quantity. Any mismatch flattens that leg and halts entries.
+- Three consecutive order errors halt **and** flatten. The flatten uses the same small slices; it never sweeps the book.
+- Every leg's stop is checked every 60 s and re-placed if missing.
+- A −5% account loss halts and flattens everything. This is a catastrophe guard: at half size it sits beyond the per-leg stops.
 
 ## 4. Bugs found live, and how we fixed them
 
@@ -157,7 +166,39 @@ A maker-only design changes the arithmetic: a win costs 0.06% and a loss costs 0
 - **Even an optimistic bound fails.** With touch fills, target before stop and zero stop slippage, out of sample it still loses (−0.034% per trade, PF 0.91). The same optimistic model was *positive* in sample (+0.095% per trade, PF 1.21). That pair of numbers is exactly why we hold the 30% back.
 - **Diagnosis:** adverse selection. A resting bid at a pullback level fills exactly when price is breaking through it. Out of sample, 70 of 117 trades hit the full stop.
 
-**Funding carry** was analysed but not traded (`docs/fee_bleed_2026-10-25/carry_decision.md`). Funding of 0.12–0.23%/day is real. But the basket carries a 42–43% chance of finishing negative at any size, so it is a coin flip against being flat. A −1.5% basket stop *raises* that chance to 48% at half size and to 67% at full size.
+**Funding carry** is the one structural effect we found. Funding of 0.12–0.23%/day is real. It is not a price edge, so it cannot pass the gate above. We treated it as a separate, explicit risk decision (§6.1).
+
+### 6.1 The carry decision (25 Oct)
+
+**The basket.** Long BTC, ETH, HYPE and SP500, short USDJPY: on each leg, the side that receives funding. We started at $9,500 per leg ("half size") on 25 Oct and moved to $19,000 per leg ("full size", $95k at 1x, 95% of equity) on 26 Oct. The basket is held until 6 Nov; nobody trades around it.
+
+**The odds we accepted** (`docs/fee_bleed_2026-10-25/carry_decision.md`; 20,000 paths, 24 h block bootstrap of joint hourly returns with each asset's drift removed, measured `pas` funding, taker costs plus measured slippage):
+
+| Variant | Median | P(finish below zero) | 5th percentile |
+|---|---|---|---|
+| Half size, 8% leg stops only | +0.46% | 42.7% | −2.10% |
+| Half size with a −1.5% basket stop | +0.12% | 48.4% | −1.74% |
+| **Full size, 8% leg stops only (chosen 26 Oct)** | **+0.91%** | **42.7%** | **−4.19%** |
+
+- **Size does not change the odds.** Size scales every outcome but leaves P(loss) at 42.7%. We started at half size and moved to full size once the execution path was proven, accepting a doubled tail.
+- **A basket stop makes things worse.** It turns ordinary drawdowns into realised losses before funding can recover them.
+- **Our tail may be too thin.** An earlier estimate had a full-size 5th percentile of −7.7%. We plan with the worse number.
+
+**How the basket is built** (organizer rule: do not move a thin book). The best level on `pas` is often about $500, and median traded volume is only $1.4k–6.4k per hour per market. So no leg is entered with one order:
+
+- **One child order per leg at a time.** For the first 2 hours each child is post-only at the touch, re-priced after 10 minutes if unfilled.
+- **Then small IOC children.** Each is limited to the touch price and to at most 25% of the touch quantity, at least 30 s apart on each leg.
+- **Sized stops.** Every leg keeps an exchange-side, reduce-only 8% stop, re-sized to the filled quantity after each fill.
+- **The unwind uses the same slices.** At full size that is about 760 slices at roughly one per minute (each guarded order reserves most of a minute's read budget), so it starts on 5 Nov at 20:00 UTC and the account is flat before the final 12:00 UTC sample.
+
+**What it costs.** Entry fees and spread make the first days look red. The basket is judged on 6 Nov.
+
+**Two more live bugs, found on the first night and fixed before any exposure was at risk** (26 Oct):
+
+- The basket polled the account stream once per cycle instead of on the receiver thread the scalper uses, so the first entry was refused before signing (`DATA_NOT_READY`). Fixed by reusing the scalper's receiver.
+- We had widened the order validator's market scope for the carry, but the final pre-HTTP check in the SDK transport still allowed only BTC/EWY/HYPE. An SP500 child was refused *before sending* and the journal correctly recorded it as UNKNOWN, which froze every order and cancel. A human confirmed non-transmission (exchange `unknownOid`, no fills, no dispatch record) with a checked script; the transport now uses the same scope as the validator.
+
+**Status at writing (26 Oct, 12:25 IST):** live. All five markets at 1x cross; BTC and HYPE partly built with 8% exchange stops sized to the filled quantity; ETH, SP500 and USDJPY building.
 
 **Machine learning** was built but not promoted. An explainable candidate-quality filter (L2 logistic regression plus a shallow tree, purged chronological splits) was never deployed: the genuine labelled sample is too small to fit honestly, and we will not show results from synthetic data.
 
@@ -182,7 +223,7 @@ A maker-only design changes the arithmetic: a win costs 0.06% and a loss costs 0
 - **Read budget.** Each guarded entry reserves about 880 of the 1,200/min IP weight. We now log weight per entry cycle (`ENTRY_CYCLE_WEIGHT`); evaluating three markets costs 123 per 5-minute bar. Next we would move book, account and order state to WebSocket subscriptions, keeping one REST freshness read before each order, to target ≤ 200 per entry.
 - **Measure maker fills on `pas`.** Before trusting any maker model here, we would measure real maker fill rates and queue position with tiny resting orders.
 - **Collect more `pas` history**, so research can run on the venue itself rather than a mainnet proxy.
-- **Revisit funding carry with a market-neutral construction**, such as delta-hedging the basket against a correlated short, so that it earns funding without a 42% chance of a negative finish.
+- **Make the carry market-neutral**, for example by hedging the basket's price exposure with a correlated short, so that it earns funding without a 42% chance of a negative finish.
 - **Re-fit the ML filter** once there are a few hundred genuine labelled candidates.
 - **Move to an always-on VPS.** The deployment kit is prepared in `deploy/vps/`, with Docker or systemd, reconcile on boot and secrets in the environment. It removes the laptop as a single point of failure.
 
@@ -194,6 +235,9 @@ python3 docs/continuous_2026-10-24/run_regression.py          # full offline reg
 node research/test_fee_aware_backtest.js                      # fill/cost model checks
 python3 scripts/backfill_missing_fills.py --fills docs/fee_bleed_2026-10-25/exchange_fills_since_2026-10-15.json \
         --state runtime/continuous --since-ms <session start>  # dry run; --apply to write
+python3 docs/carry_2026-10-25/run_regression.py               # carry release receipt
+python3 scripts/run_carry.py dry-run --minutes 15             # carry runtime on a simulated venue, no key
+python3 -m pytest algo-trading-bot/test_carry_profile.py      # carry limits, slicing, stops, restart, halts
 ```
 
-Every live action is bound to a mandate file and a matching release receipt. Events go to `runtime/<session>/overnight_events.jsonl` and to the journal at `runtime/testnet/anchorium-bot-1/pas.sqlite`.
+Every live action is bound to a mandate file and a matching release receipt. Events go to `runtime/<session>/overnight_events.jsonl` (carry: `runtime/carry-basket/carry_events.jsonl`) and to the journal at `runtime/testnet/anchorium-bot-1/pas.sqlite`.
