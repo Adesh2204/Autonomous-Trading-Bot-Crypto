@@ -198,7 +198,7 @@ A maker-only design changes the arithmetic: a win costs 0.06% and a loss costs 0
 - The basket polled the account stream once per cycle instead of on the receiver thread the scalper uses, so the first entry was refused before signing (`DATA_NOT_READY`). Fixed by reusing the scalper's receiver.
 - We had widened the order validator's market scope for the carry, but the final pre-HTTP check in the SDK transport still allowed only BTC/EWY/HYPE. An SP500 child was refused *before sending* and the journal correctly recorded it as UNKNOWN, which froze every order and cancel. A human confirmed non-transmission (exchange `unknownOid`, no fills, no dispatch record) with a checked script; the transport now uses the same scope as the validator.
 
-**Status at writing (26 Oct, 12:25 IST):** live. All five markets at 1x cross; BTC and HYPE partly built with 8% exchange stops sized to the filled quantity; ETH, SP500 and USDJPY building.
+**Status at writing (27 Oct, 00:51 IST):** fully built and holding. Final allocation, chosen by the team on 26 Oct: HYPE $35k (priority leg), SP500 $20k, BTC $18k, ETH $17k, USDJPY $5k; $95k at 1x. Every leg was verified on the exchange when complete (side, size equal to the fill ledger, exactly one 8% stop sized to the position). Building cost $77.75 in fees over 184 fills; IOC children were capped at 25% of the depth within 5 bps of the touch.
 
 **Machine learning** was built but not promoted. An explainable candidate-quality filter (L2 logistic regression plus a shallow tree, purged chronological splits) was never deployed: the genuine labelled sample is too small to fit honestly, and we will not show results from synthetic data.
 
