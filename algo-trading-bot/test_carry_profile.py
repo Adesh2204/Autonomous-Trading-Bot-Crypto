@@ -1006,3 +1006,13 @@ def test_raise_route_still_requires_no_par_exposure(monkeypatch, tmp_path):
     monkeypatch.setattr(scored_session, 'require_no_par_exposure', occupied)
     with pytest.raises(ExchangeError, match='OTHER_DEX_EXPOSURE'):
         mod.basket_evidence(tmp_path, client, account)
+
+
+def test_raise_route_accepts_only_its_own_in_flight_action(monkeypatch, tmp_path):
+    """27 Oct 10:37 IST: the route's own action is journaled UNKNOWN just before signing; it must not block itself."""
+    account = RaiseAccount()
+    mod, client, local = raise_world(monkeypatch, account)
+    local['unresolved'].append(dict(journal='pas-configuration', management_id=1, state='UNKNOWN'))
+    assert mod.basket_evidence(tmp_path, client, account, owned_actions=(1,))['positions']
+    with pytest.raises(ExchangeError, match='UNRESOLVED_LOCAL_ACTION_BLOCKS_CONFIGURATION'):
+        mod.basket_evidence(tmp_path, client, account, owned_actions=(2,))

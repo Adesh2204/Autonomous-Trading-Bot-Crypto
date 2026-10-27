@@ -37,8 +37,11 @@ def _terminal_on_exchange(account, cloid):
                                        or state.endswith('Canceled') or state.endswith('Rejected'))
 
 
-def basket_evidence(root, client, account):
-    """The open carry basket, proven to hold nothing but basket positions and their own stops."""
+def basket_evidence(root, client, account, *, owned_actions=()):
+    """The open carry basket, proven to hold nothing but basket positions and their own stops.
+
+    `owned_actions`: this route's own management row, journaled UNKNOWN just before it signs (the
+    same exemption require_shared_scope gives the configuration route's current action)."""
     from .carry_runtime import CARRY_BASKET
     from .configuration_isolation import CLOID, INTENT
     from .scored_session import require_no_par_exposure
@@ -57,6 +60,9 @@ def basket_evidence(root, client, account):
                 and row.get('state') == 'UNKNOWN'):
             if account._query('orderStatus', oid=CLOID) != {'status': 'unknownOid'}:
                 raise ExchangeError('HISTORICAL_UNKNOWN_REQUIRES_REVIEW')
+            continue
+        if (row.get('journal') == 'pas-configuration' and row.get('management_id') in set(owned_actions)
+                and row.get('state') == 'UNKNOWN'):
             continue
         parts = key.split(':')
         symbol = ':'.join(parts[1:3]) if len(parts) >= 3 else None
@@ -232,6 +238,7 @@ def execute_raise(root, plan_path, release, acceptance, output):
         account, market = HyperliquidAccount(client, TEAM), HyperliquidMarketData(client)
         clock = ClockHealthMonitor(clock_ms=client.clock_ms, journal=journal, **clock_policy)
         acceptance_hash = sha(acceptance)
+        current_action = [None]
 
         def guard():
             require_paper_migration('pas')
@@ -241,7 +248,8 @@ def execute_raise(root, plan_path, release, acceptance, output):
             require_release(root, release, a.source_hash, a.release_sha256)
             wait_for_configuration_reads(rates, a, TEAM, API, venue='pas')
             client.startup()
-            evidence = basket_evidence(root, client, account)
+            evidence = basket_evidence(root, client, account,
+                                       owned_actions=tuple(x for x in current_action if x is not None))
             if (evidence['positions'] != p['open_basket']['positions']
                     or evidence['stops'] != p['open_basket']['stops']):
                 raise ExchangeError('OPEN_BASKET_CHANGED_SINCE_APPROVAL')
@@ -286,6 +294,7 @@ def execute_raise(root, plan_path, release, acceptance, output):
                 raise ExchangeError('CONFIGURATION_BEFORE_VALUE_CHANGED')
             action_id = journal.reserve_management(action, client.clock_ms())
             before = transport.transmission_attempts
+            current_action[0] = action_id
             try:
                 rates.reserve_action(kind='updateLeverage')
                 response = transport.set_target_cross(symbol)
@@ -307,6 +316,8 @@ def execute_raise(root, plan_path, release, acceptance, output):
                 if transport.transmission_attempts == before:
                     journal.update_management(action_id, 'REJECTED_BEFORE_TRANSMISSION', client.clock_ms())
                 raise
+            finally:
+                current_action[0] = None
         for s in p['entry_markets']:
             r = account._query('activeAssetData', coin=s)
             if (r.get('coin') != s or r.get('user', '').lower() != TEAM.lower()
