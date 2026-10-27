@@ -146,6 +146,11 @@ def require_shared_scope(root,client,*,owned_pas_intents=(),owned_configuration_
                     and r.get('intent_key')==isolated and r.get('state')=='UNKNOWN')
                 and not (r.get('journal')=='pas-configuration' and r.get('management_id') in set(owned_configuration_actions) and r.get('state')=='UNKNOWN'))):
         raise ExchangeError('PAS_SHARED_ACCOUNT_UNKNOWN_REQUIRES_ADMISSIBLE_RESOLUTION')
+    require_no_par_exposure(client)
+
+
+def require_no_par_exposure(client):
+    """Shared team account: no par position or order may exist while PAS signs."""
     # Explicit /info requests only. The selected PAS client intentionally cannot
     # issue other-DEX queries; no second signer or transport is constructed.
     from .hyperliquid_client import RequestsInfoTransport

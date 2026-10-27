@@ -30,7 +30,14 @@ LEG_NOTIONAL = '19000'
 # $95k: HYPE $50k, SP500 $15k, BTC $13k, ETH $12k, USDJPY $5k. Over-target legs are trimmed first.
 LEG_NOTIONALS = (('pas:BTC', '13000'), ('pas:ETH', '12000'), ('pas:HYPE', '50000'), ('pas:SP500', '15000'),
                  ('pas:USDJPY', '5000'))
-LEVERAGE = 1
+# 27 Oct 09:05 IST (user: "don't sell or trim HYPE, leverage at 2x, give more to the other markets"): HYPE is
+# held exactly as it is; the five markets move to a 2x cross SETTING through raise_carry_leverage_2x.py and the
+# basket grows to 1.5x the starting equity. USDJPY stays $5k; SP500, BTC and ETH share the rest equally.
+LEVERAGE = 2
+EXPOSURE = D('1.5')
+HOLD_LEGS = ('pas:HYPE',)
+FIXED_LEGS = (('pas:USDJPY', '5000'),)
+EQUAL_LEGS = ('pas:BTC', 'pas:ETH', 'pas:SP500')
 TAKER_DEPTH_BPS = 5               # IOC children: up to 25% of the depth within 5 bps of the touch
 APPROVAL = ('User directive 2026-10-25 23:35 IST, "We wanna move with Carry Strategy" (YES, CARRY): half size, '
             '$9,500 per leg, LONG BTC/ETH/HYPE/SP500 and SHORT USDJPY at 1x, NO basket stop, existing 8% per-leg '
@@ -45,7 +52,24 @@ APPROVAL = ('User directive 2026-10-25 23:35 IST, "We wanna move with Carry Stra
             '$22.5k, USDJPY $5k), after the model numbers (P(profit) 44%, P(#1) 34%, -5% halt hit in ~46% of paths); '
             'the -5% account halt and 8% leg stops are kept. The 2x route needs a flat account; 27 Oct 01:35 IST the user '
             'chose instead more HYPE within 1x: HYPE $50k, SP500 $15k, BTC $13k, ETH $12k, USDJPY $5k, trimming '
-            'over-target legs first.')
+            'over-target legs first. 27 Oct 09:05 IST the user chose to keep HYPE exactly as held (no sale, trim or '
+            'top-up), approved raising the five markets to a 2x cross setting while the basket is open (a raise-only '
+            'route; leverage is never lowered and no order is placed by it), and chose 1.5x exposure: USDJPY $5k, '
+            'SP500/BTC/ETH sharing the rest equally.')
+
+
+def two_x_notionals(starting_equity, held_notionals):
+    """Leg budgets: hold legs at their marked value rounded up to $100, fixed legs as set, and the rest of
+    EXPOSURE x the starting equity split equally over EQUAL_LEGS, rounded down to $100."""
+    from exchange.carry_runtime import CARRY_BASKET
+    held = {s: (D(v) / 100).to_integral_value(rounding='ROUND_CEILING') * 100 for s, v in held_notionals.items()}
+    if set(held) != set(HOLD_LEGS):
+        raise SystemExit(f'Hold legs must all be held: {sorted(held)} vs {HOLD_LEGS}')
+    fixed = {s: D(v) for s, v in FIXED_LEGS}
+    rest = D(starting_equity) * EXPOSURE - sum(held.values(), D(0)) - sum(fixed.values(), D(0))
+    each = (rest / len(EQUAL_LEGS) / 100).to_integral_value(rounding='ROUND_FLOOR') * 100
+    legs = dict(held, **fixed, **{s: each for s in EQUAL_LEGS})
+    return tuple((s, str(legs[s])) for s, _ in CARRY_BASKET)
 
 
 def ms(dt):
@@ -97,6 +121,40 @@ def prepare(args):
     print(json.dumps(dict(mandate=str(MANDATE), identity=m.identity, starting_equity=str(equity),
                           leg_notional=LEG_NOTIONAL, legs=dict(CARRY_BASKET), leverage=leverage,
                           unwind_starts=UNWIND.isoformat(), flatten=FLATTEN.isoformat()), indent=2))
+
+
+def rebind(args):
+    """New mandate for the OPEN basket (same start and starting equity as the prior mandate): positions only in the
+    basket on its sides, resting orders only reduce-only stops, every market at the mandate's cross setting."""
+    from exchange.paper_operations import active_source_hash, atomic_json
+    from exchange.carry_runtime import CARRY_BASKET, CARRY_PROFILE, CarryMandate, sha
+    from exchange.hyperliquid_account import HyperliquidAccount
+    from exchange.testnet_certification import TEAM, API
+    from exchange.venue_profiles import venue_profile
+    prior = json.loads(Path(args.prior).read_text())
+    client = public_client()
+    account = HyperliquidAccount(client, TEAM)
+    positions = {s: p for s, p in account.get_positions().items() if p.quantity}
+    basket = dict(CARRY_BASKET)
+    if any(s not in basket or (p.quantity > 0) != (basket[s] == 'LONG') for s, p in positions.items()):
+        raise SystemExit(f'Foreign or wrong-side position: {sorted(positions)}; refusing.')
+    if any(not (o.get('isTrigger') and o.get('reduceOnly')) for o in account.get_frontend_open_orders()):
+        raise SystemExit('A resting order is not a reduce-only stop; refusing.')
+    leverage = {s: client.post_info('activeAssetData', user=TEAM, coin=s).get('leverage') for s in basket}
+    if any(v != dict(type='cross', value=LEVERAGE) for v in leverage.values()):
+        raise SystemExit(f'Markets are not at {LEVERAGE}x CROSS yet: {leverage}; run raise_carry_leverage_2x.py first.')
+    marks = {s: D(str(client.post_info('activeAssetData', user=TEAM, coin=s).get('markPx'))) for s in HOLD_LEGS}
+    notionals = two_x_notionals(prior['starting_equity'],
+                                {s: abs(positions[s].quantity) * marks[s] for s in HOLD_LEGS if s in positions})
+    m = CarryMandate(team_wallet=TEAM, api_wallet=API, markets=tuple(basket), starts_ms=prior['starts_ms'],
+                     flatten_ms=ms(FLATTEN), expires_ms=ms(EXPIRES), starting_equity=prior['starting_equity'],
+                     leg_notional=LEG_NOTIONAL, source_hash=active_source_hash(ROOT), release_sha256=sha(RELEASE),
+                     venue_identity=venue_profile('pas').identity, approval_reference=APPROVAL, profile=CARRY_PROFILE,
+                     sides=CARRY_BASKET, unwind_starts_ms=ms(UNWIND), leg_notionals=notionals,
+                     taker_depth_bps=TAKER_DEPTH_BPS, leverage=LEVERAGE, hold_legs=HOLD_LEGS).require()
+    atomic_json(MANDATE, asdict(m))
+    print(json.dumps(dict(mandate=m.identity[:16], legs=dict(notionals), hold_legs=HOLD_LEGS, leverage=LEVERAGE,
+                          held={s: str(p.quantity) for s, p in positions.items()}), indent=2))
 
 
 def dry_run(args):
@@ -243,10 +301,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest='command', required=True)
     sub.add_parser('prepare')
+    r = sub.add_parser('rebind'); r.add_argument('--prior', required=True)
     d = sub.add_parser('dry-run'); d.add_argument('--minutes', type=float, default=15)
     for name in ('start', 'supervise', 'status', 'report'):
         sub.add_parser(name)
     args = parser.parse_args()
-    handlers = {'prepare': prepare, 'dry-run': dry_run, 'start': start, 'supervise': supervise,
+    handlers = {'prepare': prepare, 'rebind': rebind, 'dry-run': dry_run, 'start': start, 'supervise': supervise,
                 'status': status, 'report': report}
     handlers[args.command](args)

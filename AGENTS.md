@@ -242,3 +242,14 @@
   entries wait until every trim is done. The 2x code stays in place but unused (mandate leverage 1, markets at 1x).
 - 27 October 02:45 IST: relaunched from 9f5e31f (codex/equity-fix). Carry equity is the unified USDP balance, which
   already includes unrealized P&L; adding uPnL again double-counted it. No limit, leg, stop or strategy change.
+- 27 October 09:05 IST (user: "don't sell or trim HYPE, leverage at 2x, give more funds to the other markets"; answered
+  questions): the user approved changing the flat-account rule for one narrow purpose and chose 1.5x exposure. New
+  raise-only route `exchange/carry_leverage_raise.py` (human-run `docs/carry_2026-10-25/raise_carry_leverage_2x.py`):
+  only 1x -> 2x CROSS on the five carry markets, with only the carry basket (basket sides) and its full-size,
+  journaled reduce-only stops open, no UNKNOWN except the historical qualification row while unknownOid, no par
+  exposure; the same exact-action transport, typed plan-hash approval, durable journal and readback. It never lowers
+  leverage, switches margin mode, places/cancels orders or transfers. The general configuration route keeps its
+  flat-account rule. HYPE is a hold leg (CarryMandate.hold_legs: target = the size held, never bought, trimmed or
+  topped up; flat -> CLOSED). Budgets (`run_carry.py rebind`): HYPE at its marked value, USDJPY $5k, SP500/BTC/ETH share
+  the rest of 1.5x the starting equity equally (~$31.5k each, ~$150k total). 8% leg stops and the -5% account halt
+  (vs the original $99,998 start) are unchanged; at 1.5x the halt is about a 2.8% basket fall from the 27 Oct level.

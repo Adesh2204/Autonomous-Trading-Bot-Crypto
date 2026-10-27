@@ -804,3 +804,205 @@ def test_equity_is_the_unified_balance_without_adding_upnl_again(tmp_path, monke
     w.r.account.get_equity = lambda: SimpleNamespace(collateral_balance=D('94998'))
     from strategies.funding_carry import loss_halt
     assert loss_halt(w.r.start_equity, w.r.equity(), D('0.05'))                    # halt on the real -5%
+
+
+# ---------- HYPE held as is, 2x setting, 1.5x exposure, raise-only leverage route (27 Oct 09:05 IST) ----------
+def run_carry_module():
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
+    import run_carry
+    return run_carry
+
+
+def test_two_x_budgets_hold_hype_and_split_the_rest_equally():
+    rc = run_carry_module()
+    legs = dict(rc.two_x_notionals('99998.337076', {'pas:HYPE': D('647.66') * D('77.71')}))
+    assert legs == {'pas:HYPE': '50400', 'pas:USDJPY': '5000', 'pas:BTC': '31500', 'pas:ETH': '31500',
+                    'pas:SP500': '31500'}
+    m = basket_mandate(starting_equity='99998.337076', leverage=2, leg_notionals=tuple(legs.items()),
+                       taker_depth_bps=5, hold_legs=('pas:HYPE',)).require()
+    assert sum(D(v) for v in legs.values()) <= D('99998.337076') * D('1.5') and m.hold_legs == ('pas:HYPE',)
+    with pytest.raises(SystemExit):
+        rc.two_x_notionals('99998', {})                                            # HYPE must be held
+
+
+@pytest.mark.parametrize('hold', [('pas:EWY',), ('pas:HYPE', 'pas:HYPE')])
+def test_hold_legs_must_be_distinct_basket_markets(hold):
+    with pytest.raises(ExchangeError, match='INVALID_CARRY_MANDATE'):
+        basket_mandate(leverage=2, leg_notionals=TILT_2X, taker_depth_bps=5, hold_legs=hold).require()
+    with pytest.raises(ExchangeError, match='INVALID_CARRY_MANDATE'):
+        basket_mandate(hold_legs=('pas:HYPE',)).require()                          # needs explicit leg budgets
+
+
+def seed(w, held):
+    for n, (s, q) in enumerate(held.items()):
+        order = dict(coin=s, side='B' if q > 0 else 'A', oid=9000 + n, origSz=str(abs(q)), sz=str(abs(q)))
+        w.venue._fill(order, abs(q), D(str(SPECS[s][1])), False)
+
+
+def test_hold_leg_is_never_bought_or_trimmed_while_the_others_grow_and_verify(tmp_path, monkeypatch):
+    rc = run_carry_module()
+    legs = rc.two_x_notionals('100000', {'pas:HYPE': D('647.66') * 77})
+    w = World(tmp_path, monkeypatch, leverage=2, leg_notionals=legs, taker_depth_bps=5, hold_legs=('pas:HYPE',))
+    held = {'pas:BTC': D('0.16289'), 'pas:ETH': D('5.2127'), 'pas:HYPE': D('647.66'), 'pas:SP500': D('1.958'),
+            'pas:USDJPY': D('-31.77')}                                              # this morning's basket
+    w.venue.leverage.update({s: dict(type='cross', value=2) for s in SPECS})        # after the raise
+    seed(w, held)
+    w.r.startup()
+    for _ in range(900):
+        w.step(31000)
+        if all(w.leg(s)['mode'] == 'HOLD' for s in SPECS):
+            break
+    attempts = w.events('CHILD_ATTEMPT')
+    assert not [e for e in attempts if e['symbol'] == 'pas:HYPE']                  # no buy, no trim
+    assert not [e for e in attempts if e['key'].startswith('carry-trim:')]
+    assert w.position('pas:HYPE') == D('647.66') and w.leg('pas:HYPE')['target'] == '647.66'
+    for s in SPECS:
+        leg, qty = w.leg(s), abs(w.position(s))
+        assert leg['mode'] == 'HOLD' and leg['verified']['problems'] == []
+        assert [D(o['sz']) for o in w.stops(s)] == [qty]
+    for s in ('pas:BTC', 'pas:ETH', 'pas:SP500'):
+        assert abs(w.position(s)) * D(str(SPECS[s][1])) > D('31000')               # grown to ~$31.7k
+    assert w.r.order_errors == 0 and not w.r.state['halted']
+
+
+def test_a_flat_hold_leg_closes_instead_of_being_bought(tmp_path, monkeypatch):
+    w = World(tmp_path, monkeypatch, leverage=2, leg_notionals=TILT_2X, taker_depth_bps=5, hold_legs=('pas:HYPE',))
+    w.r.startup()
+    for _ in range(5):
+        w.step(31000)
+    assert w.leg('pas:HYPE')['mode'] == 'CLOSED' and w.leg('pas:HYPE')['closed_reason'] == 'HOLD_LEG_FLAT'
+    assert not w.children('pas:HYPE') and w.position('pas:HYPE') == 0 and w.events('HOLD_LEG_FLAT')
+
+
+class RaiseAccount:
+    """Fake account for the raise-only route: the basket, its stops, journal rows and exchange order states."""
+    team_address = '0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C'
+
+    def __init__(self):
+        self.positions = {'pas:BTC': D('0.16289'), 'pas:HYPE': D('647.66'), 'pas:USDJPY': D('-31.77')}
+        self.orders = [dict(coin=s, cloid=f'0xs{s}', sz=str(abs(q)), side='A' if q > 0 else 'B', isTrigger=True,
+                            reduceOnly=True, triggerPx='1') for s, q in self.positions.items()]
+        self.status = {'0xchild': {'status': 'order', 'order': {'status': 'filled'}}}
+        self.leverage = {s: dict(type='cross', value=1) for s in CARRY_ENTRY_MARKETS}
+
+    def get_positions(self):
+        return {s: Position(s, q, D('1'), D(0), D(0), None) for s, q in self.positions.items()}
+
+    def get_frontend_open_orders(self):
+        return self.orders
+
+    def get_open_orders(self):
+        return list(self.orders)
+
+    def _query(self, kind, **k):
+        if kind == 'orderStatus':
+            return self.status.get(k['oid'], {'status': 'unknownOid'})
+        return dict(coin=k['coin'], user=self.team_address, leverage=self.leverage[k['coin']])
+
+
+def raise_world(monkeypatch, account):
+    from exchange import carry_leverage_raise, scored_session, terminal_evidence
+    rows = [dict(journal='pas', cloid=o['cloid'], state='OPEN', intent_key=f"protection:{o['coin']}:7")
+            for o in account.orders]
+    rows.append(dict(journal='pas', cloid='0xchild', state='PARTIALLY_FILLED', intent_key='carry-in:pas:ETH:abc:8'))
+    local = dict(status='BLOCKED_UNRESOLVED_INTENT', unresolved=rows)
+    monkeypatch.setattr(terminal_evidence, 'local_execution_state', lambda root: local)
+    monkeypatch.setattr(scored_session, 'require_no_par_exposure', lambda client: None)
+    monkeypatch.setattr('exchange.pas_funding.read_funding', lambda c, a, provenance: dict(
+        status='USDP_POSITIVE_VERIFIED', account_mode='unifiedAccount', balance='99275'))
+    specs = {s: MarketSpec(s, 2, 20, i) for i, s in enumerate(sorted(CARRY_ENTRY_MARKETS))}
+    client = SimpleNamespace(market=specs.__getitem__, clock_ms=lambda: 1000)
+    return carry_leverage_raise, client, local
+
+
+def test_raise_plan_accepts_the_open_basket_with_its_stops_and_raises_only_one_to_two(monkeypatch, tmp_path):
+    account = RaiseAccount()
+    mod, client, _ = raise_world(monkeypatch, account)
+    account.leverage['pas:SP500'] = dict(type='cross', value=2)                    # already raised: skipped
+    plan = mod.raise_plan(tmp_path, client, account, provenance='x')
+    assert [c['symbol'] for c in plan['changes']] == ['pas:BTC', 'pas:ETH', 'pas:HYPE', 'pas:USDJPY']
+    assert all(c['requested_action'] == dict(type='updateLeverage', asset=client.market(c['symbol']).asset_id,
+                                             isCross=True, leverage=2) for c in plan['changes'])
+    assert plan['already_two_x_cross'] == ['pas:SP500'] and plan['configuration_scope'] == 'CARRY_2X'
+    assert plan['open_basket']['settled_local_rows'] == ['carry-in:pas:ETH:abc:8']
+    assert plan['orders_permitted'] is False and plan['transfers_allowed'] is False
+    monkeypatch.setattr(mod.time, 'time_ns', lambda: (plan['observed_ms'] + 1000) * 1000000)
+    monkeypatch.setattr('exchange.paper_operations.active_source_hash', lambda root: plan['source_hash'])
+    assert mod.require_plan(tmp_path, plan, plan['observed_ms'] + 1000) == plan
+    with pytest.raises(ExchangeError, match='FRESH_EXACT_CARRY_LEVERAGE_PLAN_REQUIRED'):
+        mod.require_plan(tmp_path, plan, plan['observed_ms'] + 300001)            # stale
+    with pytest.raises(ExchangeError, match='FRESH_EXACT_CARRY_LEVERAGE_PLAN_REQUIRED'):
+        mod.require_plan(tmp_path, dict(plan, target_leverage=3), plan['observed_ms'])
+
+
+@pytest.mark.parametrize('before', [dict(type='cross', value=3), dict(type='isolated', value=1)])
+def test_raise_route_never_lowers_or_switches_margin_mode(monkeypatch, tmp_path, before):
+    account = RaiseAccount()
+    mod, client, _ = raise_world(monkeypatch, account)
+    account.leverage['pas:ETH'] = before
+    with pytest.raises(ExchangeError, match='ONLY_A_RAISE_FROM_1X_CROSS'):
+        mod.raise_plan(tmp_path, client, account, provenance='x')
+
+
+def _foreign(a, local):
+    a.positions['pas:EWY'] = D('1')
+
+def _wrong_side(a, local):
+    a.positions['pas:USDJPY'] = D('31.77')
+
+def _resting_child(a, local):
+    a.orders.append(dict(coin='pas:BTC', cloid='0xchild', sz='0.01', side='B', isTrigger=False, reduceOnly=False))
+
+def _not_reduce_only(a, local):
+    a.orders[0]['reduceOnly'] = False
+
+def _partial_stop(a, local):
+    a.orders[0]['sz'] = '0.1'
+
+def _unjournaled_stop(a, local):
+    a.orders[0]['cloid'] = '0xother'
+
+def _child_still_open(a, local):
+    a.status['0xchild'] = {'status': 'order', 'order': {'status': 'open'}}
+
+def _unknown_row(a, local):
+    local['unresolved'].append(dict(journal='pas', cloid='0xu', state='UNKNOWN', intent_key='carry-in:pas:BTC:a:1'))
+
+def _configuration_unknown(a, local):
+    local['unresolved'].append(dict(journal='pas-configuration', management_id=1, state='UNKNOWN'))
+
+def _journal_unreadable(a, local):
+    local['status'] = 'UNKNOWN_REQUIRES_REVIEW'
+
+
+@pytest.mark.parametrize('fault,code', [
+    (_foreign, 'CARRY_BASKET_POSITIONS_ONLY'), (_wrong_side, 'CARRY_BASKET_POSITIONS_ONLY'),
+    (_resting_child, 'ONLY_FULL_SIZE_REDUCE_ONLY_BASKET_STOPS_MAY_REST'),
+    (_not_reduce_only, 'ONLY_FULL_SIZE_REDUCE_ONLY_BASKET_STOPS_MAY_REST'),
+    (_partial_stop, 'ONLY_FULL_SIZE_REDUCE_ONLY_BASKET_STOPS_MAY_REST'),
+    (_unjournaled_stop, 'ONLY_FULL_SIZE_REDUCE_ONLY_BASKET_STOPS_MAY_REST'),
+    (_child_still_open, 'UNRESOLVED_LOCAL_ACTION_BLOCKS_CONFIGURATION'),
+    (_unknown_row, 'UNRESOLVED_LOCAL_ACTION_BLOCKS_CONFIGURATION'),
+    (_configuration_unknown, 'UNRESOLVED_LOCAL_ACTION_BLOCKS_CONFIGURATION'),
+    (_journal_unreadable, 'LOCAL_JOURNAL_STATE_REQUIRED'),
+])
+def test_raise_route_refuses_anything_but_the_basket_and_its_own_stops(monkeypatch, tmp_path, fault, code):
+    account = RaiseAccount()
+    mod, client, local = raise_world(monkeypatch, account)
+    fault(account, local)
+    with pytest.raises(ExchangeError, match=code):
+        mod.basket_evidence(tmp_path, client, account)
+
+
+def test_raise_route_still_requires_no_par_exposure(monkeypatch, tmp_path):
+    account = RaiseAccount()
+    mod, client, _ = raise_world(monkeypatch, account)
+    from exchange import scored_session
+
+    def occupied(client):
+        raise ExchangeError('OTHER_DEX_EXPOSURE_OR_ORDERS_BLOCK_PAS_SIGNING')
+    monkeypatch.setattr(scored_session, 'require_no_par_exposure', occupied)
+    with pytest.raises(ExchangeError, match='OTHER_DEX_EXPOSURE'):
+        mod.basket_evidence(tmp_path, client, account)

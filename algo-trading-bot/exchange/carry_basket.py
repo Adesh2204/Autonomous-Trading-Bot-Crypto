@@ -459,7 +459,7 @@ class CarryBasketRuntime(CarryRuntime):
         now = self.clock_ms()
         if entry:
             if leg['target'] is None:
-                leg['target'] = str(spec.normalize_size(self.m.notional_for(symbol) / quote.mid))
+                leg['target'] = str(self._target_for(symbol, quote.mid, positions))
                 leg['started_ms'] = leg.get('resume_started_ms') or now
                 self._event('LEG_BUILD_STARTED', symbol=symbol, side=leg['side'], target=leg['target'],
                             notional=self.m.notional_for(symbol), mid=quote.mid,
@@ -733,6 +733,12 @@ class CarryBasketRuntime(CarryRuntime):
         price = self.m.notional_for(symbol) / D(leg['target'])
         return over if over * price >= self.params.min_notional else D(0)
 
+    def _target_for(self, symbol, mid, positions):
+        """Target quantity: the leg's notional at the mid, or for a hold leg exactly what it holds."""
+        if symbol in self.m.hold_legs:
+            return self._qty(positions, symbol)
+        return self.client.market(symbol).normalize_size(self.m.notional_for(symbol) / mid)
+
     def _ensure_targets(self):
         """Every building leg gets its target before anything is placed, so over-target legs are seen."""
         for symbol, leg in self.state['legs'].items():
@@ -742,7 +748,13 @@ class CarryBasketRuntime(CarryRuntime):
             if quote is None:
                 continue
             now = self.clock_ms()
-            leg['target'] = str(self.client.market(symbol).normalize_size(self.m.notional_for(symbol) / quote.mid))
+            positions = self.positions() if symbol in self.m.hold_legs else {}
+            if symbol in self.m.hold_legs and not self._qty(positions, symbol):
+                # A hold leg is never bought: with nothing held there is nothing to hold.
+                leg['mode'], leg['closed_reason'] = 'CLOSED', 'HOLD_LEG_FLAT'
+                self._event('HOLD_LEG_FLAT', symbol=symbol)
+                continue
+            leg['target'] = str(self._target_for(symbol, quote.mid, positions))
             leg['started_ms'] = leg.get('resume_started_ms') or now
             self._event('LEG_BUILD_STARTED', symbol=symbol, side=leg['side'], target=leg['target'],
                         notional=self.m.notional_for(symbol), mid=quote.mid,

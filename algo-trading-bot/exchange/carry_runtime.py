@@ -47,6 +47,8 @@ CARRY_TAKER_DEPTH_BPS = (0, 5)    # IOC children: the touch only, or up to 5 bps
 CARRY_LEVERAGE_SETTINGS = (1, 2)
 CARRY_MAX_EXPOSURE_2X = D('1.5')
 CARRY_MAX_LEG_2X = D('60000')
+# 27 Oct 09:05 IST (user: "let the funds be where it is, don't sell or trim"): a hold leg keeps exactly the
+# size it holds when the mandate starts; it is never bought, trimmed or topped up, only protected and unwound.
 CARRY_CHILD_STRATEGIES = frozenset({'CARRY_LONG', 'CARRY_SHORT', 'CARRY_EXIT'})
 
 
@@ -95,11 +97,13 @@ class CarryMandate:
     book_share: str = '0.25'
     leg_notionals: tuple = ()        # ((symbol, notional), ...); empty = leg_notional for every leg
     taker_depth_bps: int = 0
+    hold_legs: tuple = ()            # symbols held at their current size (no entry or trim children)
 
     def __post_init__(self):
         object.__setattr__(self, 'markets', tuple(self.markets))
         object.__setattr__(self, 'sides', tuple(tuple(x) for x in self.sides))
         object.__setattr__(self, 'leg_notionals', tuple(tuple(x) for x in self.leg_notionals))
+        object.__setattr__(self, 'hold_legs', tuple(self.hold_legs))
 
     def notional_for(self, symbol):
         return decimal(dict(self.leg_notionals).get(symbol, self.leg_notional), positive=True)
@@ -145,6 +149,9 @@ class CarryMandate:
                 or self.taker_depth_bps not in CARRY_TAKER_DEPTH_BPS):
             raise ExchangeError('INVALID_CARRY_MANDATE')
         if self.leverage == 2 and not self.leg_notionals:
+            raise ExchangeError('INVALID_CARRY_MANDATE')
+        if (len(set(self.hold_legs)) != len(self.hold_legs) or not set(self.hold_legs) <= set(self.markets)
+                or self.hold_legs and not self.leg_notionals):
             raise ExchangeError('INVALID_CARRY_MANDATE')
         if self.leg_notionals:
             tilted = dict(self.leg_notionals)
