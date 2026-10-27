@@ -44,7 +44,12 @@ def build_exchange(signer,client,nonce_manager,sink,*,offline=False):
         def _post_action(self, action, signature, nonce):
             # SDK's generated timestamp is replaced with the leased durable nonce
             # and re-signed using the official testnet-domain signing function.
-            sink.check(action)
+            try:
+                sink.check(action)
+            except ExchangeError as exc:
+                # Refused before a nonce is leased or anything is signed (27 Oct 12:27 IST:
+                # a BTC carry child refused here with SIGNING_READINESS_REVOKED was journaled UNKNOWN).
+                raise PreDispatchRefusal(str(exc)) from exc
             nonce=nonce_manager.next()
             expiry=getattr(sink,'action_expiry_ms',None)
             signature=sign_l1_action(self.wallet,action,None,nonce,expiry,False)

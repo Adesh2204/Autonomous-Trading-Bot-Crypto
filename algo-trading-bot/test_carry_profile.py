@@ -1016,3 +1016,21 @@ def test_raise_route_accepts_only_its_own_in_flight_action(monkeypatch, tmp_path
     assert mod.basket_evidence(tmp_path, client, account, owned_actions=(1,))['positions']
     with pytest.raises(ExchangeError, match='UNRESOLVED_LOCAL_ACTION_BLOCKS_CONFIGURATION'):
         mod.basket_evidence(tmp_path, client, account, owned_actions=(2,))
+
+
+def test_a_refusal_before_signing_is_a_pre_dispatch_refusal(live):
+    """27 Oct 12:27 IST: the sink check before the nonce lease raised a plain error, journaled UNKNOWN."""
+    from exchange.sdk_transport import PreDispatchRefusal, build_exchange
+    from test_exact_full_close_v8_6 import runtime_mapping
+    runtime_mapping(live)
+    sdk = live.transport._sdk
+    assert type(sdk).__name__ == 'GuardedExchange'
+
+    def refuse(action):
+        raise ExchangeError('SIGNING_READINESS_REVOKED')
+    live.transport.check = refuse
+    leased = []
+    live.nonces.next = lambda: leased.append(1)
+    with pytest.raises(PreDispatchRefusal, match='SIGNING_READINESS_REVOKED'):
+        sdk._post_action(dict(type='order', orders=[]), None, 0)
+    assert leased == []                                                            # no nonce, nothing signed
