@@ -3,7 +3,7 @@
 No strategy callbacks, stop tuning, synthetic fills or automatic policy activation.
 An uncertain signed attempt is a durable barrier, never a reason to create another.
 """
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from decimal import Decimal
 from enum import Enum
 import json
@@ -284,10 +284,15 @@ class ExchangeProtectionManager:
                         if len(current)>1:
                             raise ExchangeError('DUPLICATE_PROTECTION_REQUIRES_MANUAL_REVIEW')
                         plan=self._plan(symbol,position,self.managers.get(symbol),observed)
+                        # The 5 s window runs from this symbol's own confirmation read, not from the
+                        # shared snapshot: with five legs, every symbol after the first used to fail
+                        # STALE on read latency alone (27 Oct), and each failure cost two re-check reads.
+                        confirmed=self.clock_ms()
                         fresh_position=self.account.get_position(symbol)
                         if (fresh_position is None or fresh_position.quantity!=position.quantity or
-                            fresh_position.entry_price!=position.entry_price or not 0<=self.clock_ms()-observed<=5000):
+                            fresh_position.entry_price!=position.entry_price or not 0<=self.clock_ms()-confirmed<=5000):
                             raise ExchangeError('PROTECTION_POSITION_CHANGED_OR_STALE')
+                        plan=replace(plan,position_observed_ms=confirmed)
                         if current and self._matches(current[0],plan):
                             self._active(symbol,plan,current[0])
                             continue
