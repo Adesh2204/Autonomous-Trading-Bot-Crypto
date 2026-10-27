@@ -253,3 +253,9 @@
   topped up; flat -> CLOSED). Budgets (`run_carry.py rebind`): HYPE at its marked value, USDJPY $5k, SP500/BTC/ETH share
   the rest of 1.5x the starting equity equally (~$31.5k each, ~$150k total). 8% leg stops and the -5% account halt
   (vs the original $99,998 start) are unchanged; at 1.5x the halt is about a 2.8% basket fall from the 27 Oct level.
+- 27 October 15:33 IST: relaunched from 2d36040 (codex/stop-check-budget; release 3,542 tests, source f1c8751d...;
+  old state/mandate/release archived _cdab9cb). Each stop's 5 s position-freshness window now runs from that symbol's
+  own confirmation read: with five legs every later symbol failed PROTECTION_POSITION_CHANGED_OR_STALE on read latency,
+  and the keep-valid re-checks (a position and an open-orders read per leg each minute) used the read budget the entry
+  slices wait for. No limit, leg, stop or strategy change. Rotating HYPE into SP500 was raised by the user and NOT done
+  (HYPE held at a loss; the 09:05 hold-leg choice stands until the user approves a change with the numbers).
