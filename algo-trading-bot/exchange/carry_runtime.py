@@ -44,9 +44,12 @@ CARRY_MAX_TILTED_LEG = D('50000')
 CARRY_TAKER_DEPTH_BPS = (0, 5)    # IOC children: the touch only, or up to 5 bps past it
 # 27 Oct 01:05 IST (user: "take more risk, invest heavily on HYPE"): the carry profile may use a 2x
 # cross leverage SETTING with total exposure capped at 1.5x equity and each leg at most $60,000.
+# 29 Oct 13:45 IST (user: "start buying with the remaining balance, most into HYPE, then SP500, BTC, ETH,
+# then the others"): exposure up to 1.85x equity, each leg at most $65,000. At 1.85x the margin left free
+# at the 2x setting stays above the loss that trips the -5% halt, so no build child runs out of margin first.
 CARRY_LEVERAGE_SETTINGS = (1, 2)
-CARRY_MAX_EXPOSURE_2X = D('1.5')
-CARRY_MAX_LEG_2X = D('60000')
+CARRY_MAX_EXPOSURE_2X = D('1.85')
+CARRY_MAX_LEG_2X = D('65000')
 # 27 Oct 09:05 IST (user: "let the funds be where it is, don't sell or trim"): a hold leg keeps exactly the
 # size it holds when the mandate starts; it is never bought, trimmed or topped up, only protected and unwound.
 CARRY_CHILD_STRATEGIES = frozenset({'CARRY_LONG', 'CARRY_SHORT', 'CARRY_EXIT'})

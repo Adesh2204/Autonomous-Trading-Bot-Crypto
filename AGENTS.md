@@ -259,3 +259,13 @@
   and the keep-valid re-checks (a position and an open-orders read per leg each minute) used the read budget the entry
   slices wait for. No limit, leg, stop or strategy change. Rotating HYPE into SP500 was raised by the user and NOT done
   (HYPE held at a loss; the 09:05 hold-leg choice stands until the user approves a change with the numbers).
+- 29 October 13:45 IST (user, strict instruction: "start buying with the remaining balance... 1st most into HYPE, then
+  SP500, then BTC, then Ethereum and then others"): the carry exposure cap is 1.85x the starting equity
+  (CARRY_MAX_EXPOSURE_2X; each leg at most $65k, CARRY_MAX_LEG_2X). At the 2x setting 1.85x keeps the free margin above
+  the loss that trips the -5% halt, so no build child runs out of margin before the halt; full 2x would not.
+  HYPE is no longer a hold leg (hold_legs empty). `run_carry.py rebind` uses ranked_notionals: each leg keeps its marked
+  value plus a 5:4:3:2:1 share (HYPE, SP500, BTC, ETH, USDJPY) of the room up to 1.85x, rounded down to $100, and refuses
+  any target at or below the held value or out of that order (no sale, no trim). Mandate fd52066b...: HYPE $62.4k,
+  SP500 $40.7k, BTC $38.4k, ETH $36.1k, USDJPY $7.2k ($184.8k). The 8% leg stops and the -5% account halt (vs $99,998)
+  are unchanged; at 1.85x the halt is about a 3.2% basket fall. Relaunched 13:58 IST (release 3,547 tests, source
+  dfd33834...; old state/mandate/release archived _b3d18d1).

@@ -704,8 +704,8 @@ def test_two_x_setting_allows_one_and_a_half_x_exposure_hype_first():
 
 
 @pytest.mark.parametrize('change', [
-    dict(leverage=2, leg_notionals=TILT_2X[:2] + (('pas:HYPE', '60001'),) + TILT_2X[3:]),      # leg above $60k
-    dict(leverage=2, leg_notionals=TILT_2X[:4] + (('pas:USDJPY', '12600'),)),                   # above 1.5x equity
+    dict(leverage=2, leg_notionals=TILT_2X[:2] + (('pas:HYPE', '65001'),) + TILT_2X[3:]),      # leg above $65k
+    dict(leverage=2, leg_notionals=TILT_2X[:4] + (('pas:USDJPY', '50000'),)),                   # above 1.85x equity
     dict(leverage=2),                                                                           # 2x needs explicit legs
     dict(leverage=3, leg_notionals=TILT_2X),                                                    # never above 2x
     dict(leverage=1, leg_notionals=TILT_2X),                                                    # 1x keeps the 1x caps
@@ -874,6 +874,57 @@ def test_a_flat_hold_leg_closes_instead_of_being_bought(tmp_path, monkeypatch):
         w.step(31000)
     assert w.leg('pas:HYPE')['mode'] == 'CLOSED' and w.leg('pas:HYPE')['closed_reason'] == 'HOLD_LEG_FLAT'
     assert not w.children('pas:HYPE') and w.position('pas:HYPE') == 0 and w.events('HOLD_LEG_FLAT')
+
+
+# ---------- remaining balance in, ranked HYPE > SP500 > BTC > ETH > USDJPY, 1.85x (29 Oct 13:45 IST) ----------
+HELD_29OCT = {'pas:BTC': D('31665.6656'), 'pas:ETH': D('31632.9717'), 'pas:HYPE': D('51191.0464'),
+              'pas:SP500': D('31672.482'), 'pas:USDJPY': D('4994.9982')}
+
+
+def test_ranked_budgets_top_up_every_leg_in_the_users_order():
+    rc = run_carry_module()
+    legs = {s: D(v) for s, v in rc.ranked_notionals('99998.337076', HELD_29OCT)}
+    assert legs == {'pas:BTC': D('38400'), 'pas:ETH': D('36100'), 'pas:HYPE': D('62400'), 'pas:SP500': D('40600'),
+                    'pas:USDJPY': D('7200')}
+    assert all(legs[s] > HELD_29OCT[s] for s in legs)                             # nothing is sold or trimmed
+    assert sum(legs.values()) <= D('99998.337076') * D('1.85')
+    basket_mandate(starting_equity='99998.337076', leverage=2, leg_notionals=tuple((s, str(v)) for s, v in legs.items()),
+                   taker_depth_bps=5).require()
+
+
+@pytest.mark.parametrize('held', [
+    dict(HELD_29OCT, **{'pas:ETH': D('39000')}),                                  # ETH would overtake BTC
+    {s: v for s, v in HELD_29OCT.items() if s != 'pas:USDJPY'},                    # a leg is missing
+    {s: v * 2 for s, v in HELD_29OCT.items()},                                     # already above 1.85x: would sell
+])
+def test_ranked_budgets_refuse_a_sale_or_a_broken_order(held):
+    with pytest.raises(SystemExit):
+        run_carry_module().ranked_notionals('99998.337076', held)
+
+
+def test_ranked_top_up_buys_every_leg_hype_included_and_never_trims(tmp_path, monkeypatch):
+    rc = run_carry_module()
+    held = {'pas:BTC': D('0.3959'), 'pas:ETH': D('13.6614'), 'pas:HYPE': D('647.66'), 'pas:SP500': D('4.11'),
+            'pas:USDJPY': D('-31.66')}                                              # the 29 Oct basket
+    legs = rc.ranked_notionals('100000', {s: abs(q) * D(str(SPECS[s][1])) for s, q in held.items()})
+    w = World(tmp_path, monkeypatch, leverage=2, leg_notionals=legs, taker_depth_bps=5)
+    w.venue.leverage.update({s: dict(type='cross', value=2) for s in SPECS})
+    seed(w, held)
+    w.r.startup()
+    for _ in range(1500):
+        w.step(31000)
+        if all(w.leg(s)['mode'] == 'HOLD' for s in SPECS):
+            break
+    attempts = w.events('CHILD_ATTEMPT')
+    assert not [e for e in attempts if e['key'].startswith(('carry-trim:', 'carry-out:'))]
+    for s, q in held.items():
+        leg = w.leg(s)
+        assert leg['mode'] == 'HOLD' and leg['verified']['problems'] == []
+        assert abs(w.position(s)) > abs(q)                                         # every leg grew, HYPE too
+        assert [D(o['sz']) for o in w.stops(s)] == [abs(w.position(s))]
+    values = [abs(w.position(s)) * D(str(SPECS[s][1])) for s, _ in rc.RANKED_SHARES]
+    assert all(a > b for a, b in zip(values, values[1:]))                          # HYPE > SP500 > BTC > ETH > USDJPY
+    assert w.r.order_errors == 0 and not w.r.state['halted']
 
 
 class RaiseAccount:

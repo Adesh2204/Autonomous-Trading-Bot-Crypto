@@ -38,7 +38,12 @@ EXPOSURE = D('1.5')
 HOLD_LEGS = ('pas:HYPE',)
 FIXED_LEGS = (('pas:USDJPY', '5000'),)
 EQUAL_LEGS = ('pas:BTC', 'pas:ETH', 'pas:SP500')
-TAKER_DEPTH_BPS = 5               # IOC children: up to 25% of the depth within 5 bps of the touch
+# 29 Oct 13:45 IST (user: "start buying with the remaining balance... most into HYPE, then SP500, then BTC, then
+# ETH and then others"): HYPE is no longer a hold leg. Every leg keeps what it holds and the room up to 1.85x the
+# starting equity is shared 5:4:3:2:1 in that order, so every target is above the size held (no sale or trim).
+RANKED_EXPOSURE = D('1.85')
+RANKED_SHARES = (('pas:HYPE', 5), ('pas:SP500', 4), ('pas:BTC', 3), ('pas:ETH', 2), ('pas:USDJPY', 1))
+TAKER_DEPTH_BPS = 5              # IOC children: up to 25% of the depth within 5 bps of the touch
 APPROVAL = ('User directive 2026-10-25 23:35 IST, "We wanna move with Carry Strategy" (YES, CARRY): half size, '
             '$9,500 per leg, LONG BTC/ETH/HYPE/SP500 and SHORT USDJPY at 1x, NO basket stop, existing 8% per-leg '
             'exchange stop, hold until the 6 Nov flatten; the user and co-founder accept a ~43% chance of finishing '
@@ -55,7 +60,10 @@ APPROVAL = ('User directive 2026-10-25 23:35 IST, "We wanna move with Carry Stra
             'over-target legs first. 27 Oct 09:05 IST the user chose to keep HYPE exactly as held (no sale, trim or '
             'top-up), approved raising the five markets to a 2x cross setting while the basket is open (a raise-only '
             'route; leverage is never lowered and no order is placed by it), and chose 1.5x exposure: USDJPY $5k, '
-            'SP500/BTC/ETH sharing the rest equally.')
+            'SP500/BTC/ETH sharing the rest equally. 29 Oct 13:45 IST the user ordered the remaining balance into the '
+            'basket ("start buying with that as well"): most into HYPE, then SP500, then BTC, then ETH, then the '
+            'others; exposure 1.85x the starting equity, HYPE no longer held as is, the room above each leg\'s held '
+            'value shared 5:4:3:2:1 in that order; nothing is sold or trimmed; the -5% halt and 8% leg stops are kept.')
 
 
 def two_x_notionals(starting_equity, held_notionals):
@@ -69,6 +77,24 @@ def two_x_notionals(starting_equity, held_notionals):
     rest = D(starting_equity) * EXPOSURE - sum(held.values(), D(0)) - sum(fixed.values(), D(0))
     each = (rest / len(EQUAL_LEGS) / 100).to_integral_value(rounding='ROUND_FLOOR') * 100
     legs = dict(held, **fixed, **{s: each for s in EQUAL_LEGS})
+    return tuple((s, str(legs[s])) for s, _ in CARRY_BASKET)
+
+
+def ranked_notionals(starting_equity, held_notionals):
+    """Leg budgets: each leg's marked value plus its RANKED_SHARES part of the room up to RANKED_EXPOSURE x the
+    starting equity, rounded down to $100. Refuses unless every leg is held, every target is above what it holds
+    and the targets fall strictly in the ranked order."""
+    from exchange.carry_runtime import CARRY_BASKET
+    held = {s: D(v) for s, v in held_notionals.items()}
+    if set(held) != {s for s, _ in RANKED_SHARES}:
+        raise SystemExit(f'Every leg must be held: {sorted(held)}')
+    room = D(starting_equity) * RANKED_EXPOSURE - sum(held.values(), D(0))
+    weights = sum(w for _, w in RANKED_SHARES)
+    legs = {s: ((held[s] + room * w / weights) / 100).to_integral_value(rounding='ROUND_FLOOR') * 100
+            for s, w in RANKED_SHARES}
+    ranked = [legs[s] for s, _ in RANKED_SHARES]
+    if any(legs[s] <= held[s] for s in legs) or any(a <= b for a, b in zip(ranked, ranked[1:])):
+        raise SystemExit(f'Ranked budgets would sell or break the order: held={held} legs={legs}')
     return tuple((s, str(legs[s])) for s, _ in CARRY_BASKET)
 
 
@@ -143,17 +169,16 @@ def rebind(args):
     leverage = {s: client.post_info('activeAssetData', user=TEAM, coin=s).get('leverage') for s in basket}
     if any(v != dict(type='cross', value=LEVERAGE) for v in leverage.values()):
         raise SystemExit(f'Markets are not at {LEVERAGE}x CROSS yet: {leverage}; run raise_carry_leverage_2x.py first.')
-    marks = {s: D(str(client.post_info('activeAssetData', user=TEAM, coin=s).get('markPx'))) for s in HOLD_LEGS}
-    notionals = two_x_notionals(prior['starting_equity'],
-                                {s: abs(positions[s].quantity) * marks[s] for s in HOLD_LEGS if s in positions})
+    marks = {s: D(str(client.post_info('activeAssetData', user=TEAM, coin=s).get('markPx'))) for s in positions}
+    notionals = ranked_notionals(prior['starting_equity'], {s: abs(p.quantity) * marks[s] for s, p in positions.items()})
     m = CarryMandate(team_wallet=TEAM, api_wallet=API, markets=tuple(basket), starts_ms=prior['starts_ms'],
                      flatten_ms=ms(FLATTEN), expires_ms=ms(EXPIRES), starting_equity=prior['starting_equity'],
                      leg_notional=LEG_NOTIONAL, source_hash=active_source_hash(ROOT), release_sha256=sha(RELEASE),
                      venue_identity=venue_profile('pas').identity, approval_reference=APPROVAL, profile=CARRY_PROFILE,
                      sides=CARRY_BASKET, unwind_starts_ms=ms(UNWIND), leg_notionals=notionals,
-                     taker_depth_bps=TAKER_DEPTH_BPS, leverage=LEVERAGE, hold_legs=HOLD_LEGS).require()
+                     taker_depth_bps=TAKER_DEPTH_BPS, leverage=LEVERAGE).require()
     atomic_json(MANDATE, asdict(m))
-    print(json.dumps(dict(mandate=m.identity[:16], legs=dict(notionals), hold_legs=HOLD_LEGS, leverage=LEVERAGE,
+    print(json.dumps(dict(mandate=m.identity[:16], legs=dict(notionals), leverage=LEVERAGE,
                           held={s: str(p.quantity) for s, p in positions.items()}), indent=2))
 
 
