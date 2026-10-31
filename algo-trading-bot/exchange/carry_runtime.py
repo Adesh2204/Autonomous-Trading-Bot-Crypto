@@ -50,6 +50,10 @@ CARRY_TAKER_DEPTH_BPS = (0, 5)    # IOC children: the touch only, or up to 5 bps
 CARRY_LEVERAGE_SETTINGS = (1, 2)
 CARRY_MAX_EXPOSURE_2X = D('1.85')
 CARRY_MAX_LEG_2X = D('65000')
+# 31 Oct 22:40 IST (user: "square off USDJPY and S&P500 and put the balance into HYPE, leverage 1.5x"; answered
+# question: total exposure 1.5x equity, BTC and ETH kept as held, HYPE gets the rest): close legs are sold to flat
+# with reduce-only IOC children and never bought; with close legs one leg may reach $90,000.
+CARRY_MAX_LEG_2X_CLOSE = D('90000')
 # 27 Oct 09:05 IST (user: "let the funds be where it is, don't sell or trim"): a hold leg keeps exactly the
 # size it holds when the mandate starts; it is never bought, trimmed or topped up, only protected and unwound.
 CARRY_CHILD_STRATEGIES = frozenset({'CARRY_LONG', 'CARRY_SHORT', 'CARRY_EXIT'})
@@ -101,12 +105,14 @@ class CarryMandate:
     leg_notionals: tuple = ()        # ((symbol, notional), ...); empty = leg_notional for every leg
     taker_depth_bps: int = 0
     hold_legs: tuple = ()            # symbols held at their current size (no entry or trim children)
+    close_legs: tuple = ()           # symbols sold to flat (reduce-only IOC children) and never bought
 
     def __post_init__(self):
         object.__setattr__(self, 'markets', tuple(self.markets))
         object.__setattr__(self, 'sides', tuple(tuple(x) for x in self.sides))
         object.__setattr__(self, 'leg_notionals', tuple(tuple(x) for x in self.leg_notionals))
         object.__setattr__(self, 'hold_legs', tuple(self.hold_legs))
+        object.__setattr__(self, 'close_legs', tuple(self.close_legs))
 
     def notional_for(self, symbol):
         return decimal(dict(self.leg_notionals).get(symbol, self.leg_notional), positive=True)
@@ -156,12 +162,19 @@ class CarryMandate:
         if (len(set(self.hold_legs)) != len(self.hold_legs) or not set(self.hold_legs) <= set(self.markets)
                 or self.hold_legs and not self.leg_notionals):
             raise ExchangeError('INVALID_CARRY_MANDATE')
+        if self.close_legs and (len(set(self.close_legs)) != len(self.close_legs)
+                                or not set(self.close_legs) <= set(self.markets)
+                                or set(self.close_legs) & set(self.hold_legs)
+                                or len(self.close_legs) >= len(self.markets)
+                                or self.leverage != 2 or not self.leg_notionals):
+            raise ExchangeError('INVALID_CARRY_MANDATE')
         if self.leg_notionals:
             tilted = dict(self.leg_notionals)
             amounts = [decimal(v, positive=True) for v in tilted.values()]
-            leg_cap, exposure = ((CARRY_MAX_LEG_2X, CARRY_MAX_EXPOSURE_2X) if self.leverage == 2
-                                 else (CARRY_MAX_TILTED_LEG, D(1)))
-            if (len(tilted) != len(self.leg_notionals) or set(tilted) != set(self.markets)
+            leg_cap, exposure = ((CARRY_MAX_LEG_2X_CLOSE if self.close_legs else CARRY_MAX_LEG_2X,
+                                  CARRY_MAX_EXPOSURE_2X) if self.leverage == 2 else (CARRY_MAX_TILTED_LEG, D(1)))
+            # A close leg has no budget: it is only ever sold to flat.
+            if (len(tilted) != len(self.leg_notionals) or set(tilted) != set(self.markets) - set(self.close_legs)
                     or any(a > leg_cap for a in amounts)
                     or sum(amounts, D(0)) > decimal(self.starting_equity, positive=True) * exposure):
                 raise ExchangeError('INVALID_CARRY_MANDATE')

@@ -438,7 +438,8 @@ class CarryBasketRuntime(CarryRuntime):
         elif trim:
             kind = TAKER
         else:
-            kind = phase(leg['unwind']['started_ms'], now, self.params, maker=not emergency and now < self.m.flatten_ms)
+            kind = phase(leg['unwind']['started_ms'], now, self.params,
+                         maker=leg['unwind']['kind'] == 'FINAL' and now < self.m.flatten_ms)
         if kind == TAKER and not taker_ready(leg['last_taker_ms'], now, self.params):
             return False
         signal_ms = self._signal_ms()
@@ -458,6 +459,8 @@ class CarryBasketRuntime(CarryRuntime):
         held = self._qty(positions, symbol)
         now = self.clock_ms()
         if entry:
+            if symbol in self.m.close_legs:
+                raise ExchangeError('CLOSE_LEG_IS_NEVER_BOUGHT:' + symbol)
             if leg['target'] is None:
                 leg['target'] = str(self._target_for(symbol, quote.mid, positions))
                 leg['started_ms'] = leg.get('resume_started_ms') or now
@@ -742,7 +745,7 @@ class CarryBasketRuntime(CarryRuntime):
     def _ensure_targets(self):
         """Every building leg gets its target before anything is placed, so over-target legs are seen."""
         for symbol, leg in self.state['legs'].items():
-            if leg['mode'] != 'BUILD' or leg['target'] is not None:
+            if leg['mode'] != 'BUILD' or leg['target'] is not None or symbol in self.m.close_legs:
                 continue
             quote = self._book(symbol)
             if quote is None:
@@ -765,12 +768,14 @@ class CarryBasketRuntime(CarryRuntime):
         """At most one new child per cycle, rotating over the legs that need one.
 
         Reallocation (27 Oct): legs above a lowered target are trimmed first, with reduce-only IOC
-        children; no entry is placed until every trim is done, so the freed margin funds the buys."""
+        children; no entry is placed until every trim is done, so the freed margin funds the buys.
+        Close legs (31 Oct) likewise: no entry until every close leg is flat."""
         now = self.clock_ms()
         building = (not self.state['halted'] and now < self.m.unwind_starts_ms)
         if building:
             self._ensure_targets()
         trims = [s for s in self.state['legs'] if building and self.excess(s, positions) > 0]
+        closing = [s for s in self.m.close_legs if self._leg(s)['mode'] == 'UNWIND']
         # Protection first: no new entry while any leg holds more or less than its stop covers.
         unprotected = sorted(s for s, l in self.state['legs'].items()
                              if self._qty(positions, s) != D(l['protected_qty']))
@@ -781,7 +786,7 @@ class CarryBasketRuntime(CarryRuntime):
             if leg['child']:
                 continue
             trim = symbol in trims
-            entry = leg['mode'] == 'BUILD' and building and not trims
+            entry = leg['mode'] == 'BUILD' and building and not trims and not closing
             unwind = leg['mode'] == 'UNWIND' and self._qty(positions, symbol) > 0
             if trims and not trim and not unwind:
                 continue
@@ -988,6 +993,7 @@ class CarryBasketRuntime(CarryRuntime):
                 leg['resume_started_ms'] = self.clock_ms() - self.params.maker_window_ms
         if self.state['basket_started_ms'] is None:
             self.state['basket_started_ms'] = self.clock_ms()
+        self._start_close_legs(positions)
         self._save_state()
         self.reconcile_fills(force=True)
         self.reconcile_funding(force=True)
@@ -997,6 +1003,19 @@ class CarryBasketRuntime(CarryRuntime):
                                                        for s, l in self.state['legs'].items()},
                     protection=self.protection.report().get('positions'), funding_24h=self._funding_check())
         self.heartbeat(force=True)
+
+    def _start_close_legs(self, positions):
+        """31 Oct reallocation: a held close leg is sold to flat with reduce-only touch IOC children
+        (CLOSE unwind, no maker window); a flat one is CLOSED. Neither is ever bought."""
+        for symbol in self.m.close_legs:
+            leg = self._leg(symbol)
+            if leg['mode'] in {'UNWIND', 'CLOSED'}:
+                continue
+            if self._qty(positions, symbol) > 0:
+                self._start_unwind(symbol, 'CLOSE', 'CARRY_REALLOCATION_CLOSE')
+            else:
+                leg['mode'], leg['closed_reason'] = 'CLOSED', 'CLOSE_LEG_FLAT'
+                self._event('CLOSE_LEG_FLAT', symbol=symbol)
 
     def _funding_check(self):
         try:

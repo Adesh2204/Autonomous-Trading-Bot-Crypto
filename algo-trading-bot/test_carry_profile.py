@@ -927,6 +927,104 @@ def test_ranked_top_up_buys_every_leg_hype_included_and_never_trims(tmp_path, mo
     assert w.r.order_errors == 0 and not w.r.state['halted']
 
 
+# ---------- SP500 and USDJPY squared off, HYPE grows to 1.5x the current equity (31 Oct 22:40 IST) ----------
+HELD_31OCT = {'pas:BTC': D('37223.30'), 'pas:ETH': D('35092.02'), 'pas:HYPE': D('69105.61'), 'pas:SP500': D('40008.82'),
+              'pas:USDJPY': D('7166.29')}
+CLOSE_31OCT = (('pas:BTC', '37300'), ('pas:ETH', '35100'), ('pas:HYPE', '85100'))
+CLOSE_KW = dict(starting_equity='99998.337076', leverage=2, taker_depth_bps=5, hold_legs=('pas:BTC', 'pas:ETH'),
+                close_legs=('pas:SP500', 'pas:USDJPY'))
+
+
+def test_close_budgets_hold_btc_eth_and_give_hype_the_rest_of_one_and_a_half_x():
+    legs = run_carry_module().close_notionals('105045.342709', HELD_31OCT)
+    assert legs == CLOSE_31OCT                                                     # no budget for SP500/USDJPY
+    assert sum(D(v) for _, v in legs) <= D('105045.342709') * D('1.5')
+    assert basket_mandate(leg_notionals=legs, **CLOSE_KW).require().close_legs == ('pas:SP500', 'pas:USDJPY')
+
+
+@pytest.mark.parametrize('held', [
+    {s: v for s, v in HELD_31OCT.items() if s != 'pas:ETH'},                       # a hold leg is missing
+    dict(HELD_31OCT, **{'pas:HYPE': D('90000')}),                                  # HYPE budget would sell
+])
+def test_close_budgets_refuse_a_missing_leg_or_a_hype_sale(held):
+    with pytest.raises(SystemExit):
+        run_carry_module().close_notionals('105045.342709', held)
+
+
+@pytest.mark.parametrize('change', [
+    dict(leg_notionals=CLOSE_31OCT + (('pas:SP500', '1000'),)),                    # a close leg with a budget
+    dict(hold_legs=('pas:BTC', 'pas:ETH', 'pas:SP500')),                           # held and closed at once
+    dict(close_legs=('pas:SP500', 'pas:SP500', 'pas:USDJPY')),
+    dict(close_legs=('pas:SP500', 'pas:DOGE')),
+    dict(leverage=1),
+    dict(leg_notionals=(('pas:BTC', '37300'), ('pas:ETH', '35100'), ('pas:HYPE', '90100'))),   # leg above $90k
+    dict(leg_notionals=(('pas:BTC', '65000'), ('pas:ETH', '65000'), ('pas:HYPE', '65000'))),   # above 1.85x
+    dict(leg_notionals=(), close_legs=('pas:BTC', 'pas:ETH', 'pas:HYPE', 'pas:SP500', 'pas:USDJPY'), hold_legs=()),
+])
+def test_close_legs_reject_anything_else(change):
+    with pytest.raises(ExchangeError):
+        basket_mandate(**{**CLOSE_KW, 'leg_notionals': CLOSE_31OCT, **change}).require()
+
+
+def test_without_close_legs_the_65k_leg_cap_still_holds():
+    with pytest.raises(ExchangeError):
+        basket_mandate(leverage=2, taker_depth_bps=5, leg_notionals=TILT_2X[:2] + (('pas:HYPE', '65100'),)
+                       + TILT_2X[3:]).require()
+
+
+def test_close_legs_sell_to_flat_with_touch_ioc_then_hype_grows_and_btc_eth_stay(tmp_path, monkeypatch):
+    rc = run_carry_module()
+    held = {'pas:BTC': D('0.48009'), 'pas:ETH': D('15.602'), 'pas:HYPE': D('789.12'), 'pas:SP500': D('5.278'),
+            'pas:USDJPY': D('-45.59')}                                              # the 31 Oct basket
+    marked = {s: abs(q) * D(str(SPECS[s][1])) for s, q in held.items()}
+    equity = D('105045.342709')
+    legs = rc.close_notionals(equity, marked)
+    w = World(tmp_path, monkeypatch, leg_notionals=legs, **CLOSE_KW)
+    w.venue.leverage.update({s: dict(type='cross', value=2) for s in SPECS})
+    seed(w, held)
+    w.r.startup()
+    for _ in range(1500):
+        w.step(31000)
+        if (all(w.leg(s)['mode'] == 'HOLD' for s in ('pas:BTC', 'pas:ETH', 'pas:HYPE'))
+                and all(w.leg(s)['mode'] == 'CLOSED' for s in rc.CLOSE_LEGS)):
+            break
+    attempts = w.events('CHILD_ATTEMPT')
+    closes = [e for e in attempts if e['symbol'] in rc.CLOSE_LEGS]
+    buys = [i for i, e in enumerate(attempts) if e['entry']]
+    assert closes and all(e['key'].startswith('carry-out:') and not e['entry'] and e['tif'] == 'Ioc' for e in closes)
+    assert buys and all(attempts[i]['symbol'] == 'pas:HYPE' for i in buys)          # only HYPE is bought
+    assert max(i for i, e in enumerate(attempts) if e['symbol'] in rc.CLOSE_LEGS) < min(buys)   # closes first
+    assert not [e for e in attempts if e['symbol'] in rc.CLOSE_HOLD_LEGS]          # BTC and ETH untouched
+    assert not [e for e in attempts if e['key'].startswith('carry-trim:')]
+    for s in rc.CLOSE_LEGS:
+        leg = w.leg(s)
+        assert w.position(s) == 0 and leg['closed_reason'] == 'CARRY_REALLOCATION_CLOSE'
+        assert not w.stops(s) and not w.children(s)                                # its stop is gone too
+    for s in ('pas:BTC', 'pas:ETH', 'pas:HYPE'):
+        leg = w.leg(s)
+        assert leg['mode'] == 'HOLD' and leg['verified']['problems'] == []
+        assert [D(o['sz']) for o in w.stops(s)] == [abs(w.position(s))]
+    assert w.position('pas:BTC') == held['pas:BTC'] and w.position('pas:ETH') == held['pas:ETH']
+    assert w.position('pas:HYPE') > held['pas:HYPE']
+    exposure = sum(abs(w.position(s)) * D(str(SPECS[s][1])) for s in SPECS)
+    assert exposure <= equity * D('1.5') and exposure > equity * D('1.49')
+    assert w.r.order_errors == 0 and not w.r.state['halted']
+
+
+def test_a_flat_close_leg_closes_at_startup_and_is_never_bought(tmp_path, monkeypatch):
+    held = {'pas:BTC': D('0.48009'), 'pas:ETH': D('15.602'), 'pas:HYPE': D('789.12')}
+    w = World(tmp_path, monkeypatch, leg_notionals=CLOSE_31OCT, **CLOSE_KW)
+    w.venue.leverage.update({s: dict(type='cross', value=2) for s in SPECS})
+    seed(w, held)
+    w.r.startup()
+    for _ in range(5):
+        w.step(31000)
+    for s in ('pas:SP500', 'pas:USDJPY'):
+        assert w.leg(s)['mode'] == 'CLOSED' and w.leg(s)['closed_reason'] == 'CLOSE_LEG_FLAT'
+        assert w.position(s) == 0 and not w.children(s)
+    assert not [e for e in w.events('CHILD_ATTEMPT') if e['symbol'] in ('pas:SP500', 'pas:USDJPY')]
+
+
 class RaiseAccount:
     """Fake account for the raise-only route: the basket, its stops, journal rows and exchange order states."""
     team_address = '0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C'

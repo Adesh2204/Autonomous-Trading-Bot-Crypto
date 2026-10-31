@@ -269,3 +269,13 @@
   SP500 $40.7k, BTC $38.4k, ETH $36.1k, USDJPY $7.2k ($184.8k). The 8% leg stops and the -5% account halt (vs $99,998)
   are unchanged; at 1.85x the halt is about a 3.2% basket fall. Relaunched 13:58 IST (release 3,547 tests, source
   dfd33834...; old state/mandate/release archived _b3d18d1).
+- 31 October 22:40 IST (user: "square off USDJPY and S&P500 ... put all the balance into HYPE ... reduce the leverage
+  strictly from 2x to 1.5x"; answered question "1.5x, HYPE gets part"): SP500 and USDJPY are close legs
+  (CarryMandate.close_legs), sold to flat with reduce-only touch IOC children (25% of the depth within 5 bps, no maker
+  window, never a sweep) and never bought; their stops go with them. BTC and ETH are hold legs (kept exactly as held).
+  HYPE gets the room up to 1.5x the CURRENT equity (`run_carry.py rebind`, close_notionals; about $85k) and is bought
+  only after both close legs are flat. The exchange setting stays 2x (whole numbers only); 1.5x is the exposure, and
+  the ~$31k of freed margin not given to HYPE stays unused. With close legs one leg may reach $90k
+  (CARRY_MAX_LEG_2X_CLOSE); the 1.85x mandate cap, 8% leg stops and the -5% account halt (vs $99,998) are unchanged.
+  Model numbers given first: #1 is unreachable by the 1 Nov 12:00 UTC sample (the score caps near 0.339 for any gain);
+  P(#2) ~15% vs ~12% unchanged. The runner had been halted (API_DISCONNECT_OVER_LIMIT, no flatten) since 29 Oct 20:40 UTC.
