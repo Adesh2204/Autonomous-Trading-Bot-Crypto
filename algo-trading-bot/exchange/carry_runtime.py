@@ -53,7 +53,9 @@ CARRY_MAX_LEG_2X = D('65000')
 # 31 Oct 22:40 IST (user: "square off USDJPY and S&P500 and put the balance into HYPE, leverage 1.5x"; answered
 # question: total exposure 1.5x equity, BTC and ETH kept as held, HYPE gets the rest): close legs are sold to flat
 # with reduce-only IOC children and never bought; with close legs one leg may reach $90,000.
-CARRY_MAX_LEG_2X_CLOSE = D('90000')
+# 1 Nov 12:05 IST (user: "invest the remaining $26k strictly all into HYPE ... leverage still 1.5x"; answered
+# question "keep 1.5x: move BTC/ETH into HYPE"): $26k of BTC/ETH is trimmed into HYPE, so HYPE may reach $120,000.
+CARRY_MAX_LEG_2X_CLOSE = D('120000')
 # 27 Oct 09:05 IST (user: "let the funds be where it is, don't sell or trim"): a hold leg keeps exactly the
 # size it holds when the mandate starts; it is never bought, trimmed or topped up, only protected and unwound.
 CARRY_CHILD_STRATEGIES = frozenset({'CARRY_LONG', 'CARRY_SHORT', 'CARRY_EXIT'})

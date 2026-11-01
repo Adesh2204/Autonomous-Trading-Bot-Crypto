@@ -51,6 +51,12 @@ CLOSE_EXPOSURE = D('1.5')
 CLOSE_LEGS = ('pas:SP500', 'pas:USDJPY')
 CLOSE_HOLD_LEGS = ('pas:BTC', 'pas:ETH')
 CLOSE_GROW_LEG = 'pas:HYPE'
+# 1 Nov 12:05 IST (user: "invest the remaining total balance of 26k dollars strictly all into HYPE making sure the
+# leverage still stays 1.5x"; the basket was already at 1.5x, answered question "keep 1.5x: move BTC/ETH into
+# HYPE"): $26,000 of BTC and ETH, in proportion to their marked values, is trimmed with reduce-only IOC children
+# and HYPE is bought with exactly what was trimmed, never above 1.5x the current equity.
+MOVE_AMOUNT = D('26000')
+MOVE_FROM_LEGS = ('pas:BTC', 'pas:ETH')
 TAKER_DEPTH_BPS = 5              # IOC children: up to 25% of the depth within 5 bps of the touch
 APPROVAL = ('User directive 2026-10-25 23:35 IST, "We wanna move with Carry Strategy" (YES, CARRY): half size, '
             '$9,500 per leg, LONG BTC/ETH/HYPE/SP500 and SHORT USDJPY at 1x, NO basket stop, existing 8% per-leg '
@@ -75,7 +81,10 @@ APPROVAL = ('User directive 2026-10-25 23:35 IST, "We wanna move with Carry Stra
             '31 Oct 22:40 IST the user ordered SP500 and USDJPY squared off and the balance put into HYPE with the '
             'leverage reduced from 2x to 1.5x; answered question: total exposure 1.5x the current equity, BTC and ETH '
             'held as they are, HYPE gets the rest (about $85k), the rest of the freed margin stays unused. The setting '
-            'stays 2x (whole numbers only); the -5% halt and 8% leg stops are kept.')
+            'stays 2x (whole numbers only); the -5% halt and 8% leg stops are kept. 1 Nov 12:05 IST the user ordered '
+            'the remaining $26k into HYPE with the leverage kept at 1.5x; the basket was already at 1.5x, answered '
+            'question: keep 1.5x and move $26,000 of BTC/ETH (in proportion) into HYPE with reduce-only IOC trims '
+            'first; nothing else changes.')
 
 
 def two_x_notionals(starting_equity, held_notionals):
@@ -122,6 +131,30 @@ def close_notionals(equity, held_notionals):
     legs = {s: (held[s] / 100).to_integral_value(rounding='ROUND_CEILING') * 100 for s in CLOSE_HOLD_LEGS}
     room = D(equity) * CLOSE_EXPOSURE - sum(legs.values(), D(0))
     legs[CLOSE_GROW_LEG] = (room / 100).to_integral_value(rounding='ROUND_FLOOR') * 100
+    if legs[CLOSE_GROW_LEG] <= held[CLOSE_GROW_LEG]:
+        raise SystemExit(f'{CLOSE_GROW_LEG} budget would sell: held={held} legs={legs}')
+    return tuple((s, str(legs[s])) for s, _ in CARRY_BASKET if s in legs)
+
+
+def move_notionals(equity, held_notionals):
+    """Leg budgets for the 1 Nov move: MOVE_FROM_LEGS lose MOVE_AMOUNT in proportion to their marked values (each
+    rounded up to $100, so never more is sold) and CLOSE_GROW_LEG gets what they lose, capped at CLOSE_EXPOSURE x
+    the current equity and rounded down to $100. Refuses unless every leg is held and the grow leg's budget is
+    above what it holds."""
+    from exchange.carry_runtime import CARRY_BASKET
+    held = {s: D(v) for s, v in held_notionals.items()}
+    keep = (*MOVE_FROM_LEGS, CLOSE_GROW_LEG)
+    if any(not held.get(s) for s in keep):
+        raise SystemExit(f'{keep} must all be held: {sorted(held)}')
+    source = sum((held[s] for s in MOVE_FROM_LEGS), D(0))
+    if MOVE_AMOUNT >= source:
+        raise SystemExit(f'Cannot move {MOVE_AMOUNT} out of {source}')
+    legs = {s: (held[s] * (1 - MOVE_AMOUNT / source) / 100).to_integral_value(rounding='ROUND_CEILING') * 100
+            for s in MOVE_FROM_LEGS}
+    moved = source - sum(legs.values(), D(0))
+    room = D(equity) * CLOSE_EXPOSURE - sum(legs.values(), D(0))
+    grow = min(held[CLOSE_GROW_LEG] + moved, room)
+    legs[CLOSE_GROW_LEG] = (grow / 100).to_integral_value(rounding='ROUND_FLOOR') * 100
     if legs[CLOSE_GROW_LEG] <= held[CLOSE_GROW_LEG]:
         raise SystemExit(f'{CLOSE_GROW_LEG} budget would sell: held={held} legs={legs}')
     return tuple((s, str(legs[s])) for s, _ in CARRY_BASKET if s in legs)
@@ -200,14 +233,13 @@ def rebind(args):
         raise SystemExit(f'Markets are not at {LEVERAGE}x CROSS yet: {leverage}; run raise_carry_leverage_2x.py first.')
     marks = {s: D(str(client.post_info('activeAssetData', user=TEAM, coin=s).get('markPx'))) for s in positions}
     equity = account.get_equity().collateral_balance          # unified USDP balance, already includes uPnL
-    notionals = close_notionals(equity, {s: abs(p.quantity) * marks[s] for s, p in positions.items()})
+    notionals = move_notionals(equity, {s: abs(p.quantity) * marks[s] for s, p in positions.items()})
     m = CarryMandate(team_wallet=TEAM, api_wallet=API, markets=tuple(basket), starts_ms=prior['starts_ms'],
                      flatten_ms=ms(FLATTEN), expires_ms=ms(EXPIRES), starting_equity=prior['starting_equity'],
                      leg_notional=LEG_NOTIONAL, source_hash=active_source_hash(ROOT), release_sha256=sha(RELEASE),
                      venue_identity=venue_profile('pas').identity, approval_reference=APPROVAL, profile=CARRY_PROFILE,
                      sides=CARRY_BASKET, unwind_starts_ms=ms(UNWIND), leg_notionals=notionals,
-                     taker_depth_bps=TAKER_DEPTH_BPS, leverage=LEVERAGE, hold_legs=CLOSE_HOLD_LEGS,
-                     close_legs=CLOSE_LEGS).require()
+                     taker_depth_bps=TAKER_DEPTH_BPS, leverage=LEVERAGE, close_legs=CLOSE_LEGS).require()
     atomic_json(MANDATE, asdict(m))
     print(json.dumps(dict(mandate=m.identity[:16], legs=dict(notionals), close=CLOSE_LEGS, equity=str(equity),
                           exposure=str(sum(D(v) for _, v in notionals)), leverage=LEVERAGE,

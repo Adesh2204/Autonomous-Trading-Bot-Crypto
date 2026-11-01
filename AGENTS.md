@@ -279,3 +279,11 @@
   (CARRY_MAX_LEG_2X_CLOSE); the 1.85x mandate cap, 8% leg stops and the -5% account halt (vs $99,998) are unchanged.
   Model numbers given first: #1 is unreachable by the 1 Nov 12:00 UTC sample (the score caps near 0.339 for any gain);
   P(#2) ~15% vs ~12% unchanged. The runner had been halted (API_DISCONNECT_OVER_LIMIT, no flatten) since 29 Oct 20:40 UTC.
+- 1 November 12:05 IST (user: "invest the remaining total balance of 26k dollars strictly all into HYPE making sure the
+  leverage still stays 1.5x"): the basket was already at 1.5x the current equity (the $26k was free margin at the 2x
+  setting), so adding HYPE alone would have raised exposure. Answered question: keep 1.5x and move $26,000 of BTC and
+  ETH, in proportion to their marked values, into HYPE (`run_carry.py rebind`, move_notionals). BTC and ETH are no
+  longer hold legs: they are trimmed first with reduce-only IOC children (25% of the depth within 5 bps, never a
+  sweep), then HYPE is bought with exactly what was trimmed, capped at 1.5x the current equity. With close legs one
+  leg may reach $120k (CARRY_MAX_LEG_2X_CLOSE). SP500/USDJPY stay closed; the 1.85x mandate cap, 2x setting, 8% leg
+  stops and -5% account halt (vs $99,998) are unchanged. HYPE is the most volatile leg, so daily-return volatility rises.
