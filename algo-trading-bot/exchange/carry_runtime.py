@@ -56,7 +56,9 @@ CARRY_MAX_LEG_2X = D('65000')
 # 1 Nov 12:05 IST (user: "invest the remaining $26k strictly all into HYPE ... leverage still 1.5x"; answered
 # question "keep 1.5x: move BTC/ETH into HYPE"): $26k of BTC/ETH is trimmed into HYPE, so HYPE may reach $120,000.
 # 1 Nov 22:30 IST (user: "atleast 10k dollars" more of BTC/ETH into HYPE, leverage 1.5x): HYPE may reach $130,000.
-CARRY_MAX_LEG_2X_CLOSE = D('130000')
+# 1 Nov 23:10 IST (user: "increase the leverage for 1.85x"; answered question "$185k: bot's 1.85x cap"): HYPE gets the
+# room up to 1.85x the starting equity (about $148k with BTC/ETH held), so it may reach $155,000.
+CARRY_MAX_LEG_2X_CLOSE = D('155000')
 # 27 Oct 09:05 IST (user: "let the funds be where it is, don't sell or trim"): a hold leg keeps exactly the
 # size it holds when the mandate starts; it is never bought, trimmed or topped up, only protected and unwound.
 CARRY_CHILD_STRATEGIES = frozenset({'CARRY_LONG', 'CARRY_SHORT', 'CARRY_EXIT'})

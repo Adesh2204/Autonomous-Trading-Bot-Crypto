@@ -294,3 +294,11 @@
   volatility increase small. Trims first (reduce-only IOC, 25% of the depth within 5 bps, never a sweep), then HYPE is
   bought with what was trimmed, capped at 1.5x the current equity. HYPE may reach $130k (CARRY_MAX_LEG_2X_CLOSE). The
   1.85x mandate cap, 2x setting, 8% leg stops and -5% account halt (vs $99,998) are unchanged; SP500/USDJPY stay closed.
+- 1 November 23:10 IST (user: "Ok increase the leverage for 1.85x and make sure that The team anchorium grows more";
+  answered question "$185k: bot's 1.85x cap", after the score analysis: a down day costs the score ~4x what an up day
+  adds): exposure rises to 1.85x the STARTING equity ($99,998 x 1.85, about 1.75x the current equity), the existing
+  CARRY_MAX_EXPOSURE_2X cap, so the free margin at the 2x setting stays above the loss that trips the -5% halt. BTC and
+  ETH are hold legs (kept exactly as held); HYPE alone gets the room (`run_carry.py rebind`, raise_notionals), bought
+  with touch-limited IOC children (25% of the depth within 5 bps, never a sweep) and never sold. HYPE may reach $155k
+  (CARRY_MAX_LEG_2X_CLOSE). The 2x setting, 8% leg stops and -5% account halt (vs $99,998) are unchanged; SP500/USDJPY
+  stay closed. No rank or profit is guaranteed for the 2 Nov 12:00 UTC sample.

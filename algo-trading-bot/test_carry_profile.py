@@ -957,7 +957,7 @@ def test_close_budgets_refuse_a_missing_leg_or_a_hype_sale(held):
     dict(close_legs=('pas:SP500', 'pas:SP500', 'pas:USDJPY')),
     dict(close_legs=('pas:SP500', 'pas:DOGE')),
     dict(leverage=1),
-    dict(leg_notionals=(('pas:BTC', '10000'), ('pas:ETH', '10000'), ('pas:HYPE', '130100'))),  # leg above $130k
+    dict(leg_notionals=(('pas:BTC', '10000'), ('pas:ETH', '10000'), ('pas:HYPE', '155100'))),  # leg above $155k
     dict(leg_notionals=(('pas:BTC', '65000'), ('pas:ETH', '65000'), ('pas:HYPE', '65000'))),   # above 1.85x
     dict(leg_notionals=(), close_legs=('pas:BTC', 'pas:ETH', 'pas:HYPE', 'pas:SP500', 'pas:USDJPY'), hold_legs=()),
 ])
@@ -1252,4 +1252,61 @@ def test_move_trims_btc_eth_first_with_reduce_only_ioc_then_buys_only_hype(tmp_p
         assert leg['mode'] == 'HOLD' and leg['verified']['problems'] == []
         assert [D(o['sz']) for o in w.stops(s)] == [abs(w.position(s))]            # stop sized to the new size
     assert sum(value.values()) <= equity * D('1.5')                                 # exposure stays 1.5x
+    assert w.r.order_errors == 0 and not w.r.state['halted']
+
+
+# ---------- exposure raised to 1.85x the starting equity, BTC/ETH held, HYPE gets the room (1 Nov 23:10 IST) ----------
+HELD_RAISE = {'pas:BTC': D('18998.39'), 'pas:ETH': D('17900.56'), 'pas:HYPE': D('112018.75')}
+RAISE_KW = dict(MOVE_KW, hold_legs=('pas:BTC', 'pas:ETH'))
+
+
+def test_raise_budgets_hold_btc_eth_and_give_hype_the_room_up_to_1_85x_the_starting_equity():
+    legs = run_carry_module().raise_notionals('99998.337076', HELD_RAISE)
+    assert legs == (('pas:BTC', '19000'), ('pas:ETH', '18000'), ('pas:HYPE', '147900'))
+    assert sum(D(v) for _, v in legs) <= D('99998.337076') * D('1.85')              # never above the 1.85x cap
+    m = basket_mandate(leg_notionals=legs, **RAISE_KW).require()
+    assert m.hold_legs == ('pas:BTC', 'pas:ETH') and m.close_legs == ('pas:SP500', 'pas:USDJPY')
+
+
+@pytest.mark.parametrize('held', [
+    {s: v for s, v in HELD_RAISE.items() if s != 'pas:BTC'},                        # a hold leg is missing
+    {s: v for s, v in HELD_RAISE.items() if s != 'pas:HYPE'},                       # HYPE is missing
+    dict(HELD_RAISE, **{'pas:HYPE': D('150000')}),                                  # HYPE budget would sell
+])
+def test_raise_budgets_refuse_a_missing_leg_or_a_hype_sale(held):
+    with pytest.raises(SystemExit):
+        run_carry_module().raise_notionals('99998.337076', held)
+
+
+def test_raise_budgets_above_the_1_85x_cap_are_refused_by_the_mandate():
+    with pytest.raises(ExchangeError):
+        basket_mandate(leg_notionals=(('pas:BTC', '19000'), ('pas:ETH', '18000'), ('pas:HYPE', '148100')),
+                       **RAISE_KW).require()
+
+
+def test_raise_buys_only_hype_and_leaves_btc_eth_untouched(tmp_path, monkeypatch):
+    rc = run_carry_module()
+    held = {'pas:BTC': D('0.24336'), 'pas:ETH': D('7.8955'), 'pas:HYPE': D('1266.54')}  # the 1 Nov 23:00 basket
+    marked = {s: q * D(str(SPECS[s][1])) for s, q in held.items()}
+    legs = rc.raise_notionals('99998.337076', marked)
+    w = World(tmp_path, monkeypatch, leg_notionals=legs, **RAISE_KW)
+    w.venue.leverage.update({s: dict(type='cross', value=2) for s in SPECS})
+    seed(w, held)
+    w.r.startup()
+    for _ in range(3000):
+        w.step(31000)
+        if all(w.leg(s)['mode'] == 'HOLD' for s in held):
+            break
+    attempts = w.events('CHILD_ATTEMPT')
+    assert attempts and all(e['symbol'] == 'pas:HYPE' and e['entry'] for e in attempts)   # only HYPE is bought
+    assert all(e['tif'] == 'Ioc' for e in attempts)
+    for s in rc.MOVE_FROM_LEGS:
+        assert w.position(s) == held[s]                                             # BTC and ETH exactly as held
+    value = {s: abs(w.position(s)) * D(str(SPECS[s][1])) for s in held}
+    assert value['pas:HYPE'] > D(dict(legs)['pas:HYPE']) - 200
+    assert sum(value.values()) <= D('99998.337076') * D('1.85')                    # exposure stays within 1.85x
+    for s in held:
+        leg = w.leg(s)
+        assert leg['mode'] == 'HOLD' and leg['verified']['problems'] == []
+        assert [D(o['sz']) for o in w.stops(s)] == [abs(w.position(s))]
     assert w.r.order_errors == 0 and not w.r.state['halted']
