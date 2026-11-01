@@ -287,3 +287,10 @@
   sweep), then HYPE is bought with exactly what was trimmed, capped at 1.5x the current equity. With close legs one
   leg may reach $120k (CARRY_MAX_LEG_2X_CLOSE). SP500/USDJPY stay closed; the 1.85x mandate cap, 2x setting, 8% leg
   stops and -5% account halt (vs $99,998) are unchanged. HYPE is the most volatile leg, so daily-return volatility rises.
+- 1 November 22:30 IST (user: "trim some more of the btc and eth ... atleast 10k dollars ... put it into hype ... levareg
+  should be til 1.5x only ... voltailty does not increase much"): a further $10,000 of BTC and ETH, in proportion to their
+  marked values, is moved into HYPE (`run_carry.py rebind`, move_notionals, MOVE_AMOUNT 10,000). The kept BTC/ETH budgets
+  now round down to $100, so at least $10,000 is trimmed (at most $10,200); the smallest qualifying move keeps the
+  volatility increase small. Trims first (reduce-only IOC, 25% of the depth within 5 bps, never a sweep), then HYPE is
+  bought with what was trimmed, capped at 1.5x the current equity. HYPE may reach $130k (CARRY_MAX_LEG_2X_CLOSE). The
+  1.85x mandate cap, 2x setting, 8% leg stops and -5% account halt (vs $99,998) are unchanged; SP500/USDJPY stay closed.

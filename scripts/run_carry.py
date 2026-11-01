@@ -55,7 +55,11 @@ CLOSE_GROW_LEG = 'pas:HYPE'
 # leverage still stays 1.5x"; the basket was already at 1.5x, answered question "keep 1.5x: move BTC/ETH into
 # HYPE"): $26,000 of BTC and ETH, in proportion to their marked values, is trimmed with reduce-only IOC children
 # and HYPE is bought with exactly what was trimmed, never above 1.5x the current equity.
-MOVE_AMOUNT = D('26000')
+# 1 Nov 22:30 IST (user: "trim some more of the btc and eth ... atleast 10k dollars ... put it into hype ... leverage
+# til 1.5x only ... volatility does not increase much"): a further $10,000 is moved the same way. The kept BTC/ETH
+# budgets now round DOWN to $100, so at least $10,000 is trimmed (at most $10,200); the smallest move that meets the
+# instruction keeps the volatility increase as small as possible.
+MOVE_AMOUNT = D('10000')
 MOVE_FROM_LEGS = ('pas:BTC', 'pas:ETH')
 TAKER_DEPTH_BPS = 5              # IOC children: up to 25% of the depth within 5 bps of the touch
 APPROVAL = ('User directive 2026-10-25 23:35 IST, "We wanna move with Carry Strategy" (YES, CARRY): half size, '
@@ -84,7 +88,9 @@ APPROVAL = ('User directive 2026-10-25 23:35 IST, "We wanna move with Carry Stra
             'stays 2x (whole numbers only); the -5% halt and 8% leg stops are kept. 1 Nov 12:05 IST the user ordered '
             'the remaining $26k into HYPE with the leverage kept at 1.5x; the basket was already at 1.5x, answered '
             'question: keep 1.5x and move $26,000 of BTC/ETH (in proportion) into HYPE with reduce-only IOC trims '
-            'first; nothing else changes.')
+            'first; nothing else changes. 1 Nov 22:30 IST the user ordered at least $10,000 more of BTC/ETH trimmed into HYPE '
+            'with the exposure kept at 1.5x and the volatility increase kept small: $10,000 (at most $10,200) is moved '
+            'the same way, in proportion, reduce-only IOC trims first; nothing else changes.')
 
 
 def two_x_notionals(starting_equity, held_notionals):
@@ -138,7 +144,7 @@ def close_notionals(equity, held_notionals):
 
 def move_notionals(equity, held_notionals):
     """Leg budgets for the 1 Nov move: MOVE_FROM_LEGS lose MOVE_AMOUNT in proportion to their marked values (each
-    rounded up to $100, so never more is sold) and CLOSE_GROW_LEG gets what they lose, capped at CLOSE_EXPOSURE x
+    rounded down to $100, so never less is sold) and CLOSE_GROW_LEG gets what they lose, capped at CLOSE_EXPOSURE x
     the current equity and rounded down to $100. Refuses unless every leg is held and the grow leg's budget is
     above what it holds."""
     from exchange.carry_runtime import CARRY_BASKET
@@ -149,7 +155,7 @@ def move_notionals(equity, held_notionals):
     source = sum((held[s] for s in MOVE_FROM_LEGS), D(0))
     if MOVE_AMOUNT >= source:
         raise SystemExit(f'Cannot move {MOVE_AMOUNT} out of {source}')
-    legs = {s: (held[s] * (1 - MOVE_AMOUNT / source) / 100).to_integral_value(rounding='ROUND_CEILING') * 100
+    legs = {s: (held[s] * (1 - MOVE_AMOUNT / source) / 100).to_integral_value(rounding='ROUND_FLOOR') * 100
             for s in MOVE_FROM_LEGS}
     moved = source - sum(legs.values(), D(0))
     room = D(equity) * CLOSE_EXPOSURE - sum(legs.values(), D(0))

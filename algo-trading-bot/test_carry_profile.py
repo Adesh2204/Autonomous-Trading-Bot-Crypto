@@ -957,7 +957,7 @@ def test_close_budgets_refuse_a_missing_leg_or_a_hype_sale(held):
     dict(close_legs=('pas:SP500', 'pas:SP500', 'pas:USDJPY')),
     dict(close_legs=('pas:SP500', 'pas:DOGE')),
     dict(leverage=1),
-    dict(leg_notionals=(('pas:BTC', '17300'), ('pas:ETH', '15100'), ('pas:HYPE', '120100'))),  # leg above $120k
+    dict(leg_notionals=(('pas:BTC', '10000'), ('pas:ETH', '10000'), ('pas:HYPE', '130100'))),  # leg above $130k
     dict(leg_notionals=(('pas:BTC', '65000'), ('pas:ETH', '65000'), ('pas:HYPE', '65000'))),   # above 1.85x
     dict(leg_notionals=(), close_legs=('pas:BTC', 'pas:ETH', 'pas:HYPE', 'pas:SP500', 'pas:USDJPY'), hold_legs=()),
 ])
@@ -1185,44 +1185,44 @@ def test_a_refusal_before_signing_is_a_pre_dispatch_refusal(live):
     assert leased == []                                                            # no nonce, nothing signed
 
 
-# ---------- $26k of BTC/ETH moved into HYPE, exposure kept at 1.5x (1 Nov 12:05 IST) ----------
-HELD_1NOV = {'pas:BTC': D('37394.69'), 'pas:ETH': D('35393.14'), 'pas:HYPE': D('85587.63')}
+# ---------- $10k more of BTC/ETH moved into HYPE, exposure kept at 1.5x (1 Nov 22:30 IST) ----------
+HELD_1NOV = {'pas:BTC': D('24142.32'), 'pas:ETH': D('22825.00'), 'pas:HYPE': D('111592.31')}
 MOVE_KW = dict(starting_equity='99998.337076', leverage=2, taker_depth_bps=5, close_legs=('pas:SP500', 'pas:USDJPY'))
 
 
-def test_move_budgets_take_26k_from_btc_eth_in_proportion_and_give_it_to_hype():
-    legs = run_carry_module().move_notionals('105701.44', HELD_1NOV)
-    assert legs == (('pas:BTC', '24100'), ('pas:ETH', '22800'), ('pas:HYPE', '111400'))
+def test_move_budgets_take_at_least_10k_from_btc_eth_in_proportion_and_give_it_to_hype():
+    legs = run_carry_module().move_notionals('105906.51', HELD_1NOV)
+    assert legs == (('pas:BTC', '19000'), ('pas:ETH', '17900'), ('pas:HYPE', '121600'))
     budget = dict(legs)
     sold = HELD_1NOV['pas:BTC'] + HELD_1NOV['pas:ETH'] - D(budget['pas:BTC']) - D(budget['pas:ETH'])
-    assert D('25800') < sold <= D('26000')                                         # never more than $26k sold
+    assert D('10000') <= sold <= D('10200')                                        # at least $10k, at most $10.2k
     assert D(budget['pas:HYPE']) - HELD_1NOV['pas:HYPE'] <= sold                   # HYPE gets only what was sold
-    assert sum(D(v) for _, v in legs) <= D('105701.44') * D('1.5')                  # exposure stays 1.5x
+    assert sum(D(v) for _, v in legs) <= D('105906.51') * D('1.5')                  # exposure stays 1.5x
     assert basket_mandate(leg_notionals=legs, **MOVE_KW).require().hold_legs == ()
 
 
 def test_move_budgets_never_exceed_one_and_a_half_x_the_current_equity():
     legs = dict(run_carry_module().move_notionals('100000', HELD_1NOV))             # equity fell: the cap binds
     assert sum(D(v) for v in legs.values()) <= D('150000')
-    assert legs['pas:BTC'] == '24100' and legs['pas:ETH'] == '22800'
+    assert legs['pas:BTC'] == '19000' and legs['pas:ETH'] == '17900'
 
 
 @pytest.mark.parametrize('held', [
     {s: v for s, v in HELD_1NOV.items() if s != 'pas:ETH'},                         # a trimmed leg is missing
     {s: v for s, v in HELD_1NOV.items() if s != 'pas:HYPE'},                        # HYPE is missing
-    dict(HELD_1NOV, **{'pas:BTC': D('10000'), 'pas:ETH': D('10000')}),              # less than $26k to move
+    dict(HELD_1NOV, **{'pas:BTC': D('5000'), 'pas:ETH': D('5000')}),                # less than $10k to move
     dict(HELD_1NOV, **{'pas:HYPE': D('160000')}),                                   # HYPE budget would sell
 ])
 def test_move_budgets_refuse_a_missing_leg_too_little_to_move_or_a_hype_sale(held):
     with pytest.raises(SystemExit):
-        run_carry_module().move_notionals('105701.44', held)
+        run_carry_module().move_notionals('105906.51', held)
 
 
 def test_move_trims_btc_eth_first_with_reduce_only_ioc_then_buys_only_hype(tmp_path, monkeypatch):
     rc = run_carry_module()
-    held = {'pas:BTC': D('0.48009'), 'pas:ETH': D('15.602'), 'pas:HYPE': D('973.66')}   # the 1 Nov basket
+    held = {'pas:BTC': D('0.30939'), 'pas:ETH': D('10.0626'), 'pas:HYPE': D('1266.54')}  # the 1 Nov 22:30 basket
     marked = {s: q * D(str(SPECS[s][1])) for s, q in held.items()}
-    equity = D('105701.44')
+    equity = D('105906.51')
     legs = rc.move_notionals(equity, marked)
     w = World(tmp_path, monkeypatch, leg_notionals=legs, **MOVE_KW)
     w.venue.leverage.update({s: dict(type='cross', value=2) for s in SPECS})
@@ -1244,7 +1244,7 @@ def test_move_trims_btc_eth_first_with_reduce_only_ioc_then_buys_only_hype(tmp_p
         assert w.leg(s)['mode'] == 'CLOSED' and w.position(s) == 0
     value = {s: abs(w.position(s)) * D(str(SPECS[s][1])) for s in held}
     sold = sum(marked[s] - value[s] for s in rc.MOVE_FROM_LEGS)
-    assert D('25700') < sold <= D('26000')
+    assert D('10000') <= sold <= D('10300')                                        # at least $10k, never a sweep
     assert value['pas:HYPE'] - marked['pas:HYPE'] <= sold + 11                      # HYPE grew by what was sold
     assert value['pas:HYPE'] - marked['pas:HYPE'] > sold - 200
     for s in held:
