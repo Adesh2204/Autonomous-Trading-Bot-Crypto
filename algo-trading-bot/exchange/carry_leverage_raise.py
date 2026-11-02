@@ -11,6 +11,10 @@ from 20x to 2x through this typed route): the one exception is pas:EWJ, which ma
 setting down to 2x CROSS while it holds no position (so no order or margin of an open position is involved).
 Every other market is still only ever raised from 1x; no market switches margin mode.
 
+2 Nov 2026 23:20 IST (user, answered question "Yes, HYPE $150k (2.9x)"): a plan may instead target 4x, which only
+raises the carry markets from 2x CROSS to 4x CROSS (scope CARRY_4X), so the basket can hold about 2.9x the starting
+equity with margin left free. Nothing else differs; the mandate still caps the exposure.
+
 Allowed open state, read fresh for the plan and again before every signature, and equal to what the
 human approved:
   * positions only in carry markets, each on the basket's side;
@@ -30,6 +34,7 @@ from .execution_journal import fingerprint
 from .testnet_certification import TEAM, API
 
 TARGET = 2
+TARGETS = {2: 1, 4: 2}                          # target cross leverage -> the only cross setting it may be raised from
 FLAT_SET_TO_TARGET = frozenset({'pas:EWJ'})     # may come down to 2x CROSS, only while it holds no position
 CHILD_PREFIXES = ('carry-in', 'carry-trim', 'carry-out', 'carry-exit')
 PLAN_MAX_AGE_MS = 300000
@@ -116,9 +121,12 @@ def read_only_client(output):
     return client, journal
 
 
-def raise_plan(root, client, account, *, provenance):
-    """Unsigned plan: every carry market at 1x CROSS becomes 2x CROSS. Never an action permit."""
-    from .entry_scope import CARRY_ENTRY_MARKETS, CARRY_2X_SCOPE
+def raise_plan(root, client, account, *, provenance, target=TARGET):
+    """Unsigned plan: every carry market at 1x CROSS becomes 2x CROSS (target 2), or at 2x CROSS becomes 4x CROSS
+    (target 4). Never an action permit."""
+    from .entry_scope import CARRY_ENTRY_MARKETS, CARRY_2X_SCOPE, CARRY_4X_SCOPE
+    if target not in TARGETS:
+        raise ExchangeError('UNSUPPORTED_TARGET_LEVERAGE')
     from .paper_operations import active_source_hash
     from .pas_funding import read_funding
     source = active_source_hash(root)
@@ -133,32 +141,37 @@ def raise_plan(root, client, account, *, provenance):
         if (not isinstance(current, dict) or current.get('coin') != symbol
                 or str(current.get('user', '')).lower() != TEAM.lower()):
             raise ExchangeError('INVALID_ACTIVE_ASSET_CONFIGURATION')
-        if spec.max_leverage < TARGET:
+        if spec.max_leverage < target:
             raise ExchangeError('TARGET_LEVERAGE_ABOVE_MARKET_MAXIMUM')
         before = current.get('leverage')
-        flat_set = (symbol in FLAT_SET_TO_TARGET and symbol not in evidence['positions'] and isinstance(before, dict)
-                    and before.get('type') == 'cross' and type(before.get('value')) is int and before['value'] > TARGET)
-        if before == dict(type='cross', value=TARGET):
+        flat_set = (target == 2 and symbol in FLAT_SET_TO_TARGET and symbol not in evidence['positions']
+                    and isinstance(before, dict) and before.get('type') == 'cross' and type(before.get('value')) is int
+                    and before['value'] > target)
+        if before == dict(type='cross', value=target):
             already.append(symbol)
-        elif before == dict(type='cross', value=1) or flat_set:
+        elif before == dict(type='cross', value=TARGETS[target]) or flat_set:
             changes.append(dict(symbol=symbol, observed_ms=client.clock_ms(), before=before,
                                 requested_action=dict(type='updateLeverage', asset=spec.asset_id, isCross=True,
-                                                      leverage=TARGET)))
+                                                      leverage=target)))
         else:
             raise ExchangeError('ONLY_A_RAISE_FROM_1X_CROSS')
     if active_source_hash(root) != source:
         raise ExchangeError('SOURCE_CHANGED_DURING_PLAN')
     plan = dict(status='UNSIGNED_CARRY_LEVERAGE_RAISE_PLAN', network='testnet', dex='pas', collateral='USDP',
                 team_wallet=TEAM, source_hash=source, observed_ms=client.clock_ms(),
-                configuration_scope=CARRY_2X_SCOPE, target_leverage=TARGET,
-                entry_markets=sorted(CARRY_ENTRY_MARKETS), changes=changes, already_two_x_cross=sorted(already),
+                configuration_scope=CARRY_2X_SCOPE if target == 2 else CARRY_4X_SCOPE, target_leverage=target,
+                entry_markets=sorted(CARRY_ENTRY_MARKETS), changes=changes,
+                **{'already_two_x_cross' if target == 2 else 'already_four_x_cross': sorted(already)},
                 open_basket=evidence, collateral_balance=funding['balance'],
                 orders_permitted=False, transfers_allowed=False, account_mode_change=False,
                 basis='User directive 27 Oct 2026 09:05 IST: raise the carry markets to a 2x cross setting while '
                       'the basket is open (raise only; HYPE held as is; exposure capped at 1.5x by the mandate). '
                       '2 Nov 2026 22:05 IST (answered question "SP500 + USDJPY + EWJ"): EWJ, holding no position, '
                       'may come down from a higher cross setting to 2x cross so it can join the basket; the '
-                      'overall exposure stays capped at 2x the starting equity by the mandate.')
+                      'overall exposure stays capped at 2x the starting equity by the mandate.'
+                      + ('' if target == 2 else ' 2 Nov 2026 23:20 IST (answered question "Yes, HYPE $150k (2.9x)"): raise '
+                         'the carry markets from 2x to 4x cross so HYPE can reach $150k with every other leg unchanged '
+                         '(about 2.9x the starting equity, capped at 2.95x by the mandate).'))
     plan['plan_hash'] = fingerprint(plan)
     return plan
 
@@ -168,7 +181,9 @@ def require_plan(root, plan, now):
     check = dict(plan)
     identity = check.pop('plan_hash', None)
     if (identity != fingerprint(check) or plan.get('status') != 'UNSIGNED_CARRY_LEVERAGE_RAISE_PLAN'
-            or plan.get('target_leverage') != TARGET or plan.get('source_hash') != active_source_hash(root)
+            or plan.get('target_leverage') not in TARGETS
+            or plan.get('configuration_scope') != ('CARRY_2X' if plan.get('target_leverage') == 2 else 'CARRY_4X')
+            or plan.get('source_hash') != active_source_hash(root)
             or type(plan.get('observed_ms')) is not int or not 0 <= now - plan['observed_ms'] <= PLAN_MAX_AGE_MS):
         raise ExchangeError('FRESH_EXACT_CARRY_LEVERAGE_PLAN_REQUIRED')
     if not plan['changes']:
@@ -188,9 +203,13 @@ def approve_raise(root, plan_path, release, output):
     if not sys.stdin.isatty():
         raise ExchangeError('GENUINE_INTERACTIVE_CONFIGURATION_APPROVAL_REQUIRED')
     print(json.dumps(plan, indent=2))
-    print('Confirm: set the listed carry markets to 2x CROSS only (a raise from 1x, or EWJ down from its higher '
-          'setting while it holds no position), with the open basket shown above. '
-          'No order, cancellation, transfer or account-mode change.')
+    if plan['target_leverage'] == 2:
+        print('Confirm: set the listed carry markets to 2x CROSS only (a raise from 1x, or EWJ down from its higher '
+              'setting while it holds no position), with the open basket shown above. '
+              'No order, cancellation, transfer or account-mode change.')
+    else:
+        print('Confirm: raise the listed carry markets from 2x to 4x CROSS only, with the open basket shown above. '
+              'No order, cancellation, transfer or account-mode change.')
     phrase = 'APPROVE PAS CONFIGURATION ' + plan['plan_hash']
     if input(phrase + '\n> ').strip() != phrase:
         raise ExchangeError('CONFIGURATION_APPROVAL_NOT_ACCEPTED')
@@ -300,7 +319,7 @@ def execute_raise(root, plan_path, release, acceptance, output):
             if journal.pending_management(action):
                 raise ExchangeError('CONFIGURATION_UNCERTAIN_ACTION_NO_RETRY')
             current = account._query('activeAssetData', coin=symbol)
-            if current.get('leverage') == dict(type='cross', value=TARGET):
+            if current.get('leverage') == dict(type='cross', value=p['target_leverage']):
                 continue
             if current.get('leverage') != row['before']:
                 raise ExchangeError('CONFIGURATION_BEFORE_VALUE_CHANGED')
@@ -318,7 +337,7 @@ def execute_raise(root, plan_path, release, acceptance, output):
                     raise ExchangeError('CONFIGURATION_NOT_ACKNOWLEDGED')
                 current = account._query('activeAssetData', coin=symbol)
                 if (current.get('user', '').lower() != TEAM.lower() or current.get('coin') != symbol
-                        or current.get('leverage') != dict(type='cross', value=TARGET)):
+                        or current.get('leverage') != dict(type='cross', value=p['target_leverage'])):
                     raise ExchangeError('AUTHORITATIVE_TWO_X_READBACK_REQUIRED')
                 journal.update_management(action_id, 'ACKNOWLEDGED', client.clock_ms())
                 result['results'].append(dict(symbol=symbol, response=response, readback=current,
@@ -333,13 +352,14 @@ def execute_raise(root, plan_path, release, acceptance, output):
         for s in p['entry_markets']:
             r = account._query('activeAssetData', coin=s)
             if (r.get('coin') != s or r.get('user', '').lower() != TEAM.lower()
-                    or r.get('leverage') != dict(type='cross', value=TARGET)):
+                    or r.get('leverage') != dict(type='cross', value=p['target_leverage'])):
                 raise ExchangeError('SELECTED_MARKETS_TWO_X_READBACKS_REQUIRED')
         final = basket_evidence(root, client, account)
         if final['positions'] != p['open_basket']['positions'] or final['stops'] != p['open_basket']['stops']:
             raise ExchangeError('OPEN_BASKET_CHANGED_DURING_CONFIGURATION')
-        result.update(status='SELECTED_MARKETS_TWO_X_CROSS_VERIFIED', verified_markets=p['entry_markets'],
-                      verified_ms=client.clock_ms(), target_leverage=TARGET, open_basket_after=final)
+        result.update(status=('SELECTED_MARKETS_TWO_X_CROSS_VERIFIED' if p['target_leverage'] == 2
+                              else 'SELECTED_MARKETS_FOUR_X_CROSS_VERIFIED'), verified_markets=p['entry_markets'],
+                      verified_ms=client.clock_ms(), target_leverage=p['target_leverage'], open_basket_after=final)
     except Exception as exc:
         result.update(status='CONFIGURATION_REQUIRES_REVIEW', error=str(exc), blind_retry=False)
     finally:

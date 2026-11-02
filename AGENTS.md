@@ -339,3 +339,13 @@
   <that run's carry_state.json>` (ewj_notionals): legs the prior run verified complete (HOLD) become hold legs, the
   others keep their budgets, EWJ gets the reserved $25,000 (capped at 2x the starting equity, refused below $15,000,
   and only after HYPE's trim was verified).
+- 2 November 23:20 IST (user: "We are out of top 10 pnl now, this is unacceptable ... increase the leverage such that the
+  balance target of HYPE reaches to 150k dollars without changing the balance of these stocks at all"; answered question
+  "Yes, HYPE $150k (2.9x)" after the model numbers: -5% halt (which flattens everything) by the 3 Nov sample ~32% vs ~7%,
+  by 6 Nov ~66% vs ~40%; top 5 tomorrow ~12% vs ~5%): HYPE's budget becomes $150,000 (`run_carry.py rebind`,
+  hype_up_notionals), bought with touch-limited IOC children; SP500, EWJ, USDJPY, BTC and ETH keep their budgets (a leg
+  the prior run verified complete is held as it is). Exposure about $290k, about 2.9x the starting equity: the six
+  markets move from 2x to 4x CROSS through the typed route (`raise_carry_leverage_4x.py`, carry_leverage_raise target 4,
+  scope CARRY_4X: only 2x -> 4x CROSS, nothing else), and the mandate allows leverage 4 with the exposure capped at 2.95x
+  the starting equity and one leg at $155k (CARRY_MAX_EXPOSURE_4X, CARRY_MAX_LEG_4X). The 8% leg stops and the -5%
+  account halt (vs $99,998; it flattens) are unchanged: with HYPE at $150k a ~3% HYPE fall alone trips it.

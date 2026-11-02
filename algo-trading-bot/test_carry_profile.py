@@ -1639,3 +1639,161 @@ def test_ewj_joins_long_while_completed_legs_are_held_and_sp500_finishes(tmp_pat
         assert leg['mode'] == 'HOLD' and leg['verified']['problems'] == []
         assert [D(o['sz']) for o in w.stops(s)] == [abs(w.position(s))]            # one full-size stop per leg
     assert w.r.order_errors == 0 and not w.r.state['halted']
+
+
+# ---------- HYPE to $150k with every other leg unchanged, 4x setting, about 2.9x exposure (2 Nov 23:20 IST) ----------
+PRIOR_150K = (('pas:BTC', '20600'), ('pas:ETH', '19600'), ('pas:HYPE', '56600'), ('pas:SP500', '59900'),
+              ('pas:USDJPY', '15000'), ('pas:EWJ', '25000'))
+HELD_150K = {'pas:BTC': D('20480.12'), 'pas:ETH': D('19551.80'), 'pas:HYPE': D('56301.07'), 'pas:SP500': D('25012.40'),
+             'pas:EWJ': D('750.00')}                                                 # marked 2 Nov 23:15 IST
+MODES_150K = {'pas:BTC': 'HOLD', 'pas:ETH': 'HOLD', 'pas:HYPE': 'HOLD', 'pas:SP500': 'BUILD', 'pas:USDJPY': 'BUILD',
+              'pas:EWJ': 'BUILD'}
+KW_4X = dict(EWJ_KW, leverage=4)
+
+
+def test_hype_up_budgets_give_hype_150k_and_keep_every_other_leg():
+    legs, hold = run_carry_module().hype_up_notionals(HELD_150K, PRIOR_150K, MODES_150K)
+    assert legs == (('pas:BTC', '20500'), ('pas:ETH', '19600'), ('pas:HYPE', '150000'), ('pas:SP500', '59900'),
+                    ('pas:USDJPY', '15000'), ('pas:EWJ', '25000'))
+    assert hold == ('pas:BTC', 'pas:ETH')                                            # HYPE grows; the rest keep building
+    assert D('2.9') * D('99998.337076') < sum(D(v) for _, v in legs) <= D('2.95') * D('99998.337076')
+    m = basket_mandate(leg_notionals=legs, hold_legs=hold, **KW_4X).require()
+    assert m.leverage == 4 and m.notional_for('pas:HYPE') == D('150000')
+
+
+@pytest.mark.parametrize('held,prior', [
+    (dict(HELD_150K, **{'pas:HYPE': D('150000')}), PRIOR_150K),                       # nothing to buy: never a sale
+    ({s: v for s, v in HELD_150K.items() if s != 'pas:BTC'}, PRIOR_150K),            # a hold leg is missing
+    (HELD_150K, PRIOR_150K[:5]),                                                     # EWJ has no prior budget
+    (dict(HELD_150K, **{'pas:EWY': D('100')}), PRIOR_150K),                           # a position outside the basket
+])
+def test_hype_up_budgets_refuse_a_sale_or_a_missing_or_foreign_leg(held, prior):
+    with pytest.raises(SystemExit):
+        run_carry_module().hype_up_notionals(held, prior, MODES_150K)
+
+
+@pytest.mark.parametrize('change', [
+    dict(leg_notionals=PRIOR_150K[:2] + (('pas:HYPE', '155100'),) + PRIOR_150K[3:]),   # leg above $155k
+    dict(leg_notionals=PRIOR_150K[:2] + (('pas:HYPE', '155000'),) + PRIOR_150K[3:5] + (('pas:EWJ', '25000'),),
+         starting_equity='99000'),                                                    # above 2.95x the start
+    dict(leverage=3),                                                                 # 1, 2 or 4 only
+    dict(leverage=5),
+    dict(leg_notionals=()),                                                           # 4x needs explicit legs
+    dict(close_legs=('pas:USDJPY',)),                                                 # close legs stay a 2x thing
+])
+def test_four_x_mandate_rejects_anything_else(change):
+    base = dict(KW_4X, leg_notionals=PRIOR_150K[:2] + (('pas:HYPE', '150000'),) + PRIOR_150K[3:],
+                hold_legs=('pas:BTC', 'pas:ETH'))
+    with pytest.raises(ExchangeError, match='INVALID_CARRY_MANDATE'):
+        basket_mandate(**dict(base, **change)).require()
+
+
+def test_raise_plan_to_4x_raises_only_from_2x_cross(monkeypatch, tmp_path):
+    account = RaiseAccount()
+    mod, client, _ = raise_world(monkeypatch, account)
+    account.leverage.update({s: dict(type='cross', value=2) for s in account.leverage})
+    account.leverage['pas:SP500'] = dict(type='cross', value=4)                     # already raised: skipped
+    plan = mod.raise_plan(tmp_path, client, account, provenance='x', target=4)
+    assert [c['symbol'] for c in plan['changes']] == ['pas:BTC', 'pas:ETH', 'pas:EWJ', 'pas:HYPE', 'pas:USDJPY']
+    assert all(c['before'] == dict(type='cross', value=2) and c['requested_action'] == dict(
+        type='updateLeverage', asset=client.market(c['symbol']).asset_id, isCross=True, leverage=4) for c in plan['changes'])
+    assert plan['already_four_x_cross'] == ['pas:SP500'] and plan['configuration_scope'] == 'CARRY_4X'
+    assert plan['target_leverage'] == 4 and plan['orders_permitted'] is False and plan['account_mode_change'] is False
+    monkeypatch.setattr('exchange.paper_operations.active_source_hash', lambda root: plan['source_hash'])
+    assert mod.require_plan(tmp_path, plan, plan['observed_ms'] + 1000) == plan
+    with pytest.raises(ExchangeError, match='FRESH_EXACT_CARRY_LEVERAGE_PLAN_REQUIRED'):
+        mod.require_plan(tmp_path, dict(plan, configuration_scope='CARRY_2X'), plan['observed_ms'])
+
+
+@pytest.mark.parametrize('before', [dict(type='cross', value=1), dict(type='cross', value=3),
+                                    dict(type='isolated', value=2), dict(type='cross', value=20)])
+def test_raise_plan_to_4x_refuses_anything_but_2x_cross(monkeypatch, tmp_path, before):
+    account = RaiseAccount()
+    mod, client, _ = raise_world(monkeypatch, account)
+    account.leverage.update({s: dict(type='cross', value=2) for s in account.leverage})
+    account.leverage['pas:EWJ'] = before                                             # no EWJ exception at 4x
+    with pytest.raises(ExchangeError, match='ONLY_A_RAISE_FROM_1X_CROSS'):
+        mod.raise_plan(tmp_path, client, account, provenance='x', target=4)
+    with pytest.raises(ExchangeError, match='UNSUPPORTED_TARGET_LEVERAGE'):
+        mod.raise_plan(tmp_path, client, account, provenance='x', target=3)
+
+
+def test_hype_grows_to_150k_with_ioc_children_while_every_other_leg_is_unchanged(tmp_path, monkeypatch):
+    monkeypatch.setitem(SPECS, 'pas:EWJ', (2, D('93.8'), '60'))
+    rc = run_carry_module()
+    held = {'pas:BTC': D('0.26485'), 'pas:ETH': D('8.6261'), 'pas:HYPE': D('735.07'), 'pas:SP500': D('7.850'),
+            'pas:USDJPY': D('-95.6'), 'pas:EWJ': D('266.5')}                         # every other leg already built
+    marked = {s: abs(q) * D(str(SPECS[s][1])) for s, q in held.items()}
+    modes = {s: 'HOLD' for s in held}
+    legs, hold = rc.hype_up_notionals(marked, PRIOR_150K, modes)
+    assert hold == ('pas:BTC', 'pas:ETH', 'pas:SP500', 'pas:USDJPY', 'pas:EWJ') and dict(legs)['pas:HYPE'] == '150000'
+    w = World(tmp_path, monkeypatch, leg_notionals=legs, hold_legs=hold, **KW_4X)
+    w.venue.leverage.update({s: dict(type='cross', value=4) for s in SPECS})
+    seed(w, held)
+    w.r.startup()
+    for _ in range(4000):
+        w.step(31000)
+        if all(w.leg(s)['mode'] == 'HOLD' for s in EWJ_MARKETS):
+            break
+    attempts = w.events('CHILD_ATTEMPT')
+    assert attempts and all(e['symbol'] == 'pas:HYPE' and e['entry'] and e['tif'] == 'Ioc' for e in attempts)
+    for s in hold:
+        assert w.position(s) == held[s]                                             # unchanged, as ordered
+    value = {s: abs(w.position(s)) * D(str(SPECS[s][1])) for s in EWJ_MARKETS}
+    assert D('149800') < value['pas:HYPE'] <= D('150000')
+    assert sum(value.values()) <= D('2.95') * D('99998.337076')                     # exposure capped at 2.95x
+    for s in EWJ_MARKETS:
+        leg = w.leg(s)
+        assert leg['mode'] == 'HOLD' and leg['verified']['problems'] == []
+        assert [D(o['sz']) for o in w.stops(s)] == [abs(w.position(s))]            # HYPE's stop sized to $150k
+    assert w.r.order_errors == 0 and not w.r.state['halted']
+
+
+def test_carry_4x_transport_signs_only_the_approved_4x_cross_action_once(tmp_path, monkeypatch):
+    import socket
+    from eth_account import Account
+    from exchange import leverage_configuration as lc, pas_configuration as pc
+    from exchange.pas_configuration import PasConfigurationApproval
+    from exchange.sdk_transport import build_exchange
+    from exchange.execution_safety import NonceManager, HyperliquidRateLimitManager
+    from exchange.execution_journal import fingerprint
+    from exchange.hyperliquid_client import HyperliquidClient
+    from test_pas_execution_faults import PasLiveFixture
+    signer = Account.create(); f = PasLiveFixture(signer.address); monkeypatch.setattr(pc, 'API', signer.address)
+    monkeypatch.setattr(pc, 'TEAM', f.active['user']); team = f.active['user']
+    c = HyperliquidClient(f, clock_ms=lambda: f.now, venue='pas'); c.startup()
+    four = dict(type='updateLeverage', asset=c.market('pas:BTC').asset_id, isCross=True, leverage=4)
+    plan = dict(source_hash='b' * 64, configuration_scope='CARRY_4X', target_leverage=4, changes=[dict(requested_action=four)])
+    plan['plan_hash'] = fingerprint(plan)
+    a = PasConfigurationApproval(plan['plan_hash'], 'b' * 64, 'c' * 64, f.now, f.now + 900000, socket.gethostname(),
+                                 'APPROVE PAS CONFIGURATION ' + plan['plan_hash'], True, True, team, signer.address)
+    j = ExecutionJournal(tmp_path / 'off.sqlite', session_id='OFFLINE', team_address=team)
+    n = NonceManager(tmp_path / 'nonce.sqlite', signer.address, clock_ms=lambda: f.now, journal=j)
+    rates = HyperliquidRateLimitManager(j, clock_ms=lambda: f.now)
+    wires = []
+
+    def sdk(wallet, client, nonces, sink):
+        s = build_exchange(wallet, client, nonces, sink, offline=True)
+        s.session.post = lambda url, **kw: (wires.append(kw['json']) or SimpleNamespace(
+            status_code=200, json=lambda: dict(status='ok', response=dict(type='default'))))
+        return s
+    monkeypatch.setattr(lc, 'build_exchange', sdk)
+    two = dict(plan, changes=[dict(requested_action=dict(four, leverage=2))]); two.pop('plan_hash')
+    two['plan_hash'] = fingerprint(two)
+    with pytest.raises(ExchangeError, match='V4_BTC_EWY_CONFIGURATION_ACTIONS_ONLY'):   # a 2x action under CARRY_4X
+        lc.LeverageConfigurationTransport(c, signer, team, n, replace(a, plan_hash=two['plan_hash'],
+                                          exact_phrase='APPROVE PAS CONFIGURATION ' + two['plan_hash']),
+                                          rates=rates, readiness_guard=lambda: None, approved_plan=two)
+    t = lc.LeverageConfigurationTransport(c, signer, team, n, a, rates=rates, readiness_guard=lambda: None,
+                                          approved_plan=plan)
+    try:
+        assert t.target_leverage == 4
+        t.set_target_cross('pas:BTC')
+        assert len(wires) == 1 and wires[0]['action'] == four                          # exactly the approved action
+        with pytest.raises(ExchangeError):
+            t.set_target_cross('pas:BTC')                                              # single use
+        with pytest.raises(ExchangeError):
+            t.set_target_cross('pas:ETH')                                              # never an unapproved market
+        assert len(wires) == 1
+    finally:
+        t.close(); n.close(); j.close(); c.close()

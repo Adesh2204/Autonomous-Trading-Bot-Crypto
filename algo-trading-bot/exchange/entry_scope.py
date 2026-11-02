@@ -14,6 +14,9 @@ CARRY_ENTRY_MARKETS = frozenset(('pas:BTC', 'pas:ETH', 'pas:HYPE', 'pas:SP500', 
 CARRY_SCOPE = 'CARRY'
 # Configuration-only scope (27 Oct, user): set the carry markets to 2x CROSS, never more.
 CARRY_2X_SCOPE = 'CARRY_2X'
+# Configuration-only scope (2 Nov 23:20 IST, user: HYPE to $150k at about 2.9x exposure): the carry markets from 2x to
+# 4x CROSS, never more.
+CARRY_4X_SCOPE = 'CARRY_4X'
 
 
 def require_entry(symbol, scope=None):

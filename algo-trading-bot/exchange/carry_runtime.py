@@ -51,7 +51,12 @@ CARRY_TAKER_DEPTH_BPS = (0, 5)    # IOC children: the touch only, or up to 5 bps
 # 29 Oct 13:45 IST (user: "start buying with the remaining balance, most into HYPE, then SP500, BTC, ETH,
 # then the others"): exposure up to 1.85x equity, each leg at most $65,000. At 1.85x the margin left free
 # at the 2x setting stays above the loss that trips the -5% halt, so no build child runs out of margin first.
-CARRY_LEVERAGE_SETTINGS = (1, 2)
+CARRY_LEVERAGE_SETTINGS = (1, 2, 4)
+# 2 Nov 23:20 IST (user, answered question "Yes, HYPE $150k (2.9x)", after the model numbers: -5% halt by the next sample
+# ~32%, by 6 Nov ~66%): HYPE to $150k with every other leg unchanged, about 2.9x the starting equity. That needs a 4x
+# cross SETTING (at 2x the exchange cannot hold it); the exposure is capped at 2.95x and one leg at $155,000.
+CARRY_MAX_EXPOSURE_4X = D('2.95')
+CARRY_MAX_LEG_4X = D('155000')
 # 2 Nov 22:05 IST: with USDJPY re-opened and EWJ added there is no close leg left, and the user kept the 2x exposure
 # ordered on 2 Nov 11:40 IST ("without changing the leverage at all"), so the cap without close legs is 2x as well.
 CARRY_MAX_EXPOSURE_2X = D('2')
@@ -173,7 +178,7 @@ class CarryMandate:
                 or decimal(self.account_loss_halt) != D('0.05')
                 or self.taker_depth_bps not in CARRY_TAKER_DEPTH_BPS):
             raise ExchangeError('INVALID_CARRY_MANDATE')
-        if self.leverage == 2 and not self.leg_notionals:
+        if self.leverage in (2, 4) and not self.leg_notionals:
             raise ExchangeError('INVALID_CARRY_MANDATE')
         if (len(set(self.hold_legs)) != len(self.hold_legs) or not set(self.hold_legs) <= set(self.markets)
                 or self.hold_legs and not self.leg_notionals):
@@ -189,7 +194,8 @@ class CarryMandate:
             amounts = [decimal(v, positive=True) for v in tilted.values()]
             leg_cap, exposure = (((CARRY_MAX_LEG_2X_CLOSE, CARRY_MAX_EXPOSURE_2X_CLOSE) if self.close_legs
                                   else (CARRY_MAX_LEG_2X, CARRY_MAX_EXPOSURE_2X))
-                                 if self.leverage == 2 else (CARRY_MAX_TILTED_LEG, D(1)))
+                                 if self.leverage == 2 else (CARRY_MAX_LEG_4X, CARRY_MAX_EXPOSURE_4X)
+                                 if self.leverage == 4 else (CARRY_MAX_TILTED_LEG, D(1)))
             # A close leg has no budget: it is only ever sold to flat.
             if (len(tilted) != len(self.leg_notionals) or set(tilted) != set(self.markets) - set(self.close_legs)
                     or any(a > leg_cap for a in amounts)

@@ -97,6 +97,13 @@ DIVERSIFY_RESERVED = D('25000')   # EWJ's share, bought when EWJ joins the baske
 EWJ_LEG = 'pas:EWJ'
 EWJ_MIN_BUY = D('15000')
 EWJ_LEG_NOTIONAL = '16000'       # default leg size, unused (every leg has a budget); 6 x $16,000 stays within equity
+# 2 Nov 23:20 IST (user: "increase the leverage such that the balance target of HYPE reaches to 150k dollars without
+# changing the balance of these stocks at all"; answered question "Yes, HYPE $150k (2.9x)" after the model numbers):
+# HYPE's budget becomes $150,000, bought with touch-limited IOC children; every other leg keeps its budget, and a leg the
+# previous run verified complete is held exactly as it is. The six markets move to a 4x CROSS setting first
+# (raise_carry_leverage_4x.py, typed approval); the mandate caps the exposure at 2.95x the starting equity.
+HYPE_TARGET = D('150000')
+HYPE_UP_LEVERAGE = 4
 TAKER_DEPTH_BPS = 5              # IOC children: up to 25% of the depth within 5 bps of the touch
 APPROVAL = ('User directive 2026-10-25 23:35 IST, "We wanna move with Carry Strategy" (YES, CARRY): half size, '
             '$9,500 per leg, LONG BTC/ETH/HYPE/SP500 and SHORT USDJPY at 1x, NO basket stop, existing 8% per-leg '
@@ -144,7 +151,11 @@ APPROVAL = ('User directive 2026-10-25 23:35 IST, "We wanna move with Carry Stra
             'its account setting is 2x (the user approved that configuration change through the typed route); BTC '
             'and ETH are held as they are; the 2x setting, 8% leg stops and -5% halt are kept. Second step: EWJ, set to '
             '2x CROSS by the typed route, joins the basket LONG with the reserved $25,000 (capped at 2x the starting '
-            'equity); legs the previous run verified complete are held as they are.')
+            'equity); legs the previous run verified complete are held as they are. 2 Nov 23:20 IST the user ordered HYPE '
+            'raised to $150,000 with every other leg unchanged; answered question "Yes, HYPE $150k (2.9x)" after the '
+            'model numbers (-5% halt by the next sample ~32%, by 6 Nov ~66%): the six markets move to a 4x cross '
+            'setting through the typed route, HYPE is bought with touch-limited IOC children, exposure capped at '
+            '2.95x the starting equity; the 8% leg stops and -5% halt are kept.')
 
 
 def two_x_notionals(starting_equity, held_notionals):
@@ -321,6 +332,29 @@ def ewj_notionals(starting_equity, held_notionals, prior_legs, prior_modes):
     return tuple((s, str(legs[s])) for s, _ in CARRY_BASKET_EWJ if s in legs), hold
 
 
+def hype_up_notionals(held_notionals, prior_legs, prior_modes):
+    """Leg budgets for HYPE at HYPE_TARGET: SHIFT_HOLD_LEGS and every other leg the previous run verified complete
+    (mode HOLD) at their marked value rounded up to $100 (hold legs), the remaining legs at their prior budgets, and
+    SHIFT_FROM_LEG at HYPE_TARGET. Refuses unless every basket leg has a prior budget, the hold legs and HYPE are
+    held, and HYPE holds less than HYPE_TARGET (nothing is sold). Returns (budgets, hold legs); the mandate caps the
+    exposure."""
+    from exchange.carry_runtime import CARRY_BASKET_EWJ
+    held = {s: D(v) for s, v in held_notionals.items()}
+    prior = {s: D(v) for s, v in dict(prior_legs).items()}
+    basket = [s for s, _ in CARRY_BASKET_EWJ]
+    if (set(prior) != set(basket) or not set(held) <= set(basket)
+            or any(not held.get(s) for s in (*SHIFT_HOLD_LEGS, SHIFT_FROM_LEG))):
+        raise SystemExit(f'Every basket leg needs a prior budget and the hold legs and HYPE must be held: '
+                         f'held={sorted(held)} prior={sorted(prior)}')
+    if held[SHIFT_FROM_LEG] >= HYPE_TARGET:
+        raise SystemExit(f'{SHIFT_FROM_LEG} already holds {held[SHIFT_FROM_LEG]} >= {HYPE_TARGET}; nothing is sold.')
+    hold = tuple(s for s in basket if s != SHIFT_FROM_LEG
+                 and (s in SHIFT_HOLD_LEGS or s in held and prior_modes.get(s) == 'HOLD'))
+    legs = {s: (held[s] / 100).to_integral_value(rounding='ROUND_CEILING') * 100 if s in hold else prior[s] for s in basket}
+    legs[SHIFT_FROM_LEG] = HYPE_TARGET
+    return tuple((s, str(legs[s])) for s in basket), hold
+
+
 def ms(dt):
     return int(dt.timestamp() * 1000)
 
@@ -394,22 +428,22 @@ def rebind(args):
     if any(not (o.get('isTrigger') and o.get('reduceOnly')) for o in account.get_frontend_open_orders()):
         raise SystemExit('A resting order is not a reduce-only stop; refusing.')
     leverage = {s: client.post_info('activeAssetData', user=TEAM, coin=s).get('leverage') for s in basket}
-    if any(v != dict(type='cross', value=LEVERAGE) for v in leverage.values()):
-        raise SystemExit(f'Markets are not at {LEVERAGE}x CROSS yet: {leverage}; run raise_carry_leverage_2x.py first.')
+    if any(v != dict(type='cross', value=HYPE_UP_LEVERAGE) for v in leverage.values()):
+        raise SystemExit(f'Markets are not at {HYPE_UP_LEVERAGE}x CROSS yet: {leverage}; run raise_carry_leverage_4x.py first.')
     marks = {s: D(str(client.post_info('activeAssetData', user=TEAM, coin=s).get('markPx'))) for s in positions}
     equity = account.get_equity().collateral_balance          # unified USDP balance, already includes uPnL
-    notionals, hold = ewj_notionals(prior['starting_equity'], {s: abs(p.quantity) * marks[s] for s, p in positions.items()},
-                                    prior['leg_notionals'], {s: leg['mode'] for s, leg in prior_state['legs'].items()})
+    notionals, hold = hype_up_notionals({s: abs(p.quantity) * marks[s] for s, p in positions.items()},
+                                        prior['leg_notionals'], {s: leg['mode'] for s, leg in prior_state['legs'].items()})
     m = CarryMandate(team_wallet=TEAM, api_wallet=API, markets=tuple(basket), starts_ms=prior['starts_ms'],
                      flatten_ms=ms(FLATTEN), expires_ms=ms(EXPIRES), starting_equity=prior['starting_equity'],
                      leg_notional=EWJ_LEG_NOTIONAL, source_hash=active_source_hash(ROOT), release_sha256=sha(RELEASE),
                      venue_identity=venue_profile('pas').identity, approval_reference=APPROVAL, profile=CARRY_PROFILE,
                      sides=CARRY_BASKET_EWJ, unwind_starts_ms=ms(UNWIND), leg_notionals=notionals,
-                     max_positions=len(CARRY_BASKET_EWJ), taker_depth_bps=TAKER_DEPTH_BPS, leverage=LEVERAGE,
+                     max_positions=len(CARRY_BASKET_EWJ), taker_depth_bps=TAKER_DEPTH_BPS, leverage=HYPE_UP_LEVERAGE,
                      hold_legs=hold).require()
     atomic_json(MANDATE, asdict(m))
     print(json.dumps(dict(mandate=m.identity[:16], legs=dict(notionals), hold=hold, close=m.close_legs,
-                          equity=str(equity), exposure=str(sum(D(v) for _, v in notionals)), leverage=LEVERAGE,
+                          equity=str(equity), exposure=str(sum(D(v) for _, v in notionals)), leverage=HYPE_UP_LEVERAGE,
                           held={s: str(p.quantity) for s, p in positions.items()}), indent=2))
 
 
