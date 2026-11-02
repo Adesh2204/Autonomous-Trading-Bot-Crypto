@@ -58,7 +58,12 @@ CARRY_MAX_LEG_2X = D('65000')
 # 1 Nov 22:30 IST (user: "atleast 10k dollars" more of BTC/ETH into HYPE, leverage 1.5x): HYPE may reach $130,000.
 # 1 Nov 23:10 IST (user: "increase the leverage for 1.85x"; answered question "$185k: bot's 1.85x cap"): HYPE gets the
 # room up to 1.85x the starting equity (about $148k with BTC/ETH held), so it may reach $155,000.
-CARRY_MAX_LEG_2X_CLOSE = D('155000')
+# 2 Nov 11:40 IST (user, strict: "make the leverage 2x strictly from 1.85x to 2x ... for all three positions"): with
+# close legs the exposure may reach 2x the starting equity (the 2x setting's full buying power at that equity); BTC,
+# ETH and HYPE grow in proportion, so HYPE (about $160k) may reach $170,000. Entry children that the exchange context
+# shows would exceed the free margin are refused before signing (INSUFFICIENT_MARGIN, a skip, not an order error).
+CARRY_MAX_LEG_2X_CLOSE = D('170000')
+CARRY_MAX_EXPOSURE_2X_CLOSE = D('2')
 # 27 Oct 09:05 IST (user: "let the funds be where it is, don't sell or trim"): a hold leg keeps exactly the
 # size it holds when the mandate starts; it is never bought, trimmed or topped up, only protected and unwound.
 CARRY_CHILD_STRATEGIES = frozenset({'CARRY_LONG', 'CARRY_SHORT', 'CARRY_EXIT'})
@@ -176,8 +181,9 @@ class CarryMandate:
         if self.leg_notionals:
             tilted = dict(self.leg_notionals)
             amounts = [decimal(v, positive=True) for v in tilted.values()]
-            leg_cap, exposure = ((CARRY_MAX_LEG_2X_CLOSE if self.close_legs else CARRY_MAX_LEG_2X,
-                                  CARRY_MAX_EXPOSURE_2X) if self.leverage == 2 else (CARRY_MAX_TILTED_LEG, D(1)))
+            leg_cap, exposure = (((CARRY_MAX_LEG_2X_CLOSE, CARRY_MAX_EXPOSURE_2X_CLOSE) if self.close_legs
+                                  else (CARRY_MAX_LEG_2X, CARRY_MAX_EXPOSURE_2X))
+                                 if self.leverage == 2 else (CARRY_MAX_TILTED_LEG, D(1)))
             # A close leg has no budget: it is only ever sold to flat.
             if (len(tilted) != len(self.leg_notionals) or set(tilted) != set(self.markets) - set(self.close_legs)
                     or any(a > leg_cap for a in amounts)

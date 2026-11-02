@@ -957,8 +957,8 @@ def test_close_budgets_refuse_a_missing_leg_or_a_hype_sale(held):
     dict(close_legs=('pas:SP500', 'pas:SP500', 'pas:USDJPY')),
     dict(close_legs=('pas:SP500', 'pas:DOGE')),
     dict(leverage=1),
-    dict(leg_notionals=(('pas:BTC', '10000'), ('pas:ETH', '10000'), ('pas:HYPE', '155100'))),  # leg above $155k
-    dict(leg_notionals=(('pas:BTC', '65000'), ('pas:ETH', '65000'), ('pas:HYPE', '65000'))),   # above 1.85x
+    dict(leg_notionals=(('pas:BTC', '10000'), ('pas:ETH', '10000'), ('pas:HYPE', '170100'))),  # leg above $170k
+    dict(leg_notionals=(('pas:BTC', '70000'), ('pas:ETH', '70000'), ('pas:HYPE', '70000'))),   # above 2x
     dict(leg_notionals=(), close_legs=('pas:BTC', 'pas:ETH', 'pas:HYPE', 'pas:SP500', 'pas:USDJPY'), hold_legs=()),
 ])
 def test_close_legs_reject_anything_else(change):
@@ -1278,9 +1278,9 @@ def test_raise_budgets_refuse_a_missing_leg_or_a_hype_sale(held):
         run_carry_module().raise_notionals('99998.337076', held)
 
 
-def test_raise_budgets_above_the_1_85x_cap_are_refused_by_the_mandate():
+def test_raise_budgets_above_the_2x_close_leg_cap_are_refused_by_the_mandate():
     with pytest.raises(ExchangeError):
-        basket_mandate(leg_notionals=(('pas:BTC', '19000'), ('pas:ETH', '18000'), ('pas:HYPE', '148100')),
+        basket_mandate(leg_notionals=(('pas:BTC', '19000'), ('pas:ETH', '18000'), ('pas:HYPE', '163000')),
                        **RAISE_KW).require()
 
 
@@ -1309,4 +1309,63 @@ def test_raise_buys_only_hype_and_leaves_btc_eth_untouched(tmp_path, monkeypatch
         leg = w.leg(s)
         assert leg['mode'] == 'HOLD' and leg['verified']['problems'] == []
         assert [D(o['sz']) for o in w.stops(s)] == [abs(w.position(s))]
+    assert w.r.order_errors == 0 and not w.r.state['halted']
+
+
+# ---------- exposure raised to 2x the starting equity, all three legs scaled up in proportion (2 Nov 11:40 IST) ----------
+HELD_2NOV = {'pas:BTC': D('19046.15'), 'pas:ETH': D('18062.53'), 'pas:HYPE': D('146794.97')}   # marked 2 Nov 11:00 IST
+
+
+def test_scale_budgets_raise_btc_eth_hype_in_proportion_to_2x_the_starting_equity():
+    legs = dict(run_carry_module().scale_notionals('99998.337076', HELD_2NOV))
+    assert legs == {'pas:BTC': '20700', 'pas:ETH': '19600', 'pas:HYPE': '159600'}
+    total = sum(D(v) for v in legs.values())
+    assert D('99998.337076') * 2 - 300 < total <= D('99998.337076') * 2           # 2x, never above it
+    assert all(D(legs[s]) > HELD_2NOV[s] for s in HELD_2NOV)                      # every leg grows, nothing is sold
+    share = lambda d: {s: D(v) / sum(D(x) for x in d.values()) for s, v in d.items()}
+    assert all(abs(share(legs)[s] - share(HELD_2NOV)[s]) < D('0.001') for s in HELD_2NOV)   # same mix
+    m = basket_mandate(leg_notionals=tuple(legs.items()), **MOVE_KW).require()
+    assert m.hold_legs == () and m.close_legs == ('pas:SP500', 'pas:USDJPY')
+
+
+@pytest.mark.parametrize('held', [
+    {s: v for s, v in HELD_2NOV.items() if s != 'pas:ETH'},                         # a leg is missing
+    dict(HELD_2NOV, **{'pas:SP500': D('1000')}),                                    # a closed leg is held
+    {s: v * 2 for s, v in HELD_2NOV.items()},                                       # already above 2x: would sell
+])
+def test_scale_budgets_refuse_a_missing_or_foreign_leg_or_a_sale(held):
+    with pytest.raises(SystemExit):
+        run_carry_module().scale_notionals('99998.337076', held)
+
+
+def test_scale_budgets_above_2x_the_starting_equity_are_refused_by_the_mandate():
+    with pytest.raises(ExchangeError):
+        basket_mandate(leg_notionals=(('pas:BTC', '20800'), ('pas:ETH', '19700'), ('pas:HYPE', '159600')),
+                       **MOVE_KW).require()
+
+
+def test_scale_buys_all_three_legs_with_ioc_children_up_to_2x(tmp_path, monkeypatch):
+    rc = run_carry_module()
+    held = {'pas:BTC': D('0.24336'), 'pas:ETH': D('7.8955'), 'pas:HYPE': D('1676.39')}  # the 2 Nov 11:00 basket
+    marked = {s: q * D(str(SPECS[s][1])) for s, q in held.items()}
+    legs = rc.scale_notionals('99998.337076', marked)
+    w = World(tmp_path, monkeypatch, leg_notionals=legs, **MOVE_KW)
+    w.venue.leverage.update({s: dict(type='cross', value=2) for s in SPECS})
+    seed(w, held)
+    w.r.startup()
+    for _ in range(4000):
+        w.step(31000)
+        if all(w.leg(s)['mode'] == 'HOLD' for s in held):
+            break
+    attempts = w.events('CHILD_ATTEMPT')
+    assert {e['symbol'] for e in attempts} == set(held)                             # all three legs are bought
+    assert all(e['entry'] and e['tif'] == 'Ioc' for e in attempts)                  # buys only, never a sale
+    value = {s: abs(w.position(s)) * D(str(SPECS[s][1])) for s in held}
+    for s in held:
+        assert w.position(s) > held[s]
+        assert value[s] > D(dict(legs)[s]) - 200
+        leg = w.leg(s)
+        assert leg['mode'] == 'HOLD' and leg['verified']['problems'] == []
+        assert [D(o['sz']) for o in w.stops(s)] == [abs(w.position(s))]            # stop sized to the new size
+    assert sum(value.values()) <= D('99998.337076') * 2                             # exposure stays within 2x
     assert w.r.order_errors == 0 and not w.r.state['halted']

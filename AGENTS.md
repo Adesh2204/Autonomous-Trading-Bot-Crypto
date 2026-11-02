@@ -302,3 +302,12 @@
   with touch-limited IOC children (25% of the depth within 5 bps, never a sweep) and never sold. HYPE may reach $155k
   (CARRY_MAX_LEG_2X_CLOSE). The 2x setting, 8% leg stops and -5% account halt (vs $99,998) are unchanged; SP500/USDJPY
   stay closed. No rank or profit is guaranteed for the 2 Nov 12:00 UTC sample.
+- 2 November 11:40 IST (user, strict: "make the leverage 2x strictly from 1.85x to 2x, these are my strict instructions
+  for all three positions"): exposure rises to 2x the STARTING equity ($99,998 x 2, the base of the 1.85x; about 1.9x
+  the current equity). BTC, ETH and HYPE are no longer hold legs: each is scaled up by the same factor and keeps its share
+  of the basket (`run_carry.py rebind`, scale_notionals), bought with touch-limited IOC children (25% of the depth
+  within 5 bps, never a sweep); nothing is sold. With close legs the mandate cap is 2x (CARRY_MAX_EXPOSURE_2X_CLOSE) and
+  one leg may reach $170k; without close legs 1.85x still applies. 2x the current equity was not used: it would need
+  every dollar of free margin. An entry child above the free margin is refused before signing (INSUFFICIENT_MARGIN, a
+  skip). The 2x setting, 8% leg stops and -5% account halt (vs $99,998, about a 5% basket fall at 2x) are unchanged;
+  SP500/USDJPY stay closed. The runner had been halted (API_DISCONNECT_OVER_LIMIT, no flatten) since 02:59 IST.
