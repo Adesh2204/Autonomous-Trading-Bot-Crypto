@@ -311,3 +311,13 @@
   every dollar of free margin. An entry child above the free margin is refused before signing (INSUFFICIENT_MARGIN, a
   skip). The 2x setting, 8% leg stops and -5% account halt (vs $99,998, about a 5% basket fall at 2x) are unchanged;
   SP500/USDJPY stay closed. The runner had been halted (API_DISCONNECT_OVER_LIMIT, no flatten) since 02:59 IST.
+- 2 November 20:50 IST (user, strict: "trim about 40-50k from HYPE now and put that money into the markets ... which is
+  going to be profitable by tommorow ... keep the levarge same"): $50,000 of HYPE (never more; the kept budget rounds UP
+  to $100) is trimmed with reduce-only touch-limited IOC children (25% of the depth within 5 bps, never a sweep) and
+  SP500 is bought LONG with what was trimmed (`run_carry.py rebind`, shift_notionals), capped at 2x the starting equity
+  and refused below $40,000. SP500 alone of the ten pas markets paid longs funding over both 24 h and 7 d, is ~6x less
+  volatile than HYPE and was already at the 2x setting; EWJ/GOLD/BRENT/USDEUR are at 20x and EWY at 1x, so they would
+  need a configuration change (no account administration was done). BTC and ETH are hold legs, USDJPY stays closed.
+  The 2x setting, 8% leg stops and -5% account halt (vs $99,998) are unchanged. Score math given to the user: #1 is
+  unreachable at the 3 Nov 12:00 UTC sample (any one-day gain caps the score near 0.324 vs 0.375); #2 needs about a
+  +15.5% account day; a -1.5% day drops the rank to ~27. No profit or rank is guaranteed.

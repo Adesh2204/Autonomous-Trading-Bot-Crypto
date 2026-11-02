@@ -1369,3 +1369,83 @@ def test_scale_buys_all_three_legs_with_ioc_children_up_to_2x(tmp_path, monkeypa
         assert [D(o['sz']) for o in w.stops(s)] == [abs(w.position(s))]            # stop sized to the new size
     assert sum(value.values()) <= D('99998.337076') * 2                             # exposure stays within 2x
     assert w.r.order_errors == 0 and not w.r.state['halted']
+
+
+# ---------- $50k of HYPE moved into SP500, BTC/ETH held, USDJPY closed, exposure kept at 2x (2 Nov 20:50 IST) ----------
+HELD_SHIFT = {'pas:BTC': D('20634.73'), 'pas:ETH': D('19767.57'), 'pas:HYPE': D('158259.52')}   # marked 2 Nov 20:55 IST
+SHIFT_KW = dict(starting_equity='99998.337076', leverage=2, taker_depth_bps=5, hold_legs=('pas:BTC', 'pas:ETH'),
+                close_legs=('pas:USDJPY',))
+
+
+def test_shift_budgets_take_at_most_50k_from_hype_into_sp500_and_hold_btc_eth():
+    legs = run_carry_module().shift_notionals('99998.337076', HELD_SHIFT)
+    assert legs == (('pas:BTC', '20700'), ('pas:ETH', '19800'), ('pas:HYPE', '108300'), ('pas:SP500', '49900'))
+    budget = dict(legs)
+    sold = HELD_SHIFT['pas:HYPE'] - D(budget['pas:HYPE'])
+    assert D('49900') < sold <= D('50000')                                          # about $50k, never more
+    assert D(budget['pas:SP500']) <= sold                                           # SP500 gets only what was sold
+    assert sum(D(v) for v in budget.values()) <= D('99998.337076') * 2              # exposure stays within 2x
+    m = basket_mandate(leg_notionals=legs, **SHIFT_KW).require()
+    assert m.hold_legs == ('pas:BTC', 'pas:ETH') and m.close_legs == ('pas:USDJPY',)
+
+
+def test_shift_budgets_keep_the_exposure_within_2x_when_hype_has_risen():
+    held = dict(HELD_SHIFT, **{'pas:HYPE': D('165000')})                            # HYPE up ~4%: the 2x cap binds
+    legs = dict(run_carry_module().shift_notionals('99998.337076', held))
+    assert legs == {'pas:BTC': '20700', 'pas:ETH': '19800', 'pas:HYPE': '115000', 'pas:SP500': '44400'}
+    assert sum(D(v) for v in legs.values()) <= D('99998.337076') * 2
+
+
+@pytest.mark.parametrize('held', [
+    {s: v for s, v in HELD_SHIFT.items() if s != 'pas:ETH'},                        # a hold leg is missing
+    {s: v for s, v in HELD_SHIFT.items() if s != 'pas:HYPE'},                       # HYPE is missing
+    dict(HELD_SHIFT, **{'pas:SP500': D('1000')}),                                   # SP500 is not flat
+    dict(HELD_SHIFT, **{'pas:USDJPY': D('1000')}),                                  # a closed leg is held
+    dict(HELD_SHIFT, **{'pas:HYPE': D('45000')}),                                   # less HYPE than the move
+    dict(HELD_SHIFT, **{'pas:HYPE': D('175000')}),                                  # the 2x cap leaves SP500 < $40k
+])
+def test_shift_budgets_refuse_a_missing_or_foreign_leg_or_too_little_room(held):
+    with pytest.raises(SystemExit):
+        run_carry_module().shift_notionals('99998.337076', held)
+
+
+def test_shift_budgets_above_2x_the_starting_equity_are_refused_by_the_mandate():
+    with pytest.raises(ExchangeError):
+        basket_mandate(leg_notionals=(('pas:BTC', '20700'), ('pas:ETH', '19800'), ('pas:HYPE', '108300'),
+                                      ('pas:SP500', '51300')), **SHIFT_KW).require()
+
+
+def test_shift_trims_hype_first_with_reduce_only_ioc_then_buys_only_sp500(tmp_path, monkeypatch):
+    rc = run_carry_module()
+    held = {'pas:BTC': D('0.26485'), 'pas:ETH': D('8.6261'), 'pas:HYPE': D('1834.17')}  # the 2 Nov 20:50 basket
+    marked = {s: q * D(str(SPECS[s][1])) for s, q in held.items()}
+    legs = rc.shift_notionals('99998.337076', marked)
+    w = World(tmp_path, monkeypatch, leg_notionals=legs, **SHIFT_KW)
+    w.venue.leverage.update({s: dict(type='cross', value=2) for s in SPECS})
+    seed(w, held)
+    w.r.startup()
+    built = (*held, 'pas:SP500')
+    for _ in range(4000):
+        w.step(31000)
+        if all(w.leg(s)['mode'] == 'HOLD' for s in built):
+            break
+    attempts = w.events('CHILD_ATTEMPT')
+    trims = [i for i, e in enumerate(attempts) if e['key'].startswith('carry-trim:')]
+    buys = [i for i, e in enumerate(attempts) if e['entry']]
+    assert trims and {attempts[i]['symbol'] for i in trims} == {'pas:HYPE'}         # only HYPE is trimmed
+    assert all(not attempts[i]['entry'] and attempts[i]['tif'] == 'Ioc' for i in trims)
+    assert buys and {attempts[i]['symbol'] for i in buys} == {'pas:SP500'}          # only SP500 is bought
+    assert max(trims) < min(buys)                                                   # every trim before any buy
+    for s in rc.SHIFT_HOLD_LEGS:
+        assert w.position(s) == held[s]                                             # BTC and ETH exactly as held
+    assert w.leg('pas:USDJPY')['mode'] == 'CLOSED' and w.position('pas:USDJPY') == 0
+    value = {s: abs(w.position(s)) * D(str(SPECS[s][1])) for s in SPECS}
+    sold = marked['pas:HYPE'] - value['pas:HYPE']
+    assert D('49800') < sold <= D('50000')                                          # about $50k, never a sweep
+    assert D(dict(legs)['pas:SP500']) - 200 < value['pas:SP500'] <= sold            # SP500 bought with what was sold
+    assert sum(value.values()) <= D('99998.337076') * 2                             # exposure stays within 2x
+    for s in built:
+        leg = w.leg(s)
+        assert leg['mode'] == 'HOLD' and leg['verified']['problems'] == []
+        assert [D(o['sz']) for o in w.stops(s)] == [abs(w.position(s))]            # one full-size stop per leg
+    assert w.r.order_errors == 0 and not w.r.state['halted']
