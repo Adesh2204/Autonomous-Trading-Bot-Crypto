@@ -330,3 +330,12 @@
   the typed configuration route (configuration only; the overall 2x leverage is unchanged), after which EWJ joins the
   basket LONG. Until then the exposure is about 1.73x. BTC/ETH are hold legs; the 8% leg stops and -5% account halt (vs
   $99,998) are unchanged. Simulated with EWJ: daily volatility about 3.7%, -5% halt by 6 Nov about 30% (was 46%).
+  Second step (same directive): EWJ joins the carry basket LONG (CARRY_BASKET_EWJ, CARRY_ENTRY_MARKETS, six positions,
+  CarryPositionGuard up to six). The raise-only route (`exchange/carry_leverage_raise.py`, human-run
+  `raise_carry_leverage_2x.py`, typed plan-hash approval) gains one exception: pas:EWJ alone may be set from a higher
+  CROSS setting down to 2x CROSS while it holds no position; every other market is still only raised from 1x and no
+  margin mode is switched. With no close leg left, the 2x exposure cap applies without close legs too
+  (CARRY_MAX_EXPOSURE_2X = 2; legs still at most $65k). `run_carry.py rebind --prior <mandate> --prior-state
+  <that run's carry_state.json>` (ewj_notionals): legs the prior run verified complete (HOLD) become hold legs, the
+  others keep their budgets, EWJ gets the reserved $25,000 (capped at 2x the starting equity, refused below $15,000,
+  and only after HYPE's trim was verified).

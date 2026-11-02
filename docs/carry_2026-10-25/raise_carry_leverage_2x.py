@@ -5,6 +5,9 @@ changing the flat-account rule for this raise only. exchange/carry_leverage_rais
 1x -> 2x CROSS on BTC, ETH, HYPE, SP500 and USDJPY, with only the carry basket and its reduce-only stops
 open. It places, cancels and changes no order or position. The carry runtime must be stopped: it shares
 the signer and nonce store.
+
+2 Nov 2026 22:05 IST (user, answered question "SP500 + USDJPY + EWJ"): the same route also sets EWJ, while it
+holds no position, from its 20x CROSS setting down to 2x CROSS so it can join the basket. Nothing else changed.
 """
 from pathlib import Path
 import json, os, subprocess, sys, time
@@ -47,7 +50,7 @@ def main():
     (review / 'plan.json').write_text(json.dumps(plan, indent=2) + '\n')
     print(json.dumps(dict(changes=[(c['symbol'], c['before'], c['requested_action']['leverage']) for c in plan['changes']],
                           open_basket=plan['open_basket']['positions']), indent=2))
-    print('Accepting the exact phrase immediately raises the listed markets to 2x CROSS. It places no order.')
+    print('Accepting the exact phrase immediately sets the listed markets to 2x CROSS. It places no order.')
     approved = approve_raise(ROOT, review / 'plan.json', release, review / 'acceptance.json')
     print(json.dumps(approved, indent=2))
     applied = execute_raise(ROOT, review / 'plan.json', release, review / 'acceptance.json', review / 'applied')

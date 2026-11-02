@@ -71,7 +71,8 @@ def test_entry_scope_widens_only_for_the_carry_scope():
         require_entry('pas:EWY', 'CARRY')
     with pytest.raises(ExchangeError, match='CARRY_BASKET_NEW_ENTRIES_ONLY'):
         require_entry('pas:BTC', 'SCALPER')
-    assert PAS_ENTRY_MARKETS == {'pas:BTC', 'pas:EWY', 'pas:HYPE'} and len(CARRY_ENTRY_MARKETS) == 5
+    assert PAS_ENTRY_MARKETS == {'pas:BTC', 'pas:EWY', 'pas:HYPE'} and len(CARRY_ENTRY_MARKETS) == 6
+    assert 'pas:EWJ' in CARRY_ENTRY_MARKETS                                         # joined 2 Nov 22:05 IST
 
 
 def test_other_runtimes_keep_their_committed_guards():
@@ -705,7 +706,7 @@ def test_two_x_setting_allows_one_and_a_half_x_exposure_hype_first():
 
 @pytest.mark.parametrize('change', [
     dict(leverage=2, leg_notionals=TILT_2X[:2] + (('pas:HYPE', '65001'),) + TILT_2X[3:]),      # leg above $65k
-    dict(leverage=2, leg_notionals=TILT_2X[:4] + (('pas:USDJPY', '50000'),)),                   # above 1.85x equity
+    dict(leverage=2, leg_notionals=TILT_2X[:4] + (('pas:USDJPY', '62600'),)),                   # above 2x equity
     dict(leverage=2),                                                                           # 2x needs explicit legs
     dict(leverage=3, leg_notionals=TILT_2X),                                                    # never above 2x
     dict(leverage=1, leg_notionals=TILT_2X),                                                    # 1x keeps the 1x caps
@@ -1071,7 +1072,7 @@ def test_raise_plan_accepts_the_open_basket_with_its_stops_and_raises_only_one_t
     mod, client, _ = raise_world(monkeypatch, account)
     account.leverage['pas:SP500'] = dict(type='cross', value=2)                    # already raised: skipped
     plan = mod.raise_plan(tmp_path, client, account, provenance='x')
-    assert [c['symbol'] for c in plan['changes']] == ['pas:BTC', 'pas:ETH', 'pas:HYPE', 'pas:USDJPY']
+    assert [c['symbol'] for c in plan['changes']] == ['pas:BTC', 'pas:ETH', 'pas:EWJ', 'pas:HYPE', 'pas:USDJPY']
     assert all(c['requested_action'] == dict(type='updateLeverage', asset=client.market(c['symbol']).asset_id,
                                              isCross=True, leverage=2) for c in plan['changes'])
     assert plan['already_two_x_cross'] == ['pas:SP500'] and plan['configuration_scope'] == 'CARRY_2X'
@@ -1513,6 +1514,127 @@ def test_diversify_trims_hype_first_then_buys_sp500_and_sells_usdjpy(tmp_path, m
     assert D('14800') < value['pas:USDJPY'] <= D('15000') and w.position('pas:USDJPY') < 0   # USDJPY is short
     assert sum(value.values()) <= D('99998.337076') * D('1.85')                     # exposure only fell
     for s in SPECS:
+        leg = w.leg(s)
+        assert leg['mode'] == 'HOLD' and leg['verified']['problems'] == []
+        assert [D(o['sz']) for o in w.stops(s)] == [abs(w.position(s))]            # one full-size stop per leg
+    assert w.r.order_errors == 0 and not w.r.state['halted']
+
+
+# ---------- EWJ joins the basket LONG at the 2x setting with the reserved $25k (2 Nov 22:05 IST, second step) ----------
+from exchange.carry_runtime import CARRY_BASKET_EWJ
+
+EWJ_MARKETS = tuple(s for s, _ in CARRY_BASKET_EWJ)
+HELD_EWJ = {'pas:BTC': D('20634.73'), 'pas:ETH': D('19767.57'), 'pas:HYPE': D('57390.00'), 'pas:SP500': D('31000.00'),
+            'pas:USDJPY': D('15010.00')}
+PRIOR_EWJ = (('pas:BTC', '20700'), ('pas:ETH', '19800'), ('pas:HYPE', '57400'), ('pas:SP500', '59900'),
+             ('pas:USDJPY', '15000'))
+MODES_EWJ = {'pas:BTC': 'HOLD', 'pas:ETH': 'HOLD', 'pas:HYPE': 'HOLD', 'pas:SP500': 'BUILD', 'pas:USDJPY': 'HOLD'}
+EWJ_KW = dict(sides=CARRY_BASKET_EWJ, markets=EWJ_MARKETS, max_positions=6, starting_equity='99998.337076',
+              leverage=2, taker_depth_bps=5)
+
+
+def test_ewj_budgets_hold_completed_legs_keep_building_the_rest_and_give_ewj_25k():
+    legs, hold = run_carry_module().ewj_notionals('99998.337076', HELD_EWJ, PRIOR_EWJ, MODES_EWJ)
+    assert legs == (('pas:BTC', '20700'), ('pas:ETH', '19800'), ('pas:HYPE', '57400'), ('pas:SP500', '59900'),
+                    ('pas:USDJPY', '15100'), ('pas:EWJ', '25000'))
+    assert hold == ('pas:BTC', 'pas:ETH', 'pas:HYPE', 'pas:USDJPY')                   # SP500 is still building
+    assert sum(D(v) for _, v in legs) <= D('99998.337076') * 2                       # 2x, never above it
+    m = basket_mandate(leg_notionals=legs, hold_legs=hold, **EWJ_KW).require()
+    assert m.basket['pas:EWJ'] == 'LONG' and m.max_positions == 6 and m.close_legs == ()
+
+
+@pytest.mark.parametrize('held,prior,modes', [
+    (HELD_EWJ, PRIOR_EWJ, dict(MODES_EWJ, **{'pas:HYPE': 'BUILD'})),                # HYPE trim not verified done
+    (dict(HELD_EWJ, **{'pas:EWJ': D('1000')}), PRIOR_EWJ, MODES_EWJ),                 # EWJ already held
+    (dict(HELD_EWJ, **{'pas:EWY': D('1000')}), PRIOR_EWJ, MODES_EWJ),                 # a position outside the basket
+    (HELD_EWJ, PRIOR_EWJ[:3] + (('pas:SP500', '75000'), PRIOR_EWJ[4]), MODES_EWJ),  # 2x cap leaves EWJ < $15k
+])
+def test_ewj_budgets_refuse_an_unfinished_trim_a_held_ewj_or_too_little_room(held, prior, modes):
+    with pytest.raises(SystemExit):
+        run_carry_module().ewj_notionals('99998.337076', held, prior, modes)
+
+
+@pytest.mark.parametrize('change', [
+    dict(sides=CARRY_BASKET + (('pas:EWJ', 'SHORT'),)),                             # EWJ only ever LONG
+    dict(max_positions=5),                                                          # six legs need six positions
+    dict(markets=EWJ_MARKETS[:5]),                                                  # markets must match the sides
+    dict(sides=CARRY_BASKET_EWJ + (('pas:EWY', 'LONG'),), markets=EWJ_MARKETS + ('pas:EWY',), max_positions=7),
+    dict(leg_notionals=PRIOR_EWJ + (('pas:EWJ', '28000'),)),                        # above 2x the starting equity
+])
+def test_six_leg_mandate_rejects_anything_else(change):
+    base = dict(EWJ_KW, leg_notionals=PRIOR_EWJ + (('pas:EWJ', '25000'),), hold_legs=('pas:BTC', 'pas:ETH'))
+    with pytest.raises(ExchangeError, match='INVALID_CARRY_MANDATE'):
+        basket_mandate(**dict(base, **change)).require()
+
+
+def test_ewj_is_a_carry_entry_market_and_the_guard_takes_six_legs(tmp_path):
+    require_entry('pas:EWJ', 'CARRY')
+    with pytest.raises(ExchangeError, match='V4_PAS_BTC_EWY_NEW_ENTRIES_ONLY'):
+        require_entry('pas:EWJ')                                                    # never for other runtimes
+    journal = ExecutionJournal(tmp_path / 'j.sqlite', session_id='offline:carry-guard', team_address='0x' + '1' * 40)
+    CarryPositionGuard(journal, clock_ms=lambda: 1, sides=CARRY_BASKET_EWJ, max_positions=6)
+    with pytest.raises(ExchangeError, match='INVALID_CARRY_POSITION_GUARD'):
+        CarryPositionGuard(journal, clock_ms=lambda: 1, sides=CARRY_BASKET_EWJ, max_positions=7)
+    journal.close()
+
+
+def test_raise_plan_sets_a_flat_ewj_from_20x_down_to_2x_and_nothing_else(monkeypatch, tmp_path):
+    account = RaiseAccount()
+    mod, client, _ = raise_world(monkeypatch, account)
+    account.leverage.update({s: dict(type='cross', value=2) for s in account.leverage})
+    account.leverage['pas:EWJ'] = dict(type='cross', value=20)
+    plan = mod.raise_plan(tmp_path, client, account, provenance='x')
+    assert [(c['symbol'], c['before']) for c in plan['changes']] == [('pas:EWJ', dict(type='cross', value=20))]
+    assert plan['changes'][0]['requested_action'] == dict(type='updateLeverage', asset=client.market('pas:EWJ').asset_id,
+                                                         isCross=True, leverage=2)
+    assert sorted(plan['already_two_x_cross']) == sorted(set(CARRY_ENTRY_MARKETS) - {'pas:EWJ'})
+    assert plan['orders_permitted'] is False and plan['account_mode_change'] is False
+
+
+@pytest.mark.parametrize('ewj,held', [
+    (dict(type='cross', value=20), D('10')),                                        # EWJ holds a position
+    (dict(type='isolated', value=20), None),                                        # never a margin-mode switch
+    (dict(type='cross', value=3), D('-10')),                                        # held (wrong side) as well
+])
+def test_raise_plan_refuses_ewj_unless_flat_and_cross(monkeypatch, tmp_path, ewj, held):
+    account = RaiseAccount()
+    mod, client, _ = raise_world(monkeypatch, account)
+    account.leverage.update({s: dict(type='cross', value=2) for s in account.leverage})
+    account.leverage['pas:EWJ'] = ewj
+    if held is not None:
+        account.positions['pas:EWJ'] = held
+    with pytest.raises(ExchangeError, match='ONLY_A_RAISE_FROM_1X_CROSS|CARRY_BASKET_POSITIONS_ONLY'):
+        mod.raise_plan(tmp_path, client, account, provenance='x')
+
+
+def test_ewj_joins_long_while_completed_legs_are_held_and_sp500_finishes(tmp_path, monkeypatch):
+    monkeypatch.setitem(SPECS, 'pas:EWJ', (2, D('93.8'), '60'))
+    rc = run_carry_module()
+    held = {'pas:BTC': D('0.26485'), 'pas:ETH': D('8.6261'), 'pas:HYPE': D('745.45'), 'pas:SP500': D('4.1'),
+            'pas:USDJPY': D('-95.6')}                                                # after the first step
+    marked = {s: abs(q) * D(str(SPECS[s][1])) for s, q in held.items()}
+    prior = (('pas:BTC', '21200'), ('pas:ETH', '20300'), ('pas:HYPE', '57400'), ('pas:SP500', '59900'),
+             ('pas:USDJPY', '15000'))
+    legs, hold = rc.ewj_notionals('99998.337076', marked, prior, MODES_EWJ)
+    assert dict(legs)['pas:EWJ'] == '25000' and hold == ('pas:BTC', 'pas:ETH', 'pas:HYPE', 'pas:USDJPY')
+    w = World(tmp_path, monkeypatch, leg_notionals=legs, hold_legs=hold, **EWJ_KW)
+    w.venue.leverage.update({s: dict(type='cross', value=2) for s in SPECS})
+    seed(w, held)
+    w.r.startup()
+    for _ in range(4000):
+        w.step(31000)
+        if all(w.leg(s)['mode'] == 'HOLD' for s in EWJ_MARKETS):
+            break
+    attempts = w.events('CHILD_ATTEMPT')
+    assert not [e for e in attempts if e['key'].startswith('carry-trim:')]          # nothing is sold
+    assert {(e['symbol'], e['side']) for e in attempts if e['entry']} == {('pas:SP500', 'BUY'), ('pas:EWJ', 'BUY')}
+    for s in hold:
+        assert w.position(s) == held[s]                                             # held exactly as they were
+    value = {s: abs(w.position(s)) * D(str(SPECS[s][1])) for s in EWJ_MARKETS}
+    assert w.position('pas:EWJ') > 0 and D('24800') < value['pas:EWJ'] <= D('25000')
+    assert D('59700') < value['pas:SP500'] <= D('59900')
+    assert sum(value.values()) <= D('99998.337076') * 2                             # exposure stays within 2x
+    for s in EWJ_MARKETS:
         leg = w.leg(s)
         assert leg['mode'] == 'HOLD' and leg['verified']['problems'] == []
         assert [D(o['sz']) for o in w.stops(s)] == [abs(w.position(s))]            # one full-size stop per leg

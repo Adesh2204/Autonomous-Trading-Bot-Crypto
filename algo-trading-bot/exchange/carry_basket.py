@@ -55,7 +55,7 @@ def settled(row):
 
 # ---------- position guard ----------
 class CarryPositionGuard(MultiPositionGuard):
-    """Carry profile only: up to five legs on fixed sides, one unresolved child per leg.
+    """Carry profile only: up to six legs (the five, plus EWJ since 2 Nov) on fixed sides, one unresolved child per leg.
 
     Keeps the account-wide durable lock of SinglePositionGuard (startup UNKNOWN, fresh
     reconciled exchange truth only, reservation inside the intent transaction, flat needs
@@ -64,7 +64,7 @@ class CarryPositionGuard(MultiPositionGuard):
     """
     def __init__(self, journal, *, clock_ms, sides, max_positions=5):
         sides = dict(sides)
-        if (type(max_positions) is not int or not 1 <= max_positions <= 5 or not sides
+        if (type(max_positions) is not int or not 1 <= max_positions <= 6 or not sides
                 or any(v not in {'LONG', 'SHORT'} for v in sides.values())):
             raise ExchangeError('INVALID_CARRY_POSITION_GUARD')
         self.sides = sides

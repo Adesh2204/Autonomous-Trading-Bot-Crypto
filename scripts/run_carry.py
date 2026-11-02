@@ -91,6 +91,12 @@ SHIFT_CLOSE_LEGS = ('pas:USDJPY',)
 DIVERSIFY_TRIM = D('50000')
 DIVERSIFY_ADD = (('pas:SP500', D('10000')), ('pas:USDJPY', D('15000')))
 DIVERSIFY_RESERVED = D('25000')   # EWJ's share, bought when EWJ joins the basket
+# Second step: once EWJ's account setting reads 2x CROSS (typed configuration route), EWJ joins the basket LONG with the
+# reserved share. Legs the previous run verified complete (HOLD) are held exactly as they are, so a price move since
+# then can neither trim nor top them up; the others keep building to their budgets.
+EWJ_LEG = 'pas:EWJ'
+EWJ_MIN_BUY = D('15000')
+EWJ_LEG_NOTIONAL = '16000'       # default leg size, unused (every leg has a budget); 6 x $16,000 stays within equity
 TAKER_DEPTH_BPS = 5              # IOC children: up to 25% of the depth within 5 bps of the touch
 APPROVAL = ('User directive 2026-10-25 23:35 IST, "We wanna move with Carry Strategy" (YES, CARRY): half size, '
             '$9,500 per leg, LONG BTC/ETH/HYPE/SP500 and SHORT USDJPY at 1x, NO basket stop, existing 8% per-leg '
@@ -136,7 +142,9 @@ APPROVAL = ('User directive 2026-10-25 23:35 IST, "We wanna move with Carry Stra
             'of the daily risk. Answered questions: $50,000 more of HYPE (never more) is trimmed with reduce-only '
             'IOC children; SP500 grows by $10,000 and USDJPY is re-opened SHORT at $15,000; EWJ gets $25,000 once '
             'its account setting is 2x (the user approved that configuration change through the typed route); BTC '
-            'and ETH are held as they are; the 2x setting, 8% leg stops and -5% halt are kept.')
+            'and ETH are held as they are; the 2x setting, 8% leg stops and -5% halt are kept. Second step: EWJ, set to '
+            '2x CROSS by the typed route, joins the basket LONG with the reserved $25,000 (capped at 2x the starting '
+            'equity); legs the previous run verified complete are held as they are.')
 
 
 def two_x_notionals(starting_equity, held_notionals):
@@ -290,6 +298,29 @@ def diversify_notionals(held_notionals, prior_legs):
     return tuple((s, str(legs[s])) for s, _ in CARRY_BASKET if s in legs)
 
 
+def ewj_notionals(starting_equity, held_notionals, prior_legs, prior_modes):
+    """Leg budgets when EWJ joins the basket. SHIFT_HOLD_LEGS and every leg the previous run verified complete (mode
+    HOLD) are hold legs at their marked value rounded up to $100; the other legs keep their prior budgets; EWJ gets
+    DIVERSIFY_RESERVED, capped at SCALE_EXPOSURE x the starting equity and rounded down to $100. Refuses unless
+    SHIFT_FROM_LEG's trim was verified complete, EWJ is flat and new, and EWJ gets at least EWJ_MIN_BUY.
+    Returns (budgets, hold legs)."""
+    from exchange.carry_runtime import CARRY_BASKET_EWJ
+    held = {s: D(v) for s, v in held_notionals.items()}
+    prior = {s: D(v) for s, v in dict(prior_legs).items()}
+    if (EWJ_LEG in held or EWJ_LEG in prior or not set(held) <= set(prior)
+            or any(not held.get(s) for s in (*SHIFT_HOLD_LEGS, SHIFT_FROM_LEG))):
+        raise SystemExit(f'Hold legs and {SHIFT_FROM_LEG} must be held, EWJ flat and new: held={sorted(held)}')
+    if prior_modes.get(SHIFT_FROM_LEG) != 'HOLD':
+        raise SystemExit(f'{SHIFT_FROM_LEG} trim was not verified complete: {prior_modes}')
+    hold = tuple(s for s, _ in CARRY_BASKET_EWJ if s in SHIFT_HOLD_LEGS or s in held and prior_modes.get(s) == 'HOLD')
+    legs = {s: (held[s] / 100).to_integral_value(rounding='ROUND_CEILING') * 100 if s in hold else prior[s] for s in prior}
+    room = D(starting_equity) * SCALE_EXPOSURE - sum(legs.values(), D(0))
+    legs[EWJ_LEG] = (min(DIVERSIFY_RESERVED, room) / 100).to_integral_value(rounding='ROUND_FLOOR') * 100
+    if legs[EWJ_LEG] < EWJ_MIN_BUY:
+        raise SystemExit(f'{EWJ_LEG} would get less than {EWJ_MIN_BUY}: legs={legs}')
+    return tuple((s, str(legs[s])) for s, _ in CARRY_BASKET_EWJ if s in legs), hold
+
+
 def ms(dt):
     return int(dt.timestamp() * 1000)
 
@@ -343,17 +374,21 @@ def prepare(args):
 
 def rebind(args):
     """New mandate for the OPEN basket (same start and starting equity as the prior mandate): positions only in the
-    basket on its sides, resting orders only reduce-only stops, every market at the mandate's cross setting."""
+    basket on its sides, resting orders only reduce-only stops, every market at the mandate's cross setting. The
+    prior run's state (bound to the prior mandate) says which legs it verified complete."""
     from exchange.paper_operations import active_source_hash, atomic_json
-    from exchange.carry_runtime import CARRY_BASKET, CARRY_PROFILE, CarryMandate, sha
+    from exchange.carry_runtime import CARRY_BASKET_EWJ, CARRY_PROFILE, CarryMandate, sha
     from exchange.hyperliquid_account import HyperliquidAccount
     from exchange.testnet_certification import TEAM, API
     from exchange.venue_profiles import venue_profile
     prior = json.loads(Path(args.prior).read_text())
+    prior_state = json.loads(Path(args.prior_state).read_text())
+    if prior_state.get('mandate') != CarryMandate(**prior).identity:
+        raise SystemExit('The prior state belongs to another mandate; refusing.')
     client = public_client()
     account = HyperliquidAccount(client, TEAM)
     positions = {s: p for s, p in account.get_positions().items() if p.quantity}
-    basket = dict(CARRY_BASKET)
+    basket = dict(CARRY_BASKET_EWJ)
     if any(s not in basket or (p.quantity > 0) != (basket[s] == 'LONG') for s, p in positions.items()):
         raise SystemExit(f'Foreign or wrong-side position: {sorted(positions)}; refusing.')
     if any(not (o.get('isTrigger') and o.get('reduceOnly')) for o in account.get_frontend_open_orders()):
@@ -363,15 +398,17 @@ def rebind(args):
         raise SystemExit(f'Markets are not at {LEVERAGE}x CROSS yet: {leverage}; run raise_carry_leverage_2x.py first.')
     marks = {s: D(str(client.post_info('activeAssetData', user=TEAM, coin=s).get('markPx'))) for s in positions}
     equity = account.get_equity().collateral_balance          # unified USDP balance, already includes uPnL
-    notionals = diversify_notionals({s: abs(p.quantity) * marks[s] for s, p in positions.items()}, prior['leg_notionals'])
+    notionals, hold = ewj_notionals(prior['starting_equity'], {s: abs(p.quantity) * marks[s] for s, p in positions.items()},
+                                    prior['leg_notionals'], {s: leg['mode'] for s, leg in prior_state['legs'].items()})
     m = CarryMandate(team_wallet=TEAM, api_wallet=API, markets=tuple(basket), starts_ms=prior['starts_ms'],
                      flatten_ms=ms(FLATTEN), expires_ms=ms(EXPIRES), starting_equity=prior['starting_equity'],
-                     leg_notional=LEG_NOTIONAL, source_hash=active_source_hash(ROOT), release_sha256=sha(RELEASE),
+                     leg_notional=EWJ_LEG_NOTIONAL, source_hash=active_source_hash(ROOT), release_sha256=sha(RELEASE),
                      venue_identity=venue_profile('pas').identity, approval_reference=APPROVAL, profile=CARRY_PROFILE,
-                     sides=CARRY_BASKET, unwind_starts_ms=ms(UNWIND), leg_notionals=notionals,
-                     taker_depth_bps=TAKER_DEPTH_BPS, leverage=LEVERAGE, hold_legs=SHIFT_HOLD_LEGS).require()
+                     sides=CARRY_BASKET_EWJ, unwind_starts_ms=ms(UNWIND), leg_notionals=notionals,
+                     max_positions=len(CARRY_BASKET_EWJ), taker_depth_bps=TAKER_DEPTH_BPS, leverage=LEVERAGE,
+                     hold_legs=hold).require()
     atomic_json(MANDATE, asdict(m))
-    print(json.dumps(dict(mandate=m.identity[:16], legs=dict(notionals), hold=SHIFT_HOLD_LEGS, close=m.close_legs,
+    print(json.dumps(dict(mandate=m.identity[:16], legs=dict(notionals), hold=hold, close=m.close_legs,
                           equity=str(equity), exposure=str(sum(D(v) for _, v in notionals)), leverage=LEVERAGE,
                           held={s: str(p.quantity) for s, p in positions.items()}), indent=2))
 
@@ -520,7 +557,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest='command', required=True)
     sub.add_parser('prepare')
-    r = sub.add_parser('rebind'); r.add_argument('--prior', required=True)
+    r = sub.add_parser('rebind'); r.add_argument('--prior', required=True); r.add_argument('--prior-state', required=True)
     d = sub.add_parser('dry-run'); d.add_argument('--minutes', type=float, default=15)
     for name in ('start', 'supervise', 'status', 'report'):
         sub.add_parser(name)

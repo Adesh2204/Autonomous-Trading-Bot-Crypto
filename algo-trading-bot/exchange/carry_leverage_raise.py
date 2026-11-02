@@ -6,6 +6,11 @@ and change the rule that leverage is configured only on a flat, order-free accou
 cross setting of the carry markets from 1 to 2. A higher cross setting lowers the initial margin the open
 positions hold; it places, cancels or changes no order or position. Anything else is refused.
 
+2 Nov 2026 22:05 IST (user, answered question "SP500 + USDJPY + EWJ", approving that EWJ's account setting changes
+from 20x to 2x through this typed route): the one exception is pas:EWJ, which may be set from a higher CROSS
+setting down to 2x CROSS while it holds no position (so no order or margin of an open position is involved).
+Every other market is still only ever raised from 1x; no market switches margin mode.
+
 Allowed open state, read fresh for the plan and again before every signature, and equal to what the
 human approved:
   * positions only in carry markets, each on the basket's side;
@@ -25,6 +30,7 @@ from .execution_journal import fingerprint
 from .testnet_certification import TEAM, API
 
 TARGET = 2
+FLAT_SET_TO_TARGET = frozenset({'pas:EWJ'})     # may come down to 2x CROSS, only while it holds no position
 CHILD_PREFIXES = ('carry-in', 'carry-trim', 'carry-out', 'carry-exit')
 PLAN_MAX_AGE_MS = 300000
 
@@ -42,11 +48,11 @@ def basket_evidence(root, client, account, *, owned_actions=()):
 
     `owned_actions`: this route's own management row, journaled UNKNOWN just before it signs (the
     same exemption require_shared_scope gives the configuration route's current action)."""
-    from .carry_runtime import CARRY_BASKET
+    from .carry_runtime import CARRY_BASKET_EWJ
     from .configuration_isolation import CLOID, INTENT
     from .scored_session import require_no_par_exposure
     from .terminal_evidence import local_execution_state
-    basket = dict(CARRY_BASKET)
+    basket = dict(CARRY_BASKET_EWJ)
     positions = {s: p for s, p in account.get_positions().items() if p.quantity}
     if any(s not in basket or (p.quantity > 0) != (basket[s] == 'LONG') for s, p in positions.items()):
         raise ExchangeError('CARRY_BASKET_POSITIONS_ONLY')
@@ -130,9 +136,11 @@ def raise_plan(root, client, account, *, provenance):
         if spec.max_leverage < TARGET:
             raise ExchangeError('TARGET_LEVERAGE_ABOVE_MARKET_MAXIMUM')
         before = current.get('leverage')
+        flat_set = (symbol in FLAT_SET_TO_TARGET and symbol not in evidence['positions'] and isinstance(before, dict)
+                    and before.get('type') == 'cross' and type(before.get('value')) is int and before['value'] > TARGET)
         if before == dict(type='cross', value=TARGET):
             already.append(symbol)
-        elif before == dict(type='cross', value=1):
+        elif before == dict(type='cross', value=1) or flat_set:
             changes.append(dict(symbol=symbol, observed_ms=client.clock_ms(), before=before,
                                 requested_action=dict(type='updateLeverage', asset=spec.asset_id, isCross=True,
                                                       leverage=TARGET)))
@@ -147,7 +155,10 @@ def raise_plan(root, client, account, *, provenance):
                 open_basket=evidence, collateral_balance=funding['balance'],
                 orders_permitted=False, transfers_allowed=False, account_mode_change=False,
                 basis='User directive 27 Oct 2026 09:05 IST: raise the carry markets to a 2x cross setting while '
-                      'the basket is open (raise only; HYPE held as is; exposure capped at 1.5x by the mandate).')
+                      'the basket is open (raise only; HYPE held as is; exposure capped at 1.5x by the mandate). '
+                      '2 Nov 2026 22:05 IST (answered question "SP500 + USDJPY + EWJ"): EWJ, holding no position, '
+                      'may come down from a higher cross setting to 2x cross so it can join the basket; the '
+                      'overall exposure stays capped at 2x the starting equity by the mandate.')
     plan['plan_hash'] = fingerprint(plan)
     return plan
 
@@ -177,7 +188,8 @@ def approve_raise(root, plan_path, release, output):
     if not sys.stdin.isatty():
         raise ExchangeError('GENUINE_INTERACTIVE_CONFIGURATION_APPROVAL_REQUIRED')
     print(json.dumps(plan, indent=2))
-    print('Confirm: raise the listed carry markets to 2x CROSS only, with the open basket shown above. '
+    print('Confirm: set the listed carry markets to 2x CROSS only (a raise from 1x, or EWJ down from its higher '
+          'setting while it holds no position), with the open basket shown above. '
           'No order, cancellation, transfer or account-mode change.')
     phrase = 'APPROVE PAS CONFIGURATION ' + plan['plan_hash']
     if input(phrase + '\n> ').strip() != phrase:

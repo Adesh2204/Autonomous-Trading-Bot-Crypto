@@ -9,7 +9,8 @@ keeps PAS_ENTRY_MARKETS.
 from .base_exchange import ExchangeError
 
 PAS_ENTRY_MARKETS = frozenset(('pas:BTC', 'pas:EWY', 'pas:HYPE'))
-CARRY_ENTRY_MARKETS = frozenset(('pas:BTC', 'pas:ETH', 'pas:HYPE', 'pas:SP500', 'pas:USDJPY'))
+# 2 Nov 22:05 IST (user, answered question "SP500 + USDJPY + EWJ"): EWJ joins the carry markets.
+CARRY_ENTRY_MARKETS = frozenset(('pas:BTC', 'pas:ETH', 'pas:HYPE', 'pas:SP500', 'pas:USDJPY', 'pas:EWJ'))
 CARRY_SCOPE = 'CARRY'
 # Configuration-only scope (27 Oct, user): set the carry markets to 2x CROSS, never more.
 CARRY_2X_SCOPE = 'CARRY_2X'

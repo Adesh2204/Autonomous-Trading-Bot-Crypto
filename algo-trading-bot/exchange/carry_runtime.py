@@ -37,6 +37,10 @@ log = logging.getLogger('carry')
 CARRY_PROFILE = 'HALF_SIZE_FIXED_BASKET_2026_10_25'
 CARRY_BASKET = (('pas:BTC', 'LONG'), ('pas:ETH', 'LONG'), ('pas:HYPE', 'LONG'), ('pas:SP500', 'LONG'),
                 ('pas:USDJPY', 'SHORT'))
+# 2 Nov 22:05 IST (user, answered question "SP500 + USDJPY + EWJ"): EWJ may join the basket LONG once its account
+# setting is 2x CROSS. A carry mandate names either the original five legs or those five plus EWJ.
+CARRY_BASKET_EWJ = CARRY_BASKET + (('pas:EWJ', 'LONG'),)
+CARRY_BASKETS = (CARRY_BASKET, CARRY_BASKET_EWJ)
 CARRY_MAX_LEG_NOTIONAL = D('19000')
 # 26 Oct 22:35 IST (user): HYPE is the priority leg. Per-leg targets may then differ, each at most
 # $50,000 (27 Oct 01:35 IST: HYPE $50k within 1x), with the basket total still at most the starting equity.
@@ -48,7 +52,9 @@ CARRY_TAKER_DEPTH_BPS = (0, 5)    # IOC children: the touch only, or up to 5 bps
 # then the others"): exposure up to 1.85x equity, each leg at most $65,000. At 1.85x the margin left free
 # at the 2x setting stays above the loss that trips the -5% halt, so no build child runs out of margin first.
 CARRY_LEVERAGE_SETTINGS = (1, 2)
-CARRY_MAX_EXPOSURE_2X = D('1.85')
+# 2 Nov 22:05 IST: with USDJPY re-opened and EWJ added there is no close leg left, and the user kept the 2x exposure
+# ordered on 2 Nov 11:40 IST ("without changing the leverage at all"), so the cap without close legs is 2x as well.
+CARRY_MAX_EXPOSURE_2X = D('2')
 CARRY_MAX_LEG_2X = D('65000')
 # 31 Oct 22:40 IST (user: "square off USDJPY and S&P500 and put the balance into HYPE, leverage 1.5x"; answered
 # question: total exposure 1.5x equity, BTC and ETH kept as held, HYPE gets the rest): close legs are sold to flat
@@ -139,7 +145,7 @@ class CarryMandate:
                 or not self.markets or len(set(self.markets)) != len(self.markets)
                 or any(not m.startswith('pas:') for m in self.markets)
                 or not (self.leverage == 1 or self.profile and self.leverage in CARRY_LEVERAGE_SETTINGS)
-                or not 1 <= self.max_positions <= 5
+                or not 1 <= self.max_positions <= (len(CARRY_BASKET_EWJ) if self.profile else 5)
                 or leg * self.max_positions > equity
                 or not SCORED_START_MS <= self.starts_ms < self.flatten_ms < self.expires_ms <= SCORED_END_MS
                 or not D(0) < decimal(self.account_loss_halt) <= D('0.05')
@@ -156,9 +162,9 @@ class CarryMandate:
         return self
 
     def _require_profile(self, leg):
-        if (self.profile != CARRY_PROFILE or self.sides != CARRY_BASKET
-                or self.markets != tuple(s for s, _ in CARRY_BASKET)
-                or leg > CARRY_MAX_LEG_NOTIONAL or self.max_positions != len(CARRY_BASKET)
+        if (self.profile != CARRY_PROFILE or self.sides not in CARRY_BASKETS
+                or self.markets != tuple(s for s, _ in self.sides)
+                or leg > CARRY_MAX_LEG_NOTIONAL or self.max_positions != len(self.sides)
                 or not self.starts_ms < self.unwind_starts_ms < self.flatten_ms
                 or self.maker_window_ms != 7200000 or self.reprice_ms != 600000
                 or not 0 < self.taker_gap_ms <= 300000
