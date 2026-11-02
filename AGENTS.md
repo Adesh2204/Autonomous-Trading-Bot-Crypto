@@ -355,3 +355,14 @@
   CARRY_ACCOUNT_LOSS_HALTS allows only 0.05 or 0.095 for the carry profile; every other runtime keeps at most 5%.
   `run_carry.py rebind` (keep_notionals) keeps every budget, holds the legs the prior run verified complete, and keeps
   the 4x setting, 2.95x cap and 8% leg stops unchanged.
+- 3 November 01:08-01:30 IST (incident, no limit change): a testnet API outage made fresh reads time out; one order error
+  (INFO_RETRY_BUDGET_EXHAUSTED) and then an EWJ IOC entry child (21.528 @ 92.994, ~$2k) that was SIGNED and DISPATCHED but
+  got no reply (RemoteDisconnected -> TRANSMISSION_UNCERTAIN, journal UNKNOWN; signed without an expiry). At 2 consecutive
+  order errors the runner was stopped (stop.flag) so a third could not halt AND flatten the basket. The UNKNOWN row blocks
+  every cancel (ACCOUNT_NOT_READY) and restart (RESTART_CHILD_UNSETTLED); the shutdown's "10 min" cancel loop is counted in
+  rounds (~90 s each when cancels are refused) so it was killed after 17 min (no signed action in flight; journal durable).
+  The exchange reported the cloid unknownOid with no EWJ fill since dispatch. New human-run tool
+  `docs/carry_2026-10-25/resolve_dispatched_ioc.py` ("Resolve stuck IOC order.command"): marks exactly one UNKNOWN carry IOC
+  entry as REJECTED (DISPATCHED_IOC_NOT_EXECUTED) only if it failed with a connection error after DISPATCHED, is >= 10 min
+  old, is unknownOid on two reads, has no fill on its market since dispatch, and its worst case fits the leg's remaining
+  budget, and only after the human types THIS IOC ORDER DID NOT EXECUTE. resolve_not_sent.py still covers pre-dispatch refusals.
