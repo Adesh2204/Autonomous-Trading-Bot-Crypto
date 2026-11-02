@@ -349,3 +349,9 @@
   scope CARRY_4X: only 2x -> 4x CROSS, nothing else), and the mandate allows leverage 4 with the exposure capped at 2.95x
   the starting equity and one leg at $155k (CARRY_MAX_EXPOSURE_4X, CARRY_MAX_LEG_4X). The 8% leg stops and the -5%
   account halt (vs $99,998; it flattens) are unchanged: with HYPE at $150k a ~3% HYPE fall alone trips it.
+- 3 November 00:10 IST (user: "move the stoploss from 3% drop to 6% drop then it would sell everything, rest everything
+  should be strictly unchanged"): the carry account halt (which flattens the basket) moves from -5% to -9.5% of the
+  $99,998 starting equity (about $90,500; with HYPE at $150k on ~$99.5k equity that is a ~6% HYPE fall instead of ~3%).
+  CARRY_ACCOUNT_LOSS_HALTS allows only 0.05 or 0.095 for the carry profile; every other runtime keeps at most 5%.
+  `run_carry.py rebind` (keep_notionals) keeps every budget, holds the legs the prior run verified complete, and keeps
+  the 4x setting, 2.95x cap and 8% leg stops unchanged.

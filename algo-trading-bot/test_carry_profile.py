@@ -1799,3 +1799,49 @@ def test_carry_4x_transport_signs_only_the_approved_4x_cross_action_once(tmp_pat
         assert len(wires) == 1
     finally:
         t.close(); n.close(); j.close(); c.close()
+
+
+# ---------- account halt moved from -5% to -9.5% (a ~6% HYPE fall at $150k), everything else unchanged (3 Nov 00:10 IST) ----------
+LEGS_4X = PRIOR_150K[:2] + (('pas:HYPE', '150000'),) + PRIOR_150K[3:]
+
+
+def test_carry_halt_may_be_nine_and_a_half_percent_and_nothing_else():
+    m = basket_mandate(leg_notionals=LEGS_4X, hold_legs=('pas:BTC', 'pas:ETH'), account_loss_halt='0.095', **KW_4X).require()
+    assert m.account_loss_halt == '0.095'
+    for other in ('0.06', '0.09', '0.096', '0.10'):
+        with pytest.raises(ExchangeError, match='INVALID_CARRY_MANDATE'):
+            basket_mandate(leg_notionals=LEGS_4X, hold_legs=('pas:BTC', 'pas:ETH'), account_loss_halt=other,
+                           **KW_4X).require()
+    from test_funding_carry import mandate as funding_mandate
+    with pytest.raises(ExchangeError, match='INVALID_CARRY_MANDATE'):
+        funding_mandate(account_loss_halt='0.095').require()                       # other runtimes keep at most 5%
+
+
+def test_keep_budgets_hold_completed_legs_and_keep_every_other_budget():
+    held = {'pas:BTC': D('20410.00'), 'pas:ETH': D('19440.00'), 'pas:HYPE': D('149870.00'), 'pas:SP500': D('41000.00'),
+            'pas:EWJ': D('6000.00')}
+    modes = dict(MODES_150K, **{'pas:HYPE': 'HOLD'})
+    legs, hold = run_carry_module().keep_notionals(held, LEGS_4X, modes)
+    assert hold == ('pas:BTC', 'pas:ETH', 'pas:HYPE')                               # HYPE complete: held as it is
+    assert legs == (('pas:BTC', '20500'), ('pas:ETH', '19500'), ('pas:HYPE', '149900'), ('pas:SP500', '59900'),
+                    ('pas:USDJPY', '15000'), ('pas:EWJ', '25000'))                   # the rest keep their budgets
+    legs, hold = run_carry_module().keep_notionals(held, LEGS_4X, dict(MODES_150K, **{'pas:HYPE': 'BUILD'}))
+    assert dict(legs)['pas:HYPE'] == '150000' and 'pas:HYPE' not in hold            # still building: same budget
+    with pytest.raises(SystemExit):
+        run_carry_module().keep_notionals(dict(held, **{'pas:EWY': D('1')}), LEGS_4X, modes)
+
+
+def test_nine_and_a_half_percent_halt_rides_a_six_percent_hype_fall_and_flattens_beyond(tmp_path, monkeypatch):
+    monkeypatch.setitem(SPECS, 'pas:EWJ', (2, D('93.8'), '60'))
+    w = World(tmp_path, monkeypatch, leg_notionals=LEGS_4X, hold_legs=('pas:BTC', 'pas:ETH'), account_loss_halt='0.095',
+              **KW_4X)
+    w.venue.leverage.update({s: dict(type='cross', value=4) for s in SPECS})
+    seed(w, {'pas:BTC': D('0.26485'), 'pas:ETH': D('8.6261'), 'pas:HYPE': D('1948.05')})
+    w.r.startup()
+    w.r.account.get_equity = lambda: SimpleNamespace(collateral_balance=D('90522'))   # $99.5k less 6% of $150k
+    w.step(31000)
+    assert not w.r.state['halted']                                                  # rides the 6% HYPE fall
+    w.r.account.get_equity = lambda: SimpleNamespace(collateral_balance=D('90498'))   # -9.5% of $99,998
+    w.step(31000)
+    assert w.r.state['halted'] and str(w.r.state['halted']['reason']).startswith('ACCOUNT_LOSS_HALT')
+    assert {s for s, leg in w.r.state['legs'].items() if leg['mode'] == 'UNWIND'} >= {'pas:BTC', 'pas:ETH', 'pas:HYPE'}

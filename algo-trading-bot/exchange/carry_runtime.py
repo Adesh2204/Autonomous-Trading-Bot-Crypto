@@ -57,6 +57,10 @@ CARRY_LEVERAGE_SETTINGS = (1, 2, 4)
 # cross SETTING (at 2x the exchange cannot hold it); the exposure is capped at 2.95x and one leg at $155,000.
 CARRY_MAX_EXPOSURE_4X = D('2.95')
 CARRY_MAX_LEG_4X = D('155000')
+# 3 Nov 00:10 IST (user: "move the stoploss from 3% drop to 6% drop then it would sell everything ... rest everything
+# should be strictly unchanged"): with HYPE at $150k on about $99.5k equity a 6% HYPE fall is about -9.5% of the $99,998
+# starting equity, so the carry account halt (it flattens the basket) may be -5% or -9.5%; nothing else.
+CARRY_ACCOUNT_LOSS_HALTS = (D('0.05'), D('0.095'))
 # 2 Nov 22:05 IST: with USDJPY re-opened and EWJ added there is no close leg left, and the user kept the 2x exposure
 # ordered on 2 Nov 11:40 IST ("without changing the leverage at all"), so the cap without close legs is 2x as well.
 CARRY_MAX_EXPOSURE_2X = D('2')
@@ -153,7 +157,7 @@ class CarryMandate:
                 or not 1 <= self.max_positions <= (len(CARRY_BASKET_EWJ) if self.profile else 5)
                 or leg * self.max_positions > equity
                 or not SCORED_START_MS <= self.starts_ms < self.flatten_ms < self.expires_ms <= SCORED_END_MS
-                or not D(0) < decimal(self.account_loss_halt) <= D('0.05')
+                or not D(0) < decimal(self.account_loss_halt) <= (max(CARRY_ACCOUNT_LOSS_HALTS) if self.profile else D('0.05'))
                 or not D(0) < decimal(self.position_stop) <= D('0.08')
                 or not D(0) < decimal(self.l2_participation) <= D('0.5')
                 or not D(0) < decimal(self.fill_deviation_halt) <= D('0.01')
@@ -175,7 +179,7 @@ class CarryMandate:
                 or not 0 < self.taker_gap_ms <= 300000
                 or not D(0) < decimal(self.book_share) <= D('0.25')
                 or decimal(self.position_stop) != D('0.08')
-                or decimal(self.account_loss_halt) != D('0.05')
+                or decimal(self.account_loss_halt) not in CARRY_ACCOUNT_LOSS_HALTS
                 or self.taker_depth_bps not in CARRY_TAKER_DEPTH_BPS):
             raise ExchangeError('INVALID_CARRY_MANDATE')
         if self.leverage in (2, 4) and not self.leg_notionals:
