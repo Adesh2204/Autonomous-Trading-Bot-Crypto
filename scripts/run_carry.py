@@ -83,6 +83,14 @@ SHIFT_FROM_LEG = 'pas:HYPE'
 SHIFT_TO_LEG = 'pas:SP500'
 SHIFT_HOLD_LEGS = ('pas:BTC', 'pas:ETH')
 SHIFT_CLOSE_LEGS = ('pas:USDJPY',)
+# 2 Nov 22:05 IST (user: "our volatility is actually very high and we have to make sure it gets low ... diversifying
+# the funds, not just SP500 ... without changing the leverage at all"; answered questions: "$50k more" HYPE and
+# "SP500 + USDJPY + EWJ"): HYPE was 92% of the basket's daily risk, so $50,000 more of HYPE (never more) is trimmed with
+# reduce-only IOC children. SP500 grows by $10,000 and USDJPY is re-opened SHORT at $15,000 (lowest volatility, a mild
+# hedge); EWJ's $25,000 follows once EWJ joins the basket at the 2x setting. BTC and ETH are held exactly as they are.
+DIVERSIFY_TRIM = D('50000')
+DIVERSIFY_ADD = (('pas:SP500', D('10000')), ('pas:USDJPY', D('15000')))
+DIVERSIFY_RESERVED = D('25000')   # EWJ's share, bought when EWJ joins the basket
 TAKER_DEPTH_BPS = 5              # IOC children: up to 25% of the depth within 5 bps of the touch
 APPROVAL = ('User directive 2026-10-25 23:35 IST, "We wanna move with Carry Strategy" (YES, CARRY): half size, '
             '$9,500 per leg, LONG BTC/ETH/HYPE/SP500 and SHORT USDJPY at 1x, NO basket stop, existing 8% per-leg '
@@ -123,7 +131,12 @@ APPROVAL = ('User directive 2026-10-25 23:35 IST, "We wanna move with Carry Stra
             'the same: $50,000 of HYPE (never more) is trimmed with reduce-only touch-limited IOC children and SP500 '
             '(the only market paying longs funding over 24 h and 7 d, already at the 2x setting) is bought LONG with '
             'what was trimmed, capped at 2x the starting equity; BTC and ETH are held as they are and USDJPY stays '
-            'closed; the 2x setting, 8% leg stops and -5% halt are kept. No profit or rank is guaranteed.')
+            'closed; the 2x setting, 8% leg stops and -5% halt are kept. No profit or rank is guaranteed. 2 Nov 22:05 '
+            'IST the user ordered the volatility lowered by diversifying without changing the leverage; HYPE was 92% '
+            'of the daily risk. Answered questions: $50,000 more of HYPE (never more) is trimmed with reduce-only '
+            'IOC children; SP500 grows by $10,000 and USDJPY is re-opened SHORT at $15,000; EWJ gets $25,000 once '
+            'its account setting is 2x (the user approved that configuration change through the typed route); BTC '
+            'and ETH are held as they are; the 2x setting, 8% leg stops and -5% halt are kept.')
 
 
 def two_x_notionals(starting_equity, held_notionals):
@@ -253,6 +266,30 @@ def shift_notionals(starting_equity, held_notionals):
     return tuple((s, str(legs[s])) for s, _ in CARRY_BASKET if s in legs)
 
 
+def diversify_notionals(held_notionals, prior_legs):
+    """Leg budgets for the 2 Nov 22:05 diversification: SHIFT_HOLD_LEGS at their marked value rounded up to $100 (hold
+    legs), SHIFT_FROM_LEG at its marked value less DIVERSIFY_TRIM rounded UP to $100 (so never more is sold), and each
+    DIVERSIFY_ADD leg at its prior budget (none for a closed leg) plus its amount. Refuses unless the hold legs and the
+    source leg are held and an added leg holds no more than its prior budget. What is added plus DIVERSIFY_RESERVED
+    never exceeds DIVERSIFY_TRIM, so the exposure only falls; the mandate itself caps it."""
+    from exchange.carry_runtime import CARRY_BASKET
+    held = {s: D(v) for s, v in held_notionals.items()}
+    prior = {s: D(v) for s, v in dict(prior_legs).items()}
+    keep = (*SHIFT_HOLD_LEGS, SHIFT_FROM_LEG)
+    adds = dict(DIVERSIFY_ADD)
+    if any(not held.get(s) for s in keep) or not set(held) <= set(keep) | set(adds):
+        raise SystemExit(f'{keep} must be held and nothing outside {sorted(set(keep) | set(adds))}: {sorted(held)}')
+    if any(held.get(s, D(0)) > prior.get(s, D(0)) for s in adds):
+        raise SystemExit(f'An added leg already holds more than its prior budget: held={held} prior={prior}')
+    if DIVERSIFY_TRIM >= held[SHIFT_FROM_LEG] or sum(adds.values(), DIVERSIFY_RESERVED) > DIVERSIFY_TRIM:
+        raise SystemExit(f'Cannot move {DIVERSIFY_TRIM} out of {held[SHIFT_FROM_LEG]} into {adds} + {DIVERSIFY_RESERVED}')
+    legs = {s: (held[s] / 100).to_integral_value(rounding='ROUND_CEILING') * 100 for s in SHIFT_HOLD_LEGS}
+    legs[SHIFT_FROM_LEG] = ((held[SHIFT_FROM_LEG] - DIVERSIFY_TRIM) / 100).to_integral_value(rounding='ROUND_CEILING') * 100
+    for s, amount in adds.items():
+        legs[s] = prior.get(s, D(0)) + amount
+    return tuple((s, str(legs[s])) for s, _ in CARRY_BASKET if s in legs)
+
+
 def ms(dt):
     return int(dt.timestamp() * 1000)
 
@@ -326,16 +363,15 @@ def rebind(args):
         raise SystemExit(f'Markets are not at {LEVERAGE}x CROSS yet: {leverage}; run raise_carry_leverage_2x.py first.')
     marks = {s: D(str(client.post_info('activeAssetData', user=TEAM, coin=s).get('markPx'))) for s in positions}
     equity = account.get_equity().collateral_balance          # unified USDP balance, already includes uPnL
-    notionals = shift_notionals(prior['starting_equity'], {s: abs(p.quantity) * marks[s] for s, p in positions.items()})
+    notionals = diversify_notionals({s: abs(p.quantity) * marks[s] for s, p in positions.items()}, prior['leg_notionals'])
     m = CarryMandate(team_wallet=TEAM, api_wallet=API, markets=tuple(basket), starts_ms=prior['starts_ms'],
                      flatten_ms=ms(FLATTEN), expires_ms=ms(EXPIRES), starting_equity=prior['starting_equity'],
                      leg_notional=LEG_NOTIONAL, source_hash=active_source_hash(ROOT), release_sha256=sha(RELEASE),
                      venue_identity=venue_profile('pas').identity, approval_reference=APPROVAL, profile=CARRY_PROFILE,
                      sides=CARRY_BASKET, unwind_starts_ms=ms(UNWIND), leg_notionals=notionals,
-                     taker_depth_bps=TAKER_DEPTH_BPS, leverage=LEVERAGE, hold_legs=SHIFT_HOLD_LEGS,
-                     close_legs=SHIFT_CLOSE_LEGS).require()
+                     taker_depth_bps=TAKER_DEPTH_BPS, leverage=LEVERAGE, hold_legs=SHIFT_HOLD_LEGS).require()
     atomic_json(MANDATE, asdict(m))
-    print(json.dumps(dict(mandate=m.identity[:16], legs=dict(notionals), hold=SHIFT_HOLD_LEGS, close=SHIFT_CLOSE_LEGS,
+    print(json.dumps(dict(mandate=m.identity[:16], legs=dict(notionals), hold=SHIFT_HOLD_LEGS, close=m.close_legs,
                           equity=str(equity), exposure=str(sum(D(v) for _, v in notionals)), leverage=LEVERAGE,
                           held={s: str(p.quantity) for s, p in positions.items()}), indent=2))
 

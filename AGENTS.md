@@ -321,3 +321,12 @@
   The 2x setting, 8% leg stops and -5% account halt (vs $99,998) are unchanged. Score math given to the user: #1 is
   unreachable at the 3 Nov 12:00 UTC sample (any one-day gain caps the score near 0.324 vs 0.375); #2 needs about a
   +15.5% account day; a -1.5% day drops the rank to ~27. No profit or rank is guaranteed.
+- 2 November 22:05 IST (user: "our voltality is actually very high and we have to make sure it get's low ... diversifying
+  the funds, not just SP500 ... without changing the levaergae at all"; answered questions "$50k more" and "SP500 + USDJPY
+  + EWJ"): HYPE was 92% of the basket's daily risk (6.2%/day), and splitting the first $50k alone would have lowered it
+  only to 6.19%. $50,000 more of HYPE (never more) is trimmed with reduce-only touch-limited IOC children
+  (`run_carry.py rebind`, diversify_notionals); SP500 grows by $10,000 and USDJPY is re-opened SHORT at $15,000 (no
+  close legs). EWJ's $25,000 is reserved: the user approved changing EWJ's account setting from 20x to 2x CROSS through
+  the typed configuration route (configuration only; the overall 2x leverage is unchanged), after which EWJ joins the
+  basket LONG. Until then the exposure is about 1.73x. BTC/ETH are hold legs; the 8% leg stops and -5% account halt (vs
+  $99,998) are unchanged. Simulated with EWJ: daily volatility about 3.7%, -5% halt by 6 Nov about 30% (was 46%).
