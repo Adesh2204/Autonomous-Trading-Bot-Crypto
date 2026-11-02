@@ -1759,6 +1759,8 @@ def test_carry_4x_transport_signs_only_the_approved_4x_cross_action_once(tmp_pat
     from exchange.execution_journal import fingerprint
     from exchange.hyperliquid_client import HyperliquidClient
     from test_pas_execution_faults import PasLiveFixture
+    # Legacy suites install practice (par) defaults at import; a PAS test selects its own profile.
+    monkeypatch.setenv('HL_DEX', 'pas'); monkeypatch.setenv('SIGNAL_DATA_MODE', 'PAS_NATIVE_ONLY')
     signer = Account.create(); f = PasLiveFixture(signer.address); monkeypatch.setattr(pc, 'API', signer.address)
     monkeypatch.setattr(pc, 'TEAM', f.active['user']); team = f.active['user']
     c = HyperliquidClient(f, clock_ms=lambda: f.now, venue='pas'); c.startup()
