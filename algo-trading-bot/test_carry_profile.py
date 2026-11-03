@@ -1703,9 +1703,9 @@ def test_hype_up_budgets_refuse_a_sale_or_a_missing_or_foreign_leg(held, prior):
 
 
 @pytest.mark.parametrize('change', [
-    dict(leg_notionals=PRIOR_150K[:2] + (('pas:HYPE', '155100'),) + PRIOR_150K[3:]),   # leg above $155k
-    dict(leg_notionals=PRIOR_150K[:2] + (('pas:HYPE', '155000'),) + PRIOR_150K[3:5] + (('pas:EWJ', '25000'),),
-         starting_equity='99000'),                                                    # above 2.95x the start
+    dict(leg_notionals=PRIOR_150K[:2] + (('pas:HYPE', '190100'),) + PRIOR_150K[3:]),   # leg above $190k
+    dict(leg_notionals=PRIOR_150K[:2] + (('pas:HYPE', '190000'),) + PRIOR_150K[3:5] + (('pas:EWJ', '25000'),),
+         starting_equity='99000'),                                                    # above 3.3x the start
     dict(leverage=3),                                                                 # 1, 2 or 4 only
     dict(leverage=5),
     dict(leg_notionals=()),                                                           # 4x needs explicit legs
@@ -1977,3 +1977,38 @@ def test_an_exchange_special_status_skips_the_child_and_is_not_an_order_error(tm
     w.r.preflight = lambda **k: None                                                # status clear: building resumes
     w.step(31000)
     assert w.children()
+
+
+# ---------- 3 Nov 23:50 IST: $30k more HYPE, once ----------
+ADD_PRIOR = (('pas:BTC', '20100'), ('pas:ETH', '19700'), ('pas:HYPE', '153400'), ('pas:SP500', '60200'),
+             ('pas:USDJPY', '15100'), ('pas:EWJ', '25200'))                          # mandate d57bd2eb
+ADD_HELD = {'pas:BTC': D('20140.10'), 'pas:ETH': D('19812.40'), 'pas:HYPE': D('154412.00'), 'pas:SP500': D('60270.50'),
+            'pas:USDJPY': D('15061.00'), 'pas:EWJ': D('25080.30')}
+ADD_MODES = {s: 'HOLD' for s, _ in ADD_PRIOR}
+
+
+def test_hype_add_puts_30k_on_top_of_hype_once_and_holds_every_other_leg():
+    rc = run_carry_module()
+    legs, hold, close = rc.flip_notionals(ADD_HELD, ADD_PRIOR, ADD_MODES, False)
+    legs, hold = rc.hype_add_notionals(legs, hold, ADD_HELD, ADD_PRIOR)
+    assert dict(legs)['pas:HYPE'] == '184500' and 'pas:HYPE' not in hold and close == ()
+    assert hold == ('pas:BTC', 'pas:ETH', 'pas:SP500', 'pas:USDJPY', 'pas:EWJ')
+    assert {s: v for s, v in legs if s != 'pas:HYPE'} == {'pas:BTC': '20200', 'pas:ETH': '19900', 'pas:SP500': '60300',
+                                                          'pas:USDJPY': '15100', 'pas:EWJ': '25100'}
+    m = basket_mandate(**dict(KW_4X, sides=CARRY_BASKET_EWJ_BTC_SHORT, leg_notionals=legs, hold_legs=hold,
+                              account_loss_halt='0.095')).require()
+    assert sum(D(v) for _, v in m.leg_notionals) <= D('3.3') * D('99998.337076')
+    # A later rebind (prior budget already raised, HYPE still building) keeps the budget: never a second $30k.
+    again, hold2, _ = rc.flip_notionals(ADD_HELD, legs, dict(ADD_MODES, **{'pas:HYPE': 'BUILD'}), False)
+    assert rc.hype_add_notionals(again, hold2, ADD_HELD, legs) == (again, hold2) and dict(again)['pas:HYPE'] == '184500'
+    with pytest.raises(SystemExit):
+        rc.hype_add_notionals(legs, hold, {s: v for s, v in ADD_HELD.items() if s != 'pas:HYPE'}, ADD_PRIOR)
+
+
+def test_the_4x_caps_allow_hype_at_190k_and_3_3x_and_nothing_more():
+    legs = dict(ADD_PRIOR, **{'pas:HYPE': '190000', 'pas:SP500': '50000'})          # $320.1k: inside 3.3x
+    base = dict(KW_4X, sides=CARRY_BASKET_EWJ_BTC_SHORT, account_loss_halt='0.095')
+    basket_mandate(**dict(base, leg_notionals=tuple(legs.items()))).require()
+    for bad in (dict(legs, **{'pas:HYPE': '190100'}), dict(legs, **{'pas:SP500': '60000'})):    # leg cap; $330.1k > 3.3x
+        with pytest.raises(ExchangeError, match='INVALID_CARRY_MANDATE'):
+            basket_mandate(**dict(base, leg_notionals=tuple(bad.items()))).require()

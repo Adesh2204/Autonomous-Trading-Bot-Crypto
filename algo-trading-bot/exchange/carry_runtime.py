@@ -58,8 +58,11 @@ CARRY_LEVERAGE_SETTINGS = (1, 2, 4)
 # 2 Nov 23:20 IST (user, answered question "Yes, HYPE $150k (2.9x)", after the model numbers: -5% halt by the next sample
 # ~32%, by 6 Nov ~66%): HYPE to $150k with every other leg unchanged, about 2.9x the starting equity. That needs a 4x
 # cross SETTING (at 2x the exchange cannot hold it); the exposure is capped at 2.95x and one leg at $155,000.
-CARRY_MAX_EXPOSURE_4X = D('2.95')
-CARRY_MAX_LEG_4X = D('155000')
+# 3 Nov 23:50 IST (user: "utilize the unused 30k funds as well now in Hype ... rest everything should be unchanged";
+# answered question "Buy $30k more HYPE", not the ~$120k that all free margin would buy at 4x): HYPE about $184.5k, so the
+# 4x exposure cap is 3.3x the starting equity and one leg at most $190,000 (about $23k of margin stays free).
+CARRY_MAX_EXPOSURE_4X = D('3.3')
+CARRY_MAX_LEG_4X = D('190000')
 # 3 Nov 00:10 IST (user: "move the stoploss from 3% drop to 6% drop then it would sell everything ... rest everything
 # should be strictly unchanged"): with HYPE at $150k on about $99.5k equity a 6% HYPE fall is about -9.5% of the $99,998
 # starting equity, so the carry account halt (it flattens the basket) may be -5% or -9.5%; nothing else.

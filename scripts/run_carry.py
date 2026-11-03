@@ -114,6 +114,11 @@ ACCOUNT_LOSS_HALT = '0.095'
 # its budget and a leg the previous run verified complete is held as it is; 4x setting, 8% stops and -9.5% halt unchanged.
 BTC_FLIP_LEG = 'pas:BTC'
 BTC_SHORT_NOTIONAL = D('20000')
+# 3 Nov 23:50 IST (user, answered question "Buy $30k more HYPE"): HYPE's budget is its marked value (rounded up to $100)
+# plus $30,000, bought with touch-limited IOC children; every other leg is held as it is. Applied once: only when the
+# prior mandate's HYPE budget is the d57bd2eb budget, so a later rebind keeps the raised budget instead of adding again.
+HYPE_ADD = D('30000')
+HYPE_ADD_PRIOR_BUDGET = '153400'
 TAKER_DEPTH_BPS = 5              # IOC children: up to 25% of the depth within 5 bps of the touch
 APPROVAL = ('User directive 2026-10-25 23:35 IST, "We wanna move with Carry Strategy" (YES, CARRY): half size, '
             '$9,500 per leg, LONG BTC/ETH/HYPE/SP500 and SHORT USDJPY at 1x, NO basket stop, existing 8% per-leg '
@@ -171,7 +176,11 @@ APPROVAL = ('User directive 2026-10-25 23:35 IST, "We wanna move with Carry Stra
             'the 8% leg stops are unchanged. '
             '3 Nov 15:20 IST the user strictly ordered BTC put into shorting; answered question "Flip BTC to a $20k short": '
             'the BTC long is sold to flat first with reduce-only touch-limited IOC children, then BTC is shorted to $20,000 '
-            'with the usual sliced children; every other leg, the 4x setting, 8% leg stops and -9.5% halt are unchanged.')
+            'with the usual sliced children; every other leg, the 4x setting, 8% leg stops and -9.5% halt are unchanged. '
+            '3 Nov 23:50 IST the user ordered the unused ~$30k put into HYPE with everything else unchanged; answered '
+            'question "Buy $30k more HYPE" (not the ~$120k all free margin would buy at 4x): HYPE is bought up to its '
+            'marked value plus $30,000 with touch-limited IOC children; the 4x exposure cap becomes 3.3x the starting '
+            'equity and one leg at most $190,000; every other leg is held; the 4x setting, 8% stops and -9.5% halt are unchanged.')
 
 
 def two_x_notionals(starting_equity, held_notionals):
@@ -408,6 +417,18 @@ def flip_notionals(held_notionals, prior_legs, prior_modes, closing):
     return tuple((s, str(legs[s])) for s in basket), hold, ()
 
 
+def hype_add_notionals(legs, hold, held_notionals, prior_legs):
+    """HYPE_ADD on top of HYPE's marked value, once (the prior HYPE budget must be HYPE_ADD_PRIOR_BUDGET); otherwise the
+    budgets are returned unchanged. Returns (budgets, hold legs)."""
+    if dict(prior_legs).get('pas:HYPE') != HYPE_ADD_PRIOR_BUDGET:
+        return legs, hold
+    if not held_notionals.get('pas:HYPE'):
+        raise SystemExit('HYPE is not held; refusing to add to it.')
+    held = (D(held_notionals['pas:HYPE']) / 100).to_integral_value(rounding='ROUND_CEILING') * 100
+    return (tuple((s, str(held + HYPE_ADD) if s == 'pas:HYPE' else v) for s, v in legs),
+            tuple(s for s in hold if s != 'pas:HYPE'))
+
+
 def ms(dt):
     return int(dt.timestamp() * 1000)
 
@@ -490,6 +511,8 @@ def rebind(args):
     notionals, hold, close = flip_notionals({s: abs(p.quantity) * marks[s] for s, p in positions.items()},
                                             prior['leg_notionals'], {s: leg['mode'] for s, leg in prior_state['legs'].items()},
                                             closing)
+    notionals, hold = hype_add_notionals(notionals, hold, {s: abs(p.quantity) * marks[s] for s, p in positions.items()},
+                                         prior['leg_notionals'])
     m = CarryMandate(team_wallet=TEAM, api_wallet=API, markets=tuple(basket), starts_ms=prior['starts_ms'],
                      flatten_ms=ms(FLATTEN), expires_ms=ms(EXPIRES), starting_equity=prior['starting_equity'],
                      leg_notional=EWJ_LEG_NOTIONAL, source_hash=active_source_hash(ROOT), release_sha256=sha(RELEASE),
