@@ -376,3 +376,11 @@
   before stop.flag: HALT CONSECUTIVE_ORDER_ERRORS with flatten started an EMERGENCY unwind, and the stop ended the run 15 s
   later before any exit child; every position and stop was intact, no fill. Fix f2bc63e (branch codex/child-key-resume):
   a new child skips any key already in the journal. Every limit, budget and stop is unchanged.
+- 3 November 13:20-13:35 IST: one entry child was refused before reservation (nothing journaled or signed) because a slow
+  read let the carry guard's 5 s observation window lapse; it raised POSITION_LIMIT, which counted toward the 3-error
+  halt-and-flatten. Fix 4de43ca (codex/stale-reserve-skip): a stale observation raises the skip code
+  ACCOUNT_PREFLIGHT_INVALIDATED; every real limit check is unchanged. Release 3,638 tests (source cf84eae3); paused
+  cleanly, archived _cd7d5d7, rebind mandate 85af1f58 (USDJPY and EWJ verified complete, now hold legs), relaunched 13:35 IST.
+  The user asked for +20% by the evening "at any cost", any leverage and new markets; not done: the build is limited to
+  ~$25k/hour by thin books (no sweeps), a +20% day needed a ~7% basket rise in 4 h (<0.1%), and a 15-day backtest of a
+  long-when-rising / short-when-falling rule lost on every market after fees. Limits and strategy are unchanged.
