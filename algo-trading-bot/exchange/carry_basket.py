@@ -483,8 +483,14 @@ class CarryBasketRuntime(CarryRuntime):
             if why == 'TOUCH_TOO_THIN' or why == 'REMAINDER_BELOW_MINIMUM' and not entry:
                 self._skip(symbol, why)
             return False
+        def key_for(n):
+            return f"carry-{'in' if entry else 'trim' if trim else 'out'}:{symbol}:{self.m.identity[:12]}:{n}"
         leg['n'] += 1
-        key = f"carry-{'in' if entry else 'trim' if trim else 'out'}:{symbol}:{self.m.identity[:12]}:{leg['n']}"
+        # A fresh state under a mandate that already traded restarts n: never reuse a journaled key (the journal
+        # refuses it with CLOID_INTENT_CONFLICT, an order error).
+        while self.executor.journal.intent(key_for(leg['n'])) is not None:
+            leg['n'] += 1
+        key = key_for(leg['n'])
         strategy_id = ('CARRY_LONG' if leg['side'] == 'LONG' else 'CARRY_SHORT') if entry else 'CARRY_EXIT'
         request = OrderRequest(symbol, plan['side'], plan['quantity'], plan['price'], reduce_only=not entry,
                                tif=plan['tif'], strategy_id=strategy_id, client_order_id=key)

@@ -340,6 +340,24 @@ def test_restart_cancels_and_settles_resting_children_and_keeps_leg_progress(tmp
     assert len(w2.children()) == 1                                                  # building resumes, one child
 
 
+def test_a_fresh_state_under_a_mandate_that_already_traded_never_reuses_a_journaled_child_key(tmp_path, monkeypatch):
+    # 3 Nov: a rebind reproduced the same mandate identity into a fresh state directory, n restarted at 0 and every
+    # new child hit CLOID_INTENT_CONFLICT on the prior run's journal rows, which counted toward the 3-error halt.
+    w = World(tmp_path, monkeypatch)
+    w.r.startup()
+    for _ in range(5):
+        w.step()
+    used = {r['intent_key'] for r in w.r.executor.journal.intents()}
+    (tmp_path / 'state').rename(tmp_path / 'state_archived')                         # same mandate, fresh state
+    w2 = World(tmp_path, monkeypatch, venue=w.venue, books=w.books, clock=w.clock)
+    w2.r.startup()
+    for _ in range(5):
+        w2.step()
+    new = {r['intent_key'] for r in w2.r.executor.journal.intents()} - used
+    assert sorted(k.rsplit(':', 1)[1] for k in new if k.startswith('carry-in:')) == ['2'] * 5
+    assert len(w2.children()) == 5 and w2.r.order_errors == 0 and not w2.r.state['halted']
+
+
 def test_three_consecutive_order_errors_halt_and_unwind_everything_at_the_touch(tmp_path, monkeypatch):
     w = World(tmp_path, monkeypatch)
     start_legs(w)
