@@ -384,3 +384,11 @@
   The user asked for +20% by the evening "at any cost", any leverage and new markets; not done: the build is limited to
   ~$25k/hour by thin books (no sweeps), a +20% day needed a ~7% basket rise in 4 h (<0.1%), and a 15-day backtest of a
   long-when-rising / short-when-falling rule lost on every market after fees. Limits and strategy are unchanged.
+- 3 November 15:20 IST (user, strict: "put btc into shorting without exiting or squaring off"; told that the exchange nets
+  one position per market, so a long cannot become a short without reaching zero; answered question "Flip BTC to a $20k
+  short", which was not the recommendation): branch codex/btc-short 1ece4cb. Step 1: `rebind` (flip_notionals) makes BTC a
+  close leg while its long is held (reduce-only touch-limited IOC children to flat; close legs are now allowed at the 4x
+  setting). Step 2: once BTC is flat, `rebind` again with CARRY_BASKET_EWJ_BTC_SHORT and BTC at $20,000 SHORT (sliced
+  children, 8% stop above). Every other leg keeps its budget (verified-complete legs held), and the 4x setting, 2.95x cap,
+  8% leg stops and -9.5% halt are unchanged. The user was told a short profits only if BTC falls and that closing locks
+  in the BTC long's loss (about -$790); no profit is guaranteed.
