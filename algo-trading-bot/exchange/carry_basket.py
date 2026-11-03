@@ -169,6 +169,9 @@ class CarryPositionGuard(MultiPositionGuard):
         pending = {request_of(r)['symbol'] for r in self.intent_rows()
                    if unresolved(r) and not request_of(r)['reduce_only']}
         held = set(prior.get('held', []))
+        if prior.get('observed_ms') is not None and now_ms - prior['observed_ms'] > 5000:
+            # The observation went stale before the reservation (a slow read): refused, re-read next cycle, a skip.
+            raise ExchangeError('ACCOUNT_PREFLIGHT_INVALIDATED')
         if (prior.get('state') not in {'FLAT', 'LONG', 'SHORT', 'ENTRY_PENDING', 'EXIT_PENDING'}
                 or not prior.get('entry_slot_open') or prior.get('observed_ms') is None
                 or not 0 <= now_ms - prior['observed_ms'] <= 5000

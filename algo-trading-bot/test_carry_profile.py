@@ -196,6 +196,18 @@ def test_stale_account_truth_blocks_entries(guard):
     assert t.g.evaluate(entry('pas:ETH', 'BUY', 'x'), ctx(t.now - 6000), t.now).code == 'UNKNOWN_ACCOUNT_STATE'
 
 
+def test_an_observation_gone_stale_before_the_reservation_is_a_skip_not_a_position_limit(guard):
+    # 3 Nov: a slow read let the 5 s window lapse between evaluate and reserve; POSITION_LIMIT counted as an order error.
+    t = guard
+    req = entry('pas:ETH', 'BUY', 'x')
+    assert t.g.evaluate(req, ctx(t.now), t.now).allowed
+    gen = t.journal.control('global_position_lock')['generation']
+    with pytest.raises(ExchangeError, match='ACCOUNT_PREFLIGHT_INVALIDATED'):
+        t.journal.reserve('x', asdict(req), 'x', t.now + 10000, position_guard=t.g, position_generation=gen)
+    assert 'ACCOUNT_PREFLIGHT_INVALIDATED' in carry_basket.SKIP_CODES and t.journal.intent('x') is None
+    reserve(t, entry('pas:BTC', 'BUY', 'y'))                                         # fresh: reserved as before
+
+
 # ---------- real compliance guard and validator ----------
 def test_real_compliance_accepts_a_post_only_child_inside_the_book_share(live):
     g = live.executor.compliance_guard
