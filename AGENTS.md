@@ -392,3 +392,9 @@
   children, 8% stop above). Every other leg keeps its budget (verified-complete legs held), and the 4x setting, 2.95x cap,
   8% leg stops and -9.5% halt are unchanged. The user was told a short profits only if BTC falls and that closing locks
   in the BTC long's loss (about -$790); no profit is guaranteed.
+- 3 November 16:37-16:51 IST: testnet flickered exchangeStatus.specialStatuses twice in 15 min; each pre-order refusal
+  (EXCHANGE_SPECIAL_STATUS_REQUIRES_REVIEW) counted as an order error. My watcher's safety net (stop.flag at 2 consecutive
+  order errors) paused the runner cleanly; nothing halted or sold. Fix 8ea8729 (codex/special-status-skip): that code is a
+  carry SKIP_CODE (refuse, retry next cycle). Release 3,641+1 tests (source 22dc2aef); archived _8a473f9; rebind mandate
+  8760f1fa (BTC SHORT $20k building, HYPE $150k building, others held); relaunched 16:51 IST. BTC long closed 15:36 IST:
+  0.26485 sold for $20,372.61 (avg 76,921.3).
