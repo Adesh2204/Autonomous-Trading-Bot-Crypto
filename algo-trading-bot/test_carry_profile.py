@@ -1957,3 +1957,23 @@ def test_btc_long_is_sold_to_flat_then_shorted_with_sliced_children_and_nothing_
     assert ins and all(e['entry'] and e['side'] == 'SELL' for e in ins)
     assert all(w2.position(s) == q for s, q in held.items() if s != 'pas:BTC')
     assert w2.r.order_errors == 0 and not w2.r.state['halted']
+
+
+def test_an_exchange_special_status_skips_the_child_and_is_not_an_order_error(tmp_path, monkeypatch):
+    # 3 Nov 16:37 IST: exchangeStatus flickered a special status twice in 15 min; each refusal counted toward the
+    # 3-error halt-and-flatten. Refusing is right; it is now a skip that retries on the next cycle.
+    w = World(tmp_path, monkeypatch)
+    w.r.startup()
+    calls = []
+
+    def gate(**k):
+        calls.append(k)
+        raise ExchangeError('EXCHANGE_SPECIAL_STATUS_REQUIRES_REVIEW')
+    w.r.preflight = gate
+    for _ in range(6):
+        w.step(31000)
+    assert calls and w.r.order_errors == 0 and not w.r.state['halted'] and not w.children()
+    assert {e['code'] for e in w.events('CHILD_SKIPPED')} == {'EXCHANGE_SPECIAL_STATUS_REQUIRES_REVIEW'}
+    w.r.preflight = lambda **k: None                                                # status clear: building resumes
+    w.step(31000)
+    assert w.children()
