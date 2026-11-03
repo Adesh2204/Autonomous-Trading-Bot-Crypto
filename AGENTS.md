@@ -366,3 +366,13 @@
   entry as REJECTED (DISPATCHED_IOC_NOT_EXECUTED) only if it failed with a connection error after DISPATCHED, is >= 10 min
   old, is unknownOid on two reads, has no fill on its market since dispatch, and its worst case fits the leg's remaining
   budget, and only after the human types THIS IOC ORDER DID NOT EXECUTE. resolve_not_sent.py still covers pre-dispatch refusals.
+- 3 November 09:18-09:25 IST (user: "complete the work such that bot is finally trading without any errors ... no losses";
+  answered question "Keep building to HYPE $150k" after the model numbers: P(account ends in profit) ~36-44% building vs
+  ~42-47% holding, -9.5% halt ~39-46% vs ~15-17%; no position's profit can be guaranteed). The user typed the confirmation
+  and the EWJ row became REJECTED (DISPATCHED_IOC_NOT_EXECUTED). The overnight USDJPY maker child (0.79 @ 157.74) had filled
+  while the runner was stopped. The halted state (API_DISCONNECT_OVER_LIMIT) was archived and `rebind` reproduced the SAME
+  mandate identity (no budget or source change), so the fresh state restarted each leg's child counter and every new child
+  key collided with the prior run's journal rows (CLOID_INTENT_CONFLICT; nothing signed). The third conflict came one second
+  before stop.flag: HALT CONSECUTIVE_ORDER_ERRORS with flatten started an EMERGENCY unwind, and the stop ended the run 15 s
+  later before any exit child; every position and stop was intact, no fill. Fix f2bc63e (branch codex/child-key-resume):
+  a new child skips any key already in the journal. Every limit, budget and stop is unchanged.
