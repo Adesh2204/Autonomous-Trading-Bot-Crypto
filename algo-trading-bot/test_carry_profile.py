@@ -13,7 +13,7 @@ import pytest
 from exchange import carry_basket
 from exchange.base_exchange import BookLevel, ExchangeError, MarketSpec, OrderBook, Position
 from exchange.carry_basket import CarryPositionGuard
-from exchange.carry_runtime import CARRY_BASKET, CARRY_PROFILE, CarryExecution, CarryMandate
+from exchange.carry_runtime import CARRY_BASKET, CARRY_BASKET_EWJ_BTC_SHORT, CARRY_PROFILE, CarryExecution, CarryMandate
 from exchange.carry_simulation import build_simulated_runtime
 from exchange.carry_slicer import MAKER, TAKER, SliceParams, child, remaining, stale
 from exchange.entry_scope import CARRY_ENTRY_MARKETS, PAS_ENTRY_MARKETS, require_entry
@@ -1709,7 +1709,7 @@ def test_hype_up_budgets_refuse_a_sale_or_a_missing_or_foreign_leg(held, prior):
     dict(leverage=3),                                                                 # 1, 2 or 4 only
     dict(leverage=5),
     dict(leg_notionals=()),                                                           # 4x needs explicit legs
-    dict(close_legs=('pas:USDJPY',)),                                                 # close legs stay a 2x thing
+    dict(close_legs=('pas:USDJPY',)),                                                 # a close leg has no budget
 ])
 def test_four_x_mandate_rejects_anything_else(change):
     base = dict(KW_4X, leg_notionals=PRIOR_150K[:2] + (('pas:HYPE', '150000'),) + PRIOR_150K[3:],
@@ -1875,3 +1875,85 @@ def test_nine_and_a_half_percent_halt_rides_a_six_percent_hype_fall_and_flattens
     w.step(31000)
     assert w.r.state['halted'] and str(w.r.state['halted']['reason']).startswith('ACCOUNT_LOSS_HALT')
     assert {s for s, leg in w.r.state['legs'].items() if leg['mode'] == 'UNWIND'} >= {'pas:BTC', 'pas:ETH', 'pas:HYPE'}
+
+
+# ---------- 3 Nov: BTC long -> $20k short ----------
+FLIP_PRIOR = (('pas:BTC', '20400'), ('pas:ETH', '19500'), ('pas:HYPE', '150000'), ('pas:SP500', '59900'),
+              ('pas:USDJPY', '15100'), ('pas:EWJ', '25000'))
+FLIP_HELD = {'pas:BTC': D('20323.10'), 'pas:ETH': D('19499.20'), 'pas:HYPE': D('104183.00'), 'pas:SP500': D('59880.00'),
+             'pas:USDJPY': D('15018.00'), 'pas:EWJ': D('25021.00')}                 # marked 3 Nov 15:10 IST
+FLIP_MODES = {'pas:BTC': 'HOLD', 'pas:ETH': 'HOLD', 'pas:HYPE': 'BUILD', 'pas:SP500': 'HOLD', 'pas:USDJPY': 'HOLD',
+              'pas:EWJ': 'HOLD'}
+
+
+def test_btc_flip_budgets_close_the_long_first_then_short_20k_and_keep_every_other_leg():
+    rc = run_carry_module()
+    legs, hold, close = rc.flip_notionals(FLIP_HELD, FLIP_PRIOR, FLIP_MODES, True)
+    assert close == ('pas:BTC',) and hold == ('pas:ETH', 'pas:SP500', 'pas:USDJPY', 'pas:EWJ')
+    assert legs == (('pas:ETH', '19500'), ('pas:HYPE', '150000'), ('pas:SP500', '59900'), ('pas:USDJPY', '15100'),
+                    ('pas:EWJ', '25100'))                                         # BTC has no budget while closing
+    flat = {s: v for s, v in FLIP_HELD.items() if s != 'pas:BTC'}
+    legs2, hold2, close2 = rc.flip_notionals(flat, legs, dict(FLIP_MODES, **{'pas:BTC': 'CLOSED'}), False)
+    assert close2 == () and hold2 == hold and legs2[0] == ('pas:BTC', '20000')
+    assert dict(legs2[1:]) == dict(legs)                                            # nothing else changes
+    with pytest.raises(SystemExit):
+        rc.flip_notionals(dict(flat, **{'pas:EWY': D('1')}), legs, FLIP_MODES, False)
+
+
+def test_btc_flip_mandates_are_valid_at_4x_and_btc_is_the_only_side_that_changes():
+    rc = run_carry_module()
+    legs, hold, close = rc.flip_notionals(FLIP_HELD, FLIP_PRIOR, FLIP_MODES, True)
+    basket_mandate(**dict(KW_4X, leg_notionals=legs, hold_legs=hold, close_legs=close, account_loss_halt='0.095')).require()
+    flat = {s: v for s, v in FLIP_HELD.items() if s != 'pas:BTC'}
+    legs2, hold2, _ = rc.flip_notionals(flat, legs, dict(FLIP_MODES, **{'pas:BTC': 'CLOSED'}), False)
+    m = basket_mandate(**dict(KW_4X, sides=CARRY_BASKET_EWJ_BTC_SHORT, leg_notionals=legs2, hold_legs=hold2,
+                              account_loss_halt='0.095')).require()
+    assert m.basket == dict(dict(CARRY_BASKET_EWJ), **{'pas:BTC': 'SHORT'})
+    eth_short = tuple((s, 'SHORT' if s == 'pas:ETH' else d) for s, d in CARRY_BASKET_EWJ)
+    with pytest.raises(ExchangeError, match='INVALID_CARRY_MANDATE'):
+        basket_mandate(**dict(KW_4X, sides=eth_short, leg_notionals=legs2, hold_legs=hold2)).require()
+
+
+def test_btc_long_is_sold_to_flat_then_shorted_with_sliced_children_and_nothing_else_moves(tmp_path, monkeypatch):
+    rc = run_carry_module()
+    monkeypatch.setitem(SPECS, 'pas:EWJ', (2, D('93.8'), '60'))
+    held = {'pas:BTC': D('0.26485'), 'pas:ETH': D('8.6261'), 'pas:HYPE': D('1948.05'), 'pas:SP500': D('7.85'),
+            'pas:USDJPY': D('-95.11'), 'pas:EWJ': D('266.6')}
+    marked = {s: abs(q) * D(str(SPECS[s][1])) for s, q in held.items()}
+    modes = dict(FLIP_MODES, **{'pas:HYPE': 'HOLD'})
+    legs, hold, close = rc.flip_notionals(marked, FLIP_PRIOR, modes, True)
+    w = World(tmp_path, monkeypatch, leg_notionals=legs, hold_legs=hold, close_legs=close, account_loss_halt='0.095',
+              **KW_4X)
+    w.venue.leverage.update({s: dict(type='cross', value=4) for s in SPECS})
+    seed(w, held)
+    w.r.startup()
+    for _ in range(600):
+        w.step(31000)
+        if w.leg('pas:BTC')['mode'] == 'CLOSED':
+            break
+    assert w.position('pas:BTC') == 0 and not w.stops('pas:BTC') and not w.children('pas:BTC')
+    outs = [e for e in w.events('CHILD_ATTEMPT') if e['symbol'] == 'pas:BTC']
+    assert outs and all(e['key'].startswith('carry-out:') and not e['entry'] and e['tif'] == 'Ioc' for e in outs)
+    assert all(D(e['quantity']) <= D(e['touch_quantity']) * D('0.25') for e in outs)  # never a sweep
+    assert all(w.position(s) == q for s, q in held.items() if s != 'pas:BTC')       # nothing else moved
+    assert w.r.order_errors == 0 and not w.r.state['halted']
+    # Second step: rebind to the BTC SHORT basket (new mandate, fresh state, same journal and exchange).
+    flat = {s: v for s, v in marked.items() if s != 'pas:BTC'}
+    legs2, hold2, _ = rc.flip_notionals(flat, legs, {s: l['mode'] for s, l in w.r.state['legs'].items()}, False)
+    (tmp_path / 'state').rename(tmp_path / 'state_closing')
+    w2 = World(tmp_path, monkeypatch, venue=w.venue, books=w.books, clock=w.clock, leg_notionals=legs2, hold_legs=hold2,
+               account_loss_halt='0.095', **dict(KW_4X, sides=CARRY_BASKET_EWJ_BTC_SHORT))
+    w2.r.startup()
+    w2.clock[0] += 2 * HOUR                                                          # past the maker window
+    for _ in range(1500):
+        w2.step(31000)
+        if w2.leg('pas:BTC')['mode'] == 'HOLD':
+            break
+    btc = w2.position('pas:BTC')
+    assert btc < 0 and abs(abs(btc) * D('80000') - D('20000')) < 50                 # $20k SHORT
+    assert [D(o['sz']) for o in w2.stops('pas:BTC')] == [abs(btc)]                   # one full-size stop
+    assert D(w2.stops('pas:BTC')[0]['triggerPx']) > D('80000')                       # above the price for a short
+    ins = [e for e in w2.events('CHILD_ATTEMPT') if e['symbol'] == 'pas:BTC']
+    assert ins and all(e['entry'] and e['side'] == 'SELL' for e in ins)
+    assert all(w2.position(s) == q for s, q in held.items() if s != 'pas:BTC')
+    assert w2.r.order_errors == 0 and not w2.r.state['halted']

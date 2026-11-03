@@ -108,6 +108,12 @@ HYPE_UP_LEVERAGE = 4
 # be strictly unchanged"): the account halt moves from -5% to -9.5% of the starting equity (a ~6% HYPE fall at $150k on
 # ~$99.5k equity). Every leg keeps its budget; a leg the previous run verified complete is held exactly as it is.
 ACCOUNT_LOSS_HALT = '0.095'
+# 3 Nov 15:20 IST (user, strict: "put btc into shorting"; answered question "Flip BTC to a $20k short" after being told
+# one market holds one net position, so the long must reach zero first): while the BTC long is held, BTC is a close leg
+# (reduce-only touch-limited IOC children, no budget); once BTC is flat it rejoins SHORT at $20,000. Every other leg keeps
+# its budget and a leg the previous run verified complete is held as it is; 4x setting, 8% stops and -9.5% halt unchanged.
+BTC_FLIP_LEG = 'pas:BTC'
+BTC_SHORT_NOTIONAL = D('20000')
 TAKER_DEPTH_BPS = 5              # IOC children: up to 25% of the depth within 5 bps of the touch
 APPROVAL = ('User directive 2026-10-25 23:35 IST, "We wanna move with Carry Strategy" (YES, CARRY): half size, '
             '$9,500 per leg, LONG BTC/ETH/HYPE/SP500 and SHORT USDJPY at 1x, NO basket stop, existing 8% per-leg '
@@ -162,7 +168,10 @@ APPROVAL = ('User directive 2026-10-25 23:35 IST, "We wanna move with Carry Stra
             '2.95x the starting equity; the 8% leg stops and -5% halt are kept. 3 Nov 00:10 IST the user ordered the '
             'account halt moved so that it sells everything only after about a 6% HYPE drop instead of 3%, everything '
             'else strictly unchanged: the halt is -9.5% of the starting equity (about $90,500); budgets, leverage and '
-            'the 8% leg stops are unchanged.')
+            'the 8% leg stops are unchanged. '
+            '3 Nov 15:20 IST the user strictly ordered BTC put into shorting; answered question "Flip BTC to a $20k short": '
+            'the BTC long is sold to flat first with reduce-only touch-limited IOC children, then BTC is shorted to $20,000 '
+            'with the usual sliced children; every other leg, the 4x setting, 8% leg stops and -9.5% halt are unchanged.')
 
 
 def two_x_notionals(starting_equity, held_notionals):
@@ -378,6 +387,27 @@ def keep_notionals(held_notionals, prior_legs, prior_modes):
     return tuple((s, str(legs[s])) for s in basket), hold
 
 
+def flip_notionals(held_notionals, prior_legs, prior_modes, closing):
+    """BTC LONG -> SHORT $20,000. While the BTC long is held (closing) BTC is a close leg with no budget; once it is flat
+    BTC gets BTC_SHORT_NOTIONAL. Every other leg keeps its prior budget, and a leg the previous run verified complete
+    (HOLD) is held at its marked value rounded up to $100. Returns (budgets, hold legs, close legs)."""
+    from exchange.carry_runtime import CARRY_BASKET_EWJ
+    held = {s: D(v) for s, v in held_notionals.items()}
+    prior = {s: D(v) for s, v in dict(prior_legs).items()}
+    basket = [s for s, _ in CARRY_BASKET_EWJ]
+    others = [s for s in basket if s != BTC_FLIP_LEG]
+    if not set(others) <= set(prior) or not set(prior) <= set(basket) or not set(held) <= set(basket):
+        raise SystemExit(f'Every basket leg needs a prior budget: held={sorted(held)} prior={sorted(prior)}')
+    hold = tuple(s for s in basket if s in held and prior_modes.get(s) == 'HOLD' and (s != BTC_FLIP_LEG or not closing))
+    legs = {s: (held[s] / 100).to_integral_value(rounding='ROUND_CEILING') * 100 if s in hold else prior.get(s)
+            for s in basket}
+    if closing:
+        return tuple((s, str(legs[s])) for s in others), hold, (BTC_FLIP_LEG,)
+    if BTC_FLIP_LEG not in hold:
+        legs[BTC_FLIP_LEG] = BTC_SHORT_NOTIONAL
+    return tuple((s, str(legs[s])) for s in basket), hold, ()
+
+
 def ms(dt):
     return int(dt.timestamp() * 1000)
 
@@ -434,7 +464,7 @@ def rebind(args):
     basket on its sides, resting orders only reduce-only stops, every market at the mandate's cross setting. The
     prior run's state (bound to the prior mandate) says which legs it verified complete."""
     from exchange.paper_operations import active_source_hash, atomic_json
-    from exchange.carry_runtime import CARRY_BASKET_EWJ, CARRY_PROFILE, CarryMandate, sha
+    from exchange.carry_runtime import CARRY_BASKET_EWJ, CARRY_BASKET_EWJ_BTC_SHORT, CARRY_PROFILE, CarryMandate, sha
     from exchange.hyperliquid_account import HyperliquidAccount
     from exchange.testnet_certification import TEAM, API
     from exchange.venue_profiles import venue_profile
@@ -445,7 +475,9 @@ def rebind(args):
     client = public_client()
     account = HyperliquidAccount(client, TEAM)
     positions = {s: p for s, p in account.get_positions().items() if p.quantity}
-    basket = dict(CARRY_BASKET_EWJ)
+    closing = BTC_FLIP_LEG in positions and positions[BTC_FLIP_LEG].quantity > 0      # the long is sold to flat first
+    sides = CARRY_BASKET_EWJ if closing else CARRY_BASKET_EWJ_BTC_SHORT
+    basket = dict(sides)
     if any(s not in basket or (p.quantity > 0) != (basket[s] == 'LONG') for s, p in positions.items()):
         raise SystemExit(f'Foreign or wrong-side position: {sorted(positions)}; refusing.')
     if any(not (o.get('isTrigger') and o.get('reduceOnly')) for o in account.get_frontend_open_orders()):
@@ -455,15 +487,16 @@ def rebind(args):
         raise SystemExit(f'Markets are not at {HYPE_UP_LEVERAGE}x CROSS yet: {leverage}; run raise_carry_leverage_4x.py first.')
     marks = {s: D(str(client.post_info('activeAssetData', user=TEAM, coin=s).get('markPx'))) for s in positions}
     equity = account.get_equity().collateral_balance          # unified USDP balance, already includes uPnL
-    notionals, hold = keep_notionals({s: abs(p.quantity) * marks[s] for s, p in positions.items()},
-                                     prior['leg_notionals'], {s: leg['mode'] for s, leg in prior_state['legs'].items()})
+    notionals, hold, close = flip_notionals({s: abs(p.quantity) * marks[s] for s, p in positions.items()},
+                                            prior['leg_notionals'], {s: leg['mode'] for s, leg in prior_state['legs'].items()},
+                                            closing)
     m = CarryMandate(team_wallet=TEAM, api_wallet=API, markets=tuple(basket), starts_ms=prior['starts_ms'],
                      flatten_ms=ms(FLATTEN), expires_ms=ms(EXPIRES), starting_equity=prior['starting_equity'],
                      leg_notional=EWJ_LEG_NOTIONAL, source_hash=active_source_hash(ROOT), release_sha256=sha(RELEASE),
                      venue_identity=venue_profile('pas').identity, approval_reference=APPROVAL, profile=CARRY_PROFILE,
-                     sides=CARRY_BASKET_EWJ, unwind_starts_ms=ms(UNWIND), leg_notionals=notionals,
-                     max_positions=len(CARRY_BASKET_EWJ), taker_depth_bps=TAKER_DEPTH_BPS, leverage=HYPE_UP_LEVERAGE,
-                     hold_legs=hold, account_loss_halt=ACCOUNT_LOSS_HALT).require()
+                     sides=sides, unwind_starts_ms=ms(UNWIND), leg_notionals=notionals,
+                     max_positions=len(sides), taker_depth_bps=TAKER_DEPTH_BPS, leverage=HYPE_UP_LEVERAGE,
+                     hold_legs=hold, close_legs=close, account_loss_halt=ACCOUNT_LOSS_HALT).require()
     atomic_json(MANDATE, asdict(m))
     print(json.dumps(dict(mandate=m.identity[:16], legs=dict(notionals), hold=hold, close=m.close_legs,
                           equity=str(equity), exposure=str(sum(D(v) for _, v in notionals)), leverage=HYPE_UP_LEVERAGE,

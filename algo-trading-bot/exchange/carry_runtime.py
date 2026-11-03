@@ -40,7 +40,10 @@ CARRY_BASKET = (('pas:BTC', 'LONG'), ('pas:ETH', 'LONG'), ('pas:HYPE', 'LONG'), 
 # 2 Nov 22:05 IST (user, answered question "SP500 + USDJPY + EWJ"): EWJ may join the basket LONG once its account
 # setting is 2x CROSS. A carry mandate names either the original five legs or those five plus EWJ.
 CARRY_BASKET_EWJ = CARRY_BASKET + (('pas:EWJ', 'LONG'),)
-CARRY_BASKETS = (CARRY_BASKET, CARRY_BASKET_EWJ)
+# 3 Nov 15:20 IST (user, answered question "Flip BTC to a $20k short"): the exchange nets one position per market, so the
+# BTC LONG is first sold to flat as a close leg (also at the 4x setting), then BTC rejoins the six legs SHORT.
+CARRY_BASKET_EWJ_BTC_SHORT = (('pas:BTC', 'SHORT'),) + CARRY_BASKET_EWJ[1:]
+CARRY_BASKETS = (CARRY_BASKET, CARRY_BASKET_EWJ, CARRY_BASKET_EWJ_BTC_SHORT)
 CARRY_MAX_LEG_NOTIONAL = D('19000')
 # 26 Oct 22:35 IST (user): HYPE is the priority leg. Per-leg targets may then differ, each at most
 # $50,000 (27 Oct 01:35 IST: HYPE $50k within 1x), with the basket total still at most the starting equity.
@@ -191,7 +194,7 @@ class CarryMandate:
                                 or not set(self.close_legs) <= set(self.markets)
                                 or set(self.close_legs) & set(self.hold_legs)
                                 or len(self.close_legs) >= len(self.markets)
-                                or self.leverage != 2 or not self.leg_notionals):
+                                or self.leverage not in (2, 4) or not self.leg_notionals):
             raise ExchangeError('INVALID_CARRY_MANDATE')
         if self.leg_notionals:
             tilted = dict(self.leg_notionals)
