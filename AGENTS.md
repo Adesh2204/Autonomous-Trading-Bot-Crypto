@@ -398,3 +398,12 @@
   carry SKIP_CODE (refuse, retry next cycle). Release 3,641+1 tests (source 22dc2aef); archived _8a473f9; rebind mandate
   8760f1fa (BTC SHORT $20k building, HYPE $150k building, others held); relaunched 16:51 IST. BTC long closed 15:36 IST:
   0.26485 sold for $20,372.61 (avg 76,921.3).
+- 3 November 23:50 IST (user: "utilize the unused 30k funds as well now in Hype ... rest everything should be unchanged";
+  answered question "Buy $30k more HYPE", not the ~$120k that all ~$30.5k of free margin would buy at 4x): branch
+  codex/hype-add-30k 8a90677. `rebind` (hype_add_notionals, once: only on top of the d57bd2eb HYPE budget $153,400) sets
+  HYPE to its marked value plus $30,000 (about $184.5k), bought with touch-limited IOC children; every other leg is held.
+  The 4x caps become 3.3x the starting equity and $190,000 per leg; about $23k of margin stays free. The 4x setting,
+  8% leg stops and -9.5% halt are unchanged; the halt is then about a 4% basket fall (about 7.5% in HYPE alone). Earlier
+  tonight (22:30 IST) the user asked to lock +4% and was told an exact floor is impossible (fees alone exceeded the
+  cushion); the user chose to change nothing then. 19:35 IST: API_DISCONNECT_OVER_LIMIT halt (laptop off network, no
+  flatten); rebind d57bd2eb held all six legs, relaunched 20:58 IST.
