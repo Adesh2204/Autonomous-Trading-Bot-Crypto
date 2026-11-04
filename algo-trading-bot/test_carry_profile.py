@@ -2055,7 +2055,19 @@ def test_cancel_all_stops_removes_every_basket_stop_and_sells_nothing(tmp_path, 
     w.step(31000)
     assert all(w.stops(s) for s in held)
     others = sorted(o['oid'] for o in w.children())                                 # unrelated resting orders
+    # The live executor re-runs protection after every action (it re-placed five stops on 4 Nov); emulate that hook.
+    real, cancel = w.r.executor.protection, w.r.executor.cancel_order
+    placed = []
+
+    def cancel_then_reprotect(*a, **k):
+        out = cancel(*a, **k)
+        if w.r.executor.protection is not None:
+            placed.append(a[0])
+            w.r.protection.ensure_all()
+        return out
+    monkeypatch.setattr(w.r.executor, 'cancel_order', cancel_then_reprotect)
     assert sorted(w.r.cancel_all_stops()) == sorted(held)
+    assert placed == [] and w.r.executor.protection is real                          # detached, then restored
     assert not any(w.stops(s) for s in SPECS) and sorted(o['oid'] for o in w.children()) == others
     assert all(w.position(s) == q for s, q in held.items())                         # nothing sold
     assert {e['symbol'] for e in w.events('STOP_CANCELLED_BY_USER_ORDER')} == set(held)

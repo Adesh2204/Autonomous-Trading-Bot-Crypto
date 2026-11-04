@@ -962,11 +962,17 @@ class CarryBasketRuntime(CarryRuntime):
         stops = lambda: [o for o in self.account.get_frontend_open_orders()
                          if o.get('isTrigger') and o.get('reduceOnly') and o['coin'] in self.m.markets]
         cancelled = []
-        for o in stops():
-            self.preflight()
-            self.executor.cancel_order(o['coin'], o['oid'], critical=True)
-            self._event('STOP_CANCELLED_BY_USER_ORDER', symbol=o['coin'], oid=o['oid'], trigger=o.get('triggerPx'))
-            cancelled.append(o['coin'])
+        # The executor's post-action reconciliation re-places every missing stop through the protection manager
+        # (4 Nov 08:03 IST: five stops came back within the same run); it is detached for these cancels.
+        protection, self.executor.protection = self.executor.protection, None
+        try:
+            for o in stops():
+                self.preflight()
+                self.executor.cancel_order(o['coin'], o['oid'], critical=True)
+                self._event('STOP_CANCELLED_BY_USER_ORDER', symbol=o['coin'], oid=o['oid'], trigger=o.get('triggerPx'))
+                cancelled.append(o['coin'])
+        finally:
+            self.executor.protection = protection
         left = stops()
         if left:
             raise ExchangeError('STOPS_STILL_OPEN:' + ','.join(o['coin'] for o in left))
