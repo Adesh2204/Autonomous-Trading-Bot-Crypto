@@ -431,3 +431,17 @@
   is flat; the halt is sticky, so a restart keeps unwinding. Started 17:34 IST at equity ~$103.7k (+3.7%).
   Completed 19:16 IST: every leg flat, 0 open orders (exchange read), account $100,287.46 (+$289.46, +0.29% on $99,998).
   HYPE fell from ~86.8 to ~84.2 during the ~1 h 40 min exit. The runner stays OFF (stop.flag); nothing is open.
+- 4 November 21:15 IST (user, strict: "selling HYPE was the biggest mistake ... Only hype use full funding and make sure
+  you use 5x leverage ... don't care about Volatility ... start buying more and more of HYPE now"; answered question "No
+  stop, ask me first" after the model numbers: flat gives ~0.030 at the 5 Nov sample (the 4 Nov sell-all already books
+  about a -4.3% day vs the +4.82% sampled); 5x HYPE: ~1 in 3 to beat the #1 score 0.227, ~1 in 2 to end below flat, final
+  account p5 about -31% / p95 about +48%; liquidation near a 15.8% HYPE fall at full 5x). Branch codex/hype-5x 32c211b:
+  CARRY_BASKET_HYPE (HYPE alone, LONG) at a 5x cross setting with a budget of 5x the $99,998 start ($499,900;
+  CARRY_MAX_EXPOSURE_5X, CARRY_MAX_LEG_5X), bought with touch-limited IOC children from the start (25% of the depth within
+  5 bps, never a sweep); INSUFFICIENT_MARGIN is a pre-sign skip, so the free margin is the last limit. CarryMandate
+  user_exits_only (only with the HYPE-only basket and leverage 5): no exchange stop (NoLegStops, never attached to the
+  executor), no account halt, no final unwind (building ends 5 Nov 20:00 UTC and HYPE is held), and no halt flattens
+  (3 order errors or a failed leg verification halt entries only). Nothing is sold without the user's order; a
+  user-ordered sell-all (docs/carry_2026-10-25/sell_all.py) still sells. HYPE 4x -> 5x CROSS only through the typed
+  route ("Raise HYPE 5x.command", carry_leverage_raise target 5, scope CARRY_5X: HYPE alone, configuration only).
+  Mandate via `run_carry.py hype-5x --prior <mandate>`. Every other runtime keeps its committed limits.
