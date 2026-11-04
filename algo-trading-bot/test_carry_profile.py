@@ -2316,7 +2316,9 @@ def test_a_flat_account_after_a_sell_off_reopens_once_the_last_entry_settled_bef
     recent = ctx(later); recent.fills = (fill,)
     assert t.g.evaluate(req, recent, later).code == 'UNKNOWN_ACCOUNT_STATE'                      # a fill in the window
     assert t.g.evaluate(req, ctx(later - 6000), later).code == 'UNKNOWN_ACCOUNT_STATE'           # stale truth
-    decision = t.g.evaluate(req, ctx(later), later)
+    # The executor merges the recovery's whole fill history (the sell-off itself) into the context.
+    history = ctx(later); history.fills = (SimpleNamespace(**dict(vars(fill), timestamp_ms=t.now)),)
+    decision = t.g.evaluate(req, history, later)
     assert decision.allowed and t.g.reason == 'CARRY_FLAT_SETTLED_BEFORE_FILL_WINDOW'
     assert t.journal.control('global_position_lock')['entry_key'] is None
 

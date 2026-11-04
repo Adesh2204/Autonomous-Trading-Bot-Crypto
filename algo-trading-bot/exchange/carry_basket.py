@@ -102,7 +102,9 @@ class CarryPositionGuard(MultiPositionGuard):
         row = self.journal.intent(key) if key else None
         return (row is not None and not unresolved(row)
                 and now_ms - max(row['created_ms'], row['updated_ms'] or 0) > self.FLAT_SETTLED_MS
-                and not any(f.symbol in self.sides for f in context.fills))
+                # The executor merges the recovery's whole fill history into the context: only recent fills count.
+                and not any(f.symbol in self.sides and f.timestamp_ms >= now_ms - self.FLAT_SETTLED_MS
+                            for f in context.fills))
 
     def _side_ok(self, symbol, quantity):
         return symbol in self.sides and (quantity > 0) == (self.sides[symbol] == 'LONG')
