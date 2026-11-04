@@ -953,6 +953,25 @@ class CarryBasketRuntime(CarryRuntime):
         return out
 
     # ---------- lifecycle ----------
+    def cancel_all_stops(self):
+        """4 Nov 2026 07:45 IST (user, answered question "Yes, cancel all stops"): cancel every exchange stop on the
+        basket once and do nothing else; nothing is sold without the user's permission. The runner stays off after this
+        (a running runner would place the stops again)."""
+        self.auth.require(self.m.team_wallet, self.m.api_wallet)
+        self.recovery.recover()
+        stops = lambda: [o for o in self.account.get_frontend_open_orders()
+                         if o.get('isTrigger') and o.get('reduceOnly') and o['coin'] in self.m.markets]
+        cancelled = []
+        for o in stops():
+            self.preflight()
+            self.executor.cancel_order(o['coin'], o['oid'], critical=True)
+            self._event('STOP_CANCELLED_BY_USER_ORDER', symbol=o['coin'], oid=o['oid'], trigger=o.get('triggerPx'))
+            cancelled.append(o['coin'])
+        left = stops()
+        if left:
+            raise ExchangeError('STOPS_STILL_OPEN:' + ','.join(o['coin'] for o in left))
+        return cancelled
+
     def reconcile_children(self):
         """Restart: every resting carry child is cancelled and settled before anything else."""
         rows = [r for r in self.executor.journal.intents() if r['created_ms'] >= self.m.starts_ms

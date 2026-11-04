@@ -2041,3 +2041,21 @@ def test_without_the_account_halt_a_deep_fall_sells_nothing(tmp_path, monkeypatc
         w.step(31000)
     assert not w.r.state['halted']
     assert not [e for e in w.events('CHILD_ATTEMPT') if not e['entry']]               # nothing sold
+
+
+def test_cancel_all_stops_removes_every_basket_stop_and_sells_nothing(tmp_path, monkeypatch):
+    # 4 Nov 07:45 IST (user): no position is sold without permission; the stops are cancelled once.
+    monkeypatch.setitem(SPECS, 'pas:EWJ', (2, D('93.8'), '60'))
+    w = World(tmp_path, monkeypatch, leg_notionals=LEGS_4X, hold_legs=('pas:BTC', 'pas:ETH'), account_loss_halt='1',
+              **KW_4X)
+    w.venue.leverage.update({s: dict(type='cross', value=4) for s in SPECS})
+    held = {'pas:BTC': D('0.26485'), 'pas:ETH': D('8.6261'), 'pas:HYPE': D('1948.05')}
+    seed(w, held)
+    w.r.startup()
+    w.step(31000)
+    assert all(w.stops(s) for s in held)
+    others = sorted(o['oid'] for o in w.children())                                 # unrelated resting orders
+    assert sorted(w.r.cancel_all_stops()) == sorted(held)
+    assert not any(w.stops(s) for s in SPECS) and sorted(o['oid'] for o in w.children()) == others
+    assert all(w.position(s) == q for s, q in held.items())                         # nothing sold
+    assert {e['symbol'] for e in w.events('STOP_CANCELLED_BY_USER_ORDER')} == set(held)

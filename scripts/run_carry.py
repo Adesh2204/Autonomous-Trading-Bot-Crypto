@@ -653,6 +653,18 @@ def supervise(args):
         backoff = min(backoff * 2, 300)
 
 
+def cancel_stops(args):
+    """4 Nov 07:45 IST (user: "if each position reaches their stop loss then they shouldn't sell anything without my
+    permission"; answered questions "Yes, cancel all stops" and "Ask me first" for the final sell-off): cancel every
+    exchange stop once, with the runner stopped, and leave it stopped. Nothing else is placed, cancelled or sold."""
+    from exchange.carry_basket import build_carry_basket_runtime
+    if subprocess.run(['pgrep', '-f', 'run_carry.py (start|supervise)'], capture_output=True).returncode == 0:
+        raise SystemExit('The carry runner is running; stop it first (stop.flag).')
+    setup_logging(STATE, 'carry.log')
+    runtime = build_carry_basket_runtime(ROOT, MANDATE, RELEASE, state_dir=STATE)
+    print(json.dumps(dict(cancelled=runtime.cancel_all_stops()), indent=2))
+
+
 def status(args):
     for name in ('status.json',):
         path = STATE / name
@@ -677,9 +689,9 @@ if __name__ == '__main__':
     sub.add_parser('prepare')
     r = sub.add_parser('rebind'); r.add_argument('--prior', required=True); r.add_argument('--prior-state', required=True)
     d = sub.add_parser('dry-run'); d.add_argument('--minutes', type=float, default=15)
-    for name in ('start', 'supervise', 'status', 'report'):
+    for name in ('start', 'supervise', 'status', 'report', 'cancel-stops'):
         sub.add_parser(name)
     args = parser.parse_args()
     handlers = {'prepare': prepare, 'rebind': rebind, 'dry-run': dry_run, 'start': start, 'supervise': supervise,
-                'status': status, 'report': report}
+                'status': status, 'report': report, 'cancel-stops': cancel_stops}
     handlers[args.command](args)
