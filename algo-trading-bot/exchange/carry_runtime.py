@@ -66,7 +66,10 @@ CARRY_MAX_LEG_4X = D('190000')
 # 3 Nov 00:10 IST (user: "move the stoploss from 3% drop to 6% drop then it would sell everything ... rest everything
 # should be strictly unchanged"): with HYPE at $150k on about $99.5k equity a 6% HYPE fall is about -9.5% of the $99,998
 # starting equity, so the carry account halt (it flattens the basket) may be -5% or -9.5%; nothing else.
-CARRY_ACCOUNT_LOSS_HALTS = (D('0.05'), D('0.095'))
+# 4 Nov 07:28 IST (user, at -6.2%: "don't sell everything at -9.5% ... I am hoping everything would bounce back ...
+# strictly don't sell everything at -9.5% halt"): 1 means no account halt (it would fire only at zero equity); the
+# per-leg 8% exchange stops are unchanged.
+CARRY_ACCOUNT_LOSS_HALTS = (D('0.05'), D('0.095'), D('1'))
 # 2 Nov 22:05 IST: with USDJPY re-opened and EWJ added there is no close leg left, and the user kept the 2x exposure
 # ordered on 2 Nov 11:40 IST ("without changing the leverage at all"), so the cap without close legs is 2x as well.
 CARRY_MAX_EXPOSURE_2X = D('2')

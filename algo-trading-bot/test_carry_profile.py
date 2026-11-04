@@ -2012,3 +2012,32 @@ def test_the_4x_caps_allow_hype_at_190k_and_3_3x_and_nothing_more():
     for bad in (dict(legs, **{'pas:HYPE': '190100'}), dict(legs, **{'pas:SP500': '60000'})):    # leg cap; $330.1k > 3.3x
         with pytest.raises(ExchangeError, match='INVALID_CARRY_MANDATE'):
             basket_mandate(**dict(base, leg_notionals=tuple(bad.items()))).require()
+
+
+def test_the_account_halt_may_be_off_and_the_leg_stops_stay():
+    # 4 Nov 07:28 IST (user): no account halt; '1' would fire only at zero equity.
+    m = basket_mandate(leg_notionals=LEGS_4X, hold_legs=('pas:BTC', 'pas:ETH'), account_loss_halt='1', **KW_4X).require()
+    assert m.account_loss_halt == '1' and m.position_stop == '0.08'
+    from strategies.funding_carry import loss_halt
+    assert not loss_halt(D('99998.337076'), D('50000'), D(m.account_loss_halt))      # -50%: no halt
+    for other in ('0.5', '0.99', '1.01'):
+        with pytest.raises(ExchangeError, match='INVALID_CARRY_MANDATE'):
+            basket_mandate(leg_notionals=LEGS_4X, hold_legs=('pas:BTC', 'pas:ETH'), account_loss_halt=other,
+                           **KW_4X).require()
+    from test_funding_carry import mandate as funding_mandate
+    with pytest.raises(ExchangeError, match='INVALID_CARRY_MANDATE'):
+        funding_mandate(account_loss_halt='1').require()                           # other runtimes keep at most 5%
+
+
+def test_without_the_account_halt_a_deep_fall_sells_nothing(tmp_path, monkeypatch):
+    monkeypatch.setitem(SPECS, 'pas:EWJ', (2, D('93.8'), '60'))
+    w = World(tmp_path, monkeypatch, leg_notionals=LEGS_4X, hold_legs=('pas:BTC', 'pas:ETH'), account_loss_halt='1',
+              **KW_4X)
+    w.venue.leverage.update({s: dict(type='cross', value=4) for s in SPECS})
+    seed(w, {'pas:BTC': D('0.26485'), 'pas:ETH': D('8.6261'), 'pas:HYPE': D('1948.05')})
+    w.r.startup()
+    w.r.account.get_equity = lambda: SimpleNamespace(collateral_balance=D('85000'))   # -15%
+    for _ in range(3):
+        w.step(31000)
+    assert not w.r.state['halted']
+    assert not [e for e in w.events('CHILD_ATTEMPT') if not e['entry']]               # nothing sold

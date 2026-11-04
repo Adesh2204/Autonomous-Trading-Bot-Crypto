@@ -107,7 +107,9 @@ HYPE_UP_LEVERAGE = 4
 # 3 Nov 00:10 IST (user: "move the stoploss from 3% drop to 6% drop then it would sell everything, rest everything should
 # be strictly unchanged"): the account halt moves from -5% to -9.5% of the starting equity (a ~6% HYPE fall at $150k on
 # ~$99.5k equity). Every leg keeps its budget; a leg the previous run verified complete is held exactly as it is.
-ACCOUNT_LOSS_HALT = '0.095'
+# 4 Nov 07:28 IST (user, strict: "don't sell everything at -9.5% halt"): no account halt ('1' fires only at zero
+# equity); the 8% leg stops, budgets, sides and the 4x setting are unchanged.
+ACCOUNT_LOSS_HALT = '1'
 # 3 Nov 15:20 IST (user, strict: "put btc into shorting"; answered question "Flip BTC to a $20k short" after being told
 # one market holds one net position, so the long must reach zero first): while the BTC long is held, BTC is a close leg
 # (reduce-only touch-limited IOC children, no budget); once BTC is flat it rejoins SHORT at $20,000. Every other leg keeps
@@ -180,7 +182,10 @@ APPROVAL = ('User directive 2026-10-25 23:35 IST, "We wanna move with Carry Stra
             '3 Nov 23:50 IST the user ordered the unused ~$30k put into HYPE with everything else unchanged; answered '
             'question "Buy $30k more HYPE" (not the ~$120k all free margin would buy at 4x): HYPE is bought up to its '
             'marked value plus $30,000 with touch-limited IOC children; the 4x exposure cap becomes 3.3x the starting '
-            'equity and one leg at most $190,000; every other leg is held; the 4x setting, 8% stops and -9.5% halt are unchanged.')
+            'equity and one leg at most $190,000; every other leg is held; the 4x setting, 8% stops and -9.5% halt are unchanged. '
+            '4 Nov 07:28 IST, with the account at -6.2%, the user strictly ordered that everything is not sold at the -9.5% '
+            'halt ("I am hoping everything would bounce back"): there is no account halt; the 8% per-leg exchange stops, '
+            'budgets and the 4x setting are unchanged.')
 
 
 def two_x_notionals(starting_equity, held_notionals):
