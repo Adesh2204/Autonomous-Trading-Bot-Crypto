@@ -413,3 +413,11 @@
   account_loss_halt may be 1 (fires only at zero equity) and run_carry.py uses it. The 8% per-leg exchange stops,
   budgets, sides and 4x setting are unchanged. Other runtimes keep at most 5%. Without the halt the only protection is
   each leg's own stop (HYPE ~77.2); the account can fall well past -9.5% before those trigger.
+- 4 November 07:45-08:19 IST (user: "if each position reaches their stop loss then they shouldn't sell anything without
+  my permission"; answered questions "Yes, cancel all stops" and "Ask me first" for the final sell-off): new command
+  `run_carry.py cancel-stops` (925ceed; cbaea58 detaches the protection manager during the cancels, because the
+  executor's post-action reconciliation re-placed five stops in the first run). Release 3,647 tests (source 4c838fa2),
+  mandate e4ee37a3 (all six legs held, account halt off). 08:19 IST the exchange reported no open orders: no stop on any
+  leg. The runner stays OFF (runtime/carry-basket/stop.flag): a running runner would place the stops again and would
+  start the 5 Nov 20:00 UTC unwind and the 6 Nov flatten, which the user wants to approve first. Nothing is sold without
+  the user's permission; only exchange liquidation remains (HYPE liquidation ~$41.3 at 08:19 IST).
