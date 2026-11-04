@@ -429,3 +429,5 @@
   leg unwinds EMERGENCY with reduce-only IOC children at the touch (<= 25% of the depth within 5 bps, one at a time, never a
   sweep); nothing is bought. Startup re-places the 8% reduce-only leg stops (they can only sell). It exits when every leg
   is flat; the halt is sticky, so a restart keeps unwinding. Started 17:34 IST at equity ~$103.7k (+3.7%).
+  Completed 19:16 IST: every leg flat, 0 open orders (exchange read), account $100,287.46 (+$289.46, +0.29% on $99,998).
+  HYPE fell from ~86.8 to ~84.2 during the ~1 h 40 min exit. The runner stays OFF (stop.flag); nothing is open.
