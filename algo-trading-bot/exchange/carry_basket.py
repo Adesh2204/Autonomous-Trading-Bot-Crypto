@@ -236,6 +236,57 @@ class CarryBasketProtection(CarryProtection):
         return ScalpProtection.keep_valid_existing_stops(self)
 
 
+class NoLegStops:
+    """4 Nov 21:15 IST (user, answered question "No stop, ask me first"): no exchange stop on any leg.
+
+    Places, modifies and cancels nothing. Every leg reads NOT_REQUIRED with the size it holds
+    (`unstopped_quantity`), so entries are not held back waiting for a stop; a trigger order resting
+    on a basket market is unexpected and reads ERROR (no entry, counted as an order error). It is
+    never attached to the executor, whose entry check would otherwise demand an ACTIVE stop.
+    """
+    before_action = None
+    running = False
+
+    def __init__(self, account, managers, clock_ms):
+        self.account, self.managers, self.clock_ms = account, managers, clock_ms
+        self.states = {}
+        self.last_verified_ms = None
+
+    def ensure_all(self, *, allow_actions=True):
+        try:
+            positions = self.account.get_positions()
+            orders = self.account.get_frontend_open_orders()
+            now = self.clock_ms()
+            for symbol, leg in self.managers.items():
+                position = positions.get(symbol)
+                leg.sync(position)
+                if any(o.get('coin') == symbol and o.get('isTrigger') for o in orders):
+                    self.states[symbol] = dict(status='ERROR', reason='UNEXPECTED_TRIGGER_ORDER_REQUIRES_REVIEW',
+                                               observed_ms=now)
+                else:
+                    held = abs(position.quantity) if position is not None and position.quantity else D(0)
+                    self.states[symbol] = dict(status='NOT_REQUIRED', reason='NO_LEG_STOP_USER_ORDER',
+                                               observed_ms=now, unstopped_quantity=str(held))
+            self.last_verified_ms = now
+        except Exception as exc:
+            for symbol in self.managers:
+                self.states[symbol] = dict(status='ERROR', reason='PROTECTION_DISCOVERY_FAILED:' + type(exc).__name__,
+                                           observed_ms=self.clock_ms())
+        return self.report()
+
+    @property
+    def healthy(self):
+        return (self.last_verified_ms is not None and 0 <= self.clock_ms() - self.last_verified_ms <= 5000
+                and all(v['status'] == 'NOT_REQUIRED' for v in self.states.values()))
+
+    entries_allowed = healthy
+
+    def report(self):
+        return dict(policy='NO_LEG_STOP_USER_ORDER', healthy=self.healthy, entries_allowed=self.healthy,
+                    last_verified_ms=self.last_verified_ms, positions=dict(self.states),
+                    accounting_source='EXCHANGE_REPORTED', normal_strategy_stop_changed=False)
+
+
 # ---------- runtime ----------
 def _new_leg(side):
     return dict(side=side, mode='BUILD', target=None, started_ms=None, child=None, n=0, last_taker_ms=None,
@@ -341,7 +392,8 @@ class CarryBasketRuntime(CarryRuntime):
         self._event('ORDER_ERROR', where=where, error=f'{type(exc).__name__}:{exc}' if isinstance(exc, Exception) else str(exc),
                     consecutive=self.order_errors)
         if self.order_errors >= self.m.max_order_errors:
-            self.halt('CONSECUTIVE_ORDER_ERRORS', flatten=True)
+            # user_exits_only (4 Nov): halt entries, sell nothing without the user's order.
+            self.halt('CONSECUTIVE_ORDER_ERRORS', flatten=not self.m.user_exits_only)
 
     def _ok(self):
         self.order_errors = 0
@@ -696,10 +748,14 @@ class CarryBasketRuntime(CarryRuntime):
                 problems.append('ABOVE_TARGET')        # a residual below the $11 minimum cannot be trimmed
             if net != position.quantity:
                 problems.append(f'FILL_LEDGER_{net}_VS_POSITION_{position.quantity}')
-            plan = self.protection._plan(symbol, position, self.legs[symbol], self.clock_ms())
-            stops = [o for o in orders if self.protection._matches(o, plan)]
-            if len(stops) != 1:
-                problems.append('EXCHANGE_STOP_MISSING_OR_MISMATCHED')
+            if self.m.user_exits_only:
+                if any(o.get('isTrigger') for o in orders):
+                    problems.append('UNEXPECTED_EXCHANGE_STOP')
+            else:
+                plan = self.protection._plan(symbol, position, self.legs[symbol], self.clock_ms())
+                stops = [o for o in orders if self.protection._matches(o, plan)]
+                if len(stops) != 1:
+                    problems.append('EXCHANGE_STOP_MISSING_OR_MISMATCHED')
             if any(o.get('isTrigger') is not True for o in orders):
                 problems.append('RESTING_CHILD_LEFT')
         record = dict(symbol=symbol, side=leg['side'], quantity=position.quantity if position else None,
@@ -734,8 +790,9 @@ class CarryBasketRuntime(CarryRuntime):
                 leg['mode'] = 'HOLD'
                 self._save_state()
                 continue
-            # Any mismatch: flatten that leg, halt, report.
-            self._start_unwind(symbol, 'EMERGENCY', 'LEG_VERIFICATION_FAILED')
+            # Any mismatch: flatten that leg, halt, report (user_exits_only: halt and report, sell nothing).
+            if not self.m.user_exits_only:
+                self._start_unwind(symbol, 'EMERGENCY', 'LEG_VERIFICATION_FAILED')
             self.halt('LEG_VERIFICATION_FAILED:' + symbol, flatten=False)
 
     def excess(self, symbol, positions):
@@ -861,7 +918,7 @@ class CarryBasketRuntime(CarryRuntime):
             if status == 'ACTIVE':
                 leg['protected_qty'] = state.get('quantity') or state.get('actual_quantity') or leg['protected_qty']
             elif status == 'NOT_REQUIRED':
-                leg['protected_qty'] = '0'
+                leg['protected_qty'] = state.get('unstopped_quantity') or '0'
             if status == 'ERROR':
                 healthy = False
                 leg['protection_errors'] = leg.get('protection_errors', 0) + 1
@@ -1023,9 +1080,10 @@ class CarryBasketRuntime(CarryRuntime):
         for symbol, leg in self.state['legs'].items():
             leg['last_qty'] = str(self._qty(positions, symbol))
             leg['protected_qty'] = '-1'          # unknown until the first stop check
-            if leg['started_ms'] is None and self._qty(positions, symbol) > 0:
+            if leg['started_ms'] is None and (self._qty(positions, symbol) > 0 or self.m.user_exits_only):
                 # A leg already partly built under an earlier mandate has had its maker window:
                 # a restart continues with IOC children instead of opening another 2 h window.
+                # 4 Nov (user: "start buying ... now"): the HYPE-only 5x basket starts with IOC children.
                 leg['resume_started_ms'] = self.clock_ms() - self.params.maker_window_ms
         if self.state['basket_started_ms'] is None:
             self.state['basket_started_ms'] = self.clock_ms()
@@ -1073,7 +1131,11 @@ class CarryBasketRuntime(CarryRuntime):
         from strategies.funding_carry import loss_halt
         equity = self.equity(positions)
         if not self.state['halted'] and loss_halt(self.start_equity, equity, decimal(self.m.account_loss_halt)):
-            self.halt(f'ACCOUNT_LOSS_HALT:{equity}', flatten=True)
+            self.halt(f'ACCOUNT_LOSS_HALT:{equity}', flatten=not self.m.user_exits_only)
+        if now >= self.m.unwind_starts_ms and self.state['final_unwind_ms'] is None and self.m.user_exits_only:
+            # 4 Nov (user: "ask me first"): building ends here and every leg is held until the user orders a sale.
+            self.state['final_unwind_ms'] = now
+            self._event('BUILD_ENDED_HELD_FOR_USER_ORDER', positions=sorted(positions))
         if now >= self.m.unwind_starts_ms and self.state['final_unwind_ms'] is None:
             self.state['final_unwind_ms'] = now
             self._event('FINAL_UNWIND_STARTED', flatten_ms=self.m.flatten_ms)
@@ -1278,7 +1340,10 @@ def build_carry_basket_runtime(root, mandate_path, release_path, *, state_dir, r
             public.get_orderbook(request.symbol), request, decimal(m.book_share, positive=True))
     policy = replace(base_policy, enabled=True, approval_reference=m.approval_reference,
                      execution_slippage_fraction=decimal(m.stop_slippage, positive=True))
-    protection = CarryBasketProtection(executor, policy=policy, managers=legs, stop_fraction=m.position_stop)
+    if m.user_exits_only:
+        protection = NoLegStops(account, legs, client.clock_ms)          # never attached to the executor
+    else:
+        protection = CarryBasketProtection(executor, policy=policy, managers=legs, stop_fraction=m.position_stop)
     stream = LiveAccountStream(TEAM, recovery, executor, clock_ms=client.clock_ms)
     holder['stream'] = stream
     runtime = (runtime_cls or CarryBasketRuntime)(mandate=m, executor=executor, protection=protection, recovery=recovery,

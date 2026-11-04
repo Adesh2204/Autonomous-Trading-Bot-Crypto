@@ -2071,3 +2071,232 @@ def test_cancel_all_stops_removes_every_basket_stop_and_sells_nothing(tmp_path, 
     assert not any(w.stops(s) for s in SPECS) and sorted(o['oid'] for o in w.children()) == others
     assert all(w.position(s) == q for s, q in held.items())                         # nothing sold
     assert {e['symbol'] for e in w.events('STOP_CANCELLED_BY_USER_ORDER')} == set(held)
+
+
+# ---------- HYPE only, full funding at a 5x setting, nothing sold without the user's order (4 Nov 21:15 IST) ----------
+from exchange.carry_runtime import CARRY_BASKET_HYPE
+HYPE_5X_KW = dict(sides=CARRY_BASKET_HYPE, markets=('pas:HYPE',), max_positions=1, starting_equity='99998.337076',
+                  leverage=5, taker_depth_bps=5, account_loss_halt='1', user_exits_only=True,
+                  leg_notional='19000', leg_notionals=(('pas:HYPE', '499900'),))
+
+
+def test_hype_5x_mandate_is_valid_and_the_old_mandates_keep_their_identity():
+    from exchange.execution_journal import fingerprint
+    m = basket_mandate(**HYPE_5X_KW).require()
+    assert m.leverage == 5 and m.notional_for('pas:HYPE') == D('499900') and m.user_exits_only is True
+    old = basket_mandate(leg_notionals=LEGS_4X, hold_legs=('pas:BTC', 'pas:ETH'), account_loss_halt='1', **KW_4X).require()
+    data = asdict(old); data.pop('user_exits_only')
+    assert old.identity == fingerprint(data)                                        # earlier mandates unchanged
+    assert m.identity != fingerprint({k: v for k, v in asdict(m).items() if k != 'user_exits_only'})
+
+
+@pytest.mark.parametrize('change', [
+    dict(leg_notionals=(('pas:HYPE', '500100'),)),                                    # leg cap $500k
+    dict(starting_equity='99000', leg_notionals=(('pas:HYPE', '499900'),)),          # above 5x the start
+    dict(leverage=4),                                                                 # HYPE-only basket is 5x
+    dict(user_exits_only=False),                                                      # and never sells by itself
+    dict(account_loss_halt='0.095'),                                                  # no account halt
+    dict(hold_legs=('pas:HYPE',)),
+    dict(leg_notionals=()),
+    dict(position_stop='0.07'),
+])
+def test_hype_5x_mandate_rejects_anything_else(change):
+    with pytest.raises(ExchangeError, match='INVALID_CARRY_MANDATE'):
+        basket_mandate(**dict(HYPE_5X_KW, **change)).require()
+
+
+def test_5x_and_user_exits_only_belong_to_the_hype_only_basket():
+    for bad in (dict(KW_4X, leverage=5, leg_notionals=LEGS_4X),
+                dict(KW_4X, leg_notionals=LEGS_4X, account_loss_halt='1', user_exits_only=True)):
+        with pytest.raises(ExchangeError, match='INVALID_CARRY_MANDATE'):
+            basket_mandate(**bad).require()
+
+
+def hype_world(tmp_path, monkeypatch, **change):
+    # A smaller start keeps the build short: budget $20k, the same rules.
+    kw = dict(HYPE_5X_KW, starting_equity='4000', leg_notional='1000', leg_notionals=(('pas:HYPE', '20000'),))
+    w = World(tmp_path, monkeypatch, **dict(kw, **change))
+    w.venue.leverage['pas:HYPE'] = dict(type='cross', value=5)
+    return w
+
+
+def test_hype_5x_builds_with_ioc_children_from_the_start_and_places_no_stop(tmp_path, monkeypatch):
+    w = hype_world(tmp_path, monkeypatch)
+    w.r.startup()
+    for _ in range(400):
+        w.step(31000)
+        if w.leg('pas:HYPE')['mode'] == 'HOLD':
+            break
+    attempts = w.events('CHILD_ATTEMPT')
+    assert attempts and all(e['symbol'] == 'pas:HYPE' and e['entry'] and e['tif'] == 'Ioc' for e in attempts)
+    assert D('19900') < w.position('pas:HYPE') * 77 <= D('20000')
+    leg = w.leg('pas:HYPE')
+    assert leg['mode'] == 'HOLD' and leg['verified']['problems'] == []
+    assert not w.stops('pas:HYPE') and not w.venue.orders                           # no stop, nothing resting
+    assert w.r.protection.states['pas:HYPE']['status'] == 'NOT_REQUIRED'
+    assert w.r.executor.protection is None and w.r.order_errors == 0 and not w.r.state['halted']
+
+
+def test_hype_5x_three_order_errors_halt_without_selling(tmp_path, monkeypatch):
+    w = hype_world(tmp_path, monkeypatch)
+    w.r.startup()
+    for _ in range(4):
+        w.step(31000)
+    held = w.position('pas:HYPE')
+    assert held > 0
+    w.venue.place = lambda request, cloid, **k: (None, D(0), 'MARGIN_REJECTED')
+    for _ in range(40):
+        w.step(31000)
+    assert w.r.state['halted']['reason'] == 'CONSECUTIVE_ORDER_ERRORS' and w.r.state['halted']['flatten'] is False
+    assert w.position('pas:HYPE') == held and w.leg('pas:HYPE')['mode'] != 'UNWIND'
+    assert not [e for e in w.events('CHILD_ATTEMPT') if not e['entry']]
+
+
+def test_hype_5x_never_unwinds_by_itself_at_the_end_or_after_a_deep_fall(tmp_path, monkeypatch):
+    w = hype_world(tmp_path, monkeypatch)
+    w.r.startup()
+    for _ in range(6):
+        w.step(31000)
+    held = w.position('pas:HYPE')
+    w.r.account.get_equity = lambda: SimpleNamespace(collateral_balance=D('1000'))    # -75%
+    w.clock[0] = w.m.unwind_starts_ms + 1
+    for _ in range(20):
+        w.step(31000)
+    assert w.position('pas:HYPE') == held and not w.r.state['halted']
+    assert w.events('BUILD_ENDED_HELD_FOR_USER_ORDER') and not w.events('FINAL_UNWIND_STARTED')
+    assert not [e for e in w.events('CHILD_ATTEMPT') if not e['entry']]
+    assert len(w.events('CHILD_ATTEMPT')) == len([e for e in w.events('CHILD_ATTEMPT') if e['ms'] < w.m.unwind_starts_ms])
+
+
+def test_hype_5x_verification_failure_halts_and_sells_nothing(tmp_path, monkeypatch):
+    w = hype_world(tmp_path, monkeypatch)
+    w.r.startup()
+    w.r.verify_leg = lambda symbol: (False, dict(problems=['WRONG_SIDE']))
+    for _ in range(400):
+        w.step(31000)
+        if w.r.state['halted']:
+            break
+    assert w.r.state['halted']['reason'] == 'LEG_VERIFICATION_FAILED:pas:HYPE'
+    held = w.position('pas:HYPE')
+    for _ in range(10):
+        w.step(31000)
+    assert held > 0 and w.position('pas:HYPE') == held
+    assert not [e for e in w.events('CHILD_ATTEMPT') if not e['entry']]
+
+
+def test_hype_5x_a_user_ordered_sell_all_still_sells_at_the_touch(tmp_path, monkeypatch):
+    w = hype_world(tmp_path, monkeypatch)
+    w.r.startup()
+    for _ in range(6):
+        w.step(31000)
+    assert w.position('pas:HYPE') > 0
+    w.r.halt('USER_ORDERED_SELL_ALL', flatten=True)                                # what sell_all.py does
+    for _ in range(300):
+        w.step(31000)
+        if not w.venue.positions:
+            break
+    w.step()
+    assert not w.venue.positions and w.leg('pas:HYPE')['mode'] == 'CLOSED'
+    exits = [e for e in w.events('CHILD_ATTEMPT') if not e['entry']]
+    assert exits and all(e['tif'] == 'Ioc' for e in exits)
+
+
+def test_a_resting_trigger_order_blocks_hype_5x_entries(tmp_path, monkeypatch):
+    w = hype_world(tmp_path, monkeypatch)
+    w.r.startup()
+    w.step(31000)
+    w.venue.orders['x'] = dict(coin='pas:HYPE', oid='x', isTrigger=True, reduceOnly=True, side='A', sz='1',
+                               origSz='1', triggerPx='70', limitPx='69')
+    before = len(w.events('CHILD_ATTEMPT'))
+    for _ in range(5):
+        w.step(31000)
+    assert w.r.protection.states['pas:HYPE']['status'] == 'ERROR' and not w.r.stops_ok()
+    assert len(w.events('CHILD_ATTEMPT')) == before
+
+
+def test_raise_plan_to_5x_raises_only_hype_from_4x_cross(monkeypatch, tmp_path):
+    account = RaiseAccount()
+    account.positions.clear(); account.orders.clear()                               # flat after the sell-all
+    mod, client, local = raise_world(monkeypatch, account)
+    local['unresolved'] = [r for r in local['unresolved'] if not r['intent_key'].startswith('protection:')]
+    account.leverage.update({s: dict(type='cross', value=4) for s in account.leverage})
+    plan = mod.raise_plan(tmp_path, client, account, provenance='x', target=5)
+    assert [c['symbol'] for c in plan['changes']] == ['pas:HYPE'] and plan['entry_markets'] == ['pas:HYPE']
+    assert plan['changes'][0]['requested_action'] == dict(type='updateLeverage', asset=client.market('pas:HYPE').asset_id,
+                                                          isCross=True, leverage=5)
+    assert plan['configuration_scope'] == 'CARRY_5X' and plan['already_five_x_cross'] == []
+    assert plan['orders_permitted'] is False and plan['account_mode_change'] is False
+    monkeypatch.setattr('exchange.paper_operations.active_source_hash', lambda root: plan['source_hash'])
+    assert mod.require_plan(tmp_path, plan, plan['observed_ms'] + 1000) == plan
+    with pytest.raises(ExchangeError, match='FRESH_EXACT_CARRY_LEVERAGE_PLAN_REQUIRED'):
+        mod.require_plan(tmp_path, dict(plan, configuration_scope='CARRY_4X'), plan['observed_ms'])
+
+
+@pytest.mark.parametrize('before', [dict(type='cross', value=2), dict(type='cross', value=10),
+                                    dict(type='isolated', value=4)])
+def test_raise_plan_to_5x_refuses_anything_but_4x_cross(monkeypatch, tmp_path, before):
+    account = RaiseAccount()
+    mod, client, _ = raise_world(monkeypatch, account)
+    account.leverage['pas:HYPE'] = before
+    with pytest.raises(ExchangeError, match='ONLY_A_RAISE_FROM_1X_CROSS'):
+        mod.raise_plan(tmp_path, client, account, provenance='x', target=5)
+
+
+def test_carry_5x_transport_signs_only_hype_at_5x_once(tmp_path, monkeypatch):
+    import socket
+    from eth_account import Account
+    from exchange import leverage_configuration as lc, pas_configuration as pc
+    from exchange.pas_configuration import PasConfigurationApproval
+    from exchange.sdk_transport import build_exchange
+    from exchange.execution_safety import NonceManager, HyperliquidRateLimitManager
+    from exchange.execution_journal import fingerprint
+    from exchange.hyperliquid_client import HyperliquidClient
+    from test_pas_execution_faults import PasLiveFixture
+    monkeypatch.setenv('HL_DEX', 'pas'); monkeypatch.setenv('SIGNAL_DATA_MODE', 'PAS_NATIVE_ONLY')
+    signer = Account.create(); f = PasLiveFixture(signer.address); monkeypatch.setattr(pc, 'API', signer.address)
+    monkeypatch.setattr(pc, 'TEAM', f.active['user']); team = f.active['user']
+    c = HyperliquidClient(f, clock_ms=lambda: f.now, venue='pas'); c.startup()
+
+    def approved(action):
+        plan = dict(source_hash='b' * 64, configuration_scope='CARRY_5X', target_leverage=5,
+                    changes=[dict(requested_action=action)])
+        plan['plan_hash'] = fingerprint(plan)
+        return plan, PasConfigurationApproval(plan['plan_hash'], 'b' * 64, 'c' * 64, f.now, f.now + 900000,
+                                              socket.gethostname(), 'APPROVE PAS CONFIGURATION ' + plan['plan_hash'],
+                                              True, True, team, signer.address)
+    j = ExecutionJournal(tmp_path / 'off.sqlite', session_id='OFFLINE', team_address=team)
+    n = NonceManager(tmp_path / 'nonce.sqlite', signer.address, clock_ms=lambda: f.now, journal=j)
+    rates = HyperliquidRateLimitManager(j, clock_ms=lambda: f.now)
+    wires = []
+
+    def sdk(wallet, client, nonces, sink):
+        s = build_exchange(wallet, client, nonces, sink, offline=True)
+        s.session.post = lambda url, **kw: (wires.append(kw['json']) or SimpleNamespace(
+            status_code=200, json=lambda: dict(status='ok', response=dict(type='default'))))
+        return s
+    monkeypatch.setattr(lc, 'build_exchange', sdk)
+    five = dict(type='updateLeverage', asset=c.market('pas:HYPE').asset_id, isCross=True, leverage=5)
+    btc = dict(five, asset=c.market('pas:BTC').asset_id)
+    plan, a = approved(btc)
+    with pytest.raises(ExchangeError, match='V4_BTC_EWY_CONFIGURATION_ACTIONS_ONLY'):   # BTC is outside CARRY_5X
+        lc.LeverageConfigurationTransport(c, signer, team, n, a, rates=rates, readiness_guard=lambda: None,
+                                          approved_plan=plan)
+    plan, a = approved(five)
+    t = lc.LeverageConfigurationTransport(c, signer, team, n, a, rates=rates, readiness_guard=lambda: None,
+                                          approved_plan=plan)
+    try:
+        assert t.target_leverage == 5
+        t.set_target_cross('pas:HYPE')
+        assert len(wires) == 1 and wires[0]['action'] == five
+        with pytest.raises(ExchangeError):
+            t.set_target_cross('pas:HYPE')                                             # single use
+        assert len(wires) == 1
+    finally:
+        t.close(); n.close(); j.close(); c.close()
+
+
+def test_hype_5x_budget_is_five_times_the_starting_equity_rounded_down():
+    rc = run_carry_module()
+    budget = (D('99998.337076') * rc.HYPE_5X_EXPOSURE / 100).to_integral_value(rounding='ROUND_FLOOR') * 100
+    assert budget == D('499900') and rc.HYPE_5X_LEVERAGE == 5
+    basket_mandate(**dict(HYPE_5X_KW, leg_notionals=(('pas:HYPE', str(budget)),))).require()

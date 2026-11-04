@@ -121,6 +121,14 @@ BTC_SHORT_NOTIONAL = D('20000')
 # prior mandate's HYPE budget is the d57bd2eb budget, so a later rebind keeps the raised budget instead of adding again.
 HYPE_ADD = D('30000')
 HYPE_ADD_PRIOR_BUDGET = '153400'
+# 4 Nov 21:15 IST (user, strict: "Only hype use full funding and make sure you use 5x leverage ... don't care about
+# volatility ... start buying more and more of HYPE now"; answered question "No stop, ask me first"): after the 4 Nov
+# sell-all the basket is HYPE alone, LONG, at a 5x cross setting (raise_hype_leverage_5x.py, typed approval), with a
+# budget of 5x the starting equity, bought with touch-limited IOC children from the start (never a sweep). Children above
+# the free margin are refused before signing, so the margin is the last limit. No exchange stop, no account halt, no
+# final unwind and no halt that sells: nothing is sold without the user's order (sell_all.py).
+HYPE_5X_LEVERAGE = 5
+HYPE_5X_EXPOSURE = D('5')
 TAKER_DEPTH_BPS = 5              # IOC children: up to 25% of the depth within 5 bps of the touch
 APPROVAL = ('User directive 2026-10-25 23:35 IST, "We wanna move with Carry Strategy" (YES, CARRY): half size, '
             '$9,500 per leg, LONG BTC/ETH/HYPE/SP500 and SHORT USDJPY at 1x, NO basket stop, existing 8% per-leg '
@@ -185,7 +193,14 @@ APPROVAL = ('User directive 2026-10-25 23:35 IST, "We wanna move with Carry Stra
             'equity and one leg at most $190,000; every other leg is held; the 4x setting, 8% stops and -9.5% halt are unchanged. '
             '4 Nov 07:28 IST, with the account at -6.2%, the user strictly ordered that everything is not sold at the -9.5% '
             'halt ("I am hoping everything would bounce back"): there is no account halt; the 8% per-leg exchange stops, '
-            'budgets and the 4x setting are unchanged.')
+            'budgets and the 4x setting are unchanged. '
+            '4 Nov 21:15 IST, after the 17:20 IST sell-all left the account flat at +0.29%, the user strictly ordered '
+            '"Only hype use full funding and make sure you use 5x leverage ... start buying more and more of HYPE now", '
+            'not caring about volatility, after the model numbers (about 1 in 3 to beat the #1 score, about 1 in 2 to end '
+            'below staying flat; liquidation near a 15.8% HYPE fall at full 5x). Answered question "No stop, ask me '
+            'first": HYPE alone, LONG, 5x cross setting, budget 5x the starting equity, touch-limited IOC children (25% '
+            'of the depth within 5 bps, never a sweep); no exchange stop, no account halt, no final unwind and no halt '
+            'that sells; nothing is sold without the user\'s order. No profit or rank is guaranteed.')
 
 
 def two_x_notionals(starting_equity, held_notionals):
@@ -531,6 +546,40 @@ def rebind(args):
                           held={s: str(p.quantity) for s, p in positions.items()}), indent=2))
 
 
+def hype_5x(args):
+    """Mandate for the HYPE-only 5x basket (4 Nov 21:15 IST). The account holds nothing but a HYPE long (flat after the
+    4 Nov sell-all), no order rests, and HYPE reads 5x CROSS. Start and starting equity come from the prior mandate."""
+    from exchange.paper_operations import active_source_hash, atomic_json
+    from exchange.carry_runtime import CARRY_BASKET_HYPE, CARRY_PROFILE, CarryMandate, sha
+    from exchange.hyperliquid_account import HyperliquidAccount
+    from exchange.testnet_certification import TEAM, API
+    from exchange.venue_profiles import venue_profile
+    prior = json.loads(Path(args.prior).read_text())
+    client = public_client()
+    account = HyperliquidAccount(client, TEAM)
+    positions = {s: p for s, p in account.get_positions().items() if p.quantity}
+    if any(s != 'pas:HYPE' or p.quantity < 0 for s, p in positions.items()):
+        raise SystemExit(f'A position other than a HYPE long is open: {sorted(positions)}; refusing.')
+    orders = account.get_frontend_open_orders()
+    if orders:
+        raise SystemExit(f'{len(orders)} order(s) rest on the account; refusing (this basket places no stop).')
+    leverage = client.post_info('activeAssetData', user=TEAM, coin='pas:HYPE').get('leverage')
+    if leverage != dict(type='cross', value=HYPE_5X_LEVERAGE):
+        raise SystemExit(f'HYPE is {leverage}, not {HYPE_5X_LEVERAGE}x CROSS; run "Raise HYPE 5x.command" first.')
+    budget = (D(prior['starting_equity']) * HYPE_5X_EXPOSURE / 100).to_integral_value(rounding='ROUND_FLOOR') * 100
+    m = CarryMandate(team_wallet=TEAM, api_wallet=API, markets=('pas:HYPE',), starts_ms=prior['starts_ms'],
+                     flatten_ms=ms(FLATTEN), expires_ms=ms(EXPIRES), starting_equity=prior['starting_equity'],
+                     leg_notional=LEG_NOTIONAL, source_hash=active_source_hash(ROOT), release_sha256=sha(RELEASE),
+                     venue_identity=venue_profile('pas').identity, approval_reference=APPROVAL, profile=CARRY_PROFILE,
+                     sides=CARRY_BASKET_HYPE, unwind_starts_ms=ms(UNWIND), leg_notionals=(('pas:HYPE', str(budget)),),
+                     max_positions=1, taker_depth_bps=TAKER_DEPTH_BPS, leverage=HYPE_5X_LEVERAGE,
+                     account_loss_halt='1', user_exits_only=True).require()
+    atomic_json(MANDATE, asdict(m))
+    print(json.dumps(dict(mandate=m.identity[:16], legs=dict(m.leg_notionals), leverage=HYPE_5X_LEVERAGE,
+                          equity=str(account.get_equity().collateral_balance),
+                          held={s: str(p.quantity) for s, p in positions.items()}, user_exits_only=True), indent=2))
+
+
 def dry_run(args):
     """Production runtime and protection on the offline SimVenue, fed by live public books.
 
@@ -689,9 +738,10 @@ if __name__ == '__main__':
     sub.add_parser('prepare')
     r = sub.add_parser('rebind'); r.add_argument('--prior', required=True); r.add_argument('--prior-state', required=True)
     d = sub.add_parser('dry-run'); d.add_argument('--minutes', type=float, default=15)
+    h = sub.add_parser('hype-5x'); h.add_argument('--prior', required=True)
     for name in ('start', 'supervise', 'status', 'report', 'cancel-stops'):
         sub.add_parser(name)
     args = parser.parse_args()
-    handlers = {'prepare': prepare, 'rebind': rebind, 'dry-run': dry_run, 'start': start, 'supervise': supervise,
+    handlers = {'prepare': prepare, 'rebind': rebind, 'hype-5x': hype_5x, 'dry-run': dry_run, 'start': start, 'supervise': supervise,
                 'status': status, 'report': report, 'cancel-stops': cancel_stops}
     handlers[args.command](args)

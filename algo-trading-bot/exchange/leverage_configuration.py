@@ -119,11 +119,13 @@ class LeverageConfigurationTransport:
             plan=dict(approved_plan);identity=plan.pop('plan_hash',None)
             if identity!=approval.plan_hash or fingerprint(plan)!=identity or plan.get('source_hash')!=approval.source_hash:
                 raise ExchangeError('HASH_BOUND_PAS_CONFIGURATION_PLAN_REQUIRED')
-            from .entry_scope import PAS_ENTRY_MARKETS, CARRY_ENTRY_MARKETS, CARRY_SCOPE, CARRY_2X_SCOPE, CARRY_4X_SCOPE
+            from .entry_scope import (PAS_ENTRY_MARKETS, CARRY_ENTRY_MARKETS, CARRY_SCOPE, CARRY_2X_SCOPE, CARRY_4X_SCOPE,
+                                      CARRY_5X_SCOPE, CARRY_5X_MARKETS)
             scope=plan.get('configuration_scope')
             markets=(PAS_ENTRY_MARKETS|CARRY_ENTRY_MARKETS if scope==CARRY_SCOPE else
-                     CARRY_ENTRY_MARKETS if scope in (CARRY_2X_SCOPE,CARRY_4X_SCOPE) else PAS_ENTRY_MARKETS)
-            self.target_leverage=4 if scope==CARRY_4X_SCOPE else 2 if scope==CARRY_2X_SCOPE else 1
+                     CARRY_ENTRY_MARKETS if scope in (CARRY_2X_SCOPE,CARRY_4X_SCOPE) else
+                     CARRY_5X_MARKETS if scope==CARRY_5X_SCOPE else PAS_ENTRY_MARKETS)
+            self.target_leverage=5 if scope==CARRY_5X_SCOPE else 4 if scope==CARRY_4X_SCOPE else 2 if scope==CARRY_2X_SCOPE else 1
             if plan.get('target_leverage',1)!=self.target_leverage:
                 raise ExchangeError('V4_BTC_EWY_CONFIGURATION_ACTIONS_ONLY')
             allowed_assets={client.market(s).asset_id for s in markets}

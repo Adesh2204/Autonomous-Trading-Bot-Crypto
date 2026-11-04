@@ -261,7 +261,7 @@ def build_simulated_runtime(mandate, *, client, books, clock_ms, state_dir, jour
                             maker_fill_chance=0.0, real_account=None, runtime_cls=None, venue=None):
     """The production CarryBasketRuntime and CarryBasketProtection on a SimVenue (pass `venue` to restart
     against the same simulated exchange state)."""
-    from .carry_basket import CarryBasketProtection, CarryBasketRuntime
+    from .carry_basket import CarryBasketProtection, CarryBasketRuntime, NoLegStops
     from .carry_runtime import CarryLeg
     from .execution_journal import ExecutionJournal
     from .position_protection import ProtectionPolicy
@@ -271,7 +271,10 @@ def build_simulated_runtime(mandate, *, client, books, clock_ms, state_dir, jour
     executor = SimExecutor(venue, account, client, journal)
     legs = {s: CarryLeg(s, mandate.position_stop) for s in mandate.markets}
     policy = ProtectionPolicy(True, mandate.approval_reference, D(1), D(mandate.stop_slippage))
-    protection = CarryBasketProtection(executor, policy=policy, managers=legs, stop_fraction=mandate.position_stop)
+    if mandate.user_exits_only:
+        protection = NoLegStops(account, legs, clock_ms)
+    else:
+        protection = CarryBasketProtection(executor, policy=policy, managers=legs, stop_fraction=mandate.position_stop)
     recovery = executor.recovery
     recovery.recover = lambda: SimpleNamespace(ready=True, reasons=())
     recovery.last_report = SimpleNamespace(ready=True, reasons=())

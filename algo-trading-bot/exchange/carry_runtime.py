@@ -43,7 +43,10 @@ CARRY_BASKET_EWJ = CARRY_BASKET + (('pas:EWJ', 'LONG'),)
 # 3 Nov 15:20 IST (user, answered question "Flip BTC to a $20k short"): the exchange nets one position per market, so the
 # BTC LONG is first sold to flat as a close leg (also at the 4x setting), then BTC rejoins the six legs SHORT.
 CARRY_BASKET_EWJ_BTC_SHORT = (('pas:BTC', 'SHORT'),) + CARRY_BASKET_EWJ[1:]
-CARRY_BASKETS = (CARRY_BASKET, CARRY_BASKET_EWJ, CARRY_BASKET_EWJ_BTC_SHORT)
+# 4 Nov 21:15 IST (user, strict: "Only hype use full funding and make sure you use 5x leverage ... start buying more and
+# more of HYPE now"; answered question "No stop, ask me first"): after the 4 Nov sell-all the basket is HYPE alone, LONG.
+CARRY_BASKET_HYPE = (('pas:HYPE', 'LONG'),)
+CARRY_BASKETS = (CARRY_BASKET, CARRY_BASKET_EWJ, CARRY_BASKET_EWJ_BTC_SHORT, CARRY_BASKET_HYPE)
 CARRY_MAX_LEG_NOTIONAL = D('19000')
 # 26 Oct 22:35 IST (user): HYPE is the priority leg. Per-leg targets may then differ, each at most
 # $50,000 (27 Oct 01:35 IST: HYPE $50k within 1x), with the basket total still at most the starting equity.
@@ -54,7 +57,7 @@ CARRY_TAKER_DEPTH_BPS = (0, 5)    # IOC children: the touch only, or up to 5 bps
 # 29 Oct 13:45 IST (user: "start buying with the remaining balance, most into HYPE, then SP500, BTC, ETH,
 # then the others"): exposure up to 1.85x equity, each leg at most $65,000. At 1.85x the margin left free
 # at the 2x setting stays above the loss that trips the -5% halt, so no build child runs out of margin first.
-CARRY_LEVERAGE_SETTINGS = (1, 2, 4)
+CARRY_LEVERAGE_SETTINGS = (1, 2, 4, 5)
 # 2 Nov 23:20 IST (user, answered question "Yes, HYPE $150k (2.9x)", after the model numbers: -5% halt by the next sample
 # ~32%, by 6 Nov ~66%): HYPE to $150k with every other leg unchanged, about 2.9x the starting equity. That needs a 4x
 # cross SETTING (at 2x the exchange cannot hold it); the exposure is capped at 2.95x and one leg at $155,000.
@@ -63,6 +66,11 @@ CARRY_LEVERAGE_SETTINGS = (1, 2, 4)
 # 4x exposure cap is 3.3x the starting equity and one leg at most $190,000 (about $23k of margin stays free).
 CARRY_MAX_EXPOSURE_4X = D('3.3')
 CARRY_MAX_LEG_4X = D('190000')
+# 4 Nov 21:15 IST (user, strict: HYPE only, "use full funding", 5x): the HYPE-only basket at a 5x cross SETTING may hold
+# up to 5x the starting equity in HYPE. Children the exchange context shows above the free margin are refused before
+# signing (INSUFFICIENT_MARGIN, a skip), so the margin itself is the last limit. Only the HYPE-only basket may use 5x.
+CARRY_MAX_EXPOSURE_5X = D('5')
+CARRY_MAX_LEG_5X = D('500000')
 # 3 Nov 00:10 IST (user: "move the stoploss from 3% drop to 6% drop then it would sell everything ... rest everything
 # should be strictly unchanged"): with HYPE at $150k on about $99.5k equity a 6% HYPE fall is about -9.5% of the $99,998
 # starting equity, so the carry account halt (it flattens the basket) may be -5% or -9.5%; nothing else.
@@ -140,6 +148,9 @@ class CarryMandate:
     taker_depth_bps: int = 0
     hold_legs: tuple = ()            # symbols held at their current size (no entry or trim children)
     close_legs: tuple = ()           # symbols sold to flat (reduce-only IOC children) and never bought
+    # 4 Nov 21:15 IST (user, answered question "No stop, ask me first"): nothing is sold without the user's order. No
+    # exchange stop is placed, the final unwind does not start, and no halt flattens; only the HYPE-only 5x basket.
+    user_exits_only: bool = False
 
     def __post_init__(self):
         object.__setattr__(self, 'markets', tuple(self.markets))
@@ -191,7 +202,12 @@ class CarryMandate:
                 or decimal(self.account_loss_halt) not in CARRY_ACCOUNT_LOSS_HALTS
                 or self.taker_depth_bps not in CARRY_TAKER_DEPTH_BPS):
             raise ExchangeError('INVALID_CARRY_MANDATE')
-        if self.leverage in (2, 4) and not self.leg_notionals:
+        if self.leverage in (2, 4, 5) and not self.leg_notionals:
+            raise ExchangeError('INVALID_CARRY_MANDATE')
+        hype_only = self.sides == CARRY_BASKET_HYPE
+        if (hype_only != (self.leverage == 5) or hype_only != (self.user_exits_only is True)
+                or self.user_exits_only not in (True, False)
+                or hype_only and (decimal(self.account_loss_halt) != D(1) or self.hold_legs or self.close_legs)):
             raise ExchangeError('INVALID_CARRY_MANDATE')
         if (len(set(self.hold_legs)) != len(self.hold_legs) or not set(self.hold_legs) <= set(self.markets)
                 or self.hold_legs and not self.leg_notionals):
@@ -208,7 +224,8 @@ class CarryMandate:
             leg_cap, exposure = (((CARRY_MAX_LEG_2X_CLOSE, CARRY_MAX_EXPOSURE_2X_CLOSE) if self.close_legs
                                   else (CARRY_MAX_LEG_2X, CARRY_MAX_EXPOSURE_2X))
                                  if self.leverage == 2 else (CARRY_MAX_LEG_4X, CARRY_MAX_EXPOSURE_4X)
-                                 if self.leverage == 4 else (CARRY_MAX_TILTED_LEG, D(1)))
+                                 if self.leverage == 4 else (CARRY_MAX_LEG_5X, CARRY_MAX_EXPOSURE_5X)
+                                 if self.leverage == 5 else (CARRY_MAX_TILTED_LEG, D(1)))
             # A close leg has no budget: it is only ever sold to flat.
             if (len(tilted) != len(self.leg_notionals) or set(tilted) != set(self.markets) - set(self.close_legs)
                     or any(a > leg_cap for a in amounts)
@@ -221,7 +238,11 @@ class CarryMandate:
 
     @property
     def identity(self):
-        return fingerprint(asdict(self))
+        # user_exits_only is left out while False, so every earlier mandate keeps its identity.
+        data = asdict(self)
+        if not self.user_exits_only:
+            data.pop('user_exits_only')
+        return fingerprint(data)
 
     @classmethod
     def read(cls, path):

@@ -17,6 +17,9 @@ CARRY_2X_SCOPE = 'CARRY_2X'
 # Configuration-only scope (2 Nov 23:20 IST, user: HYPE to $150k at about 2.9x exposure): the carry markets from 2x to
 # 4x CROSS, never more.
 CARRY_4X_SCOPE = 'CARRY_4X'
+# Configuration-only scope (4 Nov 21:15 IST, user: HYPE only, full funding, 5x): pas:HYPE alone from 4x to 5x CROSS.
+CARRY_5X_SCOPE = 'CARRY_5X'
+CARRY_5X_MARKETS = frozenset(('pas:HYPE',))
 
 
 def require_entry(symbol, scope=None):
