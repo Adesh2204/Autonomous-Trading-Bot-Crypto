@@ -421,3 +421,11 @@
   leg. The runner stays OFF (runtime/carry-basket/stop.flag): a running runner would place the stops again and would
   start the 5 Nov 20:00 UTC unwind and the 6 Nov flatten, which the user wants to approve first. Nothing is sold without
   the user's permission; only exchange liquidation remains (HYPE liquidation ~$41.3 at 08:19 IST).
+- 4 November 17:20 IST (user, strict: "sell everything fast before 5:30 ... lock in this profit"; then "yes, close all"
+  after being told the ~$327k basket cannot be sold in 9 minutes without a sweep, which the thin-book rule forbids and
+  which would cost most of the profit): the whole carry basket is sold to flat. Human-equivalent driver
+  `docs/carry_2026-10-25/sell_all.py` (outside the source hash) starts the guarded carry runtime with the current mandate
+  e4ee37a3 and release and, right after startup, takes its existing halt(..., flatten=True) path: entries stop and every
+  leg unwinds EMERGENCY with reduce-only IOC children at the touch (<= 25% of the depth within 5 bps, one at a time, never a
+  sweep); nothing is bought. Startup re-places the 8% reduce-only leg stops (they can only sell). It exits when every leg
+  is flat; the halt is sticky, so a restart keeps unwinding. Started 17:34 IST at equity ~$103.7k (+3.7%).
