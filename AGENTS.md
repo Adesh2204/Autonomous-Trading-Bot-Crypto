@@ -407,3 +407,9 @@
   tonight (22:30 IST) the user asked to lock +4% and was told an exact floor is impossible (fees alone exceeded the
   cushion); the user chose to change nothing then. 19:35 IST: API_DISCONNECT_OVER_LIMIT halt (laptop off network, no
   flatten); rebind d57bd2eb held all six legs, relaunched 20:58 IST.
+- 4 November 07:28 IST (user, strict, with the account at -6.2% and ~$3.3k above the floor: "don't sell everything at
+  -9.5% ... I am hoping everything would bounce back ... strictly don't sell everything at -9.5% halt"): the runner was
+  paused at once (the halt only runs inside it; nothing sold), then branch codex/no-account-halt 935880f: carry
+  account_loss_halt may be 1 (fires only at zero equity) and run_carry.py uses it. The 8% per-leg exchange stops,
+  budgets, sides and 4x setting are unchanged. Other runtimes keep at most 5%. Without the halt the only protection is
+  each leg's own stop (HYPE ~77.2); the account can fall well past -9.5% before those trigger.
