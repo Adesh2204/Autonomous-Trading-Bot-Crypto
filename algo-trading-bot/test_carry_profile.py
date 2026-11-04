@@ -2300,3 +2300,30 @@ def test_hype_5x_budget_is_five_times_the_starting_equity_rounded_down():
     budget = (D('99998.337076') * rc.HYPE_5X_EXPOSURE / 100).to_integral_value(rounding='ROUND_FLOOR') * 100
     assert budget == D('499900') and rc.HYPE_5X_LEVERAGE == 5
     basket_mandate(**dict(HYPE_5X_KW, leg_notionals=(('pas:HYPE', str(budget)),))).require()
+
+
+def test_a_flat_account_after_a_sell_off_reopens_once_the_last_entry_settled_before_the_fill_window(guard):
+    # 4 Nov: after the sell-all the lock kept the last HYPE entry child (bought days earlier); the net fills since that
+    # child are never zero for a leg built by many children, so the account stayed RECOVERING and refused every entry.
+    t = guard
+    reserve(t, entry('pas:HYPE', 'BUY', 'c1'))
+    t.journal.update('c1', 'FILLED', t.now, oid='11', outcome=dict(filled_quantity='0.92', remainder_cancelled=False))
+    req = entry('pas:HYPE', 'BUY', 'c2')
+    assert t.g.evaluate(req, ctx(t.now + 1000), t.now + 1000).code == 'UNKNOWN_ACCOUNT_STATE'   # too recent: no trust
+    later = t.now + CarryPositionGuard.FLAT_SETTLED_MS + 1
+    fill = SimpleNamespace(symbol='pas:HYPE', side='SELL', quantity=D('0.92'), order_id='77',
+                           source='EXCHANGE_REPORTED_FILL', timestamp_ms=later - 1000)
+    recent = ctx(later); recent.fills = (fill,)
+    assert t.g.evaluate(req, recent, later).code == 'UNKNOWN_ACCOUNT_STATE'                      # a fill in the window
+    assert t.g.evaluate(req, ctx(later - 6000), later).code == 'UNKNOWN_ACCOUNT_STATE'           # stale truth
+    decision = t.g.evaluate(req, ctx(later), later)
+    assert decision.allowed and t.g.reason == 'CARRY_FLAT_SETTLED_BEFORE_FILL_WINDOW'
+    assert t.journal.control('global_position_lock')['entry_key'] is None
+
+
+def test_an_unsettled_last_entry_keeps_the_flat_account_locked(guard):
+    t = guard
+    reserve(t, entry('pas:HYPE', 'BUY', 'c1'))
+    t.journal.update('c1', 'UNKNOWN', t.now)
+    later = t.now + CarryPositionGuard.FLAT_SETTLED_MS + 1
+    assert t.g.evaluate(entry('pas:HYPE', 'BUY', 'c2'), ctx(later), later).code != 'SINGLE_POSITION_PASS'

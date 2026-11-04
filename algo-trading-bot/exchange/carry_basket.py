@@ -95,6 +95,15 @@ class CarryPositionGuard(MultiPositionGuard):
         self.pending = frozenset()
         super().revoke(reason)
 
+    FLAT_SETTLED_MS = 600000          # twice the context's 5 min fill window
+
+    def _settled_before_fill_window(self, context, now_ms):
+        key = (self.journal.control(self.CONTROL) or {}).get('entry_key')
+        row = self.journal.intent(key) if key else None
+        return (row is not None and not unresolved(row)
+                and now_ms - max(row['created_ms'], row['updated_ms'] or 0) > self.FLAT_SETTLED_MS
+                and not any(f.symbol in self.sides for f in context.fills))
+
     def _side_ok(self, symbol, quantity):
         return symbol in self.sides and (quantity > 0) == (self.sides[symbol] == 'LONG')
 
@@ -110,6 +119,16 @@ class CarryPositionGuard(MultiPositionGuard):
             # Stale, an unknown management action, or flat: the single-position rules
             # decide (UNKNOWN / RECOVERING / FLAT with actual-fill evidence).
             report = SinglePositionGuard._reconcile(self, context, now_ms)
+            if (fresh and self.state == PortfolioState.RECOVERING
+                    and self.reason == 'ACTUAL_FILL_FLAT_EVIDENCE_REQUIRED' and self._settled_before_fill_window(context, now_ms)):
+                # 4 Nov: a basket leg is built and unwound by many children, so the net fills since its LAST
+                # entry child are never zero once it is sold to flat, and the 5 min fill window cannot show an
+                # entry from days ago: after the 4 Nov sell-all the lock stayed RECOVERING for good. Fresh
+                # reconciled exchange truth (no position, no open order), no unresolved row, an entry settled
+                # long before the fill window and no carry fill inside it are the flat evidence instead.
+                self._store(PortfolioState.FLAT, 'CARRY_FLAT_SETTLED_BEFORE_FILL_WINDOW', observed_ms=context.account_ms,
+                            in_transaction=True)
+                report = self.report()
             if self.state == PortfolioState.FLAT:
                 self.slot_open = True
                 self._store(self.state, self.reason, observed_ms=context.account_ms, in_transaction=True)
