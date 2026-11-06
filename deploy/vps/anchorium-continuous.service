@@ -1,0 +1,24 @@
+# systemd alternative to Docker: /etc/systemd/system/anchorium-continuous.service
+[Unit]
+Description=Anchorium continuous runtime (Hyperliquid testnet, pas)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=anchorium
+WorkingDirectory=/opt/anchorium
+EnvironmentFile=/etc/anchorium/bot.env
+Environment=PYTHONUNBUFFERED=1 TZ=UTC
+ExecStart=/opt/anchorium/.venv/bin/python3 deploy/vps/boot.py
+Restart=on-failure
+RestartSec=20
+KillSignal=SIGTERM
+TimeoutStopSec=90
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/anchorium/runtime
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

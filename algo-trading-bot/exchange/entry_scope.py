@@ -2,15 +2,32 @@
 
 No runtime flag expands this scope. Reduce-only management retains its own
 exact authorization and exchange checks; this filter never hides exposure.
+The carry basket (user directive 25 Oct 2026, "YES, CARRY") has its own fixed
+scope, selected only by the carry runtime's validator; every other runtime
+keeps PAS_ENTRY_MARKETS.
 """
 from .base_exchange import ExchangeError
 
-PAS_ENTRY_MARKETS = frozenset(('pas:BTC', 'pas:EWY'))
+PAS_ENTRY_MARKETS = frozenset(('pas:BTC', 'pas:EWY', 'pas:HYPE'))
+# 2 Nov 22:05 IST (user, answered question "SP500 + USDJPY + EWJ"): EWJ joins the carry markets.
+CARRY_ENTRY_MARKETS = frozenset(('pas:BTC', 'pas:ETH', 'pas:HYPE', 'pas:SP500', 'pas:USDJPY', 'pas:EWJ'))
+CARRY_SCOPE = 'CARRY'
+# Configuration-only scope (27 Oct, user): set the carry markets to 2x CROSS, never more.
+CARRY_2X_SCOPE = 'CARRY_2X'
+# Configuration-only scope (2 Nov 23:20 IST, user: HYPE to $150k at about 2.9x exposure): the carry markets from 2x to
+# 4x CROSS, never more.
+CARRY_4X_SCOPE = 'CARRY_4X'
+# Configuration-only scope (4 Nov 21:15 IST, user: HYPE only, full funding, 5x): pas:HYPE alone from 4x to 5x CROSS.
+CARRY_5X_SCOPE = 'CARRY_5X'
+CARRY_5X_MARKETS = frozenset(('pas:HYPE',))
 
 
-def require_entry(symbol):
-    if symbol not in PAS_ENTRY_MARKETS:
-        raise ExchangeError('V4_PAS_BTC_EWY_NEW_ENTRIES_ONLY')
+def require_entry(symbol, scope=None):
+    if scope is None:
+        if symbol not in PAS_ENTRY_MARKETS:
+            raise ExchangeError('V4_PAS_BTC_EWY_NEW_ENTRIES_ONLY')
+    elif scope != CARRY_SCOPE or symbol not in CARRY_ENTRY_MARKETS:
+        raise ExchangeError('CARRY_BASKET_NEW_ENTRIES_ONLY')
 
 
 def signal_markets(client, requested=()):
@@ -23,7 +40,7 @@ def signal_markets(client, requested=()):
     return selected
 
 
-def require_entry_action(client, action):
+def require_entry_action(client, action, scope=None):
     """Final actual SDK boundary; asset IDs always resolve from runtime metadata."""
     rows = action.get('orders', ()) if action.get('type') == 'order' else (
         [r.get('order', {}) for r in action.get('modifies', ())]
@@ -34,4 +51,4 @@ def require_entry_action(client, action):
         matches = [s for s, spec in client.markets.items() if spec.asset_id == wire.get('a')]
         if client.dex != 'pas' or len(matches) != 1:
             raise ExchangeError('V4_EXACT_PAS_ENTRY_ASSET_REQUIRED')
-        require_entry(matches[0])
+        require_entry(matches[0], scope)

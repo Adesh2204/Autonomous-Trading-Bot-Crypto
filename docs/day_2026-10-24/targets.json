@@ -1,0 +1,39 @@
+{
+  "generated_at": "2026-10-24T09:59:00.000479402Z",
+  "days": 5,
+  "prior_return_pct": "-0.000049",
+  "my_rank": 10,
+  "my_q": "0.10000",
+  "my_score": "0.08000",
+  "r6_pct": "0.0413",
+  "r5_pct": "0.0651",
+  "r5_if_q_up_2pct": "0.0808",
+  "lock_pct": "0.0808",
+  "ranks": {
+    "4": {
+      "name": "Polenta e Osei",
+      "return_pct": "+0.10792",
+      "q": "0.11472",
+      "score": "0.09178"
+    },
+    "5": {
+      "name": "Algo Hedge",
+      "return_pct": "+0.76102",
+      "q": "0.10945",
+      "score": "0.08756"
+    },
+    "6": {
+      "name": "Blackswans",
+      "return_pct": "+0.05027",
+      "q": "0.10607",
+      "score": "0.08486"
+    },
+    "7": {
+      "name": "BerserkerBots",
+      "return_pct": "+0.12765",
+      "q": "0.10592",
+      "score": "0.08473"
+    }
+  },
+  "formula": "Q = (max(R,0)+0.005)/(|R| + 1.5*sigma + 0.05); score = 0.8*Q + 0.2*J; sigma = sample stdev of daily returns * sqrt(n); daily sample 12:00 UTC (+240 s)"
+}

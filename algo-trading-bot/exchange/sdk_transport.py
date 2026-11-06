@@ -44,7 +44,12 @@ def build_exchange(signer,client,nonce_manager,sink,*,offline=False):
         def _post_action(self, action, signature, nonce):
             # SDK's generated timestamp is replaced with the leased durable nonce
             # and re-signed using the official testnet-domain signing function.
-            sink.check(action)
+            try:
+                sink.check(action)
+            except ExchangeError as exc:
+                # Refused before a nonce is leased or anything is signed (27 Oct 12:27 IST:
+                # a BTC carry child refused here with SIGNING_READINESS_REVOKED was journaled UNKNOWN).
+                raise PreDispatchRefusal(str(exc)) from exc
             nonce=nonce_manager.next()
             expiry=getattr(sink,'action_expiry_ms',None)
             signature=sign_l1_action(self.wallet,action,None,nonce,expiry,False)
@@ -86,6 +91,17 @@ def build_exchange(signer,client,nonce_manager,sink,*,offline=False):
     if any(not name.startswith(getattr(client,'dex','par')+':') for name in exchange.info.coin_to_asset):
         raise ExchangeError('SDK_NATIVE_MARKETS_PROHIBITED')
     return exchange
+
+
+class PreDispatchRefusal(ExchangeError):
+    """A guarded action refused before any HTTP request and before its DISPATCHED audit.
+
+    Raised only by the transport's own checks (the permit, venue, authority and exact-action
+    checks) that run before session.post: the action was not transmitted. A failure after the
+    post starts stays an ordinary exception, i.e. TRANSMISSION_UNCERTAIN.
+    26 Oct: two carry children refused here (V4_PAS_BTC_EWY_NEW_ENTRIES_ONLY at 01:19 IST,
+    ENTRY_RELIABILITY_GATE_REQUIRED at 16:30 IST) were journalled UNKNOWN and froze the account.
+    """
 
 
 class OfficialSDKTransport:
@@ -135,7 +151,8 @@ class OfficialSDKTransport:
 
     def check(self, action):
         from .entry_scope import require_entry_action
-        require_entry_action(self.client,action)
+        # Only the carry runtime sets entry_scope on its transport (and on its validator).
+        require_entry_action(self.client,action,getattr(self,'entry_scope',None))
         self._require_venue(self.client,self.authorization)
         if self._expected is None or self._guard is None or fingerprint(action)!=self._expected:
             raise ExchangeError('UNVALIDATED_SIGNED_ACTION')
@@ -149,7 +166,10 @@ class OfficialSDKTransport:
         self._guard.require(self, action)
 
     def transmit(self, payload):
-        self.check(payload['action'])
+        try:
+            self.check(payload['action'])
+        except ExchangeError as exc:
+            raise PreDispatchRefusal(str(exc)) from exc
         # No SDK debug logger and no automatic HTTP retries or redirects.
         record=getattr(self,'record_transport_boundary',None)
         if record:record('HTTP_POST_STARTED',payload)
@@ -181,14 +201,17 @@ class OfficialSDKTransport:
 
     def perform(self, method, args, kwargs, expected_action, guard):
         with self._lock:
-            if type(self) is not OfflineSDKTransport:
-                self.authorization.require(self.team_address,self.signer_address)
-            from .compliance_guard import ActionPermit
-            if type(guard) is not ActionPermit:
-                raise ExchangeError('COMPLIANCE_ACTION_PERMIT_REQUIRED')
-            if method not in {'order','modify_order','cancel','cancel_by_cloid','update_leverage'}:
-                raise ExchangeError('ACCOUNT_ADMINISTRATION_PROHIBITED')
-            guard.require(self, expected_action)
+            try:
+                if type(self) is not OfflineSDKTransport:
+                    self.authorization.require(self.team_address,self.signer_address)
+                from .compliance_guard import ActionPermit
+                if type(guard) is not ActionPermit:
+                    raise ExchangeError('COMPLIANCE_ACTION_PERMIT_REQUIRED')
+                if method not in {'order','modify_order','cancel','cancel_by_cloid','update_leverage'}:
+                    raise ExchangeError('ACCOUNT_ADMINISTRATION_PROHIBITED')
+                guard.require(self, expected_action)
+            except ExchangeError as exc:
+                raise PreDispatchRefusal(str(exc)) from exc
             self._expected=fingerprint(expected_action)
             self._guard=guard
             self._current_action=expected_action

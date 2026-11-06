@@ -113,7 +113,7 @@ def observation():
 def test_exact_plan_retains_human_approval_and_all_other_history_barriers():
     o=observation();p=configuration_plan(o)
     assert p['blockers']==['SEPARATE_EXACT_OPERATOR_CONFIGURATION_APPROVAL_REQUIRED']
-    assert {c['symbol'] for c in p['changes']}=={'pas:BTC','pas:EWY'}
+    assert {c['symbol'] for c in p['changes']}=={'pas:BTC','pas:EWY','pas:HYPE'}
     assert all(c['requested_action']['type']=='updateLeverage' for c in p['changes'])
     assert p['signing_authority']=='NONE' and 'UNKNOWN_PRESERVED' in p['historical_disposition']
     o['local_execution_state']['unresolved'].append(dict(journal='pas',state='UNKNOWN'))

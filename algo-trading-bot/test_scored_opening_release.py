@@ -55,7 +55,7 @@ def configuration_observation():
 def test_configuration_is_only_source_bound_unsigned_plan_not_organizer_credit():
     o=configuration_observation();original=deepcopy(o);p=configuration_plan(o)
     assert o==original and p['signing_authority']=='NONE' and p['exchange_writes']==p['signatures_created']==0
-    assert len(p['changes'])==2 and p['organizer_credit_amount'] is None and not p['transfers_allowed']
+    assert len(p['changes'])==3 and p['organizer_credit_amount'] is None and not p['transfers_allowed']
     assert 'PAS_USDP_FUNDING_REQUIRED_BEFORE_CONFIGURATION' in p['blockers']
     for c in p['changes']:assert c['requested_action']==dict(type='updateLeverage',asset=c['requested_action']['asset'],isCross=True,leverage=1)
 
@@ -75,7 +75,7 @@ def test_invalid_configuration_evidence_cannot_propose_actions(damage):
 def test_existing_one_x_markets_are_not_planned_again():
     o=configuration_observation()
     for r in o['markets']:r['active_asset']['leverage']=dict(type='cross',value=1)
-    p=configuration_plan(o);assert p['changes']==[] and len(p['already_one_x_cross'])==2
+    p=configuration_plan(o);assert p['changes']==[] and len(p['already_one_x_cross'])==3
 
 
 def test_scored_preparation_observes_signals_even_before_native_proof(monkeypatch,tmp_path):

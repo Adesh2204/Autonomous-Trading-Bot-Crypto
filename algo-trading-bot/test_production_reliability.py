@@ -220,6 +220,22 @@ def test_protection_correct_existing_is_idempotent(protected):
     assert p.live.transport.signed_payloads[0]==first
 
 
+
+def test_slow_shared_read_does_not_make_a_matching_stop_stale(protected):
+    """27 Oct carry: with five legs the 5 s window ran out on read latency before the later symbols."""
+    p=protected
+    p.manager.ensure_all()
+    read=p.live.client.transport
+    def slow(payload):
+        if payload['type']=='frontendOpenOrders':
+            p.live.fixture.now+=6000
+            p.live.fixture.book['time']=p.live.fixture.now
+        return read(payload)
+    p.live.client.transport=slow
+    p.manager.ensure_all()
+    assert state(p)=='ACTIVE',p.manager.report()
+    assert len(p.live.transport.signed_payloads)==1
+
 @pytest.mark.parametrize('quantity',['.35','.15'])
 def test_incremental_entry_and_partial_exit_resize_atomic(protected,quantity):
     p=protected

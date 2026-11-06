@@ -55,7 +55,8 @@ class LiveAccountStream:
                     except ExchangeError as exc:
                         self.last_error=str(exc)
                         self.recovery.journal.event('ACCOUNT_RECEIVER_RECOVERY',self.clock_ms(),reason=self.last_error)
-                        if self.reconnect_failures>=5:raise ExchangeError('ACCOUNT_RECEIVER_RECONNECT_LIMIT')
+                        # Keep reconnecting on the capped backoff; the runtime's
+                        # disconnect limit, not this thread, decides a long outage.
                         self.receiver_stop.wait(.25)
             except Exception as exc:
                 from .execution_journal import safe_reason

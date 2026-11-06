@@ -119,9 +119,17 @@ class LeverageConfigurationTransport:
             plan=dict(approved_plan);identity=plan.pop('plan_hash',None)
             if identity!=approval.plan_hash or fingerprint(plan)!=identity or plan.get('source_hash')!=approval.source_hash:
                 raise ExchangeError('HASH_BOUND_PAS_CONFIGURATION_PLAN_REQUIRED')
-            from .entry_scope import PAS_ENTRY_MARKETS
-            allowed_assets={client.market(s).asset_id for s in PAS_ENTRY_MARKETS}
-            if any(r['requested_action'] not in [dict(type='updateLeverage',asset=a,isCross=True,leverage=1) for a in allowed_assets] for r in plan['changes']):
+            from .entry_scope import (PAS_ENTRY_MARKETS, CARRY_ENTRY_MARKETS, CARRY_SCOPE, CARRY_2X_SCOPE, CARRY_4X_SCOPE,
+                                      CARRY_5X_SCOPE, CARRY_5X_MARKETS)
+            scope=plan.get('configuration_scope')
+            markets=(PAS_ENTRY_MARKETS|CARRY_ENTRY_MARKETS if scope==CARRY_SCOPE else
+                     CARRY_ENTRY_MARKETS if scope in (CARRY_2X_SCOPE,CARRY_4X_SCOPE) else
+                     CARRY_5X_MARKETS if scope==CARRY_5X_SCOPE else PAS_ENTRY_MARKETS)
+            self.target_leverage=5 if scope==CARRY_5X_SCOPE else 4 if scope==CARRY_4X_SCOPE else 2 if scope==CARRY_2X_SCOPE else 1
+            if plan.get('target_leverage',1)!=self.target_leverage:
+                raise ExchangeError('V4_BTC_EWY_CONFIGURATION_ACTIONS_ONLY')
+            allowed_assets={client.market(s).asset_id for s in markets}
+            if any(r['requested_action'] not in [dict(type='updateLeverage',asset=a,isCross=True,leverage=self.target_leverage) for a in allowed_assets] for r in plan['changes']):
                 raise ExchangeError('V4_BTC_EWY_CONFIGURATION_ACTIONS_ONLY')
             self._approved_actions=frozenset(fingerprint(r['requested_action']) for r in plan['changes'])
             self.action_expiry_ms=approval.expires_ms
@@ -150,7 +158,7 @@ class LeverageConfigurationTransport:
         if (self.expected is None or self.transmitted or not self.nonces.healthy or
                 not isinstance(action, dict) or set(action) != {'type', 'asset', 'isCross', 'leverage'} or
                 action['type'] != 'updateLeverage' or action['isCross'] is not True or
-                type(action['leverage']) is not int or action['leverage'] != 1 or
+                type(action['leverage']) is not int or action['leverage'] != getattr(self, 'target_leverage', 1) or
                 type(action['asset']) is not int or fingerprint(action) != self.expected or
                 action['asset'] not in {m.asset_id for m in self.client.markets.values()}):
             raise ExchangeError('EXACT_ONE_X_CROSS_ACTION_PERMIT_REQUIRED')
@@ -176,6 +184,19 @@ class LeverageConfigurationTransport:
             return response.json()
         except Exception:
             raise ExchangeError('CONFIGURATION_RESPONSE_UNCERTAIN') from None
+
+    def set_target_cross(self, symbol):
+        """The plan's leverage (1, or 2 for the carry 2x configuration scope), cross margin."""
+        target = getattr(self, 'target_leverage', 1)
+        with self.lock:
+            spec = self.client.market(symbol)
+            action = dict(type='updateLeverage', asset=spec.asset_id, isCross=True, leverage=target)
+            self.expected, self.transmitted = fingerprint(action), False
+            try:
+                self.check(action)
+                return self._sdk.update_leverage(target, symbol, True)
+            finally:
+                self.expected = None
 
     def set_one_x_cross(self, symbol):
         with self.lock:

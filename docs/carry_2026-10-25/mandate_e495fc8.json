@@ -1,0 +1,105 @@
+{
+  "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+  "api_wallet": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+  "markets": [
+    "pas:BTC",
+    "pas:ETH",
+    "pas:HYPE",
+    "pas:SP500",
+    "pas:USDJPY",
+    "pas:EWJ"
+  ],
+  "starts_ms": 1792957513531,
+  "flatten_ms": 1793964600000,
+  "expires_ms": 1793966100000,
+  "starting_equity": "99998.337076",
+  "leg_notional": "16000",
+  "source_hash": "c5b733fca3ec53df988aa27908be22e9a3e0606ae5261b7b7f0b7b94b1114779",
+  "release_sha256": "0df6c9fb9c65d6b7a6980edf30f2a49645bebf1ed212cf35200993f6871e75e5",
+  "venue_identity": "7562c7f16a800fae8d3f9ed4afd76c2d2a8597e5814a1626ef9553346789b493",
+  "approval_reference": "User directive 2026-10-25 23:35 IST, \"We wanna move with Carry Strategy\" (YES, CARRY): half size, $9,500 per leg, LONG BTC/ETH/HYPE/SP500 and SHORT USDJPY at 1x, NO basket stop, existing 8% per-leg exchange stop, hold until the 6 Nov flatten; the user and co-founder accept a ~43% chance of finishing negative. Answered questions: sliced post-only children for 2 h with a 10-min re-price, then IOC children <= 25% of the touch; keep the -5% account catastrophe halt. 26 Oct 11:55 IST the user chose FULL SIZE, $19,000 per leg (\"trade with big money\"), after the model numbers: median +0.91%, P(loss) ~43%, 5th percentile about -4.2%. 26 Oct 22:35 IST the user made HYPE the priority leg ($35k; BTC $18k, ETH $17k, SP500 $20k, USDJPY $5k by funding; total $95k at 1x) and allowed IOC children of up to 25% of the depth within 5 bps of the touch. 27 Oct 01:05 IST the user asked for more risk, HYPE heavy: 2x cross setting, exposure 1.5x equity ($142.5k: HYPE $60k, SP500 $30k, BTC $25k, ETH $22.5k, USDJPY $5k), after the model numbers (P(profit) 44%, P(#1) 34%, -5% halt hit in ~46% of paths); the -5% account halt and 8% leg stops are kept. The 2x route needs a flat account; 27 Oct 01:35 IST the user chose instead more HYPE within 1x: HYPE $50k, SP500 $15k, BTC $13k, ETH $12k, USDJPY $5k, trimming over-target legs first. 27 Oct 09:05 IST the user chose to keep HYPE exactly as held (no sale, trim or top-up), approved raising the five markets to a 2x cross setting while the basket is open (a raise-only route; leverage is never lowered and no order is placed by it), and chose 1.5x exposure: USDJPY $5k, SP500/BTC/ETH sharing the rest equally. 29 Oct 13:45 IST the user ordered the remaining balance into the basket (\"start buying with that as well\"): most into HYPE, then SP500, then BTC, then ETH, then the others; exposure 1.85x the starting equity, HYPE no longer held as is, the room above each leg's held value shared 5:4:3:2:1 in that order; nothing is sold or trimmed; the -5% halt and 8% leg stops are kept. 31 Oct 22:40 IST the user ordered SP500 and USDJPY squared off and the balance put into HYPE with the leverage reduced from 2x to 1.5x; answered question: total exposure 1.5x the current equity, BTC and ETH held as they are, HYPE gets the rest (about $85k), the rest of the freed margin stays unused. The setting stays 2x (whole numbers only); the -5% halt and 8% leg stops are kept. 1 Nov 12:05 IST the user ordered the remaining $26k into HYPE with the leverage kept at 1.5x; the basket was already at 1.5x, answered question: keep 1.5x and move $26,000 of BTC/ETH (in proportion) into HYPE with reduce-only IOC trims first; nothing else changes. 1 Nov 22:30 IST the user ordered at least $10,000 more of BTC/ETH trimmed into HYPE with the exposure kept at 1.5x and the volatility increase kept small: $10,000 (at most $10,200) is moved the same way, in proportion, reduce-only IOC trims first; nothing else changes. 1 Nov 23:10 IST the user ordered the leverage raised to 1.85x; answered question \"$185k: bot's 1.85x cap\": exposure 1.85x the starting equity (about 1.75x the current equity), BTC and ETH held as they are, HYPE alone bought with the room; the 2x setting, 8% leg stops and -5% halt are kept. 2 Nov 11:40 IST the user strictly ordered the leverage raised from 1.85x to 2x for all three positions: exposure 2x the starting equity (the base of the 1.85x), BTC, ETH and HYPE scaled up in proportion with touch-limited IOC children, nothing sold; the 2x setting, 8% leg stops and -5% halt are kept. 2 Nov 20:50 IST the user strictly ordered about $40-50k trimmed from HYPE and put into the markets most likely to be profitable by tomorrow, with the leverage kept the same: $50,000 of HYPE (never more) is trimmed with reduce-only touch-limited IOC children and SP500 (the only market paying longs funding over 24 h and 7 d, already at the 2x setting) is bought LONG with what was trimmed, capped at 2x the starting equity; BTC and ETH are held as they are and USDJPY stays closed; the 2x setting, 8% leg stops and -5% halt are kept. No profit or rank is guaranteed. 2 Nov 22:05 IST the user ordered the volatility lowered by diversifying without changing the leverage; HYPE was 92% of the daily risk. Answered questions: $50,000 more of HYPE (never more) is trimmed with reduce-only IOC children; SP500 grows by $10,000 and USDJPY is re-opened SHORT at $15,000; EWJ gets $25,000 once its account setting is 2x (the user approved that configuration change through the typed route); BTC and ETH are held as they are; the 2x setting, 8% leg stops and -5% halt are kept. Second step: EWJ, set to 2x CROSS by the typed route, joins the basket LONG with the reserved $25,000 (capped at 2x the starting equity); legs the previous run verified complete are held as they are. 2 Nov 23:20 IST the user ordered HYPE raised to $150,000 with every other leg unchanged; answered question \"Yes, HYPE $150k (2.9x)\" after the model numbers (-5% halt by the next sample ~32%, by 6 Nov ~66%): the six markets move to a 4x cross setting through the typed route, HYPE is bought with touch-limited IOC children, exposure capped at 2.95x the starting equity; the 8% leg stops and -5% halt are kept. 3 Nov 00:10 IST the user ordered the account halt moved so that it sells everything only after about a 6% HYPE drop instead of 3%, everything else strictly unchanged: the halt is -9.5% of the starting equity (about $90,500); budgets, leverage and the 8% leg stops are unchanged. 3 Nov 15:20 IST the user strictly ordered BTC put into shorting; answered question \"Flip BTC to a $20k short\": the BTC long is sold to flat first with reduce-only touch-limited IOC children, then BTC is shorted to $20,000 with the usual sliced children; every other leg, the 4x setting, 8% leg stops and -9.5% halt are unchanged. 3 Nov 23:50 IST the user ordered the unused ~$30k put into HYPE with everything else unchanged; answered question \"Buy $30k more HYPE\" (not the ~$120k all free margin would buy at 4x): HYPE is bought up to its marked value plus $30,000 with touch-limited IOC children; the 4x exposure cap becomes 3.3x the starting equity and one leg at most $190,000; every other leg is held; the 4x setting, 8% stops and -9.5% halt are unchanged.",
+  "max_positions": 6,
+  "leverage": 4,
+  "account_loss_halt": "0.095",
+  "position_stop": "0.08",
+  "stop_slippage": "0.01",
+  "entry_slippage": "0.003",
+  "exit_slippage": "0.005",
+  "l2_participation": "0.25",
+  "fill_deviation_halt": "0.005",
+  "max_order_errors": 3,
+  "max_disconnect_ms": 300000,
+  "funding_threshold": "0.00002",
+  "lookback_hours": 24,
+  "cooldown_hours": 24,
+  "strategy": "FUNDING_CARRY_V1",
+  "network": "testnet",
+  "dex": "pas",
+  "profile": "HALF_SIZE_FIXED_BASKET_2026_10_25",
+  "sides": [
+    [
+      "pas:BTC",
+      "SHORT"
+    ],
+    [
+      "pas:ETH",
+      "LONG"
+    ],
+    [
+      "pas:HYPE",
+      "LONG"
+    ],
+    [
+      "pas:SP500",
+      "LONG"
+    ],
+    [
+      "pas:USDJPY",
+      "SHORT"
+    ],
+    [
+      "pas:EWJ",
+      "LONG"
+    ]
+  ],
+  "unwind_starts_ms": 1793908800000,
+  "maker_window_ms": 7200000,
+  "reprice_ms": 600000,
+  "taker_gap_ms": 30000,
+  "book_share": "0.25",
+  "leg_notionals": [
+    [
+      "pas:BTC",
+      "20200"
+    ],
+    [
+      "pas:ETH",
+      "19900"
+    ],
+    [
+      "pas:HYPE",
+      "184100"
+    ],
+    [
+      "pas:SP500",
+      "60400"
+    ],
+    [
+      "pas:USDJPY",
+      "15100"
+    ],
+    [
+      "pas:EWJ",
+      "25200"
+    ]
+  ],
+  "taker_depth_bps": 5,
+  "hold_legs": [
+    "pas:BTC",
+    "pas:ETH",
+    "pas:SP500",
+    "pas:USDJPY",
+    "pas:EWJ"
+  ],
+  "close_legs": []
+}

@@ -1,0 +1,203 @@
+{
+  "status": "UNSIGNED_CONFIGURATION_PLAN_ONLY",
+  "network": "testnet",
+  "dex": "pas",
+  "collateral": "USDP",
+  "source_hash": "ddbbb64a2097a1666302749d2691f8e82fb41523aab89f01a8b879bee73a787a",
+  "observed_ms": 1792957208276,
+  "entry_markets": [
+    "pas:BTC",
+    "pas:ETH",
+    "pas:EWY",
+    "pas:HYPE",
+    "pas:SP500",
+    "pas:USDJPY"
+  ],
+  "account_reconciliation_scope": "ALL_CANONICAL_PAS_MARKETS",
+  "policy_basis": "V4 BTC/EWY entries only; leverage is per market, not an all-ten venue obligation",
+  "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+  "discovery_hash": "26985b5fed783118ae57c4791eb20587389b155351c7bce66b2697ea2950874f",
+  "changes": [
+    {
+      "symbol": "pas:ETH",
+      "observed_ms": 1792957200272,
+      "before": {
+        "type": "cross",
+        "value": 20
+      },
+      "requested_action": {
+        "type": "updateLeverage",
+        "asset": 2810001,
+        "isCross": true,
+        "leverage": 1
+      }
+    },
+    {
+      "symbol": "pas:SP500",
+      "observed_ms": 1792957202199,
+      "before": {
+        "type": "cross",
+        "value": 20
+      },
+      "requested_action": {
+        "type": "updateLeverage",
+        "asset": 2810003,
+        "isCross": true,
+        "leverage": 1
+      }
+    },
+    {
+      "symbol": "pas:USDJPY",
+      "observed_ms": 1792957203241,
+      "before": {
+        "type": "cross",
+        "value": 20
+      },
+      "requested_action": {
+        "type": "updateLeverage",
+        "asset": 2810009,
+        "isCross": true,
+        "leverage": 1
+      }
+    }
+  ],
+  "already_one_x_cross": [
+    "pas:BTC",
+    "pas:EWY",
+    "pas:HYPE"
+  ],
+  "collateral_balance": "99998.337076",
+  "organizer_credit_amount": null,
+  "organizer_credit_status": "ORIGINAL_ORGANIZER_CREDIT_RECORD_REQUIRED; balance is not funding provenance",
+  "blockers": [
+    "SEPARATE_EXACT_OPERATOR_CONFIGURATION_APPROVAL_REQUIRED"
+  ],
+  "signing_authority": "NONE",
+  "signatures_created": 0,
+  "exchange_writes": 0,
+  "transfers_allowed": false,
+  "configuration_approval_created": false,
+  "required_before_execution": [
+    "Fresh funded Unified account/agent/identity checks",
+    "Prior UNKNOWN/invocation review",
+    "Exact new configuration-only approval",
+    "Shared sole host/signer/nonce ownership",
+    "Per-action exact permit and durable uncertainty",
+    "Fresh readback of every requested 1x CROSS value"
+  ],
+  "note": "Unsigned evidence only. The separate exact PAS configuration-only approval/route is required; existing par approval never authorizes PAS.",
+  "configuration_scope": "CARRY",
+  "scope_basis": "Carry basket 1x CROSS (user directive 25 Oct 2026, YES, CARRY); configuration only, no orders.",
+  "configuration_isolation": {
+    "mode": "ACTUAL_READ_ONLY_CONFIGURATION_ISOLATION_REVIEW",
+    "scope": "PAS_BTC_EWY_1X_CROSS_CONFIGURATION_ONLY",
+    "source_hash": "ddbbb64a2097a1666302749d2691f8e82fb41523aab89f01a8b879bee73a787a",
+    "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+    "api_wallet": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+    "original_cloid": "0xac0eea156fcec80986dd67c9057b6ded",
+    "original_nonce": 1792217834069,
+    "local": {
+      "row_hash": "16288c0d29941a01891a548c6184a2f76744eae4fc2b9e03d31ae3ef76553520",
+      "invocation_hash": "76ae82b3df97189e4fef37727be15f581734a0283b287cd34ec8bb820bc172ce",
+      "consumed_marker_hash": "fca92358a25a3418b48b418da3d16a5a170136fefcafc47495b432a98cd19093",
+      "qualification_dump_sha256": "d3f114b71e0a24765f21580a055dc9d2ed2971af5fa970fd09450d9c3d2facf0",
+      "qualification_integrity": "ok",
+      "nonce_database": "/Users/adesh/Autonomous Trading Bot - Crypto /runtime/testnet/anchorium-bot-1/nonces.sqlite",
+      "signer": "0x46c9bed595770150752e7fa3806449f81e0ec6f9",
+      "nonce_high_water": 1792924575945,
+      "nonce_integrity": "ok"
+    },
+    "readbacks": [
+      {
+        "venues": {
+          "par": {
+            "dex": "par",
+            "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+            "positions_before": [],
+            "positions_after": [],
+            "open_orders": [],
+            "frontend_orders": [],
+            "exchange_time_ms": 1792957190898
+          },
+          "pas": {
+            "dex": "pas",
+            "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+            "positions_before": [],
+            "positions_after": [],
+            "open_orders": [],
+            "frontend_orders": [],
+            "exchange_time_ms": 1792957191679
+          }
+        },
+        "original_order_status": {
+          "status": "unknownOid"
+        },
+        "observed_ms": 1792957192238
+      },
+      {
+        "venues": {
+          "par": {
+            "dex": "par",
+            "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+            "positions_before": [],
+            "positions_after": [],
+            "open_orders": [],
+            "frontend_orders": [],
+            "exchange_time_ms": 1792957192853
+          },
+          "pas": {
+            "dex": "pas",
+            "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+            "positions_before": [],
+            "positions_after": [],
+            "open_orders": [],
+            "frontend_orders": [],
+            "exchange_time_ms": 1792957193670
+          }
+        },
+        "original_order_status": {
+          "status": "unknownOid"
+        },
+        "observed_ms": 1792957194170
+      }
+    ],
+    "historical_outcome": "UNKNOWN",
+    "order_authority": false,
+    "signatures_created": 0,
+    "exchange_writes": 0,
+    "funding": {
+      "status": "USDP_POSITIVE_VERIFIED",
+      "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+      "network": "testnet",
+      "dex": "pas",
+      "collateral": "USDP",
+      "account_mode": "unifiedAccount",
+      "token": 3307,
+      "observed_ms": 1792957194170,
+      "exchange_time_ms": 1792957194437,
+      "balance": "99998.337076",
+      "age_ms": 523,
+      "organizer_credit_amount": null,
+      "organizer_credit_provenance": "UNKNOWN",
+      "signing_authority": "NONE",
+      "reasons": [],
+      "response_hashes": {
+        "spot": "8e9ddbdbce767c9b7284595dd87f8fd7fab90a5e4a1fbe49846851b9a5879468",
+        "state": "8fc983bb113328f676abfc9f448c83505fe2951d17ea88fc0abeb7503be5fbfe"
+      },
+      "provenance": "/Users/adesh/Autonomous Trading Bot - Crypto /docs/carry_2026-10-25/carry_configuration_1792957187850/configuration_isolation/pas_info_receipts.jsonl",
+      "equity_basis": "Unified USDP total once; no addition of per-DEX equity or unrealized PnL",
+      "evidence_hash": "8d020655cd8eff6bf5e73166a924587728e7c0fac6186d6c7983daaa20b5b1c5"
+    },
+    "receipt_sha256": {
+      "par": "19bcb3d9006a95693c94816b7561626cd0228745402353fde18644704d98575f",
+      "pas": "1be6db7c48cf302642b1d4188342adb6b8cbadf86a927a4504a1de6da2c8c0ea"
+    },
+    "finished_ms": 1792957194694,
+    "source_hash_after": "ddbbb64a2097a1666302749d2691f8e82fb41523aab89f01a8b879bee73a787a",
+    "proof_hash": "f5415d3e9e075e7e798bca7445985608345af0d8d55daaba1e4421bee13d23e5"
+  },
+  "historical_disposition": "UNKNOWN_PRESERVED; finite configuration-only isolation. No order, qualification, cancellation or transfer authority.",
+  "isolation_acceptance": "The exact plan approval includes this displayed isolation only for the two 1x CROSS changes; ordinary order barriers remain.",
+  "plan_hash": "4cac61c37ce9cd7a93e7292ed807cfbb2df901ac8cd8d5b98beef750748ce5c9"
+}

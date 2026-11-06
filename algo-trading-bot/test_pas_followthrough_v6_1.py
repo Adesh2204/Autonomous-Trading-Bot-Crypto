@@ -128,7 +128,7 @@ def test_real_frozen_scans_preserve_btc_ewy_metrics_and_signals_in_ten_market_ob
     f,c,s=scanner(tmp_path)
     try:
         observed=s.scan();normal=MarketRegimeScanner(s.market,s.policy).scan()
-        assert len(observed.diagnostics)==10 and len(normal.diagnostics)==2
+        assert len(observed.diagnostics)==10 and len(normal.diagnostics)==3
         for baseline in normal.diagnostics:
             broad=next(d for d in observed.diagnostics if d.symbol==baseline.symbol)
             assert broad.metrics and broad.metrics==baseline.metrics

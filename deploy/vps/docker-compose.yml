@@ -1,0 +1,14 @@
+# docker compose -f deploy/vps/docker-compose.yml up -d --build
+services:
+  anchorium:
+    build:
+      context: ../..
+      dockerfile: deploy/vps/Dockerfile
+    restart: unless-stopped          # auto-restart; stop.flag still ends a run cleanly
+    env_file: /etc/anchorium/bot.env # outside the repo, chmod 600, never committed
+    volumes:
+      - /var/lib/anchorium/runtime:/app/runtime          # journals, state, logs survive restarts
+    stop_grace_period: 90s           # SIGTERM -> the runtime's own flatten/verify path
+    logging:
+      driver: json-file
+      options: {max-size: "20m", max-file: "5"}

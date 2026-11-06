@@ -1,0 +1,141 @@
+{
+  "status": "UNSIGNED_CARRY_LEVERAGE_RAISE_PLAN",
+  "network": "testnet",
+  "dex": "pas",
+  "collateral": "USDP",
+  "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+  "source_hash": "7d6220774b5c845aa5959b9e8d5126569b6ad88c0f2b588d3b78261cf4e329f2",
+  "observed_ms": 1793081952602,
+  "configuration_scope": "CARRY_2X",
+  "target_leverage": 2,
+  "entry_markets": [
+    "pas:BTC",
+    "pas:ETH",
+    "pas:HYPE",
+    "pas:SP500",
+    "pas:USDJPY"
+  ],
+  "changes": [
+    {
+      "symbol": "pas:BTC",
+      "observed_ms": 1793081951779,
+      "before": {
+        "type": "cross",
+        "value": 1
+      },
+      "requested_action": {
+        "type": "updateLeverage",
+        "asset": 2810000,
+        "isCross": true,
+        "leverage": 2
+      }
+    },
+    {
+      "symbol": "pas:ETH",
+      "observed_ms": 1793081951954,
+      "before": {
+        "type": "cross",
+        "value": 1
+      },
+      "requested_action": {
+        "type": "updateLeverage",
+        "asset": 2810001,
+        "isCross": true,
+        "leverage": 2
+      }
+    },
+    {
+      "symbol": "pas:HYPE",
+      "observed_ms": 1793081952188,
+      "before": {
+        "type": "cross",
+        "value": 1
+      },
+      "requested_action": {
+        "type": "updateLeverage",
+        "asset": 2810002,
+        "isCross": true,
+        "leverage": 2
+      }
+    },
+    {
+      "symbol": "pas:SP500",
+      "observed_ms": 1793081952364,
+      "before": {
+        "type": "cross",
+        "value": 1
+      },
+      "requested_action": {
+        "type": "updateLeverage",
+        "asset": 2810003,
+        "isCross": true,
+        "leverage": 2
+      }
+    },
+    {
+      "symbol": "pas:USDJPY",
+      "observed_ms": 1793081952537,
+      "before": {
+        "type": "cross",
+        "value": 1
+      },
+      "requested_action": {
+        "type": "updateLeverage",
+        "asset": 2810009,
+        "isCross": true,
+        "leverage": 2
+      }
+    }
+  ],
+  "already_two_x_cross": [],
+  "open_basket": {
+    "positions": {
+      "pas:BTC": "0.16289",
+      "pas:ETH": "5.2127",
+      "pas:HYPE": "647.66",
+      "pas:SP500": "1.958",
+      "pas:USDJPY": "-31.77"
+    },
+    "stops": [
+      [
+        "pas:BTC",
+        "0x4da480263baf959ecb0c626f79918421",
+        "0.16289",
+        "73722.0"
+      ],
+      [
+        "pas:ETH",
+        "0x801e260ae893062a35e7b8a2b0ef4a7c",
+        "5.2127",
+        "2137.2"
+      ],
+      [
+        "pas:HYPE",
+        "0xee34a2d0415b55349346b0845962b847",
+        "647.66",
+        "72.188"
+      ],
+      [
+        "pas:SP500",
+        "0xafb1d2d6a0ee0a0a04c4a9f3ac9c046e",
+        "1.958",
+        "7048.2"
+      ],
+      [
+        "pas:USDJPY",
+        "0x474728b49bd480419622127bb96d1d19",
+        "31.77",
+        "170.04"
+      ]
+    ],
+    "settled_local_rows": [
+      "carry-in:pas:ETH:e0a6da11c813:8"
+    ]
+  },
+  "collateral_balance": "99141.604591",
+  "orders_permitted": false,
+  "transfers_allowed": false,
+  "account_mode_change": false,
+  "basis": "User directive 27 Oct 2026 09:05 IST: raise the carry markets to a 2x cross setting while the basket is open (raise only; HYPE held as is; exposure capped at 1.5x by the mandate).",
+  "plan_hash": "ce46220e6a679f18d90ef89cc37caef1e4499a41b671e84363e8763323b969cd"
+}

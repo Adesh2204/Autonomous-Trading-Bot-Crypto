@@ -152,6 +152,9 @@ class LiveAccountRecovery:
         """Default production view preserves every raw historical uncertainty."""
         return self.journal.intents()
 
+    def concurrent_exposure_reasons(self):
+        return ['UNEXPECTED_CONCURRENT_EXPOSURE'] if len(self.state.positions)>1 else []
+
     def recover(self):
         verify_strategy_freeze()
         self.revoke('REST_ACCOUNT_RECONCILIATION_REQUIRED')
@@ -176,9 +179,7 @@ class LiveAccountRecovery:
                 self.journal.event('ACCOUNT_HISTORY_EXPANDED',self.account.client.clock_ms(),start_ms=self.initial_start_ms)
             if self.on_truth is not None:
                 self.on_truth(self.state)
-            reasons=list(report['reasons'])+protection_reasons
-            if len(self.state.positions)>1:
-                reasons.append('UNEXPECTED_CONCURRENT_EXPOSURE')
+            reasons=list(report['reasons'])+protection_reasons+self.concurrent_exposure_reasons()
             if self.checkpoint_error:
                 reasons.append(self.checkpoint_error)
             for symbol,position in self.state.positions.items():

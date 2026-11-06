@@ -5,26 +5,35 @@ import threading
 
 from .base_exchange import ExchangeError, decimal
 
+# Strategy bar intervals; one history never mixes intervals.
+BAR_INTERVAL_MS = {'1m': 60000, '1h': 3600000}
+
+
+def bar_step(candles):
+    return BAR_INTERVAL_MS.get(candles[0].interval, 60000) if candles else 60000
+
 
 def validate_history(symbol, candles, now_ms, required):
     """Validate actual completed UTC bars before they can reach the frozen brain."""
     if not symbol.startswith(('par:', 'pas:')):
         raise ExchangeError('MARKET_IDENTITY_INVALID')
+    interval = candles[0].interval if candles else '1m'
+    step = BAR_INTERVAL_MS.get(interval)
     for c in candles:
-        if c.symbol != symbol or c.interval != '1m':
+        if c.symbol != symbol or c.interval != interval or step is None:
             raise ExchangeError('STRATEGY_CANDLE_IDENTITY_MISMATCH')
-        if (type(c.timestamp_ms) is not int or c.timestamp_ms % 60000 or
-                c.close_timestamp_ms not in {c.timestamp_ms+59999,c.timestamp_ms+60000}):
+        if (type(c.timestamp_ms) is not int or c.timestamp_ms % step or
+                c.close_timestamp_ms not in {c.timestamp_ms+step-1,c.timestamp_ms+step}):
             raise ExchangeError('INVALID_CANDLE_BOUNDARIES')
-        if c.timestamp_ms+60000 > now_ms:
+        if c.timestamp_ms+step > now_ms:
             raise ExchangeError('FUTURE_OR_OPEN_COMPLETED_CANDLE')
-        if c.received_timestamp_ms is not None and c.received_timestamp_ms<c.timestamp_ms+60000:
+        if c.received_timestamp_ms is not None and c.received_timestamp_ms<c.timestamp_ms+step:
             raise ExchangeError('POST_CLOSE_CANDLE_OBSERVATION_REQUIRED')
         o,h,l,p=(decimal(v,positive=True) for v in (c.open,c.high,c.low,c.close))
         if h < max(o,l,p) or l > min(o,h,p):
             raise ExchangeError('INVALID_CANDLE_PRICES')
         decimal(c.volume,nonnegative=True)
-    if any(b.timestamp_ms-a.timestamp_ms!=60000 for a,b in zip(candles,candles[1:])):
+    if any(b.timestamp_ms-a.timestamp_ms!=step for a,b in zip(candles,candles[1:])):
         raise ExchangeError('STRATEGY_CANDLE_GAP_OR_DUPLICATE')
     if len(candles)<required:
         raise ExchangeError('INSUFFICIENT_COMPLETED_HISTORY')
@@ -66,7 +75,7 @@ class MarketHealthManager:
 
     def evaluate(self,symbol,candles,book,context,context_ms,now_ms,*,errors=None,source='PUBLIC_STREAM',observations=None):
         if symbol not in self.records:raise ExchangeError('MARKET_IDENTITY_INVALID')
-        reasons=[];components={};clocks=dict(last_candle_time=candles[-1].timestamp_ms+60000 if candles else None,
+        reasons=[];components={};clocks=dict(last_candle_time=candles[-1].timestamp_ms+bar_step(candles) if candles else None,
             last_orderbook_time=book.timestamp_ms if book else None,last_mark_time=context_ms,
             last_tick_time=book.timestamp_ms if book else None)
         if observations is not None:clocks.update(observations)

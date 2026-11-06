@@ -7,7 +7,7 @@ import time
 
 from exchange.base_exchange import ExchangeError, decimal
 from exchange.event_timing import timing
-from exchange.hyperliquid_market_data import make_quote
+from exchange.hyperliquid_market_data import INTERVAL_MS, make_quote
 from exchange.market_snapshot import MarketSnapshot
 from exchange.market_health import MarketHealthManager,validate_history
 from exchange.scanner_numeric import scanner_number
@@ -25,6 +25,10 @@ class ScannerPolicy:
     history_bars: int=300
     top_n: int=3
     max_candle_age_ms: int=120000
+    # Strategy input bars. 1m is the default; a longer interval feeds the same
+    # unchanged brain with completed bars of that interval.
+    bar_interval: str='1m'
+    strategy_history_bars: int | None=None
 
     def __post_init__(self):
         for name in ('min_atr_fraction','max_spread_bps','min_window_notional','min_bbo_notional'):
@@ -32,6 +36,11 @@ class ScannerPolicy:
         if (type(self.history_bars) is not int or not 30<=self.history_bars<=3000 or
                 type(self.top_n) is not int or not 1<=self.top_n<=3 or
                 type(self.max_candle_age_ms) is not int or not 0<self.max_candle_age_ms<=120000):
+            raise ExchangeError('INVALID_SCANNER_POLICY')
+        if self.bar_interval=='1m':
+            if self.strategy_history_bars is not None:raise ExchangeError('INVALID_SCANNER_POLICY')
+        elif (self.bar_interval!='1h' or type(self.strategy_history_bars) is not int
+                or not 30<=self.strategy_history_bars<=1000):
             raise ExchangeError('INVALID_SCANNER_POLICY')
 
 
@@ -73,6 +82,7 @@ class MarketRegimeScanner:
         self.health_manager=None
         self.public_snapshot_sink=None
         self.public_failure_sink=None
+        self._strategy_cache={}
 
     def require_runtime(self):
         # Public scanning cannot grant an exchange-write permit. The default
@@ -89,14 +99,17 @@ class MarketRegimeScanner:
         self.require_runtime()
         self.client.startup()
         p=self.policy
+        step=INTERVAL_MS[p.bar_interval];required=p.strategy_history_bars or p.history_bars
+        # A completed longer bar stays the latest for one full interval.
+        max_age=p.max_candle_age_ms if step==60000 else step
         selected=self.selected_markets()
         if self.health_manager is None:
-            self.health_manager=MarketHealthManager(selected,history_bars=p.history_bars,
-                max_candle_age_ms=p.max_candle_age_ms)
+            self.health_manager=MarketHealthManager(selected,history_bars=required,
+                max_candle_age_ms=max_age)
         now=self.client.clock_ms()
-        end=now//60000*60000-1
+        end=now//step*step-1
         anchor=int(self.session.get_vwap_anchor(datetime.fromtimestamp(now/1000,timezone.utc)).timestamp()*1000)
-        start=min(end+1-p.history_bars*60000,anchor-14*60000)
+        start=min(end+1-required*step,anchor-14*step)
         try:
             contexts=self.market.get_asset_contexts()
         except Exception:
@@ -112,21 +125,21 @@ class MarketRegimeScanner:
             diagnostics.append(d)
             d.evidence=dict(request_time_ms=None,request_cycle_observed_ms=context_observed,
                             request_time_basis='EXACT_SEND_TIME_UNAVAILABLE_NO_ADDITIONAL_CLOCK_READ',
-                            expected_last_completed_candle_ms=end//60000*60000,
+                            expected_last_completed_candle_ms=end+1-step,
                             actual_last_completed_candle_ms=None,lag_seconds=None,root_cause='UNDETERMINED',
                             source=type(self.market).__name__)
             try:
-                candles=self.market.get_candles(symbol,start,end,now_ms=now)
+                candles=self.fetch_bars(symbol,start,end,now)
                 d.candles=candles
                 if candles:
                     d.evidence.update(actual_last_completed_candle_ms=candles[-1].timestamp_ms,
                         source_timestamp_ms=candles[-1].timestamp_ms,
-                        lag_seconds=(end//60000*60000-candles[-1].timestamp_ms)/1000,
+                        lag_seconds=(end+1-step-candles[-1].timestamp_ms)/1000,
                         received_timestamp_ms=candles[-1].received_timestamp_ms)
-                if len(candles)<p.history_bars:
+                if len(candles)<required:
                     raise ExchangeError('INSUFFICIENT_COMPLETED_HISTORY')
-                validate_history(symbol,candles,now,p.history_bars)
-                if not 0<=now-(candles[-1].timestamp_ms+60000)<=p.max_candle_age_ms:
+                validate_history(symbol,candles,now,required)
+                if not 0<=now-(candles[-1].timestamp_ms+step)<=max_age:
                     raise ExchangeError('COMPLETED_CANDLE_STALE')
                 if self.client.clock_ms()-context_observed>60000:
                     raise ExchangeError('SCANNER_ASSET_CONTEXT_STALE')
@@ -150,7 +163,7 @@ class MarketRegimeScanner:
                 # rejects it as unqualified, rather than invalid market data.
                 atr=scanner_number(last['ATR_14'],'ATR_14',d.evidence,nonnegative=True)
                 ema9,ema21,vwap=(scanner_number(last[name],name,d.evidence) for name in ('EMA_9','EMA_21','VWAP'))
-                window=candles[-p.history_bars:]
+                window=candles[-required:]
                 notional=sum((c.volume*c.close for c in window),Decimal(0))
                 depth=min(quote.bid*quote.bid_quantity,quote.ask*quote.ask_quantity)
                 spread=(quote.ask-quote.bid)/quote.mid*10000
@@ -186,6 +199,8 @@ class MarketRegimeScanner:
                     long=bool(last.get('Buy_Signal',False) or last.get('Breakout_Signal',False)),
                     short=bool(last.get('Sell_Signal',False) or last.get('Breakdown_Sell_Signal',False)),
                     signal_type=signal_type)
+                if step!=60000:
+                    d.signal['interval_ms']=step
                 d.timing=timing(self.client.clock_ms(),received_ms=candles[-1].received_timestamp_ms,
                                 source="LOCAL_FROZEN_STRATEGY")
                 d.qualified=not d.reasons
@@ -210,6 +225,20 @@ class MarketRegimeScanner:
             d.evidence['scanner_rank']=rank
         return ScanResult(self.client.clock_ms(),diagnostics,[d.symbol for d in qualified[:p.top_n]],
                           'ACTIVE' if qualified else 'NO_TRADE')
+
+    def fetch_bars(self, symbol, start, end, now):
+        """Completed strategy bars; longer bars are refetched only once a new one completes."""
+        interval=self.policy.bar_interval
+        if interval=='1m':
+            return self.market.get_candles(symbol,start,end,now_ms=now)
+        cached=self._strategy_cache.get(symbol)
+        if cached is not None and cached[0]==end:
+            return cached[1]
+        bars=self.market.get_candles(symbol,start,end,interval=interval,now_ms=now)
+        # Cache only a complete tail; a late-published bar is retried next scan.
+        if bars and bars[-1].timestamp_ms+INTERVAL_MS[interval]==end+1:
+            self._strategy_cache[symbol]=(end,bars)
+        return bars
 
     def selected_markets(self):
         """Execution scanner scope; observation subclasses cannot grant entries."""

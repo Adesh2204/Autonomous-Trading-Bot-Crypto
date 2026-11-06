@@ -14,6 +14,15 @@ from .execution_journal import fingerprint, safe_data
 from .single_position_guard import unresolved
 
 
+
+def stop_beside_resting_take_profit(request, old, row, open_orders):
+    """Bug #12: a protective stop (trigger) next to our resting reduce-only take-profit (a
+    non-trigger limit) on the same side is a different order, not a duplicate."""
+    return (request.strategy_id == 'CATASTROPHIC_STOP' and request.reduce_only and
+            old.get('strategy_id') != 'CATASTROPHIC_STOP' and bool(old.get('reduce_only')) and
+            any(str(o.get('oid')) == str(row['oid']) and o.get('isTrigger') is not True and
+                o.get('reduceOnly') is True for o in open_orders))
+
 class OrderClassification(str, Enum):
     STRATEGY_ENTRY = 'STRATEGY_ENTRY'
     STRATEGY_EXIT = 'STRATEGY_EXIT'
@@ -39,6 +48,11 @@ class OrderProvenance:
     source_position_id: str | None = None
     input_source: str = 'OWN_STRATEGY_PUBLIC_MARKET'
     test_authorization: dict | None = None
+    signal_interval_ms: int = 60000
+
+
+# Entry window after the signal bar completes, per strategy bar interval.
+SIGNAL_AGE_ALLOWANCE_MS = {60000: 120000, 3600000: 300000}
 
 
 @dataclass(frozen=True)
@@ -106,6 +120,9 @@ class ActionPermit:
 
 
 class ComplianceGuard:
+    # Account leverage setting an entry requires. Only the carry builder raises it (user decision
+    # 27 Oct 01:05 IST: 2x cross setting, exposure capped at 1.5x equity by the carry mandate).
+    entry_leverage = 1
     def __init__(self, journal, position_guard, *, clock_ms, transport, policy=None, execution_owner=None,
                  qualification_scope=None):
         self.journal = journal
@@ -119,6 +136,11 @@ class ComplianceGuard:
             if type(qualification_scope) is not EmergencyComplianceScope:
                 raise ExchangeError('P0_EXACT_COMPLIANCE_SCOPE_REQUIRED')
         self.qualification_scope = qualification_scope
+        self.l2_entry_capacity = None
+        # Opt-in owner share of top-of-book for strategy entries (<= 25%), checked on
+        # the same quote snapshot as the price checks; None keeps the policy's 10%.
+        self.entry_depth_participation = None
+        self.extra_setup_types = frozenset()
         self._approved = {}
         self._permits = {}
 
@@ -178,7 +200,7 @@ class ComplianceGuard:
                 return finish(False, 'UNEXPLAINED_ORDER')
             if not position.allowed:
                 return finish(False, position.code, position.reason)
-            if not request.reduce_only and (type(context.leverage) is not int or context.leverage!=1):
+            if not request.reduce_only and (type(context.leverage) is not int or context.leverage!=self.entry_leverage):
                 return finish(False, 'INVALID_LEVERAGE')
             if (p.candidate_id != candidate or p.strategy_id != request.strategy_id or
                     p.source_market != request.symbol or p.direction != request.side or
@@ -201,9 +223,12 @@ class ComplianceGuard:
                 if not request.reduce_only or not p.source_position_id or held is None:
                     return finish(False, 'MISSING_SOURCE_POSITION')
             elif classification == 'STRATEGY_ENTRY':
-                if request.reduce_only or p.action_type != 'STRATEGY' or not 60000 <= now-p.signal_timestamp_ms <= 180000:
+                interval = p.signal_interval_ms
+                allowance = SIGNAL_AGE_ALLOWANCE_MS.get(interval) if type(interval) is int else None
+                if (request.reduce_only or p.action_type != 'STRATEGY' or allowance is None or
+                        not interval <= now-p.signal_timestamp_ms <= interval+allowance):
                     return finish(False, 'MISSING_STRATEGY_PROVENANCE')
-                if p.setup_type not in {'PULLBACK_LONG','PULLBACK_SHORT','BREAKOUT_LONG','BREAKDOWN_SHORT'}:
+                if p.setup_type not in {'PULLBACK_LONG','PULLBACK_SHORT','BREAKOUT_LONG','BREAKDOWN_SHORT'} | self.extra_setup_types:
                     return finish(False, 'UNEXPLAINED_ORDER')
             elif classification == 'CONTROLLED_TEST_ORDER':
                 a = p.test_authorization or {}
@@ -259,7 +284,12 @@ class ComplianceGuard:
                         request.strategy_id != 'CATASTROPHIC_STOP' and request.reduce_only and
                         any(str(o['oid']) == str(row['oid']) and o.get('isTrigger') is True and
                             o.get('reduceOnly') is True for o in context.open_orders))
-                    if dormant_protection:
+                    # Bug #12 (25 Oct): the reverse case. Re-planning the exchange stop while the
+                    # strategy's resting reduce-only take-profit (a non-trigger limit) is open is
+                    # not a duplicate: a trigger stop and a resting limit are different orders.
+                    # It was rejected as DUPLICATE_ORDER and the runtime flattened a protected
+                    # position. Only that exact pair is exempt; a second stop is still blocked.
+                    if dormant_protection or stop_beside_resting_take_profit(request, old, row, context.open_orders):
                         continue
                     return finish(False, 'DUPLICATE_ORDER')
             known = {str(r['oid']): r for r in self.journal.intents() if r['oid'] is not None}
@@ -303,8 +333,22 @@ class ComplianceGuard:
                 checks.update(executable_depth=str(depth), order_size=str(request.quantity),
                               participation=str(request.quantity/depth) if depth else None)
                 separate_l2 = classification == 'CONTROLLED_TEST_ORDER' and self.qualification_scope is not None
-                if not separate_l2 and (depth <= 0 or request.quantity > depth*self.policy.depth_participation):
-                    return finish(False, 'BOOK_MANIPULATION_RISK')
+                if self.l2_entry_capacity is not None and classification == 'STRATEGY_ENTRY':
+                    # Opt-in owner check: displayed depth up to the order's own
+                    # limit, at the owner's participation; replaces the BBO rule.
+                    capacity = self.l2_entry_capacity(request)
+                    checks.update(l2_entry_capacity=str(capacity), liquidity_policy='L2_DEPTH_WITHIN_LIMIT')
+                    if capacity <= 0 or request.quantity > capacity:
+                        return finish(False, 'BOOK_MANIPULATION_RISK')
+                elif not separate_l2:
+                    share = self.policy.depth_participation
+                    if self.entry_depth_participation is not None and classification == 'STRATEGY_ENTRY':
+                        share = decimal(self.entry_depth_participation, positive=True)
+                        if share > Decimal('0.25'):
+                            raise ExchangeError('CONSERVATIVE_COMPLIANCE_POLICY_REQUIRED')
+                        checks.update(liquidity_policy='BBO_OWNER_PARTICIPATION', depth_share=str(share))
+                    if depth <= 0 or request.quantity > depth*share:
+                        return finish(False, 'BOOK_MANIPULATION_RISK')
                 if separate_l2:
                     checks['liquidity_policy'] = 'P0_EXACT_SCOPE_L2_CHECK; NOT_OLD_BBO_RULE'
             checks['liquidity'] = 'PASS' if not request.reduce_only else 'REDUCE_ONLY_RISK_ACTION'

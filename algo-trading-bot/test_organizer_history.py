@@ -116,11 +116,16 @@ def test_future_candle_is_not_accepted_even_with_valid_ohlcv(history):
     assert report['status'] == 'FAIL' and 'FUTURE_OR_INCOMPLETE_HOUR' in report['issues']
 
 
-def test_hourly_history_cannot_be_passed_to_production_minute_adapter(history):
+def test_hourly_history_is_accepted_only_as_contiguous_hourly_bars(history):
+    # Hourly strategy bars are a deliberate feature (2026-10-24); the adapter
+    # still rejects gaps and duplicates within the hourly series.
     dataset = HistoricalDataset(history, now_ms=NOW)
     bars = dataset.bars['par:BTC']
-    with pytest.raises(ExchangeError, match='STRATEGY_CANDLE_IDENTITY_MISMATCH'):
-        candles_to_frame(bars)
+    assert len(candles_to_frame(bars)) == len(bars)
+    with pytest.raises(ExchangeError, match='STRATEGY_CANDLE_GAP_OR_DUPLICATE'):
+        candles_to_frame(bars[:1] + bars[2:])
+    with pytest.raises(ExchangeError, match='STRATEGY_CANDLE_GAP_OR_DUPLICATE'):
+        candles_to_frame(bars[:2] + bars[1:])
     with pytest.raises(ResearchError, match='HOURLY_REFERENCE_IDENTITY_REQUIRED'):
         replace(bars[0], interval='1m')
     assert not hasattr(dataset, 'get_quote') and not hasattr(dataset, 'get_candles')

@@ -19,7 +19,7 @@ from test_scored_opening_release import configuration_observation
 from test_activation_v3 import client,bars,NOW
 
 
-@pytest.mark.parametrize('symbol',['pas:ETH','pas:HYPE','pas:GOLD','pas:BRENT','pas:EWJ','pas:SP500','pas:USDEUR','pas:USDJPY','par:BTC','BTC','',None])
+@pytest.mark.parametrize('symbol',['pas:ETH','pas:GOLD','pas:BRENT','pas:EWJ','pas:SP500','pas:USDEUR','pas:USDJPY','par:BTC','BTC','',None])
 def test_v4_entry_scope_rejects_every_other_namespace(symbol):
     with pytest.raises(ExchangeError):require_entry(symbol)
 
@@ -34,7 +34,7 @@ def test_v4_scope_and_runtime_metadata_not_hardcoded(symbol):
     assert len(c.markets)==10 and 'pas:ETH' in a.get_positions()
 
 
-@pytest.mark.parametrize('symbol',['pas:ETH','pas:HYPE','pas:SP500','pas:GOLD','pas:EWJ','pas:BRENT','pas:USDJPY','pas:USDEUR'])
+@pytest.mark.parametrize('symbol',['pas:ETH','pas:SP500','pas:GOLD','pas:EWJ','pas:BRENT','pas:USDJPY','pas:USDEUR'])
 def test_v4_actual_signer_boundary_blocks_unapproved_entries_before_any_signature(symbol):
     _,c,_=pas();t=object.__new__(OfficialSDKTransport);t.client=c
     for action in (dict(type='order',orders=[dict(a=c.market(symbol).asset_id,r=False)]),
@@ -56,8 +56,8 @@ def test_v4_scanner_filters_before_unchanged_ranking_and_stream_history(monkeypa
     _,c,_=pas();market=HyperliquidMarketData(c);calls=[]
     monkeypatch.setattr(market,'get_asset_contexts',lambda:{s:{} for s in c.markets})
     monkeypatch.setattr(market,'get_candles',lambda s,*a,**k:(calls.append(s) or []))
-    scanner=MarketRegimeScanner(market,ScannerPolicy(D('.004'),D(15),D(0),D(0)),candidate_symbols=('pas:EWY','pas:BTC'))
-    result=scanner.scan();assert calls==sorted(PAS_ENTRY_MARKETS) and len(result.diagnostics)==2
+    scanner=MarketRegimeScanner(market,ScannerPolicy(D('.004'),D(15),D(0),D(0)),candidate_symbols=('pas:HYPE','pas:EWY','pas:BTC'))
+    result=scanner.scan();assert calls==sorted(PAS_ENTRY_MARKETS) and len(result.diagnostics)==3
     assert scanner.policy.top_n==3 and scanner.policy.history_bars==300
     engine=ParMarketDataEngine(market)
     assert set(engine.symbols)==PAS_ENTRY_MARKETS
