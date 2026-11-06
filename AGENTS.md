@@ -445,3 +445,9 @@
   user-ordered sell-all (docs/carry_2026-10-25/sell_all.py) still sells. HYPE 4x -> 5x CROSS only through the typed
   route ("Raise HYPE 5x.command", carry_leverage_raise target 5, scope CARRY_5X: HYPE alone, configuration only).
   Mandate via `run_carry.py hype-5x --prior <mandate>`. Every other runtime keeps its committed limits.
+- 4-6 November outcome (HYPE-only 5x): fixes 3778a87/04d2af9 (carry flat rule: a flat account reopens once its last
+  entry settled before the fill window; only fills inside the window count, since the executor merges the recovery's
+  whole fill history). Built 5,933.81 HYPE at avg 84.0544 (5 Nov 07:34 IST, verified); 5 Nov sample -10.42% (rank 38);
+  HYPE fell to ~77-79; final sample 6 Nov 12:00 UTC -33.43% (rank 35, score 0.0047). The mandate expired 6 Nov 11:55 UTC:
+  the runner stopped itself (MANDATE_EXPIRED); the HYPE long stays open (5x cross, liquidation ~$70.80, no stop, 0 open
+  orders). Closing it needs a new, separately approved mandate. The laptop on battery slept twice (caffeinate -s only on AC).
