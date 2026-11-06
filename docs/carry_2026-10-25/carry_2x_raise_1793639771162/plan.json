@@ -1,0 +1,88 @@
+{
+  "status": "UNSIGNED_CARRY_LEVERAGE_RAISE_PLAN",
+  "network": "testnet",
+  "dex": "pas",
+  "collateral": "USDP",
+  "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+  "source_hash": "84334b802aa863d719be53a37c070d34e3f3c2ba34cc2b1b40304cb8e17a00b1",
+  "observed_ms": 1793639778859,
+  "configuration_scope": "CARRY_2X",
+  "target_leverage": 2,
+  "entry_markets": [
+    "pas:BTC",
+    "pas:ETH",
+    "pas:EWJ",
+    "pas:HYPE",
+    "pas:SP500",
+    "pas:USDJPY"
+  ],
+  "changes": [
+    {
+      "symbol": "pas:EWJ",
+      "observed_ms": 1793639778079,
+      "before": {
+        "type": "cross",
+        "value": 20
+      },
+      "requested_action": {
+        "type": "updateLeverage",
+        "asset": 2810005,
+        "isCross": true,
+        "leverage": 2
+      }
+    }
+  ],
+  "already_two_x_cross": [
+    "pas:BTC",
+    "pas:ETH",
+    "pas:HYPE",
+    "pas:SP500",
+    "pas:USDJPY"
+  ],
+  "open_basket": {
+    "positions": {
+      "pas:BTC": "0.26485",
+      "pas:ETH": "8.6261",
+      "pas:HYPE": "669.11",
+      "pas:SP500": "0.259"
+    },
+    "stops": [
+      [
+        "pas:BTC",
+        "0x6772f99bca5186c9aa8df9ba5ab5c533",
+        "0.26485",
+        "73340.0"
+      ],
+      [
+        "pas:ETH",
+        "0xb65cee7a6bf645728736ef402da55ea1",
+        "8.6261",
+        "2126.3"
+      ],
+      [
+        "pas:HYPE",
+        "0x746f81880653ced4f7723898d2a118f8",
+        "669.11",
+        "77.088"
+      ],
+      [
+        "pas:SP500",
+        "0x56405d9eb191e6c0f7810a8d25cc27fe",
+        "0.259",
+        "7012.7"
+      ]
+    ],
+    "settled_local_rows": [
+      "carry-in:pas:ETH:ce273ae3ed67:12",
+      "carry-in:pas:ETH:e0a6da11c813:8",
+      "carry-in:pas:HYPE:d3cef6588de4:2",
+      "carry-in:pas:SP500:84ddd4b1c0f9:1"
+    ]
+  },
+  "collateral_balance": "100349.935339",
+  "orders_permitted": false,
+  "transfers_allowed": false,
+  "account_mode_change": false,
+  "basis": "User directive 27 Oct 2026 09:05 IST: raise the carry markets to a 2x cross setting while the basket is open (raise only; HYPE held as is; exposure capped at 1.5x by the mandate). 2 Nov 2026 22:05 IST (answered question \"SP500 + USDJPY + EWJ\"): EWJ, holding no position, may come down from a higher cross setting to 2x cross so it can join the basket; the overall exposure stays capped at 2x the starting equity by the mandate.",
+  "plan_hash": "7bf9fe7f885e3e7d290b3edeed78371c91695899908de2a27a10038b22d646cb"
+}

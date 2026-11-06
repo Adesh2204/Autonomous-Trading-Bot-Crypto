@@ -1,0 +1,88 @@
+{
+  "team_wallet": "0x94EA16ecE139e246A1D84E71aaCF7dD1F47CB12C",
+  "api_wallet": "0x46c9BED595770150752E7fA3806449F81E0Ec6f9",
+  "markets": [
+    "pas:BTC",
+    "pas:ETH",
+    "pas:HYPE",
+    "pas:SP500",
+    "pas:USDJPY"
+  ],
+  "starts_ms": 1792957513531,
+  "flatten_ms": 1793964600000,
+  "expires_ms": 1793966100000,
+  "starting_equity": "99998.337076",
+  "leg_notional": "19000",
+  "source_hash": "7b436cfcd81a1b99be0ce5d65c886d45d5cd892ed31df41d11cf119de6cc95a5",
+  "release_sha256": "8531d3c2ebdbc4f30ea8eeebd5b3b8cd736986807b7f264f4a6f0cef329c7d33",
+  "venue_identity": "7562c7f16a800fae8d3f9ed4afd76c2d2a8597e5814a1626ef9553346789b493",
+  "approval_reference": "User directive 2026-10-25 23:35 IST, \"We wanna move with Carry Strategy\" (YES, CARRY): half size, $9,500 per leg, LONG BTC/ETH/HYPE/SP500 and SHORT USDJPY at 1x, NO basket stop, existing 8% per-leg exchange stop, hold until the 6 Nov flatten; the user and co-founder accept a ~43% chance of finishing negative. Answered questions: sliced post-only children for 2 h with a 10-min re-price, then IOC children <= 25% of the touch; keep the -5% account catastrophe halt. 26 Oct 11:55 IST the user chose FULL SIZE, $19,000 per leg (\"trade with big money\"), after the model numbers: median +0.91%, P(loss) ~43%, 5th percentile about -4.2%. 26 Oct 22:35 IST the user made HYPE the priority leg ($35k; BTC $18k, ETH $17k, SP500 $20k, USDJPY $5k by funding; total $95k at 1x) and allowed IOC children of up to 25% of the depth within 5 bps of the touch. 27 Oct 01:05 IST the user asked for more risk, HYPE heavy: 2x cross setting, exposure 1.5x equity ($142.5k: HYPE $60k, SP500 $30k, BTC $25k, ETH $22.5k, USDJPY $5k), after the model numbers (P(profit) 44%, P(#1) 34%, -5% halt hit in ~46% of paths); the -5% account halt and 8% leg stops are kept. The 2x route needs a flat account; 27 Oct 01:35 IST the user chose instead more HYPE within 1x: HYPE $50k, SP500 $15k, BTC $13k, ETH $12k, USDJPY $5k, trimming over-target legs first.",
+  "max_positions": 5,
+  "leverage": 1,
+  "account_loss_halt": "0.05",
+  "position_stop": "0.08",
+  "stop_slippage": "0.01",
+  "entry_slippage": "0.003",
+  "exit_slippage": "0.005",
+  "l2_participation": "0.25",
+  "fill_deviation_halt": "0.005",
+  "max_order_errors": 3,
+  "max_disconnect_ms": 300000,
+  "funding_threshold": "0.00002",
+  "lookback_hours": 24,
+  "cooldown_hours": 24,
+  "strategy": "FUNDING_CARRY_V1",
+  "network": "testnet",
+  "dex": "pas",
+  "profile": "HALF_SIZE_FIXED_BASKET_2026_10_25",
+  "sides": [
+    [
+      "pas:BTC",
+      "LONG"
+    ],
+    [
+      "pas:ETH",
+      "LONG"
+    ],
+    [
+      "pas:HYPE",
+      "LONG"
+    ],
+    [
+      "pas:SP500",
+      "LONG"
+    ],
+    [
+      "pas:USDJPY",
+      "SHORT"
+    ]
+  ],
+  "unwind_starts_ms": 1793908800000,
+  "maker_window_ms": 7200000,
+  "reprice_ms": 600000,
+  "taker_gap_ms": 30000,
+  "book_share": "0.25",
+  "leg_notionals": [
+    [
+      "pas:BTC",
+      "13000"
+    ],
+    [
+      "pas:ETH",
+      "12000"
+    ],
+    [
+      "pas:HYPE",
+      "50000"
+    ],
+    [
+      "pas:SP500",
+      "15000"
+    ],
+    [
+      "pas:USDJPY",
+      "5000"
+    ]
+  ],
+  "taker_depth_bps": 5
+}
