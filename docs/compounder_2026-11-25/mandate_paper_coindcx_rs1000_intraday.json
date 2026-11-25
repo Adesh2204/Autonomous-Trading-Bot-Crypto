@@ -1,0 +1,58 @@
+{
+  "program": "compounder",
+  "created_utc": "2026-11-25",
+  "mode": "PAPER",
+  "venue": "coindcx_futures",
+  "market_data": "CoinDCX futures public API (no keys)",
+  "strategy": {
+    "name": "ID_DON24_REGIME",
+    "kind": "DON",
+    "timeframe": "1h",
+    "or_bars": 4,
+    "entry_n": 24,
+    "exit_n": 12,
+    "atr_n": 24,
+    "stop_atr": 2.0,
+    "regime_sma": 20,
+    "last_entry_hour": 20,
+    "min_stop": 0.002,
+    "max_stop": 0.05,
+    "allow_short": true
+  },
+  "universe": [
+    "BTC",
+    "ETH",
+    "BNB",
+    "SOL",
+    "XRP",
+    "ADA",
+    "AVAX",
+    "DOGE",
+    "TRX",
+    "LINK"
+  ],
+  "risk": {
+    "risk_fraction": 0.02,
+    "max_position_leverage": 3.0,
+    "max_gross_leverage": 5.0,
+    "leverage_setting": 10.0,
+    "min_size_max_risk": 0.2,
+    "max_open_risk": 0.4,
+    "liquidation_buffer": 1.6
+  },
+  "tax": {
+    "mode": "VDA_PER_TRADE",
+    "rate": 0.3,
+    "cess": 0.04
+  },
+  "start_equity_usd": 9.43,
+  "breakers": {
+    "daily_loss_pause": 0.3,
+    "drawdown_halt": 0.6
+  },
+  "research_verdict": "Day trading as requested. Pre-registered test 2024-2026: NO-GO; Rs 1,000 became about Rs 186 after costs and tax (losing before tax too). Practice only unless the user decides otherwise.",
+  "live_orders_allowed": false,
+  "label": "CoinDCX | Rs 1,000 | INTRADAY long/short by market direction | PRACTICE",
+  "start_equity_inr": 1000,
+  "margin_ccy": "INR"
+}

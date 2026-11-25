@@ -1,0 +1,24 @@
+# systemd unit for the 24/7 compounder (PAPER). Instance name = mandate file stem, e.g.
+#   sudo cp deploy/compounder/compounder-paper@.service /etc/systemd/system/
+#   sudo systemctl enable --now compounder-paper@mandate_paper
+# Base server setup (user, venv, clock sync): deploy/vps/SETUP.md steps 1-3.
+[Unit]
+Description=Compounder paper bot (%i)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=anchorium
+WorkingDirectory=/opt/anchorium
+Environment=PYTHONUNBUFFERED=1 TZ=UTC
+ExecStart=/opt/anchorium/.venv/bin/python3 scripts/run_compounder.py paper --mandate docs/compounder_2026-11-25/%i.json
+Restart=always
+RestartSec=20
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/anchorium/runtime
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

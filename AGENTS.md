@@ -451,3 +451,85 @@
   HYPE fell to ~77-79; final sample 6 Nov 12:00 UTC -33.43% (rank 35, score 0.0047). The mandate expired 6 Nov 11:55 UTC:
   the runner stopped itself (MANDATE_EXPIRED); the HYPE long stays open (5x cross, liquidation ~$70.80, no stop, 0 open
   orders). Closing it needs a new, separately approved mandate. The laptop on battery slept twice (caffeinate -s only on AC).
+- 25 November 2026 (user, strict: "take the leverage and trade ... with 1000 ... if not coindcx then other wallets like
+  metamask or brave wallet ... compound all the money generated in profit ... trading 24/7 ... profit after all kinds of
+  taxes and slippage costs"): new, separate real-money program "compounder" (`algo-trading-bot/compounder/`,
+  `scripts/run_compounder.py`, `docs/compounder_2026-11-25/`); no earlier runtime, frozen strategy file or limit changed.
+  Pre-registered research (Turtle Donchian 20/10 and 55/20 daily, 20/10 4h, long/short and long-only; in-sample 2020-2023,
+  out-of-sample 2024-01-01..2026-11-25 on Binance and Hyperliquid mainnet data; HL fees, slippage, actual funding; Indian
+  VDA tax 31.2% of each winning trade, losses not offset) selected D55_20_L and is NO-GO: after-tax drawdown 32.3% > 30%
+  and -0.6% after tax on Hyperliquid's own data (+19.5% under business-income treatment). Sizing uses after-tax equity
+  (the compounding rule). PAPER runs 24/7 on HL mainnet public data ($1,000 virtual; D55_20_L plus a D55_20_LS shadow).
+  LIVE (HL mainnet through an API/agent wallet, which cannot withdraw) stays locked until the human: stores the agent key
+  (0600, outside the repo), writes a LIVE mandate with their own address, types the activation phrase in a terminal
+  (TTY only) and passes the read-only preflight (agent approved, funded, no unowned positions/orders). Claude never
+  creates the activation receipt, never handles the main wallet key and places no real order. Every live entry gets a
+  reduce-only exchange stop; an entry whose stop cannot be placed is closed. CoinDCX adapter not built (public futures
+  data verified). Tests: `test_compounder.py`.
+- 25 November 2026, later (user: "it is 1000 rupees"; then "run practice bot simultaneously for coindcx as well as
+  hyperliquid or any other ... we can use leveraging ... i am willing to take the risk"): seven PAPER bots now run 24/7
+  (Hyperliquid, CoinDCX futures and Delta Exchange India public data through `compounder/india_venues.py`; no keys, no
+  orders): $1,000 long-only and long+short on Hyperliquid and CoinDCX, plus Rs 1,000 ($9.51) long+short at a 10x setting
+  on all three venues. The Rs 1,000 profile may raise a below-minimum order to the venue minimum only if that stop risk
+  is <= 20% of equity, with all open stop risks <= 40% (RiskParams.min_size_max_risk / max_open_risk; both off for every
+  $1,000 profile, whose behaviour is unchanged). Backtest of that profile 2024-2026 after VDA tax: Hyperliquid Rs 340,
+  CoinDCX Rs 1,010 (low Rs 498, high Rs 2,179), Delta India Rs 957. Live trading is still Hyperliquid-only and locked;
+  no CoinDCX or Delta live connection exists. `run_compounder.py board` shows every bot.
+- 25 November 2026, evening (user: "it is 1000 rupees ... use our money for other coins rather than btc ... please build
+  coindcx ... once you are ready i will attach the api ... play long or short on leverage ... intraday trading ... use that
+  profit amount + the principal ... continuously trade ... tell me ... filing tax returns"; the user has no CA): CoinDCX
+  futures live connection built from docs.coindcx.com (`compounder/coindcx_live.py`: HMAC-SHA256 signing, INR-margined
+  market orders, stop_market via create_tpsl, positions/exit, trades). It stays locked behind `CoinDCXLiveGate`: LIVE
+  mandate, typed activation phrase bound to the mandate hash (TTY only), API key file `~/.anchorium/coindcx_api.json`
+  (0600, outside the repo; stored only through the hidden prompt). CoinDCX has no client order id: a lost reply is never
+  resent; the broker re-reads the position, and the runner closes any unknown position and halts entries
+  (LIVE_UNKNOWN_POSITION). Isolated INR margin: per-trade leverage <= 1/(1.6 x stop distance) (cap 10x) and the
+  liquidation price is checked against the stop after every fill; an unprotected or liquidation-exposed entry is closed.
+  Intraday rules (`compounder/intraday.py`, IntradayRunner) were pre-registered and tested 2024-2026 on CoinDCX costs:
+  NO-GO, negative even before tax (Rs 1,000 -> about Rs 186-209). The daily long+short plan (Rs 1,000 -> Rs 1,010 after
+  tax) is the recommended live plan; both run as practice bots. The tax reserve now uses the strict VDA base (price gain
+  before fees, plus funding received). `tax-report` writes a Schedule VDA style INR register. Claude never stores or sees
+  the secret, never creates the activation receipt and places no real order; the smoke test is typed by the human.
+- 25 November 2026, night (user: "when the profit is up to its highest peak ... the bot should make the safe exit ... pick
+  the right cryptos ... make no errors"): pre-registered test (`research/compounder_2026-11-25/run_exits_rotation.py`) of
+  chandelier trailing stops (3/2 ATR), a 20% account guard and momentum coin rotation over a 61-coin pool. Out of sample
+  every add-on ended lower than the current plan for Rs 1,000 (BASE Rs 1,011; others Rs 206-731); the guard helped only
+  the 1%-risk version (+35% vs +15%). The Rs 1,000 live plan stays BASE (D55_20_LS, unchanged mandate). The add-ons live
+  in strategy.py/backtest.py for research only (all default off) and are not wired into the live runner.
+- 25 November 2026, 19:30 IST (user stored the CoinDCX key, wrote live mandate 6a4d678092 and passed the read-only
+  preflight; "perform next steps ... minimal loss"): pre-trade review of the live path against docs.coindcx.com, with no
+  strategy, risk, breaker or mandate change. Fixed: (1) account value read only the wallet `balance`; the docs' Wallet
+  Transfer note says "Total wallet balance = balance + locked_balance" and isolated INR margin moves into
+  locked_balance, so every open trade would have looked like a loss of its margin (false 30%/60% breaker trips, smaller
+  sizing); now balance + locked_balance + open P&L. (2) CoinDCXError (any non-200 reply) escaped the loop and would
+  stop the bot; it is now a DataError and run_forever logs any exception and continues. (3) a channel exit cancelled the
+  exchange stop before closing; exits now close first and cancel after, and a failed exit or flatten is retried every
+  loop (state.extra exit_retry). (4) live stop-fill booking no longer blocks the loop while CoinDCX's trade history lags
+  (to_date/time zone undocumented: window from a day early to a day after the IST date, with fallback); after 30 min it
+  books an estimate (STOP_ESTIMATED). (5) a live position without its exchange stop is closed (NO_EXCHANGE_STOP).
+  live-smoke-test now prints the wallet, position and fills and checks them (SMOKE TEST OK). `board` shows the live
+  bot. The human still runs live-smoke-test, activate-live and live; Claude places no real order. Tests: 59 compounder
+  (+11), 280 with test_carry_profile.py; strategy freeze passed.
+- 25 November 2026, 20:15 IST (user, strict: "make a profit in next 2 hours ... if the markets are falling then start
+  shorting on leverage ... out of total principal value the loss should be not more than 100 ... with the profit money
+  + principal start trading again ... don't ask me anything"): the hourly intraday rules (ID_DON24_REGIME, NO-GO in the
+  pre-registered test, Rs 1,000 -> Rs 186) are the live plan the user chose; no rule or parameter of the strategy
+  changed. Added: a hard total-loss limit (`breakers.max_total_loss_inr`, RunnerConfig.max_total_loss_inr): entries are
+  cut or skipped so the loss if every stop fills (distance + fees + stop slippage) stays within 85% of the room above
+  start - limit (after-tax equity, INR), and at the floor the runner closes everything and halts LOSS_LIMIT for good
+  (re-applied after a reset). With a limit, make-coindcx-mandate caps risk_fraction and min_size_max_risk at a quarter
+  of it (Rs 25 of Rs 100). Orders stay 1% above the venue minimum at the actual price (MIN_ORDER_BUFFER). New `go-live`
+  (TTY only): mandate, smoke test, typed activation, background start; one live bot per account (LIVE_LOCK, checked by
+  go-live, live and live-smoke-test). Dry run on real prices: BNB, SOL, XRP, DOGE shorts at ~Rs 16-20 risk each, ~Rs 75
+  total. The human runs go-live; Claude places no real order and creates no receipt. Tests: 67 compounder, 288 with
+  test_carry_profile.py.
+- 25 November 2026, 22:05 IST (user ran go-live; the first read-only CoinDCX call stalled in the TLS handshake and
+  the user pressed Ctrl+C at Step 1 before anything was sent: "fix this ... see the trades taking place in a clean
+  manner"): CoinDCX reads (wallet, positions, orders, trades, transactions, USDT/INR conversion) now retry network
+  errors, timeouts, 429 and 5xx (3 tries, each signed afresh); orders, stops, exits and leverage changes are still
+  sent once (a lost reply is looked up on the exchange, never resent). The smoke test prints a progress line before
+  its read-only check, explains a stall or Ctrl+C ("nothing was sent") instead of a traceback, and after the test
+  order says what is left open on CoinDCX. The live bot's start-up check retries network errors (5 tries, 15 s);
+  LiveLocked still stops it. New read-only `run_compounder.py watch` (the bot's status/events/trades files only; no
+  key, no API call): money, loss floor, open trades with stop-loss and P&L at the stop, closed trades, activity in
+  plain words. No strategy, risk, breaker or mandate change. Tests: 77 compounder, 298 with test_carry_profile.py.
