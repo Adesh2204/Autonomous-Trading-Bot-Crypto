@@ -1,0 +1,47 @@
+{
+  "program": "compounder",
+  "created_utc": "2026-11-25",
+  "mode": "PAPER",
+  "venue": "coindcx_futures",
+  "market_data": "CoinDCX futures public API (no keys)",
+  "strategy": {
+    "name": "D55_20_L",
+    "timeframe": "1d",
+    "entry_n": 55,
+    "exit_n": 20,
+    "atr_n": 20,
+    "stop_atr": 2.0,
+    "allow_short": false
+  },
+  "universe": [
+    "BTC",
+    "ETH",
+    "BNB",
+    "SOL",
+    "XRP",
+    "ADA",
+    "AVAX",
+    "DOGE",
+    "TRX",
+    "LINK"
+  ],
+  "risk": {
+    "risk_fraction": 0.01,
+    "max_position_leverage": 1.0,
+    "max_gross_leverage": 3.0,
+    "leverage_setting": 5.0
+  },
+  "tax": {
+    "mode": "VDA_PER_TRADE",
+    "rate": 0.3,
+    "cess": 0.04
+  },
+  "start_equity_usd": 1000,
+  "breakers": {
+    "daily_loss_pause": 0.08,
+    "drawdown_halt": 0.45
+  },
+  "research_verdict": "Same pre-registered D55_20_L rules on CoinDCX prices, book and funding. Paper only.",
+  "live_orders_allowed": false,
+  "label": "CoinDCX | tested rules, long only | $1,000"
+}

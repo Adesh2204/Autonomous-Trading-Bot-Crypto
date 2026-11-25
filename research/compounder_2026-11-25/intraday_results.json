@@ -1,0 +1,180 @@
+{
+ "protocol": "Pre-registered intraday (day-trading) research, 25 Nov 2026. Prints JSON; nothing trades.\n\nProtocol, fixed before any intraday result was read:\n  * Candidates: compounder.intraday.INTRADAY_CANDIDATES (opening-range breakout with the daily\n    market direction; hourly Donchian breakout with and without the direction filter). Flat every\n    day by 00:00 UTC, one entry per coin per day. Nothing tuned.\n  * Data: Binance USD-M hourly candles and funding (CoinDCX futures use Binance prices and publish\n    Binance's funding rate). Ten coins: BTC ETH BNB SOL XRP ADA AVAX DOGE TRX LINK.\n  * In-sample 2022-01-01 .. 2023-12-31 (selection: best after-tax Sharpe at 1% risk);\n    out-of-sample 2024-01-01 .. 2026-11-25 (the test).\n  * Costs: CoinDCX taker 0.05% + 18% GST per fill, slippage 3/6/12 bps per side (+8 bps on stops),\n    actual funding. Tax: 31.2% of each profitable trade, losses not offset.\n  * Gate (out-of-sample, selected candidate): after-tax return > 0, after-tax profit factor > 1.10,\n    >= 30 trades, max after-tax drawdown <= 30%, still positive with every cost doubled.\n  * Also reported: the Rs 1,000 profile (2% risk, venue-minimum orders when their stop risk is\n    <= 20%, open risk <= 40%, CoinDCX per-coin minimums).\n",
+ "in_sample": {
+  "ID_ORB4_REGIME": {
+   "trades": 1646,
+   "win_rate": 0.3621,
+   "pf_pre_tax": 0.6245,
+   "pf_after_tax": 0.4296,
+   "return_pre_tax": -0.6545,
+   "return_after_tax": -0.9941,
+   "cagr_after_tax": -0.9231,
+   "max_dd_after_tax": 0.9943,
+   "sharpe_after_tax": -5.4201,
+   "fees": 159.7718,
+   "slippage": 237.0846,
+   "funding": -5.848,
+   "tax": 339.5539,
+   "stops": 658,
+   "liquidated": false,
+   "yearly": {
+    "2022": -0.9896,
+    "2023": -0.4291,
+    "2024": 0.0
+   }
+  },
+  "ID_DON24_REGIME": {
+   "trades": 1690,
+   "win_rate": 0.3337,
+   "pf_pre_tax": 0.7478,
+   "pf_after_tax": 0.5145,
+   "return_pre_tax": -0.5163,
+   "return_after_tax": -0.994,
+   "cagr_after_tax": -0.9227,
+   "max_dd_after_tax": 0.9948,
+   "sharpe_after_tax": -4.8253,
+   "fees": 173.2974,
+   "slippage": 264.1495,
+   "funding": -11.2962,
+   "tax": 477.6762,
+   "stops": 692,
+   "liquidated": false,
+   "yearly": {
+    "2022": -0.9758,
+    "2023": -0.7524,
+    "2024": 0.0
+   }
+  },
+  "ID_DON24_BOTH": {
+   "trades": 1788,
+   "win_rate": 0.3496,
+   "pf_pre_tax": 0.7707,
+   "pf_after_tax": 0.5302,
+   "return_pre_tax": -0.4852,
+   "return_after_tax": -0.994,
+   "cagr_after_tax": -0.9228,
+   "max_dd_after_tax": 0.9943,
+   "sharpe_after_tax": -4.7491,
+   "fees": 182.9202,
+   "slippage": 278.6492,
+   "funding": -3.1941,
+   "tax": 508.8261,
+   "stops": 705,
+   "liquidated": false,
+   "yearly": {
+    "2022": -0.9938,
+    "2023": -0.043,
+    "2024": 0.0
+   }
+  }
+ },
+ "out_of_sample": {
+  "ID_ORB4_REGIME": {
+   "trades": 2155,
+   "win_rate": 0.3842,
+   "pf_pre_tax": 0.7268,
+   "pf_after_tax": 0.5001,
+   "return_pre_tax": -0.5431,
+   "return_after_tax": -0.994,
+   "cagr_after_tax": -0.8291,
+   "max_dd_after_tax": 0.994,
+   "sharpe_after_tax": -4.3021,
+   "fees": 227.5424,
+   "slippage": 361.5882,
+   "funding": -17.4486,
+   "tax": 450.9144,
+   "stops": 834,
+   "liquidated": false,
+   "yearly": {
+    "2024": -0.9817,
+    "2025": -0.6748,
+    "2026": 0.0
+   },
+   "return_none": -0.994,
+   "return_business_net_annual": -0.994,
+   "costs_x2_return_after_tax": -0.9941
+  },
+  "ID_DON24_REGIME": {
+   "trades": 2161,
+   "win_rate": 0.3637,
+   "pf_pre_tax": 0.8587,
+   "pf_after_tax": 0.5908,
+   "return_pre_tax": -0.3433,
+   "return_after_tax": -0.994,
+   "cagr_after_tax": -0.8288,
+   "max_dd_after_tax": 0.9943,
+   "sharpe_after_tax": -3.6287,
+   "fees": 280.0642,
+   "slippage": 439.8409,
+   "funding": -25.8788,
+   "tax": 650.6962,
+   "stops": 851,
+   "liquidated": false,
+   "yearly": {
+    "2024": -0.944,
+    "2025": -0.8932,
+    "2026": 0.0
+   },
+   "return_none": -0.9883,
+   "return_business_net_annual": -0.9883,
+   "costs_x2_return_after_tax": -0.994
+  },
+  "ID_DON24_BOTH": {
+   "trades": 2020,
+   "win_rate": 0.3738,
+   "pf_pre_tax": 0.736,
+   "pf_after_tax": 0.5064,
+   "return_pre_tax": -0.5316,
+   "return_after_tax": -0.9941,
+   "cagr_after_tax": -0.8293,
+   "max_dd_after_tax": 0.9947,
+   "sharpe_after_tax": -4.0191,
+   "fees": 225.4588,
+   "slippage": 348.8668,
+   "funding": -16.2775,
+   "tax": 462.4304,
+   "stops": 746,
+   "liquidated": false,
+   "yearly": {
+    "2024": -0.9918,
+    "2025": -0.2743,
+    "2026": 0.0
+   },
+   "return_none": -0.994,
+   "return_business_net_annual": -0.994,
+   "costs_x2_return_after_tax": -0.994
+  }
+ },
+ "rs1000": {
+  "ID_ORB4_REGIME": {
+   "end_inr": 209,
+   "lowest_inr": 209,
+   "highest_inr": 1061,
+   "trades": 191,
+   "win_rate": 0.387
+  },
+  "ID_DON24_REGIME": {
+   "end_inr": 186,
+   "lowest_inr": 186,
+   "highest_inr": 1085,
+   "trades": 162,
+   "win_rate": 0.383
+  },
+  "ID_DON24_BOTH": {
+   "end_inr": 201,
+   "lowest_inr": 201,
+   "highest_inr": 1142,
+   "trades": 173,
+   "win_rate": 0.387
+  }
+ },
+ "selected": "ID_DON24_BOTH",
+ "gate": {
+  "after_tax_return_positive": false,
+  "pf_after_tax_gt_1_10": false,
+  "at_least_30_trades": true,
+  "max_dd_le_30pct": false,
+  "costs_x2_still_positive": false
+ },
+ "verdict": "NO-GO"
+}

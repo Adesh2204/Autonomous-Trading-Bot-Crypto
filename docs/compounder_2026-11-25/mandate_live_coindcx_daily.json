@@ -1,0 +1,52 @@
+{
+  "program": "compounder",
+  "created_utc": "2026-11-25",
+  "mode": "LIVE",
+  "venue": "coindcx_futures",
+  "market_data": "CoinDCX futures public API (no keys)",
+  "strategy": {
+    "name": "D55_20_LS",
+    "timeframe": "1d",
+    "entry_n": 55,
+    "exit_n": 20,
+    "atr_n": 20,
+    "stop_atr": 2.0,
+    "allow_short": true
+  },
+  "universe": [
+    "BTC",
+    "ETH",
+    "BNB",
+    "SOL",
+    "XRP",
+    "ADA",
+    "AVAX",
+    "DOGE",
+    "TRX",
+    "LINK"
+  ],
+  "risk": {
+    "risk_fraction": 0.02,
+    "max_position_leverage": 3.0,
+    "max_gross_leverage": 5.0,
+    "leverage_setting": 10.0,
+    "min_size_max_risk": 0.2,
+    "max_open_risk": 0.4,
+    "liquidation_buffer": 1.6
+  },
+  "tax": {
+    "mode": "VDA_PER_TRADE",
+    "rate": 0.3,
+    "cess": 0.04
+  },
+  "start_equity_usd": 9.434,
+  "breakers": {
+    "daily_loss_pause": 0.3,
+    "drawdown_halt": 0.6
+  },
+  "research_verdict": "Recommended live plan. Rs 1,000 backtest 2024-2026 on CoinDCX costs: Rs 1,010 after the 30% tax (low Rs 498, high Rs 2,179). Per-trade leverage keeps liquidation beyond the stop (isolated INR margin). Paper only.",
+  "live_orders_allowed": true,
+  "label": "CoinDCX | Rs 1,000 | DAILY long+short | INR margin | LIVE copy of the live plan",
+  "start_equity_inr": 1000.0,
+  "margin_ccy": "INR"
+}

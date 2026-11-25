@@ -1,0 +1,50 @@
+{
+  "program": "compounder",
+  "created_utc": "2026-11-25",
+  "mode": "PAPER",
+  "venue": "coindcx_futures",
+  "market_data": "CoinDCX futures public API (no keys)",
+  "strategy": {
+    "name": "D55_20_LS",
+    "timeframe": "1d",
+    "entry_n": 55,
+    "exit_n": 20,
+    "atr_n": 20,
+    "stop_atr": 2.0,
+    "allow_short": true
+  },
+  "universe": [
+    "BTC",
+    "ETH",
+    "BNB",
+    "SOL",
+    "XRP",
+    "ADA",
+    "AVAX",
+    "DOGE",
+    "TRX",
+    "LINK"
+  ],
+  "risk": {
+    "risk_fraction": 0.02,
+    "max_position_leverage": 3.0,
+    "max_gross_leverage": 5.0,
+    "leverage_setting": 10.0,
+    "min_size_max_risk": 0.2,
+    "max_open_risk": 0.4
+  },
+  "tax": {
+    "mode": "VDA_PER_TRADE",
+    "rate": 0.3,
+    "cess": 0.04
+  },
+  "start_equity_usd": 9.51,
+  "breakers": {
+    "daily_loss_pause": 0.3,
+    "drawdown_halt": 0.6
+  },
+  "research_verdict": "Your real amount: Rs 1,000 (= $9.51 at USDT/INR 105.13 on 25 Nov 2026), long+short, 10x setting. Below-minimum orders are raised to the venue minimum if that stop risk is <= 20% of equity; all open stop risks together <= 40%. HIGH RISK by design (user's choice). Paper only.",
+  "live_orders_allowed": false,
+  "label": "CoinDCX | Rs 1,000 | long+short | 10x",
+  "start_equity_inr": 1000
+}
